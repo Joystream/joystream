@@ -35,9 +35,6 @@ type Channel @entity {
 
   category: ChannelCategory
 
-  "Reward account where revenue is sent if set."
-  rewardAccount: String
-
   "The title of the Channel"
   title: String @fulltext(query: "search")
 
@@ -72,6 +69,12 @@ type Channel @entity {
 
   "List of channel collaborators (members)"
   collaborators: [Membership!]
+
+  "List of members blocked from from participating on any video of the channel."
+  bannedMembers: [Membership!]
+
+  "Owners of video NFTs belonging to this channel."
+  channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
 }
 
 type VideoCategory @entity {
@@ -93,7 +96,7 @@ type Video @entity {
   "Runtime identifier"
   id: ID!
 
-  "Reference to member's channel"
+  "Reference to videos's channel"
   channel: Channel!
 
   "Reference to a video category"
@@ -149,6 +152,32 @@ type Video @entity {
 
   "Is video featured or not"
   isFeatured: Boolean!
+
+  ##########################
+
+  "Is comment section enabled (true if enabled)"
+  isCommentSectionEnabled: Boolean!
+
+  "channel owner pinned comment"
+  pinnedComment: Comment @derivedFrom(field: "video")
+
+  "List of all video comments"
+  comments: [Comment!] @derivedFrom(field: "video")
+
+  "Comments count"
+  commentsCount: Int!
+
+  "Is reactions feature enabled on video (true if enabled i.e. video can be reacted)"
+  isReactionFeatureEnabled: Boolean!
+
+  "List of all video reactions"
+  reactions: [VideoReaction!] @derivedFrom(field: "video")
+
+  "Reactions count by reaction Id"
+  reactionsCountByReactionId: [VideoReactionsCountByReactionType!] @derivedFrom(field: "video")
+
+  "Reactions count"
+  reactionsCount: Int!
 }
 
 type VideoMediaMetadata @entity {
@@ -195,4 +224,135 @@ type License @entity {
 
   "Custom license content"
   custom_text: String
+}
+
+type VideoReactionsCountByReactionType @entity {
+  "{videoId}-{reactionId}"
+  id: ID!
+
+  "The reaction option"
+  reaction: VideoReactionOptions!
+
+  "No of times the video has been reacted with given reaction"
+  count: Int!
+
+  "The video which has been react with given reaction"
+  video: Video!
+}
+
+enum VideoReactionOptions {
+  "Reacting again with the same option will cancel the previous reaction"
+  LIKE
+  UNLIKE
+}
+
+type VideoReaction @entity {
+  "{memberId}-{videoId}"
+  id: ID!
+
+  "The Reaction"
+  reaction: VideoReactionOptions!
+
+  "The member that reacted"
+  member: Membership!
+
+  "ID of the member that reacted"
+  memberId: String!
+
+  "The video that has been reacted to"
+  video: Video!
+}
+
+type CommentReaction @entity {
+  "{memberId}-{commentId}-{reactionId}"
+  id: ID!
+
+  "The Reaction id"
+  reaction_id: Int!
+
+  "The member that reacted"
+  member: Membership!
+
+  "ID of the member that reacted"
+  memberId: String!
+
+  "The comment that has been reacted to"
+  comment: Comment!
+
+  # Added to efficiently delete all reactions of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
+}
+
+enum CommentStatus {
+  VISIBLE
+  DELETED
+  MODERATED
+}
+
+type CommentReactionsCountByReactionId @entity {
+  "{commentId}-{reactionId}"
+  id: ID!
+
+  "The reaction id"
+  reaction_id: Int!
+
+  "No of times the comment has been reacted with given reaction Id"
+  count: Int!
+
+  "The comment which has been react with given reaction Id"
+  comment: Comment!
+
+  # Added to efficiently delete all reactions counts of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
+}
+
+type Comment @entity {
+  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Author of the video comment"
+  author: Membership!
+
+  "Comment text"
+  text: String! @fulltext(query: "commentText")
+
+  "Video the comment was added to"
+  video: Video!
+
+  "Status of the comment; either it is visible, deleted, or moderated (deleted by moderator)"
+  status: CommentStatus!
+
+  "List of all reactions to the comment"
+  reactions: [CommentReaction!] @derivedFrom(field: "comment")
+
+  "Reactions count by reaction Id"
+  reactionsCountByReactionId: [CommentReactionsCountByReactionId!] @derivedFrom(field: "comment")
+
+  "A (parent) comment that this comment replies to (if any)"
+  parentComment: Comment
+
+  "How many comments has replied to this comment"
+  repliesCount: Int!
+
+  "Total number of reactions to this comment"
+  reactionsCount: Int!
+
+  "Sum of replies and reactions"
+  reactionsAndRepliesCount: Int!
+
+  "Whether comment has been edited or not"
+  isEdited: Boolean!
+
+  "List of all text update events (edits)"
+  edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
+
+  "The event the comment was deleted in (if any)"
+  deletedInEvent: CommentDeletedEvent @derivedFrom(field: "comment")
+
+  "The event the comment was moderated in (if any)"
+  moderatedInEvent: CommentModeratedEvent @derivedFrom(field: "comment")
 }

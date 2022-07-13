@@ -208,7 +208,7 @@ services:
     command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
-    image: joystream/hydra-indexer:3.0.0
+    image: joystream/hydra-indexer:v4.0.0-alpha.0
     container_name: indexer
     restart: unless-stopped
     env_file:
@@ -218,7 +218,6 @@ services:
       - DB_NAME=${INDEXER_DB_NAME}
       - INDEXER_WORKERS=5
       - REDIS_URI=redis://redis:6379/0
-      - TYPES_JSON=types.json
       - WS_PROVIDER_ENDPOINT_URI=${JOYSTREAM_NODE_WS}
       - DB_HOST=db
     depends_on:
@@ -230,7 +229,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:3.0.0
+    image: joystream/hydra-indexer-gateway:4.0.0-alpha.0
     container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:
@@ -260,7 +259,7 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:olympia
+    image: joystream/faucet:rhodes
     restart: on-failure
     container_name: faucet
     env_file:
@@ -270,6 +269,10 @@ services:
       - PORT=3002
       - INVITING_MEMBER_ID=${INVITING_MEMBER_ID}
       - PROVIDER=${JOYSTREAM_NODE_WS}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - ALERT_TO_EMAIL=${ALERT_TO_EMAIL}
+      - ALERT_FROM_EMAIL=${ALERT_FROM_EMAIL}
+      - BALANCE_TOP_UP_AMOUNT=${BALANCE_TOP_UP_AMOUNT}
     ports:
       - "3002:3002"
 

@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 
 import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
@@ -273,7 +273,9 @@ async function handleRemoveUpcomingOpeningAction(
   action: IRemoveUpcomingOpening
 ): Promise<UpcomingOpeningRemoved | InvalidActionMetadata> {
   const { id } = action
-  const upcomingOpening = await store.get(UpcomingWorkingGroupOpening, { where: { id } })
+  const upcomingOpening = await store.get(UpcomingWorkingGroupOpening, {
+    where: { id },
+  } as FindOneOptions<UpcomingWorkingGroupOpening>)
   let result: UpcomingOpeningRemoved | InvalidActionMetadata
   if (upcomingOpening) {
     result = new UpcomingOpeningRemoved()
@@ -409,8 +411,8 @@ export async function workingGroups_OpeningAdded({ store, event }: EventContext 
     applications: [],
     group,
     rewardPerBlock: optRewardPerBlock.unwrapOr(new BN(0)),
-    stakeAmount: stakePolicy.stake_amount,
-    unstakingPeriod: toNumber(stakePolicy.leaving_unstaking_period, INT32MAX),
+    stakeAmount: stakePolicy.stakeAmount,
+    unstakingPeriod: toNumber(stakePolicy.leavingUnstakingPeriod, INT32MAX),
     status: new OpeningStatusOpen(),
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
@@ -434,18 +436,18 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
 
   const [
     {
-      opening_id: openingRuntimeId,
+      openingId,
       description: metadataBytes,
-      member_id: memberId,
-      reward_account_id: rewardAccount,
-      role_account_id: roleAccout,
-      stake_parameters: { stake, staking_account_id: stakingAccount },
+      memberId,
+      rewardAccountId,
+      roleAccountId,
+      stakeParameters: { stake, stakingAccountId },
     },
     applicationRuntimeId,
   ] = new WorkingGroups.AppliedOnOpeningEvent(event).params
 
   const group = await getWorkingGroup(store, event)
-  const openingstoreId = `${group.name}-${openingRuntimeId.toString()}`
+  const openingstoreId = `${group.name}-${openingId.toString()}`
 
   const application = new WorkingGroupApplication({
     createdAt: eventTime,
@@ -454,9 +456,9 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
     runtimeId: applicationRuntimeId.toNumber(),
     opening: new WorkingGroupOpening({ id: openingstoreId }),
     applicant: new Membership({ id: memberId.toString() }),
-    rewardAccount: rewardAccount.toString(),
-    roleAccount: roleAccout.toString(),
-    stakingAccount: stakingAccount.toString(),
+    rewardAccount: rewardAccountId.toString(),
+    roleAccount: roleAccountId.toString(),
+    stakingAccount: stakingAccountId.toString(),
     status: new ApplicationStatusPending(),
     answers: [],
     stake,
@@ -498,7 +500,7 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
     'applications',
     'applications.applicant',
   ])
-  const acceptedApplicationIds = createType('Vec<ApplicationId>', applicationIdsSet.toHex() as any)
+  const acceptedApplicationIds = createType('Vec<u64>', applicationIdsSet.toHex() as any)
 
   // Save the event
   const openingFilledEvent = new OpeningFilledEvent({

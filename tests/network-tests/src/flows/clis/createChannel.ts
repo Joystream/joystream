@@ -18,7 +18,7 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
   await new FixtureRunner(buyMembershipFixture).run()
   const memberId = buyMembershipFixture.getCreatedMembers()[0]
 
-  // Send some funds to pay the deletion_prize and fees
+  // Send some funds to pay the state_bloat_bond and fees
   const channelOwnerBalance = new BN(10000)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
@@ -39,7 +39,6 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
     description: 'This is a test channel',
     isPublic: true,
     language: 'en',
-    rewardAccount: channelOwnerKeypair.key.address,
   }
 
   const channelId = await joystreamCli.createChannel(channelInput, [
@@ -57,7 +56,6 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
       assert.equal(channel.description, channelInput.description)
       assert.equal(channel.isPublic, channelInput.isPublic)
       assert.equal(channel.language?.iso, channelInput.language)
-      assert.equal(channel.rewardAccount, channelInput.rewardAccount)
       assert.equal(channel.avatarPhoto?.type.__typename, 'DataObjectTypeChannelAvatar')
       assert.equal(channel.avatarPhoto?.size, statSync(avatarPhotoPath).size)
       assert.equal(channel.coverPhoto?.type.__typename, 'DataObjectTypeChannelCoverPhoto')

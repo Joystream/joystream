@@ -8,12 +8,12 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
 use super::mock::{
-    Balances, LockId, System, Test, TestEvent, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID,
+    Balances, Event, LockId, System, Test, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID,
 };
 use crate::types::StakeParameters;
 use crate::{
-    Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, RawEvent,
-    StakePolicy, Trait, Worker,
+    Application, ApplyOnOpeningParameters, Config, DefaultInstance, Opening, OpeningType, RawEvent,
+    StakePolicy, Worker,
 };
 
 pub struct EventFixture;
@@ -29,15 +29,16 @@ impl EventFixture {
             OpeningType,
             StakePolicy<u64, u64>,
             ApplyOnOpeningParameters<Test>,
+            u64,
             DefaultInstance,
         >,
     ) {
-        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+        let converted_event = Event::TestWorkingGroup(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -58,15 +59,16 @@ impl EventFixture {
             OpeningType,
             StakePolicy<u64, u64>,
             ApplyOnOpeningParameters<Test>,
+            u64,
             DefaultInstance,
         >,
     ) {
-        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+        let converted_event = Event::TestWorkingGroup(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    fn contains_global_event(expected_event: TestEvent) {
+    fn contains_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -94,8 +96,8 @@ impl Default for AddOpeningFixture {
             opening_type: OpeningType::Regular,
             starting_block: 0,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
         }
@@ -118,15 +120,15 @@ impl AddOpeningFixture {
 
             let actual_opening = TestWorkingGroup::opening_by_id(opening_id);
 
-            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
+            let expected_hash = <Test as frame_system::Config>::Hashing::hash(&self.description);
             let expected_opening = Opening {
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
                 stake_policy: self.stake_policy.clone(),
-                reward_per_block: self.reward_per_block.clone(),
+                reward_per_block: self.reward_per_block,
                 creation_stake: if self.opening_type == OpeningType::Regular {
-                    <Test as Trait>::LeaderOpeningStake::get()
+                    <Test as Config>::LeaderOpeningStake::get()
                 } else {
                     0
                 },
@@ -145,7 +147,7 @@ impl AddOpeningFixture {
             self.description.clone(),
             self.opening_type,
             self.stake_policy.clone(),
-            self.reward_per_block.clone(),
+            self.reward_per_block,
         )?;
 
         Ok(saved_opening_next_id)
@@ -240,10 +242,10 @@ impl ApplyOnOpeningFixture {
             reward_account_id: 2,
             description: b"human_text".to_vec(),
             stake_parameters: StakeParameters {
-                stake: <Test as Trait>::MinimumApplicationStake::get(),
+                stake: <Test as Config>::MinimumApplicationStake::get(),
                 staking_account_id: 2,
             },
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
+            initial_balance: <Test as Config>::MinimumApplicationStake::get(),
         }
     }
 
@@ -259,7 +261,7 @@ impl ApplyOnOpeningFixture {
     }
 
     pub fn call(&self) -> Result<u64, DispatchError> {
-        balances::Module::<Test>::make_free_balance_be(
+        balances::Pallet::<Test>::make_free_balance_be(
             &self.stake_parameters.staking_account_id,
             self.initial_balance,
         );
@@ -288,7 +290,7 @@ impl ApplyOnOpeningFixture {
 
             let actual_application = TestWorkingGroup::application_by_id(application_id);
 
-            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
+            let expected_hash = <Test as frame_system::Config>::Hashing::hash(&self.description);
             let expected_application = Application::<Test> {
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
@@ -298,7 +300,7 @@ impl ApplyOnOpeningFixture {
                 opening_id: self.opening_id,
             };
 
-            assert_eq!(actual_application, expected_application);
+            assert_eq!(actual_application, Some(expected_application));
         }
 
         saved_application_next_id
@@ -319,7 +321,7 @@ pub struct FillOpeningFixture {
 
 impl FillOpeningFixture {
     pub fn default_for_ids(opening_id: u64, application_ids: Vec<u64>) -> Self {
-        let application_ids: BTreeSet<u64> = application_ids.iter().map(|x| *x).collect();
+        let application_ids: BTreeSet<u64> = application_ids.iter().copied().collect();
 
         Self {
             origin: RawOrigin::Signed(1),
@@ -329,8 +331,8 @@ impl FillOpeningFixture {
             reward_account_id: 2,
             staking_account_id: 2,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             created_at: 0,
@@ -411,7 +413,7 @@ impl FillOpeningFixture {
 
             let actual_worker = TestWorkingGroup::worker_by_id(worker_id);
 
-            assert_eq!(actual_worker, expected_worker);
+            assert_eq!(actual_worker, Some(expected_worker));
 
             let expected_worker_count =
                 saved_worker_count + (self.successful_application_ids.len() as u32);
@@ -439,13 +441,13 @@ impl Default for HireLeadFixture {
         Self {
             setup_environment: true,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             lead_id: 1,
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get()
-                + <Test as Trait>::LeaderOpeningStake::get()
+            initial_balance: <Test as Config>::MinimumApplicationStake::get()
+                + <Test as Config>::LeaderOpeningStake::get()
                 + 1,
         }
     }
@@ -515,11 +517,11 @@ impl Default for HireRegularWorkerFixture {
         Self {
             setup_environment: true,
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
+            initial_balance: <Test as Config>::MinimumApplicationStake::get(),
         }
     }
 }
@@ -585,7 +587,7 @@ impl UpdateWorkerRoleAccountFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             assert_eq!(worker.role_account_id, self.new_role_account_id);
         }
@@ -614,12 +616,12 @@ impl LeaveWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             if worker.job_unstaking_period > 0 {
                 assert_eq!(
                     worker.started_leaving_at,
-                    Some(<frame_system::Module<Test>>::block_number())
+                    Some(<frame_system::Pallet<Test>>::block_number())
                 );
                 return;
             }
@@ -659,17 +661,15 @@ impl TerminateWorkerRoleFixture {
         let actual_result = TestWorkingGroup::terminate_role(
             self.origin.clone().into(),
             self.worker_id,
-            self.penalty.clone(),
+            self.penalty,
             self.rationale.clone(),
         );
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            if actual_result.is_ok() {
-                assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
-                    self.worker_id
-                ));
-            }
+            assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+                self.worker_id
+            ));
         }
     }
 }
@@ -752,7 +752,7 @@ fn get_current_lead_account_id() -> u64 {
     let leader_worker_id = TestWorkingGroup::current_lead();
 
     if let Some(leader_worker_id) = leader_worker_id {
-        let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
+        let leader = TestWorkingGroup::worker_by_id(leader_worker_id).expect("Worker Must Exist");
         leader.role_account_id
     } else {
         0 // return invalid lead_account_id for testing
@@ -917,16 +917,14 @@ impl WithdrawApplicationFixture {
             TestWorkingGroup::withdraw_application(self.origin.clone().into(), self.application_id);
         assert_eq!(actual_result.clone(), expected_result);
 
-        if actual_result.is_ok() {
-            if self.stake {
-                // the stake was removed
-                assert_eq!(0, get_stake_balance(&self.account_id));
+        if actual_result.is_ok() && self.stake {
+            // the stake was removed
+            assert_eq!(0, get_stake_balance(&self.account_id));
 
-                let new_balance = Balances::usable_balance(&self.account_id);
+            let new_balance = Balances::usable_balance(&self.account_id);
 
-                // worker balance equilibrium
-                assert_eq!(old_balance + old_stake, new_balance);
-            }
+            // worker balance equilibrium
+            assert_eq!(old_balance + old_stake, new_balance);
         }
     }
 }
@@ -1047,7 +1045,7 @@ impl UpdateRewardAccountFixture {
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             assert_eq!(worker.reward_account_id, self.new_reward_account_id);
         }
@@ -1091,7 +1089,7 @@ impl UpdateRewardAmountFixture {
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             assert_eq!(worker.reward_per_block, self.reward_per_block);
         }
@@ -1138,7 +1136,7 @@ impl SetStatusTextFixture {
         let new_text_hash = TestWorkingGroup::status_text_hash();
 
         if actual_result.is_ok() {
-            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(
+            let expected_hash = <Test as frame_system::Config>::Hashing::hash(
                 &self.new_status_text.clone().unwrap(),
             );
 
@@ -1240,6 +1238,63 @@ impl UpdateWorkerStorageFixture {
             let storage = TestWorkingGroup::worker_storage(self.worker_id);
 
             assert_eq!(storage, self.storage_field);
+        }
+    }
+}
+
+pub struct FundWorkingGroupBudgetFixture {
+    origin: RawOrigin<u64>,
+    member_id: u64,
+    amount: u64,
+    rationale: Vec<u8>,
+}
+
+impl Default for FundWorkingGroupBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            member_id: 1,
+            amount: 100,
+            rationale: Vec::new(),
+        }
+    }
+}
+
+impl FundWorkingGroupBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: u64) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
+        Self { rationale, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = TestWorkingGroup::budget();
+
+        let actual_result = TestWorkingGroup::fund_working_group_budget(
+            self.origin.clone().into(),
+            self.member_id,
+            self.amount,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = TestWorkingGroup::budget();
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, old_budget + self.amount);
+        } else {
+            assert_eq!(old_budget, new_budget);
         }
     }
 }

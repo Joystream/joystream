@@ -1,26 +1,16 @@
 import { Api } from '../../../Api'
-import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
-import { JoystreamCLI } from '../../../cli/joystream'
+import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
 import { assertNftOwner } from './utils'
 
 export class NftDirectOfferFixture extends BaseQueryNodeFixture {
-  private cli: JoystreamCLI
   private videoId: number
   private author: IMember
   private participant: IMember
 
-  constructor(
-    api: Api,
-    query: QueryNodeApi,
-    cli: JoystreamCLI,
-    videoId: number,
-    author: IMember,
-    participant: IMember
-  ) {
+  constructor(api: Api, query: QueryNodeApi, videoId: number, author: IMember, participant: IMember) {
     super(api, query)
-    this.cli = cli
     this.videoId = videoId
     this.author = author
     this.participant = participant
@@ -33,7 +23,7 @@ export class NftDirectOfferFixture extends BaseQueryNodeFixture {
     this.debug('Issue video NFT')
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
-    this.debug('Offer NFT')
+    this.debug(`Offer NFT (expected new owner id ${this.participant.memberId})`)
     await this.api.offerNft(
       this.author.keyringPair.address,
       this.videoId,

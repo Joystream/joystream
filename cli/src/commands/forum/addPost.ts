@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import ForumCommandBase from '../../base/ForumCommandBase'
 import { ForumPostMetadata, IForumPostMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../helpers/serialization'
-import { PostId } from '@joystream/types/common'
+import { ForumPostId as PostId } from '@joystream/types/primitives'
 
 export default class ForumAddPostCommand extends ForumCommandBase {
   static description = 'Add forum post.'
@@ -41,7 +41,7 @@ export default class ForumAddPostCommand extends ForumCommandBase {
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
     const result = await this.sendAndFollowTx(
-      await this.getDecodedPair(member.membership.controller_account),
+      await this.getDecodedPair(member.membership.controllerAccount),
       api.tx.forum.addPost(member.id, categoryId, threadId, metadataToBytes(ForumPostMetadata, metadata), editable)
     )
 

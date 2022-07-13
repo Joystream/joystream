@@ -1,14 +1,19 @@
 #![cfg(feature = "runtime-benchmarks")]
+// Substrate macro issue:
+#![allow(clippy::no_effect)]
+
 use super::*;
 use crate::Module as Codex;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
+
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
+use content::NftLimitPeriod;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use proposals_discussion::Module as Discussion;
@@ -22,11 +27,11 @@ use sp_std::prelude::*;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
     let EventRecord { event, .. } = &events[events.len() - 1];
@@ -34,7 +39,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -49,7 +54,7 @@ fn handle_from_id(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait + membership::Trait>(
+fn member_funded_account<T: Config + membership::Config>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -74,12 +79,12 @@ fn member_funded_account<T: Trait + membership::Trait>(
     let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
     )
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
         account_id.clone(),
     )
     .unwrap();
@@ -87,7 +92,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-fn create_proposal_parameters<T: Trait + membership::Trait>(
+fn create_proposal_parameters<T: Config + membership::Config>(
     title_length: u32,
     description_length: u32,
 ) -> (T::AccountId, T::MemberId, GeneralProposalParameters<T>) {
@@ -104,7 +109,7 @@ fn create_proposal_parameters<T: Trait + membership::Trait>(
     (account_id, member_id, general_proposal_paramters)
 }
 
-fn create_proposal_verify<T: Trait>(
+fn create_proposal_verify<T: Config>(
     account_id: T::AccountId,
     member_id: T::MemberId,
     proposal_parameters: GeneralProposalParameters<T>,
@@ -184,20 +189,15 @@ fn create_proposal_verify<T: Trait>(
 
 benchmarks! {
     where_clause {
-        where T: membership::Trait,
-        T: council::Trait,
-        T: working_group::Trait<working_group::Instance1>
-    }
-
-    _ {
-        let t in 1 .. T::TitleMaxLength::get() => ();
-        let d in 1 .. T::DescriptionMaxLength::get() => ();
+        where T: membership::Config,
+        T: council::Config,
+        T: working_group::Config<working_group::Instance1>
     }
 
     create_proposal_signal {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -219,8 +219,8 @@ benchmarks! {
 
     create_proposal_runtime_upgrade {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -242,8 +242,8 @@ benchmarks! {
 
     create_proposal_funding_request {
         let i in 1 .. MAX_FUNDING_REQUEST_ACCOUNTS.try_into().unwrap();
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -279,8 +279,8 @@ benchmarks! {
     }
 
     create_proposal_set_max_validator_count {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -301,8 +301,8 @@ benchmarks! {
     }
 
     create_proposal_veto_proposal {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -324,8 +324,8 @@ benchmarks! {
 
     create_proposal_create_working_group_lead_opening {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -335,7 +335,7 @@ benchmarks! {
                 description: vec![0u8; i.try_into().unwrap()],
                 stake_policy: working_group::StakePolicy {
                     stake_amount:
-                        <T as working_group::Trait<working_group::Instance1>>
+                        <T as working_group::Config<working_group::Instance1>>
                             ::MinimumApplicationStake::get(),
                     leaving_unstaking_period: Zero::zero(),
                 },
@@ -357,8 +357,8 @@ benchmarks! {
     }
 
     create_proposal_fill_working_group_lead_opening {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -383,8 +383,8 @@ benchmarks! {
     }
 
     create_proposal_update_working_group_budget {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -409,8 +409,8 @@ benchmarks! {
     }
 
     create_proposal_decrease_working_group_lead_stake {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -435,8 +435,8 @@ benchmarks! {
     }
 
     create_proposal_slash_working_group_lead {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -461,8 +461,8 @@ benchmarks! {
     }
 
     create_proposal_set_working_group_lead_reward {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -487,8 +487,8 @@ benchmarks! {
     }
 
     create_proposal_terminate_working_group_lead {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -516,8 +516,8 @@ benchmarks! {
 
     create_proposal_amend_constitution {
         let i in 1 .. MAX_BYTES;
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -539,8 +539,8 @@ benchmarks! {
     }
 
     create_proposal_cancel_working_group_lead_opening {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -563,8 +563,8 @@ benchmarks! {
     }
 
     create_proposal_set_membership_price {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
@@ -585,8 +585,8 @@ benchmarks! {
     }
 
     create_proposal_set_council_budget_increment {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -607,8 +607,8 @@ benchmarks! {
     }
 
     create_proposal_set_councilor_reward {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -629,8 +629,8 @@ benchmarks! {
     }
 
     create_proposal_set_initial_invitation_balance {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -651,8 +651,8 @@ benchmarks! {
     }
 
     create_proposal_set_initial_invitation_count {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -673,8 +673,8 @@ benchmarks! {
     }
 
     create_proposal_set_membership_lead_invitation_quota {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -695,8 +695,8 @@ benchmarks! {
     }
 
     create_proposal_set_referral_cut {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -716,121 +716,49 @@ benchmarks! {
         );
     }
 
-    create_proposal_create_blog_post {
-        let t in ...;
-        let d in ...;
-        let h in 1 .. MAX_BYTES;
-        let b in 1 .. MAX_BYTES;
+    create_proposal_update_global_nft_limit {
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
-        let (account_id, member_id, general_proposal_paramters) =
+        let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::CreateBlogPost(
-                vec![0; h.try_into().unwrap()],
-                vec![0; b.try_into().unwrap()],
-            );
-    }: create_proposal(
-        RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
-        proposal_details.clone()
-    )
-    verify {
-        create_proposal_verify::<T>(
-            account_id,
-            member_id,
-            general_proposal_paramters,
-            proposal_details
+        let proposal_details = ProposalDetails::UpdateGlobalNftLimit(
+            NftLimitPeriod::Daily,
+            100,
         );
-    }
-
-    create_proposal_edit_blog_post {
-        let t in ...;
-        let d in ...;
-        let h in 1 .. MAX_BYTES;
-        let b in 1 .. MAX_BYTES;
-
-        let (account_id, member_id, general_proposal_paramters) =
-            create_proposal_parameters::<T>(t, d);
-
-        let proposal_details = ProposalDetails::EditBlogPost(
-                0,
-                Some(vec![0; h.try_into().unwrap()]),
-                Some(vec![0; b.try_into().unwrap()]),
-            );
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
+        general_proposal_parameters.clone(),
         proposal_details.clone()
     )
     verify {
         create_proposal_verify::<T>(
             account_id,
             member_id,
-            general_proposal_paramters,
-            proposal_details
-        );
-    }
-
-    create_proposal_lock_blog_post {
-        let t in ...;
-        let d in ...;
-
-        let (account_id, member_id, general_proposal_paramters) =
-            create_proposal_parameters::<T>(t, d);
-
-        let proposal_details = ProposalDetails::LockBlogPost(0);
-    }: create_proposal(
-        RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
-        proposal_details.clone()
-    )
-    verify {
-        create_proposal_verify::<T>(
-            account_id,
-            member_id,
-            general_proposal_paramters,
-            proposal_details
-        );
-    }
-
-    create_proposal_unlock_blog_post {
-        let t in ...;
-        let d in ...;
-
-        let (account_id, member_id, general_proposal_paramters) =
-            create_proposal_parameters::<T>(t, d);
-
-        let proposal_details = ProposalDetails::UnlockBlogPost(0);
-    }: create_proposal(
-        RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
-        proposal_details.clone()
-    )
-    verify {
-        create_proposal_verify::<T>(
-            account_id,
-            member_id,
-            general_proposal_paramters,
+            general_proposal_parameters,
             proposal_details
         );
     }
 
     create_proposal_update_channel_payouts {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
         let i in 0..MAX_BYTES;
 
-        let (account_id, member_id, general_proposal_paramters) =
+        let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
 
-        let commitment = T::Hashing::hash(&b"commitment".to_vec());
+        let uploader_account = account::<T::AccountId>("uploader_account", 1, SEED);
+        let commitment = T::Hashing::hash(b"commitment".as_ref());
         let payload = content::ChannelPayoutsPayloadParametersRecord {
-            uploader_account: T::AccountId::default(),
+            uploader_account,
             object_creation_params: content::DataObjectCreationParameters {
                 size: u64::MAX,
                 ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))
             },
             expected_data_size_fee: u128::MAX.saturated_into::<T::Balance>(),
+            expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<T::Balance>()
         };
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<T> {
@@ -843,14 +771,14 @@ benchmarks! {
         );
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
+        general_proposal_parameters.clone(),
         proposal_details.clone()
     )
     verify {
         create_proposal_verify::<T>(
             account_id,
             member_id,
-            general_proposal_paramters,
+            general_proposal_parameters,
             proposal_details
         );
     }
@@ -858,128 +786,144 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
+    type ProposalsCodex = crate::Module<Test>;
 
     #[test]
     fn test_create_proposal_signal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_signal::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_signal());
         });
     }
 
     #[test]
     fn test_create_proposal_funding_request() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_funding_request::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_funding_request());
         });
     }
 
     #[test]
     fn test_create_proposal_set_max_validator_count() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_max_validator_count::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_max_validator_count());
         });
     }
 
     #[test]
     fn test_create_proposal_create_working_group_lead_opening() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_create_working_group_lead_opening::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_create_working_group_lead_opening()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_fill_working_group_lead_opening() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_fill_working_group_lead_opening::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_fill_working_group_lead_opening()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_update_working_group_budget() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_update_working_group_budget::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_update_working_group_budget()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_decrease_working_group_lead_stake() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_decrease_working_group_lead_stake::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_decrease_working_group_lead_stake()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_slash_working_group_lead() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_slash_working_group_lead::<
-                Test,
-            >());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_slash_working_group_lead());
         });
     }
 
     #[test]
     fn test_create_proposal_set_working_group_lead_reward() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_working_group_lead_reward::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_working_group_lead_reward()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_terminate_working_group_lead() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_terminate_working_group_lead::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_terminate_working_group_lead()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_amend_constitution() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_amend_constitution::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_amend_constitution());
         });
     }
 
     #[test]
     fn test_create_proposal_cancel_working_group_lead_opening() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_amend_constitution::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_amend_constitution());
         });
     }
 
     #[test]
     fn test_create_proposal_set_membership_price() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_membership_price::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_membership_price());
         });
     }
 
     #[test]
     fn test_create_proposal_set_council_budget_increment() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_council_budget_increment::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_council_budget_increment()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_set_councior_reward() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_councilor_reward::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_councilor_reward());
         });
     }
 
     #[test]
     fn test_create_proposal_set_initial_invitation_balance() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_initial_invitation_balance::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_initial_invitation_balance()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_set_initial_invitation_count() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_initial_invitation_count::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_initial_invitation_count()
+            );
         });
     }
 
@@ -987,7 +931,8 @@ mod tests {
     fn test_create_proposal_set_membership_lead_invitation_quota() {
         initial_test_ext().execute_with(|| {
             assert_ok!(
-                test_benchmark_create_proposal_set_membership_lead_invitation_quota::<Test>()
+                ProposalsCodex::test_benchmark_create_proposal_set_membership_lead_invitation_quota(
+                )
             );
         });
     }
@@ -995,49 +940,28 @@ mod tests {
     #[test]
     fn test_create_proposal_set_referral_cut() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_referral_cut::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_create_blog_post() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_create_blog_post::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_edit_blog_post() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_edit_blog_post::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_lock_blog_post() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_lock_blog_post::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_unlock_blog_post() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_unlock_blog_post::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_referral_cut());
         });
     }
 
     #[test]
     fn test_create_proposal_veto_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_veto_proposal::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_veto_proposal());
         });
     }
 
     #[test]
-    fn test_update_channel_payouts() {
+    fn test_update_global_nft_limit_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_update_channel_payouts::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_global_nft_limit());
+        })
+    }
+
+    #[test]
+    fn test_update_channel_payouts_proposal() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_channel_payouts());
         });
     }
 }

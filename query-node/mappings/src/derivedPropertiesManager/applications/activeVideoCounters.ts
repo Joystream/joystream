@@ -2,7 +2,7 @@ import { DerivedPropertiesManager } from '../classes'
 import { IExecutor, IListener, IChangePair } from '../interfaces'
 import { DatabaseManager } from '@joystream/hydra-common'
 import { Channel, ChannelCategory, Video, VideoCategory, StorageDataObject } from 'query-node/dist/model'
-import { videoRelationsForCountersBare } from '../../content/utils'
+import { videoRelationsForCounters } from '../../content/utils'
 
 export type IVideoDerivedEntites = 'channel' | 'channel.category' | 'category'
 export type IAvcChange = 1 | -1 | [1 | -1, IVideoDerivedEntites[]]
@@ -93,7 +93,7 @@ function hasVideoChanged(
 */
 class VideoUpdateListener implements IListener<Video, IAvcChange> {
   getRelationDependencies(): string[] {
-    return ['thumbnailPhoto', 'media']
+    return []
   }
 
   hasValueChanged(oldValue: Video | undefined, newValue: Video): IChangePair<IAvcChange> | undefined
@@ -284,7 +284,7 @@ class ChannelCategoryActiveVideoCounterExecutor implements IExecutor<Channel, IA
 }
 
 export function createVideoManager(store: DatabaseManager): DerivedPropertiesManager<Video, IAvcChange> {
-  const manager = new DerivedPropertiesManager<Video, IAvcChange>(store, Video, videoRelationsForCountersBare)
+  const manager = new DerivedPropertiesManager<Video, IAvcChange>(store, Video, videoRelationsForCounters)
 
   // listen to video change
   const listener = new VideoUpdateListener()

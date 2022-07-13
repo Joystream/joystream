@@ -2,14 +2,13 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions } from 'typeorm'
 import { Curator, CuratorGroup } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { inconsistentState, logger } from '../common'
 
 async function getCurator(store: DatabaseManager, curatorId: string): Promise<Curator | undefined> {
   const existingCurator = await store.get(Curator, {
-    where: { id: curatorId.toString() } as FindConditions<Curator>,
+    where: { id: curatorId.toString() },
   })
 
   return existingCurator
@@ -60,7 +59,7 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
-    where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+    where: { id: curatorGroupId.toString() },
   })
 
   // ensure curator group exists
@@ -87,7 +86,8 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
-    where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+    where: { id: curatorGroupId.toString() },
+    relations: ['curators'],
   })
 
   // ensure curator group exists
@@ -117,7 +117,8 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
-    where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+    where: { id: curatorGroupId.toString() },
+    relations: ['curators'],
   })
 
   // ensure curator group exists

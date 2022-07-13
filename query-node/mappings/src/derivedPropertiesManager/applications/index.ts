@@ -5,8 +5,9 @@ import {
   IAvcChange,
   IAvcChannelChange,
 } from './activeVideoCounters'
+import { createVideoNftManager, IOwnedNftChange } from './videoNftCollectors'
 import { DatabaseManager } from '@joystream/hydra-common'
-import { Channel, Video, StorageDataObject } from 'query-node/dist/model'
+import { Channel, OwnedNft, Video, StorageDataObject } from 'query-node/dist/model'
 import { DerivedPropertiesManager } from '../classes'
 
 let managers: IAllManagers
@@ -16,6 +17,7 @@ export interface IAllManagers {
   videos: DerivedPropertiesManager<Video, IAvcChange>
   channels: DerivedPropertiesManager<Channel, IAvcChannelChange>
   storageDataObjects: DerivedPropertiesManager<StorageDataObject, IAvcChange>
+  videoNfts: DerivedPropertiesManager<OwnedNft, IOwnedNftChange>
 }
 
 export function getAllManagers(store: DatabaseManager): IAllManagers {
@@ -27,6 +29,7 @@ export function getAllManagers(store: DatabaseManager): IAllManagers {
       videos: createVideoManager(store),
       channels: createChannelManager(store),
       storageDataObjects: createStorageDataObjectManager(store),
+      videoNfts: createVideoNftManager(store),
     }
   }
 

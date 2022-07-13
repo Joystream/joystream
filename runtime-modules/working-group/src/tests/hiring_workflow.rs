@@ -7,7 +7,7 @@ use crate::tests::fixtures::{
 };
 use crate::tests::mock::{Test, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID};
 use crate::types::StakeParameters;
-use crate::{OpeningType, StakePolicy, Trait};
+use crate::{Config, OpeningType, StakePolicy};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
@@ -33,13 +33,13 @@ impl Default for HiringWorkflow {
             opening_type: OpeningType::Regular,
             expected_result: Ok(()),
             stake_policy: StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
             },
             reward_per_block: None,
             applications: Vec::new(),
             setup_environment: true,
-            initial_balance: <Test as Trait>::MinimumApplicationStake::get() + 1,
+            initial_balance: <Test as Config>::MinimumApplicationStake::get() + 1,
         }
     }
 }
@@ -132,10 +132,10 @@ impl HiringWorkflow {
         if matches!(self.opening_type, OpeningType::Regular) {
             HireLeadFixture::default().hire_lead();
         } else {
-            balances::Module::<Test>::make_free_balance_be(
+            balances::Pallet::<Test>::make_free_balance_be(
                 &1,
-                <Test as Trait>::MinimumApplicationStake::get()
-                    + <Test as Trait>::LeaderOpeningStake::get()
+                <Test as Config>::MinimumApplicationStake::get()
+                    + <Test as Config>::LeaderOpeningStake::get()
                     + 1,
             );
             //         setup_members(6);
@@ -149,7 +149,7 @@ impl HiringWorkflow {
 
         let result = self.fill_worker_position();
 
-        let check_result = result.clone().map(|_| ());
+        let check_result = result.map(|_| ());
 
         assert_eq!(check_result, self.expected_result);
 
@@ -160,8 +160,9 @@ impl HiringWorkflow {
         let origin = match self.opening_type {
             OpeningType::Leader => RawOrigin::Root,
             OpeningType::Regular => {
-                let leader_worker_id = TestWorkingGroup::current_lead().unwrap();
-                let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
+                let leader_worker_id = TestWorkingGroup::current_lead().expect("Lead Must Exist");
+                let leader =
+                    TestWorkingGroup::worker_by_id(leader_worker_id).expect("Worker Must Exist");
                 let lead_account_id = leader.role_account_id;
 
                 RawOrigin::Signed(lead_account_id)
@@ -171,7 +172,7 @@ impl HiringWorkflow {
         // create the opening
         let add_worker_opening_fixture = AddOpeningFixture::default()
             .with_stake_policy(self.stake_policy.clone())
-            .with_reward_per_block(self.reward_per_block.clone())
+            .with_reward_per_block(self.reward_per_block)
             .with_opening_type(self.opening_type)
             .with_origin(origin.clone());
 
@@ -192,8 +193,8 @@ impl HiringWorkflow {
         }
 
         // fill opening
-        let fill_opening_fixture = FillOpeningFixture::default_for_ids(opening_id, application_ids)
-            .with_origin(origin.clone());
+        let fill_opening_fixture =
+            FillOpeningFixture::default_for_ids(opening_id, application_ids).with_origin(origin);
 
         let worker_id = fill_opening_fixture.call()?;
 

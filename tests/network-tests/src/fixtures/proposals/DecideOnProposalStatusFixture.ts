@@ -1,10 +1,14 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Utils } from '../../utils'
-import { Proposal, ProposalId, VoteKind } from '@joystream/types/proposals'
+import {
+  PalletProposalsEngineProposal as Proposal,
+  PalletProposalsEngineVoteKind as VoteKind,
+  PalletCouncilCouncilMember as CouncilMember,
+} from '@polkadot/types/lookup'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { ProposalVote } from './index'
-import { CouncilMember } from '@joystream/types/council'
+import { ProposalId } from '@joystream/types/primitives'
 import { VoteOnProposalsFixture } from './VoteOnProposalsFixture'
 import { ProposalFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
@@ -57,8 +61,8 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       slashingQuorumPercentage,
       slashingThresholdPercentage,
     } = proposal.parameters
-    const vote = (vote: keyof typeof VoteKind['typeDefinitions'], i: number): ProposalVote => ({
-      asMember: councilMembers[i].membership_id,
+    const vote = (vote: VoteKind['type'], i: number): ProposalVote => ({
+      asMember: councilMembers[i].membershipId,
       proposalId,
       rationale: `Vote ${vote} by member ${i}`,
       vote,

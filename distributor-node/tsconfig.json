@@ -12,11 +12,7 @@
     "esModuleInterop": true,
     "types" : [ "node", "mocha" ],
     "resolveJsonModule": true,
-    "strictNullChecks": true,
-    "paths": {
-      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
-      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
-    },
+    "strictNullChecks": true
   },
   "include": [
     "src/**/*"

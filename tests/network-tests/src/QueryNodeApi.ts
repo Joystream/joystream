@@ -1,7 +1,15 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
+import {
+  MemberId,
+  ApplicationId,
+  OpeningId,
+  WorkerId,
+  ProposalId,
+  ForumCategoryId,
+  ForumPostId,
+  ForumThreadId,
+} from '@joystream/types/primitives'
 import { extendDebug, Debugger } from './Debugger'
-import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
 import {
   ElectedCouncilFieldsFragment,
@@ -299,6 +307,9 @@ import {
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
   ChannelFieldsFragment,
+  GetChannelsByIds,
+  GetChannelsByIdsQuery,
+  GetChannelsByIdsQueryVariables,
   ChannelCategoryFieldsFragment,
   GetChannelCategoryByIdQuery,
   GetChannelCategoryByIdQueryVariables,
@@ -311,17 +322,90 @@ import {
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
   GetOwnedNftByVideoIdQueryVariables,
+  ChannelNftCollectorFieldsFragment,
+  GetChannelNftCollectorsQuery,
+  GetChannelNftCollectorsQueryVariables,
+  GetChannelNftCollectors,
   MemberVerificationStatusUpdatedEventFieldsFragment,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
   GetMemberVerificationStatusUpdatedEventsByEventIds,
+  CommentCreatedEventFieldsFragment,
+  GetCommentCreatedEventsByEventIdsQuery,
+  GetCommentCreatedEventsByEventIdsQueryVariables,
+  GetCommentCreatedEventsByEventIds,
+  GetCommentsByIds,
+  GetCommentsByIdsQuery,
+  GetCommentsByIdsQueryVariables,
+  CommentDeletedEventFieldsFragment,
+  GetCommentDeletedEventsByEventIdsQuery,
+  GetCommentDeletedEventsByEventIdsQueryVariables,
+  GetCommentDeletedEventsByEventIds,
+  VideoReactionFieldsFragment,
+  VideoReactedEventFieldsFragment,
+  GetVideoReactedEventsByEventIds,
+  GetVideoReactedEventsByEventIdsQuery,
+  GetVideoReactedEventsByEventIdsQueryVariables,
+  CommentReactedEventFieldsFragment,
+  GetCommentReactedEventsByEventIds,
+  GetCommentReactedEventsByEventIdsQuery,
+  GetCommentReactedEventsByEventIdsQueryVariables,
+  CommentReactionFieldsFragment,
+  MemberBannedFromChannelEventFieldsFragment,
+  GetMemberBannedFromChannelEventsByEventIdsQuery,
+  GetMemberBannedFromChannelEventsByEventIdsQueryVariables,
+  GetMemberBannedFromChannelEventsByEventIds,
+  VideoFieldsFragment,
+  GetVideosByIdsQuery,
+  GetVideosByIdsQueryVariables,
+  GetVideosByIds,
+  CommentPinnedEventFieldsFragment,
+  GetCommentPinnedEventsByEventIdsQuery,
+  GetCommentPinnedEventsByEventIdsQueryVariables,
+  GetCommentPinnedEventsByEventIds,
+  CommentTextUpdatedEventFieldsFragment,
+  GetCommentEditedEventsByEventIdsQuery,
+  GetCommentEditedEventsByEventIdsQueryVariables,
+  GetCommentEditedEventsByEventIds,
+  CommentModeratedEventFieldsFragment,
+  EnglishAuctionStartedEventFieldsFragment,
+  GetEnglishAuctionStartedEventsByEventIdsQuery,
+  GetEnglishAuctionStartedEventsByEventIdsQueryVariables,
+  GetEnglishAuctionStartedEventsByEventIds,
+  GetNftIssuedEventsByEventIds,
+  NftIssuedEventFieldsFragment,
+  GetNftIssuedEventsByEventIdsQuery,
+  GetNftIssuedEventsByEventIdsQueryVariables,
+  EnglishAuctionSettledEventFieldsFragment,
+  GetEnglishAuctionSettledEventsByEventIdsQuery,
+  GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
+  GetEnglishAuctionSettledEventsByEventIds,
+  GetCommentModeratedEventsByEventIdsQuery,
+  GetCommentModeratedEventsByEventIdsQueryVariables,
+  GetCommentModeratedEventsByEventIds,
+  CommentFieldsFragment,
+  BidFieldsFragment,
+  GetBidsByMemberIdQuery,
+  GetBidsByMemberIdQueryVariables,
+  GetBidsByMemberId,
+  VideoReactionsPreferenceEventFieldsFragment,
+  GetVideoReactionsPreferenceEventsByEventIdsQuery,
+  GetVideoReactionsPreferenceEventsByEventIdsQueryVariables,
+  GetVideoReactionsPreferenceEventsByEventIds,
+  StorageNodeInfoFragment,
+  GetStorageBucketsQuery,
+  GetStorageBucketsQueryVariables,
+  GetStorageBuckets,
+  DistributionBucketFamilyFieldsFragment,
+  GetDistributionFamiliesAdndBucketsQuery,
+  GetDistributionFamiliesAdndBucketsQueryVariables,
+  GetDistributionFamiliesAdndBuckets,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
-import { ProposalId } from '@joystream/types/proposals'
 import { BLOCKTIME } from './consts'
-import { CategoryId } from '@joystream/types/forum'
 import { Utils } from './utils'
+
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -869,7 +953,7 @@ export class QueryNodeApi {
     >(GetProposalCancelledEventsByEventIds, { eventIds }, 'proposalCancelledEvents')
   }
 
-  public async getCategoriesByIds(ids: CategoryId[]): Promise<ForumCategoryFieldsFragment[]> {
+  public async getCategoriesByIds(ids: ForumCategoryId[]): Promise<ForumCategoryFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetCategoriesByIdsQuery, GetCategoriesByIdsQueryVariables>(
       GetCategoriesByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -921,7 +1005,7 @@ export class QueryNodeApi {
     >(GetThreadMetadataUpdatedEventsByEventIds, { eventIds }, 'threadMetadataUpdatedEvents')
   }
 
-  public async getThreadsWithInitialPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithInitialPostFragment[]> {
+  public async getThreadsWithInitialPostsByIds(ids: ForumThreadId[]): Promise<ForumThreadWithInitialPostFragment[]> {
     return this.multipleEntitiesQuery<
       GetThreadsWithInitialPostsByIdsQuery,
       GetThreadsWithInitialPostsByIdsQueryVariables
@@ -945,7 +1029,7 @@ export class QueryNodeApi {
     >(GetThreadDeletedEventsByEventIds, { eventIds }, 'threadDeletedEvents')
   }
 
-  public async getPostsByIds(ids: PostId[]): Promise<ForumPostFieldsFragment[]> {
+  public async getPostsByIds(ids: ForumPostId[]): Promise<ForumPostFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetPostsByIdsQuery, GetPostsByIdsQueryVariables>(
       GetPostsByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -1075,7 +1159,7 @@ export class QueryNodeApi {
   }
 
   public async getProposalDiscussionPostsByIds(
-    ids: (PostId | number)[]
+    ids: (ForumPostId | number)[]
   ): Promise<ProposalDiscussionPostFieldsFragment[]> {
     return this.multipleEntitiesQuery<
       GetProposalDiscussionPostsByIdsQuery,
@@ -1084,7 +1168,7 @@ export class QueryNodeApi {
   }
 
   public async getProposalDiscussionThreadsByIds(
-    ids: (PostId | number)[]
+    ids: (ForumPostId | number)[]
   ): Promise<ProposalDiscussionThreadFieldsFragment[]> {
     return this.multipleEntitiesQuery<
       GetProposalDiscussionThreadsByIdsQuery,
@@ -1097,6 +1181,14 @@ export class QueryNodeApi {
       GetChannelById,
       { id },
       'channelByUniqueInput'
+    )
+  }
+
+  public async channelsByIds(ids: string[]): Promise<ChannelFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelsByIdsQuery, GetChannelsByIdsQueryVariables>(
+      GetChannelsByIds,
+      { ids },
+      'channels'
     )
   }
 
@@ -1124,6 +1216,22 @@ export class QueryNodeApi {
     )
   }
 
+  public async bidsByMemberId(videoId: string, memberId: string): Promise<BidFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetBidsByMemberIdQuery, GetBidsByMemberIdQueryVariables>(
+      GetBidsByMemberId,
+      { videoId, memberId },
+      'bids'
+    )
+  }
+
+  public async getChannelNftCollectors(): Promise<ChannelNftCollectorFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelNftCollectorsQuery, GetChannelNftCollectorsQueryVariables>(
+      GetChannelNftCollectors,
+      {},
+      'channelNftCollectors'
+    )
+  }
+
   public async getMembershipVerificationStatusUpdatedEvents(
     events: EventDetails[]
   ): Promise<MemberVerificationStatusUpdatedEventFieldsFragment[]> {
@@ -1132,5 +1240,141 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async getVideosByIds(ids: string[]): Promise<VideoFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideosByIdsQuery, GetVideosByIdsQueryVariables>(
+      GetVideosByIds,
+      { ids },
+      'videos'
+    )
+  }
+
+  public async getCommentsByIds(ids: string[]): Promise<CommentFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCommentsByIdsQuery, GetCommentsByIdsQueryVariables>(
+      GetCommentsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'comments'
+    )
+  }
+
+  public async getCommentCreatedEvents(events: EventDetails[]): Promise<CommentCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentCreatedEventsByEventIdsQuery,
+      GetCommentCreatedEventsByEventIdsQueryVariables
+    >(GetCommentCreatedEventsByEventIds, { eventIds }, 'commentCreatedEvents')
+  }
+
+  public async getCommentEditedEvents(events: EventDetails[]): Promise<CommentTextUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentEditedEventsByEventIdsQuery,
+      GetCommentEditedEventsByEventIdsQueryVariables
+    >(GetCommentEditedEventsByEventIds, { eventIds }, 'commentTextUpdatedEvents')
+  }
+
+  public async getCommentDeletedEvents(events: EventDetails[]): Promise<CommentDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentDeletedEventsByEventIdsQuery,
+      GetCommentDeletedEventsByEventIdsQueryVariables
+    >(GetCommentDeletedEventsByEventIds, { eventIds }, 'commentDeletedEvents')
+  }
+
+  public async getCommentModeratedEvents(events: EventDetails[]): Promise<CommentModeratedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentModeratedEventsByEventIdsQuery,
+      GetCommentModeratedEventsByEventIdsQueryVariables
+    >(GetCommentModeratedEventsByEventIds, { eventIds }, 'commentModeratedEvents')
+  }
+
+  public async getVideoReactedEvents(events: EventDetails[]): Promise<VideoReactedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoReactedEventsByEventIdsQuery,
+      GetVideoReactedEventsByEventIdsQueryVariables
+    >(GetVideoReactedEventsByEventIds, { eventIds }, 'videoReactedEvents')
+  }
+
+  public async getCommentReactedEvents(events: EventDetails[]): Promise<CommentReactedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentReactedEventsByEventIdsQuery,
+      GetCommentReactedEventsByEventIdsQueryVariables
+    >(GetCommentReactedEventsByEventIds, { eventIds }, 'commentReactedEvents')
+  }
+
+  public async getCommentPinnedEvents(events: EventDetails[]): Promise<CommentPinnedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentPinnedEventsByEventIdsQuery,
+      GetCommentPinnedEventsByEventIdsQueryVariables
+    >(GetCommentPinnedEventsByEventIds, { eventIds }, 'commentPinnedEvents')
+  }
+
+  public async getMemberBannedFromChannelEvents(
+    events: EventDetails[]
+  ): Promise<MemberBannedFromChannelEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMemberBannedFromChannelEventsByEventIdsQuery,
+      GetMemberBannedFromChannelEventsByEventIdsQueryVariables
+    >(GetMemberBannedFromChannelEventsByEventIds, { eventIds }, 'memberBannedFromChannelEvents')
+  }
+
+  public async getVideoReactionsPreferenceEvents(
+    events: EventDetails[]
+  ): Promise<VideoReactionsPreferenceEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoReactionsPreferenceEventsByEventIdsQuery,
+      GetVideoReactionsPreferenceEventsByEventIdsQueryVariables
+    >(GetVideoReactionsPreferenceEventsByEventIds, { eventIds }, 'videoReactionsPreferenceEvents')
+  }
+
+  public async getEnglishAuctionStartedEvents(
+    events: EventDetails[]
+  ): Promise<EnglishAuctionStartedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetEnglishAuctionStartedEventsByEventIdsQuery,
+      GetEnglishAuctionStartedEventsByEventIdsQueryVariables
+    >(GetEnglishAuctionStartedEventsByEventIds, { eventIds }, 'englishAuctionStartedEvents')
+  }
+
+  public async getNftIssuedEvents(events: EventDetails[]): Promise<NftIssuedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<GetNftIssuedEventsByEventIdsQuery, GetNftIssuedEventsByEventIdsQueryVariables>(
+      GetNftIssuedEventsByEventIds,
+      { eventIds },
+      'nftIssuedEvents'
+    )
+  }
+
+  public async getEnglishAuctionSettledEvents(
+    events: EventDetails[]
+  ): Promise<EnglishAuctionSettledEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetEnglishAuctionSettledEventsByEventIdsQuery,
+      GetEnglishAuctionSettledEventsByEventIdsQueryVariables
+    >(GetEnglishAuctionSettledEventsByEventIds, { eventIds }, 'englishAuctionSettledEvents')
+  }
+
+  async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
+    return this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      {},
+      'storageBuckets'
+    )
+  }
+
+  async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetDistributionFamiliesAdndBucketsQuery,
+      GetDistributionFamiliesAdndBucketsQueryVariables
+    >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
   }
 }

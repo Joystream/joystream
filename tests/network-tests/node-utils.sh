@@ -18,12 +18,12 @@ mkdir -p ${DATA_PATH}
 # Initial account balance for sudo account
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=100000000}
 SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
-SUDO_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=100000000}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:=$SUDO_ACCOUNT_URI}
-TREASURY_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 >&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
@@ -119,7 +119,6 @@ function cleanup() {
     # 	docker logs ${CONTAINER_ID} --tail 15
     # fi
     docker-compose -f ../../docker-compose.yml down -v
-    find ./assets/ -name '[A-Z0-9]*__rejectedContent.json' -delete
     rm -rf $DATA_PATH
 }
 

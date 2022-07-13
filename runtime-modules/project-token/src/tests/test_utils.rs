@@ -1,29 +1,37 @@
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::Hash;
-use sp_runtime::Perquintill;
+use sp_runtime::traits::{Hash, Saturating};
+use sp_runtime::{Permill, Perquintill};
 use sp_std::collections::btree_map::BTreeMap;
 
-use crate::tests::mock::*;
-use crate::types::{
-    AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
-    RevenueSplitState, TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf,
-    TransferPolicy, TransferPolicyOf, Transfers,
+use crate::types::VestingScheduleOf;
+use crate::{
+    balance,
+    tests::mock::*,
+    types::{
+        AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
+        PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
+        TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf,
+        Transfers, Validated, ValidatedPayment, VestingSchedule, VestingSource,
+    },
+    Config, GenesisConfig,
 };
-use crate::{balance, GenesisConfig};
 
 pub struct TokenDataBuilder {
-    pub(crate) total_supply: <Test as crate::Trait>::Balance,
-    pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
-    pub(crate) last_sale: Option<TokenSaleOf<Test>>,
-    pub(crate) sales_initialized: TokenSaleId,
+    pub(crate) total_supply: <Test as crate::Config>::Balance,
+    pub(crate) tokens_issued: <Test as crate::Config>::Balance,
+    pub(crate) sale: Option<TokenSaleOf<Test>>,
+    pub(crate) next_sale_id: TokenSaleId,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
-    pub(crate) patronage_info:
-        PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
-    pub(crate) symbol: <Test as frame_system::Trait>::Hash,
-    pub(crate) revenue_split: RevenueSplitState<
-        <Test as crate::Trait>::Balance,
-        <Test as frame_system::Trait>::BlockNumber,
+    pub(crate) patronage_info: PatronageData<
+        <Test as crate::Config>::Balance,
+        <Test as frame_system::Config>::BlockNumber,
     >,
+    pub(crate) symbol: <Test as frame_system::Config>::Hash,
+    pub(crate) revenue_split: RevenueSplitState<
+        <Test as crate::Config>::Balance,
+        <Test as frame_system::Config>::BlockNumber,
+    >,
+    pub(crate) revenue_split_rate: Permill,
 }
 
 impl TokenDataBuilder {
@@ -31,18 +39,26 @@ impl TokenDataBuilder {
         crate::types::TokenDataOf::<Test> {
             total_supply: self.total_supply,
             tokens_issued: self.tokens_issued,
-            last_sale: self.last_sale,
-            sales_initialized: self.sales_initialized,
+            sale: self.sale,
+            next_sale_id: self.next_sale_id,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
             symbol: self.symbol,
             accounts_number: 0u64,
             revenue_split: self.revenue_split,
-            latest_revenue_split_id: 0u32,
+            next_revenue_split_id: 0u32,
+            revenue_split_rate: self.revenue_split_rate,
         }
     }
 
-    pub fn with_symbol(self, symbol: <Test as frame_system::Trait>::Hash) -> Self {
+    pub fn with_split_rate(self, revenue_split_rate: Permill) -> Self {
+        Self {
+            revenue_split_rate,
+            ..self
+        }
+    }
+
+    pub fn with_symbol(self, symbol: <Test as frame_system::Config>::Hash) -> Self {
         Self { symbol, ..self }
     }
 
@@ -76,8 +92,9 @@ impl TokenDataBuilder {
         Self {
             tokens_issued: Balance::zero(),
             total_supply: Balance::zero(),
-            last_sale: None,
-            sales_initialized: 0,
+            sale: None,
+            // reflect TokenData init setup
+            next_sale_id: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: BlockRate(Perquintill::zero()),
@@ -85,8 +102,9 @@ impl TokenDataBuilder {
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
             // hash of "default"
-            symbol: <Test as frame_system::Trait>::Hash::default(),
+            symbol: <Test as frame_system::Config>::Hash::default(),
             revenue_split: RevenueSplitState::Inactive,
+            revenue_split_rate: Permill::zero(),
         }
     }
 }
@@ -95,10 +113,14 @@ impl GenesisConfigBuilder {
     pub fn new_empty() -> Self {
         Self {
             token_info_by_id: vec![],
-            account_info_by_token_and_account: vec![],
+            account_info_by_token_and_member: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
+            min_sale_duration: BlockNumber::zero(),
             bloat_bond: DEFAULT_BLOAT_BOND.into(),
+            min_revenue_split_duration: MIN_REVENUE_SPLIT_DURATION.into(),
+            min_revenue_split_time_to_start: MIN_REVENUE_SPLIT_TIME_TO_START.into(),
+            sale_platform_fee: Permill::zero(),
         }
     }
 
@@ -115,7 +137,7 @@ impl GenesisConfigBuilder {
         self,
         token_id: TokenId,
         token_info: TokenData,
-        owner: AccountId,
+        owner: MemberId,
         initial_supply: Balance,
     ) -> Self {
         self.with_token(token_id, token_info)
@@ -126,12 +148,22 @@ impl GenesisConfigBuilder {
         Self { bloat_bond, ..self }
     }
 
+    pub fn with_min_sale_duration(self, min_sale_duration: BlockNumber) -> Self {
+        Self {
+            min_sale_duration,
+            ..self
+        }
+    }
+
+    pub fn with_sale_platform_fee(self, sale_platform_fee: Permill) -> Self {
+        Self {
+            sale_platform_fee,
+            ..self
+        }
+    }
+
     // add account & updates token supply
-    pub fn with_account(
-        mut self,
-        account_id: AccountId,
-        account_data: AccountDataOf<Test>,
-    ) -> Self {
+    pub fn with_account(mut self, member_id: MemberId, account_data: AccountDataOf<Test>) -> Self {
         let id = self.next_token_id.saturating_sub(TokenId::one());
 
         self.token_info_by_id
@@ -140,8 +172,8 @@ impl GenesisConfigBuilder {
             .1
             .increase_supply_by(Balance::from(account_data.amount));
 
-        self.account_info_by_token_and_account
-            .push((id, account_id, account_data));
+        self.account_info_by_token_and_member
+            .push((id, member_id, account_data));
 
         self.token_info_by_id.last_mut().unwrap().1.accounts_number += 1u64;
         self
@@ -149,22 +181,88 @@ impl GenesisConfigBuilder {
 
     pub fn build(self) -> GenesisConfig<Test> {
         GenesisConfig::<Test> {
-            account_info_by_token_and_account: self.account_info_by_token_and_account,
+            account_info_by_token_and_member: self.account_info_by_token_and_member,
             token_info_by_id: self.token_info_by_id,
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
             bloat_bond: self.bloat_bond,
+            min_sale_duration: self.min_sale_duration,
+            min_revenue_split_duration: self.min_revenue_split_duration,
+            min_revenue_split_time_to_start: self.min_revenue_split_time_to_start,
+            sale_platform_fee: self.sale_platform_fee,
         }
     }
 }
 
-impl<VestingSchedule, Balance: Zero, StakingStatus, ReserveBalance: Zero>
-    AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance>
+pub fn default_vesting_schedule() -> VestingScheduleOf<Test> {
+    VestingScheduleOf::<Test> {
+        burned_amount: 0,
+        cliff_amount: 300,
+        linear_vesting_duration: 700,
+        linear_vesting_start_block: 100,
+        post_cliff_total_amount: 700,
+    }
+}
+
+impl<
+        BlockNumber: From<u32> + Clone,
+        Balance: Zero + From<u32> + Saturating + Clone,
+        ReserveBalance: Zero + Clone,
+    >
+    AccountData<
+        VestingSchedule<BlockNumber, Balance>,
+        Balance,
+        StakingStatus<Balance>,
+        ReserveBalance,
+    >
 {
     pub fn new_with_amount(amount: Balance) -> Self {
         Self {
             amount,
             ..Self::default()
+        }
+    }
+
+    pub fn with_max_vesting_schedules(
+        self,
+        vesting_schedule: VestingSchedule<BlockNumber, Balance>,
+    ) -> Self {
+        let max_vesting_schedules = <Test as Config>::MaxVestingBalancesPerAccountPerToken::get();
+        let mut acc_data = self.clone();
+        for _ in 0..max_vesting_schedules - 1 {
+            acc_data = acc_data.with_vesting_schedule(vesting_schedule.clone())
+        }
+        acc_data.with_vesting_schedule(vesting_schedule)
+    }
+
+    pub fn with_vesting_schedule(
+        self,
+        vesting_schedule: VestingSchedule<BlockNumber, Balance>,
+    ) -> Self {
+        let mut new_vesting_schedules = self.vesting_schedules.clone();
+        new_vesting_schedules.insert(
+            VestingSource::IssuerTransfer(self.next_vesting_transfer_id),
+            vesting_schedule.clone(),
+        );
+        Self {
+            next_vesting_transfer_id: self.next_vesting_transfer_id.saturating_add(1),
+            vesting_schedules: new_vesting_schedules,
+            amount: self.amount.saturating_add(
+                vesting_schedule
+                    .cliff_amount
+                    .saturating_add(vesting_schedule.post_cliff_total_amount),
+            ),
+            ..self
+        }
+    }
+
+    pub fn with_staked(self, amount: Balance) -> Self {
+        Self {
+            split_staking_status: Some(StakingStatus {
+                amount,
+                split_id: 0,
+            }),
+            ..self
         }
     }
 }
@@ -175,7 +273,7 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<Balance, Account: Ord> Transfers<Account, Balance> {
+impl<Balance, Account: Ord> Transfers<Account, Payment<Balance>> {
     pub fn new(v: Vec<(Account, Balance)>) -> Self {
         Transfers::<_, _>(
             v.into_iter()
@@ -193,30 +291,89 @@ impl<Balance, Account: Ord> Transfers<Account, Balance> {
     }
 }
 
-impl<Hash, Balance, VestingScheduleParams, TransferPolicyParams, AccountId>
+impl<Balance, MemberId: Ord, VestingScheduleParams>
+    Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
+{
+    pub fn new_issuer(v: Vec<(MemberId, Balance, Option<VestingScheduleParams>)>) -> Self {
+        Transfers::<_, _>(
+            v.into_iter()
+                .map(|(member_id, amount, vesting_schedule)| {
+                    (
+                        member_id,
+                        PaymentWithVesting {
+                            remark: vec![],
+                            amount,
+                            vesting_schedule,
+                        },
+                    )
+                })
+                .collect::<BTreeMap<_, _>>(),
+        )
+    }
+}
+
+impl<Balance, VestingScheduleParams, MemberId>
+    Transfers<
+        Validated<MemberId>,
+        ValidatedPayment<PaymentWithVesting<Balance, VestingScheduleParams>>,
+    >
+where
+    MemberId: Ord + Eq + Clone,
+{
+    pub fn new_validated(
+        v: Vec<(
+            Validated<MemberId>,
+            Balance,
+            Option<VestingScheduleParams>,
+            Option<VestingSource>,
+        )>,
+    ) -> Self {
+        Transfers::<_, _>(
+            v.into_iter()
+                .map(
+                    |(validated_acc, amount, vesting_schedule, vesting_cleanup_candidate)| {
+                        (
+                            validated_acc,
+                            ValidatedPayment {
+                                payment: PaymentWithVesting::<Balance, VestingScheduleParams> {
+                                    remark: vec![],
+                                    amount,
+                                    vesting_schedule,
+                                },
+                                vesting_cleanup_candidate,
+                            },
+                        )
+                    },
+                )
+                .collect::<BTreeMap<_, _>>(),
+        )
+    }
+}
+
+impl<Hash, Balance, VestingScheduleParams, TransferPolicyParams, MemberId>
     TokenIssuanceParameters<
         Hash,
         TokenAllocation<Balance, VestingScheduleParams>,
         TransferPolicyParams,
-        AccountId,
+        MemberId,
     >
 where
-    AccountId: Ord + Clone,
+    MemberId: Ord + Clone,
     Balance: Clone,
     VestingScheduleParams: Clone,
 {
     pub fn with_allocation(
         self,
-        account: &AccountId,
+        member_id: &MemberId,
         amount: Balance,
-        vesting_schedule: Option<VestingScheduleParams>,
+        vesting_schedule_params: Option<VestingScheduleParams>,
     ) -> Self {
         let mut initial_allocation = self.initial_allocation.clone();
         initial_allocation.insert(
-            account.clone(),
+            member_id.clone(),
             TokenAllocation {
                 amount,
-                vesting_schedule,
+                vesting_schedule_params,
             },
         );
         Self {

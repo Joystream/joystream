@@ -1,8 +1,9 @@
 use crate::Module;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
-    pub enum Error for Module<T: crate::Trait> {
+    pub enum Error for Module<T: crate::Config> {
         /// Account's transferrable balance is insufficient to perform the transfer or initialize token sale
         InsufficientTransferrableBalance,
 
@@ -24,17 +25,23 @@ decl_error! {
         /// Account Already exists
         AccountAlreadyExists,
 
+        /// Transfer destination member id invalid
+        TransferDestinationMemberDoesNotExist,
+
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
 
         /// Insufficient JOY Balance to cover the transaction costs
         InsufficientJoyBalance,
 
-        /// Attempt to removed non owned account under permissioned mode
+        /// The amount of JOY to be transferred is not enough to keep the destination account alive
+        JoyTransferSubjectToDusting,
+
+        /// Attempt to remove non owned account under permissioned mode
         AttemptToRemoveNonOwnedAccountUnderPermissionedMode,
 
-        /// Attempt to removed non empty non owned
-        AttemptToRemoveNonOwnedAndNonEmptyAccount,
+        /// Attempt to remove an account with some outstanding tokens
+        AttemptToRemoveNonEmptyAccount,
 
         /// Cannot join whitelist in permissionless mode
         CannotJoinWhitelistInPermissionlessMode,
@@ -74,16 +81,34 @@ decl_error! {
         /// Maximum number of vesting schedules for this account-token pair was reached.
         MaxVestingSchedulesPerAccountPerTokenReached,
 
-        /// Some unsold tokens from previous, finished sale are still unrecovered. Recover them first.
-        RemainingUnrecoveredTokensFromPreviousSale,
+        /// Previous sale was still not finalized, finalize it first.
+        PreviousSaleNotFinalized,
 
         /// There are no remaining tokes to recover from the previous token sale.
         NoTokensToRecover,
 
-        // ------Revenue Split Errors ------------------------------------------------------
+        /// Specified sale duration is shorter than MinSaleDuration
+        SaleDurationTooShort,
+
+        /// Sale duration cannot be zero
+        SaleDurationIsZero,
+
+        /// Upper bound quantity cannot be zero
+        SaleUpperBoundQuantityIsZero,
+
+        /// Purchase cap per member cannot be zero
+        SaleCapPerMemberIsZero,
+
+        /// Token's unit price cannot be zero
+        SaleUnitPriceIsZero,
+
+        /// Amount of tokens to purchase on sale cannot be zero
+        SalePurchaseAmountIsZero,
+
+        // ------ Revenue Split Errors ------------------------------------------------------
 
         /// Specified revenue split starting block is in the past
-        RevenueSplitStartingBlockInThePast,
+        RevenueSplitTimeToStartTooShort,
 
         /// Revenue Split duration is too short
         RevenueSplitDurationTooShort,
@@ -108,5 +133,25 @@ decl_error! {
 
         /// User is not participating in any split
         UserNotParticipantingInAnySplit,
+
+        /// Attempt to participate in a split with zero token to stake
+        CannotParticipateInSplitWithZeroAmount,
+
+        /// Attempt to issue in a split with zero allocation amount
+        CannotIssueSplitWithZeroAllocationAmount,
+
+        /// Attempt to modify supply when revenue split is active
+        CannotModifySupplyWhenRevenueSplitsAreActive,
+
+        /// Revenue split rate cannot be 0
+        RevenueSplitRateIsZero,
+
+        // ------ Burning ------------------------------------------------------
+
+        /// Provided amount to burn is == 0
+        BurnAmountIsZero,
+
+        /// Amount of tokens to burn exceeds total amount of tokens owned by the account
+        BurnAmountGreaterThanAccountTokensAmount,
     }
 }

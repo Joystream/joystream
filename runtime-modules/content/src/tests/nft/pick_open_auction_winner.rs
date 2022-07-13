@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 const NEXT_BID_OFFSET: u64 = 10;
 const AUCTION_DURATION: u64 = 10;
@@ -13,14 +10,12 @@ const AUCTION_DURATION: u64 = 10;
 #[test]
 fn pick_open_auction_winner() {
     with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
         let video_id = NextVideoId::<Test>::get();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
+        make_content_module_account_existential_deposit();
+
+        ContentTest::default().with_video().setup();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -45,13 +40,13 @@ fn pick_open_auction_winner() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -60,11 +55,6 @@ fn pick_open_auction_winner() {
             video_id,
             bid,
         ));
-
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
 
         // Pick open auction winner
         assert_ok!(Content::pick_open_auction_winner(
@@ -87,15 +77,12 @@ fn pick_open_auction_winner() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::OpenAuctionBidAccepted(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-                bid,
-            )),
-            // 3 events: NewAccount (channel reward acc), Endowed (channel reward acc), OpenAuctionBidAccepted
-            number_of_events_before_call + 3,
-        );
+        last_event_eq!(RawEvent::OpenAuctionBidAccepted(
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            SECOND_MEMBER_ID,
+            bid,
+        ));
     })
 }
 
@@ -134,13 +121,13 @@ fn pick_open_auction_winner_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -205,13 +192,13 @@ fn pick_open_auction_winner_actor_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -367,13 +354,13 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -435,7 +422,7 @@ fn pick_open_auction_winner_bid_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Run to the block where auction expires
@@ -494,14 +481,14 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let low_bid = Content::min_starting_price();
         let high_bid = low_bid.saturating_add(NEXT_BID_OFFSET);
 
-        let _ = balances::Module::<Test>::deposit_creating(
+        let _ = balances::Pallet::<Test>::deposit_creating(
             &SECOND_MEMBER_ACCOUNT_ID,
             high_bid + low_bid,
         );
@@ -534,6 +521,92 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
                 high_bid,
             ),
             Error::<Test>::InvalidBidAmountSpecified,
+        );
+    })
+}
+
+#[test]
+fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
+    with_default_mock_builder(|| {
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        let royalty = Perbill::from_percent(DEFAULT_ROYALTY).mul_floor(DEFAULT_NFT_PRICE);
+        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+        ContentTest::default().with_video().setup();
+        IssueNftFixture::default()
+            .with_non_channel_owner(THIRD_MEMBER_ID)
+            .with_royalty(Perbill::from_percent(1))
+            .call_and_assert(Ok(()));
+        StartOpenAuctionFixture::default()
+            .with_sender(THIRD_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(THIRD_MEMBER_ID))
+            .call_and_assert(Ok(()));
+        MakeOpenAuctionBidFixture::default()
+            .with_bid(DEFAULT_NFT_PRICE)
+            .call_and_assert(Ok(()));
+
+        assert_ok!(Content::pick_open_auction_winner(
+            Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(THIRD_MEMBER_ID),
+            VideoId::one(),
+            SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE
+        ));
+
+        // net revenue for member owner : NFT PRICE - ROYALTY - FEE
+        assert_eq!(
+            Balances::<Test>::usable_balance(THIRD_MEMBER_ACCOUNT_ID),
+            DEFAULT_NFT_PRICE - royalty - platform_fee
+        );
+    })
+}
+
+#[test]
+fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
+    with_default_mock_builder(|| {
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+        ContentTest::default().with_video().setup();
+        IssueNftFixture::default()
+            .with_royalty(Perbill::from_percent(1))
+            .call_and_assert(Ok(()));
+        StartOpenAuctionFixture::default().call_and_assert(Ok(()));
+        MakeOpenAuctionBidFixture::default()
+            .with_bid(DEFAULT_NFT_PRICE)
+            .call_and_assert(Ok(()));
+
+        assert_ok!(Content::pick_open_auction_winner(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            VideoId::one(),
+            SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE
+        ));
+
+        // net revenue for creator owner : NFT PRICE - FEE
+        assert_eq!(
+            channel_reward_account_balance(ChannelId::one()),
+            DEFAULT_NFT_PRICE - platform_fee
+        );
+    })
+}
+
+#[test]
+fn pick_open_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default().with_nft_open_auction_bid().setup();
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::pick_open_auction_winner(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                SECOND_MEMBER_ID,
+                Content::min_starting_price(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

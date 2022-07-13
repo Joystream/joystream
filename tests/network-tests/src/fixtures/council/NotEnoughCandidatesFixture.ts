@@ -1,4 +1,4 @@
-import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { assertCouncilMembersRuntimeQnMatch, prepareFailToElectResources } from './common'
 import { assert } from 'chai'
 
@@ -23,7 +23,7 @@ export class NotEnoughCandidatesFixture extends BaseQueryNodeFixture {
     await this.api.untilCouncilStage('Announcing')
 
     // ensure no voting is in progress
-    assert((await this.api.query.referendum.stage()).isOfType('Inactive'))
+    assert((await this.api.query.referendum.stage()).isInactive)
     const announcementPeriodNrInit = await this.api.query.council.announcementPeriodNr()
 
     // announce candidacies
@@ -42,14 +42,14 @@ export class NotEnoughCandidatesFixture extends BaseQueryNodeFixture {
     await this.api.untilCouncilStage('Announcing', announcementPeriodNrInit.toNumber() + 1)
     const announcementPeriodNrEnding = await this.api.query.council.announcementPeriodNr()
 
-    assert((await this.api.query.referendum.stage()).isOfType('Inactive'))
+    assert((await this.api.query.referendum.stage()).isInactive)
     assert.equal(announcementPeriodNrEnding.toNumber(), announcementPeriodNrInit.toNumber() + 1)
 
     // ensure council members haven't changed
     const councilMembersEnding = await this.api.query.council.councilMembers()
     assert.sameMembers(
       councilMemberIds.map((item) => item.toString()),
-      councilMembersEnding.map((item) => item.membership_id.toString())
+      councilMembersEnding.map((item) => item.membershipId.toString())
     )
   }
 
