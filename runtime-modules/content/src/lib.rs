@@ -140,7 +140,7 @@ pub trait Config:
     >;
 
     /// Minimum cashout allowed limit
-    type MinimumCashoutAllowedLimit: Get<BalanceOf<Self>>;
+    type MinimumCashoutAllowedLimit: Get<Balance Of<Self>>;
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit: Get<BalanceOf<Self>>;
