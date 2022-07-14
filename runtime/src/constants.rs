@@ -195,28 +195,23 @@ mod tests {
     #[test]
     // This function tests that the fee for `pallet_balances::transfer` of weight is correct
     fn extrinsic_transfer_fee_is_correct() {
-        // Transfer fee should be less than 100 tokens and should be non-zero (Initially ~30)
+        // Transfer fee should be less than 1 CENTS
         let transfer_weight =
             crate::weights::pallet_balances::SubstrateWeight::<crate::Runtime>::transfer();
         println!("Transfer weight: {}", transfer_weight);
         let transfer_fee = WeightToFee::weight_to_fee(&transfer_weight);
         println!("Transfer fee: {}", transfer_fee);
-        assert!(0 < transfer_fee && transfer_fee < 100);
+        assert!(0 < transfer_fee && transfer_fee < CENTS);
     }
 
     #[test]
     // This function tests that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight is correct
     fn full_block_fee_is_correct() {
-        // A full block should cost 16 DOLLARS
         println!("Base: {}", ExtrinsicBaseWeight::get());
-        let x = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
-        let y = 16 * DOLLARS;
-        assert!(x.max(y) - x.min(y) < 1);
-        // Polkadot
         // A full block should cost between 10 and 100 DOLLARS.
-        // let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
-        // assert!(full_block >= 10 * DOLLARS);
-        // assert!(full_block <= 100 * DOLLARS);
+        let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
+        assert!(full_block >= 10 * DOLLARS);
+        assert!(full_block <= 100 * DOLLARS);
     }
 
     #[test]
