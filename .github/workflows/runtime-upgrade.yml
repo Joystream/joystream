@@ -69,10 +69,11 @@ jobs:
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
-
+  
   runtime_upgrade:
-    # if: ${{ false }}
-    name: Runtime Upgrade From Rhodes Spec 6
+    # Re-Enable when we want to test carthage runtime updates
+    if: ${{ false }}
+    name: Runtime Upgrade From Carthage Spec 0
     needs: build_images
     runs-on: ubuntu-latest
     steps:
