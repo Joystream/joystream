@@ -4,6 +4,7 @@ import initDistribution, { singleBucketConfig as defaultDistributionConfig } fro
 import { scenario } from '../Scenario'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Init storage and distribution', async ({ job }) => {
   const setupLead = job('setup leads', leaderSetup(true, ['storageWorkingGroup', 'distributionWorkingGroup']))
   const updateWorkerAccounts = job('Update worker accounts', updateAccountsFlow).after(setupLead)

@@ -368,6 +368,10 @@ parameter_types! {
         block_number_period: 1000,
         limit: 500,
     };
+
+    pub const MinimumCashoutAllowedLimit: u64 = 1;
+
+    pub const MaximumCashoutAllowedLimit: u64 = 1_000_000;
 }
 
 impl Config for Test {
@@ -424,6 +428,12 @@ impl Config for Test {
 
     /// Transfer Id
     type TransferId = u64;
+
+    /// Minimum cashout allowed limit
+    type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
+
+    /// Max cashout allowed limit
+    type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -522,7 +532,7 @@ impl Default for ExtBuilder {
             next_curator_group_id: 1,
             next_transfer_id: 1,
             max_cashout_allowed: BalanceOf::<Test>::from(1_000u32),
-            min_cashout_allowed: BalanceOf::<Test>::from(1u32),
+            min_cashout_allowed: BalanceOf::<Test>::from(10u32),
             channel_cashouts_enabled: true,
             min_auction_duration: 5,
             max_auction_duration: 20,

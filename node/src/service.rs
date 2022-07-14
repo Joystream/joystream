@@ -117,7 +117,7 @@ pub fn create_extrinsic(
 
     node_runtime::UncheckedExtrinsic::new_signed(
         function,
-        sp_runtime::AccountId32::from(sender.public()).into(),
+        sp_runtime::AccountId32::from(sender.public()),
         node_runtime::Signature::Sr25519(signature),
         extra,
     )
