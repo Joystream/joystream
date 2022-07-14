@@ -1,7 +1,7 @@
 import { Api } from '../../../Api'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { BaseQueryNodeFixture } from '../../../Fixture'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Utils } from '../../../utils'

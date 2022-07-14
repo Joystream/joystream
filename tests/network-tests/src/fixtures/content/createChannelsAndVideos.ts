@@ -4,7 +4,7 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 import * as path from 'path'
 import { getVideoDefaults, getChannelDefaults } from './contentTemplates'
-import { IMember } from './createMembers'
+import { IMember } from './createMembersAndCurators'
 
 const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'
 
