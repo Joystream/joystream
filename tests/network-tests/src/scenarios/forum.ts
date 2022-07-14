@@ -7,6 +7,7 @@ import leadOpening from '../flows/working-groups/leadOpening'
 import threadTags from '../flows/forum/threadTags'
 import { scenario } from '../Scenario'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Forum', async ({ job }) => {
   const sudoHireLead = job('hiring working group leads', leadOpening())
   job('forum categories', categories).requires(sudoHireLead)

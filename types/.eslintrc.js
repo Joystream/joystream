@@ -5,4 +5,7 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['error'],
     '@typescript-eslint/naming-convention': 'off',
   },
+  parserOptions: {
+    project: './tsconfig-eslint.json',
+  },
 }

@@ -6,6 +6,7 @@ import initStorage, { singleBucketConfig as defaultStorageConfig } from '../flow
 import initDistribution, { singleBucketConfig as defaultDistributionConfig } from '../flows/storage/initDistribution'
 import { scenario } from '../Scenario'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Setup new chain', async ({ job }) => {
   const leads = job('Set WorkingGroup Leads', leaderSetup())
   const updateAccounts = job('Update Worker Accounts', updateAccountsFlow).requires(leads)
