@@ -259,8 +259,8 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:rhodes
-    restart: on-failure
+    image: joystream/faucet:carthage-1.0
+    restart: unless-stopped
     container_name: faucet
     env_file:
       - .env
