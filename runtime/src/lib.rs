@@ -410,8 +410,10 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 1; // TODO: adjust value
-    pub const OperationalFeeMultiplier: u8 = 1; // TODO: adjust value
+    pub const TransactionByteFee: Balance = 5 * currency::MILLICENTS; // TODO: adjust value
+    /// This value increases the priority of `Operational` transactions by adding
+    /// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+    pub const OperationalFeeMultiplier: u8 = 5; // TODO: adjust value
 }
 
 impl pallet_transaction_payment::Config for Runtime {
