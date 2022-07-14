@@ -187,9 +187,8 @@ export async function content_VideoAssetsDeletedByModerator({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [actor, videoId, dataObjectIds, areNftAssets, rationale] = new Content.VideoAssetsDeletedByModeratorEvent(
-    event
-  ).params
+  const [actor, videoId, dataObjectIds, areNftAssets, rationale] = new Content.VideoAssetsDeletedByModeratorEvent(event)
+    .params
 
   const assets = await store.getMany(StorageDataObject, {
     where: {
