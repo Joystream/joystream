@@ -257,7 +257,7 @@ export async function processReactVideoMessage(
   const reactionsCountByReactionType = await getOrCreateVideoReactionsCountByReactionId(store, video, reactionResult)
 
   if (previousReactionByMember) {
-    changeOrRemovePreviousReaction(store, video, previousReactionByMember, reactionResult)
+    await changeOrRemovePreviousReaction(store, video, previousReactionByMember, reactionResult)
   } else {
     // new reaction
     const newReactionByMember = new VideoReaction({

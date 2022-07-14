@@ -312,12 +312,8 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
 }
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [
-    proposalId,
-    generalProposalParameters,
-    runtimeProposalDetails,
-    proposalThreadId,
-  ] = new ProposalsCodex.ProposalCreatedEvent(event).params
+  const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
+    new ProposalsCodex.ProposalCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
@@ -437,12 +433,14 @@ export async function proposalsEngine_ProposalDecisionMade({
       'ProposalStatusVetoed',
     ].includes(decisionStatus.isTypeOf)
   ) {
-    ;(decisionStatus as
-      | ProposalStatusCanceledByRuntime
-      | ProposalStatusExpired
-      | ProposalStatusRejected
-      | ProposalStatusSlashed
-      | ProposalStatusVetoed).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
+    ;(
+      decisionStatus as
+        | ProposalStatusCanceledByRuntime
+        | ProposalStatusExpired
+        | ProposalStatusRejected
+        | ProposalStatusSlashed
+        | ProposalStatusVetoed
+    ).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
     await setProposalStatus(event, store, proposal, decisionStatus)
   }
 }

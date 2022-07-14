@@ -28,7 +28,7 @@ pub fn production_config() -> ContentConfig {
         platform_fee_percentage: Perbill::from_percent(1),
         auction_starts_at_max_delta: DAYS * 30,
         max_auction_whitelist_length: 100,
-        nft_limits_enabled: true,
+        nft_limits_enabled: false,
     }
 }
 
@@ -56,6 +56,6 @@ pub fn testing_config() -> ContentConfig {
         platform_fee_percentage: Perbill::from_percent(1),
         auction_starts_at_max_delta: DAYS * 30,
         max_auction_whitelist_length: 100,
-        nft_limits_enabled: true,
+        nft_limits_enabled: false,
     }
 }
