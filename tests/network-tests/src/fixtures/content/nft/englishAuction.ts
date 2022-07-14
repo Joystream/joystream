@@ -8,9 +8,6 @@ import { Utils } from '../../../utils'
 import { assertNftOwner, assertAuctionAndBids, assertNftEventContentActor } from './utils'
 import BN from 'bn.js'
 
-// settings
-const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
-
 export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
   private videoId: number
   private author: IMember

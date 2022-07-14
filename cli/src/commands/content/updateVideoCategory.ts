@@ -1,5 +1,5 @@
 // TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
-
+/*
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { VideoCategoryInputParameters } from '../../Types'
@@ -49,3 +49,4 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
     ])
   }
 }
+*/

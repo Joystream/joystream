@@ -3,7 +3,6 @@ import {
   ChannelUpdateInputParameters,
   VideoInputParameters,
   VideoCategoryInputParameters,
-  ChannelCategoryInputParameters,
   JsonSchema,
 } from '../Types'
 
@@ -16,8 +15,6 @@ export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> 
     },
   },
 }
-
-export const ChannelCategoryInputSchema: JsonSchema<ChannelCategoryInputParameters> = VideoCategoryInputSchema
 
 export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParameters> = {
   type: 'object',

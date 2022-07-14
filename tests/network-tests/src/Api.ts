@@ -54,6 +54,7 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
+import { CreateVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -719,6 +720,25 @@ export class Api {
 
     const event = this.getEvent(result.events, 'content', 'VideoCreated')
     return event.data[2]
+  }
+
+  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const [, lead] = await this.getLeader('contentWorkingGroup')
+
+    const account = lead.roleAccountId
+
+    const meta = new WorkerGroupLeadRemarked({
+      moderateVideoCategories: new ModerateVideoCategories({
+        createCategory: new CreateVideoCategory({
+          name,
+        }),
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(WorkerGroupLeadRemarked, meta)),
+      account?.toString()
+    )
   }
 
   async assignWorkerRoleAccount(

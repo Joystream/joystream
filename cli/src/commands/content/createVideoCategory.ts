@@ -1,5 +1,5 @@
-// TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
-
+// TODO: either remove this file / CLI command or rework it into LeadRemark -> ModerateVideoCategories
+/*
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { VideoCategoryInputParameters } from '../../Types'
@@ -48,3 +48,4 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
     }
   }
 }
+*/

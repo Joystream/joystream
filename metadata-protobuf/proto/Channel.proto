@@ -21,8 +21,3 @@ message ChannelMetadata {
     // Channel Category Id
     optional uint64 category = 7;
 }
-
-message ChannelCategoryMetadata {
-    // Category Name
-    optional string name = 1;
-}

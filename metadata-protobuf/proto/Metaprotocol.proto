@@ -137,3 +137,30 @@ message ChannelOwnerRemarked {
         ModerateComment moderate_comment = 5;
     }
 }
+
+message CreateVideoCategory {
+    required string name = 1;
+}
+
+message UpdateVideoCategory {
+    required uint64 video_category_id = 1;
+    required string name = 2;
+}
+
+message DeleteVideoCategory {
+    required uint64 video_category_id = 1;
+}
+
+message ModerateVideoCategories {
+    oneof video_category_moderation {
+        CreateVideoCategory create_category = 1;
+        UpdateVideoCategory update_category = 2;
+        DeleteVideoCategory delete_category = 3;
+    }
+}
+
+message WorkerGroupLeadRemarked {
+    oneof worker_group_lead_remarked {
+        ModerateVideoCategories moderate_video_categories = 1;
+    }
+}

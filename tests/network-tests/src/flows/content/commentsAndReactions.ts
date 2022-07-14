@@ -35,22 +35,15 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   const videoCount = 2
   const videoCategoryCount = 2
   const channelCount = 1
-  const channelCategoryCount = 2
   const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
   // flow itself
 
   // create channel categories and video categories
-  const createContentStructureFixture = new CreateContentStructureFixture(
-    api,
-    query,
-    joystreamCli,
-    videoCategoryCount,
-    channelCategoryCount
-  )
+  const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
-  const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos
   const createMembersFixture = new CreateMembersFixture(api, query, 3, sufficientTopupAmount)
@@ -64,7 +57,6 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
     joystreamCli,
     channelCount,
     videoCount,
-    channelCategoryIds[0],
     videoCategoryIds[0],
     channelOwner
   )

@@ -16,7 +16,9 @@ import {
   getWorker,
   inconsistentState,
   toNumber,
-  updateMetaprotocolTransactionStatus,
+  logger,
+  saveMetaprotocolTransactionSuccessful,
+  saveMetaprotocolTransactionErrored,
 } from './common'
 import {
   Membership,
@@ -41,9 +43,6 @@ import {
   MembershipEntryInvited,
   AvatarUri,
   WorkingGroup,
-  MetaprotocolTransactionStatusEvent,
-  MetaprotocolTransactionPending,
-  MetaprotocolTransactionErrored,
   MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import {
@@ -53,7 +52,6 @@ import {
   processEditCommentMessage,
   processDeleteCommentMessage,
 } from './content'
-import { BaseModel } from '@joystream/warthog'
 
 async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
@@ -524,46 +522,60 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   const { event, store } = ctx
   const [memberId, message] = new Members.MemberRemarkedEvent(event).params
 
-  const genericFields = genericEventFields(event)
-  // unique identifier for metaprotocol tx
-  const { id: metaprotocolTxIdentifier } = genericFields as BaseModel
-
-  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
-    ...genericFields,
-    status: new MetaprotocolTransactionPending(),
-  })
-
-  // save metaprotocol tx status event
-  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
-
   try {
     const decodedMessage = MemberRemarked.decode(message.toU8a(true))
-    const messageType = decodedMessage.memberRemarked
 
-    // update MetaprotocolTransactionStatusEvent
-    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+    const metaTransactionInfo = await processReactOrComment(store, event, memberId, decodedMessage)
 
-    if (!messageType) {
-      inconsistentState('Unsupported message type in member_remark action')
-    } else if (messageType === 'reactVideo') {
-      await processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
-    } else if (messageType === 'reactComment') {
-      await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
-    } else if (messageType === 'createComment') {
-      const comment = await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
-      statusSuccessful.commentCreatedId = comment.id
-    } else if (messageType === 'editComment') {
-      const comment = await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
-      statusSuccessful.commentEditedId = comment.id
-    } else if (messageType === 'deleteComment') {
-      const comment = await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
-      statusSuccessful.commentDeletedId = comment.id
-    }
+    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
-    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+    // emit log event
+    logger.info('Member remarked', { decodedMessage })
   } catch (e) {
-    // update MetaprotocolTransactionStatusEvent
-    const statusErrored = new MetaprotocolTransactionErrored()
-    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
+    // emit log event
+    logger.info(`Bad metadata for member's remark`, { e })
+
+    // save metaprotocol info
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for member's remark`)
   }
+}
+
+async function processReactOrComment(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  memberId: MemberId,
+  decodedMessage: MemberRemarked
+): Promise<Partial<MetaprotocolTransactionSuccessful>> {
+  const messageType = decodedMessage.memberRemarked
+
+  if (messageType === 'reactVideo') {
+    await processReactVideoMessage(store, event, memberId, decodedMessage.reactVideo!)
+
+    return {}
+  }
+
+  if (messageType === 'reactComment') {
+    await processReactCommentMessage(store, event, memberId, decodedMessage.reactComment!)
+
+    return {}
+  }
+
+  if (messageType === 'createComment') {
+    const comment = await processCreateCommentMessage(store, event, memberId, decodedMessage.createComment!)
+
+    return { commentCreatedId: comment.id }
+  }
+
+  if (messageType === 'editComment') {
+    const comment = await processEditCommentMessage(store, event, memberId, decodedMessage.editComment!)
+    return { commentEditedId: comment.id }
+  }
+
+  if (messageType === 'deleteComment') {
+    const comment = await processDeleteCommentMessage(store, event, memberId, decodedMessage.deleteComment!)
+    return { commentDeletedId: comment.id }
+  }
+
+  // unknown message type
+  return inconsistentState('Unsupported message type in member_remark action', messageType)
 }

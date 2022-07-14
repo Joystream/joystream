@@ -6,7 +6,6 @@ import {
   VideoInputParameters,
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
-  ChannelCategoryInputParameters,
   VideoCategoryInputParameters,
 } from '@joystream/cli/src/Types'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
@@ -108,26 +107,6 @@ export class JoystreamCLI extends CLI {
     }
 
     return parseInt(out)
-  }
-
-  /**
-    Creates a new channel category.
-  */
-  async createChannelCategory(channelCategory: ChannelCategoryInputParameters): Promise<number> {
-    const jsonFile = this.tmpFileManager.jsonFile(channelCategory)
-
-    const { stdout, stderr, exitCode } = await this.run('content:createChannelCategory', [
-      '--input',
-      jsonFile,
-      '--context',
-      'Lead',
-    ])
-
-    if (exitCode) {
-      throw new Error(`Unexpected CLI failure on creating channel category: "${stderr}"`)
-    }
-
-    return this.parseCreatedIdFromOutput(stderr)
   }
 
   /**

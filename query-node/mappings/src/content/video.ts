@@ -44,7 +44,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   // load channel
   const channel = await store.get(Channel, {
     where: { id: channelId.toString() },
-    relations: ['category', 'ownerMember', 'ownerCuratorGroup'],
+    relations: ['ownerMember', 'ownerCuratorGroup'],
   })
 
   // ensure channel exists

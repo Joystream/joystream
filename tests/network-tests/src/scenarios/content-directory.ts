@@ -7,6 +7,9 @@ import { scenario } from '../Scenario'
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Content directory', async ({ job }) => {
   const leadSetupJob = job('Set content working group leads', leadOpening(true, ['contentWorkingGroup']))
-  job('nft auction and offers', nftAuctionAndOffers).requires(leadSetupJob)
-  job('video comments and reactions', commentsAndReactions).after(leadSetupJob)
+
+  // following jobs must be run sequentially due to some QN queries that could interfere
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(leadSetupJob)
+  const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  job('video comments and reactions', commentsAndReactions).after(nftAuctionAndOffersJob)
 })
