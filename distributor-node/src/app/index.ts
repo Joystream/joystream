@@ -37,12 +37,21 @@ export class App {
 
   private setIntervals() {
     this.intervals = {
-      saveCacheState: setInterval(() => this.stateCache.save(), this.config.intervals.saveCacheState * 1000),
+      saveCacheState: setInterval(
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        () => this.stateCache.save(),
+        this.config.intervals.saveCacheState * 1000
+      ),
       checkStorageNodeResponseTimes: setInterval(
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         () => this.networking.checkActiveStorageNodeEndpoints(),
         this.config.intervals.checkStorageNodeResponseTimes * 1000
       ),
-      cacheCleanup: setInterval(() => this.content.cacheCleanup(), this.config.intervals.cacheCleanup * 1000),
+      cacheCleanup: setInterval(
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        () => this.content.cacheCleanup(),
+        this.config.intervals.cacheCleanup * 1000
+      ),
     }
   }
 

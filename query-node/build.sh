@@ -14,7 +14,7 @@ yarn --cwd codegen install
 
 yarn clean
 yarn codegen:noinstall
-cp mappings/queryTemplates.ts generated/graphql-server/src/
+cp mappings/src/queryTemplates.ts generated/graphql-server/src/
 yarn typegen # if this fails try to run this command outside of yarn workspaces
 
 # We run yarn again to ensure graphql-server dependencies are installed
