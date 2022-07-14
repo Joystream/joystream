@@ -8,7 +8,7 @@ import {
 } from '@joystream/hydra-common'
 import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
-import { FindOneOptions, SelectQueryBuilder } from 'typeorm'
+import { FindOneOptions } from 'typeorm'
 
 import {
   // Council events
@@ -89,10 +89,20 @@ async function getCandidate(
   electionRound?: ElectionRound,
   relations: string[] = []
 ): Promise<Candidate> {
-  const event = await store.get<NewCandidateEvent>(NewCandidateEvent, {
-    where: electionRound
-      ? { candidate: { member: { id: memberId }, electionRound: { id: electionRound.id } } }
-      : { candidate: { member: { id: memberId } } },
+  /* TODO: nested filtering is needed here to work properly
+           it is better approach then `where` function used below
+  */
+
+  const where: FindOptionsWhere<NewCandidateEvent> = {
+    candidate: { memberId: memberId.toString() } as any, // TODO: get rid of `any` typecast
+  }
+
+  if (electionRound) {
+    where.electionRound = { id: electionRound.id.toString() }
+  }
+
+  const event = await store.get(NewCandidateEvent, {
+    where,
     order: { inBlock: 'DESC', indexInBlock: 'DESC' },
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
   })
@@ -446,6 +456,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
   const newCandidateEvent = new NewCandidateEvent({
     ...genericEventFields(event),
     candidate,
+    electionRound,
     stakingAccount: stakingAccount.toString(),
     rewardAccount: rewardAccount.toString(),
     balance,

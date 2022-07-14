@@ -43,7 +43,7 @@ export class CreateChannelsAsMemberFixture extends BaseQueryNodeFixture {
     const distributionBucketIds = []
 
     for (const { id, buckets } of families || []) {
-      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get((id as unknown) as DistributionBucketFamilyId)
+      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get(id as unknown as DistributionBucketFamilyId)
       if (bucketsCountPolicy && bucketsCountPolicy.toNumber() < buckets.length) {
         throw new Error(`Distribution buckets policy constraint unsatifified. Not enough distribution buckets exist`)
       }
