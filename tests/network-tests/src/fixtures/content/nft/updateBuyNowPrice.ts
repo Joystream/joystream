@@ -42,7 +42,7 @@ export class NftUpdateBuyNowPriceFixture extends BaseQueryNodeFixture {
     )
 
     this.debug('Check NFT buy now price change')
-    this.assertBuyNowPrice(this.query, this.videoId, newBuyNowPrice)
+    await this.assertBuyNowPrice(this.query, this.videoId, newBuyNowPrice)
   }
 
   private async assertBuyNowPrice(query: QueryNodeApi, videoId: number, newPrice: BN) {
