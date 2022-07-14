@@ -190,7 +190,7 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
     await unsetAssetRelations(store, asset)
   }
 
-  logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
+  logger.info('Channel assets have been removed', { ids: dataObjectIds })
 }
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
