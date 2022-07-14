@@ -2,11 +2,12 @@ import path from 'path'
 import { CLI, CommandResult } from './base'
 import { spawn } from 'child_process'
 import { v4 as uuid } from 'uuid'
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId } from '@joystream/types/primitives'
 import os from 'os'
 import { ProcessManager } from './utils'
 import fs from 'fs'
 import { Keyring } from '@polkadot/keyring'
+import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../storage-node')
 
@@ -25,7 +26,8 @@ export class StorageCLI extends CLI {
     if (!accountUri) {
       throw new Error('Missing accountUri')
     }
-    const accountKey = new Keyring({ type: 'sr25519' }).createFromUri(accountUri).address
+    const accountKey = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX }).createFromUri(accountUri)
+      .address
     return super.run(command, args, [accountKey])
   }
 

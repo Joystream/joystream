@@ -1,4 +1,4 @@
-import { WorkingGroup } from '@joystream/types/common'
+import { PalletCommonWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
 import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
 import { ProposalType, WorkingGroupModuleName } from './types'
@@ -49,23 +49,23 @@ export const workingGroupNameByModuleName = {
 validateType<{ [k in WorkingGroupModuleName]: string }>(workingGroupNameByModuleName)
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
-  if (group.isOfType('Content')) {
+  if (group.isContent) {
     return 'contentWorkingGroup'
-  } else if (group.isOfType('Membership')) {
+  } else if (group.isMembership) {
     return 'membershipWorkingGroup'
-  } else if (group.isOfType('Forum')) {
+  } else if (group.isForum) {
     return 'forumWorkingGroup'
-  } else if (group.isOfType('Storage')) {
+  } else if (group.isStorage) {
     return 'storageWorkingGroup'
-  } else if (group.isOfType('OperationsAlpha')) {
+  } else if (group.isOperationsAlpha) {
     return 'operationsWorkingGroupAlpha'
-  } else if (group.isOfType('Gateway')) {
+  } else if (group.isGateway) {
     return 'gatewayWorkingGroup'
-  } else if (group.isOfType('Distribution')) {
+  } else if (group.isDistribution) {
     return 'distributionWorkingGroup'
-  } else if (group.isOfType('OperationsBeta')) {
+  } else if (group.isOperationsBeta) {
     return 'operationsWorkingGroupBeta'
-  } else if (group.isOfType('OperationsGamma')) {
+  } else if (group.isOperationsGamma) {
     return 'operationsWorkingGroupGamma'
   }
 
@@ -96,6 +96,8 @@ export const proposalTypeToProposalParamsKey = {
   'TerminateWorkingGroupLead': 'terminateWorkingGroupLeadProposalParameters',
   'UpdateWorkingGroupBudget': 'updateWorkingGroupBudgetProposalParameters',
   'VetoProposal': 'vetoProposalProposalParameters',
+  'UpdateGlobalNftLimit': 'updateGlobalNftLimitProposalParameters',
+  'UpdateChannelPayouts': 'updateChannelPayoutsProposalParameters',
 } as const
 
 type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }

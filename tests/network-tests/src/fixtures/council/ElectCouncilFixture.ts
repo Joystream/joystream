@@ -2,8 +2,10 @@ import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../membership'
 import { assertCouncilMembersRuntimeQnMatch } from './common'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { GenericAccountId } from '@polkadot/types'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 import { assert } from 'chai'
+import { createType, registry } from '@joystream/types'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
@@ -54,11 +56,11 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     // Voting stage
     await this.api.untilCouncilStage('Voting')
 
-    const cycleId = (await this.api.query.referendum.stage()).asType('Voting').current_cycle_id
+    const cycleId = (await this.api.query.referendum.stage()).asVoting.currentCycleId
     const votingTxs = votersStakingAccounts.map((account, i) => {
-      const accountId = api.createType('AccountId', account)
+      const accountId = new GenericAccountId(registry, account)
       const optionId = candidatesMemberIds[i % numberOfCandidates]
-      const salt = api.createType('Bytes', `salt${i}`)
+      const salt = createType('Bytes', `salt${i}`)
 
       const payload = Buffer.concat([accountId.toU8a(), optionId.toU8a(), salt.toU8a(), cycleId.toU8a()])
       const commitment = blake2AsHex(payload)
@@ -99,7 +101,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
 
     const councilMembers = await api.query.council.councilMembers()
     assert.sameMembers(
-      councilMembers.map((m) => m.membership_id.toString()),
+      councilMembers.map((m) => m.membershipId.toString()),
       candidatesToWinIds
     )
   }

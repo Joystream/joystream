@@ -27,7 +27,7 @@ use crate::{
 };
 use frame_benchmarking_cli::*;
 use node_runtime::Block;
-use node_runtime::RuntimeApi;
+
 use sc_cli::{ChainSpec, Result, RuntimeVersion, SubstrateCli};
 use sc_finality_grandpa as grandpa;
 use sc_service::PartialComponents;

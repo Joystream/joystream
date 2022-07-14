@@ -34,7 +34,6 @@ mod integration;
 pub mod primitives;
 mod proposals_configuration;
 mod runtime_api;
-#[cfg(test)]
 mod tests;
 /// Generated voter bag information.
 mod voter_bags;
@@ -50,14 +49,14 @@ use frame_election_provider_support::{
 };
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
-    ConstU16, ConstU32, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem, LockIdentifier,
-    OnUnbalanced,
+    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
+    LockIdentifier, OnUnbalanced,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
     ConstantMultiplier, DispatchClass, Weight,
 };
-use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
+
 use frame_support::{construct_runtime, parameter_types, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -68,9 +67,9 @@ use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
-use sp_io;
+
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys, Saturating};
+use sp_runtime::traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
 };
@@ -187,8 +186,48 @@ parameter_types! {
 
 const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO.deconstruct());
 
+pub struct LockedDownBaseFilter {}
+
+// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        match call {
+            // TODO: adjust after Carthage
+            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+                general_proposal_parameters: _,
+                proposal_details,
+            }) => !matches!(
+                proposal_details,
+                proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
+                    | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+            ),
+            _ => true, // Enable all other calls
+        }
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+    fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
+        true
+    }
+}
+
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = frame_support::traits::Everything;
+    type BaseCallFilter = LockedDownBaseFilter;
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
@@ -199,7 +238,7 @@ impl frame_system::Config for Runtime {
     type Hash = Hash;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
-    type Lookup = AccountIdLookup<AccountId, ()>;
+    type Lookup = IdentityLookup<Self::AccountId>;
     type Header = generic::Header<BlockNumber, BlakeTwo256>;
     type Event = Event;
     type BlockHashCount = BlockHashCount;
@@ -486,9 +525,9 @@ parameter_types! {
     pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
 
     // signed config
-    pub const SignedRewardBase: Balance = 1 * currency::DOLLARS;
-    pub const SignedDepositBase: Balance = 1 * currency::DOLLARS;
-    pub const SignedDepositByte: Balance = 1 * currency::CENTS;
+    pub const SignedRewardBase: Balance = currency::DOLLARS;
+    pub const SignedDepositBase: Balance = currency::DOLLARS;
+    pub const SignedDepositByte: Balance = currency::CENTS;
 
     pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
 
@@ -695,6 +734,8 @@ parameter_types! {
         block_number_period: WEEKS,
         limit: 500,
     };  // TODO: update
+    pub const MinimumCashoutAllowedLimit: Balance = 1; // TODO: update
+    pub const MaximumCashoutAllowedLimit: Balance = 1_000_000; // TODO: update
 }
 
 impl content::Config for Runtime {
@@ -716,6 +757,8 @@ impl content::Config for Runtime {
     type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
     type ProjectToken = ProjectToken;
     type TransferId = TransferId;
+    type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
+    type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
 parameter_types! {
@@ -897,18 +940,33 @@ impl common::StorageOwnership for Runtime {
     type DataObjectTypeId = DataObjectTypeId;
 }
 
+// Storage parameters independent of runtime profile
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
+    pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
+}
+
+// Production storage parameters
+#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+parameter_types! {
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
-    pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
+}
+
+// Staging/testing storage parameters
+#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
+parameter_types! {
+    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
+        storage::StorageBucketsPerBagValueConstraint {min: 1, max_min_diff: 15};
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 1;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 1;
 }
 
 impl storage::Config for Runtime {
@@ -1328,8 +1386,7 @@ impl proposals_codex::Config for Runtime {
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
-    // TODO: Enable after Carthage
-    // type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }
 

@@ -6,13 +6,12 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithInitialPostFragment, VoteOnPollEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId } from '@joystream/types/forum'
-import { MemberId, ThreadId } from '@joystream/types/common'
+import { MemberId, ForumThreadId, ForumCategoryId } from '@joystream/types/primitives'
 import { Utils } from '../../utils'
 
 export type VoteParams = {
-  categoryId: CategoryId
-  threadId: ThreadId
+  categoryId: ForumCategoryId
+  threadId: ForumThreadId
   index: number
   asMember: MemberId
 }
@@ -28,7 +27,7 @@ export class VoteOnPollFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.votes.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }

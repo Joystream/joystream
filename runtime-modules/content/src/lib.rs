@@ -1,15 +1,15 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]
+#![allow(clippy::unused_unit)]
 
-#[cfg(test)]
-mod tests;
-use core::marker::PhantomData;
 mod errors;
 mod nft;
 mod permissions;
+mod tests;
 mod types;
 
+use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
     TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,
@@ -138,6 +138,12 @@ pub trait Config:
         UploadContextOf<Self>,
         TransfersWithVestingOf<Self>,
     >;
+
+    /// Minimum cashout allowed limit
+    type MinimumCashoutAllowedLimit: Get<BalanceOf<Self>>;
+
+    /// Max cashout allowed limit
+    type MaximumCashoutAllowedLimit: Get<BalanceOf<Self>>;
 }
 
 decl_storage! {
@@ -1159,6 +1165,8 @@ decl_module! {
         ) {
             ensure_root(origin)?;
 
+            Self::verify_cashout_limits(&params)?;
+
             let new_min_cashout_allowed = params.min_cashout_allowed
                 .unwrap_or_else(Self::min_cashout_allowed);
             let new_max_cashout_allowed = params.max_cashout_allowed
@@ -1743,7 +1751,7 @@ decl_module! {
             )?;
 
             // Ensure nft in buy now state
-            let _ = Self::ensure_in_buy_now_state(&nft)?;
+            Self::ensure_in_buy_now_state(&nft)?;
 
             //
             // == MUTATION SAFE ==
@@ -2367,7 +2375,7 @@ decl_module! {
             origin,
             enabled: bool
         ) {
-            let _ = ensure_root(origin)?;
+            ensure_root(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -3281,10 +3289,10 @@ impl<T: Config> Module<T> {
         ids_to_remove: &BTreeSet<DataObjectId<T>>,
     ) -> BTreeSet<DataObjectId<T>> {
         current_set
-            .union(&ids_to_add)
+            .union(ids_to_add)
             .cloned()
             .collect::<BTreeSet<_>>()
-            .difference(&ids_to_remove)
+            .difference(ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
     }
@@ -3497,7 +3505,7 @@ impl<T: Config> Module<T> {
         channel.ensure_has_no_active_transfer::<T>()?;
         channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
-        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel)?;
+        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), actor, &channel)?;
 
         ensure!(
             Self::channel_cashouts_enabled(),
@@ -3529,6 +3537,22 @@ impl<T: Config> Module<T> {
         Ok((channel, reward_account, cashout))
     }
 
+    fn verify_cashout_limits(params: &UpdateChannelPayoutsParameters<T>) -> DispatchResult {
+        if let Some(ref min_cashout) = params.min_cashout_allowed {
+            ensure!(
+                *min_cashout >= T::MinimumCashoutAllowedLimit::get(),
+                Error::<T>::MinCashoutValueTooLow
+            );
+        }
+        if let Some(ref max_cashout) = params.max_cashout_allowed {
+            ensure!(
+                *max_cashout <= T::MaximumCashoutAllowedLimit::get(),
+                Error::<T>::MaxCashoutValueTooHigh
+            );
+        }
+        Ok(())
+    }
+
     fn execute_channel_reward_claim(
         channel_id: T::ChannelId,
         reward_account: &T::AccountId,
@@ -3556,7 +3580,7 @@ impl<T: Config> Module<T> {
                 )
             }
             ChannelFundsDestination::CouncilBudget => {
-                let _ = Balances::<T>::slash(&reward_account, amount);
+                let _ = Balances::<T>::slash(reward_account, amount);
                 T::CouncilBudgetManager::increase_budget(amount);
                 Ok(())
             }
@@ -3726,7 +3750,7 @@ decl_event!(
         CancelChannelTransfer(ChannelId, ContentActor),
         ChannelTransferAccepted(ChannelId, TransferCommitment),
 
-        /// Nft limits
+        // Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
         ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
         ToggledNftLimits(bool),

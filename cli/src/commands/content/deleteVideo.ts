@@ -45,7 +45,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
     } = this.parse(DeleteVideoCommand)
     // Context
     const video = await this.getApi().videoById(videoId)
-    const channel = await this.getApi().channelById(video.in_channel.toNumber())
+    const channel = await this.getApi().channelById(video.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
 
     const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
@@ -55,7 +55,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloat_bond]) => sum.add(bloat_bond), new BN(0))
+      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
         `Data objects state bloat bond of ${chalk.cyanBright(
           formatBalance(stateBloatBond)
@@ -72,10 +72,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideo', [
       actor,
       videoId,
-      createType(
-        'BTreeSet<DataObjectId>',
-        dataObjectsInfo.map(([id]) => id)
-      ),
+      createType('u64', dataObjectsInfo.length),
     ])
   }
 }

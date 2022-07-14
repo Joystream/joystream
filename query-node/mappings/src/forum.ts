@@ -58,7 +58,8 @@ import {
   ForumThreadTag,
 } from 'query-node/dist/model'
 import { Forum } from '../generated/types'
-import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
+import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
+import { ForumPostReactionId } from '@joystream/types/primitives'
 import {
   ForumPostMetadata,
   ForumPostReaction as SupportedPostReactions,
@@ -181,7 +182,7 @@ async function unsetThreadTags({ event, store }: StoreContext & EventContext, ta
 }
 
 // Get standarized PostReactionResult by PostReactionId
-function parseReaction(reactionId: PostReactionId): typeof PostReactionResult {
+function parseReaction(reactionId: ForumPostReactionId): typeof PostReactionResult {
   switch (toNumber(reactionId)) {
     case SupportedPostReactions.Reaction.CANCEL: {
       return new PostReactionResultCancel()
@@ -309,12 +310,12 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
       createdAt: eventTime,
       updatedAt: eventTime,
       description: bytesToString(pollInput.unwrap().description),
-      endTime: new Date(toNumber(pollInput.unwrap().end_time, TIMESTAMPMAX)),
+      endTime: new Date(toNumber(pollInput.unwrap().endTime, TIMESTAMPMAX)),
       thread,
     })
     await store.save<ForumPoll>(threadPoll)
     await Promise.all(
-      pollInput.unwrap().poll_alternatives.map(async (alt, index) => {
+      pollInput.unwrap().pollAlternatives.map(async (alt, index) => {
         const alternative = new ForumPollAlternative({
           createdAt: eventTime,
           updatedAt: eventTime,
@@ -688,7 +689,7 @@ export async function forum_PostDeleted({ event, store }: EventContext & StoreCo
   await store.save<PostDeletedEvent>(postDeletedEvent)
 
   await Promise.all(
-    Array.from(postsData.entries()).map(async ([{ post_id: postId }, hideFlag]) => {
+    Array.from(postsData.entries()).map(async ([{ postId }, hideFlag]) => {
       const post = await getPost(store, postId.toString(), ['thread'])
       const newStatus = hideFlag.isTrue ? new PostStatusRemoved() : new PostStatusLocked()
       newStatus.postDeletedEventId = postDeletedEvent.id

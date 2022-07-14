@@ -48,13 +48,8 @@ fn referendum_start_forbidden_after_start() {
         let winning_target_count = 1;
         let cycle_id = 1;
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
-        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), cycle_id, Err(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
+        Mocks::start_referendum_extrinsic(origin, options, cycle_id, Err(()));
     });
 }
 
@@ -76,21 +71,9 @@ fn voting() {
         let (commitment, _) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count,
-            cycle_id.clone(),
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
 
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            cycle_id.clone(),
-            Ok(()),
-        );
+        Mocks::vote(origin, account_id, commitment, stake, cycle_id, Ok(()));
     });
 }
 
@@ -116,27 +99,22 @@ fn voting_referendum_not_running() {
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Err(Error::ReferendumNotRunning),
         );
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count,
-            cycle_id.clone(),
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
 
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         // try to vote after voting stage ended
         Mocks::vote(
-            origin.clone(),
+            origin,
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Err(Error::ReferendumNotRunning),
         );
     });
@@ -158,18 +136,13 @@ fn voting_stake_too_low() {
         let (commitment, _) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count,
-            cycle_id.clone(),
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
-            origin.clone(),
+            origin,
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Err(Error::InsufficientStake),
         );
     });
@@ -192,27 +165,22 @@ fn voting_user_repeated_vote() {
         let (commitment, _) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count,
-            cycle_id.clone(),
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
             commitment,
-            stake.clone(),
-            cycle_id.clone(),
+            stake,
+            cycle_id,
             Ok(()),
         );
 
         Mocks::vote(
-            origin.clone(),
+            origin,
             account_id,
             commitment,
-            different_stake.clone(),
-            cycle_id.clone(),
+            different_stake,
+            cycle_id,
             Err(Error::AlreadyVotedThisCycle),
         );
     });
@@ -227,19 +195,14 @@ fn finish_voting() {
         let winning_target_count = 1;
         let cycle_id = 1;
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count,
-            cycle_id.clone(),
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
 
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
 
         // voting period starts at block 1
         MockUtils::move_to_block(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count, cycle_id.clone());
+        Mocks::check_voting_finished(winning_target_count, cycle_id);
     });
 }
 
@@ -262,18 +225,13 @@ fn reveal() {
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -286,16 +244,16 @@ fn reveal() {
             origin.clone(),
             account_id,
             salt.clone(),
-            option_to_vote_for.clone(),
+            option_to_vote_for,
             Ok(()),
         );
 
         // Revealing more than once should fail!
         Mocks::reveal_vote(
-            origin.clone(),
+            origin,
             account_id,
-            salt.clone(),
-            option_to_vote_for.clone(),
+            salt,
+            option_to_vote_for,
             Err(Error::InvalidReveal),
         );
     });
@@ -319,18 +277,13 @@ fn reveal_reveal_stage_not_running() {
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
 
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
             salt.clone(),
-            option_to_vote_for.clone(),
+            option_to_vote_for,
             Err(Error::RevealingNotInProgress),
         );
 
@@ -339,7 +292,7 @@ fn reveal_reveal_stage_not_running() {
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -350,10 +303,10 @@ fn reveal_reveal_stage_not_running() {
         Mocks::check_revealing_finished(vec![], MockUtils::transform_results(vec![]));
 
         Mocks::reveal_vote(
-            origin.clone(),
+            origin,
             account_id,
-            salt.clone(),
-            option_to_vote_for.clone(),
+            salt,
+            option_to_vote_for,
             Err(Error::RevealingNotInProgress),
         );
     });
@@ -372,12 +325,7 @@ fn reveal_no_vote() {
         let cycle_id = 1;
         let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         // voting period starts at block 1
         MockUtils::move_to_block(voting_stage_duration + 1);
 
@@ -415,18 +363,13 @@ fn reveal_salt_too_long() {
             &cycle_id,
         );
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -434,7 +377,7 @@ fn reveal_salt_too_long() {
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
-            origin.clone(),
+            origin,
             account_id,
             salt,
             option_to_vote_for,
@@ -461,18 +404,13 @@ fn reveal_invalid_vote() {
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -482,7 +420,7 @@ fn reveal_invalid_vote() {
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
-            origin.clone(),
+            origin,
             account_id,
             salt,
             invalid_option,
@@ -509,18 +447,13 @@ fn reveal_invalid_commitment_proof() {
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -528,7 +461,7 @@ fn reveal_invalid_commitment_proof() {
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
-            origin.clone(),
+            origin,
             account_id,
             salt,
             invalid_option,
@@ -557,18 +490,13 @@ fn finish_revealing_period() {
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
             commitment,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
 
@@ -576,13 +504,7 @@ fn finish_revealing_period() {
         MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
-        Mocks::reveal_vote(
-            origin.clone(),
-            account_id,
-            salt,
-            option_to_vote_for.clone(),
-            Ok(()),
-        );
+        Mocks::reveal_vote(origin, account_id, salt, option_to_vote_for, Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration);
 
         Mocks::check_revealing_finished(
@@ -621,18 +543,13 @@ fn finish_revealing_period_vote_power() {
         let (commitment2, salt2) =
             MockUtils::calculate_commitment(&account_id2, &option_to_vote_for2, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
             commitment1,
             stake_bigger,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         ); // vote for first option by regular user
         Mocks::vote(
@@ -640,7 +557,7 @@ fn finish_revealing_period_vote_power() {
             account_id2,
             commitment2,
             stake_smaller,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         ); // vote for second option by prominent user
 
@@ -649,14 +566,14 @@ fn finish_revealing_period_vote_power() {
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
-            origin_voter1.clone(),
+            origin_voter1,
             account_id1,
             salt1,
             option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter2.clone(),
+            origin_voter2,
             account_id2,
             salt2,
             option_to_vote_for2,
@@ -694,7 +611,7 @@ fn winners_no_vote_revealed() {
         let cycle_id = 1;
         let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         // voting period starts at block 1
         MockUtils::move_to_block(voting_stage_duration + 1);
         Mocks::check_voting_finished(winning_target_count, cycle_id);
@@ -732,18 +649,13 @@ fn winners_multiple_winners() {
         let (commitment3, salt3) =
             MockUtils::calculate_commitment(&account_id3, &option_to_vote_for2, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
             commitment1,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -751,7 +663,7 @@ fn winners_multiple_winners() {
             account_id2,
             commitment2,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -759,7 +671,7 @@ fn winners_multiple_winners() {
             account_id3,
             commitment3,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -768,21 +680,21 @@ fn winners_multiple_winners() {
         Mocks::check_voting_finished(winning_target_count, cycle_id);
 
         Mocks::reveal_vote(
-            origin_voter1.clone(),
+            origin_voter1,
             account_id1,
             salt1,
             option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter2.clone(),
+            origin_voter2,
             account_id2,
             salt2,
             option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter3.clone(),
+            origin_voter3,
             account_id3,
             salt3,
             option_to_vote_for2,
@@ -844,18 +756,13 @@ fn correct_candidates_make_it_into_winners_list() {
         let (commitment5, salt5) =
             MockUtils::calculate_commitment(&account_id5, &option_to_vote_for3, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
             commitment1,
             (stake * 3) + 1,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -863,7 +770,7 @@ fn correct_candidates_make_it_into_winners_list() {
             account_id2,
             commitment2,
             stake * 2,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -871,7 +778,7 @@ fn correct_candidates_make_it_into_winners_list() {
             account_id3,
             commitment3,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -879,7 +786,7 @@ fn correct_candidates_make_it_into_winners_list() {
             account_id4,
             commitment4,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -887,7 +794,7 @@ fn correct_candidates_make_it_into_winners_list() {
             account_id5,
             commitment5,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -896,14 +803,14 @@ fn correct_candidates_make_it_into_winners_list() {
         Mocks::check_voting_finished(winning_target_count, cycle_id);
 
         Mocks::reveal_vote(
-            origin_voter1.clone(),
+            origin_voter1,
             account_id1,
             salt1,
             option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter2.clone(),
+            origin_voter2,
             account_id2,
             salt2,
             option_to_vote_for2,
@@ -911,21 +818,21 @@ fn correct_candidates_make_it_into_winners_list() {
         );
 
         Mocks::reveal_vote(
-            origin_voter3.clone(),
+            origin_voter3,
             account_id3,
             salt3,
             option_to_vote_for3,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter4.clone(),
+            origin_voter4,
             account_id4,
             salt4,
             option_to_vote_for3,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter5.clone(),
+            origin_voter5,
             account_id5,
             salt5,
             option_to_vote_for3,
@@ -992,18 +899,13 @@ fn correct_orderding_of_winners() {
         let (commitment4, salt4) =
             MockUtils::calculate_commitment(&account_id4, &option_to_vote_for4, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
             commitment1,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -1011,7 +913,7 @@ fn correct_orderding_of_winners() {
             account_id2,
             commitment2,
             stake * 2,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -1019,7 +921,7 @@ fn correct_orderding_of_winners() {
             account_id3,
             commitment3,
             stake * 3,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -1027,7 +929,7 @@ fn correct_orderding_of_winners() {
             account_id4,
             commitment4,
             stake * 4,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -1036,28 +938,28 @@ fn correct_orderding_of_winners() {
         Mocks::check_voting_finished(winning_target_count, cycle_id);
 
         Mocks::reveal_vote(
-            origin_voter1.clone(),
+            origin_voter1,
             account_id1,
             salt1,
             option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter2.clone(),
+            origin_voter2,
             account_id2,
             salt2,
             option_to_vote_for2,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter3.clone(),
+            origin_voter3,
             account_id3,
             salt3,
             option_to_vote_for3,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter4.clone(),
+            origin_voter4,
             account_id4,
             salt4,
             option_to_vote_for4,
@@ -1123,18 +1025,13 @@ fn winners_multiple_winners_extra() {
         let (commitment2, salt2) =
             MockUtils::calculate_commitment(&account_id2, &option_to_vote_for2, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
             commitment1,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         Mocks::vote(
@@ -1142,7 +1039,7 @@ fn winners_multiple_winners_extra() {
             account_id2,
             commitment2,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -1150,14 +1047,14 @@ fn winners_multiple_winners_extra() {
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
-            origin_voter1.clone(),
+            origin_voter1,
             account_id1,
             salt1,
             option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
-            origin_voter2.clone(),
+            origin_voter2,
             account_id2,
             salt2,
             option_to_vote_for2,
@@ -1197,18 +1094,13 @@ fn winners_multiple_not_enough() {
         let (commitment1, salt1) =
             MockUtils::calculate_commitment(&account_id1, &option_to_vote_for, &cycle_id);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin, winning_target_count, cycle_id, Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
             commitment1,
             stake,
-            cycle_id.clone(),
+            cycle_id,
             Ok(()),
         );
         // voting period starts at block 1
@@ -1216,7 +1108,7 @@ fn winners_multiple_not_enough() {
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
         Mocks::reveal_vote(
-            origin_voter1.clone(),
+            origin_voter1,
             account_id1,
             salt1,
             option_to_vote_for,
@@ -1257,31 +1149,20 @@ fn referendum_release_stake() {
         let (commitment, salt) =
             MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id1);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id1,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id1, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
             commitment,
-            stake.clone(),
-            cycle_id1.clone(),
+            stake,
+            cycle_id1,
             Ok(()),
         );
         // voting period starts at block 1
         MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id1);
-        Mocks::reveal_vote(
-            origin.clone(),
-            account_id,
-            salt,
-            option_to_vote_for.clone(),
-            Ok(()),
-        );
+        Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration);
 
         Mocks::check_revealing_finished(
@@ -1297,14 +1178,9 @@ fn referendum_release_stake() {
         Runtime::feature_stack_lock(true);
 
         // since `account_id` voted for the winner, he can unlock stake only after inactive stage ends
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            winning_target_count.clone(),
-            cycle_id2,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id2, Ok(()));
 
-        Mocks::release_stake(origin.clone(), account_id, Ok(()));
+        Mocks::release_stake(origin, account_id, Ok(()));
     });
 }
 

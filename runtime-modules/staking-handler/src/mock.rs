@@ -4,7 +4,7 @@ use frame_support::{
     parameter_types,
     traits::{ConstU16, ConstU32, ConstU64},
 };
-use frame_system;
+
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -84,10 +84,7 @@ impl common::membership::MembershipTypes for Test {
 impl LockComparator<<Test as pallet_balances::Config>::Balance> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         // simple check preventing lock reuse
-        existing_locks
-            .iter()
-            .find(|lock| *lock == new_lock)
-            .is_some()
+        existing_locks.iter().any(|lock| lock == new_lock)
     }
 }
 

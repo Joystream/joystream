@@ -216,10 +216,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 
 // Default implementation for tests
 impl WeightInfo for () {
-	fn buy_membership_without_referrer(i: u32, _j: u32, ) -> Weight {
+	fn buy_membership_without_referrer(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn buy_membership_with_referrer(i: u32, j: u32, ) -> Weight {
+	fn buy_membership_with_referrer(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn update_profile(_i: u32, ) -> Weight {
@@ -243,7 +243,7 @@ impl WeightInfo for () {
 	fn transfer_invites() -> Weight {
 		0
 	}
-	fn invite_member(i: u32, j: u32, ) -> Weight {
+	fn invite_member(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn set_membership_price() -> Weight {

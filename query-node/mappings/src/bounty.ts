@@ -8,7 +8,7 @@ import {
   FundingType,
   OracleWorkEntryJudgment,
 } from '@joystream/types/augment'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { BN } from '@polkadot/util'
 import {
   Bounty,
@@ -503,7 +503,7 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   const entryJudgments = Array.from(bountyJudgment.entries())
 
   // Go to Withdrawal Period (and update entries statuses)
-  goToWithdrawalPeriod(store, bounty, entryJudgments)
+  await goToWithdrawalPeriod(store, bounty, entryJudgments)
 
   // Record the event
   const judgmentEvent = new OracleJudgmentSubmittedEvent({

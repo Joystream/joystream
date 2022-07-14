@@ -9,7 +9,7 @@ export default async function initDistributionBucket({ api }: FlowProps): Promis
   const [leaderId, leader] = await api.getLeader('distributionWorkingGroup')
 
   const operatorId = leaderId.toString()
-  const leaderSuri = api.getSuri(leader.role_account_id)
+  const leaderSuri = api.getSuri(leader.roleAccountId)
 
   const cli = new DistributorCLI([leaderSuri])
 

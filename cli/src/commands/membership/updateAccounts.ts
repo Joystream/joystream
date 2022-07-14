@@ -21,7 +21,7 @@ export default class MembershipUpdateAccountsCommand extends MembershipsCommandB
     const { newControllerAccount, newRootAccount } = this.parse(MembershipUpdateAccountsCommand).flags
     const {
       id: memberId,
-      membership: { root_account: rootKey },
+      membership: { rootAccount: rootKey },
     } = await this.getRequiredMemberContext(false, undefined, 'root')
 
     this.jsonPrettyPrint(JSON.stringify({ memberId, newControllerAccount, newRootAccount }))

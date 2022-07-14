@@ -135,6 +135,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     if (flags.sync) {
       logger.info(`Synchronization enabled.`)
       setTimeout(
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
           runSyncWithInterval(
             api,

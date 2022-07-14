@@ -56,7 +56,7 @@ fn unsuccessful_reward_claim_with_unsufficient_cashout() {
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
-            .with_payments(vec![item.clone()])
+            .with_payments(vec![item])
             .with_item(item)
             .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()))
     })
@@ -73,7 +73,7 @@ fn unsuccessful_reward_claim_with_cashout_limit_exceeded() {
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
-            .with_payments(vec![item.clone()])
+            .with_payments(vec![item])
             .with_item(item)
             .call_and_assert(Err(Error::<Test>::CashoutAmountExceedsMaximumAmount.into()))
     })
@@ -90,7 +90,7 @@ fn unsuccessful_reward_claim_with_invalid_channel_id() {
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
-            .with_payments(vec![item.clone()])
+            .with_payments(vec![item])
             .with_item(item)
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
     })
@@ -104,7 +104,7 @@ fn unsuccessful_reward_claim_with_invalid_claim() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            cumulative_reward_earned: (DEFAULT_PAYOUT_CLAIMED + 1),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -121,7 +121,7 @@ fn unsuccessful_reward_claim_with_empty_proof() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
+            cumulative_reward_earned: DEFAULT_PAYOUT_CLAIMED,
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -573,7 +573,7 @@ fn unsuccessful_claim_and_withdraw_with_unsufficient_cashout() {
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(vec![item.clone()])
+            .with_payments(vec![item])
             .with_item(item)
             .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()))
     })
@@ -590,7 +590,7 @@ fn unsuccessful_claim_and_withdraw_with_reward_limit_exceeded() {
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(vec![item.clone()])
+            .with_payments(vec![item])
             .with_item(item)
             .call_and_assert(Err(Error::<Test>::CashoutAmountExceedsMaximumAmount.into()))
     })
@@ -607,7 +607,7 @@ fn unsuccessful_claim_and_withdraw_with_invalid_channel_id() {
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(vec![item.clone()])
+            .with_payments(vec![item])
             .with_item(item)
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
     })
@@ -624,7 +624,7 @@ fn unsuccessful_claim_and_withdraw_with_invalid_claim() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            cumulative_reward_earned: (DEFAULT_PAYOUT_CLAIMED + 1),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimAndWithdrawChannelRewardFixture::default()
@@ -642,7 +642,7 @@ fn unsuccessful_claim_and_withdraw_with_empty_proof() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
+            cumulative_reward_earned: DEFAULT_PAYOUT_CLAIMED,
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimAndWithdrawChannelRewardFixture::default()
@@ -728,7 +728,7 @@ fn successful_multiple_claims_and_withdrawals_when_reward_updated() {
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED * 2);
 
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(payments.clone())
+            .with_payments(payments)
             .call_and_assert(Ok(()));
 
         let payments2 = create_some_pull_payments_helper_with_rewards(DEFAULT_PAYOUT_EARNED * 2);
@@ -1030,6 +1030,24 @@ fn unsuccessfull_channel_payouts_update_min_cashout_exceeds_max_cashout() {
 }
 
 #[test]
+fn unsuccessful_channel_payouts_update_with_min_cashout_value_below_limit() {
+    with_default_mock_builder(|| {
+        UpdateChannelPayoutsFixture::default()
+            .with_min_cashout_allowed(Some(MinimumCashoutAllowedLimit::get() - 1))
+            .call_and_assert(Err(Error::<Test>::MinCashoutValueTooLow.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_payouts_update_with_max_cashout_value_above_limit() {
+    with_default_mock_builder(|| {
+        UpdateChannelPayoutsFixture::default()
+            .with_max_cashout_allowed(Some(MaximumCashoutAllowedLimit::get() + 1))
+            .call_and_assert(Err(Error::<Test>::MaxCashoutValueTooHigh.into()));
+    })
+}
+
+#[test]
 fn successful_channel_payouts_update() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1053,8 +1071,8 @@ fn successful_channel_payouts_update() {
 
         UpdateChannelPayoutsFixture::default()
             .with_commitment(Some(merkle_root))
-            .with_min_cashout_allowed(Some(0))
-            .with_max_cashout_allowed(Some(1))
+            .with_min_cashout_allowed(Some(5))
+            .with_max_cashout_allowed(Some(10))
             .with_channel_cashouts_enabled(Some(false))
             .with_payload(Some(payload_params))
             .call_and_assert(Ok(()));

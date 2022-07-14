@@ -1,7 +1,11 @@
 import { DatabaseManager } from '@joystream/hydra-common'
-import { UploadParameters } from '@joystream/types/augment'
-import { registry } from '@joystream/types'
-import { DataObjectCreationParameters as ObjectCreationParams } from '@joystream/types/storage'
+import {
+  PalletStorageBagIdType as BagId,
+  PalletStorageDynamicBagIdType as DynamicBagId,
+  PalletStorageStaticBagId as StaticBagId,
+  PalletStorageDistributionBucketIdRecord as DistributionBucketId,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+} from '@polkadot/types/lookup'
 import {
   DataObjectTypeUnknown,
   StorageBag,
@@ -23,16 +27,19 @@ import { In } from 'typeorm'
 import { BTreeSet } from '@polkadot/types'
 import _ from 'lodash'
 import {
+  WorkerId,
   DataObjectId,
-  BagId,
-  DynamicBagId,
-  StaticBagId,
-  DistributionBucketId,
   DistributionBucketFamilyId,
   DistributionBucketIndex,
-  WorkerId,
-} from '@joystream/types/augment/all'
+} from '@joystream/types/primitives'
 import { Balance } from '@polkadot/types/interfaces'
+
+export type StorageDataObjectParams = {
+  storageBagOrId: StorageBag | BagId
+  objectCreationList: DataObjectCreationParameters[]
+  stateBloatBond: Balance
+  objectIds?: BN[]
+}
 
 export async function getDataObjectsInBag(
   store: DatabaseManager,
@@ -195,22 +202,18 @@ export async function getStorageSystem(store: DatabaseManager): Promise<StorageS
 
 export async function createDataObjects(
   store: DatabaseManager,
-  uploadParams: UploadParameters,
-  stateBloatBond: Balance,
-  objectIds?: BN[]
+  { storageBagOrId, objectCreationList, stateBloatBond, objectIds }: StorageDataObjectParams
 ): Promise<StorageDataObject[]> {
   const storageSystem = await getStorageSystem(store)
-  const { objectCreationList, bagId } = uploadParams
-  const storageBag = await getBag(store, bagId)
+  const storageBag = storageBagOrId instanceof StorageBag ? storageBagOrId : await getBag(store, storageBagOrId)
 
   const dataObjects = objectCreationList.map((objectParams, i) => {
-    const params = new ObjectCreationParams(registry, objectParams.toJSON() as any)
     const objectId = objectIds ? objectIds[i] : storageSystem.nextDataObjectId
     const object = new StorageDataObject({
       id: objectId.toString(),
       isAccepted: false,
       ipfsHash: bytesToString(objectParams.ipfsContentId),
-      size: new BN(params.getField('size').toString()),
+      size: new BN(objectParams.size_),
       type: new DataObjectTypeUnknown(),
       stateBloatBond,
       storageBag,
@@ -246,8 +249,8 @@ export async function getMostRecentlyCreatedDataObjects(
 }
 
 export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {
-  const { distribution_bucket_family_id: familyId, distribution_bucket_index: bucketIndex } = runtimeBucketId
-  return distributionBucketIdByFamilyAndIndex(familyId, bucketIndex)
+  const { distributionBucketFamilyId, distributionBucketIndex } = runtimeBucketId
+  return distributionBucketIdByFamilyAndIndex(distributionBucketFamilyId, distributionBucketIndex)
 }
 
 export function distributionBucketIdByFamilyAndIndex(

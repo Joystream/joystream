@@ -149,10 +149,10 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     nft_limit_period,
                     limit,
                 })
-            } // TODO: Enable after Carthage
-              // ProposalDetails::UpdateChannelPayouts(params) => {
-              //     Call::Content(content::Call::update_channel_payouts { params })
-              // }
+            }
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                Call::Content(content::Call::update_channel_payouts { params })
+            }
         };
 
         call.encode()
