@@ -75,6 +75,9 @@ type Channel @entity {
 
   "Owners of video NFTs belonging to this channel."
   channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
+
+  "Channel's reward account, storing the income from the nft sales and channel payouts."
+  rewardAccount: String!
 }
 
 type VideoCategory @entity {

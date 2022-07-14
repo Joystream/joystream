@@ -44,7 +44,9 @@ import {
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [channelId, { owner, dataObjects }, channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
+  const [channelId, { owner, dataObjects }, channelCreationParameters, rewardAccount] = new Content.ChannelCreatedEvent(
+    event
+  ).params
 
   // create entity
   const channel = new Channel({
@@ -65,6 +67,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     collaborators: Array.from(channelCreationParameters.collaborators).map(
       (id) => new Membership({ id: id.toString() })
     ),
+    rewardAccount: rewardAccount.toString(),
   })
 
   // deserialize & process metadata

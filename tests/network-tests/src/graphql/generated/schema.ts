@@ -6156,6 +6156,8 @@ export type Channel = BaseGraphQlObject & {
   collaborators: Array<Membership>
   bannedMembers: Array<Membership>
   channelNftCollectors: Array<ChannelNftCollectors>
+  /** Channel's reward account, storing the income from the nft sales and channel payouts. */
+  rewardAccount: Scalars['String']
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
   commentdeletedeventvideoChannel?: Maybe<Array<CommentDeletedEvent>>
   commentmoderatedeventvideoChannel?: Maybe<Array<CommentModeratedEvent>>
@@ -6305,6 +6307,7 @@ export type ChannelCreateInput = {
   isCensored: Scalars['Boolean']
   language?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
+  rewardAccount: Scalars['String']
 }
 
 export type ChannelEdge = {
@@ -6458,6 +6461,8 @@ export enum ChannelOrderByInput {
   LanguageDesc = 'language_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
   CreatedInBlockDesc = 'createdInBlock_DESC',
+  RewardAccountAsc = 'rewardAccount_ASC',
+  RewardAccountDesc = 'rewardAccount_DESC',
 }
 
 export type ChannelUpdateInput = {
@@ -6473,6 +6478,7 @@ export type ChannelUpdateInput = {
   isCensored?: Maybe<Scalars['Boolean']>
   language?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
+  rewardAccount?: Maybe<Scalars['String']>
 }
 
 export type ChannelWhereInput = {
@@ -6526,6 +6532,11 @@ export type ChannelWhereInput = {
   createdInBlock_lt?: Maybe<Scalars['Int']>
   createdInBlock_lte?: Maybe<Scalars['Int']>
   createdInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rewardAccount_eq?: Maybe<Scalars['String']>
+  rewardAccount_contains?: Maybe<Scalars['String']>
+  rewardAccount_startsWith?: Maybe<Scalars['String']>
+  rewardAccount_endsWith?: Maybe<Scalars['String']>
+  rewardAccount_in?: Maybe<Array<Scalars['String']>>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   category?: Maybe<ChannelCategoryWhereInput>

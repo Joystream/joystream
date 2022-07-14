@@ -598,7 +598,7 @@ export default {
       CuratorGroupStatusSet: '(u64,bool)',
       CuratorAdded: '(u64,u64,BTreeSet<PalletContentChannelActionPermission>)',
       CuratorRemoved: '(u64,u64)',
-      ChannelCreated: '(u64,PalletContentChannelRecord,PalletContentChannelCreationParametersRecord)',
+      ChannelCreated: '(u64,PalletContentChannelRecord,PalletContentChannelCreationParametersRecord,AccountId32)',
       ChannelUpdated: '(PalletContentPermissionsContentActor,u64,PalletContentChannelUpdateParametersRecord,BTreeSet<u64>)',
       ChannelPrivilegeLevelUpdated: '(u64,u8)',
       ChannelStateBloatBondValueUpdated: 'u128',
