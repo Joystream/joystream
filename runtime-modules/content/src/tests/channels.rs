@@ -17,7 +17,7 @@ use crate::*;
 fn successful_channel_creation_with_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
@@ -40,7 +40,7 @@ fn successful_curator_group_channel_creation_with_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
 
         create_initial_storage_buckets_helper();
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
@@ -282,7 +282,7 @@ fn successful_channel_creation_with_collaborators_set() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()

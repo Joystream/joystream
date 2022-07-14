@@ -1,13 +1,20 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 #![recursion_limit = "512"]
 #![allow(clippy::unused_unit)]
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarks;
 
 mod errors;
 mod nft;
 mod permissions;
-mod tests;
 mod types;
+pub mod weights;
 
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
@@ -16,6 +23,7 @@ use project_token::types::{
     YearlyRate,
 };
 use sp_std::vec;
+pub use weights::WeightInfo;
 
 pub use errors::*;
 pub use nft::*;
@@ -24,7 +32,7 @@ use scale_info::TypeInfo;
 pub use types::*;
 
 use codec::{Codec, Decode, Encode};
-
+use frame_support::weights::Weight;
 pub use storage::{
     BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
     DynamicBagIdType, StaticBagId, UploadParameters,
@@ -55,6 +63,8 @@ use sp_arithmetic::{
 use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
+type WeightInfoContent<T> = <T as Config>::WeightInfo;
+
 /// Module configuration trait for Content Directory Module
 pub trait Config:
     frame_system::Config
@@ -65,6 +75,9 @@ pub trait Config:
     + storage::Config
     + project_token::Config
 {
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
+
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
@@ -454,7 +467,7 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::create_channel_weight(params)] // TODO: adjust weight
         pub fn create_channel(
             origin,
             channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -3612,6 +3625,27 @@ impl<T: Config> Module<T> {
             }
             ChannelOwner::CuratorGroup(..) => Ok(ChannelFundsDestination::CouncilBudget),
         }
+    }
+    //Weight functions
+
+    // Calculates weight for channel_creation_weight extrinsic.
+    fn create_channel_weight(params: &ChannelCreationParameters<T>) -> Weight {
+        //collaborators
+        let a = params.collaborators.len() as u32;
+
+        //storage_buckets
+        let b = params.storage_buckets.len() as u32;
+
+        //distribution_buckets
+        let c = params.distribution_buckets.len() as u32;
+
+        // assets
+        let d = params
+            .assets
+            .as_ref()
+            .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+        WeightInfoContent::<T>::create_channel(a, b, c, d)
     }
 }
 

@@ -744,6 +744,7 @@ impl content::Config for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
+    type WeightInfo = content::weights::SubstrateWeight<Runtime>;
     type PricePerByte = PricePerByte;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
