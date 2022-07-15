@@ -45,6 +45,7 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for content.
 pub trait WeightInfo {
 	fn create_channel(_a: u32, _b: u32, _c: u32, _d: u32, ) -> Weight;
+	fn claim_channel_reward(_i: u32, ) -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -89,6 +90,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // Default implementation for tests
 impl WeightInfo for () {
 	fn create_channel(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
+		0
+	}
+
+	fn claim_channel_reward(i: u32, ) -> Weight {
 		0
 	}
 }
