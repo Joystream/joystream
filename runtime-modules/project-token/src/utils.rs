@@ -3,7 +3,7 @@ use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
 // crate import
-use crate::{types::MerkleSide, Trait};
+use crate::{types::MerkleSide, Config};
 
 // Merkle tree Helpers
 #[derive(Debug)]
@@ -46,9 +46,9 @@ pub(crate) fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     path
 }
 
-pub(crate) fn generate_merkle_root_helper<T: Trait, E: Encode>(
+pub(crate) fn generate_merkle_root_helper<T: Config, E: Encode>(
     collection: &[E],
-) -> Vec<<T as frame_system::Trait>::Hash> {
+) -> Vec<<T as frame_system::Config>::Hash> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -57,7 +57,7 @@ pub(crate) fn generate_merkle_root_helper<T: Trait, E: Encode>(
     assert!(!collection.is_empty());
     let mut out = Vec::new();
     for e in collection.iter() {
-        out.push(<T as frame_system::Trait>::Hashing::hash(&e.encode()));
+        out.push(<T as frame_system::Config>::Hashing::hash(&e.encode()));
     }
 
     let mut start: usize = 0;
@@ -70,12 +70,12 @@ pub(crate) fn generate_merkle_root_helper<T: Trait, E: Encode>(
     while max_len != 0 {
         last_len = out.len();
         for i in 0..max_len {
-            out.push(<T as frame_system::Trait>::Hashing::hash(
+            out.push(<T as frame_system::Config>::Hashing::hash(
                 &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
             ));
         }
         if rem == 1 {
-            out.push(<T as frame_system::Trait>::Hashing::hash(
+            out.push(<T as frame_system::Config>::Hashing::hash(
                 &[out[last_len - 1], out[last_len - 1]].encode(),
             ));
         }
@@ -88,10 +88,10 @@ pub(crate) fn generate_merkle_root_helper<T: Trait, E: Encode>(
 }
 
 /// Generates merkle proof (Hash, Side) for element collection[index_for_proof]
-pub(crate) fn build_merkle_path_helper<T: Trait, E: Encode + Clone>(
+pub(crate) fn build_merkle_path_helper<T: Config, E: Encode + Clone>(
     collection: &[E],
     index_for_proof: usize,
-) -> Vec<(<T as frame_system::Trait>::Hash, MerkleSide)> {
+) -> Vec<(<T as frame_system::Config>::Hash, MerkleSide)> {
     let merkle_tree = generate_merkle_root_helper::<T, _>(collection);
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = index_path_helper(collection.len(), index_for_proof + 1);

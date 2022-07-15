@@ -774,34 +774,12 @@ impl project_token::Config for Runtime {
     type BlockNumberToBalance = BlockNumberToBalance;
     type DataObjectStorage = Storage;
     type ModuleId = ProjectTokenModuleId;
-    type MaxVestingBalancesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
-    type JoyExistentialDeposit = ExistentialDeposit;
-    type BlocksPerYear = BlocksPerYear;
-    type MemberOriginValidator = Members;
-    type MembershipInfoProvider = Members;
-}
-
-parameter_types! {
-    pub const ProjectTokenModuleId: ModuleId = ModuleId(*b"mo:token"); // module: token
-    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
-    pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
-    pub const MinRevenueSplitDuration: u32 = DAYS; // one day TODO: adjust
-}
-
-impl project_token::Trait for Runtime {
-    type Event = Event;
-    type Balance = Balance;
-    type TokenId = TokenId;
-    type BlockNumberToBalance = BlockNumberToBalance;
-    type DataObjectStorage = Storage;
-    type ModuleId = ProjectTokenModuleId;
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type JoyExistentialDeposit = ExistentialDeposit;
     type BlocksPerYear = BlocksPerYear;
-    type MinRevenueSplitDuration = MinRevenueSplitDuration;
     type MemberOriginValidator = Members;
     type MembershipInfoProvider = Members;
-    type WeightInfo = weights::project_token::WeightInfo;
+    type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
 }
 
 // The referendum instance alias.

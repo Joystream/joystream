@@ -5,7 +5,6 @@ use frame_support::{
     traits::{Currency, OnFinalize, OnInitialize},
 };
 
-use codec::Encode;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use frame_support::{
     ensure,
@@ -16,7 +15,7 @@ use frame_system::ensure_signed;
 use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
-use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
+use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
 use sp_runtime::{DispatchError, DispatchResult, Permill};
 use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::LockComparator;
@@ -169,7 +168,6 @@ impl Config for Test {
     type WeightInfo = ();
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
-    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 // Working group integration

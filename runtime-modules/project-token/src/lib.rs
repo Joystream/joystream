@@ -6,7 +6,6 @@
 use codec::FullCodec;
 use common::membership::{MemberId as MemberIdOf, MemberOriginValidator, MembershipInfoProvider};
 use core::default::Default;
-use frame_support::weights::Weight;
 use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
@@ -28,20 +27,22 @@ use sp_std::vec::Vec;
 use storage::UploadParameters;
 
 // crate modules
-#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 mod errors;
 mod events;
+mod tests;
 pub mod traits;
 pub mod types;
 mod utils;
-mod tests;
 
 // crate imports
 pub use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;
+
+pub mod weights;
+pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
@@ -194,7 +195,7 @@ decl_module! {
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len().saturated_into())]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32)]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
@@ -370,7 +371,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::join_whitelist(
-            proof.0.len().saturated_into()
+            proof.0.len() as u32
         )]
         pub fn join_whitelist(origin, member_id: T::MemberId, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
