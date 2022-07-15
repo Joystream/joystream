@@ -1,15 +1,23 @@
-#[cfg(feature = "runtime-benchmarks")]
+#![cfg(feature = "runtime-benchmarks")]
+
 mod channels;
 
-use crate::types::{ChannelActionPermission, ChannelCreationParameters, StorageAssets};
+use crate::permissions::*;
+use crate::types::{
+    ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, StorageAssets,
+};
 use crate::{Config, Module as Pallet};
 use balances::Pallet as Balances;
+use common::MembershipTypes;
 use frame_benchmarking::account;
 use frame_support::storage::{StorageMap, StorageValue};
 use frame_support::traits::{Currency, Get, Instance};
+use frame_system::EventRecord;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_arithmetic::traits::One;
+use sp_runtime::DispatchError;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
@@ -31,13 +39,14 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
-// pub type ContentWorkingGroupInstance = working_group::Instance3;
+// Content working group instance alias.
+pub type ContentWorkingGroupInstance = working_group::Instance3;
 
-const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
+const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
     let mut res = [0; N];
 
     let mut i = 0;
-    while i < N as u64 {
+    while i < N as u128 {
         res[i as usize] = init + i;
         i += 1;
     }
@@ -45,20 +54,27 @@ const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
     res
 }
 
-pub const MEMBER_IDS_INIT: u64 = 500;
+pub const MEMBER_IDS_INIT: u128 = 500;
 pub const MAX_MEMBER_IDS: usize = 100;
 
-pub const MEMBER_IDS: [u64; MAX_MEMBER_IDS] = gen_array_u64::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
+pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
 
-pub const COLABORATOR_IDS_INIT: u64 = 700;
+pub const COLABORATOR_IDS_INIT: u128 = 700;
 pub const MAX_COLABORATOR_IDS: usize = 100;
 
-pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
-    gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
+pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
+    gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
-const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[1];
-const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001;
-const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004;
+pub const CURATOR_IDS_INIT: u128 = 800;
+pub const MAX_CURATOR_IDS: usize = 100;
+
+pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
+    gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
+
+const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[1];
+const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
+const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100002;
+const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
 const MAX_BYTES: u32 = 50000;
 const MAX_OBJ_NUMBER: u32 = 100;
 
@@ -78,18 +94,34 @@ const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
     ChannelActionPermission::WithdrawFromChannelBalance,
 ];
 
+const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
+    ContentModerationAction::HideVideo,
+    ContentModerationAction::HideChannel,
+    ContentModerationAction::ChangeChannelFeatureStatus(
+        PausableChannelFeature::ChannelFundsTransfer,
+    ),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::CreatorCashout),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::VideoNftIssuance),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::VideoCreation),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::VideoUpdate),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::ChannelUpdate),
+    ContentModerationAction::ChangeChannelFeatureStatus(
+        PausableChannelFeature::CreatorTokenIssuance,
+    ),
+    ContentModerationAction::DeleteVideo,
+    ContentModerationAction::DeleteChannel,
+    ContentModerationAction::DeleteVideoAssets(true),
+    ContentModerationAction::DeleteVideoAssets(false),
+    ContentModerationAction::DeleteNonVideoChannelAssets,
+    ContentModerationAction::UpdateChannelNftLimits,
+];
+
 pub trait CreateAccountId {
-    fn create_account_id(id: u64) -> Self;
+    fn create_account_id(id: u128) -> Self;
 }
 
 impl CreateAccountId for u128 {
-    fn create_account_id(id: u64) -> Self {
-        id.into()
-    }
-}
-
-impl CreateAccountId for u64 {
-    fn create_account_id(id: u64) -> Self {
+    fn create_account_id(id: u128) -> Self {
         id
     }
 }
@@ -97,23 +129,23 @@ impl CreateAccountId for u64 {
 const SEED: u32 = 0;
 
 impl CreateAccountId for sp_core::crypto::AccountId32 {
-    fn create_account_id(id: u64) -> Self {
+    fn create_account_id(id: u128) -> Self {
         account::<Self>("default", id.try_into().unwrap(), SEED)
     }
 }
 
-fn get_byte(num: u64, byte_number: u8) -> u8 {
+fn get_byte(num: u128, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Config>(id: u64) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u128) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
 
-    for i in 0..4 {
+    for i in 0..16 {
         handle.push(get_byte(id, i));
     }
 
@@ -218,13 +250,24 @@ where
     insert_leader::<T, DistributionWorkingGroupInstance>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID)
 }
 
+fn insert_content_leader<T>() -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+    T: Config
+        + membership::Config
+        + working_group::Config<ContentWorkingGroupInstance>
+        + balances::Config,
+{
+    insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID)
+}
+
 fn insert_leader<T, I>(id: u128) -> T::AccountId
 where
     T::AccountId: CreateAccountId,
     T: Config + membership::Config + working_group::Config<I> + balances::Config,
     I: Instance,
 {
-    let (caller_id, member_id) = member_funded_account::<T>(id.saturated_into());
+    let (caller_id, member_id) = member_funded_account::<T>(id);
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         &T::Origin::from(RawOrigin::Root),
@@ -248,13 +291,60 @@ where
     caller_id
 }
 
+fn insert_curator<T>(id: u128) -> T::CuratorId
+where
+    T::AccountId: CreateAccountId,
+    T: Config
+        + membership::Config
+        + working_group::Config<ContentWorkingGroupInstance>
+        + balances::Config,
+{
+    insert_worker::<T, ContentWorkingGroupInstance>(
+        T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID),
+        id,
+    )
+    .saturated_into::<u64>()
+    .saturated_into()
+}
+
+fn insert_worker<T, I>(leader_acc: T::AccountId, id: u128) -> <T as MembershipTypes>::ActorId
+where
+    T::AccountId: CreateAccountId,
+    T: Config + membership::Config + working_group::Config<I> + balances::Config,
+    I: Instance,
+{
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
+
+    let (account_id, member_id) = member_funded_account::<T>(id);
+
+    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
+        &T::Origin::from(RawOrigin::Signed(leader_acc.clone())),
+        &account_id,
+        &member_id,
+        &OpeningType::Regular,
+    );
+
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
+
+    working_group::Module::<T, I>::fill_opening(
+        RawOrigin::Signed(leader_acc).into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    assert!(WorkerById::<T, I>::contains_key(worker_id));
+
+    worker_id
+}
+
 //defines initial balance
 fn initial_balance<T: balances::Config>() -> T::Balance {
     1000000u32.into()
 }
 
 fn member_funded_account<T: Config + membership::Config + balances::Config>(
-    id: u64,
+    id: u128,
 ) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
@@ -406,11 +496,11 @@ fn create_distribution_bucket_with_family<T>(
 where
     T: Config + storage::Config,
 {
-    let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id.clone());
+    let distribution_wg_leader_signed = RawOrigin::Signed(lead_account_id.clone());
 
     let db_family_id = Storage::<T>::next_distribution_bucket_family_id();
 
-    Storage::<T>::create_distribution_bucket_family(T::Origin::from(storage_wg_leader_signed))
+    Storage::<T>::create_distribution_bucket_family(T::Origin::from(distribution_wg_leader_signed))
         .unwrap();
 
     (
@@ -524,4 +614,67 @@ where
         expected_data_object_state_bloat_bond,
         expected_channel_state_bloat_bond,
     }
+}
+
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
+}
+
+fn worst_case_content_moderation_actions_set() -> BTreeSet<ContentModerationAction> {
+    CONTENT_MODERATION_ACTIONS.iter().cloned().collect()
+}
+
+fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
+    CHANNEL_AGENT_PERMISSIONS.iter().cloned().collect()
+}
+
+fn setup_worst_case_curator_group_with_curators<T>(
+    curators_len: u32,
+) -> Result<T::CuratorGroupId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: Config
+        + membership::Config
+        + working_group::Config<ContentWorkingGroupInstance>
+        + balances::Config,
+{
+    let permissions_by_level: ModerationPermissionsByLevel<T> = (0
+        ..T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get())
+        .map(|i| {
+            (
+                i.saturated_into(),
+                worst_case_content_moderation_actions_set(),
+            )
+        })
+        .collect();
+
+    let group_id = Pallet::<T>::next_curator_group_id();
+
+    Pallet::<T>::create_curator_group(
+        RawOrigin::Signed(T::AccountId::create_account_id(
+            CONTENT_WG_LEADER_ACCOUNT_ID,
+        ))
+        .into(),
+        true,
+        permissions_by_level.clone(),
+    )?;
+
+    for i in 0..(curators_len as usize) {
+        let curator_id = insert_curator::<T>(CURATOR_IDS[i]);
+        Pallet::<T>::add_curator_to_group(
+            RawOrigin::Signed(T::AccountId::create_account_id(
+                CONTENT_WG_LEADER_ACCOUNT_ID,
+            ))
+            .into(),
+            group_id,
+            curator_id.saturated_into::<u64>().saturated_into(),
+            worst_case_channel_agent_permissions(),
+        )?;
+    }
+
+    Ok(group_id)
 }
