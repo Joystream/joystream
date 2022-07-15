@@ -1,6 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-mod channels;
+mod benchmarking;
 
 use crate::permissions::*;
 use crate::types::{
