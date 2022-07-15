@@ -660,11 +660,11 @@ where
         ))
         .into(),
         true,
-        permissions_by_level.clone(),
+        permissions_by_level,
     )?;
 
-    for i in 0..(curators_len as usize) {
-        let curator_id = insert_curator::<T>(CURATOR_IDS[i]);
+    for c in CURATOR_IDS.iter().take(curators_len as usize) {
+        let curator_id = insert_curator::<T>(*c);
         Pallet::<T>::add_curator_to_group(
             RawOrigin::Signed(T::AccountId::create_account_id(
                 CONTENT_WG_LEADER_ACCOUNT_ID,

@@ -120,7 +120,7 @@ benchmarks! {
         assert_eq!(group.get_permissions_by_level(), &permissions_by_level);
         assert_last_event::<T>(Event::<T>::CuratorGroupPermissionsUpdated(
             group_id,
-            permissions_by_level.clone()
+            permissions_by_level
         ).into());
     }
 
@@ -130,7 +130,7 @@ benchmarks! {
             T::MaxNumberOfCuratorsPerGroup::get()
         )?;
         let group = Pallet::<T>::curator_group_by_id(group_id);
-        assert_eq!(group.is_active(), true);
+        assert!(group.is_active());
     }: _ (
         RawOrigin::Signed(lead_account),
         group_id,
@@ -138,7 +138,7 @@ benchmarks! {
     )
     verify {
         let group = Pallet::<T>::curator_group_by_id(group_id);
-        assert_eq!(group.is_active(), false);
+        assert!(!group.is_active());
         assert_last_event::<T>(Event::<T>::CuratorGroupStatusSet(group_id, false).into());
     }
 
@@ -171,7 +171,7 @@ benchmarks! {
             T::MaxNumberOfCuratorsPerGroup::get()
         )?;
         let group = Pallet::<T>::curator_group_by_id(group_id);
-        let curator_id = group.get_curators().keys().next().unwrap().clone();
+        let curator_id = *group.get_curators().keys().next().unwrap();
     }: _ (
         RawOrigin::Signed(lead_account),
         group_id,
