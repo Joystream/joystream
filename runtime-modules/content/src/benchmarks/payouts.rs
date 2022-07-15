@@ -27,18 +27,21 @@ benchmarks! {
     T: Config ,
 }
 
-    claim_channel_reward {
+    update_channel_payouts {
         // setup
-        // 1 channel
         let channel_creation_params = generate_channel_creation_params(
             insert_storage_leader::<T>(),
             insert_distribution_leader::<T>(),
             0,0,0,0,0
         );
-)
-        // 2 outstanding payment
-    }: _ (sender, actor, proof, item)
-        verify {
+        let origin = RawOrigin::Root;
+        let params = ChannelPayoutsPayloadParametersRecord::<_,_> {
+            commitment: None,
+            payload: None,
+            min_cashout_allowed: None,
+            max_cashout_allowed: None,
+            channel_cashouts_enabled: None
+        };
+    }: _ (origin, params)
 
-        }
 }

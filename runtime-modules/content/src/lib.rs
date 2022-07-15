@@ -660,6 +660,7 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
             ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features.clone() });
 
 

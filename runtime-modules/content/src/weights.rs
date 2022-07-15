@@ -45,7 +45,7 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for content.
 pub trait WeightInfo {
 	fn create_channel(_a: u32, _b: u32, _c: u32, _d: u32, ) -> Weight;
-	fn claim_channel_reward(_i: u32, ) -> Weight;
+	fn update_channel_payouts() -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -85,6 +85,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
 	}
+
+	fn update_channel_payouts() -> Weight {
+		(0 as Weight)
+	}
 }
 
 // Default implementation for tests
@@ -93,7 +97,7 @@ impl WeightInfo for () {
 		0
 	}
 
-	fn claim_channel_reward(i: u32, ) -> Weight {
+	fn update_channel_payouts() -> Weight {
 		0
 	}
 }
