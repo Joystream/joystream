@@ -467,7 +467,7 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        #[weight = Module::<T>::create_channel_weight(params)] // TODO: adjust weight
+        #[weight = Module::<T>::create_channel_weight(params)]
         pub fn create_channel(
             origin,
             channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -553,7 +553,7 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::update_channel_weight(params)]
         pub fn update_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3628,7 +3628,7 @@ impl<T: Config> Module<T> {
     }
     //Weight functions
 
-    // Calculates weight for channel_creation_weight extrinsic.
+    // Calculates weight for create_channel extrinsic.
     fn create_channel_weight(params: &ChannelCreationParameters<T>) -> Weight {
         //collaborators
         let a = params.collaborators.len() as u32;
@@ -3646,6 +3646,23 @@ impl<T: Config> Module<T> {
             .map_or(0, |v| v.object_creation_list.len()) as u32;
 
         WeightInfoContent::<T>::create_channel(a, b, c, d)
+    }
+
+    // Calculates weight for update_channel extrinsic.
+    fn update_channel_weight(params: &ChannelUpdateParameters<T>) -> Weight {
+        //collaborators
+        let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
+
+        // assets_to_upload
+        let b = params
+            .assets_to_upload
+            .as_ref()
+            .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+        //assets_to_remove
+        let c = params.assets_to_remove.len() as u32;
+
+        WeightInfoContent::<T>::update_channel(a, b, c)
     }
 }
 

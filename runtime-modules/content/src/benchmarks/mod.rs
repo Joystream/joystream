@@ -7,7 +7,8 @@ use balances::Pallet as Balances;
 use frame_benchmarking::account;
 use frame_support::storage::{StorageMap, StorageValue};
 use frame_support::traits::{Currency, Get, Instance};
-use frame_system::RawOrigin;
+use frame_system::Pallet as System;
+use frame_system::{EventRecord, RawOrigin};
 use membership::Module as Membership;
 use sp_arithmetic::traits::One;
 use sp_runtime::SaturatedConversion;
@@ -101,6 +102,21 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
         account::<Self>("default", id.try_into().unwrap(), SEED)
     }
 }
+
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
+}
+
+// fn assert_was_fired<T: Config>(generic_event: <T as Config>::Event) {
+//     let events = System::<T>::events();
+//     let system_event: <T as frame_system::Config>::Event = generic_event.into();
+
+//     assert!(events.iter().any(|ev| ev.event == system_event));
+// }
 
 fn get_byte(num: u64, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
@@ -435,9 +451,12 @@ pub fn create_data_object_candidates_helper(
         .collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_channel_creation_params<T>(
     storage_wg_lead_account_id: T::AccountId,
     distribution_wg_lead_account_id: T::AccountId,
+    bucket_objs_size_limit: u64,
+    bucket_objs_number_limit: u64,
     colaborator_num: u32,
     storage_bucket_num: u32,
     distribution_bucket_num: u32,
@@ -454,7 +473,6 @@ where
     T::AccountId: CreateAccountId,
 {
     let permissions = BTreeSet::from_iter(CHANNEL_AGENT_PERMISSIONS);
-    let total_objs_size: u64 = max_obj_size.saturating_mul(objects_num.into());
     let metadata = vec![0u8].repeat(MAX_BYTES as usize);
 
     set_dyn_bag_creation_storage_bucket_numbers::<T>(
@@ -465,8 +483,8 @@ where
 
     set_storage_buckets_voucher_max_limits::<T>(
         storage_wg_lead_account_id.clone(),
-        total_objs_size,
-        objects_num.into(),
+        bucket_objs_size_limit,
+        bucket_objs_number_limit,
     );
 
     let assets = StorageAssets::<T> {
@@ -490,8 +508,8 @@ where
             create_storage_bucket::<T>(
                 storage_wg_lead_account_id.clone(),
                 true,
-                total_objs_size,
-                objects_num.into(),
+                bucket_objs_size_limit,
+                bucket_objs_number_limit,
             );
             id.saturated_into()
         })
