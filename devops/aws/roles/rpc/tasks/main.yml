@@ -109,7 +109,7 @@
 - name: Create config.json to serve as Caddy endpoint
   copy:
     content: '{{ all_services | from_yaml | to_json }}'
-    dest: '/home/ubuntu/config.json'
+    dest: '/home/caddy/network/config.json'
 
 - name: Save output as file on local
   copy:
