@@ -93,6 +93,20 @@ benchmarks! {
             channel_cashouts_enabled: Some(true),
         };
     }: _ (origin, params)
+
+    withdraw_from_channel_balance {
+        let (channel_owner_account_id, channel_owner_member_id) =
+            member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let origin = RawOrigin::Signed(channel_owner_account_id);
+        let actor = ContentActor::Member(channel_owner_member_id);
+        let params = generate_channel_creation_params::<T>(
+            insert_storage_leader::<T>(),
+            insert_distribution_leader::<T>(),
+            0, 0, 0, 0,
+            T::MaxDataObjectSize::get(),
+        );
+
+    } _ (origin, actor, channel_id, amount)
 }
 
 #[cfg(test)]
