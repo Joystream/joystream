@@ -2507,6 +2507,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     storage: {
       /**
+       * Generic Arithmetic Error due to internal accounting operation
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Blacklist size limit exceeded.
        **/
       BlacklistSizeLimitExceeded: AugmentedError<ApiType>;

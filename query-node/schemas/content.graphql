@@ -75,6 +75,9 @@ type Channel @entity {
 
   "Owners of video NFTs belonging to this channel."
   channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
+
+  "Channel's privilege level"
+  privilegeLevel: Int
 }
 
 type VideoCategory @entity {

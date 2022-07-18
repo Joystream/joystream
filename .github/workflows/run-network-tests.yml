@@ -145,4 +145,5 @@ jobs:
       - name: Execute Tests
         run: |
           export RUNTIME=latest
+          export SKIP_MOCK_CONTENT=true
           tests/network-tests/test-setup-new-chain.sh

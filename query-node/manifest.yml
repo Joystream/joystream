@@ -92,6 +92,11 @@ typegen:
     - content.VideoUpdated
     - content.VideoDeleted
     - content.ChannelDeleted
+    - content.ChannelDeletedByModerator
+    - content.VideoDeletedByModerator
+    - content.ChannelAssetsDeletedByModerator
+    - content.VideoAssetsDeletedByModerator
+    - content.VideoVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
     # Storage
@@ -722,6 +727,17 @@ mappings:
       handler: content_VideoDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
+    - event: content.ChannelDeletedByModerator
+      handler: content_ChannelDeletedByModerator
+    - event: content.VideoDeletedByModerator
+      handler: content_VideoDeletedByModerator
+    - event: content.ChannelAssetsDeletedByModerator
+      handler: content_ChannelAssetsDeletedByModerator
+    - event: content.VideoAssetsDeletedByModerator
+      handler: content_VideoAssetsDeletedByModerator
+    - event: content.VideoVisibilitySetByModerator
+      handler: content_VideoVisibilitySetByModerator
+
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked
     - event: content.ChannelAgentRemarked

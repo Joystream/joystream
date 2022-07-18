@@ -2,7 +2,7 @@ import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { Utils } from '../../../utils'
 import { assertNftOwner, assertAuctionAndBids, assertNftEventContentActor } from './utils'
@@ -54,13 +54,8 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     )
 
     this.debug(`Start NFT auction (expected winner id ${winner.memberId})`)
-    const {
-      auctionParams,
-      startingPrice,
-      minimalBidStep,
-      auctionDuration,
-      extensionPeriod,
-    } = await this.api.createEnglishAuctionParameters()
+    const { auctionParams, startingPrice, minimalBidStep, auctionDuration, extensionPeriod } =
+      await this.api.createEnglishAuctionParameters()
 
     const auctionStartedResult = await this.api.startEnglishAuction(
       this.author.keyringPair.address,
