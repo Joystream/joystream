@@ -1,3 +1,5 @@
+#![cfg(any(feature = "runtime-benchmarks", test))]
+
 use codec::Encode;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
