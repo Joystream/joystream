@@ -20,7 +20,7 @@ import {
   WorkerGroupLeadRemarked,
   ModerateVideoCategories,
 } from '@joystream/metadata-protobuf'
-import { Bytes, Vec } from '@polkadot/types'
+import { Bytes } from '@polkadot/types'
 import {
   deserializeMetadata,
   bytesToString,
@@ -1039,7 +1039,7 @@ async function processVideoCategoriesModeration(
   }
 
   if (messageType === 'updateCategory') {
-    const updateParams = moderationParameters.createCategory as IUpdateVideoCategory
+    const updateParams = moderationParameters.updateCategory as IUpdateVideoCategory
 
     const videoCategory = await updateVideoCategory(
       store,

@@ -86,11 +86,16 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
 
     // create new categories and remember their ids
     const createdIds = await this.createCommonEntities(count, async (index) => {
+      const categoryName = getVideoCategoryDefaults(index).name
+      await this.cli.createVideoCategory(categoryName)
+
+      /*
       const response = await this.api.createVideoCategoryAsLead(
         {
           ...getVideoCategoryDefaults(index),
         }.name
       )
+      */
 
       const qEvents = await this.query.tryQueryWithTimeout(
         () => this.query.getVideoCategories(),

@@ -4,6 +4,7 @@ import { BaseQueryNodeFixture } from '../../Fixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Utils } from '../../utils'
 import { JoystreamCLI, ICreatedVideoData } from '../../cli/joystream'
+import { Maybe } from '../../graphql/generated/schema'
 
 /**
   Fixture that test Joystream content can be created, is reflected in query node,
@@ -104,7 +105,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
   ) {
     const getterName = `${entityName}ById` as 'channelById' | 'videoCategoryById'
     await this.query.tryQueryWithTimeout(
-      () => this.query[getterName](entityId.toString()),
+      () => this.query[getterName](entityId.toString()) as Promise<Maybe<{ id: string; activeVideosCounter: number }>>,
       (entity) => {
         Utils.assert(entity)
         assert.equal(entity.activeVideosCounter, expectedCount)

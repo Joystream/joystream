@@ -65,6 +65,7 @@ fragment ChannelFields on Channel {
 
 fragment VideoCategoryFields on VideoCategory {
   id
+  name
   activeVideosCounter
 }
 

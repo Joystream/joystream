@@ -1,51 +1,40 @@
-// TODO: either remove this file / CLI command or rework it into LeadRemark -> ModerateVideoCategories
-/*
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { getInputJson } from '../../helpers/InputOutput'
-import { VideoCategoryInputParameters } from '../../Types'
-import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
-import { flags } from '@oclif/command'
-import { VideoCategoryInputSchema } from '../../schemas/ContentDirectory'
+import { metadataToString } from '../../helpers/serialization'
 import chalk from 'chalk'
-import { VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+import { CreateVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
+import WorkerGroupLeadRemarkedCommand from '../working-groups/leadRemark'
 
 export default class CreateVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create video category inside content directory.'
-  static flags = {
-    context: ContentDirectoryCommandBase.categoriesContextFlag,
-    input: flags.string({
-      char: 'i',
+  static args = [
+    {
+      name: 'name',
       required: true,
-      description: `Path to JSON file to use as input`,
-    }),
+      description: 'Video category name',
+    },
+  ]
+  static flags = {
     ...ContentDirectoryCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { context, input } = this.parse(CreateVideoCategoryCommand).flags
+    const { name } = this.parse(CreateVideoCategoryCommand).args
 
-    const [, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
+    const meta = new WorkerGroupLeadRemarked({
+      moderateVideoCategories: new ModerateVideoCategories({
+        createCategory: new CreateVideoCategory({
+          name,
+        }),
+      }),
+    })
+    const metaMessage = metadataToString(WorkerGroupLeadRemarked, meta)
 
-    const videoCategoryInput = await getInputJson<VideoCategoryInputParameters>(input, VideoCategoryInputSchema)
-    const meta = asValidatedMetadata(VideoCategoryMetadata, videoCategoryInput)
+    await WorkerGroupLeadRemarkedCommand.run([
+      '--group',
+      'curators',
+      metaMessage,
+    ])
 
-    const videoCategoryCreationParameters = metadataToBytes(VideoCategoryMetadata, meta)
-
-    this.jsonPrettyPrint(JSON.stringify(videoCategoryInput))
-
-    await this.requireConfirmation('Do you confirm the provided input?', true)
-
-    const result = await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(address),
-      'contentWorkingGroup',
-      'leadRemark',
-      [videoCategoryCreationParameters]
-    )
-
-    if (result) {
-      const categoryId = this.getEvent(result, 'contentWorkingGroup', 'LeadRemarked').data[1]
-      this.log(chalk.green(`VideoCategory with id ${chalk.cyanBright(categoryId.toString())} successfully created!`))
-    }
+    this.log(chalk.green(`Video category successfully created!`))
   }
 }
-*/

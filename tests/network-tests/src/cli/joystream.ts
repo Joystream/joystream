@@ -2,6 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import path from 'path'
 import { CLI, CommandResult } from './base'
 import { TmpFileManager } from './utils'
+import { Utils } from '../utils'
 import {
   VideoInputParameters,
   ChannelCreationInputParameters,
@@ -9,6 +10,14 @@ import {
   VideoCategoryInputParameters,
 } from '@joystream/cli/src/Types'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
+import {
+  CreateVideoCategory,
+  UpdateVideoCategory,
+  DeleteVideoCategory,
+  ModerateVideoCategories,
+  WorkerGroupLeadRemarked,
+} from '@joystream/metadata-protobuf'
+import Long from 'long'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 
@@ -144,21 +153,37 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new video category.
   */
-  async createVideoCategory(videoCategory: VideoCategoryInputParameters): Promise<number> {
-    const jsonFile = this.tmpFileManager.jsonFile(videoCategory)
-
-    const { stdout, stderr, exitCode } = await this.run('content:createVideoCategory', [
-      '--input',
-      jsonFile,
-      '--context',
-      'Lead',
-    ])
+  async createVideoCategory(name: string): Promise<void> {
+    const { stdout, stderr, exitCode } = await this.run('content:createVideoCategory', [name])
 
     if (exitCode) {
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
+  }
 
-    return this.parseCreatedIdFromOutput(stderr)
+  /**
+    Creates an existing video category.
+  */
+  async updateVideoCategory(videoCategoryId: number, newName: string): Promise<void> {
+    const { stdout, stderr, exitCode } = await this.run('content:updateVideoCategory', [
+      videoCategoryId.toString(),
+      newName,
+    ])
+
+    if (exitCode) {
+      throw new Error(`Unexpected CLI failure on updating video category: "${stderr}"`)
+    }
+  }
+
+  /**
+    Deletes an existing video category.
+  */
+  async deleteVideoCategory(videoCategoryId: number): Promise<void> {
+    const { stdout, stderr, exitCode } = await this.run('content:deleteVideoCategory', [videoCategoryId.toString()])
+
+    if (exitCode) {
+      throw new Error(`Unexpected CLI failure on deleting video category: "${stderr}"`)
+    }
   }
 
   /**

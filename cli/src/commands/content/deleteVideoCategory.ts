@@ -1,37 +1,41 @@
-// TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
-
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+import { metadataToString } from '../../helpers/serialization'
+import chalk from 'chalk'
+import { DeleteVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
+import WorkerGroupLeadRemarkedCommand from '../working-groups/leadRemark'
+import Long from 'long'
 
 export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandBase {
-  static description = 'Delete video category.'
-  static flags = {
-    context: ContentDirectoryCommandBase.categoriesContextFlag,
-    ...ContentDirectoryCommandBase.flags,
-  }
-
+  static description = 'Delete video category from content directory.'
   static args = [
     {
       name: 'videoCategoryId',
       required: true,
-      description: 'ID of the Video Category',
-    },
+      description: 'Video category id',
+    }
   ]
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
 
   async run(): Promise<void> {
-    const { context } = this.parse(DeleteVideoCategoryCommand).flags
-
     const { videoCategoryId } = this.parse(DeleteVideoCategoryCommand).args
 
-    const videoCategoryIds: number[] = []
+    const meta = new WorkerGroupLeadRemarked({
+      moderateVideoCategories: new ModerateVideoCategories({
+        deleteCategory: new DeleteVideoCategory({
+          videoCategoryId: new Long(videoCategoryId),
+        }),
+      }),
+    })
+    const metaMessage = metadataToString(WorkerGroupLeadRemarked, meta)
 
-    if (videoCategoryIds.some((id) => id.toString() === videoCategoryId)) {
-      const [, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
+    await WorkerGroupLeadRemarkedCommand.run([
+      '--group',
+      'curators',
+      metaMessage,
+    ])
 
-      await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'contentWorkingGroup', 'leadRemark', [
-        videoCategoryId,
-      ])
-    } else {
-      this.error('Video category under given id does not exist...')
-    }
+    this.log(chalk.green(`Video category successfully deleted!`))
   }
 }

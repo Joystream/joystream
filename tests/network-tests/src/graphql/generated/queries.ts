@@ -61,7 +61,7 @@ export type ChannelFieldsFragment = {
   bannedMembers: Array<{ id: string }>
 }
 
-export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+export type VideoCategoryFieldsFragment = { id: string; name: string; activeVideosCounter: number }
 
 export type VideoReactionFieldsFragment = {
   id: string
@@ -2395,6 +2395,7 @@ export const ChannelFields = gql`
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
     id
+    name
     activeVideosCounter
   }
 `
