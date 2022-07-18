@@ -69,12 +69,30 @@ benchmarks! {
             channel_id.saturating_add(One::one())
         );
     }
+
+    update_channel_payouts {
+        let origin = RawOrigin::Root;
+        let params = crate::UpdateChannelPayoutsParametersRecord::<ChannelPayoutsPayloadParameters,u64,u64> {
+            commitment: None,
+            payload: None,
+            min_cashout_allowed: None,
+            max_cashout_allowed: None,
+            channel_cashouts_enabled: None,
+        };
+    }: _ (origin, params)
 }
 
 #[cfg(test)]
 pub mod tests {
     use crate::tests::mock::{with_default_mock_builder, Content};
     use frame_support::assert_ok;
+
+    #[test]
+    fn update_channel_payouts() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_channel_payouts());
+        });
+    }
 
     #[test]
     fn create_channel() {
