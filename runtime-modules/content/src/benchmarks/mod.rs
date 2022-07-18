@@ -1,5 +1,5 @@
 #[cfg(feature = "runtime-benchmarks")]
-mod channels;
+mod benchmarking;
 
 use crate::types::{ChannelActionPermission, ChannelCreationParameters, StorageAssets};
 use crate::{Config, Module as Pallet};

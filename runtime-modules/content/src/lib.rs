@@ -670,7 +670,7 @@ decl_module! {
         }
 
         // extrinsics for channel deletion
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::delete_channel((*num_objects_to_delete) as u32)]
         pub fn delete_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
