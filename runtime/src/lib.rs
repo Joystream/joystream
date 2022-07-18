@@ -49,8 +49,8 @@ use frame_election_provider_support::{
 };
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
-    ConstU16, ConstU32, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem, LockIdentifier,
-    OnUnbalanced,
+    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
+    LockIdentifier, OnUnbalanced,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -69,7 +69,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys};
+use sp_runtime::traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
 };
@@ -186,8 +186,48 @@ parameter_types! {
 
 const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO.deconstruct());
 
+pub struct LockedDownBaseFilter {}
+
+// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        match call {
+            // TODO: adjust after Carthage
+            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+                general_proposal_parameters: _,
+                proposal_details,
+            }) => !matches!(
+                proposal_details,
+                proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
+                    | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+            ),
+            _ => true, // Enable all other calls
+        }
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+    fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
+        true
+    }
+}
+
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = frame_support::traits::Everything;
+    type BaseCallFilter = LockedDownBaseFilter;
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
@@ -198,7 +238,7 @@ impl frame_system::Config for Runtime {
     type Hash = Hash;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
-    type Lookup = AccountIdLookup<AccountId, ()>;
+    type Lookup = IdentityLookup<Self::AccountId>;
     type Header = generic::Header<BlockNumber, BlakeTwo256>;
     type Event = Event;
     type BlockHashCount = BlockHashCount;
@@ -694,6 +734,8 @@ parameter_types! {
         block_number_period: WEEKS,
         limit: 500,
     };  // TODO: update
+    pub const MinimumCashoutAllowedLimit: Balance = 1; // TODO: update
+    pub const MaximumCashoutAllowedLimit: Balance = 1_000_000; // TODO: update
 }
 
 impl content::Config for Runtime {
@@ -715,6 +757,8 @@ impl content::Config for Runtime {
     type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
     type ProjectToken = ProjectToken;
     type TransferId = TransferId;
+    type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
+    type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
 parameter_types! {
@@ -1342,8 +1386,7 @@ impl proposals_codex::Config for Runtime {
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
-    // TODO: Enable after Carthage
-    // type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }
 

@@ -274,3 +274,9 @@ query getChannelNftCollectors {
     ...ChannelNftCollectorFields
   }
 }
+
+query getDataObjectsByVideoId($videoId: ID) {
+  storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...StorageDataObjectFields
+  }
+}

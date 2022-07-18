@@ -80,19 +80,6 @@ declare module '@polkadot/api-base/types/events' {
       BuyNowCanceled: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor]>;
       BuyNowPriceUpdated: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor, u128]>;
       CancelChannelTransfer: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor]>;
-      CouncilRewardClaimed: AugmentedEvent<ApiType, [u64, u128]>;
-      CreatorTokenIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64]>;
-      CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentChannelActionPermission>]>;
-      CuratorGroupCreated: AugmentedEvent<ApiType, [u64]>;
-      CuratorGroupPermissionsUpdated: AugmentedEvent<ApiType, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
-      CuratorGroupStatusSet: AugmentedEvent<ApiType, [u64, bool]>;
-      CuratorRemoved: AugmentedEvent<ApiType, [u64, u64]>;
-      EnglishAuctionSettled: AugmentedEvent<ApiType, [u64, AccountId32, u64]>;
-      EnglishAuctionStarted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesEnglishAuctionParamsRecord]>;
-      /**
-       * Nft limits
-       **/
-      GlobalNftLimitUpdated: AugmentedEvent<ApiType, [PalletContentNftLimitPeriod, u64]>;
       ChannelAgentRemarked: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
       ChannelAssetsDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, Bytes]>;
       ChannelAssetsRemoved: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, PalletContentChannelRecord]>;
@@ -114,6 +101,16 @@ declare module '@polkadot/api-base/types/events' {
       ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferCommitmentParameters]>;
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
+      CouncilRewardClaimed: AugmentedEvent<ApiType, [u64, u128]>;
+      CreatorTokenIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64]>;
+      CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentChannelActionPermission>]>;
+      CuratorGroupCreated: AugmentedEvent<ApiType, [u64]>;
+      CuratorGroupPermissionsUpdated: AugmentedEvent<ApiType, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
+      CuratorGroupStatusSet: AugmentedEvent<ApiType, [u64, bool]>;
+      CuratorRemoved: AugmentedEvent<ApiType, [u64, u64]>;
+      EnglishAuctionSettled: AugmentedEvent<ApiType, [u64, AccountId32, u64]>;
+      EnglishAuctionStarted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesEnglishAuctionParamsRecord]>;
+      GlobalNftLimitUpdated: AugmentedEvent<ApiType, [PalletContentNftLimitPeriod, u64]>;
       InitializedChannelTransfer: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor, PalletContentPendingTransfer]>;
       NftBought: AugmentedEvent<ApiType, [u64, u64]>;
       NftDestroyed: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
@@ -2188,16 +2185,16 @@ declare module '@polkadot/api-base/types/events' {
        **/
       Bonded: AugmentedEvent<ApiType, [AccountId32, u128]>;
       /**
+       * An account has stopped participating as either a validator or nominator.
+       * \[stash\]
+       **/
+      Chilled: AugmentedEvent<ApiType, [AccountId32]>;
+      /**
        * The era payout has been set; the first balance is the validator-payout; the second is
        * the remainder from the maximum amount of reward.
        * \[era_index, validator_payout, remainder\]
        **/
       EraPaid: AugmentedEvent<ApiType, [u32, u128, u128]>;
-      /**
-       * An account has stopped participating as either a validator or nominator.
-       * \[stash\]
-       **/
-      Chilled: AugmentedEvent<ApiType, [AccountId32]>;
       /**
        * A nominator has been kicked from a validator. \[nominator, stash\]
        **/

@@ -206,6 +206,12 @@ declare module '@polkadot/api-base/types/storage' {
        * Max delta between current block and starts at
        **/
       auctionStartsAtMaxDelta: AugmentedQuery<ApiType, () => Observable<u32>, []>;
+      channelById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentChannelRecord>, [u64]>;
+      channelCashoutsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
+      /**
+       * The state bloat bond for the channel (helps preventing the state bloat).
+       **/
+      channelStateBloatBondValue: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       commitment: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       curatorGroupById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentPermissionsCuratorGroup>, [u64]>;
       /**
@@ -224,12 +230,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Global weekly NFT limit.
        **/
       globalWeeklyNftLimit: AugmentedQuery<ApiType, () => Observable<PalletContentLimitPerPeriod>, []>;
-      channelById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentChannelRecord>, [u64]>;
-      channelCashoutsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
-      /**
-       * The state bloat bond for the channel (helps preventing the state bloat).
-       **/
-      channelStateBloatBondValue: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       /**
        * Max auction duration
        **/
@@ -284,8 +284,8 @@ declare module '@polkadot/api-base/types/storage' {
        * Min auction staring price
        **/
       minStartingPrice: AugmentedQuery<ApiType, () => Observable<u128>, []>;
-      nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextChannelId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextTransferId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
@@ -1155,6 +1155,12 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       canceledSlashPayout: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       /**
+       * The threshold for when users can start calling `chill_other` for other validators /
+       * nominators. The threshold is compared to the actual number of validators / nominators
+       * (`CountFor*`) in the system compared to the configured max (`Max*Count`).
+       **/
+      chillThreshold: AugmentedQuery<ApiType, () => Observable<Option<Percent>>, []>;
+      /**
        * Counter for the related counted storage map
        **/
       counterForNominators: AugmentedQuery<ApiType, () => Observable<u32>, []>;
@@ -1247,12 +1253,6 @@ declare module '@polkadot/api-base/types/storage' {
        * guaranteed.
        **/
       historyDepth: AugmentedQuery<ApiType, () => Observable<u32>, []>;
-      /**
-       * The threshold for when users can start calling `chill_other` for other validators /
-       * nominators. The threshold is compared to the actual number of validators / nominators
-       * (`CountFor*`) in the system compared to the configured max (`Max*Count`).
-       **/
-      chillThreshold: AugmentedQuery<ApiType, () => Observable<Option<Percent>>, []>;
       /**
        * Any validators that may never be slashed or forcibly kicked. It's a Vec since they're
        * easy to initialize and the performance hit is minimal (we expect no more than four

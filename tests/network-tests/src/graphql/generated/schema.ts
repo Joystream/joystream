@@ -10895,6 +10895,8 @@ export type Channel = BaseGraphQlObject & {
   collaborators: Array<Membership>
   bannedMembers: Array<Membership>
   channelNftCollectors: Array<ChannelNftCollectors>
+  /** Channel's privilege level */
+  privilegeLevel?: Maybe<Scalars['Int']>
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
   commentdeletedeventvideoChannel?: Maybe<Array<CommentDeletedEvent>>
   commentmoderatedeventvideoChannel?: Maybe<Array<CommentModeratedEvent>>
@@ -10904,6 +10906,155 @@ export type Channel = BaseGraphQlObject & {
   memberbannedfromchanneleventchannel?: Maybe<Array<MemberBannedFromChannelEvent>>
   ownednftcreatorChannel?: Maybe<Array<OwnedNft>>
   videoreactedeventvideoChannel?: Maybe<Array<VideoReactedEvent>>
+}
+
+export type ChannelAssetsDeletedByModeratorEvent = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** Hash of the extrinsic which caused the event to be emitted. */
+  inExtrinsic?: Maybe<Scalars['String']>
+  /** Blocknumber of the block in which the event was emitted. */
+  inBlock: Scalars['Int']
+  /** Network the block was produced in. */
+  network: Network
+  /** Index of event in block from which it was emitted. */
+  indexInBlock: Scalars['Int']
+  /** Actor that deleted the channel assets. */
+  actor: ContentActor
+  /** Channel whose assets are deleted */
+  channelId: Scalars['Int']
+  /** ID  of the deleted video */
+  assetIds: Array<Scalars['Int']>
+  /** why the channel assets were deleted */
+  rationale: Scalars['String']
+}
+
+export type ChannelAssetsDeletedByModeratorEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<ChannelAssetsDeletedByModeratorEventEdge>
+  pageInfo: PageInfo
+}
+
+export type ChannelAssetsDeletedByModeratorEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  actor: Scalars['JSONObject']
+  channelId: Scalars['Float']
+  assetIds: Array<Scalars['Int']>
+  rationale: Scalars['String']
+}
+
+export type ChannelAssetsDeletedByModeratorEventEdge = {
+  node: ChannelAssetsDeletedByModeratorEvent
+  cursor: Scalars['String']
+}
+
+export enum ChannelAssetsDeletedByModeratorEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  ChannelIdAsc = 'channelId_ASC',
+  ChannelIdDesc = 'channelId_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+}
+
+export type ChannelAssetsDeletedByModeratorEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  actor?: Maybe<Scalars['JSONObject']>
+  channelId?: Maybe<Scalars['Float']>
+  assetIds?: Maybe<Array<Scalars['Int']>>
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type ChannelAssetsDeletedByModeratorEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  actor_json?: Maybe<Scalars['JSONObject']>
+  channelId_eq?: Maybe<Scalars['Int']>
+  channelId_gt?: Maybe<Scalars['Int']>
+  channelId_gte?: Maybe<Scalars['Int']>
+  channelId_lt?: Maybe<Scalars['Int']>
+  channelId_lte?: Maybe<Scalars['Int']>
+  channelId_in?: Maybe<Array<Scalars['Int']>>
+  assetIds_containsAll?: Maybe<Array<Scalars['Int']>>
+  assetIds_containsNone?: Maybe<Array<Scalars['Int']>>
+  assetIds_containsAny?: Maybe<Array<Scalars['Int']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+  AND?: Maybe<Array<ChannelAssetsDeletedByModeratorEventWhereInput>>
+  OR?: Maybe<Array<ChannelAssetsDeletedByModeratorEventWhereInput>>
+  NOT?: Maybe<Array<ChannelAssetsDeletedByModeratorEventWhereInput>>
+}
+
+export type ChannelAssetsDeletedByModeratorEventWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type ChannelConnection = {
@@ -10925,6 +11076,149 @@ export type ChannelCreateInput = {
   isCensored: Scalars['Boolean']
   language?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
+  privilegeLevel?: Maybe<Scalars['Float']>
+}
+
+export type ChannelDeletedByModeratorEvent = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** Hash of the extrinsic which caused the event to be emitted. */
+  inExtrinsic?: Maybe<Scalars['String']>
+  /** Blocknumber of the block in which the event was emitted. */
+  inBlock: Scalars['Int']
+  /** Network the block was produced in. */
+  network: Network
+  /** Index of event in block from which it was emitted. */
+  indexInBlock: Scalars['Int']
+  /** Actor that deleted the video. */
+  actor: ContentActor
+  /** ID  of the deleted channel */
+  channelId: Scalars['Int']
+  /** Why the video was deleted */
+  rationale: Scalars['String']
+}
+
+export type ChannelDeletedByModeratorEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<ChannelDeletedByModeratorEventEdge>
+  pageInfo: PageInfo
+}
+
+export type ChannelDeletedByModeratorEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  actor: Scalars['JSONObject']
+  channelId: Scalars['Float']
+  rationale: Scalars['String']
+}
+
+export type ChannelDeletedByModeratorEventEdge = {
+  node: ChannelDeletedByModeratorEvent
+  cursor: Scalars['String']
+}
+
+export enum ChannelDeletedByModeratorEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  ChannelIdAsc = 'channelId_ASC',
+  ChannelIdDesc = 'channelId_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+}
+
+export type ChannelDeletedByModeratorEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  actor?: Maybe<Scalars['JSONObject']>
+  channelId?: Maybe<Scalars['Float']>
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type ChannelDeletedByModeratorEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  actor_json?: Maybe<Scalars['JSONObject']>
+  channelId_eq?: Maybe<Scalars['Int']>
+  channelId_gt?: Maybe<Scalars['Int']>
+  channelId_gte?: Maybe<Scalars['Int']>
+  channelId_lt?: Maybe<Scalars['Int']>
+  channelId_lte?: Maybe<Scalars['Int']>
+  channelId_in?: Maybe<Array<Scalars['Int']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+  AND?: Maybe<Array<ChannelDeletedByModeratorEventWhereInput>>
+  OR?: Maybe<Array<ChannelDeletedByModeratorEventWhereInput>>
+  NOT?: Maybe<Array<ChannelDeletedByModeratorEventWhereInput>>
+}
+
+export type ChannelDeletedByModeratorEventWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type ChannelEdge = {
@@ -11078,6 +11372,8 @@ export enum ChannelOrderByInput {
   LanguageDesc = 'language_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
   CreatedInBlockDesc = 'createdInBlock_DESC',
+  PrivilegeLevelAsc = 'privilegeLevel_ASC',
+  PrivilegeLevelDesc = 'privilegeLevel_DESC',
 }
 
 export type ChannelUpdateInput = {
@@ -11093,6 +11389,7 @@ export type ChannelUpdateInput = {
   isCensored?: Maybe<Scalars['Boolean']>
   language?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
+  privilegeLevel?: Maybe<Scalars['Float']>
 }
 
 export type ChannelWhereInput = {
@@ -11151,6 +11448,12 @@ export type ChannelWhereInput = {
   createdInBlock_lt?: Maybe<Scalars['Int']>
   createdInBlock_lte?: Maybe<Scalars['Int']>
   createdInBlock_in?: Maybe<Array<Scalars['Int']>>
+  privilegeLevel_eq?: Maybe<Scalars['Int']>
+  privilegeLevel_gt?: Maybe<Scalars['Int']>
+  privilegeLevel_gte?: Maybe<Scalars['Int']>
+  privilegeLevel_lt?: Maybe<Scalars['Int']>
+  privilegeLevel_lte?: Maybe<Scalars['Int']>
+  privilegeLevel_in?: Maybe<Array<Scalars['Int']>>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   coverPhoto?: Maybe<StorageDataObjectWhereInput>
@@ -19990,6 +20293,12 @@ export type Query = {
   categoryStickyThreadUpdateEvents: Array<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventByUniqueInput?: Maybe<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventsConnection: CategoryStickyThreadUpdateEventConnection
+  channelAssetsDeletedByModeratorEvents: Array<ChannelAssetsDeletedByModeratorEvent>
+  channelAssetsDeletedByModeratorEventByUniqueInput?: Maybe<ChannelAssetsDeletedByModeratorEvent>
+  channelAssetsDeletedByModeratorEventsConnection: ChannelAssetsDeletedByModeratorEventConnection
+  channelDeletedByModeratorEvents: Array<ChannelDeletedByModeratorEvent>
+  channelDeletedByModeratorEventByUniqueInput?: Maybe<ChannelDeletedByModeratorEvent>
+  channelDeletedByModeratorEventsConnection: ChannelDeletedByModeratorEventConnection
   channelNftCollectors: Array<ChannelNftCollectors>
   channelNftCollectorsByUniqueInput?: Maybe<ChannelNftCollectors>
   channelNftCollectorsConnection: ChannelNftCollectorsConnection
@@ -20379,9 +20688,18 @@ export type Query = {
   upcomingWorkingGroupOpenings: Array<UpcomingWorkingGroupOpening>
   upcomingWorkingGroupOpeningByUniqueInput?: Maybe<UpcomingWorkingGroupOpening>
   upcomingWorkingGroupOpeningsConnection: UpcomingWorkingGroupOpeningConnection
+  videoAssetsDeletedByModeratorEvents: Array<VideoAssetsDeletedByModeratorEvent>
+  videoAssetsDeletedByModeratorEventByUniqueInput?: Maybe<VideoAssetsDeletedByModeratorEvent>
+  videoAssetsDeletedByModeratorEventsConnection: VideoAssetsDeletedByModeratorEventConnection
   videoCategories: Array<VideoCategory>
   videoCategoryByUniqueInput?: Maybe<VideoCategory>
   videoCategoriesConnection: VideoCategoryConnection
+  videoDeletedByModeratorEvents: Array<VideoDeletedByModeratorEvent>
+  videoDeletedByModeratorEventByUniqueInput?: Maybe<VideoDeletedByModeratorEvent>
+  videoDeletedByModeratorEventsConnection: VideoDeletedByModeratorEventConnection
+  videoDeletedEvents: Array<VideoDeletedEvent>
+  videoDeletedEventByUniqueInput?: Maybe<VideoDeletedEvent>
+  videoDeletedEventsConnection: VideoDeletedEventConnection
   videoMediaEncodings: Array<VideoMediaEncoding>
   videoMediaEncodingByUniqueInput?: Maybe<VideoMediaEncoding>
   videoMediaEncodingsConnection: VideoMediaEncodingConnection
@@ -20400,6 +20718,9 @@ export type Query = {
   videoReactionsPreferenceEvents: Array<VideoReactionsPreferenceEvent>
   videoReactionsPreferenceEventByUniqueInput?: Maybe<VideoReactionsPreferenceEvent>
   videoReactionsPreferenceEventsConnection: VideoReactionsPreferenceEventConnection
+  videoVisibilitySetByModeratorEvents: Array<VideoVisibilitySetByModeratorEvent>
+  videoVisibilitySetByModeratorEventByUniqueInput?: Maybe<VideoVisibilitySetByModeratorEvent>
+  videoVisibilitySetByModeratorEventsConnection: VideoVisibilitySetByModeratorEventConnection
   videos: Array<Video>
   videoByUniqueInput?: Maybe<Video>
   videosConnection: VideoConnection
@@ -21323,6 +21644,46 @@ export type QueryCategoryStickyThreadUpdateEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
   orderBy?: Maybe<Array<CategoryStickyThreadUpdateEventOrderByInput>>
+}
+
+export type QueryChannelAssetsDeletedByModeratorEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<ChannelAssetsDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<ChannelAssetsDeletedByModeratorEventOrderByInput>>
+}
+
+export type QueryChannelAssetsDeletedByModeratorEventByUniqueInputArgs = {
+  where: ChannelAssetsDeletedByModeratorEventWhereUniqueInput
+}
+
+export type QueryChannelAssetsDeletedByModeratorEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<ChannelAssetsDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<ChannelAssetsDeletedByModeratorEventOrderByInput>>
+}
+
+export type QueryChannelDeletedByModeratorEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<ChannelDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<ChannelDeletedByModeratorEventOrderByInput>>
+}
+
+export type QueryChannelDeletedByModeratorEventByUniqueInputArgs = {
+  where: ChannelDeletedByModeratorEventWhereUniqueInput
+}
+
+export type QueryChannelDeletedByModeratorEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<ChannelDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<ChannelDeletedByModeratorEventOrderByInput>>
 }
 
 export type QueryChannelNftCollectorsArgs = {
@@ -23922,6 +24283,26 @@ export type QueryUpcomingWorkingGroupOpeningsConnectionArgs = {
   orderBy?: Maybe<Array<UpcomingWorkingGroupOpeningOrderByInput>>
 }
 
+export type QueryVideoAssetsDeletedByModeratorEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<VideoAssetsDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<VideoAssetsDeletedByModeratorEventOrderByInput>>
+}
+
+export type QueryVideoAssetsDeletedByModeratorEventByUniqueInputArgs = {
+  where: VideoAssetsDeletedByModeratorEventWhereUniqueInput
+}
+
+export type QueryVideoAssetsDeletedByModeratorEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<VideoAssetsDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<VideoAssetsDeletedByModeratorEventOrderByInput>>
+}
+
 export type QueryVideoCategoriesArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -23940,6 +24321,46 @@ export type QueryVideoCategoriesConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoCategoryWhereInput>
   orderBy?: Maybe<Array<VideoCategoryOrderByInput>>
+}
+
+export type QueryVideoDeletedByModeratorEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<VideoDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<VideoDeletedByModeratorEventOrderByInput>>
+}
+
+export type QueryVideoDeletedByModeratorEventByUniqueInputArgs = {
+  where: VideoDeletedByModeratorEventWhereUniqueInput
+}
+
+export type QueryVideoDeletedByModeratorEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<VideoDeletedByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<VideoDeletedByModeratorEventOrderByInput>>
+}
+
+export type QueryVideoDeletedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<VideoDeletedEventWhereInput>
+  orderBy?: Maybe<Array<VideoDeletedEventOrderByInput>>
+}
+
+export type QueryVideoDeletedEventByUniqueInputArgs = {
+  where: VideoDeletedEventWhereUniqueInput
+}
+
+export type QueryVideoDeletedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<VideoDeletedEventWhereInput>
+  orderBy?: Maybe<Array<VideoDeletedEventOrderByInput>>
 }
 
 export type QueryVideoMediaEncodingsArgs = {
@@ -24060,6 +24481,26 @@ export type QueryVideoReactionsPreferenceEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoReactionsPreferenceEventWhereInput>
   orderBy?: Maybe<Array<VideoReactionsPreferenceEventOrderByInput>>
+}
+
+export type QueryVideoVisibilitySetByModeratorEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<VideoVisibilitySetByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<VideoVisibilitySetByModeratorEventOrderByInput>>
+}
+
+export type QueryVideoVisibilitySetByModeratorEventByUniqueInputArgs = {
+  where: VideoVisibilitySetByModeratorEventWhereUniqueInput
+}
+
+export type QueryVideoVisibilitySetByModeratorEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<VideoVisibilitySetByModeratorEventWhereInput>
+  orderBy?: Maybe<Array<VideoVisibilitySetByModeratorEventOrderByInput>>
 }
 
 export type QueryVideosArgs = {
@@ -29150,6 +29591,163 @@ export type Video = BaseGraphQlObject & {
   videoreactionspreferenceeventvideo?: Maybe<Array<VideoReactionsPreferenceEvent>>
 }
 
+export type VideoAssetsDeletedByModeratorEvent = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** Hash of the extrinsic which caused the event to be emitted. */
+  inExtrinsic?: Maybe<Scalars['String']>
+  /** Blocknumber of the block in which the event was emitted. */
+  inBlock: Scalars['Int']
+  /** Network the block was produced in. */
+  network: Network
+  /** Index of event in block from which it was emitted. */
+  indexInBlock: Scalars['Int']
+  /** Actor that deleted the channel assets. */
+  actor: ContentActor
+  /** Video whose assets are being deleted */
+  videoId: Scalars['Int']
+  /** Does deleted video assets belongs to NFT */
+  areNftAssets?: Maybe<Scalars['Boolean']>
+  /** ID  of the deleted video */
+  assetIds: Array<Scalars['Int']>
+  /** why the channel assets were deleted */
+  rationale: Scalars['String']
+}
+
+export type VideoAssetsDeletedByModeratorEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<VideoAssetsDeletedByModeratorEventEdge>
+  pageInfo: PageInfo
+}
+
+export type VideoAssetsDeletedByModeratorEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  actor: Scalars['JSONObject']
+  videoId: Scalars['Float']
+  areNftAssets?: Maybe<Scalars['Boolean']>
+  assetIds: Array<Scalars['Int']>
+  rationale: Scalars['String']
+}
+
+export type VideoAssetsDeletedByModeratorEventEdge = {
+  node: VideoAssetsDeletedByModeratorEvent
+  cursor: Scalars['String']
+}
+
+export enum VideoAssetsDeletedByModeratorEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  VideoIdAsc = 'videoId_ASC',
+  VideoIdDesc = 'videoId_DESC',
+  AreNftAssetsAsc = 'areNftAssets_ASC',
+  AreNftAssetsDesc = 'areNftAssets_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+}
+
+export type VideoAssetsDeletedByModeratorEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  actor?: Maybe<Scalars['JSONObject']>
+  videoId?: Maybe<Scalars['Float']>
+  areNftAssets?: Maybe<Scalars['Boolean']>
+  assetIds?: Maybe<Array<Scalars['Int']>>
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type VideoAssetsDeletedByModeratorEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  actor_json?: Maybe<Scalars['JSONObject']>
+  videoId_eq?: Maybe<Scalars['Int']>
+  videoId_gt?: Maybe<Scalars['Int']>
+  videoId_gte?: Maybe<Scalars['Int']>
+  videoId_lt?: Maybe<Scalars['Int']>
+  videoId_lte?: Maybe<Scalars['Int']>
+  videoId_in?: Maybe<Array<Scalars['Int']>>
+  areNftAssets_eq?: Maybe<Scalars['Boolean']>
+  areNftAssets_in?: Maybe<Array<Scalars['Boolean']>>
+  assetIds_containsAll?: Maybe<Array<Scalars['Int']>>
+  assetIds_containsNone?: Maybe<Array<Scalars['Int']>>
+  assetIds_containsAny?: Maybe<Array<Scalars['Int']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+  AND?: Maybe<Array<VideoAssetsDeletedByModeratorEventWhereInput>>
+  OR?: Maybe<Array<VideoAssetsDeletedByModeratorEventWhereInput>>
+  NOT?: Maybe<Array<VideoAssetsDeletedByModeratorEventWhereInput>>
+}
+
+export type VideoAssetsDeletedByModeratorEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type VideoCategoriesByNameFtsOutput = {
   item: VideoCategoriesByNameSearchResult
   rank: Scalars['Float']
@@ -29297,6 +29895,279 @@ export type VideoCreateInput = {
   commentsCount: Scalars['Float']
   isReactionFeatureEnabled: Scalars['Boolean']
   reactionsCount: Scalars['Float']
+}
+
+export type VideoDeletedByModeratorEvent = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** Hash of the extrinsic which caused the event to be emitted. */
+  inExtrinsic?: Maybe<Scalars['String']>
+  /** Blocknumber of the block in which the event was emitted. */
+  inBlock: Scalars['Int']
+  /** Network the block was produced in. */
+  network: Network
+  /** Index of event in block from which it was emitted. */
+  indexInBlock: Scalars['Int']
+  /** Actor that deleted the video. */
+  actor: ContentActor
+  /** ID  of the deleted video */
+  videoId: Scalars['Int']
+  /** Why the video was deleted */
+  rationale: Scalars['String']
+}
+
+export type VideoDeletedByModeratorEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<VideoDeletedByModeratorEventEdge>
+  pageInfo: PageInfo
+}
+
+export type VideoDeletedByModeratorEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  actor: Scalars['JSONObject']
+  videoId: Scalars['Float']
+  rationale: Scalars['String']
+}
+
+export type VideoDeletedByModeratorEventEdge = {
+  node: VideoDeletedByModeratorEvent
+  cursor: Scalars['String']
+}
+
+export enum VideoDeletedByModeratorEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  VideoIdAsc = 'videoId_ASC',
+  VideoIdDesc = 'videoId_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+}
+
+export type VideoDeletedByModeratorEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  actor?: Maybe<Scalars['JSONObject']>
+  videoId?: Maybe<Scalars['Float']>
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type VideoDeletedByModeratorEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  actor_json?: Maybe<Scalars['JSONObject']>
+  videoId_eq?: Maybe<Scalars['Int']>
+  videoId_gt?: Maybe<Scalars['Int']>
+  videoId_gte?: Maybe<Scalars['Int']>
+  videoId_lt?: Maybe<Scalars['Int']>
+  videoId_lte?: Maybe<Scalars['Int']>
+  videoId_in?: Maybe<Array<Scalars['Int']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+  AND?: Maybe<Array<VideoDeletedByModeratorEventWhereInput>>
+  OR?: Maybe<Array<VideoDeletedByModeratorEventWhereInput>>
+  NOT?: Maybe<Array<VideoDeletedByModeratorEventWhereInput>>
+}
+
+export type VideoDeletedByModeratorEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type VideoDeletedEvent = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** Hash of the extrinsic which caused the event to be emitted. */
+  inExtrinsic?: Maybe<Scalars['String']>
+  /** Blocknumber of the block in which the event was emitted. */
+  inBlock: Scalars['Int']
+  /** Network the block was produced in. */
+  network: Network
+  /** Index of event in block from which it was emitted. */
+  indexInBlock: Scalars['Int']
+  /** Actor that deleted the video. */
+  actor: ContentActor
+  /** ID  of the deleted video */
+  videoId: Scalars['Int']
+}
+
+export type VideoDeletedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<VideoDeletedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type VideoDeletedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  actor: Scalars['JSONObject']
+  videoId: Scalars['Float']
+}
+
+export type VideoDeletedEventEdge = {
+  node: VideoDeletedEvent
+  cursor: Scalars['String']
+}
+
+export enum VideoDeletedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  VideoIdAsc = 'videoId_ASC',
+  VideoIdDesc = 'videoId_DESC',
+}
+
+export type VideoDeletedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  actor?: Maybe<Scalars['JSONObject']>
+  videoId?: Maybe<Scalars['Float']>
+}
+
+export type VideoDeletedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  actor_json?: Maybe<Scalars['JSONObject']>
+  videoId_eq?: Maybe<Scalars['Int']>
+  videoId_gt?: Maybe<Scalars['Int']>
+  videoId_gte?: Maybe<Scalars['Int']>
+  videoId_lt?: Maybe<Scalars['Int']>
+  videoId_lte?: Maybe<Scalars['Int']>
+  videoId_in?: Maybe<Array<Scalars['Int']>>
+  AND?: Maybe<Array<VideoDeletedEventWhereInput>>
+  OR?: Maybe<Array<VideoDeletedEventWhereInput>>
+  NOT?: Maybe<Array<VideoDeletedEventWhereInput>>
+}
+
+export type VideoDeletedEventWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type VideoEdge = {
@@ -30099,6 +30970,156 @@ export type VideoUpdateInput = {
   commentsCount?: Maybe<Scalars['Float']>
   isReactionFeatureEnabled?: Maybe<Scalars['Boolean']>
   reactionsCount?: Maybe<Scalars['Float']>
+}
+
+export type VideoVisibilitySetByModeratorEvent = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** Hash of the extrinsic which caused the event to be emitted. */
+  inExtrinsic?: Maybe<Scalars['String']>
+  /** Blocknumber of the block in which the event was emitted. */
+  inBlock: Scalars['Int']
+  /** Network the block was produced in. */
+  network: Network
+  /** Index of event in block from which it was emitted. */
+  indexInBlock: Scalars['Int']
+  /** Actor that deleted the channel assets. */
+  actor: ContentActor
+  /** Video whose visiblity/censorship status is changed */
+  videoId: Scalars['Int']
+  /** Is video being censored/hidden (yes if true) */
+  isHidden: Scalars['Boolean']
+  /** Why video's visibality status was set */
+  rationale: Scalars['String']
+}
+
+export type VideoVisibilitySetByModeratorEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<VideoVisibilitySetByModeratorEventEdge>
+  pageInfo: PageInfo
+}
+
+export type VideoVisibilitySetByModeratorEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  actor: Scalars['JSONObject']
+  videoId: Scalars['Float']
+  isHidden: Scalars['Boolean']
+  rationale: Scalars['String']
+}
+
+export type VideoVisibilitySetByModeratorEventEdge = {
+  node: VideoVisibilitySetByModeratorEvent
+  cursor: Scalars['String']
+}
+
+export enum VideoVisibilitySetByModeratorEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  VideoIdAsc = 'videoId_ASC',
+  VideoIdDesc = 'videoId_DESC',
+  IsHiddenAsc = 'isHidden_ASC',
+  IsHiddenDesc = 'isHidden_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+}
+
+export type VideoVisibilitySetByModeratorEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  actor?: Maybe<Scalars['JSONObject']>
+  videoId?: Maybe<Scalars['Float']>
+  isHidden?: Maybe<Scalars['Boolean']>
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type VideoVisibilitySetByModeratorEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  actor_json?: Maybe<Scalars['JSONObject']>
+  videoId_eq?: Maybe<Scalars['Int']>
+  videoId_gt?: Maybe<Scalars['Int']>
+  videoId_gte?: Maybe<Scalars['Int']>
+  videoId_lt?: Maybe<Scalars['Int']>
+  videoId_lte?: Maybe<Scalars['Int']>
+  videoId_in?: Maybe<Array<Scalars['Int']>>
+  isHidden_eq?: Maybe<Scalars['Boolean']>
+  isHidden_in?: Maybe<Array<Scalars['Boolean']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+  AND?: Maybe<Array<VideoVisibilitySetByModeratorEventWhereInput>>
+  OR?: Maybe<Array<VideoVisibilitySetByModeratorEventWhereInput>>
+  NOT?: Maybe<Array<VideoVisibilitySetByModeratorEventWhereInput>>
+}
+
+export type VideoVisibilitySetByModeratorEventWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type VideoWhereInput = {
