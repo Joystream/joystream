@@ -339,6 +339,9 @@ impl storage::Config for Test {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
+    pub const MaxNumberOfAssetsPerChannel: u32 = 1000;
+    pub const MaxNumberOfAssetsPerVideo: u32 = 2000;
+    pub const MaxNumberOfCollaboratorsPerChannel: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
     pub const PricePerByte: u32 = 2;
@@ -395,6 +398,15 @@ impl Config for Test {
 
     /// max number of keys per curator_group.permissions_by_level map instance
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+
+    /// The maximum number of assets that can be assigned to a single channel
+    type MaxNumberOfAssetsPerChannel = MaxNumberOfAssetsPerChannel;
+
+    /// The maximum number of assets that can be assigned to a signle video
+    type MaxNumberOfAssetsPerVideo = MaxNumberOfAssetsPerVideo;
+
+    /// The maximum number of collaborators per channel
+    type MaxNumberOfCollaboratorsPerChannel = MaxNumberOfCollaboratorsPerChannel;
 
     /// channel privilege level
     type ChannelPrivilegeLevel = u8;
