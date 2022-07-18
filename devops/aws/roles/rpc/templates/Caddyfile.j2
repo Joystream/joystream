@@ -53,6 +53,7 @@ wss://{{ nip_domain }}/query-node/server* {
       Access-Control-Allow-Origin *
       Cache-Control: no-cache
     }
-    root * /home/caddy
+    root * /home/ubuntu
+    rewrite * /network-config.json
     file_server
 }
