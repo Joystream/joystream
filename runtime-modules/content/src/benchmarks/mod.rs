@@ -195,6 +195,7 @@ fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
     );
 
     opening_id
+
 }
 
 fn insert_storage_leader<T>() -> T::AccountId

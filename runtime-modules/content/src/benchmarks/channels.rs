@@ -7,7 +7,9 @@ use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_support::traits::Get;
 use frame_system::RawOrigin;
+use sp_runtime::traits::Hash;
 use sp_arithmetic::traits::{One, Saturating};
+use codec::{Encode};
 
 use super::{
     generate_channel_creation_params, insert_distribution_leader, insert_storage_leader,
@@ -25,6 +27,7 @@ benchmarks! {
               T: working_group::Config<DistributionWorkingGroupInstance>,
               T::AccountId: CreateAccountId,
               T: Config ,
+              T: frame_system::Config,
     }
 
     create_channel {
@@ -72,12 +75,22 @@ benchmarks! {
 
     update_channel_payouts {
         let origin = RawOrigin::Root;
-        let params = crate::UpdateChannelPayoutsParametersRecord::<ChannelPayoutsPayloadParameters,u64,u64> {
-            commitment: None,
-            payload: None,
-            min_cashout_allowed: None,
-            max_cashout_allowed: None,
-            channel_cashouts_enabled: None,
+        let (account_id, _) = member_funded_account::<T>(1);
+        let hash = <<T as frame_system::Config>::Hashing as Hash>::hash(&"test".encode());
+        let params = crate::UpdateChannelPayoutsParameters::<T> {
+            commitment: Some(hash),
+            payload: Some(crate::ChannelPayoutsPayloadParameters::<T>{
+                uploader_account: account_id,
+                object_creation_params: storage::DataObjectCreationParameters {
+                    size: 1u64,
+                    ipfs_content_id: 1_u32.to_be_bytes().as_slice().to_vec(),
+                },
+                expected_data_object_state_bloat_bond: <T as balances::Config>::Balance::one(),
+                expected_data_size_fee: <T as balances::Config>::Balance::one(),
+            }),
+            min_cashout_allowed: Some(<T as balances::Config>::Balance::one()),
+            max_cashout_allowed: Some(<T as balances::Config>::Balance::from(1_000_000u32)),
+            channel_cashouts_enabled: Some(true),
         };
     }: _ (origin, params)
 }
