@@ -151,7 +151,7 @@ lazy_static! {
 parameter_types! {
     // TODO: Update invited member initial balance in membership to be greater than this!
     // and any other relevant places in runtime/pallets.
-    pub const ExistentialDeposit: Balance = 1; // 1 * currency::MILLICENTS;
+    pub const ExistentialDeposit: Balance = currency::MILLICENTS;
 }
 
 pub mod currency {
