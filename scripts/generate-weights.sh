@@ -4,8 +4,8 @@
 
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 
-STEPS=${1:-50}
-REPEAT=${2:-20}
+STEPS=${1:-5}
+REPEAT=${2:-2}
 
 substrate_pallet_benchmark() {
   echo "Generating weights for $1..."

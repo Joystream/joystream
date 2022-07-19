@@ -32,7 +32,8 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
-// pub type ContentWorkingGroupInstance = working_group::Instance3;
+// The content working group instance
+pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
     let mut res = [0; N];
@@ -52,14 +53,16 @@ pub const MAX_MEMBER_IDS: usize = 100;
 pub const MEMBER_IDS: [u64; MAX_MEMBER_IDS] = gen_array_u64::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
 
 pub const COLABORATOR_IDS_INIT: u64 = 700;
-pub const MAX_COLABORATOR_IDS: usize = 100;
+pub const MAX_COLLABORATOR_IDS: usize = 100;
+pub const MAX_LEVELS: u8 = 10;
 
-pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
-    gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
+pub const COLABORATOR_IDS: [u64; MAX_COLLABORATOR_IDS] =
+    gen_array_u64::<MAX_COLLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
 const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[1];
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001;
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004;
+const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100002;
 const MAX_BYTES: u32 = 50000;
 const MAX_OBJ_NUMBER: u32 = 100;
 
@@ -195,7 +198,6 @@ fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
     );
 
     opening_id
-
 }
 
 fn insert_storage_leader<T>() -> T::AccountId
@@ -252,7 +254,7 @@ where
 
 //defines initial balance
 fn initial_balance<T: balances::Config>() -> T::Balance {
-    1000000u32.into()
+    1_000_000u32.into()
 }
 
 fn member_funded_account<T: Config + membership::Config + balances::Config>(
@@ -330,6 +332,47 @@ fn update_families_in_dynamic_bag_creation_policy<T>(
         families,
     )
     .unwrap();
+}
+
+// worst case scenario: all channels have full permissions
+fn generate_permissions_by_level<T: Config>(levels: u8) -> crate::ModerationPermissionsByLevel<T> {
+    (1..levels)
+        .map(|i| {
+            (
+                <T as Config>::ChannelPrivilegeLevel::from(i),
+                BTreeSet::from_iter(vec![
+                    crate::ContentModerationAction::HideVideo,
+                    crate::ContentModerationAction::HideChannel,
+                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
+                        crate::PausableChannelFeature::ChannelFundsTransfer,
+                    ),
+                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
+                        crate::PausableChannelFeature::CreatorCashout,
+                    ),
+                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
+                        crate::PausableChannelFeature::ChannelUpdate,
+                    ),
+                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
+                        crate::PausableChannelFeature::VideoNftIssuance,
+                    ),
+                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
+                        crate::PausableChannelFeature::VideoCreation,
+                    ),
+                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
+                        crate::PausableChannelFeature::ChannelUpdate,
+                    ),
+                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
+                        crate::PausableChannelFeature::CreatorTokenIssuance,
+                    ),
+                    crate::ContentModerationAction::DeleteVideo,
+                    crate::ContentModerationAction::DeleteChannel,
+                    crate::ContentModerationAction::DeleteVideoAssets(true),
+                    crate::ContentModerationAction::DeleteNonVideoChannelAssets,
+                    crate::ContentModerationAction::UpdateChannelNftLimits,
+                ]),
+            )
+        })
+        .collect::<BTreeMap<_,_>>()
 }
 
 fn set_storage_buckets_voucher_max_limits<T>(
@@ -435,6 +478,24 @@ pub fn create_data_object_candidates_helper(
             ipfs_content_id: vec![1u8],
         })
         .collect()
+}
+
+pub fn all_channel_pausable_features_except(
+    feature: crate::PausableChannelFeature,
+) -> BTreeSet<crate::PausableChannelFeature> {
+    [
+        crate::PausableChannelFeature::ChannelFundsTransfer,
+        crate::PausableChannelFeature::CreatorCashout,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::VideoNftIssuance,
+        crate::PausableChannelFeature::VideoCreation,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::CreatorTokenIssuance,
+    ]
+    .iter()
+    .filter(|&&x| x != feature)
+    .map(|&x| x)
+    .collect::<BTreeSet<_>>()
 }
 
 fn generate_channel_creation_params<T>(
