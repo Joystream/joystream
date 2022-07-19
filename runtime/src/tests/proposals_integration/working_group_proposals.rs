@@ -751,7 +751,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount: Balance = 10_000;
 
-        increase_total_balance_issuance_using_account_id(account_id.into(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(account_id.into(), 1_000_000);
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -761,14 +761,14 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
 
         let staking_account_id: [u8; 32] = [22u8; 32];
-        increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(staking_account_id.into(), 2_000_000);
         set_staking_account(account_id.into(), staking_account_id.into(), member_id);
         let stake_parameters = StakeParameters::<T::AccountId, working_group::BalanceOf<T>> {
             stake: stake_amount.into(),
             staking_account_id: staking_account_id.into(),
         };
 
-        let old_balance = Balances::free_balance(&account_id.into());
+        let old_balance = Balances::free_balance(&staking_account_id.into());
 
         let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
             RawOrigin::Signed(account_id.into()).into(),

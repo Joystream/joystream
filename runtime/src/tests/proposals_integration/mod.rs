@@ -267,7 +267,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_stake(account_id.clone())
             .with_proposer(member_id);
 
-        let account_balance = 500000;
+        let account_balance = 500000 + crate::ExistentialDeposit::get();
         Balances::make_free_balance_be(&account_id, account_balance);
 
         // Since the account_id is the staking account it neccesarily has locked funds
