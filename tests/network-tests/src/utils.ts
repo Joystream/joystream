@@ -124,7 +124,9 @@ export class Utils {
         }
         debug('Condition not satisfied, waiting...')
       }
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       const interval = setInterval(check, intervalMs)
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       check()
     })
   }
