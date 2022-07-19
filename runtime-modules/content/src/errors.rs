@@ -17,6 +17,15 @@ decl_error! {
         /// Attempt to set minimum cashout allowed above the limit
         MaxCashoutValueTooHigh,
 
+        /// Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
+        MaxNumberOfChannelCollaboratorsExceeded,
+
+        /// Number of channel assets exceeds MaxNumberOfAssetsPerChannel
+        MaxNumberOfChannelAssetsExceeded,
+
+        /// Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
+        MaxNumberOfVideoAssetsExceeded,
+
         // Curator Management Errors
         // -------------------------
 
