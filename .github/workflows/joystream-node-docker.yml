@@ -16,9 +16,9 @@ jobs:
       image_exists: ${{ steps.compute_main_image_exists.outputs.image_exists }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
 
@@ -29,7 +29,7 @@ jobs:
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
       - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -49,7 +49,7 @@ jobs:
           echo "::set-output name=image_exists::${IMAGE_EXISTS}"
 
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           file: joystream-node.Dockerfile
@@ -80,9 +80,9 @@ jobs:
         id: extract_branch
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
 
@@ -96,7 +96,7 @@ jobs:
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
       - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -165,7 +165,7 @@ jobs:
       TAG_SHASUM: ${{ needs.push-amd64.outputs.tag_shasum }}
     steps:
       - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}

@@ -20,7 +20,7 @@ jobs:
       STACK_NAME: ga-deploy-node-network-${{ github.run_number }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set env variables
         id: myoutputs # set the outputs
@@ -173,13 +173,13 @@ jobs:
           7z a -p${{ steps.myoutputs.outputs.encryptionKey }} chain-data.7z mydata/*
 
       - name: Save the output as an artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: data-chainspec-auth
           path: devops/aws/chain-data.7z
 
       - name: Save the endpoints file as an artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: endpoints
           path: devops/aws/endpoints.json
