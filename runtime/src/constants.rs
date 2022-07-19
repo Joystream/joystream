@@ -157,32 +157,31 @@ parameter_types! {
 pub mod currency {
     use super::Balance;
 
-    /// The base currency unit.
-    pub const HAPI: Balance = 1;
-    /// One JOY equals 10 Billion HAPIs. Hence we use 10 decimal places in
+    /// One JOY equals 10 Billion base units (HAPIs). Hence we use 10 decimal places in
     /// currency representation.
-    pub const JOY: Balance = 10_000_000_000 * HAPI;
-    /// The planned initial token issuance of JOY at genesis.
-    const TOTAL_JOY_ISSUANCE_AT_GENESIS: Balance = 1_000_000_000 * JOY;
-    /// A Hypothetical valuation of total issued JOY tokens in USD.
-    const ESTIMATED_JOY_USD_MCAP: Balance = 100_000_000;
+    pub const JOY: Balance = 10_000_000_000;
+    /// Total base unit token issuance. (Starting value at genesis)
+    const BASE_UNIT_ISSUANCE: Balance = JOY.saturating_mul(1_000_000_000);
+    /// Valuation of total issued base unit tokens in USD.
+    const BASE_UNIT_ISSUANCE_USD_MCAP: Balance = 60_000_000;
     // Constants used to derive balance configurations of pallets more human readable
 
     /// Balance estimated worth one USD.
-    pub const DOLLARS: Balance = TOTAL_JOY_ISSUANCE_AT_GENESIS / ESTIMATED_JOY_USD_MCAP;
+    pub const DOLLARS: Balance = BASE_UNIT_ISSUANCE.saturating_div(BASE_UNIT_ISSUANCE_USD_MCAP);
     /// Balance estimated worth one hundredth of a USD.
-    pub const CENTS: Balance = DOLLARS / 100;
+    pub const CENTS: Balance = DOLLARS.saturating_div(100);
     /// Balance estimated worth one thousandths of a cent.
-    pub const MILLICENTS: Balance = CENTS / 1_000;
+    pub const MILLICENTS: Balance = CENTS.saturating_div(1_000);
 
     /// Genesis balance for endowed accounts
-    pub const ENDOWMENT: Balance = 1_000_000 * JOY;
+    pub const ENDOWMENT: Balance = DOLLARS.saturating_mul(5_000);
     /// Genesis balance for initial validator stash accounts
-    pub const STASH: Balance = ENDOWMENT / 1000;
+    pub const STASH: Balance = DOLLARS.saturating_mul(1_000);
 
     /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+        (items as Balance).saturating_mul(CENTS).saturating_mul(15)
+            + (bytes as Balance).saturating_mul(CENTS).saturating_mul(6)
     }
 }
 
@@ -212,8 +211,8 @@ mod tests {
         println!("Base: {}", ExtrinsicBaseWeight::get());
         // A full block should cost between 10 and 100 DOLLARS.
         let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
-        assert!(full_block >= 10 * DOLLARS);
-        assert!(full_block <= 100 * DOLLARS);
+        assert!(full_block >= DOLLARS.saturating_mul(10));
+        assert!(full_block <= DOLLARS.saturating_mul(100));
     }
 
     #[test]
@@ -222,7 +221,7 @@ mod tests {
         // `ExtrinsicBaseWeight` should cost 1/10 of a CENT
         println!("Base: {}", ExtrinsicBaseWeight::get());
         let x = WeightToFee::weight_to_fee(&ExtrinsicBaseWeight::get());
-        let y = CENTS / 10;
+        let y = CENTS.saturating_div(10);
         assert!(x.max(y) - x.min(y) < MILLICENTS);
     }
 }
