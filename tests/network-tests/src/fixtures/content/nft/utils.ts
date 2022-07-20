@@ -1,4 +1,4 @@
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { Utils } from '../../../utils'
 import { assert } from 'chai'

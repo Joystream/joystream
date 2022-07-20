@@ -78,6 +78,9 @@ type Channel @entity {
 
   "Channel's reward account, storing the income from the nft sales and channel payouts."
   rewardAccount: String!
+  
+  "Channel's privilege level"
+  privilegeLevel: Int
 }
 
 type VideoCategory @entity {
