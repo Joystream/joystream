@@ -133,17 +133,6 @@ jobs:
                           git_repo=${{ steps.myoutputs.outputs.gitRepo }} data_path=mydata \
                           runtime_profile=${{ steps.myoutputs.outputs.runtimeProfile }}"
 
-      - name: Run playbook to install additional utils on build server
-        uses: dawidd6/action-ansible-playbook@v2
-        if: steps.myoutputs.outputs.ec2AMI == ''
-        with:
-          playbook: setup-build-server.yml
-          directory: devops/aws
-          requirements: requirements.yml
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          options: |
-            --inventory inventory
-
       - name: Run playbook to configure chain-spec
         uses: dawidd6/action-ansible-playbook@v2
         with:

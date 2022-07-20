@@ -6,7 +6,7 @@ Parameters:
     Default: t2.xlarge
   EC2AMI:
     Type: String
-    Default: 'ami-09e67e426f25ce0d7'
+    Default: 'ami-0a8273bdc1bfaedf7'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -56,11 +56,11 @@ Resources:
             # send script output to /tmp so we can debug boot failures
             exec > /tmp/userdata.log 2>&1
 
-            # Update all packages
-            apt-get update -y
-
             # Prevent interactive prompts that would interrupt the installation
             export DEBIAN_FRONTEND=noninteractive
+
+            # Update all packages
+            apt-get update -y
 
             # Install the updates
             apt-get upgrade -y

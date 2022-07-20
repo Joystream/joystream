@@ -80,12 +80,6 @@ if [ $? -eq 0 ]; then
                     data_path=$DATA_PATH runtime_profile=$RUNTIME_PROFILE"
   fi
 
-  if [ -z "$EC2_AMI_ID" ]
-  then
-    echo -e "\n\n=========== Install additional utils on build server ==========="
-    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-build-server.yml
-  fi
-
   echo -e "\n\n=========== Configure and start new validators and rpc node ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.yml \
     --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX

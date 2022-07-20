@@ -1,5 +1,6 @@
-# Deploys and EC2 node with docker tools suitable for
-# building joystream node docker images
+# Deploys and EC2 node with docker and build tools
+# This deployment is suitable for making a base AMI image for other
+# deployments.
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -74,6 +75,9 @@ Resources:
 
             # Install the updates
             apt-get upgrade -y
+            
+            # Build toolchains
+            apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python3
 
             apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
@@ -94,12 +98,10 @@ Resources:
             ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
             # Get latest cfn scripts and install them;
-            apt-get install -y python3-setuptools
+            apt-get install -y python3-setuptools python3-pip
             mkdir -p /opt/aws/bin
             wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
             python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-
-            apt-get install -y python3-pip
 
             /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
 
