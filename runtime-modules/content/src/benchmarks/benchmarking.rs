@@ -17,7 +17,6 @@ use super::{
     setup_worst_case_curator_group_with_curators, worst_case_channel_agent_permissions,
     worst_case_content_moderation_actions_set, ContentWorkingGroupInstance, CreateAccountId,
     DistributionWorkingGroupInstance, StorageWorkingGroupInstance, CURATOR_IDS, DEFAULT_MEMBER_ID,
-    MAX_COLABORATOR_IDS, MAX_OBJ_NUMBER,
 };
 
 benchmarks! {
@@ -35,7 +34,7 @@ benchmarks! {
 
     create_channel {
 
-        let a in 1 .. MAX_COLABORATOR_IDS as u32; //max colaborators
+        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
 
         let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
             (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
@@ -43,7 +42,7 @@ benchmarks! {
         let c in (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
             (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
-        let d in 1 .. MAX_OBJ_NUMBER; //max objs number
+        let d in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
