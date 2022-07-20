@@ -410,7 +410,7 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 5 * currency::MILLICENTS; // TODO: adjust value
+    pub const TransactionByteFee: Balance = 2 * currency::MILLICENTS; // TODO: adjust value
     /// This value increases the priority of `Operational` transactions by adding
     /// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
     pub const OperationalFeeMultiplier: u8 = 5; // TODO: adjust value
@@ -716,7 +716,7 @@ impl pallet_authority_discovery::Config for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const PricePerByte: u32 = 2; // TODO: adjust value
+    pub const PricePerByte: Balance = 2 * currency::MILLICENTS; // TODO: adjust value
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
     pub const BagDeletionPrize: Balance = 0; // TODO: adjust value
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
@@ -736,8 +736,8 @@ parameter_types! {
         block_number_period: WEEKS,
         limit: 500,
     };  // TODO: update
-    pub const MinimumCashoutAllowedLimit: Balance = 1; // TODO: update
-    pub const MaximumCashoutAllowedLimit: Balance = 1_000_000; // TODO: update
+    pub const MinimumCashoutAllowedLimit: Balance = ExistentialDeposit::get() + 1; // TODO: update
+    pub const MaximumCashoutAllowedLimit: Balance = 1_000_000 * currency::DOLLARS; // TODO: update
 }
 
 impl content::Config for Runtime {
@@ -795,16 +795,16 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32;
     pub const VoteStageDuration: BlockNumber = 14400;
     pub const RevealStageDuration: BlockNumber = 14400;
-    pub const MinimumVotingStake: u64 = 10000;
+    pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 14400;
     pub const IdlePeriodDuration: BlockNumber = 57600;
     pub const CouncilSize: u64 = 5;
-    pub const MinCandidateStake: u64 = 11000;
+    pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: u64 = 5000000;
+    pub const DefaultBudgetIncrement: Balance = 5000000;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
 }
@@ -817,15 +817,15 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32;
     pub const VoteStageDuration: BlockNumber = 100;
     pub const RevealStageDuration: BlockNumber = 50;
-    pub const MinimumVotingStake: u64 = 10000;
+    pub const MinimumVotingStake: u64 = 10 * currency::DOLLARS;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 200;
     pub const IdlePeriodDuration: BlockNumber = 400;
-    pub const MinCandidateStake: u64 = 11000;
+    pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: u64 = 10000000;
+    pub const DefaultBudgetIncrement: Balance = 10000000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -858,9 +858,9 @@ parameter_types! {
     pub const AnnouncingPeriodDuration: BlockNumber = 20;
     pub const IdlePeriodDuration: BlockNumber = 20;
     pub const CouncilSize: u64 = 5;
-    pub const MinCandidateStake: u64 = 11000;
+    pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: u64 = 10000000;
+    pub const DefaultBudgetIncrement: Balance = 10000000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -1004,11 +1004,11 @@ impl common::membership::MembershipTypes for Runtime {
 }
 
 parameter_types! {
-    pub const DefaultMembershipPrice: Balance = 100;
+    pub const DefaultMembershipPrice: Balance = 100 * currency::CENTS;
     pub const ReferralCutMaximumPercent: u8 = 50;
-    pub const DefaultInitialInvitationBalance: Balance = 100;
-    // The candidate stake should be more than the transaction fee which currently is 53
-    pub const CandidateStake: Balance = 200;
+    pub const DefaultInitialInvitationBalance: Balance = 100 * currency::CENTS;
+    // The candidate stake should be more than the transaction fee
+    pub const CandidateStake: Balance = 200 * currency::CENTS;
 }
 
 impl membership::Config for Runtime {
@@ -1031,8 +1031,8 @@ parameter_types! {
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
-    pub const ThreadDeposit: u64 = 30;
-    pub const PostDeposit: u64 = 10;
+    pub const ThreadDeposit: Balance = 30 * currency::CENTS;
+    pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
 }
@@ -1093,11 +1093,11 @@ parameter_types! {
     // This should be more costly than `apply_on_opening` fee with the current configuration
     // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
-    pub const MinimumApplicationStake: Balance = 2000;
+    pub const MinimumApplicationStake: Balance = 20 * currency::DOLLARS;
     // This should be more costly than `add_opening` fee with the current configuration
     // the base cost of `add_opening` in tokens is 81. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
-    pub const LeaderOpeningStake: Balance = 2000;
+    pub const LeaderOpeningStake: Balance = 20 * currency::DOLLARS;
 }
 
 // Staking managers type aliases.
@@ -1303,7 +1303,7 @@ impl Default for Call {
 
 parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
-    pub const ProposalsPostDeposit: Balance = 2000;
+    pub const ProposalsPostDeposit: Balance = 20 * currency::CENTS;
     // module : proposals_discussion
     pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:prdis");
     pub const ForumPostLifeTime: BlockNumber = 3600;
@@ -1424,7 +1424,7 @@ impl pallet_constitution::Config for Runtime {
 pub type CategoryId = u64;
 
 parameter_types! {
-    pub const MinVestedTransfer: Balance = 100; // TODO: adjust value
+    pub const MinVestedTransfer: Balance = 100 * currency::CENTS; // TODO: adjust value
 }
 
 impl pallet_vesting::Config for Runtime {

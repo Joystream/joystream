@@ -159,9 +159,9 @@ pub mod currency {
 
     /// One JOY equals 10 Billion base units (HAPIs). Hence we use 10 decimal places in
     /// currency representation.
-    pub const JOY: Balance = 10_000_000_000;
-    /// Total base unit token issuance. (Starting value at genesis)
-    const BASE_UNIT_ISSUANCE: Balance = JOY.saturating_mul(1_000_000_000);
+    pub const BASE_UNIT_PER_JOY: Balance = 10_000_000_000;
+    /// Total base unit issuance. 1 Billion JOY
+    const BASE_UNIT_ISSUANCE: Balance = BASE_UNIT_PER_JOY.saturating_mul(1_000_000_000);
     /// Valuation of total issued base unit tokens in USD.
     const BASE_UNIT_ISSUANCE_USD_MCAP: Balance = 60_000_000;
     // Constants used to derive balance configurations of pallets more human readable
@@ -173,10 +173,10 @@ pub mod currency {
     /// Balance estimated worth one thousandths of a cent.
     pub const MILLICENTS: Balance = CENTS.saturating_div(1_000);
 
-    /// Genesis balance for endowed accounts
-    pub const ENDOWMENT: Balance = DOLLARS.saturating_mul(5_000);
-    /// Genesis balance for initial validator stash accounts
-    pub const STASH: Balance = DOLLARS.saturating_mul(1_000);
+    /// Genesis balance for each endowed account
+    pub const ENDOWMENT: Balance = DOLLARS.saturating_mul(1_000_000);
+    /// Genesis balance for each initial validator stash account
+    pub const STASH: Balance = DOLLARS.saturating_mul(10_000);
 
     /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
