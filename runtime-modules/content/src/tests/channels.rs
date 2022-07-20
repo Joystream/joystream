@@ -327,6 +327,38 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_creation_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerChannel::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfChannelAssetsExceeded.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_number_of_collaborators_exceeded() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_collaborators(
+                (0..(<Test as Config>::MaxNumberOfCollaboratorsPerChannel::get() + 1) as usize)
+                    .map(|i| (MEMBER_IDS[i], ChannelAgentPermissions::new()))
+                    .collect(),
+            )
+            .call_and_assert(Err(
+                Error::<Test>::MaxNumberOfChannelCollaboratorsExceeded.into()
+            ));
+    })
+}
+
 /////////////////////////////////////////////////////////////////////
 // Channel update failures (excluding invalid context/permissions) //
 /////////////////////////////////////////////////////////////////////
@@ -538,6 +570,40 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
             })
             .call_and_assert(Err(
                 storage::Error::<Test>::StorageBucketObjectNumberLimitReached.into(),
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerChannel::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfChannelAssetsExceeded.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_number_of_collaborators_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        UpdateChannelFixture::default()
+            .with_collaborators(
+                (0..(<Test as Config>::MaxNumberOfCollaboratorsPerChannel::get() + 1) as usize)
+                    .map(|i| (MEMBER_IDS[i], ChannelAgentPermissions::new()))
+                    .collect(),
+            )
+            .call_and_assert(Err(
+                Error::<Test>::MaxNumberOfChannelCollaboratorsExceeded.into()
             ));
     })
 }

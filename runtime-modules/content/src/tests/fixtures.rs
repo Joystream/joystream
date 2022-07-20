@@ -232,12 +232,14 @@ impl CreateChannelFixture {
                     channel_id,
                     Channel::<Test> {
                         owner: self.channel_owner.clone(),
-                        collaborators: self.params.collaborators.clone(),
+                        collaborators: self.params.collaborators.clone().try_into().unwrap(),
                         num_videos: Zero::zero(),
                         cumulative_reward_claimed: Zero::zero(),
                         privilege_level: Zero::zero(),
                         paused_features: BTreeSet::new(),
-                        data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id),
+                        data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id)
+                            .try_into()
+                            .unwrap(),
                         transfer_status: Default::default(),
                         daily_nft_limit: DefaultChannelDailyNftLimit::get(),
                         weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
@@ -614,7 +616,7 @@ impl UpdateChannelFixture {
                     self.params
                         .collaborators
                         .clone()
-                        .unwrap_or(channel_pre.collaborators)
+                        .map_or(channel_pre.collaborators, |c| c.try_into().unwrap())
                 );
 
                 assert_eq!(
@@ -3000,7 +3002,7 @@ impl InitializeChannelTransferFixture {
 pub struct AcceptChannelTransferFixture {
     origin: RawOrigin<u128>,
     channel_id: u64,
-    params: TransferCommitmentParameters<MemberId, BalanceOf<Test>, TransferId>,
+    params: TransferCommitmentWitnessOf<Test>,
 }
 
 impl AcceptChannelTransferFixture {
@@ -3024,13 +3026,13 @@ impl AcceptChannelTransferFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_transfer_params(self, params: TransferCommitmentOf<Test>) -> Self {
+    pub fn with_transfer_params(self, params: TransferCommitmentWitnessOf<Test>) -> Self {
         Self { params, ..self }
     }
 
     pub fn with_price(self, price: u64) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferCommitmentOf::<Test> {
+        self.with_transfer_params(TransferCommitmentWitnessOf::<Test> {
             price,
             ..old_transfer_params
         })
@@ -3038,7 +3040,7 @@ impl AcceptChannelTransferFixture {
 
     pub fn with_transfer_id(self, id: u64) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferCommitmentOf::<Test> {
+        self.with_transfer_params(TransferCommitmentWitnessOf::<Test> {
             transfer_id: id,
             ..old_transfer_params
         })
@@ -3049,7 +3051,7 @@ impl AcceptChannelTransferFixture {
         new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     ) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferCommitmentOf::<Test> {
+        self.with_transfer_params(TransferCommitmentWitnessOf::<Test> {
             new_collaborators,
             ..old_transfer_params
         })
@@ -4439,7 +4441,8 @@ impl SuccessfulChannelCollaboratorsManagementFlow {
 
     pub fn run(&self) {
         let default_collaborators = Module::<Test>::channel_by_id(ChannelId::one()).collaborators;
-        let mut updated_collaborators = default_collaborators;
+        let mut updated_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> =
+            default_collaborators.into();
 
         // Add collaborator (as owner) will full permissions
         updated_collaborators.insert(
@@ -5020,7 +5023,7 @@ impl ContentTest {
         collaborators: &[(u64, BTreeSet<ChannelActionPermission>)],
     ) -> Self {
         Self {
-            collaborators: Some(collaborators.iter().cloned().collect::<BTreeMap<_, _>>()),
+            collaborators: Some(collaborators.iter().cloned().collect()),
             ..self
         }
     }

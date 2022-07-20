@@ -210,6 +210,23 @@ fn unsuccessful_video_creation_with_invalid_expected_video_state_bloat_bond() {
 }
 
 #[test]
+fn unsuccessful_video_creation_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        CreateVideoFixture::default()
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerVideo::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfVideoAssetsExceeded.into()));
+    })
+}
+
+#[test]
 fn successful_video_creation_with_collaborator_auth_failure() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -653,6 +670,23 @@ fn unsuccessful_video_update_with_pending_channel_transfer() {
         UpdateVideoFixture::default()
             .with_assets_to_remove(video_assets)
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerVideo::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfVideoAssetsExceeded.into()));
     })
 }
 
