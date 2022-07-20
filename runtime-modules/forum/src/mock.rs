@@ -176,7 +176,6 @@ parameter_types! {
     pub const MaxSubcategories: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 3;
     pub const MaxCategories: u64 = 40;
-    pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: PalletId = PalletId(*b"m0:forum"); // module : forum
@@ -769,8 +768,6 @@ pub fn edit_post_text_mock(
     }
     post_id
 }
-
-/// Change current timestamp
 
 /// Create update category membership of moderator mock
 pub fn update_category_membership_of_moderator_mock(
