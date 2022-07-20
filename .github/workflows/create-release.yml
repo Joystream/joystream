@@ -18,7 +18,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - id: compute_shasum
         name: Compute runtime code shasum
@@ -39,7 +39,7 @@ jobs:
           tar czvf joystream-node-macos.tar.gz -C ./target/release joystream-node
 
       - name: Temporarily save node binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
           path: joystream-node-macos.tar.gz
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - id: compute_shasum
         name: Compute runtime code shasum
@@ -73,7 +73,7 @@ jobs:
           tar czvf joystream-node-rpi.tar.gz -C ./target/arm-unknown-linux-gnueabihf/release joystream-node
 
       - name: Temporarily save node binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: joystream-node-rpi-${{ steps.compute_shasum.outputs.shasum }}
           path: joystream-node-rpi.tar.gz
@@ -84,7 +84,7 @@ jobs:
     needs: [build-mac-binary, build-rpi-binary]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - id: compute_shasum
         name: Compute runtime code shasum
@@ -117,12 +117,12 @@ jobs:
           tar -czvf joystream-node-$VERSION_AND_COMMIT-armv7-linux-gnu.tar.gz joystream-node
 
       - name: Retrieve saved MacOS binary
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
 
       - name: Retrieve saved RPi binary
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: joystream-node-rpi-${{ steps.compute_shasum.outputs.shasum }}
 
