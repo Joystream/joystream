@@ -250,7 +250,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
-        let stake_amount = 20000u128;
+        let stake_amount = 2 * <Runtime as membership::Config>::CandidateStake::get();
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 50,
@@ -267,7 +267,8 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_stake(account_id.clone())
             .with_proposer(member_id);
 
-        let account_balance = 500000 + crate::ExistentialDeposit::get();
+        let account_balance = 10 * <Runtime as membership::Config>::CandidateStake::get()
+            + crate::ExistentialDeposit::get();
         Balances::make_free_balance_be(&account_id, account_balance);
 
         // Since the account_id is the staking account it neccesarily has locked funds
@@ -285,7 +286,11 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         // Only the biggest locked stake count, we don't need to substract the stake candidate here
         assert_eq!(
             Balances::usable_balance(&account_id),
-            account_balance - stake_amount
+            account_balance
+                - std::cmp::max(
+                    stake_amount,
+                    <Runtime as membership::Config>::CandidateStake::get()
+                )
         );
 
         let proposal = ProposalsEngine::proposals(proposal_id);
