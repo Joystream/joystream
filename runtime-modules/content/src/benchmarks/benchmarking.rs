@@ -15,21 +15,15 @@ use super::{
     assert_last_event, generate_channel_creation_params, insert_content_leader, insert_curator,
     insert_distribution_leader, insert_storage_leader, member_funded_account,
     setup_worst_case_curator_group_with_curators, worst_case_channel_agent_permissions,
-    worst_case_content_moderation_actions_set, ContentWorkingGroupInstance, CreateAccountId,
-    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, CURATOR_IDS, DEFAULT_MEMBER_ID,
+    worst_case_content_moderation_actions_set, CreateAccountId, RuntimeConfig, CURATOR_IDS,
+    DEFAULT_MEMBER_ID,
 };
 
 benchmarks! {
     where_clause {
         where
-              T: balances::Config,
-              T: membership::Config,
-              T: storage::Config,
-              T: working_group::Config<StorageWorkingGroupInstance>,
-              T: working_group::Config<DistributionWorkingGroupInstance>,
-              T: working_group::Config<ContentWorkingGroupInstance>,
-              T::AccountId: CreateAccountId,
-              T: Config ,
+            T: RuntimeConfig,
+            T::AccountId: CreateAccountId
     }
 
     create_channel {
@@ -143,13 +137,13 @@ benchmarks! {
 
     add_curator_to_group {
         let lead_account = insert_content_leader::<T>();
-        let curator_id = insert_curator::<T>(
-            CURATOR_IDS[T::MaxNumberOfCuratorsPerGroup::get() as usize - 1]
-        );
         let permissions = worst_case_channel_agent_permissions();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
             T::MaxNumberOfCuratorsPerGroup::get() - 1
         )?;
+        let (curator_id, _) = insert_curator::<T>(
+            CURATOR_IDS[T::MaxNumberOfCuratorsPerGroup::get() as usize - 1]
+        );
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert_eq!(group.get_curators().get(&curator_id), None);
     }: _ (

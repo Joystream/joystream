@@ -837,7 +837,7 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 20;
+    pub const MaxWorkerNumberLimit: u32 = 30;
     pub const LockId: LockIdentifier = [9; 8];
     pub const LockId2: LockIdentifier = [10; 8];
     pub const LockId3: LockIdentifier = [11; 8];
