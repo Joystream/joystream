@@ -688,7 +688,7 @@ declare module '@polkadot/types/lookup' {
     readonly isCuratorRemoved: boolean;
     readonly asCuratorRemoved: ITuple<[u64, u64]>;
     readonly isChannelCreated: boolean;
-    readonly asChannelCreated: ITuple<[u64, PalletContentChannelRecord, PalletContentChannelCreationParametersRecord]>;
+    readonly asChannelCreated: ITuple<[u64, PalletContentChannelRecord, PalletContentChannelCreationParametersRecord, AccountId32]>;
     readonly isChannelUpdated: boolean;
     readonly asChannelUpdated: ITuple<[PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
     readonly isChannelPrivilegeLevelUpdated: boolean;
