@@ -11,7 +11,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
-      - uses: technote-space/get-diff-action@v6
+      - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
             node
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
-      - uses: technote-space/get-diff-action@v6
+      - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
             node
