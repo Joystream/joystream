@@ -150,6 +150,7 @@ frame_support::construct_runtime!(
         Content: crate::{Pallet, Call, Storage, Config<T>, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
+        ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
     }
 );
 
@@ -484,10 +485,27 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
+
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = Weights;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+// The content working group instance alias : used in benchmarking
+pub type ContentWorkingGroupInstance = working_group::Instance3;
+
+impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;

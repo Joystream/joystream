@@ -1,23 +1,24 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::{
-    generate_channel_creation_params, insert_distribution_leader, insert_storage_leader,
-    member_funded_account, ContentWorkingGroupInstance, CreateAccountId,
-    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, CONTENT_WG_LEADER_ACCOUNT_ID,
-    DEFAULT_MEMBER_ID, MAX_COLLABORATOR_IDS, MAX_LEVELS, MAX_OBJ_NUMBER,
+    generate_channel_creation_params, insert_content_leader,
+    insert_distribution_leader, insert_storage_leader, member_funded_account,
+    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
+    StorageWorkingGroupInstance, DEFAULT_MEMBER_ID, MAX_COLLABORATOR_IDS, MAX_LEVELS,
+    MAX_OBJ_NUMBER, CURATOR_IDS,
 };
 use crate::types::{ChannelOwner, ModuleAccount};
 use crate::Module as Pallet;
 use crate::{Call, ChannelById, Config};
+use balances::Pallet as Balances;
 use codec::Encode;
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
-use frame_support::traits::{Get, Currency};
+use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::{One, Saturating};
 use sp_runtime::traits::Hash;
 use storage::Pallet as Storage;
-use balances::Pallet as Balances;
 
 benchmarks! {
     where_clause {
@@ -131,7 +132,7 @@ benchmarks! {
             T::MaxDataObjectSize::get(),
         );
 
-        let lead_account_id = super::insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID);
+        let lead_account_id = insert_content_leader::<T>();
 
         let channel_id = Pallet::<T>::next_channel_id();
 
@@ -139,38 +140,39 @@ benchmarks! {
 
         let curator_permissions = super::generate_permissions_by_level::<T>(k as u8);
 
-        Pallet::<T>::create_channel(origin.clone().into(), owner.clone(), params)?;
+        Pallet::<T>::create_channel(origin.clone().into(), owner.clone(), params)
+            .unwrap();
 
         Pallet::<T>::create_curator_group(
             RawOrigin::Signed(lead_account_id.clone()).into(),
             true,
             curator_permissions,
-        )?;
+        ).unwrap();
 
-        (0..i).for_each(|curator_id| {
-            let _ = Pallet::<T>::add_curator_to_group(
+        (0..(i as usize)).for_each(|id| {
+            Pallet::<T>::add_curator_to_group(
                RawOrigin::Signed(lead_account_id.clone()).into(),
                curator_group_id,
-               T::CuratorId::from(curator_id as u8),
+               CURATOR_IDS[id].into(),
                crate::BTreeSet::new(),
-           );
+           ).unwrap();
         });
 
         Pallet::<T>::set_channel_paused_features_as_moderator(
             RawOrigin::Signed(lead_account_id).into(),
-            actor.clone(),
+            crate::ContentActor::Lead,
             channel_id,
-            super::all_channel_pausable_features_except(crate::PausableChannelFeature::CreatorCashout),
+            super::all_channel_pausable_features_except(crate::PausableChannelFeature::ChannelFundsTransfer),
             b"reason".to_vec(),
-        )?;
+        ).unwrap();
 
         let channel_account_id = crate::ContentTreasury::<T>::account_for_channel(channel_id);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
 
-        let _ = Balances::<T>::deposit_creating(&channel_account_id, amount);
+        let _ = Balances::<T>::deposit_creating(&channel_account_id, amount + T::ExistentialDeposit::get());
 
-        let balance_pre = Balances::<T>::usable_balance(&channel_account_id);
+        let balance_pre = Balances::<T>::usable_balance(&channel_owner_account_id);
 
     }: _ (origin, actor, channel_id, amount)
         verify {
@@ -189,7 +191,6 @@ pub mod tests {
             assert_ok!(Content::test_benchmark_withdraw_from_channel_balance());
         });
     }
-
 
     #[test]
     fn update_channel_payouts() {

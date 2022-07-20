@@ -23,7 +23,7 @@ use storage::{
 };
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    StakeParameters, StakePolicy, WorkerById,
+    StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
 
 // The storage working group instance alias.
@@ -49,20 +49,22 @@ const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
 
 pub const MEMBER_IDS_INIT: u64 = 500;
 pub const MAX_MEMBER_IDS: usize = 100;
-
 pub const MEMBER_IDS: [u64; MAX_MEMBER_IDS] = gen_array_u64::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
 
 pub const COLABORATOR_IDS_INIT: u64 = 700;
 pub const MAX_COLLABORATOR_IDS: usize = 100;
-pub const MAX_LEVELS: u8 = 10;
-
 pub const COLABORATOR_IDS: [u64; MAX_COLLABORATOR_IDS] =
     gen_array_u64::<MAX_COLLABORATOR_IDS>(COLABORATOR_IDS_INIT);
+
+pub const MAX_LEVELS: u8 = 10;
+
+pub const CURATOR_IDS_INIT: u64 = 600;
+pub const MAX_CURATOR_IDS: usize = 100;
+pub const CURATOR_IDS: [u64; MAX_CURATOR_IDS] = gen_array_u64::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
 
 const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[1];
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001;
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004;
-const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100002;
 const MAX_BYTES: u32 = 50000;
 const MAX_OBJ_NUMBER: u32 = 100;
 
@@ -222,6 +224,52 @@ where
     insert_leader::<T, DistributionWorkingGroupInstance>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID)
 }
 
+fn insert_content_leader<T>() -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+    T: Config
+        + membership::Config
+        + working_group::Config<ContentWorkingGroupInstance>
+        + balances::Config,
+{
+    insert_leader::<T, ContentWorkingGroupInstance>(MEMBER_IDS[0] as u128)
+}
+
+fn insert_worker<
+    T: Config + membership::Config + working_group::Config<I> + balances::Config,
+    I: Instance,
+>(
+    leader_account_id: T::AccountId,
+    id: u64,
+) -> (T::AccountId, WorkerId<T>)
+where
+    T::AccountId: CreateAccountId,
+{
+    let (caller_id, member_id) = member_funded_account::<T>(id);
+
+    let leader_origin = RawOrigin::Signed(leader_account_id);
+
+    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
+        &T::Origin::from(leader_origin.clone()),
+        &caller_id,
+        &member_id,
+        &OpeningType::Regular,
+    );
+
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    working_group::Module::<T, I>::fill_opening(
+        leader_origin.into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    assert!(WorkerById::<T, I>::contains_key(&worker_id));
+
+    (caller_id, worker_id)
+}
+
 fn insert_leader<T, I>(id: u128) -> T::AccountId
 where
     T::AccountId: CreateAccountId,
@@ -372,7 +420,7 @@ fn generate_permissions_by_level<T: Config>(levels: u8) -> crate::ModerationPerm
                 ]),
             )
         })
-        .collect::<BTreeMap<_,_>>()
+        .collect::<BTreeMap<_, _>>()
 }
 
 fn set_storage_buckets_voucher_max_limits<T>(
