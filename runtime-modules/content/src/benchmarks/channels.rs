@@ -108,26 +108,39 @@ benchmarks! {
         let j in 1..(MAX_COLLABORATOR_IDS as u32); // max collaborators
         let k in 1..(MAX_LEVELS as u32); // max permission levels
 
+        let storage_wg_lead_account_id = insert_storage_leader::<T>();
+
+        let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
+
         let (channel_owner_account_id, channel_owner_member_id) =
             member_funded_account::<T>(DEFAULT_MEMBER_ID);
+
         let origin = RawOrigin::Signed(channel_owner_account_id.clone());
+
         let owner = crate::ChannelOwner::Member(channel_owner_member_id);
+
         let actor = crate::ContentActor::Member(channel_owner_member_id);
+
         let params = generate_channel_creation_params::<T>(
-            insert_storage_leader::<T>(),
-            insert_distribution_leader::<T>(),
+            storage_wg_lead_account_id,
+            distribution_wg_lead_account_id,
             j,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
             MAX_OBJ_NUMBER,
             T::MaxDataObjectSize::get(),
         );
+
         let lead_account_id = super::insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID);
+
         let channel_id = Pallet::<T>::next_channel_id();
+
         let curator_group_id = Pallet::<T>::next_curator_group_id();
+
         let curator_permissions = super::generate_permissions_by_level::<T>(k as u8);
 
         Pallet::<T>::create_channel(origin.clone().into(), owner.clone(), params)?;
+
         Pallet::<T>::create_curator_group(
             RawOrigin::Signed(lead_account_id.clone()).into(),
             true,
@@ -135,13 +148,14 @@ benchmarks! {
         )?;
 
         (0..i).for_each(|curator_id| {
-           Pallet::<T>::add_curator_to_group(
+            let _ = Pallet::<T>::add_curator_to_group(
                RawOrigin::Signed(lead_account_id.clone()).into(),
                curator_group_id,
                T::CuratorId::from(curator_id as u8),
                crate::BTreeSet::new(),
            );
         });
+
         Pallet::<T>::set_channel_paused_features_as_moderator(
             RawOrigin::Signed(lead_account_id).into(),
             actor.clone(),
@@ -151,8 +165,11 @@ benchmarks! {
         )?;
 
         let channel_account_id = crate::ContentTreasury::<T>::account_for_channel(channel_id);
+
         let amount = <T as balances::Config>::Balance::from(100u32);
+
         let _ = Balances::<T>::deposit_creating(&channel_account_id, amount);
+
         let balance_pre = Balances::<T>::usable_balance(&channel_account_id);
 
     }: _ (origin, actor, channel_id, amount)
