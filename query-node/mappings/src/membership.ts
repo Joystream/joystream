@@ -75,10 +75,12 @@ async function getLatestMembershipSystemSnapshot(store: DatabaseManager): Promis
 
 async function getOrCreateMembershipSnapshot({ store, event }: EventContext & StoreContext) {
   const latestSnapshot = await getLatestMembershipSystemSnapshot(store)
+  const eventTime = new Date(event.blockTimestamp)
   return latestSnapshot.snapshotBlock === event.blockNumber
     ? latestSnapshot
     : new MembershipSystemSnapshot({
         ...latestSnapshot,
+        createdAt: eventTime,
         id: undefined,
         snapshotBlock: event.blockNumber,
       })
