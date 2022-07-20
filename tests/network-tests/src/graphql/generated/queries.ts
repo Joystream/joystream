@@ -53,6 +53,7 @@ export type ChannelFieldsFragment = {
   description?: Types.Maybe<string>
   isPublic?: Types.Maybe<boolean>
   isCensored: boolean
+  rewardAccount: string
   language?: Types.Maybe<{ iso: string }>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
@@ -2499,6 +2500,7 @@ export const ChannelFields = gql`
     bannedMembers {
       id
     }
+    rewardAccount
   }
   ${StorageDataObjectFields}
 `
