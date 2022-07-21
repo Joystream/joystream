@@ -12,7 +12,7 @@ use strum::IntoEnumIterator;
 use working_group::StakeParameters;
 
 use crate::primitives::{ActorId, MemberId};
-use crate::tests::run_to_block;
+use crate::tests::{max_proposal_stake, run_to_block};
 use crate::{
     Balance, BlockNumber, ContentWorkingGroup, ContentWorkingGroupInstance,
     ContentWorkingGroupStakingManager, DistributionWorkingGroup, DistributionWorkingGroupInstance,
@@ -115,7 +115,10 @@ fn add_opening(
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         let staking_account_id: [u8; 32] = [221u8; 32];
-        increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(
+            staking_account_id.into(),
+            max_proposal_stake(),
+        );
 
         set_staking_account(account_id.into(), staking_account_id.into(), member_id);
 
@@ -194,7 +197,10 @@ fn fill_opening(
     let expected_proposal_id = sequence_number;
 
     let staking_account_id: [u8; 32] = [220u8; 32];
-    increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+    increase_total_balance_issuance_using_account_id(
+        staking_account_id.into(),
+        max_proposal_stake(),
+    );
     set_staking_account(account_id.into(), staking_account_id.into(), member_id);
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
@@ -233,7 +239,10 @@ fn decrease_stake(
     let expected_proposal_id = sequence_number;
 
     let staking_account_id: [u8; 32] = [227u8; 32];
-    increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+    increase_total_balance_issuance_using_account_id(
+        staking_account_id.into(),
+        max_proposal_stake(),
+    );
     set_staking_account(account_id.into(), staking_account_id.into(), member_id);
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
@@ -304,7 +313,10 @@ fn set_reward(
     let expected_proposal_id = sequence_number;
 
     let staking_account_id: [u8; 32] = [228u8; 32];
-    increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+    increase_total_balance_issuance_using_account_id(
+        staking_account_id.into(),
+        max_proposal_stake(),
+    );
     set_staking_account(account_id.into(), staking_account_id.into(), member_id);
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
@@ -347,7 +359,10 @@ fn set_mint_capacity<
     let expected_proposal_id = sequence_number;
 
     let staking_account_id: [u8; 32] = [224u8; 32];
-    increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+    increase_total_balance_issuance_using_account_id(
+        staking_account_id.into(),
+        max_proposal_stake(),
+    );
     set_staking_account(account_id.into(), staking_account_id.into(), member_id);
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
@@ -382,7 +397,10 @@ fn terminate_role(
     let expected_proposal_id = sequence_number;
 
     let staking_account_id: [u8; 32] = [223u8; 32];
-    increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+    increase_total_balance_issuance_using_account_id(
+        staking_account_id.into(),
+        max_proposal_stake(),
+    );
     set_staking_account(account_id.into(), staking_account_id.into(), member_id);
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
@@ -990,7 +1008,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         let staking_account_id_for_slashing: [u8; 32] = [22u8; 32];
         increase_total_balance_issuance_using_account_id(
             staking_account_id_for_slashing.into(),
-            1_500_000,
+            max_proposal_stake(),
         );
         set_staking_account(
             account_id.into(),
@@ -1102,7 +1120,7 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
 
         let mint_capacity = 999999;
 
-        increase_total_balance_issuance_using_account_id(account_id.into(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(account_id.into(), max_proposal_stake());
 
         Council::set_budget(RawOrigin::Root.into(), 5_000_000).unwrap();
 

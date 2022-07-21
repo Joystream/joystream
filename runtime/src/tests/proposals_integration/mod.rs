@@ -7,7 +7,7 @@ mod working_group_proposals;
 use crate::tests::{
     account_from_member_id, create_new_members, max_proposal_stake, run_to_block, setup_new_council,
 };
-use crate::{MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
+use crate::{currency, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use content::NftLimitPeriod;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
@@ -471,7 +471,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         working_group::OpeningType::Leader,
         StakePolicy {
             stake_amount:
-                <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(
+                <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::LeaderOpeningStake::get(
                 ) as u128,
             leaving_unstaking_period: 1000000,
         },
@@ -486,7 +486,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8],
         stake_parameters: StakeParameters {
-            stake: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get() as
+            stake: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::LeaderOpeningStake::get() as
                 u128,
             staking_account_id: lead_account_id.clone(),
         },
@@ -517,7 +517,7 @@ where
 
                 let min_stake = <Runtime as working_group::Config<
                     MembershipWorkingGroupInstance,
-                >>::MinimumApplicationStake::get();
+                >>::LeaderOpeningStake::get();
 
                 increase_total_balance_issuance_using_account_id(
                     lead_account_id.clone(),
@@ -528,6 +528,7 @@ where
             }
         }
 
+        // are we missing one proposal when getting max stake?
         increase_total_balance_issuance_using_account_id(account_id, max_proposal_stake());
 
         assert_eq!((self.successful_call)(), Ok(()));
@@ -691,10 +692,16 @@ fn set_validator_count_proposal_execution_succeeds() {
         let new_validator_count = <pallet_staking::ValidatorCount<Runtime>>::get() + 8;
 
         setup_new_council(0);
-        increase_total_balance_issuance_using_account_id(account_id.clone(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(
+            account_id.clone(),
+            10_000 * currency::DOLLARS,
+        );
 
         let staking_account_id: [u8; 32] = [225u8; 32];
-        increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(
+            staking_account_id.into(),
+            10_000 * currency::DOLLARS,
+        );
         set_staking_account(
             account_id.clone(),
             staking_account_id.into(),
