@@ -573,10 +573,7 @@ where
 
     let assets = StorageAssets::<T> {
         expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
-        object_creation_list: create_data_object_candidates_helper(
-            objects_num.into(),
-            max_obj_size,
-        ),
+        object_creation_list: create_data_object_candidates_helper(objects_num, max_obj_size),
     };
 
     let collaborators = worst_case_scenario_collaborators::<T>(0, colaborator_num);
@@ -738,19 +735,18 @@ where
     Ok(group_id)
 }
 
+type CuratorChannelData<T> = (
+    <T as storage::Config>::ChannelId,                // channel id
+    <T as ContentActorAuthenticator>::CuratorGroupId, // curator group id
+    <T as frame_system::Config>::AccountId,           // lead_account_id
+    <T as ContentActorAuthenticator>::CuratorId,      // curator_id
+    <T as frame_system::Config>::AccountId,           // curator_account_id
+);
+
 fn setup_worst_case_scenario_curator_channel<T>(
     storage_buckets_num: u32,
     distribution_buckets_num: u32,
-) -> Result<
-    (
-        T::ChannelId,
-        T::CuratorGroupId,
-        T::AccountId,
-        T::CuratorId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<CuratorChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -787,15 +783,14 @@ fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
     }
 }
 
-fn setup_bloat_bonds<T>() -> Result<
-    (
-        <T as balances::Config>::Balance,
-        <T as balances::Config>::Balance,
-        <T as balances::Config>::Balance,
-        <T as balances::Config>::Balance,
-    ),
-    DispatchError,
->
+type BloatBonds<T> = (
+    <T as balances::Config>::Balance, // channel_state_bloat_bond
+    <T as balances::Config>::Balance, // video_state_bloat_bond
+    <T as balances::Config>::Balance, // data_object_state_bloat_bond
+    <T as balances::Config>::Balance, // data_size_fee
+);
+
+fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -816,7 +811,7 @@ where
     )?;
     // Set non-zero video bloat bond
     Pallet::<T>::update_video_state_bloat_bond(
-        RawOrigin::Signed(content_lead_acc.clone()).into(),
+        RawOrigin::Signed(content_lead_acc).into(),
         video_state_bloat_bond,
     )?;
     // Set non-zero data object bloat bond

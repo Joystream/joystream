@@ -214,7 +214,7 @@ benchmarks! {
         ).collect();
     }: create_video (
         RawOrigin::Signed(curator_account_id.clone()),
-        actor.clone(),
+        actor,
         channel_id,
         params.clone()
     )
