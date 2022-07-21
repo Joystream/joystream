@@ -8,7 +8,7 @@ mod locks;
 
 mod fee_tests;
 
-use crate::primitives::MemberId;
+use crate::primitives::{Balance, MemberId};
 use crate::{BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
@@ -240,7 +240,7 @@ pub(crate) fn run_to_block(n: BlockNumber) {
 
 pub(crate) fn increase_total_balance_issuance_using_account_id(
     account_id: AccountId32,
-    balance: u128,
+    balance: Balance,
 ) {
     type Balances = pallet_balances::Pallet<Runtime>;
     let initial_balance = Balances::total_issuance();
@@ -251,7 +251,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     assert_eq!(Balances::total_issuance(), initial_balance + deposit);
 }
 
-pub(crate) fn max_proposal_stake() -> u128 {
+pub(crate) fn max_proposal_stake() -> Balance {
     let mut stakes = vec![];
     stakes
         .push(<Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get());
