@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::permissions::*;
-use crate::types::ChannelOwner;
+use crate::types::{ChannelOwner, VideoCreationParameters};
 use crate::Module as Pallet;
 use crate::{Call, ChannelById, Config, Event};
 use frame_benchmarking::benchmarks;
@@ -10,13 +10,14 @@ use frame_support::traits::Get;
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::{One, Saturating};
 use sp_runtime::SaturatedConversion;
+use sp_std::collections::btree_set::BTreeSet;
 
 use super::{
     assert_last_event, generate_channel_creation_params, insert_content_leader, insert_curator,
-    insert_distribution_leader, insert_storage_leader, member_funded_account,
-    setup_worst_case_curator_group_with_curators, worst_case_channel_agent_permissions,
-    worst_case_content_moderation_actions_set, CreateAccountId, RuntimeConfig, CURATOR_IDS,
-    DEFAULT_MEMBER_ID,
+    insert_distribution_leader, insert_storage_leader, member_funded_account, setup_bloat_bonds,
+    setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
+    worst_case_channel_agent_permissions, worst_case_content_moderation_actions_set,
+    worst_case_scenario_assets, CreateAccountId, RuntimeConfig, CURATOR_IDS, DEFAULT_MEMBER_ID,
 };
 
 benchmarks! {
@@ -175,6 +176,57 @@ benchmarks! {
         assert!(group.get_curators().get(&curator_id).is_none());
         assert_last_event::<T>(Event::<T>::CuratorRemoved(group_id, curator_id).into());
     }
+
+    /*
+    ===============================================================================================
+    ============================================ VIDEOS ===========================================
+    ===============================================================================================
+    */
+    create_video_without_nft {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32, //b
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32 //c
+            )?;
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let video_assets_size = T::MaxDataObjectSize::get() * T::MaxNumberOfAssetsPerVideo::get() as u64;
+        let (_, video_state_bloat_bond, data_object_state_bloat_bond, data_size_fee) =
+            setup_bloat_bonds::<T>()?;
+        let assets = worst_case_scenario_assets::<T>(a);
+        let params = VideoCreationParameters::<T> {
+            assets: Some(assets),
+            meta: None,
+            auto_issue_nft: None,
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+        };
+        let video_id = Pallet::<T>::next_video_id();
+        let expected_asset_ids: BTreeSet<T::DataObjectId> = (
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into()
+            ..(T::MaxNumberOfAssetsPerChannel::get()+a).saturated_into()
+        ).collect();
+    }: create_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor.clone(),
+        channel_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(video_id);
+        assert_eq!(video.in_channel, channel_id);
+        assert_eq!(video.nft_status, None);
+        assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
+        assert_eq!(video.video_state_bloat_bond, video_state_bloat_bond);
+        assert_last_event::<T>(Event::<T>::VideoCreated(
+            actor,
+            channel_id,
+            video_id,
+            params,
+            expected_asset_ids
+        ).into());
+    }
 }
 
 #[cfg(test)]
@@ -221,6 +273,13 @@ pub mod tests {
     fn remove_curator_from_group() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_remove_curator_from_group());
+        });
+    }
+
+    #[test]
+    fn create_video_without_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_create_video_without_nft());
         });
     }
 }

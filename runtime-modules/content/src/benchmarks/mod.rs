@@ -4,8 +4,8 @@ mod benchmarking;
 
 use crate::permissions::*;
 use crate::types::{
-    ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-    StorageAssets,
+    ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness, ChannelCreationParameters,
+    ChannelOwner, StorageAssets,
 };
 use crate::{Config, Module as Pallet};
 use balances::Pallet as Balances;
@@ -27,7 +27,8 @@ use sp_std::iter::FromIterator;
 use sp_std::vec;
 use sp_std::vec::Vec;
 use storage::{
-    DataObjectCreationParameters, DistributionBucketId, DynamicBagType, Module as Storage,
+    DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
+    Module as Storage,
 };
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
@@ -524,11 +525,10 @@ where
 }
 
 pub fn create_data_object_candidates_helper(
-    starting_ipfs_index: u8,
-    number: u64,
+    number: u32,
     size: u64,
 ) -> Vec<DataObjectCreationParameters> {
-    let range = (starting_ipfs_index as u64)..((starting_ipfs_index as u64) + number);
+    let range = 0..number;
 
     range
         .into_iter()
@@ -552,7 +552,11 @@ where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let total_objs_size: u64 = max_obj_size.saturating_mul(objects_num.into());
+    // set limits that allow channel + video with max. number of assets creation
+    let storage_objects_limit: u64 =
+        (T::MaxNumberOfAssetsPerChannel::get() + T::MaxNumberOfAssetsPerVideo::get()) as u64;
+    let storage_size_limit: u64 = storage_objects_limit * T::MaxDataObjectSize::get() as u64;
+
     let metadata = vec![0u8].repeat(MAX_BYTES as usize);
 
     set_dyn_bag_creation_storage_bucket_numbers::<T>(
@@ -563,14 +567,13 @@ where
 
     set_storage_buckets_voucher_max_limits::<T>(
         storage_wg_lead_account_id.clone(),
-        total_objs_size,
-        objects_num.into(),
+        storage_size_limit,
+        storage_objects_limit,
     );
 
     let assets = StorageAssets::<T> {
         expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
         object_creation_list: create_data_object_candidates_helper(
-            1,
             objects_num.into(),
             max_obj_size,
         ),
@@ -583,8 +586,8 @@ where
             create_storage_bucket::<T>(
                 storage_wg_lead_account_id.clone(),
                 true,
-                total_objs_size,
-                objects_num.into(),
+                storage_size_limit,
+                storage_objects_limit,
             );
             id.saturated_into()
         })
@@ -651,10 +654,11 @@ where
         .collect()
 }
 
-#[allow(dead_code)] // TODO: Just temporarly, remove once it's actually used
 fn setup_worst_case_scenario_channel<T: RuntimeConfig>(
     sender: T::AccountId,
     channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
 ) -> Result<T::ChannelId, DispatchError>
 where
     T::AccountId: CreateAccountId,
@@ -667,8 +671,8 @@ where
         storage_wg_lead_account_id,
         distribution_wg_lead_account_id,
         T::MaxNumberOfCollaboratorsPerChannel::get(),
-        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        storage_buckets_num,
+        distribution_buckets_num,
         T::MaxNumberOfAssetsPerChannel::get(),
         T::MaxDataObjectSize::get(),
     );
@@ -734,8 +738,10 @@ where
     Ok(group_id)
 }
 
-#[allow(dead_code)] // TODO: Just temporarly, remove once it's actually used
-fn setup_worst_case_scenario_curator_channel<T>() -> Result<
+fn setup_worst_case_scenario_curator_channel<T>(
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+) -> Result<
     (
         T::ChannelId,
         T::CuratorGroupId,
@@ -755,6 +761,8 @@ where
     let channel_id = setup_worst_case_scenario_channel::<T>(
         lead_account_id.clone(),
         ChannelOwner::CuratorGroup(group_id),
+        storage_buckets_num,
+        distribution_buckets_num,
     )?;
     let group = Pallet::<T>::curator_group_by_id(group_id);
     let curator_id: T::CuratorId = *group.get_curators().keys().next().unwrap();
@@ -766,5 +774,66 @@ where
         lead_account_id,
         curator_id,
         curator_account_id,
+    ))
+}
+
+fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
+    StorageAssets::<T> {
+        expected_data_size_fee: storage::Pallet::<T>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_object_candidates_helper(
+            num,                         // number of objects
+            T::MaxDataObjectSize::get(), // object size
+        ),
+    }
+}
+
+fn setup_bloat_bonds<T>() -> Result<
+    (
+        <T as balances::Config>::Balance,
+        <T as balances::Config>::Balance,
+        <T as balances::Config>::Balance,
+        <T as balances::Config>::Balance,
+    ),
+    DispatchError,
+>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
+    let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let channel_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let video_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let data_object_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    let data_size_fee = <T as balances::Config>::Balance::one();
+    // Set non-zero channel bloat bond
+    Pallet::<T>::update_channel_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc.clone()).into(),
+        channel_state_bloat_bond,
+    )?;
+    // Set non-zero video bloat bond
+    Pallet::<T>::update_video_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc.clone()).into(),
+        video_state_bloat_bond,
+    )?;
+    // Set non-zero data object bloat bond
+    storage::Pallet::<T>::update_data_object_state_bloat_bond(
+        RawOrigin::Signed(storage_lead_acc.clone()).into(),
+        data_object_state_bloat_bond,
+    )?;
+    // Set non-zero fee per mb
+    storage::Pallet::<T>::update_data_size_fee(
+        RawOrigin::Signed(storage_lead_acc).into(),
+        data_size_fee,
+    )?;
+
+    Ok((
+        channel_state_bloat_bond,
+        video_state_bloat_bond,
+        data_object_state_bloat_bond,
+        data_size_fee,
     ))
 }
