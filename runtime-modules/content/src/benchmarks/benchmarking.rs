@@ -1,10 +1,11 @@
 #![cfg(feature = "runtime-benchmarks")]
 
+use crate::nft::{NftOwner, TransactionalStatus};
 use crate::permissions::*;
 use crate::types::{ChannelOwner, VideoCreationParameters};
 use crate::Module as Pallet;
 use crate::{Call, ChannelById, Config, Event};
-use frame_benchmarking::benchmarks;
+use frame_benchmarking::{benchmarks, Zero};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Get;
 use frame_system::RawOrigin;
@@ -17,8 +18,9 @@ use super::{
     insert_content_leader, insert_curator, insert_distribution_leader, insert_storage_leader,
     member_funded_account, setup_bloat_bonds, setup_worst_case_curator_group_with_curators,
     setup_worst_case_scenario_curator_channel, worst_case_channel_agent_permissions,
-    worst_case_content_moderation_actions_set, worst_case_scenario_assets, CreateAccountId,
-    RuntimeConfig, CURATOR_IDS, DEFAULT_MEMBER_ID,
+    worst_case_content_moderation_actions_set, worst_case_scenario_assets,
+    worst_case_scenario_video_nft_issuance_params, CreateAccountId, RuntimeConfig, CURATOR_IDS,
+    DEFAULT_MEMBER_ID, MAX_AUCTION_WHITELIST_LENGTH,
 };
 
 benchmarks! {
@@ -232,6 +234,73 @@ benchmarks! {
             expected_asset_ids
         ).into());
     }
+
+    // Worst case scenario: initial state - EnglishAuction
+    create_video_with_nft {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+        let d in 2..MAX_AUCTION_WHITELIST_LENGTH;
+
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(b, c)?;
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let video_assets_size = T::MaxDataObjectSize::get() * T::MaxNumberOfAssetsPerVideo::get() as u64;
+        let (_, video_state_bloat_bond, data_object_state_bloat_bond, data_size_fee) =
+            setup_bloat_bonds::<T>()?;
+        let assets = worst_case_scenario_assets::<T>(a);
+
+        // nft params
+        let nft_params = worst_case_scenario_video_nft_issuance_params::<T>(d);
+
+        let params = VideoCreationParameters::<T> {
+            assets: Some(assets),
+            meta: None,
+            auto_issue_nft: Some(nft_params.clone()),
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            channel_bag_witness: channel_bag_witness::<T>(channel_id)?,
+        };
+        let video_id = Pallet::<T>::next_video_id();
+        let expected_asset_ids: BTreeSet<T::DataObjectId> = (
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into()
+            ..(T::MaxNumberOfAssetsPerChannel::get()+a).saturated_into()
+        ).collect();
+        let expected_auction_start_block = frame_system::Pallet::<T>::block_number() + T::BlockNumber::one();
+    }: create_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        channel_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(video_id);
+        assert_eq!(video.in_channel, channel_id);
+        assert_eq!(video.nft_status.as_ref().unwrap().owner, NftOwner::<T::MemberId>::Member(T::MemberId::zero()));
+        assert_eq!(video.nft_status.as_ref().unwrap().creator_royalty, nft_params.royalty);
+        match &video.nft_status.as_ref().unwrap().transactional_status {
+            TransactionalStatus::<T>::EnglishAuction(params) => {
+                assert_eq!(params.whitelist.len(), d as usize);
+                assert!(params.buy_now_price.is_some());
+                assert_eq!(params.start, expected_auction_start_block)
+            },
+            _ => panic!("Unexpected video nft transactional status")
+        }
+
+        assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
+        assert_eq!(video.video_state_bloat_bond, video_state_bloat_bond);
+        assert_last_event::<T>(Event::<T>::VideoCreated(
+            actor,
+            channel_id,
+            video_id,
+            params,
+            expected_asset_ids
+        ).into());
+    }
 }
 
 #[cfg(test)]
@@ -285,6 +354,13 @@ pub mod tests {
     fn create_video_without_nft() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_create_video_without_nft());
+        });
+    }
+
+    #[test]
+    fn create_video_with_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_create_video_with_nft());
         });
     }
 }

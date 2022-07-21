@@ -2,6 +2,7 @@
 
 mod benchmarking;
 
+use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters};
 use crate::permissions::*;
 use crate::types::{
     ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness, ChannelCreationParameters,
@@ -13,19 +14,17 @@ use common::MembershipTypes;
 use frame_benchmarking::account;
 use frame_support::storage::{StorageMap, StorageValue};
 use frame_support::traits::{Currency, Get, Instance};
-use frame_system::EventRecord;
-use frame_system::Pallet as System;
-use frame_system::RawOrigin;
+use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
-use sp_arithmetic::traits::One;
-use sp_runtime::DispatchError;
-use sp_runtime::SaturatedConversion;
-use sp_std::collections::btree_map::BTreeMap;
-use sp_std::collections::btree_set::BTreeSet;
-use sp_std::convert::TryInto;
-use sp_std::iter::FromIterator;
-use sp_std::vec;
-use sp_std::vec::Vec;
+use sp_arithmetic::traits::{One, Zero};
+use sp_runtime::{DispatchError, SaturatedConversion};
+use sp_std::{
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
+    iter::FromIterator,
+    vec,
+    vec::Vec,
+};
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
     Module as Storage,
@@ -78,6 +77,9 @@ const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100002;
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
 const MAX_BYTES: u32 = 50000;
+// FIXME: Since we have no bounds for this in the runtime, as this value relies
+// solely on the genesis config, we use this arbitrary constant for benchmarking purposes
+const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
     ChannelActionPermission::AddVideo,
@@ -842,4 +844,38 @@ fn channel_bag_witness<T: RuntimeConfig>(
         storage_buckets_num: channel_bag.stored_by.len() as u32,
         distribution_buckets_num: channel_bag.distributed_by.len() as u32,
     })
+}
+
+fn worst_case_scenario_video_nft_issuance_params<T>(whitelist_size: u32) -> NftIssuanceParameters<T>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let mut next_member_id = membership::Pallet::<T>::members_created();
+    NftIssuanceParameters::<T> {
+        nft_metadata: Vec::new(),
+        non_channel_owner: Some(T::MemberId::zero()),
+        royalty: Some(Pallet::<T>::max_creator_royalty()),
+        // most complex InitTransactionalStatus is EnglishAuction
+        init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
+            EnglishAuctionParams::<T> {
+                buy_now_price: Some(
+                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
+                ),
+                duration: Pallet::<T>::min_auction_duration(),
+                extension_period: Pallet::<T>::min_auction_extension_period(),
+                min_bid_step: Pallet::<T>::min_bid_step(),
+                starting_price: Pallet::<T>::min_starting_price(),
+                starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+                whitelist: (0..whitelist_size)
+                    .map(|_| {
+                        let (_, member_id) =
+                            member_funded_account::<T>(next_member_id.saturated_into());
+                        next_member_id += T::MemberId::one();
+                        member_id
+                    })
+                    .collect(),
+            },
+        ),
+    }
 }

@@ -915,7 +915,17 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is the number of items in `params.assets.object_creation_list`
+        /// - `B` is `params.channel_bag_witness.storage_buckers_num`
+        /// - `C` is `params.channel_bag_witness.distribution_buckets_num`
+        /// - DB:
+        ///    - `O(A + B + C)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::create_video_weight(params)]
         pub fn create_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3791,7 +3801,7 @@ impl<T: Config> Module<T> {
 
     //Weight functions
 
-    // Calculates weight for channel_creation_weight extrinsic.
+    // Calculates weight for create_channel extrinsic.
     fn create_channel_weight(params: &ChannelCreationParameters<T>) -> Weight {
         //collaborators
         let a = params.collaborators.len() as u32;
@@ -3809,6 +3819,33 @@ impl<T: Config> Module<T> {
             .map_or(0, |v| v.object_creation_list.len()) as u32;
 
         WeightInfoContent::<T>::create_channel(a, b, c, d)
+    }
+
+    // Calculates weight for create_video extrinsic.
+    fn create_video_weight(params: &VideoCreationParameters<T>) -> Weight {
+        // assets
+        let a = params
+            .assets
+            .as_ref()
+            .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+        // storage buckets in channel bag
+        let b = params.channel_bag_witness.storage_buckets_num;
+
+        // distribution buckets in channel bag
+        let c = params.channel_bag_witness.distribution_buckets_num;
+
+        if let Some(nft_params) = params.auto_issue_nft.as_ref() {
+            let d = match &nft_params.init_transactional_status {
+                InitTransactionalStatus::<T>::EnglishAuction(params) => params.whitelist.len(),
+                InitTransactionalStatus::<T>::OpenAuction(params) => params.whitelist.len(),
+                _ => 0,
+            } as u32;
+
+            return WeightInfoContent::<T>::create_video_with_nft(a, b, c, d);
+        }
+
+        WeightInfoContent::<T>::create_video_without_nft(a, b, c)
     }
 }
 
