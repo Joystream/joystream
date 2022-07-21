@@ -23,14 +23,18 @@
       become: yes
 
     - name: Build packages
-      shell: "yarn build:packages"
+      shell:
+        cmd: |
+          source ~/.bash_profile
+          yarn build:packages
       args:
         chdir: '{{ remote_code_path }}'
+        executable: /usr/bin/bash
       async: 3600
       poll: 0
       register: build_result
 
-    - name: Check on build async task
+    - name: Check on build packages async task
       async_status:
         jid: '{{ build_result.ansible_job_id }}'
       register: job_result
@@ -40,8 +44,8 @@
       # Check for the status every 100s
       delay: 100
 
-    - name: Build Node image
-      shell: "yarn build:node:docker"
+    - name: Build joystream/node docker image
+      shell: . ~/.bash_profile && ./build-node-docker.sh
       args:
         chdir: '{{ remote_code_path }}'
       environment:
@@ -60,8 +64,8 @@
       # Check for the status every 100s
       delay: 100
 
-    - name: Run docker-compose
-      shell: "yarn start"
+    - name: Start Playground Services
+      shell: . ~/.bash_profile && yarn start
       args:
         chdir: '{{ remote_code_path }}'
       environment:

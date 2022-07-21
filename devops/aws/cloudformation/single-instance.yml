@@ -56,14 +56,11 @@ Resources:
             # send script output to /tmp so we can debug boot failures
             exec > /tmp/userdata.log 2>&1
 
-            # Prevent interactive prompts that would interrupt the installation
+            # Prevent interactive prompts
             export DEBIAN_FRONTEND=noninteractive
 
             # Update all packages
             apt-get update -y
-
-            # Install the updates
-            apt-get upgrade -y
 
             # Get latest cfn scripts and install them;
             apt-get install -y python3-setuptools

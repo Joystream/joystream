@@ -132,6 +132,7 @@ jobs:
             --extra-vars "branch_name=${{ steps.myoutputs.outputs.branchName }} \
                           git_repo=${{ steps.myoutputs.outputs.gitRepo }} data_path=mydata \
                           runtime_profile=${{ steps.myoutputs.outputs.runtimeProfile }}"
+            --verbose
 
       - name: Run playbook to configure chain-spec
         uses: dawidd6/action-ansible-playbook@v2
@@ -150,6 +151,7 @@ jobs:
                           initial_members_file=${{ steps.myoutputs.outputs.initialMembersFilePath }} \
                           initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }} \
                           skip_chain_setup=${{ steps.myoutputs.outputs.skipChainSetup }}"
+            --verbose
 
       - name: Terminate Build instance
         continue-on-error: true
