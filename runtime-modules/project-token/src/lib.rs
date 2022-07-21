@@ -368,6 +368,7 @@ decl_module! {
         /// ## Weight
         /// `O (H)` where:
         /// - `H` is the length of `proof.0`
+        /// - DB:
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::join_whitelist(
