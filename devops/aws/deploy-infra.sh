@@ -71,7 +71,7 @@ if [ $? -eq 0 ]; then
 
   echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
 
-  # Build binaries if AMI not specified or a custom proposals parameter is passed
+  # Build binaries if AMI not specified
   if [ -z "$EC2_AMI_ID" ]
   then
     echo -e "\n\n=========== Compile joystream-node on build server ==========="
