@@ -23,7 +23,7 @@
       become: yes
 
     - name: Build packages
-      command: yarn build:packages
+      shell: "yarn build:packages"
       args:
         chdir: '{{ remote_code_path }}'
       async: 3600
@@ -41,7 +41,7 @@
       delay: 100
 
     - name: Build Node image
-      command: yarn build:node:docker
+      shell: "yarn build:node:docker"
       args:
         chdir: '{{ remote_code_path }}'
       environment:
@@ -61,7 +61,7 @@
       delay: 100
 
     - name: Run docker-compose
-      command: yarn start
+      shell: "yarn start"
       args:
         chdir: '{{ remote_code_path }}'
       environment:
