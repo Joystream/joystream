@@ -86,11 +86,17 @@ export abstract class CLI {
             throw error
           }
 
-          return {
+          const response = {
             exitCode: errorTyped.code || defaultError,
             stdout: errorTyped.stdout || '',
             stderr: errorTyped.stderr || '',
           }
+
+          if (debuggingCli) {
+            console.log('CLI response (error) ', response)
+          }
+
+          return response
         }
       },
       {
@@ -98,11 +104,17 @@ export abstract class CLI {
       } as any // needs cast to any because type `maxOccupation` is missing in types for async-lock v1.1.3
     )
 
-    return {
+    const response = {
       exitCode,
       stdout,
       stderr,
       out: stdout.trim(),
     }
+
+    if (debuggingCli) {
+      console.log('CLI response', response)
+    }
+
+    return response
   }
 }

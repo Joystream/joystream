@@ -12,7 +12,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
   private channelCount: number
   private videoCount: number
-  private videoCategoryId: number
+  private videoCategoryId: string
   private author: IMember
   private createdItems: {
     channelIds: number[]
@@ -25,7 +25,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     cli: JoystreamCLI,
     channelCount: number,
     videoCount: number,
-    videoCategoryId: number,
+    videoCategoryId: string,
     author: IMember
   ) {
     super(api, query)
@@ -84,7 +84,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
 
     Note: Assets have to be accepted later on for videos to be counted as active.
   */
-  private async createVideos(count: number, channelId: number, videoCategoryId: number): Promise<ICreatedVideoData[]> {
+  private async createVideos(count: number, channelId: number, videoCategoryId: string): Promise<ICreatedVideoData[]> {
     const createVideo = async (index: number) => {
       return await this.cli.createVideo(channelId, {
         ...getVideoDefaults(index, cliExamplesFolderPath),

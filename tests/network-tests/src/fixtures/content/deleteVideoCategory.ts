@@ -7,9 +7,9 @@ import { Utils } from '../../utils'
 
 export class DeleteVideoCategoryFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
-  private videoCategoryId: number
+  private videoCategoryId: string
 
-  constructor(api: Api, query: QueryNodeApi, cli: JoystreamCLI, videoCategoryId: number) {
+  constructor(api: Api, query: QueryNodeApi, cli: JoystreamCLI, videoCategoryId: string) {
     super(api, query)
     this.cli = cli
     this.videoCategoryId = videoCategoryId

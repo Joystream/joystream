@@ -3,7 +3,6 @@ import { metadataToString } from '../../helpers/serialization'
 import chalk from 'chalk'
 import { DeleteVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
 import WorkerGroupLeadRemarkedCommand from '../working-groups/leadRemark'
-import Long from 'long'
 
 export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Delete video category from content directory.'
@@ -12,7 +11,7 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
       name: 'videoCategoryId',
       required: true,
       description: 'Video category id',
-    }
+    },
   ]
   static flags = {
     ...ContentDirectoryCommandBase.flags,
@@ -24,17 +23,13 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
     const meta = new WorkerGroupLeadRemarked({
       moderateVideoCategories: new ModerateVideoCategories({
         deleteCategory: new DeleteVideoCategory({
-          videoCategoryId: new Long(videoCategoryId),
+          videoCategoryId,
         }),
       }),
     })
     const metaMessage = metadataToString(WorkerGroupLeadRemarked, meta)
 
-    await WorkerGroupLeadRemarkedCommand.run([
-      '--group',
-      'curators',
-      metaMessage,
-    ])
+    await WorkerGroupLeadRemarkedCommand.run(['--group', 'curators', metaMessage])
 
     this.log(chalk.green(`Video category successfully deleted!`))
   }

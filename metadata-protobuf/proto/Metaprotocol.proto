@@ -143,12 +143,12 @@ message CreateVideoCategory {
 }
 
 message UpdateVideoCategory {
-    required uint64 video_category_id = 1;
+    required string video_category_id = 1;
     required string name = 2;
 }
 
 message DeleteVideoCategory {
-    required uint64 video_category_id = 1;
+    required string video_category_id = 1;
 }
 
 message ModerateVideoCategories {

@@ -123,7 +123,7 @@ export class JoystreamCLI extends CLI {
   */
   async createVideo(
     channelId: number,
-    video: Modify<VideoInputParameters, { category: number }>,
+    video: Modify<VideoInputParameters, { category: string }>,
     canOmitUpload = true
   ): Promise<ICreatedVideoData> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
@@ -164,7 +164,7 @@ export class JoystreamCLI extends CLI {
   /**
     Creates an existing video category.
   */
-  async updateVideoCategory(videoCategoryId: number, newName: string): Promise<void> {
+  async updateVideoCategory(videoCategoryId: string, newName: string): Promise<void> {
     const { stdout, stderr, exitCode } = await this.run('content:updateVideoCategory', [
       videoCategoryId.toString(),
       newName,
@@ -178,7 +178,7 @@ export class JoystreamCLI extends CLI {
   /**
     Deletes an existing video category.
   */
-  async deleteVideoCategory(videoCategoryId: number): Promise<void> {
+  async deleteVideoCategory(videoCategoryId: string): Promise<void> {
     const { stdout, stderr, exitCode } = await this.run('content:deleteVideoCategory', [videoCategoryId.toString()])
 
     if (exitCode) {
@@ -189,7 +189,7 @@ export class JoystreamCLI extends CLI {
   /**
     Updates an existing video.
   */
-  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category: number }>): Promise<void> {
+  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category: string }>): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
     const { stdout, stderr, exitCode } = await this.run('content:updateVideo', [

@@ -15,7 +15,7 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
   private videoCategoryCount: number
   private createdItems: {
-    videoCategoryIds: number[]
+    videoCategoryIds: string[]
   }
 
   constructor(api: Api, query: QueryNodeApi, cli: JoystreamCLI, videoCategoryCount: number) {
@@ -75,7 +75,7 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
   /**
     Creates a new video category. Can only be executed as content group leader.
   */
-  private async createVideoCategories(count: number): Promise<number[]> {
+  private async createVideoCategories(count: number): Promise<string[]> {
     // remember initial video categories count
     const initialVideoCategories = await this.query.tryQueryWithTimeout(
       () => this.query.getVideoCategories(),
@@ -89,19 +89,11 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
       const categoryName = getVideoCategoryDefaults(index).name
       await this.cli.createVideoCategory(categoryName)
 
-      /*
-      const response = await this.api.createVideoCategoryAsLead(
-        {
-          ...getVideoCategoryDefaults(index),
-        }.name
-      )
-      */
-
       const qEvents = await this.query.tryQueryWithTimeout(
         () => this.query.getVideoCategories(),
         (qEvents) => assert.equal(qEvents.length, initialCategoryCount + index + 1)
       )
-      const id = parseInt(qEvents[0].id)
+      const id = qEvents[0].id
 
       return id
     })

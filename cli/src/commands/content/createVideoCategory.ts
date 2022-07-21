@@ -29,11 +29,7 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
     })
     const metaMessage = metadataToString(WorkerGroupLeadRemarked, meta)
 
-    await WorkerGroupLeadRemarkedCommand.run([
-      '--group',
-      'curators',
-      metaMessage,
-    ])
+    await WorkerGroupLeadRemarkedCommand.run(['--group', 'curators', metaMessage])
 
     this.log(chalk.green(`Video category successfully created!`))
   }

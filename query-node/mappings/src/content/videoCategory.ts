@@ -1,21 +1,19 @@
 import { VideoCategory } from 'query-node/dist/model'
 import { inconsistentState, logger } from '../common'
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { generateNextId } from '@joystream/hydra-processor/lib/executor/EntityIdGenerator'
 
 export async function createVideoCategory(
   store: DatabaseManager,
   event: SubstrateEvent,
   name: string
 ): Promise<VideoCategory> {
-  // TODO: this doesn't take category deletion into account
-  const tmp = await store.get<VideoCategory>(VideoCategory, { order: { id: 'DESC' } })
-  const temporaryId = tmp ? (parseInt(tmp.id) + 1).toString() : '1'
+  const videoCategoryId = await generateNextId(store, VideoCategory)
 
   // create new video category
   const videoCategory = new VideoCategory({
     // main data
-    // id: videoCategoryId.toString(),
-    id: temporaryId,
+    id: videoCategoryId,
 
     videos: [],
     name,

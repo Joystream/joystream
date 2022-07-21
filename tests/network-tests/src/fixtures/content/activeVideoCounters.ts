@@ -17,7 +17,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
   private channelIds: number[]
   private videosData: ICreatedVideoData[]
-  private videoCategoryIds: number[]
+  private videoCategoryIds: string[]
 
   constructor(
     api: Api,
@@ -25,7 +25,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     cli: JoystreamCLI,
     channelIds: number[],
     videosData: ICreatedVideoData[],
-    videoCategoryIds: number[]
+    videoCategoryIds: string[]
   ) {
     super(api, query)
     this.cli = cli
@@ -100,7 +100,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
   */
   private async assertCounterMatch(
     entityName: 'channel' | 'channelCategory' | 'videoCategory',
-    entityId: number,
+    entityId: number | string,
     expectedCount: number
   ) {
     const getterName = `${entityName}ById` as 'channelById' | 'videoCategoryById'

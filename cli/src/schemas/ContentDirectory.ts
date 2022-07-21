@@ -20,7 +20,6 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
   type: 'object',
   additionalProperties: false,
   properties: {
-    category: { type: 'number' },
     description: { type: 'string' },
     isPublic: { type: 'boolean' },
     language: { type: 'string' },
@@ -78,7 +77,7 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    category: { type: 'number' },
+    category: { type: 'string' },
     description: { type: 'string' },
     duration: { type: 'number' },
     hasMarketing: { type: 'boolean' },
