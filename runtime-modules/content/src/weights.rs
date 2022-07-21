@@ -50,7 +50,7 @@ pub trait WeightInfo {
 	fn set_curator_group_status() -> Weight;
 	fn add_curator_to_group() -> Weight;
 	fn remove_curator_from_group() -> Weight;
-	fn create_video_without_nft(_a: u32, ) -> Weight;
+	fn create_video_without_nft(_a: u32, _b: u32, _c: u32, ) -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -72,15 +72,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x95875cb80ebaf9f918457db6a86ac6adade883233841e9338c8e73f6b9f74890] (r:0 w:10)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b8727cd538b4597adba02e6593ace94e804] (r:0 w:1)
 	fn create_channel(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		(188_699_000 as Weight)
-			// Standard Error: 885_000
-			.saturating_add((7_836_000 as Weight).saturating_mul(a as Weight))
-			// Standard Error: 455_000
-			.saturating_add((9_257_000 as Weight).saturating_mul(b as Weight))
-			// Standard Error: 51_000
-			.saturating_add((12_333_000 as Weight).saturating_mul(c as Weight))
-			// Standard Error: 885_000
-			.saturating_add((10_399_000 as Weight).saturating_mul(d as Weight))
+		(16_262_000 as Weight)
+			// Standard Error: 3_005_000
+			.saturating_add((11_566_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 1_544_000
+			.saturating_add((17_426_000 as Weight).saturating_mul(b as Weight))
+			// Standard Error: 173_000
+			.saturating_add((13_290_000 as Weight).saturating_mul(c as Weight))
+			// Standard Error: 3_005_000
+			.saturating_add((12_915_000 as Weight).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(11 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
@@ -95,9 +95,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b870c0ce290812b08a3418d76f63fc3b322] (r:1 w:1)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:0 w:1)
 	fn create_curator_group(a: u32, ) -> Weight {
-		(36_746_000 as Weight)
-			// Standard Error: 9_000
-			.saturating_add((1_807_000 as Weight).saturating_mul(a as Weight))
+		(40_491_000 as Weight)
+			// Standard Error: 64_000
+			.saturating_add((1_799_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
@@ -105,9 +105,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn update_curator_group_permissions(a: u32, ) -> Weight {
-		(117_469_000 as Weight)
-			// Standard Error: 33_000
-			.saturating_add((1_947_000 as Weight).saturating_mul(a as Weight))
+		(137_532_000 as Weight)
+			// Standard Error: 40_000
+			.saturating_add((1_556_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -115,7 +115,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn set_curator_group_status() -> Weight {
-		(119_775_000 as Weight)
+		(126_385_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -123,7 +123,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:2 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn add_curator_to_group() -> Weight {
-		(192_034_000 as Weight)
+		(200_421_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -131,7 +131,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn remove_curator_from_group() -> Weight {
-		(185_376_000 as Weight)
+		(193_281_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -151,13 +151,21 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x95875cb80ebaf9f918457db6a86ac6ad33807bc23ee2cb31454339d2b2c6b0a8] (r:101 w:101)
 	// Storage: unknown [0x95875cb80ebaf9f918457db6a86ac6adade883233841e9338c8e73f6b9f74890] (r:0 w:1)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b870af9e4882a7d4dfc4aa025e76973af62] (r:0 w:1)
-	fn create_video_without_nft(a: u32, ) -> Weight {
-		(1_466_547_000 as Weight)
-			// Standard Error: 448_000
-			.saturating_add((5_040_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(134 as Weight))
-			.saturating_add(T::DbWeight::get().writes(128 as Weight))
+	fn create_video_without_nft(a: u32, b: u32, c: u32, ) -> Weight {
+		(606_657_000 as Weight)
+			// Standard Error: 287_000
+			.saturating_add((369_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 389_000
+			.saturating_add((3_948_000 as Weight).saturating_mul(b as Weight))
+			// Standard Error: 43_000
+			.saturating_add((9_068_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add(T::DbWeight::get().reads(13 as Weight))
+			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
+			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
 	}
 }
 
@@ -181,7 +189,7 @@ impl WeightInfo for () {
 	fn remove_curator_from_group() -> Weight {
 		0
 	}
-	fn create_video_without_nft(a: u32, ) -> Weight {
+	fn create_video_without_nft(a: u32, b: u32, c: u32, ) -> Weight {
 		0
 	}
 }

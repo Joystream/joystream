@@ -299,8 +299,19 @@ impl CreateVideoFixture {
                 auto_issue_nft: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
                 expected_video_state_bloat_bond: DEFAULT_VIDEO_STATE_BLOAT_BOND,
+                channel_bag_witness: channel_bag_witness(ChannelId::one()),
             },
             channel_id: ChannelId::one(), // channel index starts at 1
+        }
+    }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                channel_bag_witness,
+                ..self.params
+            },
+            ..self
         }
     }
 
@@ -347,7 +358,14 @@ impl CreateVideoFixture {
     }
 
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
+        Self {
+            channel_id,
+            params: VideoCreationParameters::<Test> {
+                channel_bag_witness: channel_bag_witness(channel_id),
+                ..self.params
+            },
+            ..self
+        }
     }
 
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
@@ -5455,6 +5473,15 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err);
+    }
+}
+
+fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
+    let bag_id = Content::bag_id_for_channel(&channel_id);
+    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
+    ChannelBagWitness {
+        storage_buckets_num: channel_bag.stored_by.len() as u32,
+        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
     }
 }
 

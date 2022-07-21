@@ -34,8 +34,8 @@ pub use types::*;
 use codec::{Codec, Decode, Encode};
 use frame_support::weights::Weight;
 pub use storage::{
-    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
-    DynamicBagIdType, StaticBagId, UploadParameters,
+    BagId, BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
+    DynamicBagId, DynamicBagIdType, StaticBagId, UploadParameters,
 };
 
 pub use common::{
@@ -935,6 +935,9 @@ decl_module! {
             if params.auto_issue_nft.is_some() {
                 channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
+
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &params.channel_bag_witness)?;
 
             // next video id
             let video_id = NextVideoId::<T>::get();
@@ -3766,6 +3769,26 @@ impl<T: Config> Module<T> {
             ChannelOwner::CuratorGroup(..) => Ok(ChannelFundsDestination::CouncilBudget),
         }
     }
+
+    fn verify_channel_bag_witness(
+        channel_id: T::ChannelId,
+        witness: &ChannelBagWitness,
+    ) -> DispatchResult {
+        let bag_id = Self::bag_id_for_channel(&channel_id);
+        let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+
+        ensure!(
+            channel_bag.stored_by.len() == witness.storage_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+        ensure!(
+            channel_bag.distributed_by.len() == witness.distribution_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+
+        Ok(())
+    }
+
     //Weight functions
 
     // Calculates weight for channel_creation_weight extrinsic.

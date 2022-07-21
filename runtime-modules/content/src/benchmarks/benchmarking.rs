@@ -13,11 +13,12 @@ use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_set::BTreeSet;
 
 use super::{
-    assert_last_event, generate_channel_creation_params, insert_content_leader, insert_curator,
-    insert_distribution_leader, insert_storage_leader, member_funded_account, setup_bloat_bonds,
-    setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
-    worst_case_channel_agent_permissions, worst_case_content_moderation_actions_set,
-    worst_case_scenario_assets, CreateAccountId, RuntimeConfig, CURATOR_IDS, DEFAULT_MEMBER_ID,
+    assert_last_event, channel_bag_witness, generate_channel_creation_params,
+    insert_content_leader, insert_curator, insert_distribution_leader, insert_storage_leader,
+    member_funded_account, setup_bloat_bonds, setup_worst_case_curator_group_with_curators,
+    setup_worst_case_scenario_curator_channel, worst_case_channel_agent_permissions,
+    worst_case_content_moderation_actions_set, worst_case_scenario_assets, CreateAccountId,
+    RuntimeConfig, CURATOR_IDS, DEFAULT_MEMBER_ID,
 };
 
 benchmarks! {
@@ -184,12 +185,15 @@ benchmarks! {
     */
     create_video_without_nft {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32, //b
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32 //c
-            )?;
+            setup_worst_case_scenario_curator_channel::<T>(b, c)?;
         let actor = ContentActor::Curator(group_id, curator_id);
         let video_assets_size = T::MaxDataObjectSize::get() * T::MaxNumberOfAssetsPerVideo::get() as u64;
         let (_, video_state_bloat_bond, data_object_state_bloat_bond, data_size_fee) =
@@ -201,6 +205,7 @@ benchmarks! {
             auto_issue_nft: None,
             expected_video_state_bloat_bond: video_state_bloat_bond,
             expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            channel_bag_witness: channel_bag_witness::<T>(channel_id)?,
         };
         let video_id = Pallet::<T>::next_video_id();
         let expected_asset_ids: BTreeSet<T::DataObjectId> = (

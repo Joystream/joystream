@@ -563,7 +563,12 @@ pub type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, Balance> {
+pub struct VideoCreationParametersRecord<
+    StorageAssets,
+    NftIssuanceParameters,
+    Balance,
+    ChannelBagWitness,
+> {
     /// Asset collection for the video
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
@@ -574,10 +579,25 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub expected_video_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witness/commitment data related to channel bag (for weight calculation purposes)
+    pub channel_bag_witness: ChannelBagWitness,
 }
 
-pub type VideoCreationParameters<T> =
-    VideoCreationParametersRecord<StorageAssets<T>, NftIssuanceParameters<T>, BalanceOf<T>>;
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub struct ChannelBagWitness {
+    /// Number of storage buckets assigned to channel's storage bag
+    pub storage_buckets_num: u32,
+    /// Number of distribution buckets assigned to channel's storage bag
+    pub distribution_buckets_num: u32,
+}
+
+pub type VideoCreationParameters<T> = VideoCreationParametersRecord<
+    StorageAssets<T>,
+    NftIssuanceParameters<T>,
+    BalanceOf<T>,
+    ChannelBagWitness,
+>;
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

@@ -837,3 +837,14 @@ where
         data_size_fee,
     ))
 }
+
+fn channel_bag_witness<T: RuntimeConfig>(
+    channel_id: T::ChannelId,
+) -> Result<ChannelBagWitness, DispatchError> {
+    let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
+    let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+    Ok(ChannelBagWitness {
+        storage_buckets_num: channel_bag.stored_by.len() as u32,
+        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
+    })
+}

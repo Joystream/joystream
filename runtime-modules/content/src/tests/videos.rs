@@ -527,6 +527,21 @@ fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
 }
 
 #[test]
+fn unsuccessful_video_creation_with_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        CreateVideoFixture::default()
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
+#[test]
 fn successful_video_update_by_member_with_nft() {
     with_default_mock_builder(|| {
         run_to_block(1);
