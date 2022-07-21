@@ -1,12 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use super::{
-    generate_channel_creation_params, insert_content_leader,
-    insert_distribution_leader, insert_storage_leader, member_funded_account,
-    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
-    StorageWorkingGroupInstance, DEFAULT_MEMBER_ID, MAX_COLLABORATOR_IDS, MAX_LEVELS,
-    MAX_OBJ_NUMBER, CURATOR_IDS,
-};
+use super::*;
 use crate::types::{ChannelOwner, ModuleAccount};
 use crate::Module as Pallet;
 use crate::{Call, ChannelById, Config};
@@ -105,27 +99,19 @@ benchmarks! {
     }
 
     withdraw_from_channel_balance {
-        let (channel_owner_account_id, channel_owner_member_id) =
-            member_funded_account::<T>(DEFAULT_MEMBER_ID);
-
-        let origin = RawOrigin::Signed(channel_owner_account_id.clone());
-
-        let owner = crate::ChannelOwner::Member(channel_owner_member_id);
-
-        let actor = crate::ContentActor::Member(channel_owner_member_id);
-
         let lead_account = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
             T::MaxNumberOfCuratorsPerGroup::get()
         )?;
         let group = Pallet::<T>::curator_group_by_id(group_id);
 
-        assert!(group.is_active());
-
+        let (channel_owner_account_id, channel_owner_member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let origin = RawOrigin::Signed(channel_owner_account_id.clone());
+        let owner = crate::ChannelOwner::Member(channel_owner_member_id);
         let channel_id = setup_worst_case_scenario_channel::<T>(channel_owner_account_id, owner).ok().unwrap();
 
         Pallet::<T>::set_channel_paused_features_as_moderator(
-            RawOrigin::Signed(lead_account_id).into(),
+            RawOrigin::Signed(lead_account).into(),
             crate::ContentActor::Lead,
             channel_id,
             super::all_channel_pausable_features_except(crate::PausableChannelFeature::ChannelFundsTransfer),
@@ -133,13 +119,11 @@ benchmarks! {
         ).unwrap();
 
         let channel_account_id = crate::ContentTreasury::<T>::account_for_channel(channel_id);
-
         let amount = <T as balances::Config>::Balance::from(100u32);
-
         let _ = Balances::<T>::deposit_creating(&channel_account_id, amount + T::ExistentialDeposit::get());
 
         let balance_pre = Balances::<T>::usable_balance(&channel_owner_account_id);
-
+        let actor = crate::ContentActor::Member(channel_owner_member_id);
     }: _ (origin, actor, channel_id, amount)
         verify {
             assert_eq!(Balances::<T>::usable_balance(channel_owner_account_id), balance_pre.saturating_add(amount));

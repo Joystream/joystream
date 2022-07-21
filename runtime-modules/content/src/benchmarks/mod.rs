@@ -1,9 +1,9 @@
 #[cfg(feature = "runtime-benchmarks")]
-mod channels;
+mod benchmarks;
 //mod payouts;
 
-use crate::types::{ChannelActionPermission, ChannelCreationParameters, StorageAssets};
-use crate::{Config, Module as Pallet};
+use crate::types::{ChannelActionPermission, ChannelCreationParameters, StorageAssets, PausableChannelFeature};
+use crate::{Config, Module as Pallet, ModerationPermissionsByLevel, ContentModerationAction};
 use balances::Pallet as Balances;
 use frame_benchmarking::account;
 use frame_support::storage::{StorageMap, StorageValue};
@@ -11,7 +11,7 @@ use frame_support::traits::{Currency, Get, Instance};
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_arithmetic::traits::One;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{DispatchError,SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
@@ -25,6 +25,52 @@ use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
+
+// Configuration
+pub trait RuntimeConfig:
+    Config
+    + storage::Config
+    + membership::Config
+    + balances::Config
+    + working_group::Config<StorageWorkingGroupInstance>
+    + working_group::Config<DistributionWorkingGroupInstance>
+    + working_group::Config<ContentWorkingGroupInstance>
+{
+}
+
+impl<T> RuntimeConfig for T where
+    T: Config
+        + storage::Config
+        + membership::Config
+        + balances::Config
+        + working_group::Config<StorageWorkingGroupInstance>
+        + working_group::Config<DistributionWorkingGroupInstance>
+        + working_group::Config<ContentWorkingGroupInstance>
+{
+}
+
+// moderation actions
+const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
+    ContentModerationAction::HideVideo,
+    ContentModerationAction::HideChannel,
+    ContentModerationAction::ChangeChannelFeatureStatus(
+        PausableChannelFeature::ChannelFundsTransfer,
+    ),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::CreatorCashout),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::VideoNftIssuance),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::VideoCreation),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::VideoUpdate),
+    ContentModerationAction::ChangeChannelFeatureStatus(PausableChannelFeature::ChannelUpdate),
+    ContentModerationAction::ChangeChannelFeatureStatus(
+        PausableChannelFeature::CreatorTokenIssuance,
+    ),
+    ContentModerationAction::DeleteVideo,
+    ContentModerationAction::DeleteChannel,
+    ContentModerationAction::DeleteVideoAssets(true),
+    ContentModerationAction::DeleteVideoAssets(false),
+    ContentModerationAction::DeleteNonVideoChannelAssets,
+    ContentModerationAction::UpdateChannelNftLimits,
+];
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
@@ -60,9 +106,10 @@ pub const CURATOR_IDS_INIT: u64 = 600;
 pub const MAX_CURATOR_IDS: usize = 100;
 pub const CURATOR_IDS: [u64; MAX_CURATOR_IDS] = gen_array_u64::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
 
-const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[1];
-const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001;
-const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004;
+const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[1];
+const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
+const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100002;
+const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
 const MAX_BYTES: u32 = 50000;
 const MAX_OBJ_NUMBER: u32 = 100;
 
@@ -268,6 +315,26 @@ where
     (caller_id, worker_id)
 }
 
+fn insert_curator<T>(id: u128) -> (T::CuratorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let (actor_id, account_id) = insert_worker::<T, ContentWorkingGroupInstance>(
+        T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID),
+        id,
+    );
+
+    (
+        actor_id.saturated_into::<u64>().saturated_into(),
+        account_id,
+    )
+}
+
+fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
+    CHANNEL_AGENT_PERMISSIONS.iter().cloned().collect()
+}
+
 fn setup_worst_case_curator_group_with_curators<T>(
     curators_len: u32,
 ) -> Result<T::CuratorGroupId, DispatchError>
@@ -289,7 +356,7 @@ where
 
     Pallet::<T>::create_curator_group(
         RawOrigin::Signed(T::AccountId::create_account_id(
-            CONTENT_WG_LEADER_ACCOUNT_ID,
+            MEMBER_IDS[0],
         ))
         .into(),
         true,
@@ -432,47 +499,6 @@ fn update_families_in_dynamic_bag_creation_policy<T>(
         families,
     )
     .unwrap();
-}
-
-// worst case scenario: all channels have full permissions
-fn generate_permissions_by_level<T: Config>(levels: u8) -> crate::ModerationPermissionsByLevel<T> {
-    (1..levels)
-        .map(|i| {
-            (
-                <T as Config>::ChannelPrivilegeLevel::from(i),
-                BTreeSet::from_iter(vec![
-                    crate::ContentModerationAction::HideVideo,
-                    crate::ContentModerationAction::HideChannel,
-                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
-                        crate::PausableChannelFeature::ChannelFundsTransfer,
-                    ),
-                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
-                        crate::PausableChannelFeature::CreatorCashout,
-                    ),
-                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
-                        crate::PausableChannelFeature::ChannelUpdate,
-                    ),
-                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
-                        crate::PausableChannelFeature::VideoNftIssuance,
-                    ),
-                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
-                        crate::PausableChannelFeature::VideoCreation,
-                    ),
-                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
-                        crate::PausableChannelFeature::ChannelUpdate,
-                    ),
-                    crate::ContentModerationAction::ChangeChannelFeatureStatus(
-                        crate::PausableChannelFeature::CreatorTokenIssuance,
-                    ),
-                    crate::ContentModerationAction::DeleteVideo,
-                    crate::ContentModerationAction::DeleteChannel,
-                    crate::ContentModerationAction::DeleteVideoAssets(true),
-                    crate::ContentModerationAction::DeleteNonVideoChannelAssets,
-                    crate::ContentModerationAction::UpdateChannelNftLimits,
-                ]),
-            )
-        })
-        .collect::<BTreeMap<_, _>>()
 }
 
 fn set_storage_buckets_voucher_max_limits<T>(
@@ -715,4 +741,8 @@ where
     Pallet::<T>::create_channel(origin.into(), channel_owner, params)?;
 
     Ok(channel_id)
+}
+
+fn worst_case_content_moderation_actions_set() -> BTreeSet<ContentModerationAction> {
+    CONTENT_MODERATION_ACTIONS.iter().cloned().collect()
 }
