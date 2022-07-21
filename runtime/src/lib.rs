@@ -1270,8 +1270,8 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
 }
 
 parameter_types! {
-    pub const ProposalCancellationFee: u64 = 10000;
-    pub const ProposalRejectionFee: u64 = 5000;
+    pub const ProposalCancellationFee: Balance = 100 * currency::CENTS;
+    pub const ProposalRejectionFee: Balance = 50 * currency::CENTS;
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 20;
