@@ -216,7 +216,10 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
   const bagDataObjects = await store.getMany(StorageDataObject, {
     where: { storageBag: { id: getDynamicBagId(bagId) } },
   })
-  await Promise.all(bagDataObjects.map((a) => unsetAssetRelations(store, a)))
+
+  for (const dataObject of bagDataObjects) {
+    await unsetAssetRelations(store, dataObject)
+  }
 
   const storageBag = await getDynamicBag(store, bagId, ['objects'])
   await store.remove<StorageBag>(storageBag)
