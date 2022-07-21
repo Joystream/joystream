@@ -17,6 +17,8 @@ scenario('Content directory', async ({ job }) => {
   const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
   */
   const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCategoriesJob)
-  const curatorModerationActionsJob = job('curator moderation actions', curatorModerationActions).after(nftAuctionAndOffersJob)
+  const curatorModerationActionsJob = job('curator moderation actions', curatorModerationActions).after(
+    nftAuctionAndOffersJob
+  )
   job('video comments and reactions', commentsAndReactions).after(curatorModerationActionsJob)
 })

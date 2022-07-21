@@ -43,12 +43,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
 
   // prepare content
 
-  const createContentStructureFixture = new CreateContentStructureFixture(
-    api,
-    query,
-    joystreamCli,
-    videoCategoryCount,
-  )
+  const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
   const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()

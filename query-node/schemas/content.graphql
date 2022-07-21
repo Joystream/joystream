@@ -18,9 +18,6 @@ type Channel @entity {
   "Curator group owning the channel (if any)"
   ownerCuratorGroup: CuratorGroup
 
-  "Reward account where revenue is sent if set."
-  rewardAccount: String
-
   "The title of the Channel"
   title: String @fulltext(query: "search")
 

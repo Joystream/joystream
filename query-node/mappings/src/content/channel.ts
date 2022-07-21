@@ -4,7 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
 import { BaseModel } from '@joystream/warthog'
-import { ChannelId } from '@joystream/types/primitives'
+import { ChannelId, DataObjectId } from '@joystream/types/primitives'
 import {
   Channel,
   ContentActor,
@@ -43,7 +43,6 @@ import {
   processChannelMetadata,
   unsetAssetRelations,
 } from './utils'
-import { DataObjectId } from '@joystream/types/primitives'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
