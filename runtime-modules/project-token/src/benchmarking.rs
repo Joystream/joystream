@@ -211,8 +211,6 @@ benchmarks! {
     }
 
     // Worst case scenario:
-    // - token.sale.is_some() and token.revenue_split is RevenueSplitState::Active
-    //   (affects the size of TokenData)
     // - source_accout.vesting_schedules.len() is T::MaxVestingSchedulesPerAccountPerToken
     // - source_account.split_staking_status is Some(_)
     // - destination accounts do not exist (need to be created)
@@ -240,8 +238,6 @@ benchmarks! {
         );
         let bloat_bond: JoyBalanceOf<T> = 100u32.into();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
-        init_token_sale::<T>(token_id)?;
-        issue_revenue_split::<T>(token_id, None)?;
         setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
         BloatBond::<T>::set(bloat_bond);
         let _ = Joy::<T>::deposit_creating(
@@ -282,8 +278,6 @@ benchmarks! {
     }
 
     // Worst case scenario:
-    // - token.sale.is_some() and token.revenue_split is RevenueSplitState::Active
-    //   (affects the size of TokenData)
     // - account's bloat_bond is non-zero
     // - token policy is Permissioned
     dust_account {
@@ -306,15 +300,13 @@ benchmarks! {
             T::JoyExistentialDeposit::get()
         );
 
-        init_token_sale::<T>(token_id)?;
         // Burn all owner tokens
         Token::<T>::burn(
             RawOrigin::Signed(owner_account.clone()).into(),
             token_id,
             owner_member_id,
-            (DEFAULT_TOKEN_ISSUANCE - DEFAULT_TOKENS_ON_SALE).into()
+            (DEFAULT_TOKEN_ISSUANCE).into()
         )?;
-        issue_revenue_split::<T>(token_id, None)?;
     }: _(
         RawOrigin::Signed(owner_account.clone()),
         token_id,
@@ -333,8 +325,6 @@ benchmarks! {
     }
 
     // Worst case scenario:
-    // - token.sale.is_some() and token.revenue_split is RevenueSplitState::Active
-    //   (affects the size of TokenData)
     // - bloat_bond is non-zero
     join_whitelist {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
@@ -361,8 +351,6 @@ benchmarks! {
 
         let _ = Joy::<T>::deposit_creating(&acc, T::JoyExistentialDeposit::get() + bloat_bond);
         let token_id = issue_token::<T>(transfer_policy_params.clone())?;
-        init_token_sale::<T>(token_id)?;
-        issue_revenue_split::<T>(token_id, None)?;
         BloatBond::<T>::set(bloat_bond);
     }: _(
         RawOrigin::Signed(acc.clone()),
@@ -387,7 +375,6 @@ benchmarks! {
     }
 
     // Worst case scenario:
-    // - token.revenue_split is RevenueSplitState::Active (affects the size of TokenData)
     // - new account needs to be created
     // - sale has a vesting schedule
     // - cap per member exists
@@ -410,7 +397,6 @@ benchmarks! {
         // Issue token and initialize sale
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let sale_id = init_token_sale::<T>(token_id)?;
-        issue_revenue_split::<T>(token_id, None)?;
         BloatBond::<T>::set(bloat_bond);
         SalePlatformFee::set(platform_fee);
     }: _(
@@ -455,7 +441,6 @@ benchmarks! {
     }
 
     // Worst case scenario:
-    // - token.sale.is_some() (affects the size of TokenData)
     // - participant.vesting_schedules.len() is T::MaxVestingSchedulesPerAccountPerToken
     // - participant.split_staking_status is Some(_)
     // - dividend_amount/payout is non-zero
@@ -472,7 +457,7 @@ benchmarks! {
         // Note: We need to force split_id==1, because
         // setup_account_with_max_number_of_locks will setup a staking_status with split_id == 0
         issue_revenue_split::<T>(token_id, Some(1))?;
-        init_token_sale::<T>(token_id)?;
+
         System::<T>::set_block_number(
             System::<T>::block_number().saturating_add(Token::<T>::min_revenue_split_time_to_start())
         );
@@ -503,7 +488,6 @@ benchmarks! {
     }
 
     // Worst case scenario:
-    // - token.sale.is_some() (affects the size of TokenData)
     // - participant.vesting_schedules.len() is T::MaxVestingSchedulesPerAccountPerToken
     // - participant.split_staking_status is Some(_)
     // - exiting current split
@@ -512,7 +496,6 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
 
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
-        init_token_sale::<T>(token_id)?;
 
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
         let participant_id = create_member::<T>(&participant_acc, b"participant");
