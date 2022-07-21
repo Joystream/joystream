@@ -105,14 +105,6 @@ benchmarks! {
     }
 
     withdraw_from_channel_balance {
-        let i in 1..(T::MaxNumberOfCuratorsPerGroup::get() as u32);
-        let j in 1..(MAX_COLLABORATOR_IDS as u32); // max collaborators
-        let k in 1..(MAX_LEVELS as u32); // max permission levels
-
-        let storage_wg_lead_account_id = insert_storage_leader::<T>();
-
-        let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
-
         let (channel_owner_account_id, channel_owner_member_id) =
             member_funded_account::<T>(DEFAULT_MEMBER_ID);
 
@@ -122,41 +114,15 @@ benchmarks! {
 
         let actor = crate::ContentActor::Member(channel_owner_member_id);
 
-        let params = generate_channel_creation_params::<T>(
-            storage_wg_lead_account_id,
-            distribution_wg_lead_account_id,
-            j,
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            MAX_OBJ_NUMBER,
-            T::MaxDataObjectSize::get(),
-        );
+        let lead_account = insert_content_leader::<T>();
+        let group_id = setup_worst_case_curator_group_with_curators::<T>(
+            T::MaxNumberOfCuratorsPerGroup::get()
+        )?;
+        let group = Pallet::<T>::curator_group_by_id(group_id);
 
-        let lead_account_id = insert_content_leader::<T>();
+        assert!(group.is_active());
 
-        let channel_id = Pallet::<T>::next_channel_id();
-
-        let curator_group_id = Pallet::<T>::next_curator_group_id();
-
-        let curator_permissions = super::generate_permissions_by_level::<T>(k as u8);
-
-        Pallet::<T>::create_channel(origin.clone().into(), owner.clone(), params)
-            .unwrap();
-
-        Pallet::<T>::create_curator_group(
-            RawOrigin::Signed(lead_account_id.clone()).into(),
-            true,
-            curator_permissions,
-        ).unwrap();
-
-        (0..(i as usize)).for_each(|id| {
-            Pallet::<T>::add_curator_to_group(
-               RawOrigin::Signed(lead_account_id.clone()).into(),
-               curator_group_id,
-               CURATOR_IDS[id].into(),
-               crate::BTreeSet::new(),
-           ).unwrap();
-        });
+        let channel_id = setup_worst_case_scenario_channel::<T>(channel_owner_account_id, owner).ok().unwrap();
 
         Pallet::<T>::set_channel_paused_features_as_moderator(
             RawOrigin::Signed(lead_account_id).into(),

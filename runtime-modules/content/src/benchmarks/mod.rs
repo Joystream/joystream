@@ -56,8 +56,6 @@ pub const MAX_COLLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u64; MAX_COLLABORATOR_IDS] =
     gen_array_u64::<MAX_COLLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
-pub const MAX_LEVELS: u8 = 10;
-
 pub const CURATOR_IDS_INIT: u64 = 600;
 pub const MAX_CURATOR_IDS: usize = 100;
 pub const CURATOR_IDS: [u64; MAX_CURATOR_IDS] = gen_array_u64::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
@@ -268,6 +266,60 @@ where
     assert!(WorkerById::<T, I>::contains_key(&worker_id));
 
     (caller_id, worker_id)
+}
+
+fn setup_worst_case_curator_group_with_curators<T>(
+    curators_len: u32,
+) -> Result<T::CuratorGroupId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let permissions_by_level: ModerationPermissionsByLevel<T> = (0
+        ..T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get())
+        .map(|i| {
+            (
+                i.saturated_into(),
+                worst_case_content_moderation_actions_set(),
+            )
+        })
+        .collect();
+
+    let group_id = Pallet::<T>::next_curator_group_id();
+
+    Pallet::<T>::create_curator_group(
+        RawOrigin::Signed(T::AccountId::create_account_id(
+            CONTENT_WG_LEADER_ACCOUNT_ID,
+        ))
+        .into(),
+        true,
+        permissions_by_level,
+    )?;
+
+    // We substract 1 from `next_worker_id`, because we're not counting the lead
+    let already_existing_curators_num =
+        working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
+            .saturated_into::<u32>()
+            - 1;
+
+    for c in CURATOR_IDS
+        .iter()
+        .skip(already_existing_curators_num as usize)
+        .take(curators_len as usize)
+    {
+        let (curator_id, _) = insert_curator::<T>(*c);
+        Pallet::<T>::add_curator_to_group(
+            RawOrigin::Signed(T::AccountId::create_account_id(
+                CONTENT_WG_LEADER_ACCOUNT_ID,
+            ))
+            .into(),
+            group_id,
+            curator_id.saturated_into::<u64>().saturated_into(),
+            worst_case_channel_agent_permissions(),
+        )?;
+    }
+
+    Ok(group_id)
 }
 
 fn insert_leader<T, I>(id: u128) -> T::AccountId
@@ -635,4 +687,32 @@ where
         expected_data_object_state_bloat_bond,
         expected_channel_state_bloat_bond,
     }
+}
+
+fn setup_worst_case_scenario_channel<T: RuntimeConfig>(
+    sender: T::AccountId,
+    channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
+) -> Result<T::ChannelId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+{
+    let storage_wg_lead_account_id = insert_storage_leader::<T>();
+    let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
+    let origin = RawOrigin::Signed(sender);
+
+    let params = generate_channel_creation_params::<T>(
+        storage_wg_lead_account_id,
+        distribution_wg_lead_account_id,
+        T::MaxNumberOfCollaboratorsPerChannel::get(),
+        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        T::MaxNumberOfAssetsPerChannel::get(),
+        T::MaxDataObjectSize::get(),
+    );
+
+    let channel_id = Pallet::<T>::next_channel_id();
+
+    Pallet::<T>::create_channel(origin.into(), channel_owner, params)?;
+
+    Ok(channel_id)
 }

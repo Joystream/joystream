@@ -44,7 +44,7 @@ joystream_pallet_benchmark() {
       --chain=dev \
       --steps=$STEPS \
       --repeat=$REPEAT \
-      --execution=wasm \
+      --execution=native \
       --template=$SCRIPT_DIR/../devops/joystream-pallet-weight-template.hbs \
       --output=. 2>&1 > /dev/null)
 
