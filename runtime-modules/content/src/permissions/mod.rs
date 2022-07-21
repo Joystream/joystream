@@ -344,6 +344,16 @@ pub fn ensure_channel_is_owned_by_curator_group<T: Config>(
     Ok(())
 }
 
+pub fn get_existing_collaborator_permissions<'a, T: Config>(
+    channel: &'a Channel<T>,
+    member_id: &T::MemberId,
+) -> Result<&'a ChannelAgentPermissions, DispatchError> {
+    channel
+        .collaborators
+        .get(member_id)
+        .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
+}
+
 pub fn ensure_actor_has_channel_permissions<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -365,7 +375,7 @@ pub fn ensure_actor_has_channel_permissions<T: Config>(
             ensure_channel_is_owned_by_member::<T>(channel, member_id).map_or_else(
                 |_| {
                     let agent_permissions =
-                        channel.get_existing_collaborator_permissions::<T>(member_id)?;
+                        get_existing_collaborator_permissions::<T>(channel, member_id)?;
                     ensure_agent_has_required_permissions::<T>(
                         agent_permissions,
                         required_permissions,

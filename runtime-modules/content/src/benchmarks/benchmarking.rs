@@ -19,7 +19,6 @@ use super::{
     assert_last_event, create_data_object_candidates_helper, generate_channel_creation_params,
     insert_distribution_leader, insert_storage_leader, member_funded_account, CreateAccountId,
     DistributionWorkingGroupInstance, StorageWorkingGroupInstance, DEFAULT_MEMBER_ID,
-    MAX_COLABORATOR_IDS, MAX_OBJ_NUMBER,
 };
 
 benchmarks! {
@@ -42,7 +41,7 @@ benchmarks! {
 
     create_channel {
 
-        let a in 1 .. MAX_COLABORATOR_IDS as u32; //max colaborators
+        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get();//max colaborators
 
         let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
             (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
@@ -51,7 +50,7 @@ benchmarks! {
         (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
         (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
-        let d in 1 .. MAX_OBJ_NUMBER; //max objs number
+        let d in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
@@ -66,11 +65,17 @@ benchmarks! {
 
         let channel_owner = ChannelOwner::Member(channel_owner_member_id);
 
+        let bucket_objs_size_limit = max_obj_size.
+            saturating_mul(T::MaxNumberOfAssetsPerChannel::get().into());
+
+        let bucket_objs_number_limit =
+            T::MaxNumberOfAssetsPerChannel::get().into();
+
         let params = generate_channel_creation_params::<T>(
             storage_wg_lead_account_id,
             distribution_wg_lead_account_id,
-            max_obj_size.saturating_mul(MAX_OBJ_NUMBER.into()),
-            MAX_OBJ_NUMBER.into(),
+            bucket_objs_size_limit,
+            bucket_objs_number_limit,
             a, b, c, d,
             max_obj_size,
         );
@@ -93,11 +98,11 @@ benchmarks! {
 
     update_channel {
 
-        let a in 1 .. MAX_COLABORATOR_IDS as u32; //max colaborators
+        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
 
-        let b in 1 .. MAX_OBJ_NUMBER; //max objs number to upload
+        let b in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number to upload
 
-        let c in 1 .. MAX_OBJ_NUMBER; //max objs number to remove
+        let c in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number to remove
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
@@ -116,11 +121,17 @@ benchmarks! {
         let assets_to_remove =
             Storage::<T>::get_next_data_object_ids(c as usize);
 
+        let bucket_objs_size_limit = max_obj_size.
+            saturating_mul((2 * T::MaxNumberOfAssetsPerChannel::get()).into());
+
+        let bucket_objs_number_limit =
+            (2 * T::MaxNumberOfAssetsPerChannel::get()).into();
+
         let params = generate_channel_creation_params::<T>(
             storage_wg_lead_account_id,
             distribution_wg_lead_account_id,
-            max_obj_size.saturating_mul((2 * MAX_OBJ_NUMBER).into()),
-            (2 * MAX_OBJ_NUMBER).into(),
+            bucket_objs_size_limit,
+            bucket_objs_number_limit,
             a,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
@@ -188,7 +199,7 @@ benchmarks! {
 
     delete_channel {
 
-        let a in 1 .. MAX_OBJ_NUMBER; //max objs number
+        let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
@@ -206,9 +217,9 @@ benchmarks! {
         let params = generate_channel_creation_params::<T>(
             storage_wg_lead_account_id,
             distribution_wg_lead_account_id,
-            max_obj_size.saturating_mul(MAX_OBJ_NUMBER.into()),
-            MAX_OBJ_NUMBER.into(),
-            MAX_COLABORATOR_IDS as u32,
+            max_obj_size.saturating_mul(T::MaxNumberOfAssetsPerChannel::get().into()),
+            T::MaxNumberOfAssetsPerChannel::get().into(),
+            T::MaxNumberOfCollaboratorsPerChannel::get() as u32,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
             a,

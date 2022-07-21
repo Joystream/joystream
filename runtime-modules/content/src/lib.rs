@@ -52,6 +52,8 @@ use frame_support::{
     PalletId, Parameter,
 };
 
+use sp_std::convert::TryInto;
+
 use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
@@ -107,6 +109,15 @@ pub trait Config:
 
     /// Max number of keys per curator_group.permissions_by_level map instance
     type MaxKeysPerCuratorGroupPermissionsByLevelMap: Get<u8>;
+
+    /// The maximum number of assets that can be assigned to a single channel
+    type MaxNumberOfAssetsPerChannel: Get<MaxNumber>;
+
+    /// The maximum number of assets that can be assigned to a signle video
+    type MaxNumberOfAssetsPerVideo: Get<MaxNumber>;
+
+    /// The maximum number of collaborators per channel
+    type MaxNumberOfCollaboratorsPerChannel: Get<MaxNumber>;
 
     // Channel's privilege level
     type ChannelPrivilegeLevel: Parameter
@@ -517,6 +528,16 @@ decl_module! {
                 distribution_buckets: params.distribution_buckets.clone(),
             };
 
+            let data_objects: ChannelAssetsSet<T> = data_objects_ids
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelAssetsExceeded))?;
+
+            let collaborators: ChannelCollaboratorsMap<T> = params
+                .collaborators
+                .clone()
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -533,12 +554,12 @@ decl_module! {
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
                 num_videos: 0u64,
-                collaborators: params.collaborators.clone(),
+                collaborators,
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
                 transfer_status: ChannelTransferStatus::NoActiveTransfer,
                 privilege_level: Zero::zero(),
                 paused_features: BTreeSet::new(),
-                data_objects: data_objects_ids,
+                data_objects,
                 daily_nft_limit: T::DefaultChannelDailyNftLimit::get(),
                 weekly_nft_limit: T::DefaultChannelWeeklyNftLimit::get(),
                 daily_nft_counter: Default::default(),
@@ -583,12 +604,26 @@ decl_module! {
 
             Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
 
+            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+
+            let updated_assets_set = Self::create_updated_channel_assets_set(
+                &channel.data_objects,
+                &new_data_object_ids,
+                &params.assets_to_remove
+            )?;
+
+            let new_collabs: Option<ChannelCollaboratorsMap<T>> = params
+                .collaborators
+                .clone()
+                .map(|c| c
+                    .try_into()
+                    .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))
+                ).transpose()?;
+
             //
             // == MUTATION SAFE ==
             //
-
-            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
 
             let upload_parameters = UploadParameters::<T> {
                 bag_id: Self::bag_id_for_channel(&channel_id),
@@ -604,9 +639,9 @@ decl_module! {
 
             // Update the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.data_objects = Self::create_updated_data_objects_set(&channel.data_objects, &new_data_object_ids, &params.assets_to_remove);
-                if let Some(new_collabs) = params.collaborators.as_ref() {
-                    channel.collaborators = new_collabs.clone();
+                channel.data_objects = updated_assets_set;
+                if let Some(new_collabs) = new_collabs {
+                    channel.collaborators = new_collabs;
                 }
             });
 
@@ -730,6 +765,12 @@ decl_module! {
             // ensure provided assets belong to the channel
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &channel.data_objects)?;
 
+            let updated_assets = Self::create_updated_channel_assets_set(
+                &channel.data_objects,
+                &BTreeSet::new(),
+                &assets_to_remove
+            )?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -745,7 +786,7 @@ decl_module! {
 
             // update channel's data_objects set
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.data_objects = Self::create_updated_data_objects_set(&channel.data_objects, &BTreeSet::new(), &assets_to_remove)
+                channel.data_objects = updated_assets;
             });
 
             // emit the event
@@ -878,11 +919,16 @@ decl_module! {
                 Self::check_nft_limits(&channel)?;
             }
 
+            let data_objects: VideoAssetsSet<T> = data_objects_ids
+                .clone()
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfVideoAssetsExceeded))?;
+
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
                 nft_status: nft_status.clone(),
-                data_objects: data_objects_ids.clone(),
+                data_objects,
                 video_state_bloat_bond
             };
 
@@ -972,6 +1018,12 @@ decl_module! {
                 Self::check_nft_limits(&channel)?;
             }
 
+            let updated_assets = Self::create_updated_video_assets_set(
+                &video.data_objects,
+                &new_data_object_ids,
+                &params.assets_to_remove
+            )?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1001,7 +1053,7 @@ decl_module! {
 
             // Update the video
             VideoById::<T>::mutate(video_id, |video| {
-                video.data_objects = Self::create_updated_data_objects_set(&video.data_objects, &new_data_object_ids, &params.assets_to_remove)
+                video.data_objects = updated_assets;
             });
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_object_ids));
@@ -1077,6 +1129,12 @@ decl_module! {
             // ensure provided assets belong to the video
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &video.data_objects)?;
 
+            let updated_assets = Self::create_updated_video_assets_set(
+                &video.data_objects,
+                &BTreeSet::new(),
+                &assets_to_remove
+            )?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1092,7 +1150,7 @@ decl_module! {
 
             // update video's data_objects set
             VideoById::<T>::mutate(video_id, |video| {
-                video.data_objects = Self::create_updated_data_objects_set(&video.data_objects, &BTreeSet::new(), &assets_to_remove)
+                video.data_objects = updated_assets;
             });
 
             // emit the event
@@ -2474,7 +2532,7 @@ decl_module! {
 
             ChannelById::<T>::mutate(
                 &channel_id,
-                |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer::<_,_,_,_>(pending_transfer.clone())
+                |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
             );
 
             NextTransferId::<T>::mutate(|id| *id = id.saturating_add(T::TransferId::one()));
@@ -2519,7 +2577,7 @@ decl_module! {
         pub fn accept_channel_transfer(
             origin,
             channel_id: T::ChannelId,
-            commitment_params: TransferCommitmentParameters<T::MemberId, BalanceOf<T>, T::TransferId>
+            commitment_params: TransferCommitmentWitnessOf<T>
         ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2533,7 +2591,11 @@ decl_module! {
             }?;
 
             let new_owner = params.new_owner.clone();
-            let new_collaborators = commitment_params.new_collaborators.clone();
+            let new_collaborators: ChannelCollaboratorsMap<T> = commitment_params
+                .new_collaborators
+                .clone()
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))?;
 
             //
             // == MUTATION SAFE ==
@@ -3156,11 +3218,15 @@ impl<T: Config> Module<T> {
     ) -> Result<PendingTransferOf<T>, DispatchError> {
         Self::validate_member_set(&params.new_collaborators.keys().cloned().collect())?;
         let transfer_id = Self::next_transfer_id();
+        let new_collaborators: ChannelCollaboratorsMap<T> =
+            params.new_collaborators.try_into().map_err(|_| {
+                DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded)
+            })?;
         Ok(PendingTransferOf::<T> {
             new_owner: params.new_owner,
             transfer_params: TransferCommitmentOf::<T> {
                 price: params.price,
-                new_collaborators: params.new_collaborators,
+                new_collaborators,
                 transfer_id,
             },
         })
@@ -3193,7 +3259,7 @@ impl<T: Config> Module<T> {
             Storage::<T>::delete_data_objects(
                 sender.clone(),
                 Self::bag_id_for_channel(&channel_id),
-                video.data_objects.clone(),
+                video.data_objects.clone().into(),
             )?;
         }
 
@@ -3296,11 +3362,11 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn create_updated_data_objects_set(
-        current_set: &BTreeSet<DataObjectId<T>>,
+    fn create_updated_channel_assets_set(
+        current_set: &ChannelAssetsSet<T>,
         ids_to_add: &BTreeSet<DataObjectId<T>>,
         ids_to_remove: &BTreeSet<DataObjectId<T>>,
-    ) -> BTreeSet<DataObjectId<T>> {
+    ) -> Result<ChannelAssetsSet<T>, DispatchError> {
         current_set
             .union(ids_to_add)
             .cloned()
@@ -3308,6 +3374,24 @@ impl<T: Config> Module<T> {
             .difference(ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
+            .try_into()
+            .map_err(|_| Error::<T>::MaxNumberOfChannelAssetsExceeded.into())
+    }
+
+    fn create_updated_video_assets_set(
+        current_set: &VideoAssetsSet<T>,
+        ids_to_add: &BTreeSet<DataObjectId<T>>,
+        ids_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> Result<VideoAssetsSet<T>, DispatchError> {
+        current_set
+            .union(ids_to_add)
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            .difference(ids_to_remove)
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            .try_into()
+            .map_err(|_| Error::<T>::MaxNumberOfVideoAssetsExceeded.into())
     }
 
     fn ensure_channel_creation_sufficient_balance(
@@ -3360,11 +3444,14 @@ impl<T: Config> Module<T> {
 
     // Validates channel transfer acceptance parameters: commitment params, new owner balance.
     fn validate_channel_transfer_acceptance(
-        commitment_params: &TransferCommitmentParameters<T::MemberId, BalanceOf<T>, T::TransferId>,
-        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
+        witness: &TransferCommitmentWitnessOf<T>,
+        params: &PendingTransferOf<T>,
     ) -> DispatchResult {
         ensure!(
-            params.transfer_params == *commitment_params,
+            witness.transfer_id == params.transfer_params.transfer_id
+                && witness.new_collaborators
+                    == params.transfer_params.new_collaborators.clone().into()
+                && witness.price == params.transfer_params.price,
             Error::<T>::InvalidChannelTransferCommitmentParams
         );
 
@@ -3692,7 +3779,7 @@ decl_event!(
         VideoUpdateParameters = VideoUpdateParameters<T>,
         ChannelPrivilegeLevel = <T as Config>::ChannelPrivilegeLevel,
         ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
-        TransferCommitment = TransferCommitmentOf<T>,
+        TransferCommitmentWitness = TransferCommitmentWitnessOf<T>,
         PendingTransfer = PendingTransferOf<T>,
         AccountId = <T as frame_system::Config>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
@@ -3799,7 +3886,7 @@ decl_event!(
         // Channel transfer
         InitializedChannelTransfer(ChannelId, ContentActor, PendingTransfer),
         CancelChannelTransfer(ChannelId, ContentActor),
-        ChannelTransferAccepted(ChannelId, TransferCommitment),
+        ChannelTransferAccepted(ChannelId, TransferCommitmentWitness),
 
         // Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
