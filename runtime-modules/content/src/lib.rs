@@ -1083,7 +1083,7 @@ decl_module! {
                 if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
                     // verify channel bag witness
                     match params.channel_bag_witness.as_ref() {
-                        Some(witness) => Self::verify_channel_bag_witness(channel_id, &witness),
+                        Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
                         None => Err(Error::<T>::MissingChannelBagWitness.into())
                     }?;
                     // ensure assets to remove are part of the existing video assets set
