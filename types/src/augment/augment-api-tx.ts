@@ -3138,6 +3138,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * is reduced by `min(amount, split_staking_status.amount)`
        * - `account.amount` is reduced by `amount`
        * - token supply is reduced by `amount`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       burn: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
@@ -3153,6 +3161,13 @@ declare module '@polkadot/api-base/types/submittable' {
        * Postconditions:
        * - Account information for `token_id` x `member_id` removed from storage
        * - bloat bond refunded to `member_id` controller account
+       * 
+       * <weight>
+       * 
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       dustAccount: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
       /**
@@ -3167,6 +3182,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * Postconditions
        * - `account.staking_status` set to None
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       exitRevenueSplit: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
       /**
@@ -3180,6 +3203,15 @@ declare module '@polkadot/api-base/types/submittable' {
        * Postconditions:
        * - account for `member_id` created and added to pallet storage
        * - `bloat_bond` transferred from sender to treasury account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (H)` where:
+       * - `H` is the length of `proof.0`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       joinWhitelist: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, proof: PalletProjectTokenMerkleProof) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenMerkleProof]>;
       /**
@@ -3201,6 +3233,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `dividend` amount of JOYs transferred from `treasury_account` to `sender`
        * - `token` revenue split dividends payed tracking variable increased by `dividend`
        * - `account.staking_status` set to Some(..) with `amount` and `token.latest_split`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       participateInSplit: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
@@ -3255,6 +3295,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * `token_data.sale` is set to None, otherwise `token_data.sale.quantity_left` is
        * decreased by `amount` and `token_data.sale.funds_collected` in increased by
        * `amount * sale.unit_price`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       purchaseTokensOnSale: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
@@ -3274,6 +3322,15 @@ declare module '@polkadot/api-base/types/submittable' {
        * - total bloat bond transferred from sender's JOY balance into the treasury account
        * in case destination(s) have been added to storage
        * - `outputs.beneficiary` tokens amount increased by `amount`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (T)` where:
+       * - `T` is the length of `outputs`
+       * - DB:
+       * - `O(T)` - from the the generated weights
+       * # </weight>
        **/
       transfer: AugmentedSubmittable<(srcMemberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPayment) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenTransfersPayment]>;
     };
