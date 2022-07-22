@@ -1,8 +1,12 @@
 use super::mock::*;
-use crate::{BuyMembershipParameters, InviteMembershipParameters};
+use crate::Event as MembershipEvent;
+use crate::{
+    BuyMembershipParameters, CreateFoundingMemberParameters, InviteMembershipParameters,
+    MembershipObject,
+};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::StorageMap;
+use frame_support::{assert_noop, assert_ok, StorageMap};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
 
@@ -696,5 +700,75 @@ impl ConfirmStakingAccountFixture {
 
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
+    }
+}
+
+pub struct CreateFoundingMemberFixture {
+    pub origin: RawOrigin<u64>,
+    pub params: CreateFoundingMemberParameters<u64>,
+}
+
+impl CreateFoundingMemberFixture {
+    pub fn default() -> Self {
+        let alice = get_alice_info();
+        Self {
+            origin: RawOrigin::Root,
+            params: CreateFoundingMemberParameters {
+                root_account: ALICE_ACCOUNT_ID,
+                controller_account: ALICE_ACCOUNT_ID,
+                handle: alice.handle.unwrap(),
+                metadata: alice.metadata,
+            },
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_handle(self, handle: Vec<u8>) -> Self {
+        Self {
+            params: CreateFoundingMemberParameters {
+                handle,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let expected_member_id = Membership::members_created();
+        let actual_result =
+            Membership::create_founding_member(self.origin.clone().into(), self.params.clone());
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+
+            let handle_hash: Vec<u8> =
+                <Test as frame_system::Config>::Hashing::hash(&self.params.handle.clone())
+                    .as_ref()
+                    .to_vec();
+            let profile = get_membership_by_id(expected_member_id);
+
+            assert_eq!(Membership::handles(handle_hash.clone()), expected_member_id);
+            assert_eq!(Membership::members_created(), expected_member_id + 1);
+            assert_eq!(
+                profile,
+                MembershipObject {
+                    handle_hash,
+                    root_account: self.params.root_account.clone(),
+                    controller_account: self.params.controller_account.clone(),
+                    verified: true,
+                    invites: Membership::initial_invitation_count()
+                }
+            );
+
+            EventFixture::assert_last_crate_event(MembershipEvent::<Test>::FoundingMemberCreated(
+                expected_member_id,
+                self.params.clone(),
+            ));
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
     }
 }

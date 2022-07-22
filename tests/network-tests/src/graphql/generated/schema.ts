@@ -6156,6 +6156,8 @@ export type Channel = BaseGraphQlObject & {
   collaborators: Array<Membership>
   bannedMembers: Array<Membership>
   channelNftCollectors: Array<ChannelNftCollectors>
+  /** Channel's reward account, storing the income from the nft sales and channel payouts. */
+  rewardAccount: Scalars['String']
   /** Channel's privilege level */
   privilegeLevel?: Maybe<Scalars['Int']>
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
@@ -6456,6 +6458,7 @@ export type ChannelCreateInput = {
   isCensored: Scalars['Boolean']
   language?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
+  rewardAccount: Scalars['String']
   privilegeLevel?: Maybe<Scalars['Float']>
 }
 
@@ -6752,6 +6755,8 @@ export enum ChannelOrderByInput {
   LanguageDesc = 'language_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
   CreatedInBlockDesc = 'createdInBlock_DESC',
+  RewardAccountAsc = 'rewardAccount_ASC',
+  RewardAccountDesc = 'rewardAccount_DESC',
   PrivilegeLevelAsc = 'privilegeLevel_ASC',
   PrivilegeLevelDesc = 'privilegeLevel_DESC',
 }
@@ -6769,6 +6774,7 @@ export type ChannelUpdateInput = {
   isCensored?: Maybe<Scalars['Boolean']>
   language?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
+  rewardAccount?: Maybe<Scalars['String']>
   privilegeLevel?: Maybe<Scalars['Float']>
 }
 
@@ -6823,6 +6829,11 @@ export type ChannelWhereInput = {
   createdInBlock_lt?: Maybe<Scalars['Int']>
   createdInBlock_lte?: Maybe<Scalars['Int']>
   createdInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rewardAccount_eq?: Maybe<Scalars['String']>
+  rewardAccount_contains?: Maybe<Scalars['String']>
+  rewardAccount_startsWith?: Maybe<Scalars['String']>
+  rewardAccount_endsWith?: Maybe<Scalars['String']>
+  rewardAccount_in?: Maybe<Array<Scalars['String']>>
   privilegeLevel_eq?: Maybe<Scalars['Int']>
   privilegeLevel_gt?: Maybe<Scalars['Int']>
   privilegeLevel_gte?: Maybe<Scalars['Int']>
@@ -9743,6 +9754,7 @@ export type ElectionRound = BaseGraphQlObject & {
   nextElectedCouncil?: Maybe<ElectedCouncil>
   nextElectedCouncilId?: Maybe<Scalars['String']>
   candidates: Array<Candidate>
+  newcandidateeventelectionRound?: Maybe<Array<NewCandidateEvent>>
 }
 
 export type ElectionRoundConnection = {
@@ -9855,6 +9867,9 @@ export type ElectionRoundWhereInput = {
   candidates_none?: Maybe<CandidateWhereInput>
   candidates_some?: Maybe<CandidateWhereInput>
   candidates_every?: Maybe<CandidateWhereInput>
+  newcandidateeventelectionRound_none?: Maybe<NewCandidateEventWhereInput>
+  newcandidateeventelectionRound_some?: Maybe<NewCandidateEventWhereInput>
+  newcandidateeventelectionRound_every?: Maybe<NewCandidateEventWhereInput>
   AND?: Maybe<Array<ElectionRoundWhereInput>>
   OR?: Maybe<Array<ElectionRoundWhereInput>>
   NOT?: Maybe<Array<ElectionRoundWhereInput>>
@@ -14606,6 +14621,8 @@ export type NewCandidateEvent = Event &
     version: Scalars['Int']
     candidate: Candidate
     candidateId: Scalars['String']
+    electionRound: ElectionRound
+    electionRoundId: Scalars['String']
     /** Candidate's account used to stake currency. */
     stakingAccount: Scalars['String']
     /** Candidate's account that will be recieving rewards if candidate's elected. */
@@ -14626,6 +14643,7 @@ export type NewCandidateEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   candidate: Scalars['ID']
+  electionRound: Scalars['ID']
   stakingAccount: Scalars['String']
   rewardAccount: Scalars['String']
   balance: Scalars['String']
@@ -14653,6 +14671,8 @@ export enum NewCandidateEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CandidateAsc = 'candidate_ASC',
   CandidateDesc = 'candidate_DESC',
+  ElectionRoundAsc = 'electionRound_ASC',
+  ElectionRoundDesc = 'electionRound_DESC',
   StakingAccountAsc = 'stakingAccount_ASC',
   StakingAccountDesc = 'stakingAccount_DESC',
   RewardAccountAsc = 'rewardAccount_ASC',
@@ -14667,6 +14687,7 @@ export type NewCandidateEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   candidate?: Maybe<Scalars['ID']>
+  electionRound?: Maybe<Scalars['ID']>
   stakingAccount?: Maybe<Scalars['String']>
   rewardAccount?: Maybe<Scalars['String']>
   balance?: Maybe<Scalars['String']>
@@ -14733,6 +14754,7 @@ export type NewCandidateEventWhereInput = {
   balance_lte?: Maybe<Scalars['BigInt']>
   balance_in?: Maybe<Array<Scalars['BigInt']>>
   candidate?: Maybe<CandidateWhereInput>
+  electionRound?: Maybe<ElectionRoundWhereInput>
   AND?: Maybe<Array<NewCandidateEventWhereInput>>
   OR?: Maybe<Array<NewCandidateEventWhereInput>>
   NOT?: Maybe<Array<NewCandidateEventWhereInput>>

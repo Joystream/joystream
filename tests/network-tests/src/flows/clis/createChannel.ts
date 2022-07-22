@@ -7,6 +7,8 @@ import { Utils } from '../../utils'
 import { statSync } from 'fs'
 import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
+import { createType } from '@joystream/types'
+import { u8aConcat, u8aFixLength } from '@polkadot/util'
 
 export default async function createChannel({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
@@ -48,6 +50,22 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
     memberId.toString(),
   ])
 
+  const expectedChannelRewardAccount = api
+    .createType(
+      'AccountId32',
+      u8aFixLength(
+        u8aConcat(
+          'modl',
+          'mContent',
+          createType('Bytes', 'CHANNEL').toU8a(false),
+          createType('u64', channelId).toU8a()
+        ),
+        32 * 8,
+        true
+      )
+    )
+    .toString()
+
   await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
     (channel) => {
@@ -60,6 +78,7 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
       assert.equal(channel.avatarPhoto?.size, statSync(avatarPhotoPath).size)
       assert.equal(channel.coverPhoto?.type.__typename, 'DataObjectTypeChannelCoverPhoto')
       assert.equal(channel.coverPhoto?.size, statSync(coverPhotoPath).size)
+      assert.equal(channel.rewardAccount, expectedChannelRewardAccount)
     }
   )
 
