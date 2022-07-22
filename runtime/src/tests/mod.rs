@@ -300,7 +300,7 @@ pub(crate) fn max_proposal_stake() -> Balance {
     stakes
         .push(<Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get());
     stakes
-        ..push(<Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get());
+        .push(<Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get());
 
     stakes
         .iter()
