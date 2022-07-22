@@ -9,7 +9,6 @@ import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { PalletForumPollInput as PollInput } from '@polkadot/types/lookup'
 import { MemberId, ForumThreadId, ForumCategoryId, ForumPostId } from '@joystream/types/primitives'
-import { POST_DEPOSIT, THREAD_DEPOSIT } from '../../consts'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { EventDetails } from '@joystream/cli/src/Types'
@@ -66,7 +65,8 @@ export class CreateThreadsFixture extends StandardizedFixture {
   public async execute(): Promise<void> {
     const accounts = await this.getSignerAccountOrAccounts()
     // Send required funds to accounts (ThreadDeposit + PostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, THREAD_DEPOSIT.add(POST_DEPOSIT))))
+    const funds = this.api.consts.forum.postDeposit.add(this.api.consts.forum.threadDeposit)
+    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, funds)))
     await super.execute()
   }
 

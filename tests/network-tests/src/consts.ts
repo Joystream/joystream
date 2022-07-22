@@ -12,15 +12,8 @@ export const validateType = <T>(obj: T) => obj
 export const BLOCKTIME = 1000
 
 // Known worker role account default balance (JOY)
-export const KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE = new BN(100000)
+export const KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE = new BN(1000000000)
 
-export const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
-export const MIN_APPLICATION_STAKE = new BN(2000)
-export const MIN_UNSTANKING_PERIOD = 43201
-export const LEADER_OPENING_STAKE = new BN(2000)
-export const THREAD_DEPOSIT = new BN(30)
-export const POST_DEPOSIT = new BN(10)
-export const PROPOSALS_POST_DEPOSIT = new BN(2000)
 export const ALL_BYTES = '0x' + Array.from({ length: 256 }, (v, i) => Buffer.from([i]).toString('hex')).join('')
 
 export const workingGroups: WorkingGroupModuleName[] = [

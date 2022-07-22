@@ -3,7 +3,6 @@ import { assertCouncilMembersRuntimeQnMatch, prepareFailToElectResources } from 
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { GenericAccountId } from '@polkadot/types'
 import { assert } from 'chai'
-import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 import { createType, registry } from '@joystream/types'
 
 export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
@@ -16,7 +15,6 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
       councilMemberIds,
     } = await prepareFailToElectResources(this.api, this.query)
 
-    const lessVotersNumber = 1
     const numberOfCandidates = candidatesMemberIds.length
     const numberOfVoters = numberOfCandidates - 1
 
@@ -25,7 +23,7 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
     const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
     await this.api.treasuryTransferBalanceToAccounts(
       votersStakingAccounts,
-      voteStake.addn(MINIMUM_STAKING_ACCOUNT_BALANCE)
+      voteStake.add(this.api.consts.referendum.minimumStake)
     )
 
     // announcing stage
