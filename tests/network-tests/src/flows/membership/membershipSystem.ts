@@ -10,6 +10,8 @@ export default async function membershipSystem({ api, query, env }: FlowProps): 
   debug('Started')
   api.enableDebugTxLogs()
 
+  // testing updates, keeping final membership price significantly larger
+  // than buy membership tx fee, or BuyMembershipWithInsufficienFundsFixture would fail.
   const updates = [
     {
       defaultInviteCount: 10,
@@ -19,11 +21,8 @@ export default async function membershipSystem({ api, query, env }: FlowProps): 
     },
     // BigInt above Int32 case:
     {
-      membershipPrice: new BN(100_000_000_000),
-    },
-    {
       defaultInviteCount: 5,
-      membershipPrice: new BN(500),
+      membershipPrice: new BN(100_000_000_000),
     },
     {
       referralCut: 0,
