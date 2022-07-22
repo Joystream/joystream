@@ -6,7 +6,7 @@ use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParam
 use crate::permissions::*;
 use crate::types::{
     ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness, ChannelCreationParameters,
-    ChannelOwner, StorageAssets,
+    ChannelOwner, StorageAssets, VideoCreationParameters,
 };
 use crate::{Config, Module as Pallet};
 use balances::Pallet as Balances;
@@ -878,4 +878,72 @@ where
             },
         ),
     }
+}
+
+type VideoCreationInputParameters<T> = (
+    <T as frame_system::Config>::AccountId,
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >,
+    <T as storage::Config>::ChannelId,
+    VideoCreationParameters<T>,
+);
+
+fn prepare_worst_case_scenario_video_creation_parameters<T>(
+    assets_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+    nft_auction_whitelist_size: Option<u32>,
+) -> Result<VideoCreationInputParameters<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (channel_id, group_id, _, curator_id, curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            storage_buckets_num,
+            distribution_buckets_num,
+        )?;
+    let actor = ContentActor::Curator(group_id, curator_id);
+    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
+    let assets = worst_case_scenario_assets::<T>(assets_num);
+    let auto_issue_nft =
+        nft_auction_whitelist_size.map(|s| worst_case_scenario_video_nft_issuance_params::<T>(s));
+
+    Ok((
+        curator_account_id,
+        actor,
+        channel_id,
+        VideoCreationParameters::<T> {
+            assets: Some(assets),
+            meta: None,
+            auto_issue_nft,
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            channel_bag_witness: channel_bag_witness::<T>(channel_id)?,
+        },
+    ))
+}
+
+fn setup_worst_case_scenario_mutable_video<T>(
+    assets_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+) -> Result<(T::VideoId, VideoCreationInputParameters<T>), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let p = prepare_worst_case_scenario_video_creation_parameters::<T>(
+        assets_num,
+        storage_buckets_num,
+        distribution_buckets_num,
+        None,
+    )?;
+    let video_id = Pallet::<T>::next_video_id();
+    Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
+
+    Ok((video_id, p))
 }

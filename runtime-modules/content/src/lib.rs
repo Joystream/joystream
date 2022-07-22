@@ -918,10 +918,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (A + B + C)` where:
+        /// `O (A + B + C + D)` where:
         /// - `A` is the number of items in `params.assets.object_creation_list`
         /// - `B` is `params.channel_bag_witness.storage_buckers_num`
         /// - `C` is `params.channel_bag_witness.distribution_buckets_num`
+        /// - `D` is the length of open auction / english auction whitelist (if provided)
         /// - DB:
         ///    - `O(A + B + C)` - from the the generated weights
         /// # </weight>
@@ -1033,7 +1034,19 @@ decl_module! {
 
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D + E)` where:
+        /// - `A` is params.assets_to_upload.object_creation_list.len() (if provided)
+        /// - `B` is params.assets_to_remove.len()
+        /// - `C` is `params.channel_bag_witness.storage_buckets_num` (if provided)
+        /// - `D` is `params.channel_bag_witness.distribution_buckets_num` (if provided)
+        /// - `E` is the length of open auction / english auction whitelist (if provided)
+        /// - DB:
+        ///    - `O(A + B + C + D)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::update_video_weight(params)]
         pub fn update_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1066,10 +1079,40 @@ decl_module! {
                 channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
 
-            Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &video.data_objects)?;
+            let (upload_parameters, updated_assets, new_data_object_ids) =
+                if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
+                    // verify channel bag witness
+                    match params.channel_bag_witness.as_ref() {
+                        Some(witness) => Self::verify_channel_bag_witness(channel_id, &witness),
+                        None => Err(Error::<T>::MissingChannelBagWitness.into())
+                    }?;
+                    // ensure assets to remove are part of the existing video assets set
+                    Self::ensure_assets_to_remove_are_part_of_assets_set(
+                        &params.assets_to_remove,
+                        &video.data_objects
+                    )?;
 
-            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+                    let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+                    let new_data_object_ids = Storage::<T>::get_next_data_object_ids(
+                        assets_to_upload.object_creation_list.len()
+                    );
+                    let updated_assets = Self::create_updated_video_assets_set(
+                        &video.data_objects,
+                        &new_data_object_ids,
+                        &params.assets_to_remove
+                    )?;
+                    let upload_parameters = UploadParameters::<T> {
+                        bag_id: Self::bag_id_for_channel(&channel_id),
+                        object_creation_list: assets_to_upload.object_creation_list,
+                        state_bloat_bond_source_account_id: sender,
+                        expected_data_size_fee: assets_to_upload.expected_data_size_fee,
+                        expected_data_object_state_bloat_bond:
+                            params.expected_data_object_state_bloat_bond,
+                    };
+                    (Some(upload_parameters), Some(updated_assets), new_data_object_ids)
+                } else {
+                    (None, None, BTreeSet::new())
+                };
 
             let nft_status = params.auto_issue_nft
                 .as_ref()
@@ -1084,31 +1127,19 @@ decl_module! {
                 Self::check_nft_limits(&channel)?;
             }
 
-            let updated_assets = Self::create_updated_video_assets_set(
-                &video.data_objects,
-                &new_data_object_ids,
-                &params.assets_to_remove
-            )?;
+
 
             //
             // == MUTATION SAFE ==
             //
 
-            // upload/delete video assets from storage with commit or rollback semantics
-            let upload_parameters = UploadParameters::<T> {
-                bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.object_creation_list),
-                state_bloat_bond_source_account_id: sender,
-                expected_data_size_fee: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.expected_data_size_fee),
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-            };
-
-            Storage::<T>::upload_and_delete_data_objects(
-                upload_parameters,
-                params.assets_to_remove.clone(),
+            if let Some(upload_parameters) = upload_parameters {
+                // upload/delete video assets from storage with commit or rollback semantics
+                Storage::<T>::upload_and_delete_data_objects(
+                    upload_parameters,
+                    params.assets_to_remove.clone(),
                 )?;
+            }
 
             if nft_status.is_some() {
                 ChannelById::<T>::mutate(channel_id, |channel| {
@@ -1118,9 +1149,11 @@ decl_module! {
             }
 
             // Update the video
-            VideoById::<T>::mutate(video_id, |video| {
-                video.data_objects = updated_assets;
-            });
+            if let Some(updated_assets) = updated_assets {
+                VideoById::<T>::mutate(video_id, |video| {
+                    video.data_objects = updated_assets;
+                });
+            }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_object_ids));
         }
@@ -3799,6 +3832,14 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    fn extract_nft_auction_whitelist_size_len(nft_params: &NftIssuanceParameters<T>) -> u32 {
+        (match &nft_params.init_transactional_status {
+            InitTransactionalStatus::<T>::EnglishAuction(params) => params.whitelist.len(),
+            InitTransactionalStatus::<T>::OpenAuction(params) => params.whitelist.len(),
+            _ => 0,
+        }) as u32
+    }
+
     //Weight functions
 
     // Calculates weight for create_channel extrinsic.
@@ -3836,16 +3877,46 @@ impl<T: Config> Module<T> {
         let c = params.channel_bag_witness.distribution_buckets_num;
 
         if let Some(nft_params) = params.auto_issue_nft.as_ref() {
-            let d = match &nft_params.init_transactional_status {
-                InitTransactionalStatus::<T>::EnglishAuction(params) => params.whitelist.len(),
-                InitTransactionalStatus::<T>::OpenAuction(params) => params.whitelist.len(),
-                _ => 0,
-            } as u32;
-
+            let d = Self::extract_nft_auction_whitelist_size_len(nft_params);
             return WeightInfoContent::<T>::create_video_with_nft(a, b, c, d);
         }
 
         WeightInfoContent::<T>::create_video_without_nft(a, b, c)
+    }
+
+    // Calculates weight for update_video extrinsic.
+    fn update_video_weight(params: &VideoUpdateParameters<T>) -> Weight {
+        let assets_touched =
+            !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some();
+
+        match (assets_touched, params.auto_issue_nft.as_ref()) {
+            (false, None) => WeightInfoContent::<T>::update_video_without_assets_without_nft(),
+            (false, Some(nft_params)) => {
+                let a = Self::extract_nft_auction_whitelist_size_len(nft_params);
+                WeightInfoContent::<T>::update_video_without_assets_with_nft(a)
+            }
+            (true, nft_params) => {
+                let a = params
+                    .assets_to_upload
+                    .as_ref()
+                    .map_or(0u32, |v| v.object_creation_list.len() as u32);
+                let b = params.assets_to_remove.len() as u32;
+                let c = params
+                    .channel_bag_witness
+                    .as_ref()
+                    .map_or(0u32, |v| v.storage_buckets_num);
+                let d = params
+                    .channel_bag_witness
+                    .as_ref()
+                    .map_or(0u32, |v| v.distribution_buckets_num);
+                if let Some(nft_params) = nft_params {
+                    let e = Self::extract_nft_auction_whitelist_size_len(nft_params);
+                    WeightInfoContent::<T>::update_video_with_assets_with_nft(a, b, c, d, e)
+                } else {
+                    WeightInfoContent::<T>::update_video_with_assets_without_nft(a, b, c, d)
+                }
+            }
+        }
     }
 }
 

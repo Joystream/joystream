@@ -1072,6 +1072,74 @@ fn unsuccessful_video_update_with_nft() {
 }
 
 #[test]
+fn unsuccessful_video_update_with_assets_to_upload_and_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        UpdateVideoFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_channel_bag_witness(Some(invalid_witness))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_assets_to_upload_and_missing_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_channel_bag_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_assets_to_remove_and_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_remove(video_assets)
+            .with_channel_bag_witness(Some(invalid_witness))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_assets_to_remove_and_missing_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_remove(video_assets)
+            .with_channel_bag_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
+    })
+}
+
+#[test]
 fn successful_video_deletion_by_member_with_assets_removal() {
     with_default_mock_builder(|| {
         run_to_block(1);

@@ -607,6 +607,7 @@ pub struct VideoUpdateParametersRecord<
     DataObjectId: Ord,
     NftIssuanceParameters,
     Balance,
+    ChannelBagWitness,
 > {
     /// Assets referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
@@ -618,6 +619,8 @@ pub struct VideoUpdateParametersRecord<
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witness/commitment data related to channel bag (for weight calculation purposes)
+    pub channel_bag_witness: Option<ChannelBagWitness>,
 }
 
 pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
@@ -625,6 +628,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
     DataObjectId<T>,
     NftIssuanceParameters<T>,
     BalanceOf<T>,
+    ChannelBagWitness,
 >;
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.

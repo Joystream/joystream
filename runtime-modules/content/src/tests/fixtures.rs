@@ -749,6 +749,7 @@ impl UpdateVideoFixture {
                 new_meta: None,
                 auto_issue_nft: Default::default(),
                 expected_data_object_state_bloat_bond: Default::default(),
+                channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
             },
         }
     }
@@ -795,7 +796,25 @@ impl UpdateVideoFixture {
     }
 
     pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
+        let video = Content::video_by_id(video_id);
+        Self {
+            video_id,
+            params: VideoUpdateParameters::<Test> {
+                channel_bag_witness: Some(channel_bag_witness(video.in_channel)),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                channel_bag_witness,
+                ..self.params
+            },
+            ..self
+        }
     }
 
     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
