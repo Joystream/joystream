@@ -2027,6 +2027,14 @@ declare module '@polkadot/api-base/types/events' {
        **/
       TokenSaleInitialized: AugmentedEvent<ApiType, [u64, u32, PalletProjectTokenTokenSale, Option<Bytes>]>;
       /**
+       * Tokens Burned
+       * Params:
+       * - token id
+       * - member id
+       * - number of tokens burned
+       **/
+      TokensBurned: AugmentedEvent<ApiType, [u64, u64, u128]>;
+      /**
        * Tokens Purchased On Sale
        * Params:
        * - token id
