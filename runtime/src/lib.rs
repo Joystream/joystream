@@ -804,7 +804,7 @@ parameter_types! {
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 5000000;
+    pub const DefaultBudgetIncrement: Balance = 100 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
 }
@@ -825,7 +825,7 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 400;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 10000000;
+    pub const DefaultBudgetIncrement: Balance = 100 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -834,7 +834,7 @@ parameter_types! {
 #[cfg(feature = "staging_runtime")]
 #[cfg(not(feature = "playground_runtime"))]
 parameter_types! {
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u64 = 3;
 }
 
 // Playground council size
@@ -860,7 +860,7 @@ parameter_types! {
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 10000000;
+    pub const DefaultBudgetIncrement: Balance = 20 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -1031,7 +1031,7 @@ parameter_types! {
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
-    pub const ThreadDeposit: Balance = 30 * currency::CENTS;
+    pub const ThreadDeposit: Balance = 25 * currency::CENTS;
     pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
@@ -1303,7 +1303,7 @@ impl Default for Call {
 
 parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
-    pub const ProposalsPostDeposit: Balance = 20 * currency::CENTS;
+    pub const ProposalsPostDeposit: Balance = 10 * currency::CENTS;
     // module : proposals_discussion
     pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:prdis");
     pub const ForumPostLifeTime: BlockNumber = 3600;
@@ -1353,6 +1353,7 @@ impl joystream_utility::Config for Runtime {
 
 parameter_types! {
     // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
+    // The new compressed wasm format is much smaller in size ~ 1MB
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_500_000;
 }
 
