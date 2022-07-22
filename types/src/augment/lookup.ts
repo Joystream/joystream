@@ -646,7 +646,7 @@ export default {
       CuratorGroupStatusSet: '(u64,bool)',
       CuratorAdded: '(u64,u64,BTreeSet<PalletContentChannelActionPermission>)',
       CuratorRemoved: '(u64,u64)',
-      ChannelCreated: '(u64,PalletContentChannelRecord,PalletContentChannelCreationParametersRecord)',
+      ChannelCreated: '(u64,PalletContentChannelRecord,PalletContentChannelCreationParametersRecord,AccountId32)',
       ChannelUpdated: '(PalletContentPermissionsContentActor,u64,PalletContentChannelUpdateParametersRecord,BTreeSet<u64>)',
       ChannelPrivilegeLevelUpdated: '(u64,u8)',
       ChannelStateBloatBondValueUpdated: 'u128',
@@ -1067,7 +1067,8 @@ export default {
       UpcomingTokenSaleUpdated: '(u64,u32,Option<u32>,Option<u32>)',
       TokensPurchasedOnSale: '(u64,u32,u128,u64)',
       TokenSaleFinalized: '(u64,u32,u128,u128)',
-      TransferPolicyChangedToPermissionless: 'u64'
+      TransferPolicyChangedToPermissionless: 'u64',
+      TokensBurned: '(u64,u64,u128)'
     }
   },
   /**

@@ -83,7 +83,7 @@ declare module '@polkadot/api-base/types/events' {
       ChannelAgentRemarked: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
       ChannelAssetsDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, Bytes]>;
       ChannelAssetsRemoved: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, PalletContentChannelRecord]>;
-      ChannelCreated: AugmentedEvent<ApiType, [u64, PalletContentChannelRecord, PalletContentChannelCreationParametersRecord]>;
+      ChannelCreated: AugmentedEvent<ApiType, [u64, PalletContentChannelRecord, PalletContentChannelCreationParametersRecord, AccountId32]>;
       ChannelDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       ChannelDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
       ChannelFundsWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
@@ -2044,6 +2044,14 @@ declare module '@polkadot/api-base/types/events' {
        * - token sale metadata
        **/
       TokenSaleInitialized: AugmentedEvent<ApiType, [u64, u32, PalletProjectTokenTokenSale, Option<Bytes>]>;
+      /**
+       * Tokens Burned
+       * Params:
+       * - token id
+       * - member id
+       * - number of tokens burned
+       **/
+      TokensBurned: AugmentedEvent<ApiType, [u64, u64, u128]>;
       /**
        * Tokens Purchased On Sale
        * Params:
