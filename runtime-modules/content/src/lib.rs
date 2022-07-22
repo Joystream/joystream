@@ -1158,12 +1158,23 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_object_ids));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is num_objects_to_delete
+        /// - `B` is `params.channel_bag_witness.storage_buckets_num` (if provided)
+        /// - `C` is `params.channel_bag_witness.distribution_buckets_num` (if provided)
+        /// - DB:
+        ///    - `O(A + B + C)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::delete_video_weight(num_objects_to_delete, channel_bag_witness)]
         pub fn delete_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             num_objects_to_delete: u64,
+            channel_bag_witness: Option<ChannelBagWitness>
         ) {
             let sender = ensure_signed(origin)?;
 
@@ -1189,6 +1200,14 @@ decl_module! {
 
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
+
+            // Verify channel_bag_witness
+            if !num_objects_to_delete.is_zero() {
+                match channel_bag_witness.as_ref() {
+                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                    None => Err(Error::<T>::MissingChannelBagWitness.into()),
+                }?;
+            }
 
             // Try removing the video
             Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video)?;
@@ -3916,6 +3935,25 @@ impl<T: Config> Module<T> {
                     WeightInfoContent::<T>::update_video_with_assets_without_nft(a, b, c, d)
                 }
             }
+        }
+    }
+
+    // Calculates weight for delete_video extrinsic.
+    fn delete_video_weight(
+        num_objects_to_delete: &u64,
+        channel_bag_witness: &Option<ChannelBagWitness>,
+    ) -> Weight {
+        if !num_objects_to_delete.is_zero() {
+            let a = *num_objects_to_delete as u32;
+            let b = channel_bag_witness
+                .as_ref()
+                .map_or(0u32, |v| v.storage_buckets_num);
+            let c = channel_bag_witness
+                .as_ref()
+                .map_or(0u32, |v| v.distribution_buckets_num);
+            WeightInfoContent::<T>::delete_video_with_assets(a, b, c)
+        } else {
+            WeightInfoContent::<T>::delete_video_without_assets()
         }
     }
 }

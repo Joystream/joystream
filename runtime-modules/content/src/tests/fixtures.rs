@@ -1610,6 +1610,7 @@ pub struct DeleteVideoFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
     num_objects_to_delete: u64,
+    channel_bag_witness: Option<ChannelBagWitness>,
 }
 
 impl DeleteVideoFixture {
@@ -1619,6 +1620,7 @@ impl DeleteVideoFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
             num_objects_to_delete: DATA_OBJECTS_NUMBER,
+            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
         }
     }
 
@@ -1638,7 +1640,19 @@ impl DeleteVideoFixture {
     }
 
     pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
+        let video = Content::video_by_id(video_id);
+        Self {
+            video_id,
+            channel_bag_witness: Some(channel_bag_witness(video.in_channel)),
+            ..self
+        }
+    }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+        Self {
+            channel_bag_witness,
+            ..self
+        }
     }
 }
 
@@ -1659,6 +1673,7 @@ impl VideoDeletion for DeleteVideoFixture {
             self.actor,
             self.video_id,
             self.num_objects_to_delete,
+            self.channel_bag_witness.clone(),
         )
     }
 

@@ -6,30 +6,15 @@ use super::curators;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::assert_err;
 use storage::DynamicBagType;
 
 #[test]
-fn delete_video_nft_is_issued() {
+fn unsuccessful_video_deletion_when_nft_issued() {
     with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = Content::next_video_id();
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_with_nft();
+        ContentTest::with_member_channel().with_video_nft().setup();
 
         // Make an attempt to delete a video, which has an nft issued already.
-        assert_err!(
-            Content::delete_video(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-                DATA_OBJECTS_NUMBER,
-            ),
-            Error::<Test>::NftAlreadyExists
-        );
+        DeleteVideoFixture::default().call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()))
     })
 }
 
@@ -1396,6 +1381,34 @@ fn unsuccessful_video_deletion_with_invalid_num_objects_to_delete() {
             .call_and_assert(Err(
                 Error::<Test>::InvalidVideoDataObjectsCountProvided.into()
             ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_deletion_with_assets_and_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        // Make an attempt to delete a video, which has an nft issued already.
+        DeleteVideoFixture::default()
+            .with_channel_bag_witness(Some(invalid_witness))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()))
+    })
+}
+
+#[test]
+fn unsuccessful_video_deletion_with_assets_and_channel_bag_witness_missing() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        // Make an attempt to delete a video, which has an nft issued already.
+        DeleteVideoFixture::default()
+            .with_channel_bag_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()))
     })
 }
 

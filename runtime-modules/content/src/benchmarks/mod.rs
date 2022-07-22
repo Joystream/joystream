@@ -892,7 +892,7 @@ type VideoCreationInputParameters<T> = (
 );
 
 fn prepare_worst_case_scenario_video_creation_parameters<T>(
-    assets_num: u32,
+    assets_num: Option<u32>,
     storage_buckets_num: u32,
     distribution_buckets_num: u32,
     nft_auction_whitelist_size: Option<u32>,
@@ -908,7 +908,7 @@ where
         )?;
     let actor = ContentActor::Curator(group_id, curator_id);
     let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
-    let assets = worst_case_scenario_assets::<T>(assets_num);
+    let assets = assets_num.map(|n| worst_case_scenario_assets::<T>(n));
     let auto_issue_nft =
         nft_auction_whitelist_size.map(|s| worst_case_scenario_video_nft_issuance_params::<T>(s));
 
@@ -917,7 +917,7 @@ where
         actor,
         channel_id,
         VideoCreationParameters::<T> {
-            assets: Some(assets),
+            assets,
             meta: None,
             auto_issue_nft,
             expected_video_state_bloat_bond: video_state_bloat_bond,
@@ -928,7 +928,7 @@ where
 }
 
 fn setup_worst_case_scenario_mutable_video<T>(
-    assets_num: u32,
+    assets_num: Option<u32>,
     storage_buckets_num: u32,
     distribution_buckets_num: u32,
 ) -> Result<(T::VideoId, VideoCreationInputParameters<T>), DispatchError>

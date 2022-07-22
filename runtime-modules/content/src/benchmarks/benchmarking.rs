@@ -196,7 +196,7 @@ benchmarks! {
             ..(T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
-            a,
+            Some(a),
             b,
             c,
             None
@@ -239,7 +239,7 @@ benchmarks! {
         let d in 2..MAX_AUCTION_WHITELIST_LENGTH;
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
-            a,
+            Some(a),
             b,
             c,
             Some(d)
@@ -287,7 +287,7 @@ benchmarks! {
             video_id,
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
-            T::MaxNumberOfAssetsPerVideo::get(),
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32
         )?;
@@ -343,7 +343,7 @@ benchmarks! {
             video_id,
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
-            num_preexisting_assets,
+            Some(num_preexisting_assets),
             c,
             d
         )?;
@@ -395,7 +395,7 @@ benchmarks! {
             video_id,
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
-            T::MaxNumberOfAssetsPerVideo::get(),
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
         )?;
@@ -463,7 +463,7 @@ benchmarks! {
             video_id,
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
-            num_preexisting_assets,
+            Some(num_preexisting_assets),
             c,
             d
         )?;
@@ -516,6 +516,60 @@ benchmarks! {
             video_id,
             params,
             expected_asset_ids
+        ).into());
+    }
+
+    delete_video_without_assets {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            None,
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+        )?;
+    }: delete_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        0,
+        None
+    ) verify {
+        assert!(Pallet::<T>::ensure_video_exists(&video_id).is_err());
+        assert_last_event::<T>(Event::<T>::VideoDeleted(
+            actor,
+            video_id
+        ).into());
+    }
+
+    delete_video_with_assets {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(a),
+            b,
+            c
+        )?;
+        let witness = channel_bag_witness::<T>(channel_id)?;
+    }: delete_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        a as u64,
+        Some(witness)
+    ) verify {
+        assert!(Pallet::<T>::ensure_video_exists(&video_id).is_err());
+        assert_last_event::<T>(Event::<T>::VideoDeleted(
+            actor,
+            video_id
         ).into());
     }
 }
@@ -606,6 +660,20 @@ pub mod tests {
     fn update_video_with_assets_with_nft() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_update_video_with_assets_with_nft());
+        });
+    }
+
+    #[test]
+    fn delete_video_without_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_without_assets());
+        });
+    }
+
+    #[test]
+    fn delete_video_with_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_with_assets());
         });
     }
 }
