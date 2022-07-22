@@ -66,6 +66,7 @@ substrate_pallet_benchmark substrate_utility
 substrate_pallet_benchmark pallet_session
 substrate_pallet_benchmark pallet_timestamp
 substrate_pallet_benchmark pallet_vesting
+substrate_pallet_benchmark pallet_multisig
 
 # Module staking benchmarking takes too long.
 substrate_pallet_benchmark pallet_staking

@@ -100,6 +100,7 @@ mod benches {
         [pallet_timestamp, Timestamp]
         [substrate_utility, Utility]
         [pallet_vesting, Vesting]
+        [pallet_multisig, Multisig]
         [proposals_discussion, ProposalsDiscussion]
         [proposals_codex, ProposalsCodex]
         [proposals_engine, ProposalsEngine]
