@@ -77,7 +77,7 @@ export default async function openingsAndApplications({ api, query, env }: FlowP
       const leaderStakingAcc = await api.getLeaderStakingKey(group)
       await api.treasuryTransferBalance(
         leaderStakingAcc,
-        api.consts.contentWorkingGroup.leaderOpeningStake.muln(openingsToCreate.length)
+        api.consts.contentWorkingGroup.leaderOpeningStake.muln(openingsToCreate(api).length)
       )
 
       // Create an opening
