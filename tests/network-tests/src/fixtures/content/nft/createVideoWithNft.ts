@@ -1,9 +1,9 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
-import { assertNftOwner } from './utils'
 import { Utils } from '../../../utils'
+import { IMember } from '../createMembersAndCurators'
+import { assertNftOwner } from './utils'
 
 export class CreateVideoWithNftFixture extends BaseQueryNodeFixture {
   private author: IMember
