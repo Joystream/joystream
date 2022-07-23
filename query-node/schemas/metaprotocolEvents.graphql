@@ -29,9 +29,7 @@ type MetaprotocolTransactionErrored @variant {
   message: String!
 }
 
-union MetaprotocolTransactionStatus =
-    MetaprotocolTransactionSuccessful
-  | MetaprotocolTransactionErrored
+union MetaprotocolTransactionStatus = MetaprotocolTransactionSuccessful | MetaprotocolTransactionErrored
 
 type MetaprotocolTransactionStatusEvent implements Event @entity {
   ### GENERIC DATA ###

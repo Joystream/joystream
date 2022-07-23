@@ -18,6 +18,7 @@ export default class UpdateVideoCategoryCommand extends ContentDirectoryCommandB
       description: 'New video category name',
     },
   ]
+
   static flags = {
     ...ContentDirectoryCommandBase.flags,
   }

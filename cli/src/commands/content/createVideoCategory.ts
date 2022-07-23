@@ -13,6 +13,7 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
       description: 'Video category name',
     },
   ]
+
   static flags = {
     ...ContentDirectoryCommandBase.flags,
   }

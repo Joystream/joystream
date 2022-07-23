@@ -17,7 +17,7 @@ export default class WorkingGroupsLeadRemark extends WorkingGroupsCommandBase {
   }
 
   async run(): Promise<void> {
-    let { message } = this.parse(WorkingGroupsLeadRemark).args
+    const { message } = this.parse(WorkingGroupsLeadRemark).args
 
     // ensure lead is using this command
     const lead = await this.getRequiredLeadContext()

@@ -13,6 +13,7 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
       description: 'Video category id',
     },
   ]
+
   static flags = {
     ...ContentDirectoryCommandBase.flags,
   }
