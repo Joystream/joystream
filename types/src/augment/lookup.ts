@@ -1029,7 +1029,8 @@ export default {
       UpcomingTokenSaleUpdated: '(u64,u32,Option<u32>,Option<u32>)',
       TokensPurchasedOnSale: '(u64,u32,u128,u64)',
       TokenSaleFinalized: '(u64,u32,u128,u128)',
-      TransferPolicyChangedToPermissionless: 'u64'
+      TransferPolicyChangedToPermissionless: 'u64',
+      TokensBurned: '(u64,u64,u128)'
     }
   },
   /**
