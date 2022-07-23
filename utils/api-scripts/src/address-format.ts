@@ -15,4 +15,4 @@ async function main() {
   console.log(userAddress)
 }
 
-main()
+main().catch(console.error)

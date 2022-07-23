@@ -41,17 +41,29 @@ export class ExtrinsicsHelper {
     return nonce
   }
 
-  async sendAndCheckSudo(tx: SubmittableExtrinsic<'promise'>, errorMsg?: string): Promise<ISubmittableResult> {
+  async sendAndCheckSudo(
+    tx: SubmittableExtrinsic<'promise'>,
+    errorMsg?: string,
+    wrap = true
+  ): Promise<ISubmittableResult> {
     const sudoUri = process.env.SUDO_URI || '//Alice'
     const sudoMultiKeys = (process.env.SUDO_MULTISIG_KEYS || '').split(',').filter((v) => v)
     const sudoMultiUris = (process.env.SUDO_MULTISIG_URIS || '').split(',').filter((v) => v)
-    tx = this.api.tx.sudo.sudo(tx)
+    tx = wrap ? this.api.tx.sudo.sudo(tx) : tx
 
     if (sudoMultiKeys.length && sudoMultiUris.length) {
-      const sudoKeys = sudoMultiUris.map((u) => getKeyFromSuri(u))
-      return this.sendAndCheckMulisig(sudoKeys, sudoMultiKeys, tx, errorMsg)
+      const sudoSigners = sudoMultiUris.map((u) => getKeyFromSuri(u))
+      console.log(`Using multisig sudo`)
+      console.log('Multisig keys:', sudoMultiKeys)
+      console.log('Multisig threshold', sudoSigners.length)
+      console.log(
+        'Signers:',
+        sudoSigners.map((s) => s.address)
+      )
+      return this.sendAndCheckMulisig(sudoSigners, sudoMultiKeys, tx, errorMsg)
     } else {
       const sudoKey = getKeyFromSuri(sudoUri)
+      console.log(`Using sudo key: ${sudoKey.address}`)
       return (await this.sendAndCheck(sudoKey, [tx], errorMsg))[0]
     }
   }
