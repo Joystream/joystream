@@ -818,7 +818,7 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32;
     pub const VoteStageDuration: BlockNumber = 100;
     pub const RevealStageDuration: BlockNumber = 50;
-    pub const MinimumVotingStake: u64 = 10 * currency::DOLLARS;
+    pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
@@ -852,7 +852,7 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32;
     pub const VoteStageDuration: BlockNumber = 20;
     pub const RevealStageDuration: BlockNumber = 20;
-    pub const MinimumVotingStake: u64 = 10000;
+    pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
