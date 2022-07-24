@@ -1,24 +1,27 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::types::{ChannelActionPermission, ChannelOwner};
-use crate::Module as Pallet;
 use crate::{
-    Call, ChannelById, ChannelUpdateParameters, Config, ContentActor, Event, StorageAssets,
+    types::{ChannelActionPermission, ChannelOwner},
+    Call, ChannelById, ChannelUpdateParameters, Config, ContentActor, Event, Module as Pallet,
+    StorageAssets,
 };
 use frame_benchmarking::benchmarks;
-use frame_support::storage::StorageMap;
-use frame_support::traits::Get;
+use frame_support::{storage::StorageMap, traits::Get};
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
-use sp_std::collections::btree_map::BTreeMap;
-use sp_std::collections::btree_set::BTreeSet;
-use sp_std::iter::FromIterator;
+use sp_std::{
+    cmp::min,
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    iter::FromIterator,
+};
 use storage::{DataObjectStorage, Module as Storage};
 
 use super::{
     assert_last_event, create_data_object_candidates_helper, generate_channel_creation_params,
-    insert_distribution_leader, insert_storage_leader, member_funded_account, CreateAccountId,
-    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, DEFAULT_MEMBER_ID,
+    insert_content_leader, insert_distribution_leader, insert_storage_leader,
+    setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
+    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
+    StorageWorkingGroupInstance,
 };
 
 benchmarks! {
@@ -29,6 +32,7 @@ benchmarks! {
               T: storage::Config,
               T: working_group::Config<StorageWorkingGroupInstance>,
               T: working_group::Config<DistributionWorkingGroupInstance>,
+              T: working_group::Config<ContentWorkingGroupInstance>,
               T::AccountId: CreateAccountId,
               T: Config ,
     }
@@ -54,16 +58,22 @@ benchmarks! {
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
-        let storage_wg_lead_account_id = insert_storage_leader::<T>();
+        let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
 
-        let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
+        let (_, distribution_wg_lead_account_id) =
+            insert_distribution_leader::<T>();
 
-        let (channel_owner_account_id, channel_owner_member_id) =
-            member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let (_, lead_account_id) = insert_content_leader::<T>();
 
-        let sender = RawOrigin::Signed(channel_owner_account_id);
+        let sender = RawOrigin::Signed(lead_account_id);
 
-        let channel_owner = ChannelOwner::Member(channel_owner_member_id);
+        let group_id = setup_worst_case_curator_group_with_curators::<T>(
+            min(<T as working_group::Config<ContentWorkingGroupInstance>>::
+                MaxWorkerNumberLimit::get(),
+            T::MaxNumberOfCuratorsPerGroup::get())
+        )?;
+
+        let channel_owner = ChannelOwner::CuratorGroup(group_id);
 
         let bucket_objs_size_limit = max_obj_size.
             saturating_mul(T::MaxNumberOfAssetsPerChannel::get().into());
@@ -106,43 +116,29 @@ benchmarks! {
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
-        let storage_wg_lead_account_id = insert_storage_leader::<T>();
-
-        let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
-
-        let (channel_owner_account_id, channel_owner_member_id) =
-            member_funded_account::<T>(DEFAULT_MEMBER_ID);
-
-        let sender = RawOrigin::Signed(channel_owner_account_id.clone());
-
-        let channel_owner =
-            ChannelOwner::Member(channel_owner_member_id);
-
         let assets_to_remove =
             Storage::<T>::get_next_data_object_ids(c as usize);
 
         let bucket_objs_size_limit = max_obj_size.
-            saturating_mul((2 * T::MaxNumberOfAssetsPerChannel::get()).into());
+            saturating_mul(T::MaxNumberOfAssetsPerChannel::get().into());
 
         let bucket_objs_number_limit =
-            (2 * T::MaxNumberOfAssetsPerChannel::get()).into();
+            T::MaxNumberOfAssetsPerChannel::get().into();
 
-        let params = generate_channel_creation_params::<T>(
-            storage_wg_lead_account_id,
-            distribution_wg_lead_account_id,
+        let (channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            c,
             bucket_objs_size_limit,
             bucket_objs_number_limit,
-            a,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            c,
-            max_obj_size,
-        );
+        ).unwrap();
 
-        Pallet::<T>::create_channel(
-            sender.into(),
-            channel_owner,
-            params.clone()).unwrap();
+        let channel = ChannelById::<T>::get(channel_id);
 
         let permissions = BTreeSet::from_iter([
             ChannelActionPermission::ManageChannelCollaborators,
@@ -150,7 +146,7 @@ benchmarks! {
             ChannelActionPermission::UpdateChannelMetadata,
         ]);
 
-        let collaborators = params.collaborators.into_iter()
+        let collaborators = channel.collaborators.into_iter()
         .map(|(member_id, _)|{
             (member_id, permissions.clone())
         }).collect::<BTreeMap<_, _>>();
@@ -159,15 +155,14 @@ benchmarks! {
                 expected_data_size_fee:
                     Storage::<T>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_object_candidates_helper(
-                    1,
-                    (b - 1).into(),
-                    max_obj_size,
+                    b,
+                    max_obj_size
                 ),
         };
 
         let new_data_object_ids =
-        Storage::<T>::get_next_data_object_ids(
-            assets_to_upload.object_creation_list.len());
+            Storage::<T>::get_next_data_object_ids(
+                assets_to_upload.object_creation_list.len());
 
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
@@ -180,13 +175,12 @@ benchmarks! {
             expected_data_object_state_bloat_bond,
         };
 
-        let origin = RawOrigin::Signed(channel_owner_account_id);
-        let actor = ContentActor::Member(channel_owner_member_id);
-        let channel_id: T::ChannelId = One::one();
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
 
     }: _ (origin, actor, channel_id, update_params.clone())
     verify {
-        let channel_id: T::ChannelId = One::one();
+
         assert!(ChannelById::<T>::contains_key(&channel_id));
 
         assert_last_event::<T>(
@@ -203,37 +197,29 @@ benchmarks! {
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
-        let storage_wg_lead_account_id = insert_storage_leader::<T>();
+        let bucket_objs_size_limit = max_obj_size.
+            saturating_mul(T::MaxNumberOfAssetsPerChannel::get().into());
 
-        let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
+        let bucket_objs_number_limit =
+            T::MaxNumberOfAssetsPerChannel::get().into();
 
-        let (channel_owner_account_id, channel_owner_member_id) =
-            member_funded_account::<T>(DEFAULT_MEMBER_ID);
-
-        let sender = RawOrigin::Signed(channel_owner_account_id.clone());
-
-        let channel_owner = ChannelOwner::Member(channel_owner_member_id);
-
-        let params = generate_channel_creation_params::<T>(
-            storage_wg_lead_account_id,
-            distribution_wg_lead_account_id,
-            max_obj_size.saturating_mul(T::MaxNumberOfAssetsPerChannel::get().into()),
-            T::MaxNumberOfAssetsPerChannel::get().into(),
-            T::MaxNumberOfCollaboratorsPerChannel::get() as u32,
+        let (
+            channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            a,
+            bucket_objs_size_limit,
+            bucket_objs_number_limit,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            a,
-            max_obj_size,
-        );
+        ).unwrap();
 
-        Pallet::<T>::create_channel(
-            sender.into(),
-            channel_owner,
-            params).unwrap();
-
-        let origin = RawOrigin::Signed(channel_owner_account_id);
-        let actor = ContentActor::Member(channel_owner_member_id);
-        let channel_id: T::ChannelId = One::one();
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
 
     }: _ (origin, actor, channel_id, a.into())
     verify {
