@@ -111,6 +111,7 @@ jobs:
       - name: Execute network tests
         run: |
           export DEV_NODE=true
+          export JOYSTREAM_NODE_TAG=latest
           export RUNTIME=latest
           tests/network-tests/run-full-tests.sh
 
@@ -146,6 +147,7 @@ jobs:
       - name: Execute Tests
         run: |
           export DEV_NODE=true
+          export JOYSTREAM_NODE_TAG=latest
           export RUNTIME=latest
           export SKIP_MOCK_CONTENT=true
           tests/network-tests/test-setup-new-chain.sh
