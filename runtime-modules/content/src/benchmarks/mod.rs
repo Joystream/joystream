@@ -5,7 +5,7 @@ mod benchmarking;
 use crate::permissions::*;
 use crate::types::{
     ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-    StorageAssets,
+    InitTransferParametersOf, StorageAssets,
 };
 use crate::{Config, Module as Pallet};
 use balances::Pallet as Balances;
@@ -654,6 +654,9 @@ where
 fn setup_worst_case_scenario_channel<T: RuntimeConfig>(
     sender: T::AccountId,
     channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
+    // benchmarks should always use "true" if possible (ie. the benchmarked tx
+    // is allowed during active transfer, for example - delete_channel)
+    with_transfer: bool,
 ) -> Result<T::ChannelId, DispatchError>
 where
     T::AccountId: CreateAccountId,
@@ -674,7 +677,33 @@ where
 
     let channel_id = Pallet::<T>::next_channel_id();
 
-    Pallet::<T>::create_channel(origin.into(), channel_owner, params)?;
+    Pallet::<T>::create_channel(origin.clone().into(), channel_owner.clone(), params)?;
+
+    // initialize worst-case-scenario transfer
+    if with_transfer {
+        let (_, new_owner_id) = member_funded_account::<T>(MEMBER_IDS[2]);
+        let new_owner = ChannelOwner::Member(new_owner_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        let actor = match channel_owner {
+            ChannelOwner::Member(member_id) => ContentActor::Member(member_id),
+            ChannelOwner::CuratorGroup(_) => ContentActor::Lead,
+        };
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner,
+            new_collaborators,
+            price,
+        };
+        Pallet::<T>::initialize_channel_transfer(
+            origin.into(),
+            channel_id,
+            actor,
+            transfer_params,
+        )?;
+    }
 
     Ok(channel_id)
 }
@@ -733,7 +762,11 @@ where
     Ok(group_id)
 }
 
-fn setup_worst_case_scenario_curator_channel<T>() -> Result<
+fn setup_worst_case_scenario_curator_channel<T>(
+    // benchmarks should always use "true" unless initializing a transfer
+    // is part of the benchmarks itself
+    with_transfer: bool,
+) -> Result<
     (
         T::ChannelId,
         T::CuratorGroupId,
@@ -753,6 +786,7 @@ where
     let channel_id = setup_worst_case_scenario_channel::<T>(
         lead_account_id.clone(),
         ChannelOwner::CuratorGroup(group_id),
+        with_transfer,
     )?;
     let group = Pallet::<T>::curator_group_by_id(group_id);
     let curator_id: T::CuratorId = *group.get_curators().keys().next().unwrap();
@@ -786,7 +820,7 @@ where
         Pallet::<T>::add_curator_to_group(
             RawOrigin::Signed(lead_acc_id.clone()).into(),
             new_group_id,
-            curator_id.clone(),
+            *curator_id,
             permissions.clone(),
         )?;
     }
