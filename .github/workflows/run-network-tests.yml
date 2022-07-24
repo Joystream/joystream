@@ -110,6 +110,7 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         run: |
+          export DEV_NODE=true
           export RUNTIME=latest
           tests/network-tests/run-full-tests.sh
 
@@ -144,6 +145,7 @@ jobs:
       # integration tests
       - name: Execute Tests
         run: |
+          export DEV_NODE=true
           export RUNTIME=latest
           export SKIP_MOCK_CONTENT=true
           tests/network-tests/test-setup-new-chain.sh
