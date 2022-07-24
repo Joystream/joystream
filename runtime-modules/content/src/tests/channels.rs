@@ -343,6 +343,22 @@ fn unsuccessful_channel_creation_with_number_of_assets_exceeded() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_creation_with_number_of_collaborators_exceeded() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        CreateChannelFixture::default()
+            .with_collaborators(
+                (0..(<Test as Config>::MaxNumberOfCollaboratorsPerChannel::get() + 1) as usize)
+                    .map(|i| (MEMBER_IDS[i], ChannelAgentPermissions::new()))
+                    .collect(),
+            )
+            .call_and_assert(Err(
+                Error::<Test>::MaxNumberOfChannelCollaboratorsExceeded.into()
+            ));
+    })
+}
+
 /////////////////////////////////////////////////////////////////////
 // Channel update failures (excluding invalid context/permissions) //
 /////////////////////////////////////////////////////////////////////
@@ -564,8 +580,6 @@ fn unsuccessful_channel_update_with_number_of_assets_exceeded() {
         ContentTest::with_member_channel().setup();
 
         UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_object_candidates_helper(
@@ -574,6 +588,23 @@ fn unsuccessful_channel_update_with_number_of_assets_exceeded() {
                 ),
             })
             .call_and_assert(Err(Error::<Test>::MaxNumberOfChannelAssetsExceeded.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_number_of_collaborators_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        UpdateChannelFixture::default()
+            .with_collaborators(
+                (0..(<Test as Config>::MaxNumberOfCollaboratorsPerChannel::get() + 1) as usize)
+                    .map(|i| (MEMBER_IDS[i], ChannelAgentPermissions::new()))
+                    .collect(),
+            )
+            .call_and_assert(Err(
+                Error::<Test>::MaxNumberOfChannelCollaboratorsExceeded.into()
+            ));
     })
 }
 
