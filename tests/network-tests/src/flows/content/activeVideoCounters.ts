@@ -23,7 +23,7 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
   const videoCategoryCount = 2
   const channelCount = 2
   const channelCategoryCount = 2
-  const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(10_000_000_000) // some very big number to cover fees of all transactions
 
   // flow itself
 
