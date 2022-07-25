@@ -1028,7 +1028,6 @@ parameter_types! {
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 40;
-    pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: Balance = 25 * currency::CENTS;
     pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
@@ -1040,7 +1039,6 @@ impl forum::StorageLimits for MapLimits {
     type MaxSubcategories = MaxSubcategories;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
-    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
 impl forum::Config for Runtime {

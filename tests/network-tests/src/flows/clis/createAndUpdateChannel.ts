@@ -10,7 +10,7 @@ import { createJoystreamCli } from '../utils'
 import { createType } from '@joystream/types'
 import { u8aConcat, u8aFixLength } from '@polkadot/util'
 
-export default async function createChannel({ api, query }: FlowProps): Promise<void> {
+export default async function createAndUpdateChannel({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
   debug('Started')
 
@@ -66,6 +66,7 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
     )
     .toString()
 
+  // Assert channel data after creation
   await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
     (channel) => {
@@ -82,5 +83,28 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
     }
   )
 
+  const updatedCoverPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(1820, 400)
+  const updateChannelInput = {
+    title: 'Test channel [UPDATED!]',
+    coverPhotoPath: updatedCoverPhotoPath,
+    description: 'This is a test channel [UPDATED!]',
+  }
+
+  await joystreamCli.updateChannel(channelId, updateChannelInput)
+
+  // Assert channel data after update
+  await query.tryQueryWithTimeout(
+    () => query.channelById(channelId.toString()),
+    (channel) => {
+      Utils.assert(channel, 'Channel not found')
+      assert.equal(channel.title, updateChannelInput.title)
+      assert.equal(channel.description, updateChannelInput.description)
+      assert.equal(channel.avatarPhoto?.type.__typename, 'DataObjectTypeChannelAvatar')
+      assert.equal(channel.avatarPhoto?.size, statSync(avatarPhotoPath).size)
+      assert.equal(channel.coverPhoto?.type.__typename, 'DataObjectTypeChannelCoverPhoto')
+      assert.equal(channel.coverPhoto?.size, statSync(updatedCoverPhotoPath).size)
+      assert.equal(channel.rewardAccount, expectedChannelRewardAccount)
+    }
+  )
   debug('Done')
 }

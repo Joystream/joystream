@@ -33,6 +33,8 @@ import {
   DistributionBucketIndex,
 } from '@joystream/types/primitives'
 import { Balance } from '@polkadot/types/interfaces'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
+import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
 
 export type StorageDataObjectParams = {
   storageBagOrId: StorageBag | BagId
@@ -228,6 +230,26 @@ export async function createDataObjects(
   await store.save<StorageSystemParameters>(storageSystem)
 
   return dataObjects
+}
+
+export async function deleteDataObjects(
+  store: DatabaseManager,
+  bagId: BagId,
+  dataObjectIds: BTreeSet<DataObjectId>
+): Promise<void> {
+  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
+    'videoThumbnail',
+    ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
+    'videoMedia',
+    ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
+  ])
+
+  for (const dataObject of dataObjects) {
+    // update video active counters
+    await getAllManagers(store).storageDataObjects.onMainEntityDeletion(dataObject)
+
+    await unsetAssetRelations(store, dataObject)
+  }
 }
 
 export async function getMostRecentlyCreatedDataObjects(

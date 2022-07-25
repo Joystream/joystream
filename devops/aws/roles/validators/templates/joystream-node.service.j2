@@ -11,8 +11,7 @@ ExecStart=/home/ubuntu/joystream/target/release/joystream-node \
         --pruning archive \
         --node-key-file {{ template_secret_path }} \
         --keystore-path {{ template_keystore_path }} \
-        --validator \
-        --log runtime,txpool,transaction-pool,trace=sync
+        --validator
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=10000
