@@ -349,7 +349,6 @@ parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
-    pub const PricePerByte: u32 = 2;
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const ModuleAccountInitialBalance: u64 = 1;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
@@ -389,9 +388,6 @@ impl Config for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
-
-    /// price per byte
-    type PricePerByte = PricePerByte;
 
     /// module id
     type ModuleId = ContentModuleId;

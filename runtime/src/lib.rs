@@ -716,9 +716,7 @@ impl pallet_authority_discovery::Config for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const PricePerByte: Balance = 2 * currency::MILLICENTS; // TODO: adjust value
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
-    pub const BagDeletionPrize: Balance = 0; // TODO: adjust value
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
         block_number_period: DAYS,
@@ -746,7 +744,6 @@ impl content::Config for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
-    type PricePerByte = PricePerByte;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;

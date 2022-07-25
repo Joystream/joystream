@@ -83,9 +83,6 @@ pub trait Config:
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
-    /// Price per byte
-    type PricePerByte: Get<<Self as balances::Config>::Balance>;
-
     /// Content Module Id
     type ModuleId: Get<PalletId>;
 
