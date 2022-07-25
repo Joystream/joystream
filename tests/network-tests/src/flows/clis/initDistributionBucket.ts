@@ -1,6 +1,7 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { DistributorCLI } from '../../cli/distributor'
+import BN from 'bn.js'
 
 export default async function initDistributionBucket({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:initDistributionBucketViaCLI')
@@ -10,6 +11,10 @@ export default async function initDistributionBucket({ api }: FlowProps): Promis
 
   const operatorId = leaderId.toString()
   const leaderSuri = api.getSuri(leader.roleAccountId)
+
+  // Send some funds to pay fees
+  const funds = new BN(10_000_000_000)
+  await api.treasuryTransferBalance(leader.roleAccountId.toString(), funds)
 
   const cli = new DistributorCLI([leaderSuri])
 

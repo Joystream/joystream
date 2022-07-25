@@ -1,6 +1,7 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { StorageCLI } from '../../cli/storage'
+import BN from 'bn.js'
 
 export default async function initStorageBucket({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:initStorageBucketViaCLI')
@@ -12,6 +13,9 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
   const transactorKey = '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU' // //Colossus1
 
   const operatorId = leaderId.toString()
+  // Send some funds to pay fees
+  const funds = new BN(10_000_000_000)
+  await api.treasuryTransferBalance(operatorId, funds)
 
   const cli = new StorageCLI(leaderSuri)
   await cli.run('leader:update-bag-limit', ['--limit', '10'])
