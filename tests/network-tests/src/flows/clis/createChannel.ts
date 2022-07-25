@@ -21,7 +21,7 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
   const memberId = buyMembershipFixture.getCreatedMembers()[0]
 
   // Send some funds to pay the state_bloat_bond and fees
-  const channelOwnerBalance = new BN(10000)
+  const channelOwnerBalance = new BN(10_000_000_000)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 
   // Create and init Joystream CLI
