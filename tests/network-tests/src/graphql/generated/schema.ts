@@ -28217,6 +28217,8 @@ export type StorageSystemParameters = BaseGraphQlObject & {
   storageBucketMaxObjectsSizeLimit: Scalars['BigInt']
   /** ID of the next data object when created */
   nextDataObjectId: Scalars['BigInt']
+  /** Data Object state bloat bond value */
+  dataObjectStateBloatBondValue: Scalars['Int']
 }
 
 export type StorageSystemParametersConnection = {
@@ -28234,6 +28236,7 @@ export type StorageSystemParametersCreateInput = {
   storageBucketMaxObjectsCountLimit: Scalars['String']
   storageBucketMaxObjectsSizeLimit: Scalars['String']
   nextDataObjectId: Scalars['String']
+  dataObjectStateBloatBondValue: Scalars['Float']
 }
 
 export type StorageSystemParametersEdge = {
@@ -28262,6 +28265,8 @@ export enum StorageSystemParametersOrderByInput {
   StorageBucketMaxObjectsSizeLimitDesc = 'storageBucketMaxObjectsSizeLimit_DESC',
   NextDataObjectIdAsc = 'nextDataObjectId_ASC',
   NextDataObjectIdDesc = 'nextDataObjectId_DESC',
+  DataObjectStateBloatBondValueAsc = 'dataObjectStateBloatBondValue_ASC',
+  DataObjectStateBloatBondValueDesc = 'dataObjectStateBloatBondValue_DESC',
 }
 
 export type StorageSystemParametersUpdateInput = {
@@ -28273,6 +28278,7 @@ export type StorageSystemParametersUpdateInput = {
   storageBucketMaxObjectsCountLimit?: Maybe<Scalars['String']>
   storageBucketMaxObjectsSizeLimit?: Maybe<Scalars['String']>
   nextDataObjectId?: Maybe<Scalars['String']>
+  dataObjectStateBloatBondValue?: Maybe<Scalars['Float']>
 }
 
 export type StorageSystemParametersWhereInput = {
@@ -28341,6 +28347,12 @@ export type StorageSystemParametersWhereInput = {
   nextDataObjectId_lt?: Maybe<Scalars['BigInt']>
   nextDataObjectId_lte?: Maybe<Scalars['BigInt']>
   nextDataObjectId_in?: Maybe<Array<Scalars['BigInt']>>
+  dataObjectStateBloatBondValue_eq?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_gt?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_gte?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_lt?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_lte?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_in?: Maybe<Array<Scalars['Int']>>
   AND?: Maybe<Array<StorageSystemParametersWhereInput>>
   OR?: Maybe<Array<StorageSystemParametersWhereInput>>
   NOT?: Maybe<Array<StorageSystemParametersWhereInput>>
