@@ -72,7 +72,6 @@ typegen:
     - forum.ThreadMetadataUpdated
     - forum.ThreadDeleted
     - forum.ThreadMoved
-    - forum.VoteOnPoll
     - forum.PostAdded
     - forum.PostModerated
     - forum.PostDeleted
@@ -700,8 +699,6 @@ mappings:
       handler: forum_PostTextUpdated
     - event: forum.PostReacted
       handler: forum_PostReacted
-    - event: forum.VoteOnPoll
-      handler: forum_VoteOnPoll
     - event: forum.CategoryStickyThreadUpdate
       handler: forum_CategoryStickyThreadUpdate
     - event: forum.CategoryMembershipOfModeratorUpdated

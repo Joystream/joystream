@@ -195,10 +195,6 @@ import {
   GetThreadCreatedEventsByEventIdsQuery,
   GetThreadCreatedEventsByEventIds,
   GetThreadCreatedEventsByEventIdsQueryVariables,
-  VoteOnPollEventFieldsFragment,
-  GetVoteOnPollEventsByEventIdsQuery,
-  GetVoteOnPollEventsByEventIdsQueryVariables,
-  GetVoteOnPollEventsByEventIds,
   ThreadDeletedEventFieldsFragment,
   GetThreadDeletedEventsByEventIdsQuery,
   GetThreadDeletedEventsByEventIdsQueryVariables,
@@ -1033,15 +1029,6 @@ export class QueryNodeApi {
       GetThreadsWithInitialPostsByIdsQuery,
       GetThreadsWithInitialPostsByIdsQueryVariables
     >(GetThreadsWithInitialPostsByIds, { ids: ids.map((id) => id.toString()) }, 'forumThreads')
-  }
-
-  public async getVoteOnPollEvents(events: EventDetails[]): Promise<VoteOnPollEventFieldsFragment[]> {
-    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
-    return this.multipleEntitiesQuery<GetVoteOnPollEventsByEventIdsQuery, GetVoteOnPollEventsByEventIdsQueryVariables>(
-      GetVoteOnPollEventsByEventIds,
-      { eventIds },
-      'voteOnPollEvents'
-    )
   }
 
   public async getThreadDeletedEvents(events: EventDetails[]): Promise<ThreadDeletedEventFieldsFragment[]> {
