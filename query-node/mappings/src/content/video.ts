@@ -196,7 +196,9 @@ export async function content_VideoAssetsDeletedByModerator({
     },
   })
 
-  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
+  for (const asset of assets) {
+    await unsetAssetRelations(store, asset)
+  }
   logger.info('Video assets have been removed', { ids: dataObjectIds })
 
   // common event processing - second

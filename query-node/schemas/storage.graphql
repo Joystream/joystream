@@ -23,6 +23,9 @@ type StorageSystemParameters @entity {
 
   "ID of the next data object when created"
   nextDataObjectId: BigInt!
+
+  "Data Object state bloat bond value"
+  dataObjectStateBloatBondValue: Int!
 }
 
 type StorageBucketOperatorStatusMissing @variant {
