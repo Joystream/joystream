@@ -586,6 +586,9 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &params.channel_bag_witness)?;
+
             channel.ensure_has_no_active_transfer::<T>()?;
 
             // permissions check
@@ -705,17 +708,21 @@ decl_module! {
         }
 
         // extrinsics for channel deletion
-        #[weight = WeightInfoContent::<T>::delete_channel((*num_objects_to_delete) as u32)]
+        #[weight = Module::<T>::delete_channel_weight(channel_bag_witness, num_objects_to_delete)]
         pub fn delete_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // ensure no creator token is issued for the channel
             channel.ensure_creator_token_not_issued::<T>()?;
@@ -3713,6 +3720,26 @@ impl<T: Config> Module<T> {
             ChannelOwner::CuratorGroup(..) => Ok(ChannelFundsDestination::CouncilBudget),
         }
     }
+
+    fn verify_channel_bag_witness(
+        channel_id: T::ChannelId,
+        witness: &ChannelBagWitness,
+    ) -> DispatchResult {
+        let bag_id = Self::bag_id_for_channel(&channel_id);
+        let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+
+        ensure!(
+            channel_bag.stored_by.len() == witness.storage_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+        ensure!(
+            channel_bag.distributed_by.len() == witness.distribution_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+
+        Ok(())
+    }
+
     //Weight functions
 
     // Calculates weight for create_channel extrinsic.
@@ -3732,7 +3759,10 @@ impl<T: Config> Module<T> {
             .as_ref()
             .map_or(0, |v| v.object_creation_list.len()) as u32;
 
-        WeightInfoContent::<T>::create_channel(a, b, c, d)
+        //metadata
+        let e = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+        WeightInfoContent::<T>::create_channel(a, b, c, d, e)
     }
 
     // Calculates weight for update_channel extrinsic.
@@ -3749,7 +3779,33 @@ impl<T: Config> Module<T> {
         //assets_to_remove
         let c = params.assets_to_remove.len() as u32;
 
-        WeightInfoContent::<T>::update_channel(a, b, c)
+        //new metadata
+        let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+        //channel_bag_witness storage_buckets_num
+        let e = params.channel_bag_witness.storage_buckets_num;
+
+        //channel_bag_witness distribution_buckets_num
+        let f = params.channel_bag_witness.distribution_buckets_num;
+
+        WeightInfoContent::<T>::update_channel(a, b, c, d, e, f)
+    }
+
+    // Calculates weight for delete_channel extrinsic.
+    fn delete_channel_weight(
+        channel_bag_witness: &ChannelBagWitness,
+        num_objects_to_delete: &u64,
+    ) -> Weight {
+        //num_objects_to_delete
+        let a = (*num_objects_to_delete) as u32;
+
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
+
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
+
+        WeightInfoContent::<T>::delete_channel(a, b, c)
     }
 }
 

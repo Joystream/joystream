@@ -26,6 +26,9 @@ decl_error! {
         /// Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
         MaxNumberOfVideoAssetsExceeded,
 
+        /// Channel bag witness parameters don't match the current runtime state
+        InvalidChannelBagWitnessProvided,
+
         // Curator Management Errors
         // -------------------------
 

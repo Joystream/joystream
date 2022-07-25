@@ -527,7 +527,13 @@ pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, MemberId: Ord, Balance> {
+pub struct ChannelUpdateParametersRecord<
+    StorageAssets,
+    DataObjectId: Ord,
+    MemberId: Ord,
+    Balance,
+    ChannelBagWitness,
+> {
     /// Asset collection for the channel, referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
@@ -538,6 +544,8 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witness/commitment data related to channel bag (for weight calculation purposes)
+    pub channel_bag_witness: ChannelBagWitness,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -545,6 +553,7 @@ pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
     DataObjectId<T>,
     <T as common::MembershipTypes>::MemberId,
     BalanceOf<T>,
+    ChannelBagWitness,
 >;
 
 /// Information regarding the content being uploaded
@@ -574,6 +583,15 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub expected_video_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub struct ChannelBagWitness {
+    /// Number of storage buckets assigned to channel's storage bag
+    pub storage_buckets_num: u32,
+    /// Number of distribution buckets assigned to channel's storage bag
+    pub distribution_buckets_num: u32,
 }
 
 pub type VideoCreationParameters<T> =

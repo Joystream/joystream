@@ -608,6 +608,21 @@ fn unsuccessful_channel_update_with_number_of_collaborators_exceeded() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_update_with_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        UpdateChannelFixture::default()
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
 /////////////////////////////////////////////////////////////////////
 /////////////////// Channel privilege level tests ///////////////////
 /////////////////////////////////////////////////////////////////////
@@ -705,6 +720,21 @@ fn unsuccessful_channel_deletion_with_creator_token_issued() {
 
         DeleteChannelFixture::default()
             .call_and_assert(Err(Error::<Test>::CreatorTokenAlreadyIssued.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_deletion_with_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        DeleteChannelFixture::default()
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
     })
 }
 
