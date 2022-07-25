@@ -25,6 +25,14 @@ use strum::IntoEnumIterator;
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
+fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
+    let bag_id = Content::bag_id_for_channel(&channel_id);
+    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
+    ChannelBagWitness {
+        storage_buckets_num: channel_bag.stored_by.len() as u32,
+        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
+    }
+}
 // fixtures
 
 pub struct CreateCuratorGroupFixture {
@@ -485,6 +493,7 @@ impl UpdateChannelFixture {
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
+                channel_bag_witness: channel_bag_witness(ChannelId::one()),
             },
         }
     }
@@ -506,6 +515,16 @@ impl UpdateChannelFixture {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 expected_data_object_state_bloat_bond,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                channel_bag_witness,
                 ..self.params.clone()
             },
             ..self
@@ -1069,6 +1088,7 @@ pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
+    channel_bag_witness: ChannelBagWitness,
     num_objects_to_delete: u64,
 }
 
@@ -1078,6 +1098,7 @@ impl DeleteChannelFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
+            channel_bag_witness: channel_bag_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
         }
     }
@@ -1100,6 +1121,13 @@ impl DeleteChannelFixture {
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+        Self {
+            channel_bag_witness,
+            ..self
+        }
+    }
 }
 
 impl ChannelDeletion for DeleteChannelFixture {
@@ -1121,6 +1149,7 @@ impl ChannelDeletion for DeleteChannelFixture {
             Origin::signed(self.sender),
             self.actor,
             self.channel_id,
+            self.channel_bag_witness.clone(),
             self.num_objects_to_delete,
         )
     }

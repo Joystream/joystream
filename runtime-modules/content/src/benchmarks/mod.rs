@@ -3,8 +3,8 @@ mod benchmarking;
 use crate::{
     permissions::PausableChannelFeature,
     types::{
-        ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-        StorageAssets,
+        ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness,
+        ChannelCreationParameters, ChannelOwner, StorageAssets,
     },
     Config, ContentModerationAction, ModerationPermissionsByLevel, Module as Pallet,
 };
@@ -29,7 +29,8 @@ use sp_std::{
     vec::Vec,
 };
 use storage::{
-    DataObjectCreationParameters, DistributionBucketId, DynamicBagType, Module as Storage,
+    DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
+    Module as Storage,
 };
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
@@ -71,7 +72,7 @@ pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES: u32 = 50000;
+const MAX_BYTES_METADATA: u32 = 5000;
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
     ChannelActionPermission::AddVideo,
@@ -110,6 +111,14 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::DeleteNonVideoChannelAssets,
     ContentModerationAction::UpdateChannelNftLimits,
 ];
+
+fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
+    (T::MaxNumberOfAssetsPerChannel::get() as u64) * 100
+}
+
+fn storage_bucket_objs_size_limit<T: Config>() -> u64 {
+    T::MaxDataObjectSize::get() * storage_bucket_objs_number_limit::<T>() * 1000
+}
 
 pub trait CreateAccountId {
     fn create_account_id(id: u128) -> Self;
@@ -469,12 +478,8 @@ fn set_storage_buckets_voucher_max_limits<T>(
     .unwrap();
 }
 
-fn create_storage_bucket<T>(
-    lead_account_id: T::AccountId,
-    accepting_bags: bool,
-    bucket_objs_size_limit: u64,
-    bucket_objs_number_limit: u64,
-) where
+fn create_storage_bucket<T>(lead_account_id: T::AccountId, accepting_bags: bool)
+where
     T: Config + storage::Config,
 {
     // Set storage bucket in the dynamic bag creation policy to zero.
@@ -483,8 +488,8 @@ fn create_storage_bucket<T>(
         T::Origin::from(storage_wg_leader_signed),
         None,
         accepting_bags,
-        bucket_objs_size_limit,
-        bucket_objs_number_limit,
+        storage_bucket_objs_size_limit::<T>(),
+        storage_bucket_objs_number_limit::<T>(),
     )
     .unwrap();
 }
@@ -557,16 +562,65 @@ pub fn create_data_object_candidates_helper(
         .collect()
 }
 
+type BloatBonds<T> = (
+    <T as balances::Config>::Balance, // channel_state_bloat_bond
+    <T as balances::Config>::Balance, // video_state_bloat_bond
+    <T as balances::Config>::Balance, // data_object_state_bloat_bond
+    <T as balances::Config>::Balance, // data_size_fee
+);
+
+fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
+where
+    T: Config,
+    T::AccountId: CreateAccountId,
+{
+    let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
+    let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let channel_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let video_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let data_object_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    let data_size_fee = <T as balances::Config>::Balance::one();
+    // Set non-zero channel bloat bond
+    Pallet::<T>::update_channel_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc.clone()).into(),
+        channel_state_bloat_bond,
+    )?;
+    // Set non-zero video bloat bond
+    Pallet::<T>::update_video_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc).into(),
+        video_state_bloat_bond,
+    )?;
+    // Set non-zero data object bloat bond
+    storage::Pallet::<T>::update_data_object_state_bloat_bond(
+        RawOrigin::Signed(storage_lead_acc.clone()).into(),
+        data_object_state_bloat_bond,
+    )?;
+    // Set non-zero fee per mb
+    storage::Pallet::<T>::update_data_size_fee(
+        RawOrigin::Signed(storage_lead_acc).into(),
+        data_size_fee,
+    )?;
+
+    Ok((
+        channel_state_bloat_bond,
+        video_state_bloat_bond,
+        data_object_state_bloat_bond,
+        data_size_fee,
+    ))
+}
+
 #[allow(clippy::too_many_arguments)]
 fn generate_channel_creation_params<T>(
     storage_wg_lead_account_id: T::AccountId,
     distribution_wg_lead_account_id: T::AccountId,
-    bucket_objs_size_limit: u64,
-    bucket_objs_number_limit: u64,
     colaborator_num: u32,
     storage_bucket_num: u32,
     distribution_bucket_num: u32,
     objects_num: u32,
+    max_bytes_metadata: u32,
     max_obj_size: u64,
 ) -> ChannelCreationParameters<T>
 where
@@ -579,9 +633,6 @@ where
         + working_group::Config<DistributionWorkingGroupInstance>,
     T::AccountId: CreateAccountId,
 {
-    // let permissions = BTreeSet::from_iter(CHANNEL_AGENT_PERMISSIONS);
-    let metadata = vec![0u8].repeat(MAX_BYTES as usize);
-
     set_dyn_bag_creation_storage_bucket_numbers::<T>(
         storage_wg_lead_account_id.clone(),
         storage_bucket_num.into(),
@@ -590,24 +641,22 @@ where
 
     set_storage_buckets_voucher_max_limits::<T>(
         storage_wg_lead_account_id.clone(),
-        bucket_objs_size_limit,
-        bucket_objs_number_limit,
+        storage_bucket_objs_size_limit::<T>(),
+        storage_bucket_objs_number_limit::<T>(),
     );
 
-    let assets = StorageAssets::<T> {
+    setup_bloat_bonds::<T>().unwrap();
+
+    let assets = Some(StorageAssets::<T> {
         expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
         object_creation_list: create_data_object_candidates_helper(objects_num, max_obj_size),
-    };
+    });
+
     let collaborators = worst_case_scenario_collaborators::<T>(0, colaborator_num);
 
     let storage_buckets = (0..storage_bucket_num)
         .map(|id| {
-            create_storage_bucket::<T>(
-                storage_wg_lead_account_id.clone(),
-                true,
-                bucket_objs_size_limit,
-                bucket_objs_number_limit,
-            );
+            create_storage_bucket::<T>(storage_wg_lead_account_id.clone(), true);
             id.saturated_into()
         })
         .collect::<BTreeSet<_>>();
@@ -630,9 +679,11 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
+    let meta = Some(vec![0u8].repeat(max_bytes_metadata as usize));
+
     ChannelCreationParameters::<T> {
-        assets: Some(assets),
-        meta: Some(metadata),
+        assets,
+        meta,
         collaborators,
         storage_buckets,
         distribution_buckets,
@@ -669,8 +720,6 @@ fn setup_worst_case_scenario_channel<T: Config>(
     sender: T::AccountId,
     channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
     objects_num: u32,
-    bucket_objs_size_limit: u64,
-    bucket_objs_number_limit: u64,
     storage_buckets_num: u32,
     distribution_buckets_num: u32,
 ) -> Result<T::ChannelId, DispatchError>
@@ -691,12 +740,11 @@ where
     let params = generate_channel_creation_params::<T>(
         storage_wg_lead_account_id,
         distribution_wg_lead_account_id,
-        bucket_objs_size_limit,
-        bucket_objs_number_limit,
         T::MaxNumberOfCollaboratorsPerChannel::get(),
         storage_buckets_num,
         distribution_buckets_num,
         objects_num,
+        MAX_BYTES_METADATA,
         T::MaxDataObjectSize::get(),
     );
 
@@ -757,8 +805,6 @@ where
 #[allow(clippy::type_complexity)]
 fn setup_worst_case_scenario_curator_channel<T>(
     objects_num: u32,
-    bucket_objs_size_limit: u64,
-    bucket_objs_number_limit: u64,
     storage_buckets_num: u32,
     distribution_buckets_num: u32,
 ) -> Result<
@@ -789,8 +835,6 @@ where
         lead_account_id.clone(),
         ChannelOwner::CuratorGroup(group_id),
         objects_num,
-        bucket_objs_size_limit,
-        bucket_objs_number_limit,
         storage_buckets_num,
         distribution_buckets_num,
     )?;
@@ -806,6 +850,17 @@ where
         curator_id,
         curator_account_id,
     ))
+}
+
+fn channel_bag_witness<T: Config>(
+    channel_id: T::ChannelId,
+) -> Result<ChannelBagWitness, DispatchError> {
+    let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
+    let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+    Ok(ChannelBagWitness {
+        storage_buckets_num: channel_bag.stored_by.len() as u32,
+        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
+    })
 }
 
 // fn worst_case_scenario_assets<T: Config>(num: u32) -> StorageAssets<T> {
