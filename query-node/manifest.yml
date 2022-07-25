@@ -104,6 +104,7 @@ typegen:
     - storage.StorageBucketInvitationAccepted
     - storage.StorageBucketsUpdatedForBag
     - storage.DataObjectsUploaded
+    - storage.DataObjectsUpdated
     - storage.StorageOperatorMetadataSet
     - storage.StorageBucketVoucherLimitsSet
     - storage.PendingDataObjectsAccepted
@@ -136,6 +137,7 @@ typegen:
     - storage.DistributionBucketMetadataSet
     - storage.DistributionBucketOperatorRemoved
     - storage.DistributionBucketFamilyMetadataSet
+    - storage.DataObjectStateBloatBondValueUpdated
     # Not required:
     # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
     # - storage.FamiliesInDynamicBagCreationPolicyUpdated
@@ -787,6 +789,8 @@ mappings:
       handler: storage_StorageBucketsUpdatedForBag
     - event: storage.DataObjectsUploaded
       handler: storage_DataObjectsUploaded
+    - event: storage.DataObjectsUpdated
+      handler: storage_DataObjectsUpdated
     - event: storage.StorageOperatorMetadataSet
       handler: storage_StorageOperatorMetadataSet
     - event: storage.StorageBucketVoucherLimitsSet
@@ -851,6 +855,8 @@ mappings:
       handler: storage_DistributionBucketOperatorRemoved
     - event: storage.DistributionBucketFamilyMetadataSet
       handler: storage_DistributionBucketFamilyMetadataSet
+    - event: storage.DataObjectStateBloatBondValueUpdated
+      handler: storage_DataObjectStateBloatBondValueUpdated
 
     # Council
     - event: council.AnnouncingPeriodStarted
