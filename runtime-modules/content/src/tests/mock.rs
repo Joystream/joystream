@@ -990,7 +990,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Distributio
 // pallet_project_token trait implementation and related stuff
 parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
-    pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
 }
 
@@ -1002,10 +1002,11 @@ impl project_token::Config for Test {
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
-    type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type WeightInfo = ();
 }
 
 pub struct Block2Balance {}

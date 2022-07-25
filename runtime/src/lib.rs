@@ -774,11 +774,12 @@ impl project_token::Config for Runtime {
     type BlockNumberToBalance = BlockNumberToBalance;
     type DataObjectStorage = Storage;
     type ModuleId = ProjectTokenModuleId;
-    type MaxVestingBalancesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type JoyExistentialDeposit = ExistentialDeposit;
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = Members;
     type MembershipInfoProvider = Members;
+    type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
 }
 
 // The referendum instance alias.
