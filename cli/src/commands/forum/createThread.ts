@@ -41,8 +41,7 @@ export default class ForumCreateThreadCommand extends ForumCommandBase {
 
     const result = await this.sendAndFollowTx(
       await this.getDecodedPair(member.membership.controllerAccount),
-      // Polls not supported atm
-      api.tx.forum.createThread(member.id, categoryId, metadataToBytes(ForumThreadMetadata, metadata), text, null)
+      api.tx.forum.createThread(member.id, categoryId, metadataToBytes(ForumThreadMetadata, metadata), text)
     )
 
     const threadId: ThreadId = this.getEvent(result, 'forum', 'ThreadCreated').data[1]

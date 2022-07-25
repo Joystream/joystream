@@ -3,7 +3,6 @@ export { UpdateCategoriesStatusFixture, CategoryStatusUpdate } from './UpdateCat
 export { RemoveCategoriesFixture, CategoryRemovalInput } from './RemoveCategoriesFixture'
 export { CreateThreadsFixture, ThreadParams } from './CreateThreadsFixture'
 export { DeleteThreadsFixture, ThreadRemovalInput } from './DeleteThreadsFixture'
-export { VoteOnPollFixture, VoteParams } from './VoteOnPollFixture'
 export { AddPostsFixture, PostParams } from './AddPostsFixture'
 export { UpdateThreadsMetadataFixture, ThreadMetadataUpdate } from './UpdateThreadsMetadataFixture'
 export { MoveThreadsFixture, MoveThreadParams } from './MoveThreadsFixture'

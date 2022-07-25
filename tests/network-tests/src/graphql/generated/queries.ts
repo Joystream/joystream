@@ -53,7 +53,7 @@ export type ChannelFieldsFragment = {
   description?: Types.Maybe<string>
   isPublic?: Types.Maybe<boolean>
   isCensored: boolean
-  rewardAccount?: Types.Maybe<string>
+  rewardAccount: string
   language?: Types.Maybe<{ iso: string }>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
@@ -582,11 +582,6 @@ export type ForumThreadWithInitialPostFragment = {
   author: { id: string }
   category: { id: string }
   initialPost?: Types.Maybe<ForumPostFieldsFragment>
-  poll?: Types.Maybe<{
-    description: string
-    endTime: any
-    pollAlternatives: Array<{ index: number; text: string; votes: Array<{ votingMember: { id: string } }> }>
-  }>
   createdInEvent: { id: string; title: string; text: string }
   status:
     | { __typename: 'ThreadStatusActive' }
@@ -709,23 +704,6 @@ export type GetThreadMetadataUpdatedEventsByEventIdsQueryVariables = Types.Exact
 export type GetThreadMetadataUpdatedEventsByEventIdsQuery = {
   threadMetadataUpdatedEvents: Array<ThreadMetadataUpdatedEventFieldsFragment>
 }
-
-export type VoteOnPollEventFieldsFragment = {
-  id: string
-  createdAt: any
-  inBlock: number
-  network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
-  indexInBlock: number
-  pollAlternative: { id: string; index: number; text: string; poll: { thread: { id: string } } }
-  votingMember: { id: string }
-}
-
-export type GetVoteOnPollEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetVoteOnPollEventsByEventIdsQuery = { voteOnPollEvents: Array<VoteOnPollEventFieldsFragment> }
 
 export type ThreadDeletedEventFieldsFragment = {
   id: string
@@ -3048,19 +3026,6 @@ export const ForumThreadWithInitialPost = gql`
     initialPost {
       ...ForumPostFields
     }
-    poll {
-      description
-      endTime
-      pollAlternatives {
-        index
-        text
-        votes {
-          votingMember {
-            id
-          }
-        }
-      }
-    }
     isSticky
     createdInEvent {
       id
@@ -3171,29 +3136,6 @@ export const ThreadMetadataUpdatedEventFields = gql`
       id
     }
     newTitle
-  }
-`
-export const VoteOnPollEventFields = gql`
-  fragment VoteOnPollEventFields on VoteOnPollEvent {
-    id
-    createdAt
-    inBlock
-    network
-    inExtrinsic
-    indexInBlock
-    pollAlternative {
-      id
-      index
-      text
-      poll {
-        thread {
-          id
-        }
-      }
-    }
-    votingMember {
-      id
-    }
   }
 `
 export const ThreadDeletedEventFields = gql`
@@ -4986,14 +4928,6 @@ export const GetThreadMetadataUpdatedEventsByEventIds = gql`
     }
   }
   ${ThreadMetadataUpdatedEventFields}
-`
-export const GetVoteOnPollEventsByEventIds = gql`
-  query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
-    voteOnPollEvents(where: { id_in: $eventIds }) {
-      ...VoteOnPollEventFields
-    }
-  }
-  ${VoteOnPollEventFields}
 `
 export const GetThreadDeletedEventsByEventIds = gql`
   query getThreadDeletedEventsByEventIds($eventIds: [ID!]) {
