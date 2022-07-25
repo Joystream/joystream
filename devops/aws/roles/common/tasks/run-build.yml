@@ -1,6 +1,15 @@
 ---
 # Build code
 
+- name: Ensure Rust toolchains installed
+  shell:
+    cmd: |
+      . ~/.cargo/env
+      rustup install nightly-2022-05-11
+      rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
+      rustup component add --toolchain nightly-2022-05-11 clippy
+      rustup component add rustfmt
+
 - name: Build joystream node
   shell: . ~/.bash_profile && yarn cargo-build
   args:
