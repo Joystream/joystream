@@ -25,8 +25,6 @@ import {
   ForumThread,
   Membership,
   ThreadStatusActive,
-  ForumPoll,
-  ForumPollAlternative,
   ThreadModeratedEvent,
   ThreadStatusModerated,
   ThreadMetadataUpdatedEvent,
@@ -37,7 +35,6 @@ import {
   ForumPost,
   PostStatusActive,
   PostOriginThreadInitial,
-  VoteOnPollEvent,
   PostAddedEvent,
   PostStatusLocked,
   PostOriginThreadReply,
@@ -96,19 +93,6 @@ async function getPost(store: DatabaseManager, postId: string, relations?: 'thre
   }
 
   return post
-}
-
-async function getPollAlternative(store: DatabaseManager, threadId: string, index: number) {
-  const poll = await store.get(ForumPoll, { where: { thread: { id: threadId } }, relations: ['pollAlternatives'] })
-  if (!poll) {
-    throw new Error(`Forum poll not found by threadId: ${threadId.toString()}`)
-  }
-  const pollAlternative = poll.pollAlternatives?.find((alt) => alt.index === index)
-  if (!pollAlternative) {
-    throw new Error(`Froum poll alternative not found by index ${index} in thread ${threadId.toString()}`)
-  }
-
-  return pollAlternative
 }
 
 async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): Promise<Worker> {
@@ -264,8 +248,9 @@ export async function forum_CategoryDeleted({ event, store }: EventContext & Sto
 
 export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [categoryId, threadId, postId, memberId, threadMetaBytes, postTextBytes, pollInput] =
-    new Forum.ThreadCreatedEvent(event).params
+  const [categoryId, threadId, postId, memberId, threadMetaBytes, postTextBytes] = new Forum.ThreadCreatedEvent(event)
+    .params
+  const eventTime = new Date(event.blockTimestamp)
   const author = new Membership({ id: memberId.toString() })
 
   const { title, tags } = parseThreadMetadata(threadMetaBytes)
@@ -282,26 +267,6 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
     tags: tags ? await prepareThreadTagsToSet(ctx, tags) : [],
   })
   await store.save<ForumThread>(thread)
-
-  if (pollInput.isSome) {
-    const threadPoll = new ForumPoll({
-      description: bytesToString(pollInput.unwrap().description),
-      endTime: new Date(toNumber(pollInput.unwrap().endTime, TIMESTAMPMAX)),
-      thread,
-    })
-    await store.save<ForumPoll>(threadPoll)
-    await Promise.all(
-      pollInput.unwrap().pollAlternatives.map(async (alt, index) => {
-        const alternative = new ForumPollAlternative({
-          poll: threadPoll,
-          text: bytesToString(alt),
-          index,
-        })
-
-        await store.save<ForumPollAlternative>(alternative)
-      })
-    )
-  }
 
   const threadCreatedEvent = new ThreadCreatedEvent({
     ...genericEventFields(event),
@@ -429,20 +394,6 @@ export async function forum_ThreadMoved({ event, store }: EventContext & StoreCo
 
   thread.category = new ForumCategory({ id: newCategoryId.toString() })
   await store.save<ForumThread>(thread)
-}
-
-export async function forum_VoteOnPoll({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [threadId, alternativeIndex, forumUserId] = new Forum.VoteOnPollEvent(event).params
-  const pollAlternative = await getPollAlternative(store, threadId.toString(), alternativeIndex.toNumber())
-  const votingMember = new Membership({ id: forumUserId.toString() })
-
-  const voteOnPollEvent = new VoteOnPollEvent({
-    ...genericEventFields(event),
-    pollAlternative,
-    votingMember,
-  })
-
-  await store.save<VoteOnPollEvent>(voteOnPollEvent)
 }
 
 export async function forum_PostAdded({ event, store }: EventContext & StoreContext): Promise<void> {

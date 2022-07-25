@@ -6156,6 +6156,8 @@ export type Channel = BaseGraphQlObject & {
   collaborators: Array<Membership>
   bannedMembers: Array<Membership>
   channelNftCollectors: Array<ChannelNftCollectors>
+  /** Channel's reward account, storing the income from the nft sales and channel payouts. */
+  rewardAccount: Scalars['String']
   /** Channel's privilege level */
   privilegeLevel?: Maybe<Scalars['Int']>
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
@@ -6456,6 +6458,7 @@ export type ChannelCreateInput = {
   isCensored: Scalars['Boolean']
   language?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
+  rewardAccount: Scalars['String']
   privilegeLevel?: Maybe<Scalars['Float']>
 }
 
@@ -6752,6 +6755,8 @@ export enum ChannelOrderByInput {
   LanguageDesc = 'language_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
   CreatedInBlockDesc = 'createdInBlock_DESC',
+  RewardAccountAsc = 'rewardAccount_ASC',
+  RewardAccountDesc = 'rewardAccount_DESC',
   PrivilegeLevelAsc = 'privilegeLevel_ASC',
   PrivilegeLevelDesc = 'privilegeLevel_DESC',
 }
@@ -6769,6 +6774,7 @@ export type ChannelUpdateInput = {
   isCensored?: Maybe<Scalars['Boolean']>
   language?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
+  rewardAccount?: Maybe<Scalars['String']>
   privilegeLevel?: Maybe<Scalars['Float']>
 }
 
@@ -6823,6 +6829,11 @@ export type ChannelWhereInput = {
   createdInBlock_lt?: Maybe<Scalars['Int']>
   createdInBlock_lte?: Maybe<Scalars['Int']>
   createdInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rewardAccount_eq?: Maybe<Scalars['String']>
+  rewardAccount_contains?: Maybe<Scalars['String']>
+  rewardAccount_startsWith?: Maybe<Scalars['String']>
+  rewardAccount_endsWith?: Maybe<Scalars['String']>
+  rewardAccount_in?: Maybe<Array<Scalars['String']>>
   privilegeLevel_eq?: Maybe<Scalars['Int']>
   privilegeLevel_gt?: Maybe<Scalars['Int']>
   privilegeLevel_gte?: Maybe<Scalars['Int']>
@@ -9743,6 +9754,7 @@ export type ElectionRound = BaseGraphQlObject & {
   nextElectedCouncil?: Maybe<ElectedCouncil>
   nextElectedCouncilId?: Maybe<Scalars['String']>
   candidates: Array<Candidate>
+  newcandidateeventelectionRound?: Maybe<Array<NewCandidateEvent>>
 }
 
 export type ElectionRoundConnection = {
@@ -9855,6 +9867,9 @@ export type ElectionRoundWhereInput = {
   candidates_none?: Maybe<CandidateWhereInput>
   candidates_some?: Maybe<CandidateWhereInput>
   candidates_every?: Maybe<CandidateWhereInput>
+  newcandidateeventelectionRound_none?: Maybe<NewCandidateEventWhereInput>
+  newcandidateeventelectionRound_some?: Maybe<NewCandidateEventWhereInput>
+  newcandidateeventelectionRound_every?: Maybe<NewCandidateEventWhereInput>
   AND?: Maybe<Array<ElectionRoundWhereInput>>
   OR?: Maybe<Array<ElectionRoundWhereInput>>
   NOT?: Maybe<Array<ElectionRoundWhereInput>>
@@ -10324,7 +10339,6 @@ export enum EventTypeOptions {
   VideoReactedEvent = 'VideoReactedEvent',
   VideoReactionsPreferenceEvent = 'VideoReactionsPreferenceEvent',
   VoteCastEvent = 'VoteCastEvent',
-  VoteOnPollEvent = 'VoteOnPollEvent',
   VoteRevealedEvent = 'VoteRevealedEvent',
   VotingPeriodStartedEvent = 'VotingPeriodStartedEvent',
   WorkEntrantFundsWithdrawnEvent = 'WorkEntrantFundsWithdrawnEvent',
@@ -10549,215 +10563,6 @@ export type ForumCategoryWhereInput = {
 }
 
 export type ForumCategoryWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
-export type ForumPoll = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['ID']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['ID']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['ID']>
-  version: Scalars['Int']
-  thread: ForumThread
-  threadId: Scalars['String']
-  /** Poll description */
-  description: Scalars['String']
-  /** The time at which the poll ends */
-  endTime: Scalars['DateTime']
-  pollAlternatives: Array<ForumPollAlternative>
-}
-
-export type ForumPollAlternative = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['ID']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['ID']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['ID']>
-  version: Scalars['Int']
-  /** Index uniquely identifying the alternative in given poll */
-  index: Scalars['Int']
-  poll: ForumPoll
-  pollId: Scalars['String']
-  /** The alternative text */
-  text: Scalars['String']
-  votes: Array<VoteOnPollEvent>
-}
-
-export type ForumPollAlternativeConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ForumPollAlternativeEdge>
-  pageInfo: PageInfo
-}
-
-export type ForumPollAlternativeCreateInput = {
-  index: Scalars['Float']
-  poll: Scalars['ID']
-  text: Scalars['String']
-}
-
-export type ForumPollAlternativeEdge = {
-  node: ForumPollAlternative
-  cursor: Scalars['String']
-}
-
-export enum ForumPollAlternativeOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  IndexAsc = 'index_ASC',
-  IndexDesc = 'index_DESC',
-  PollAsc = 'poll_ASC',
-  PollDesc = 'poll_DESC',
-  TextAsc = 'text_ASC',
-  TextDesc = 'text_DESC',
-}
-
-export type ForumPollAlternativeUpdateInput = {
-  index?: Maybe<Scalars['Float']>
-  poll?: Maybe<Scalars['ID']>
-  text?: Maybe<Scalars['String']>
-}
-
-export type ForumPollAlternativeWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  index_eq?: Maybe<Scalars['Int']>
-  index_gt?: Maybe<Scalars['Int']>
-  index_gte?: Maybe<Scalars['Int']>
-  index_lt?: Maybe<Scalars['Int']>
-  index_lte?: Maybe<Scalars['Int']>
-  index_in?: Maybe<Array<Scalars['Int']>>
-  text_eq?: Maybe<Scalars['String']>
-  text_contains?: Maybe<Scalars['String']>
-  text_startsWith?: Maybe<Scalars['String']>
-  text_endsWith?: Maybe<Scalars['String']>
-  text_in?: Maybe<Array<Scalars['String']>>
-  poll?: Maybe<ForumPollWhereInput>
-  votes_none?: Maybe<VoteOnPollEventWhereInput>
-  votes_some?: Maybe<VoteOnPollEventWhereInput>
-  votes_every?: Maybe<VoteOnPollEventWhereInput>
-  AND?: Maybe<Array<ForumPollAlternativeWhereInput>>
-  OR?: Maybe<Array<ForumPollAlternativeWhereInput>>
-  NOT?: Maybe<Array<ForumPollAlternativeWhereInput>>
-}
-
-export type ForumPollAlternativeWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
-export type ForumPollConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ForumPollEdge>
-  pageInfo: PageInfo
-}
-
-export type ForumPollCreateInput = {
-  thread: Scalars['ID']
-  description: Scalars['String']
-  endTime: Scalars['DateTime']
-}
-
-export type ForumPollEdge = {
-  node: ForumPoll
-  cursor: Scalars['String']
-}
-
-export enum ForumPollOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  ThreadAsc = 'thread_ASC',
-  ThreadDesc = 'thread_DESC',
-  DescriptionAsc = 'description_ASC',
-  DescriptionDesc = 'description_DESC',
-  EndTimeAsc = 'endTime_ASC',
-  EndTimeDesc = 'endTime_DESC',
-}
-
-export type ForumPollUpdateInput = {
-  thread?: Maybe<Scalars['ID']>
-  description?: Maybe<Scalars['String']>
-  endTime?: Maybe<Scalars['DateTime']>
-}
-
-export type ForumPollWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  description_eq?: Maybe<Scalars['String']>
-  description_contains?: Maybe<Scalars['String']>
-  description_startsWith?: Maybe<Scalars['String']>
-  description_endsWith?: Maybe<Scalars['String']>
-  description_in?: Maybe<Array<Scalars['String']>>
-  endTime_eq?: Maybe<Scalars['DateTime']>
-  endTime_lt?: Maybe<Scalars['DateTime']>
-  endTime_lte?: Maybe<Scalars['DateTime']>
-  endTime_gt?: Maybe<Scalars['DateTime']>
-  endTime_gte?: Maybe<Scalars['DateTime']>
-  thread?: Maybe<ForumThreadWhereInput>
-  pollAlternatives_none?: Maybe<ForumPollAlternativeWhereInput>
-  pollAlternatives_some?: Maybe<ForumPollAlternativeWhereInput>
-  pollAlternatives_every?: Maybe<ForumPollAlternativeWhereInput>
-  AND?: Maybe<Array<ForumPollWhereInput>>
-  OR?: Maybe<Array<ForumPollWhereInput>>
-  NOT?: Maybe<Array<ForumPollWhereInput>>
-}
-
-export type ForumPollWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -11030,7 +10835,6 @@ export type ForumThread = BaseGraphQlObject & {
   initialPostId?: Maybe<Scalars['String']>
   /** Number of non-deleted posts in the thread */
   visiblePostsCount: Scalars['Int']
-  poll?: Maybe<ForumPoll>
   /** Whether the thread is sticky in the category */
   isSticky: Scalars['Boolean']
   createdInEvent: ThreadCreatedEvent
@@ -11237,7 +11041,6 @@ export type ForumThreadWhereInput = {
   posts_some?: Maybe<ForumPostWhereInput>
   posts_every?: Maybe<ForumPostWhereInput>
   initialPost?: Maybe<ForumPostWhereInput>
-  poll?: Maybe<ForumPollWhereInput>
   createdInEvent?: Maybe<ThreadCreatedEventWhereInput>
   metadataUpdates_none?: Maybe<ThreadMetadataUpdatedEventWhereInput>
   metadataUpdates_some?: Maybe<ThreadMetadataUpdatedEventWhereInput>
@@ -13458,7 +13261,6 @@ export type Membership = BaseGraphQlObject & {
   stakingaccountremovedeventmember?: Maybe<Array<StakingAccountRemovedEvent>>
   videoreactedeventreactingMember?: Maybe<Array<VideoReactedEvent>>
   videoreactionmember?: Maybe<Array<VideoReaction>>
-  voteonpolleventvotingMember?: Maybe<Array<VoteOnPollEvent>>
   workinggroupapplicationapplicant?: Maybe<Array<WorkingGroupApplication>>
 }
 
@@ -14272,9 +14074,6 @@ export type MembershipWhereInput = {
   videoreactionmember_none?: Maybe<VideoReactionWhereInput>
   videoreactionmember_some?: Maybe<VideoReactionWhereInput>
   videoreactionmember_every?: Maybe<VideoReactionWhereInput>
-  voteonpolleventvotingMember_none?: Maybe<VoteOnPollEventWhereInput>
-  voteonpolleventvotingMember_some?: Maybe<VoteOnPollEventWhereInput>
-  voteonpolleventvotingMember_every?: Maybe<VoteOnPollEventWhereInput>
   workinggroupapplicationapplicant_none?: Maybe<WorkingGroupApplicationWhereInput>
   workinggroupapplicationapplicant_some?: Maybe<WorkingGroupApplicationWhereInput>
   workinggroupapplicationapplicant_every?: Maybe<WorkingGroupApplicationWhereInput>
@@ -14606,6 +14405,8 @@ export type NewCandidateEvent = Event &
     version: Scalars['Int']
     candidate: Candidate
     candidateId: Scalars['String']
+    electionRound: ElectionRound
+    electionRoundId: Scalars['String']
     /** Candidate's account used to stake currency. */
     stakingAccount: Scalars['String']
     /** Candidate's account that will be recieving rewards if candidate's elected. */
@@ -14626,6 +14427,7 @@ export type NewCandidateEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   candidate: Scalars['ID']
+  electionRound: Scalars['ID']
   stakingAccount: Scalars['String']
   rewardAccount: Scalars['String']
   balance: Scalars['String']
@@ -14653,6 +14455,8 @@ export enum NewCandidateEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CandidateAsc = 'candidate_ASC',
   CandidateDesc = 'candidate_DESC',
+  ElectionRoundAsc = 'electionRound_ASC',
+  ElectionRoundDesc = 'electionRound_DESC',
   StakingAccountAsc = 'stakingAccount_ASC',
   StakingAccountDesc = 'stakingAccount_DESC',
   RewardAccountAsc = 'rewardAccount_ASC',
@@ -14667,6 +14471,7 @@ export type NewCandidateEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   candidate?: Maybe<Scalars['ID']>
+  electionRound?: Maybe<Scalars['ID']>
   stakingAccount?: Maybe<Scalars['String']>
   rewardAccount?: Maybe<Scalars['String']>
   balance?: Maybe<Scalars['String']>
@@ -14733,6 +14538,7 @@ export type NewCandidateEventWhereInput = {
   balance_lte?: Maybe<Scalars['BigInt']>
   balance_in?: Maybe<Array<Scalars['BigInt']>>
   candidate?: Maybe<CandidateWhereInput>
+  electionRound?: Maybe<ElectionRoundWhereInput>
   AND?: Maybe<Array<NewCandidateEventWhereInput>>
   OR?: Maybe<Array<NewCandidateEventWhereInput>>
   NOT?: Maybe<Array<NewCandidateEventWhereInput>>
@@ -20490,12 +20296,6 @@ export type Query = {
   forumCategories: Array<ForumCategory>
   forumCategoryByUniqueInput?: Maybe<ForumCategory>
   forumCategoriesConnection: ForumCategoryConnection
-  forumPollAlternatives: Array<ForumPollAlternative>
-  forumPollAlternativeByUniqueInput?: Maybe<ForumPollAlternative>
-  forumPollAlternativesConnection: ForumPollAlternativeConnection
-  forumPolls: Array<ForumPoll>
-  forumPollByUniqueInput?: Maybe<ForumPoll>
-  forumPollsConnection: ForumPollConnection
   forumPostReactions: Array<ForumPostReaction>
   forumPostReactionByUniqueInput?: Maybe<ForumPostReaction>
   forumPostReactionsConnection: ForumPostReactionConnection
@@ -20837,9 +20637,6 @@ export type Query = {
   voteCastEvents: Array<VoteCastEvent>
   voteCastEventByUniqueInput?: Maybe<VoteCastEvent>
   voteCastEventsConnection: VoteCastEventConnection
-  voteOnPollEvents: Array<VoteOnPollEvent>
-  voteOnPollEventByUniqueInput?: Maybe<VoteOnPollEvent>
-  voteOnPollEventsConnection: VoteOnPollEventConnection
   voteRevealedEvents: Array<VoteRevealedEvent>
   voteRevealedEventByUniqueInput?: Maybe<VoteRevealedEvent>
   voteRevealedEventsConnection: VoteRevealedEventConnection
@@ -22361,46 +22158,6 @@ export type QueryForumCategoriesConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<ForumCategoryWhereInput>
   orderBy?: Maybe<Array<ForumCategoryOrderByInput>>
-}
-
-export type QueryForumPollAlternativesArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ForumPollAlternativeWhereInput>
-  orderBy?: Maybe<Array<ForumPollAlternativeOrderByInput>>
-}
-
-export type QueryForumPollAlternativeByUniqueInputArgs = {
-  where: ForumPollAlternativeWhereUniqueInput
-}
-
-export type QueryForumPollAlternativesConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ForumPollAlternativeWhereInput>
-  orderBy?: Maybe<Array<ForumPollAlternativeOrderByInput>>
-}
-
-export type QueryForumPollsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ForumPollWhereInput>
-  orderBy?: Maybe<Array<ForumPollOrderByInput>>
-}
-
-export type QueryForumPollByUniqueInputArgs = {
-  where: ForumPollWhereUniqueInput
-}
-
-export type QueryForumPollsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ForumPollWhereInput>
-  orderBy?: Maybe<Array<ForumPollOrderByInput>>
 }
 
 export type QueryForumPostReactionsArgs = {
@@ -24678,26 +24435,6 @@ export type QueryVoteCastEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<VoteCastEventWhereInput>
   orderBy?: Maybe<Array<VoteCastEventOrderByInput>>
-}
-
-export type QueryVoteOnPollEventsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<VoteOnPollEventWhereInput>
-  orderBy?: Maybe<Array<VoteOnPollEventOrderByInput>>
-}
-
-export type QueryVoteOnPollEventByUniqueInputArgs = {
-  where: VoteOnPollEventWhereUniqueInput
-}
-
-export type QueryVoteOnPollEventsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<VoteOnPollEventWhereInput>
-  orderBy?: Maybe<Array<VoteOnPollEventOrderByInput>>
 }
 
 export type QueryVoteRevealedEventsArgs = {
@@ -28195,6 +27932,8 @@ export type StorageSystemParameters = BaseGraphQlObject & {
   storageBucketMaxObjectsSizeLimit: Scalars['BigInt']
   /** ID of the next data object when created */
   nextDataObjectId: Scalars['BigInt']
+  /** Data Object state bloat bond value */
+  dataObjectStateBloatBondValue: Scalars['Int']
 }
 
 export type StorageSystemParametersConnection = {
@@ -28212,6 +27951,7 @@ export type StorageSystemParametersCreateInput = {
   storageBucketMaxObjectsCountLimit: Scalars['String']
   storageBucketMaxObjectsSizeLimit: Scalars['String']
   nextDataObjectId: Scalars['String']
+  dataObjectStateBloatBondValue: Scalars['Float']
 }
 
 export type StorageSystemParametersEdge = {
@@ -28240,6 +27980,8 @@ export enum StorageSystemParametersOrderByInput {
   StorageBucketMaxObjectsSizeLimitDesc = 'storageBucketMaxObjectsSizeLimit_DESC',
   NextDataObjectIdAsc = 'nextDataObjectId_ASC',
   NextDataObjectIdDesc = 'nextDataObjectId_DESC',
+  DataObjectStateBloatBondValueAsc = 'dataObjectStateBloatBondValue_ASC',
+  DataObjectStateBloatBondValueDesc = 'dataObjectStateBloatBondValue_DESC',
 }
 
 export type StorageSystemParametersUpdateInput = {
@@ -28251,6 +27993,7 @@ export type StorageSystemParametersUpdateInput = {
   storageBucketMaxObjectsCountLimit?: Maybe<Scalars['String']>
   storageBucketMaxObjectsSizeLimit?: Maybe<Scalars['String']>
   nextDataObjectId?: Maybe<Scalars['String']>
+  dataObjectStateBloatBondValue?: Maybe<Scalars['Float']>
 }
 
 export type StorageSystemParametersWhereInput = {
@@ -28319,6 +28062,12 @@ export type StorageSystemParametersWhereInput = {
   nextDataObjectId_lt?: Maybe<Scalars['BigInt']>
   nextDataObjectId_lte?: Maybe<Scalars['BigInt']>
   nextDataObjectId_in?: Maybe<Array<Scalars['BigInt']>>
+  dataObjectStateBloatBondValue_eq?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_gt?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_gte?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_lt?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_lte?: Maybe<Scalars['Int']>
+  dataObjectStateBloatBondValue_in?: Maybe<Array<Scalars['Int']>>
   AND?: Maybe<Array<StorageSystemParametersWhereInput>>
   OR?: Maybe<Array<StorageSystemParametersWhereInput>>
   NOT?: Maybe<Array<StorageSystemParametersWhereInput>>
@@ -31566,137 +31315,6 @@ export type VoteCastEventWhereInput = {
 }
 
 export type VoteCastEventWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
-export type VoteOnPollEvent = Event &
-  BaseGraphQlObject & {
-    /** Hash of the extrinsic which caused the event to be emitted */
-    inExtrinsic?: Maybe<Scalars['String']>
-    /** Blocknumber of the block in which the event was emitted. */
-    inBlock: Scalars['Int']
-    /** Network the block was produced in */
-    network: Network
-    /** Index of event in block from which it was emitted. */
-    indexInBlock: Scalars['Int']
-    /** Filtering options for interface implementers */
-    type?: Maybe<EventTypeOptions>
-    id: Scalars['ID']
-    createdAt: Scalars['DateTime']
-    createdById: Scalars['ID']
-    updatedAt?: Maybe<Scalars['DateTime']>
-    updatedById?: Maybe<Scalars['ID']>
-    deletedAt?: Maybe<Scalars['DateTime']>
-    deletedById?: Maybe<Scalars['ID']>
-    version: Scalars['Int']
-    pollAlternative: ForumPollAlternative
-    pollAlternativeId: Scalars['String']
-    votingMember: Membership
-    votingMemberId: Scalars['String']
-  }
-
-export type VoteOnPollEventConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<VoteOnPollEventEdge>
-  pageInfo: PageInfo
-}
-
-export type VoteOnPollEventCreateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock: Scalars['Float']
-  network: Network
-  indexInBlock: Scalars['Float']
-  pollAlternative: Scalars['ID']
-  votingMember: Scalars['ID']
-}
-
-export type VoteOnPollEventEdge = {
-  node: VoteOnPollEvent
-  cursor: Scalars['String']
-}
-
-export enum VoteOnPollEventOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  InExtrinsicAsc = 'inExtrinsic_ASC',
-  InExtrinsicDesc = 'inExtrinsic_DESC',
-  InBlockAsc = 'inBlock_ASC',
-  InBlockDesc = 'inBlock_DESC',
-  NetworkAsc = 'network_ASC',
-  NetworkDesc = 'network_DESC',
-  IndexInBlockAsc = 'indexInBlock_ASC',
-  IndexInBlockDesc = 'indexInBlock_DESC',
-  PollAlternativeAsc = 'pollAlternative_ASC',
-  PollAlternativeDesc = 'pollAlternative_DESC',
-  VotingMemberAsc = 'votingMember_ASC',
-  VotingMemberDesc = 'votingMember_DESC',
-}
-
-export type VoteOnPollEventUpdateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock?: Maybe<Scalars['Float']>
-  network?: Maybe<Network>
-  indexInBlock?: Maybe<Scalars['Float']>
-  pollAlternative?: Maybe<Scalars['ID']>
-  votingMember?: Maybe<Scalars['ID']>
-}
-
-export type VoteOnPollEventWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  inExtrinsic_eq?: Maybe<Scalars['String']>
-  inExtrinsic_contains?: Maybe<Scalars['String']>
-  inExtrinsic_startsWith?: Maybe<Scalars['String']>
-  inExtrinsic_endsWith?: Maybe<Scalars['String']>
-  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
-  inBlock_eq?: Maybe<Scalars['Int']>
-  inBlock_gt?: Maybe<Scalars['Int']>
-  inBlock_gte?: Maybe<Scalars['Int']>
-  inBlock_lt?: Maybe<Scalars['Int']>
-  inBlock_lte?: Maybe<Scalars['Int']>
-  inBlock_in?: Maybe<Array<Scalars['Int']>>
-  network_eq?: Maybe<Network>
-  network_in?: Maybe<Array<Network>>
-  indexInBlock_eq?: Maybe<Scalars['Int']>
-  indexInBlock_gt?: Maybe<Scalars['Int']>
-  indexInBlock_gte?: Maybe<Scalars['Int']>
-  indexInBlock_lt?: Maybe<Scalars['Int']>
-  indexInBlock_lte?: Maybe<Scalars['Int']>
-  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
-  pollAlternative?: Maybe<ForumPollAlternativeWhereInput>
-  votingMember?: Maybe<MembershipWhereInput>
-  AND?: Maybe<Array<VoteOnPollEventWhereInput>>
-  OR?: Maybe<Array<VoteOnPollEventWhereInput>>
-  NOT?: Maybe<Array<VoteOnPollEventWhereInput>>
-}
-
-export type VoteOnPollEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 

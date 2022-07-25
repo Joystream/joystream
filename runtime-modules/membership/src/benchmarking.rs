@@ -683,9 +683,54 @@ benchmarks! {
         let member_id = 0;
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, msg.clone())
-        verify {
-            assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
-        }
+
+    verify {
+        assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
+    }
+
+    create_founding_member{
+
+        let i in 1 .. MAX_BYTES;
+
+        let j in 0 .. MAX_BYTES;
+
+        let member_id = Module::<T>::members_created();
+
+        let account_id = account::<T::AccountId>("member", member_id.saturated_into(), SEED);
+
+        let handle = vec![0u8].repeat(i as usize);
+
+        let metadata = vec![0u8].repeat(j as usize);
+
+        let params = CreateFoundingMemberParameters {
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            handle: handle.clone(),
+            metadata,
+        };
+
+    }: _(RawOrigin::Root, params.clone())
+    verify {
+
+        // Ensure membership for given member_id is successfully bought
+        assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one());
+
+        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+
+        let membership: Membership<T> = MembershipObject {
+            handle_hash: handle_hash.clone(),
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            verified: true,
+            invites: Module::<T>::initial_invitation_count(),
+        };
+
+        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+
+        assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
+
+        assert_last_event::<T>(RawEvent::FoundingMemberCreated(member_id, params).into());
+    }
 
     // impl_benchmark_test_suite!(Module, tests::mock::build_test_externalities(), tests::mock::Test)
     impl_benchmark_test_suite!(

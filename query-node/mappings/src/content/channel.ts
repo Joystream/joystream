@@ -47,7 +47,9 @@ import { DataObjectId } from '@joystream/types/primitives'
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [channelId, { owner, dataObjects }, channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
+  const [channelId, { owner, dataObjects }, channelCreationParameters, rewardAccount] = new Content.ChannelCreatedEvent(
+    event
+  ).params
 
   // create entity
   const channel = new Channel({
@@ -64,6 +66,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     collaborators: Array.from(channelCreationParameters.collaborators).map(
       (id) => new Membership({ id: id.toString() })
     ),
+    rewardAccount: rewardAccount.toString(),
   })
 
   // deserialize & process metadata
@@ -194,13 +197,6 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
   const [actor, channelId, rationale] = new Content.ChannelDeletedByModeratorEvent(event).params
-  const assets = await store.getMany(StorageDataObject, {
-    where: {
-      type: { channelId: channelId.toString() },
-    },
-  })
-
-  console.log('assets: ', assets)
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 
   // common event processing - second

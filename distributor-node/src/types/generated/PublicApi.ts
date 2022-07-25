@@ -44,7 +44,7 @@ export interface components {
         }
   }
   parameters: {
-    /** Data Object ID */
+    /** @description Data Object ID */
     'ObjectId': string
   }
   headers: {

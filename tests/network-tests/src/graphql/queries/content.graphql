@@ -64,6 +64,7 @@ fragment ChannelFields on Channel {
   bannedMembers {
     id
   }
+  rewardAccount
 }
 
 fragment ChannelCategoryFields on ChannelCategory {
