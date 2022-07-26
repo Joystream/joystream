@@ -9,7 +9,11 @@ use frame_benchmarking::benchmarks;
 use frame_support::{storage::StorageMap, traits::Get};
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
-use sp_std::{cmp::min, collections::btree_map::BTreeMap, vec};
+use sp_std::{
+    cmp::min,
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    vec,
+};
 use storage::{DataObjectStorage, Module as Storage};
 
 use super::{
@@ -97,7 +101,7 @@ benchmarks! {
         );
     }
 
-    update_channel {
+    channel_update_with_assets {
 
         let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
 
@@ -134,7 +138,9 @@ benchmarks! {
             .skip(1)
             .collect();
 
-        let collaborators = Some(channel.collaborators.into_iter()
+        let collaborators = Some(channel.collaborators
+            .into_iter()
+            .take(a as usize)
             .map(|(member_id, _)|{
                 (member_id, permissions.clone())
             })
@@ -170,7 +176,8 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
 
-    }: _ (origin, actor, channel_id, update_params.clone())
+    }: update_channel(
+        origin, actor, channel_id, update_params.clone())
     verify {
 
         assert!(ChannelById::<T>::contains_key(&channel_id));
@@ -183,7 +190,75 @@ benchmarks! {
         );
     }
 
-    delete_channel {
+    channel_update_without_assets {
+
+        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
+
+        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+
+        let max_obj_size: u64 = T::MaxDataObjectSize::get();
+
+        let (channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            b,
+            c,).unwrap();
+
+        let channel = ChannelById::<T>::get(channel_id);
+
+        let permissions: ChannelAgentPermissions =
+            worst_case_channel_agent_permissions()
+            .into_iter()
+            .skip(1)
+            .collect();
+
+        let collaborators = Some(channel.collaborators
+            .into_iter()
+            .take(a as usize)
+            .map(|(member_id, _)|{
+                (member_id, permissions.clone())
+            })
+            .collect::<BTreeMap<_, _>>());
+
+        let expected_data_object_state_bloat_bond =
+            Storage::<T>::data_object_state_bloat_bond_value();
+
+        let update_params = ChannelUpdateParameters::<T> {
+            assets_to_upload: None,
+            new_meta: None,
+            assets_to_remove: BTreeSet::new(),
+            collaborators,
+            expected_data_object_state_bloat_bond,
+            channel_bag_witness: channel_bag_witness::<T>(channel_id)?,
+        };
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+    }: update_channel(
+        origin, actor, channel_id, update_params.clone())
+    verify {
+
+        assert!(ChannelById::<T>::contains_key(&channel_id));
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelUpdated(actor,
+                channel_id,
+                update_params,
+                BTreeSet::new()).into()
+        );
+    }
+
+    channel_delete_with_assets {
 
         let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
@@ -208,7 +283,42 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
-    }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
+    }: delete_channel(origin, actor, channel_id, channel_bag_witness, a.into())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelDeleted(
+                actor,
+                channel_id
+            ).into()
+        );
+    }
+
+    channel_delete_without_assets {
+
+
+        let a in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let b in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+
+        let max_obj_size: u64 = T::MaxDataObjectSize::get();
+
+        let (
+            channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(0, a, b,).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
+    }: delete_channel(origin, actor, channel_id, channel_bag_witness, 0)
     verify {
 
         assert_last_event::<T>(
@@ -233,16 +343,30 @@ pub mod tests {
     }
 
     #[test]
-    fn update_channel() {
+    fn channel_update_with_assets() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_update_channel());
+            assert_ok!(Content::test_benchmark_channel_update_with_assets());
         });
     }
 
     #[test]
-    fn delete_channel() {
+    fn channel_update_without_assets() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_delete_channel());
+            assert_ok!(Content::test_benchmark_channel_update_without_assets());
+        });
+    }
+
+    #[test]
+    fn channel_delete_with_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_channel_delete_with_assets());
+        });
+    }
+
+    #[test]
+    fn channel_delete_without_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_channel_delete_without_assets());
         });
     }
 }

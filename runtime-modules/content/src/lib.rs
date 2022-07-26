@@ -3767,28 +3767,44 @@ impl<T: Config> Module<T> {
 
     // Calculates weight for update_channel extrinsic.
     fn update_channel_weight(params: &ChannelUpdateParameters<T>) -> Weight {
-        //collaborators
-        let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
+        let assets_touched =
+            !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some();
 
-        // assets_to_upload
-        let b = params
-            .assets_to_upload
-            .as_ref()
-            .map_or(0, |v| v.object_creation_list.len()) as u32;
+        if assets_touched {
+            //collaborators
+            let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
 
-        //assets_to_remove
-        let c = params.assets_to_remove.len() as u32;
+            // assets_to_upload
+            let b = params
+                .assets_to_upload
+                .as_ref()
+                .map_or(0, |v| v.object_creation_list.len()) as u32;
 
-        //new metadata
-        let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+            //assets_to_remove
+            let c = params.assets_to_remove.len() as u32;
 
-        //channel_bag_witness storage_buckets_num
-        let e = params.channel_bag_witness.storage_buckets_num;
+            //new metadata
+            let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
 
-        //channel_bag_witness distribution_buckets_num
-        let f = params.channel_bag_witness.distribution_buckets_num;
+            //channel_bag_witness storage_buckets_num
+            let e = params.channel_bag_witness.storage_buckets_num;
 
-        WeightInfoContent::<T>::update_channel(a, b, c, d, e, f)
+            //channel_bag_witness distribution_buckets_num
+            let f = params.channel_bag_witness.distribution_buckets_num;
+
+            WeightInfoContent::<T>::channel_update_with_assets(a, b, c, d, e, f)
+        } else {
+            //collaborators
+            let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
+
+            //channel_bag_witness storage_buckets_num
+            let b = params.channel_bag_witness.storage_buckets_num;
+
+            //channel_bag_witness distribution_buckets_num
+            let c = params.channel_bag_witness.distribution_buckets_num;
+
+            WeightInfoContent::<T>::channel_update_without_assets(a, b, c)
+        }
     }
 
     // Calculates weight for delete_channel extrinsic.
@@ -3796,16 +3812,28 @@ impl<T: Config> Module<T> {
         channel_bag_witness: &ChannelBagWitness,
         num_objects_to_delete: &u64,
     ) -> Weight {
-        //num_objects_to_delete
-        let a = (*num_objects_to_delete) as u32;
+        let assets_touched = *num_objects_to_delete > 0;
 
-        //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
+        if assets_touched {
+            //num_objects_to_delete
+            let a = (*num_objects_to_delete) as u32;
 
-        //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
+            //channel_bag_witness storage_buckets_num
+            let b = (*channel_bag_witness).storage_buckets_num;
 
-        WeightInfoContent::<T>::delete_channel(a, b, c)
+            //channel_bag_witness distribution_buckets_num
+            let c = (*channel_bag_witness).distribution_buckets_num;
+
+            WeightInfoContent::<T>::channel_delete_with_assets(a, b, c)
+        } else {
+            //channel_bag_witness storage_buckets_num
+            let a = (*channel_bag_witness).storage_buckets_num;
+
+            //channel_bag_witness distribution_buckets_num
+            let b = (*channel_bag_witness).distribution_buckets_num;
+
+            WeightInfoContent::<T>::channel_delete_without_assets(a, b)
+        }
     }
 }
 
