@@ -24,6 +24,7 @@ pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
+pub mod storage_config;
 
 use grandpa_primitives::AuthorityId as GrandpaId;
 
@@ -31,8 +32,8 @@ use node_runtime::{
     constants::currency::{ENDOWMENT, STASH},
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block,
     ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    TransactionPaymentConfig,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SudoConfig,
+    SystemConfig, TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -175,6 +176,7 @@ pub fn testnet_genesis(
     forum_cfg: ForumConfig,
     genesis_balances: Vec<(AccountId, Balance)>,
     content_cfg: ContentConfig,
+    storage_cfg: StorageConfig,
 ) -> GenesisConfig {
     // endow all authorities and nominators.
     initial_authorities
@@ -265,6 +267,7 @@ pub fn testnet_genesis(
         members: MembersConfig { members },
         forum: forum_cfg,
         content: content_cfg,
+        storage: storage_cfg,
         referendum: council_config::create_referendum_config(),
         project_token: Default::default(),
     }
@@ -283,6 +286,7 @@ fn development_config_genesis() -> GenesisConfig {
         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
         vec![],
         content_config::testing_config(),
+        storage_config::testing_config(),
     )
 }
 
@@ -315,6 +319,7 @@ fn local_testnet_genesis() -> GenesisConfig {
         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
         vec![],
         content_config::testing_config(),
+        storage_config::testing_config(),
     )
 }
 
@@ -351,6 +356,7 @@ pub(crate) mod tests {
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
             content_config::testing_config(),
+            storage_config::testing_config(),
         )
     }
 

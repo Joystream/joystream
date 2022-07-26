@@ -517,6 +517,8 @@ pub struct ExtBuilder {
     auction_starts_at_max_delta: u64,
     max_auction_whitelist_length: u32,
     nft_limits_enabled: bool,
+    channel_state_bloat_bond_value: BalanceOf<Test>,
+    video_state_bloat_bond_value: BalanceOf<Test>,
 }
 
 impl Default for ExtBuilder {
@@ -546,6 +548,8 @@ impl Default for ExtBuilder {
             auction_starts_at_max_delta: 90_000,
             max_auction_whitelist_length: 4,
             nft_limits_enabled: true,
+            channel_state_bloat_bond_value: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+            video_state_bloat_bond_value: DEFAULT_VIDEO_STATE_BLOAT_BOND,
         }
     }
 }
@@ -601,6 +605,8 @@ impl ExtBuilder {
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
             max_auction_whitelist_length: self.max_auction_whitelist_length,
             nft_limits_enabled: self.nft_limits_enabled,
+            channel_state_bloat_bond_value: self.channel_state_bloat_bond_value,
+            video_state_bloat_bond_value: self.video_state_bloat_bond_value,
         }
         .assimilate_storage(&mut t)
         .unwrap();

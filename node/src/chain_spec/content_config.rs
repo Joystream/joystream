@@ -1,5 +1,5 @@
 use node_runtime::{
-    constants::{ExistentialDeposit, DAYS, HOURS, MINUTES},
+    constants::{currency, ExistentialDeposit, DAYS, HOURS, MINUTES},
     ContentConfig,
 };
 use sp_runtime::Perbill;
@@ -29,6 +29,8 @@ pub fn production_config() -> ContentConfig {
         auction_starts_at_max_delta: DAYS * 30,
         max_auction_whitelist_length: 100,
         nft_limits_enabled: false,
+        channel_state_bloat_bond_value: 10 * currency::CENTS,
+        video_state_bloat_bond_value: 2 * currency::CENTS,
     }
 }
 
@@ -57,5 +59,7 @@ pub fn testing_config() -> ContentConfig {
         auction_starts_at_max_delta: DAYS * 30,
         max_auction_whitelist_length: 100,
         nft_limits_enabled: false,
+        channel_state_bloat_bond_value: 10 * currency::CENTS,
+        video_state_bloat_bond_value: 2 * currency::CENTS,
     }
 }

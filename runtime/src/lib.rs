@@ -1489,7 +1489,7 @@ construct_runtime!(
         // Bounty: bounty::{Pallet, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Storage: storage::{Pallet, Call, Storage, Event<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},

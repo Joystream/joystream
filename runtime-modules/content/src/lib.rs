@@ -164,10 +164,10 @@ decl_storage! {
         pub Commitment get(fn commitment): <T as frame_system::Config>::Hash;
 
         /// The state bloat bond for the channel (helps preventing the state bloat).
-        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value): BalanceOf<T>;
+        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value) config(): BalanceOf<T>;
 
         ///The state bloat bond for the video (helps preventing the state bloat).
-        pub VideoStateBloatBondValue get (fn video_state_bloat_bond_value): BalanceOf<T>;
+        pub VideoStateBloatBondValue get (fn video_state_bloat_bond_value) config(): BalanceOf<T>;
 
         pub MaxCashoutAllowed get(fn max_cashout_allowed) config(): BalanceOf<T>;
 
