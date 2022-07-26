@@ -14,8 +14,9 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
 
   const operatorId = leaderId.toString()
   // Send some funds to pay fees
-  const funds = new BN(10_000_000_000)
-  await api.treasuryTransferBalance(operatorId, funds)
+  const funds = new BN(5_000_000_000)
+  await api.treasuryTransferBalance(transactorKey, funds)
+  await api.treasuryTransferBalance(leader.roleAccountId.toString(), funds)
 
   const cli = new StorageCLI(leaderSuri)
   await cli.run('leader:update-bag-limit', ['--limit', '10'])

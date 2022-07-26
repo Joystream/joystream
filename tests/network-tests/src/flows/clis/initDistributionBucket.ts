@@ -13,7 +13,7 @@ export default async function initDistributionBucket({ api }: FlowProps): Promis
   const leaderSuri = api.getSuri(leader.roleAccountId)
 
   // Send some funds to pay fees
-  const funds = new BN(10_000_000_000)
+  const funds = new BN(5_000_000_000)
   await api.treasuryTransferBalance(leader.roleAccountId.toString(), funds)
 
   const cli = new DistributorCLI([leaderSuri])
