@@ -162,7 +162,7 @@ export async function processVideoMetadata(
 
   // prepare video category if needed
   if (meta.category) {
-    video.category = await processVideoCategory(ctx, video.category, parseInt(meta.category))
+    video.category = await processVideoCategory(ctx, video.category, meta.category)
   }
 
   // prepare media meta information if needed
@@ -518,7 +518,7 @@ function isLicenseEmpty(licenseObject: ILicense): boolean {
 async function processVideoCategory(
   ctx: EventContext & StoreContext,
   currentCategory: VideoCategory | undefined,
-  categoryId: number
+  categoryId: string
 ): Promise<VideoCategory | undefined> {
   const { store } = ctx
 

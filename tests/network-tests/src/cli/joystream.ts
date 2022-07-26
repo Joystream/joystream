@@ -103,10 +103,7 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new channel.
   */
-  async createChannel(
-    channel: Modify<ChannelCreationInputParameters, { category?: number }>,
-    args: string[]
-  ): Promise<number> {
+  async createChannel(channel: ChannelCreationInputParameters, args: string[]): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
     const { out, stderr, exitCode } = await this.run('content:createChannel', ['--input', jsonFile, ...args])

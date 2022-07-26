@@ -102,7 +102,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   await getAllManagers(store).videos.onMainEntityCreation(video)
 
   // emit log event
-  logger.info('Video has been created', { id: videoId })
+  logger.info('Video has been created', { id: videoId.toString() })
 }
 
 export async function content_VideoUpdated(ctx: EventContext & StoreContext): Promise<void> {

@@ -9,7 +9,7 @@ import {
 import { createJoystreamCli } from '../utils'
 
 export default async function videoCategories({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow:active-video-counters')
+  const debug = extendDebug('flow:video-categories')
   debug('Started')
 
   // create Joystream CLI
