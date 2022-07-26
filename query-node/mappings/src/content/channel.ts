@@ -60,10 +60,6 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     createdInBlock: event.blockNumber,
     activeVideosCounter: 0,
 
-    // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
-
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
 
@@ -141,9 +137,6 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   if (newCollaborators) {
     channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id.toString() }))
   }
-
-  // set last update time
-  channel.updatedAt = new Date(event.blockTimestamp)
 
   // transfer video active counter value to new category
   await getAllManagers(store).channels.onMainEntityUpdate(channel)
