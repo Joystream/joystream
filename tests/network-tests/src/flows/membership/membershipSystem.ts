@@ -15,14 +15,14 @@ export default async function membershipSystem({ api, query, env }: FlowProps): 
   const updates = [
     {
       defaultInviteCount: 10,
-      membershipPrice: new BN(1000),
+      membershipPrice: new BN(100_000_000_000),
       referralCut: 5,
       invitedInitialBalance: new BN(500),
     },
     // BigInt above Int32 case:
     {
       defaultInviteCount: 5,
-      membershipPrice: new BN(100_000_000_000),
+      membershipPrice: new BN(100_000_000),
     },
     {
       referralCut: 0,
