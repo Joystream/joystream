@@ -40,10 +40,6 @@ export async function content_CuratorGroupCreated({ store, event }: EventContext
     id: curatorGroupId.toString(),
     curators: [],
     isActive: false, // runtime creates inactive curator groups by default
-
-    // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
   })
 
   // save curator group
@@ -69,9 +65,6 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
 
   // update curator group
   curatorGroup.isActive = isActive.isTrue
-
-  // set last update time
-  curatorGroup.updatedAt = new Date(event.blockTimestamp)
 
   // save curator group
   await store.save<CuratorGroup>(curatorGroup)
@@ -100,9 +93,6 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
 
   // update curator group
   curatorGroup.curators.push(curator)
-
-  // set last update time
-  curatorGroup.updatedAt = new Date(event.blockTimestamp)
 
   // save curator group
   await store.save<CuratorGroup>(curatorGroup)
