@@ -201,7 +201,8 @@ benchmarks! {
             (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
             (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
-        let max_obj_size: u64 = T::MaxDataObjectSize::get();
+        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
         let (channel_id,
             group_id,
