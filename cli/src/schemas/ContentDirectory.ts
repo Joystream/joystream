@@ -5,6 +5,7 @@ import {
   VideoCategoryInputParameters,
   ChannelCategoryInputParameters,
   JsonSchema,
+  ModerationPermissionsByLevelInputParameters,
 } from '../Types'
 
 export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> = {
@@ -41,7 +42,6 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
             items: {
               type: 'string',
               enum: [
-                'UpdateChannelMetadata',
                 'ManageNonVideoChannelAssets',
                 'ManageChannelCollaborators',
                 'UpdateVideoMetadata',
@@ -69,6 +69,51 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
       },
     },
     privilegeLevel: { type: 'integer' },
+  },
+}
+
+export const ModerationPermissionsByLevelInputSchema: JsonSchema<ModerationPermissionsByLevelInputParameters> = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    channelPreviledgeLevel: { type: 'integer' },
+    permissions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        enum: [
+          { DeleteVideo: null },
+          { DeleteChannel: null },
+          { HideVideo: null },
+          { HideChannel: null },
+          { DeleteNonVideoChannelAssets: null },
+          { UpdateChannelNftLimits: null },
+          { DeleteVideoAssets: true },
+          { DeleteVideoAssets: false },
+          {
+            ChangeChannelFeatureStatus: 'ChannelFundsTransfer',
+          },
+          {
+            ChangeChannelFeatureStatus: 'CreatorCashout',
+          },
+          {
+            ChangeChannelFeatureStatus: 'VideoNftIssuance',
+          },
+          {
+            ChangeChannelFeatureStatus: 'VideoCreation',
+          },
+          {
+            ChangeChannelFeatureStatus: 'VideoUpdate',
+          },
+          {
+            ChangeChannelFeatureStatus: 'ChannelUpdate',
+          },
+          {
+            ChangeChannelFeatureStatus: 'CreatorTokenIssuance',
+          },
+        ],
+      },
+    },
   },
 }
 

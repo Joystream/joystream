@@ -8,6 +8,7 @@ import {
   PalletWorkingGroupOpeningType as OpeningType,
   PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
   PalletContentChannelActionPermission as ChannelActionPermission,
+  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
 } from '@polkadot/types/lookup'
 import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { Validator } from 'inquirer'
@@ -208,6 +209,15 @@ export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto'
   avatarPhotoPath?: string
   collaborators?: { memberId: number; channelAgentPermissions: ChannelActionPermission['type'][] }[]
   privilegeLevel?: number
+}
+
+export type ModerationPermissionsByLevelInputParameters = {
+  channelPreviledgeLevel: number
+  permissions: (
+    | Exclude<ContentModerationAction['type'], 'ChangeChannelFeatureStatus' | 'DeleteVideoAssets'>
+    | { 'DeleteVideoAssets': boolean }
+    | { 'ChangeChannelFeatureStatus': ContentModerationAction['asChangeChannelFeatureStatus']['type'] }
+  )[]
 }
 
 export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>
