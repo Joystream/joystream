@@ -12,7 +12,7 @@ export const validateType = <T>(obj: T) => obj
 export const BLOCKTIME = 1000
 
 // Known worker role account default balance (JOY)
-export const KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE = new BN(100000000000)
+export const KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE = new BN(1000000000000)
 
 export const ALL_BYTES = '0x' + Array.from({ length: 256 }, (v, i) => Buffer.from([i]).toString('hex')).join('')
 
