@@ -477,6 +477,9 @@ decl_module! {
                 Error::<T>::ChannelStateBloatBondChanged,
             );
 
+            // ensure owner is valid
+            Self::validate_channel_owner(&channel_owner)?;
+
             // ensure collaborator member ids are valid
             Self::validate_member_set(&params.collaborators.keys().cloned().collect())?;
 
