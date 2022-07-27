@@ -33,7 +33,7 @@ export async function getInputJson<T>(inputPath: string, schema?: unknown): Prom
     throw new CLIError(`JSON parsing failed for file: ${inputPath}`, { exit: ExitCodes.InvalidInput })
   }
   if (schema) {
-    await validateInput(jsonObj, schema)
+    await validateInput(jsonObj.length ? jsonObj[0] : jsonObj, schema)
   }
 
   return jsonObj as T
