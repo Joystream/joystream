@@ -17,6 +17,12 @@ decl_error! {
         /// Attempt to set minimum cashout allowed above the limit
         MaxCashoutValueTooHigh,
 
+        /// Provided channel owner (member) does not exist
+        ChannelOwnerMemberDoesNotExist,
+
+        /// Provided channel owner (curator group) does not exist
+        ChannelOwnerCuratorGroupDoesNotExist,
+
         // Curator Management Errors
         // -------------------------
 
