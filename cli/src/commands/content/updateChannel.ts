@@ -113,6 +113,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     meta.avatarPhoto = assetIndices.avatarPhotoPath
 
     // Preare and send the extrinsic
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(
       channelId,
@@ -121,11 +122,13 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     )
 
     const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
-      assetsToUpload: assetsToUpload,
-      expectedDataObjectStateBloatBond: 0,
-      collaborators: [],
-      assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
+      expectedDataObjectStateBloatBond,
+      assetsToUpload,
+      assetsToRemove,
       newMeta: metadataToBytes(ChannelMetadata, meta),
+      collaborators: new Map(
+        collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions])
+      ),
     })
     this.jsonPrettyPrint(
       JSON.stringify({

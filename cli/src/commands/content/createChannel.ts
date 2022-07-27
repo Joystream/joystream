@@ -62,14 +62,11 @@ export default class CreateChannelCommand extends UploadCommandBase {
       assets,
       expectedChannelStateBloatBond,
       expectedDataObjectStateBloatBond,
+      storageBuckets,
+      distributionBuckets,
       meta: metadataToBytes(ChannelMetadata, meta),
-      storageBuckets: storageBuckets,
-      distributionBuckets: createType('BTreeSet<PalletStorageDistributionBucketIdRecord>', distributionBuckets),
       collaborators: new Map(
-        collaborators?.map(({ memberId, channelAgentPermissions }) => [
-          memberId,
-          channelAgentPermissions.map((p) => createType('PalletContentChannelActionPermission', p)),
-        ])
+        collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions])
       ),
     })
 
