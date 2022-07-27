@@ -5,11 +5,11 @@
 use super::*;
 use crate::Module as Codex;
 use balances::Pallet as Balances;
-use codec::Decode;
+
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use content::NftLimitPeriod;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
@@ -19,7 +19,7 @@ use membership::Module as Membership;
 use proposals_discussion::Module as Discussion;
 use proposals_engine::Module as Engine;
 use sp_core::Hasher;
-use sp_runtime::traits::{One, TrailingZeroInput, Zero};
+use sp_runtime::traits::One;
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
@@ -720,39 +720,39 @@ benchmarks! {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
 
-        let (account_id, member_id, general_proposal_paramters) =
+        let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::UpdateGlobalNftLimit(
             NftLimitPeriod::Daily,
-            100
+            100,
         );
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
+        general_proposal_parameters.clone(),
         proposal_details.clone()
     )
     verify {
         create_proposal_verify::<T>(
             account_id,
             member_id,
-            general_proposal_paramters,
+            general_proposal_parameters,
             proposal_details
         );
     }
 
-
     create_proposal_update_channel_payouts {
-        let i in 1 .. MAX_BYTES;
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
+        let i in 0..MAX_BYTES;
 
-        let (account_id, member_id, general_proposal_paramters) =
+        let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
 
-        let commitment = T::Hashing::hash(&b"commitment".to_vec());
+        let uploader_account = account::<T::AccountId>("uploader_account", 1, SEED);
+        let commitment = T::Hashing::hash(b"commitment".as_ref());
         let payload = content::ChannelPayoutsPayloadParametersRecord {
-            uploader_account: T::AccountId::decode(&mut TrailingZeroInput::zeroes()).unwrap(),
+            uploader_account,
             object_creation_params: content::DataObjectCreationParameters {
                 size: u64::MAX,
                 ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))
@@ -771,14 +771,14 @@ benchmarks! {
         );
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
+        general_proposal_parameters.clone(),
         proposal_details.clone()
     )
     verify {
         create_proposal_verify::<T>(
             account_id,
             member_id,
-            general_proposal_paramters,
+            general_proposal_parameters,
             proposal_details
         );
     }
@@ -786,7 +786,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
     type ProposalsCodex = crate::Module<Test>;

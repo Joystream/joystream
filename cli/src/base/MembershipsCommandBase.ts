@@ -1,7 +1,7 @@
 import ExitCodes from '../ExitCodes'
 import { MemberDetails } from '../Types'
 import { memberHandle } from '../helpers/display'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { flags } from '@oclif/command'
 import AccountsCommandBase from './AccountsCommandBase'
 
@@ -44,12 +44,11 @@ export default abstract class MembershipsCommandBase extends AccountsCommandBase
     const membersDetails = allowedIds
       ? await this.getApi().membersDetailsByIds(allowedIds)
       : await this.getApi().allMembersDetails()
+
     const availableMemberships = await Promise.all(
       membersDetails.filter((m) =>
         this.isKeyAvailable(
-          accountType === 'controller'
-            ? m.membership.controller_account.toString()
-            : m.membership.root_account.toString()
+          accountType === 'controller' ? m.membership.controllerAccount.toString() : m.membership.rootAccount.toString()
         )
       )
     )

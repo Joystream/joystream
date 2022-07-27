@@ -27,19 +27,24 @@ use sp_std::vec::Vec;
 use storage::UploadParameters;
 
 // crate modules
+mod benchmarking;
 mod errors;
 mod events;
+mod tests;
 pub mod traits;
 pub mod types;
-
-// #[cfg(test)]
-mod tests;
+mod utils;
 
 // crate imports
 pub use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;
+
+pub mod weights;
+pub use weights::WeightInfo;
+
+type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
 /// Pallet Configuration
 pub trait Config:
@@ -77,7 +82,10 @@ pub trait Config:
     type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
 
     /// Maximum number of vesting balances per account per token
-    type MaxVestingBalancesPerAccountPerToken: Get<u8>;
+    type MaxVestingSchedulesPerAccountPerToken: Get<u8>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
     /// Number of blocks produced in a year
     type BlocksPerYear: Get<u32>;
@@ -178,7 +186,16 @@ decl_module! {
         /// - total bloat bond transferred from sender's JOY balance into the treasury account
         ///   in case destination(s) have been added to storage
         /// - `outputs.beneficiary` tokens amount increased by `amount`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T)` where:
+        /// - `T` is the length of `outputs`
+        /// - DB:
+        ///   - `O(T)` - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32)]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
@@ -228,7 +245,15 @@ decl_module! {
         ///   is reduced by `min(amount, split_staking_status.amount)`
         /// - `account.amount` is reduced by `amount`
         /// - token supply is reduced by `amount`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::burn()]
         pub fn burn(origin, token_id: T::TokenId, member_id: T::MemberId, amount: TokenBalanceOf<T>) -> DispatchResult {
             // Ensure burn amount is non-zero
             ensure!(
@@ -270,6 +295,8 @@ decl_module! {
                 token.decrease_supply_by(amount);
             });
 
+            Self::deposit_event(RawEvent::TokensBurned(token_id, member_id, amount));
+
             Ok(())
         }
 
@@ -285,7 +312,14 @@ decl_module! {
         /// Postconditions:
         /// - Account information for `token_id` x `member_id` removed from storage
         /// - bloat bond refunded to `member_id` controller account
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::dust_account()]
         pub fn dust_account(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
@@ -328,7 +362,18 @@ decl_module! {
         /// Postconditions:
         /// - account for `member_id` created and added to pallet storage
         /// - `bloat_bond` transferred from sender to treasury account
-        #[weight = 10_000_000] // TODO: adjust weights
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the length of `proof.0`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::join_whitelist(
+            proof.0.len() as u32
+        )]
         pub fn join_whitelist(origin, member_id: T::MemberId, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -421,8 +466,15 @@ decl_module! {
         ///   `token_data.sale` is set to None, otherwise `token_data.sale.quantity_left` is
         ///   decreased by `amount` and `token_data.sale.funds_collected` in increased by
         ///   `amount * sale.unit_price`
-
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::purchase_tokens_on_sale()]
         pub fn purchase_tokens_on_sale(
             origin,
             token_id: T::TokenId,
@@ -506,7 +558,7 @@ decl_module! {
             if let Some(dst) = sale.earnings_destination.as_ref() {
                 Self::transfer_joy(
                     &sender,
-                    &dst,
+                    dst,
                     transfer_amount
                 );
             }
@@ -576,7 +628,15 @@ decl_module! {
         /// - `dividend` amount of JOYs transferred from `treasury_account` to `sender`
         /// - `token` revenue split dividends payed tracking variable increased by `dividend`
         /// - `account.staking_status` set to Some(..) with `amount` and `token.latest_split`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::participate_in_split()]
         fn participate_in_split(
             origin,
             token_id: T::TokenId,
@@ -657,7 +717,15 @@ decl_module! {
         ///
         /// Postconditions
         /// - `account.staking_status` set to None
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::exit_revenue_split()]
         fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -704,6 +772,24 @@ impl<T: Config>
         TransfersWithVestingOf<T>,
     > for Module<T>
 {
+    /// Establish whether there's an unfinalized revenue split
+    /// Postconditions: true if token @ token_id has an unfinalized revenue split, false otherwise
+    fn is_revenue_split_inactive(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.revenue_split.ensure_inactive::<T>().is_ok();
+        }
+        true
+    }
+
+    /// Establish whether there is an unfinalized token sale
+    /// Postconditions: true if token @ token_id has an unfinalized sale, false otherwise
+    fn is_sale_unscheduled(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.sale.is_none();
+        }
+        true
+    }
+
     /// Change to permissionless
     /// Preconditions:
     /// - token by `token_id` must exist
@@ -1118,6 +1204,7 @@ impl<T: Config>
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         let treasury_account = Self::module_treasury_account();
+
         Self::ensure_can_transfer_joy(
             &revenue_source_account,
             &[(&treasury_account, allocation_amount)],
@@ -1278,7 +1365,7 @@ impl<T: Config> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        Self::ensure_can_transfer_joy(bloat_bond_payer, &[(&treasury, cumulative_bloat_bond)])?;
+        Self::ensure_can_transfer_joy(bloat_bond_payer, &[(treasury, cumulative_bloat_bond)])?;
 
         Ok(validated_transfers)
     }
@@ -1332,7 +1419,7 @@ impl<T: Config> Module<T> {
                     Validated::<_>::NonExisting(dst_member_id) => {
                         Self::do_insert_new_account_for_token(
                             token_id,
-                            &dst_member_id,
+                            dst_member_id,
                             if let Some(vs) = vesting_schedule {
                                 AccountDataOf::<T>::new_with_vesting_and_bond(
                                     VestingSource::IssuerTransfer(0),
@@ -1596,7 +1683,7 @@ impl<T: Config> Module<T> {
     pub(crate) fn transfer_joy(src: &T::AccountId, dst: &T::AccountId, amount: JoyBalanceOf<T>) {
         let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
             src,
-            &dst,
+            dst,
             amount,
             ExistenceRequirement::KeepAlive,
         );
@@ -1632,7 +1719,7 @@ impl<T: Config> Module<T> {
                 AccountDataOf::<T>::new_with_amount_and_bond(allocation.amount, bloat_bond)
             };
 
-            Self::do_insert_new_account_for_token(token_id, &destination, account_data);
+            Self::do_insert_new_account_for_token(token_id, destination, account_data);
         }
     }
 
@@ -1648,8 +1735,6 @@ impl<T: Config> Module<T> {
             expected_data_size_fee: payload.expected_data_size_fee,
             object_creation_list: vec![payload.object_creation_params.clone()],
             expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         })
     }
 

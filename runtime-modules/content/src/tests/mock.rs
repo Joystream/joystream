@@ -29,6 +29,7 @@ pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as storage::Config>::ChannelId;
+pub type TransferId = <Test as Config>::TransferId;
 pub type StorageBucketId = <Test as storage::Config>::StorageBucketId;
 
 /// Account Ids
@@ -42,7 +43,6 @@ pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = 113;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = 114;
 pub const SECOND_MEMBER_ACCOUNT_ID: u128 = 116;
 pub const THIRD_MEMBER_ACCOUNT_ID: u128 = 117;
-pub const DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID: u128 = 119;
 pub const LEAD_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 120;
 pub const DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 121;
 pub const UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 122;
@@ -77,6 +77,9 @@ pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
 pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 2 * STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT;
 pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = VOUCHER_OBJECTS_NUMBER_LIMIT * DEFAULT_OBJECT_SIZE;
 pub const INITIAL_BALANCE: u64 = 1000;
+
+// Transfer price
+pub const DEFAULT_CHANNEL_TRANSFER_PRICE: u64 = 100;
 
 pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
@@ -365,6 +368,10 @@ parameter_types! {
         block_number_period: 1000,
         limit: 500,
     };
+
+    pub const MinimumCashoutAllowedLimit: u64 = 1;
+
+    pub const MaximumCashoutAllowedLimit: u64 = 1_000_000;
 }
 
 impl Config for Test {
@@ -418,6 +425,15 @@ impl Config for Test {
 
     /// Creator tokens interface
     type ProjectToken = project_token::Module<Self>;
+
+    /// Transfer Id
+    type TransferId = u64;
+
+    /// Minimum cashout allowed limit
+    type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
+
+    /// Max cashout allowed limit
+    type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -485,6 +501,7 @@ pub struct ExtBuilder {
     next_channel_id: u64,
     next_video_id: u64,
     next_curator_group_id: u64,
+    next_transfer_id: u64,
     max_cashout_allowed: BalanceOf<Test>,
     min_cashout_allowed: BalanceOf<Test>,
     channel_cashouts_enabled: bool,
@@ -503,6 +520,7 @@ pub struct ExtBuilder {
     platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
     max_auction_whitelist_length: u32,
+    nft_limits_enabled: bool,
 }
 
 impl Default for ExtBuilder {
@@ -512,8 +530,9 @@ impl Default for ExtBuilder {
             next_channel_id: 1,
             next_video_id: 1,
             next_curator_group_id: 1,
+            next_transfer_id: 1,
             max_cashout_allowed: BalanceOf::<Test>::from(1_000u32),
-            min_cashout_allowed: BalanceOf::<Test>::from(1u32),
+            min_cashout_allowed: BalanceOf::<Test>::from(10u32),
             channel_cashouts_enabled: true,
             min_auction_duration: 5,
             max_auction_duration: 20,
@@ -530,20 +549,42 @@ impl Default for ExtBuilder {
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
             max_auction_whitelist_length: 4,
+            nft_limits_enabled: true,
         }
     }
 }
 
+// TODO(post mainnet?): authomatically set block number = 1
 impl ExtBuilder {
-    pub fn build(self) -> sp_io::TestExternalities {
+    pub fn with_creator_royalty_bounds(
+        self,
+        min_creator_royalty: Perbill,
+        max_creator_royalty: Perbill,
+    ) -> Self {
+        Self {
+            min_creator_royalty,
+            max_creator_royalty,
+            ..self
+        }
+    }
+    /// test externalities + initial balances allocation
+    pub fn build_with_balances(
+        self,
+        balances: Vec<(AccountId, BalanceOf<Test>)>,
+    ) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
+            .unwrap();
+
+        balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
             .unwrap();
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
         crate::GenesisConfig::<Test> {
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
+            next_transfer_id: self.next_transfer_id,
             next_curator_group_id: self.next_curator_group_id,
             max_cashout_allowed: self.max_cashout_allowed,
             min_cashout_allowed: self.min_cashout_allowed,
@@ -563,16 +604,21 @@ impl ExtBuilder {
             platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
             max_auction_whitelist_length: self.max_auction_whitelist_length,
+            nft_limits_enabled: self.nft_limits_enabled,
         }
         .assimilate_storage(&mut t)
         .unwrap();
 
-        t.into()
+        Into::<sp_io::TestExternalities>::into(t)
+    }
+
+    pub fn build(self) -> sp_io::TestExternalities {
+        self.build_with_balances(vec![])
     }
 }
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
-    ExtBuilder::default().build().execute_with(|| f())
+    ExtBuilder::default().build().execute_with(f)
 }
 
 // Recommendation from Parity on testing on_finalize
@@ -944,7 +990,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Distributio
 // pallet_project_token trait implementation and related stuff
 parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
-    pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
 }
 
@@ -956,10 +1002,11 @@ impl project_token::Config for Test {
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
-    type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type WeightInfo = ();
 }
 
 pub struct Block2Balance {}

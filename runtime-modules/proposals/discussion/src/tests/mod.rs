@@ -31,15 +31,17 @@ impl EventFixture {
     }
 }
 
+#[allow(dead_code)]
 struct TestPostEntry {
-    pub post_id: u64,
-    pub text: Vec<u8>,
-    pub edition_number: u32,
+    post_id: u64,
+    text: Vec<u8>,
+    edition_number: u32,
 }
 
+#[allow(dead_code)]
 struct TestThreadEntry {
-    pub thread_id: u64,
-    pub title: Vec<u8>,
+    thread_id: u64,
+    title: Vec<u8>,
 }
 
 fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPostEntry>) {
@@ -66,6 +68,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
     }
 }
 
+#[allow(dead_code)]
 struct DiscussionFixture {
     pub title: Vec<u8>,
     pub origin: RawOrigin<u64>,

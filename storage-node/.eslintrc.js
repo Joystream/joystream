@@ -3,7 +3,7 @@ module.exports = {
     mocha: true,
   },
   parserOptions: {
-    project: './tsconfig.json'
+    project: './tsconfig.json',
   },
   extends: ['@joystream/eslint-config'],
   rules: {

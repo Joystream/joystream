@@ -21,14 +21,7 @@ type ContentActorLead @variant {
   dummy: Int
 }
 
-type ContentActorCollaborator @variant {
-  "Type needs to have at least one non-relation entity. This value is not used."
-  dummy: Int
-
-  member: Membership!
-}
-
-union ContentActor = ContentActorCurator | ContentActorMember | ContentActorLead | ContentActorCollaborator
+union ContentActor = ContentActorCurator | ContentActorMember | ContentActorLead
 
 type CuratorGroup @entity {
   "Runtime identifier"
@@ -45,6 +38,7 @@ type CuratorGroup @entity {
 
   "NFTs owned by this member in various channels."
   nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "curatorGroup")
+  # permissionsByLevel: ModerationPermissionsByLevel<T>,
 }
 
 type Curator @entity {

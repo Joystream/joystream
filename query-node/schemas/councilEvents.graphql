@@ -89,6 +89,9 @@ type NewCandidateEvent implements Event @entity {
   "Related candidate."
   candidate: Candidate!
 
+  "Election round."
+  electionRound: ElectionRound!
+
   "Candidate's account used to stake currency."
   stakingAccount: String!
 

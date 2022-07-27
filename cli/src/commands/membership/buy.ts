@@ -75,8 +75,8 @@ export default class MembershipBuyCommand extends AccountsCommandBase {
     const result = await this.sendAndFollowTx(
       await this.getDecodedPair(senderKey),
       api.tx.members.buyMembership({
-        root_account: rootKey,
-        controller_account: controllerKey,
+        rootAccount: rootKey,
+        controllerAccount: controllerKey,
         handle,
         metadata: metadataToBytes(MembershipMetadata, metadata),
       })

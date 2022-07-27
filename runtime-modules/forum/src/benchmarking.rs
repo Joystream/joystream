@@ -2,7 +2,7 @@
 use super::*;
 use balances::Pallet as Balances;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Pallet as System;
@@ -159,43 +159,6 @@ where
     caller_id
 }
 
-fn insert_a_worker<
-    T: Config
-        + membership::Config
-        + working_group::Config<ForumWorkingGroupInstance>
-        + balances::Config,
->(
-    leader_account_id: T::AccountId,
-    id: u64,
-) -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-{
-    let (caller_id, member_id) = member_funded_account::<T>(id as u32);
-
-    let leader_origin = RawOrigin::Signed(leader_account_id);
-
-    let (opening_id, application_id) = add_and_apply_opening::<T>(
-        &T::Origin::from(leader_origin.clone()),
-        &caller_id,
-        &member_id,
-        &OpeningType::Regular,
-    );
-
-    let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
-    successful_application_ids.insert(application_id);
-    ForumGroup::<T>::fill_opening(leader_origin.into(), opening_id, successful_application_ids)
-        .unwrap();
-
-    let actor_id =
-        <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
-    assert!(WorkerById::<T, ForumWorkingGroupInstance>::contains_key(
-        actor_id
-    ));
-
-    caller_id
-}
-
 fn add_and_apply_opening<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
     add_opening_origin: &T::Origin,
     applicant_account_id: &T::AccountId,
@@ -296,7 +259,6 @@ fn create_new_thread<T: Config>(
     category_id: T::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll: Option<PollInput<T::Moment>>,
 ) -> T::ThreadId {
     Module::<T>::create_thread(
         RawOrigin::Signed(account_id).into(),
@@ -304,7 +266,6 @@ fn create_new_thread<T: Config>(
         category_id,
         title,
         text,
-        poll,
     )
     .unwrap();
     Module::<T>::next_thread_id() - T::ThreadId::one()
@@ -327,32 +288,6 @@ fn add_thread_post<T: Config>(
     )
     .unwrap();
     Module::<T>::next_post_id() - T::PostId::one()
-}
-
-fn good_poll_alternative_text() -> Vec<u8> {
-    b"poll alternative".to_vec()
-}
-
-fn good_poll_description() -> Vec<u8> {
-    b"poll description".to_vec()
-}
-
-/// Generates poll input
-pub fn generate_poll_input<T: Config>(
-    expiration_diff: T::Moment,
-    alternatives_number: u32,
-) -> PollInput<T::Moment> {
-    PollInput {
-        description: good_poll_description(),
-        end_time: pallet_timestamp::Pallet::<T>::now() + expiration_diff,
-        poll_alternatives: {
-            let mut alternatives = vec![];
-            for _ in 0..alternatives_number {
-                alternatives.push(good_poll_alternative_text());
-            }
-            alternatives
-        },
-    }
 }
 
 /// Generates categories tree
@@ -918,8 +853,6 @@ benchmarks! {
 
         let k in 0 .. MAX_BYTES;
 
-        let z in 1 .. (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
-
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
         let mut category = Module::<T>::category_by_id(category_id);
@@ -928,20 +861,11 @@ benchmarks! {
 
         let text = vec![0u8].repeat(k as usize);
 
-        let expiration_diff = 1010u32.into();
-
-        let poll_input = if z == 1 {
-            None
-        } else {
-            // min number of poll alternatives is set to 2
-            Some(generate_poll_input::<T>(expiration_diff, z))
-        };
-
         let next_thread_id = Module::<T>::next_thread_id();
         let next_post_id = Module::<T>::next_post_id();
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
 
-    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, metadata.clone(), text.clone(), poll_input.clone())
+    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, metadata.clone(), text.clone())
     verify {
 
         assert_eq!(
@@ -966,7 +890,6 @@ benchmarks! {
         let new_thread = Thread {
             category_id,
             author_id: forum_user_id.saturated_into(),
-            poll: poll_input.clone().map(<Module<T>>::from_poll_input),
             cleanup_pay_off: T::ThreadDeposit::get(),
             number_of_posts: 1,
         };
@@ -990,7 +913,6 @@ benchmarks! {
                 forum_user_id.saturated_into(),
                 metadata,
                 text,
-                poll_input,
             ).into()
         );
     }
@@ -1011,7 +933,7 @@ benchmarks! {
         // Create thread
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), None
+            vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize)
         );
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
@@ -1043,31 +965,21 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
+
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text, poll
+            text.clone(), text
         );
 
-        // Add poll voting.
-        for idx in 1..(T::MaxWorkerNumberLimit::get() - 1) {
-            let member_id = idx.into();
-            let member_account_id = insert_a_worker::<T>(caller_id.clone(), member_id);
-
-            let alternative_idx = 1;
-            Module::<T>::vote_on_poll(
-                RawOrigin::Signed(member_account_id.clone()).into(),
-                member_id.saturated_into(),
-                category_id,
-                thread_id,
-                alternative_idx
-            ).unwrap();
-        }
+        // Delete initial post first in order to allow thread deletion
+        let _ = Module::<T>::delete_posts(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            forum_user_id.saturated_into(),
+            [(ExtendedPostId::<T> { category_id, thread_id, post_id: <T as Config>::PostId::one() }, true)].iter().cloned().collect(),
+            Vec::new()
+        );
 
         let mut category = Module::<T>::category_by_id(category_id);
 
@@ -1094,7 +1006,6 @@ benchmarks! {
 
         // Ensure thread was successfully deleted
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-        assert_eq!(<PollVotes<T>>::iter_prefix_values(&thread_id).count(), 0);
 
         assert_last_event::<T>(
             RawEvent::ThreadDeleted(
@@ -1140,7 +1051,7 @@ benchmarks! {
         };
 
         // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text, None);
+        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text);
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
         let mut category = Module::<T>::category_by_id(category_id);
@@ -1205,7 +1116,7 @@ benchmarks! {
         };
 
         // Create thread
-        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text, None);
+        let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text);
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
         let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
@@ -1248,63 +1159,6 @@ benchmarks! {
         );
     }
 
-    vote_on_poll {
-
-        let forum_user_id = 0;
-        let caller_id =
-            insert_a_leader::<T>(forum_user_id);
-
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
-
-        let j in 2 .. (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
-
-        // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
-        // Create thread
-        let expiration_diff = 10u32.into();
-        let poll_input = Some(generate_poll_input::<T>(expiration_diff, j));
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
-
-        let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text, poll_input
-        );
-
-        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
-
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, j - 1)
-    verify {
-        // Store new poll alternative statistics
-        if let Some(ref mut poll) = thread.poll {
-            let new_poll_alternatives: Vec<PollAlternative<T::Hash>> = poll.poll_alternatives.iter()
-                .enumerate()
-                .map(|(old_index, old_value)| if (j - 1) as usize == old_index
-                    { PollAlternative {
-                        alternative_text_hash: old_value.alternative_text_hash,
-                        vote_count: old_value.vote_count + 1,
-                    }
-                    } else {
-                        old_value.clone()
-                    })
-            .collect();
-
-            poll.poll_alternatives = new_poll_alternatives;
-        }
-
-        assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
-        assert!(<PollVotes<T>>::get(thread_id, forum_user_id.saturated_into::<ForumUserId<T>>()));
-
-        assert_last_event::<T>(
-            RawEvent::VoteOnPoll(
-                thread_id,
-                j - 1,
-                forum_user_id.saturated_into(),
-                category_id
-            ).into()
-        );
-    }
-
     moderate_thread_lead {
         let lead_id = 0;
 
@@ -1319,15 +1173,20 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
+
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
-            text.clone(), text, poll
+            text.clone(), text
+        );
+
+        // Delete initial post first in order to allow thread deletion
+        let _ = Module::<T>::delete_posts(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            lead_id.saturated_into(),
+            [(ExtendedPostId::<T> { category_id, thread_id, post_id: <T as Config>::PostId::one() }, true)].iter().cloned().collect(),
+            Vec::new()
         );
 
         let mut category = Module::<T>::category_by_id(category_id);
@@ -1340,7 +1199,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           T::PostDeposit::get()
+           <T as balances::Config>::Balance::zero()
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -1375,15 +1234,20 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
+
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
-            text.clone(), text, poll
+            text.clone(), text
+        );
+
+        // Delete initial post first in order to allow thread deletion
+        let _ = Module::<T>::delete_posts(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            lead_id.saturated_into(),
+            [(ExtendedPostId::<T> { category_id, thread_id, post_id: <T as Config>::PostId::one() }, true)].iter().cloned().collect(),
+            Vec::new()
         );
 
         let moderator_id = ModeratorId::<T>::from(lead_id.try_into().unwrap());
@@ -1403,7 +1267,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           T::PostDeposit::get()
+           <T as balances::Config>::Balance::zero()
         );
 
 
@@ -1442,7 +1306,7 @@ benchmarks! {
         // Create thread
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            vec![0u8].repeat(MAX_BYTES as usize), vec![0u8].repeat(MAX_BYTES as usize), None
+            vec![0u8].repeat(MAX_BYTES as usize), vec![0u8].repeat(MAX_BYTES as usize)
         );
 
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
@@ -1493,15 +1357,12 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
+
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone(), poll
+            text.clone(), text.clone()
         );
 
         let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text);
@@ -1534,15 +1395,13 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
+
+
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone(), poll
+            text.clone(), text.clone()
         );
 
         let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text);
@@ -1588,15 +1447,13 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
+
+
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone(), poll
+            text.clone(), text.clone()
         );
         let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text);
 
@@ -1635,15 +1492,13 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
+
+
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone(), poll
+            text.clone(), text.clone()
         );
         let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text);
 
@@ -1691,15 +1546,11 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let expiration_diff = 10u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone(), poll
+            text.clone(), text.clone()
         );
         let hide = false;
         let mut posts = BTreeMap::new();
@@ -1769,17 +1620,13 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let expiration_diff = 1010u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let stickied_ids: Vec<T::ThreadId> = (0..j)
             .into_iter()
             .map(|_| create_new_thread::<T>(
                 caller_id.clone(), forum_user_id.saturated_into(), category_id,
-                text.clone(), text.clone(), poll.clone()
+                text.clone(), text.clone()
             )).collect();
 
         let mut category =  Module::<T>::category_by_id(category_id);
@@ -1812,17 +1659,13 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let expiration_diff = 1010u32.into();
-        let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
-        );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let stickied_ids: Vec<T::ThreadId> = (0..j)
             .into_iter()
             .map(|_| create_new_thread::<T>(
                 caller_id.clone(), forum_user_id.saturated_into(), category_id,
-                text.clone(), text.clone(), poll.clone()
+                text.clone(), text.clone()
             )).collect();
 
         let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
@@ -1852,7 +1695,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::mock::*;
     use frame_support::assert_ok;
 
@@ -1941,13 +1783,6 @@ mod tests {
     fn test_move_thread_to_category_moderator() {
         with_test_externalities(|| {
             assert_ok!(TestForumModule::test_benchmark_move_thread_to_category_moderator());
-        });
-    }
-
-    #[test]
-    fn test_vote_on_poll() {
-        with_test_externalities(|| {
-            assert_ok!(TestForumModule::test_benchmark_vote_on_poll());
         });
     }
 

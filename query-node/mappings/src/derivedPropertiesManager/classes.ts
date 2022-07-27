@@ -1,4 +1,4 @@
-import { DatabaseManager } from '@joystream/hydra-common'
+import { DatabaseManager, FindOneOptions } from '@joystream/hydra-common'
 import { IExecutor, IListener, IDerivedPropertiesManager } from './interfaces'
 import { EntityType } from '../common'
 
@@ -8,7 +8,8 @@ interface IListenerWithExecutors<Entity, Change> {
 }
 
 export class DerivedPropertiesManager<Entity extends { id: string }, Change>
-  implements IDerivedPropertiesManager<Entity, Change> {
+  implements IDerivedPropertiesManager<Entity, Change>
+{
   private store: DatabaseManager
   private listeners: IListenerWithExecutors<Entity, Change>[] = []
   private entityType: EntityType<Entity>
@@ -39,7 +40,10 @@ export class DerivedPropertiesManager<Entity extends { id: string }, Change>
   async onMainEntityUpdate(newEntity: Entity, initialEntity?: Entity): Promise<void> {
     const oldEntity =
       initialEntity ||
-      (await this.store.get(this.entityType, { where: { id: newEntity.id }, relations: this.defaultRelations }))
+      (await this.store.get(this.entityType, {
+        where: { id: newEntity.id },
+        relations: this.defaultRelations,
+      } as FindOneOptions<Entity>))
 
     for (let i = 0; i < this.listeners.length; i++) {
       await this.handleListener(oldEntity, newEntity, this.listeners[i])

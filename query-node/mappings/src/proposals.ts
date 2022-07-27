@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { ProposalDetails as RuntimeProposalDetails } from '@joystream/types/augment/all'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import {
   Proposal,
@@ -103,7 +103,7 @@ async function parseProposalDetails(
   if (proposalDetails.isSignal) {
     const details = new SignalProposalDetails()
     const specificDetails = proposalDetails.asSignal
-    details.text = perpareString(specificDetails.toString())
+    details.text = perpareString(specificDetails.toHuman() as string)
     return details
   }
   // RuntimeUpgradeProposalDetails:
@@ -122,8 +122,6 @@ async function parseProposalDetails(
       specificDetails.map(({ account, amount }) =>
         store.save(
           new FundingRequestDestination({
-            createdAt: eventTime,
-            updatedAt: eventTime,
             account: account.toString(),
             amount: new BN(amount.toString()),
             list: destinationsList,
@@ -147,20 +145,20 @@ async function parseProposalDetails(
     const details = new CreateWorkingGroupLeadOpeningProposalDetails()
     const specificDetails = proposalDetails.asCreateWorkingGroupLeadOpening
     const metadata = await createWorkingGroupOpeningMetadata(store, eventTime, specificDetails.description)
-    details.groupId = getWorkingGroupModuleName(specificDetails.working_group)
+    details.groupId = getWorkingGroupModuleName(specificDetails.group)
     details.metadataId = metadata.id
-    details.rewardPerBlock = new BN(specificDetails.reward_per_block.unwrapOr(0).toString())
-    details.stakeAmount = new BN(specificDetails.stake_policy.stake_amount.toString())
-    details.unstakingPeriod = toNumber(specificDetails.stake_policy.leaving_unstaking_period, INT32MAX)
+    details.rewardPerBlock = new BN(specificDetails.rewardPerBlock.unwrapOr(0).toString())
+    details.stakeAmount = new BN(specificDetails.stakePolicy.stakeAmount.toString())
+    details.unstakingPeriod = toNumber(specificDetails.stakePolicy.leavingUnstakingPeriod, INT32MAX)
     return details
   }
   // FillWorkingGroupLeadOpeningProposalDetails:
   else if (proposalDetails.isFillWorkingGroupLeadOpening) {
     const details = new FillWorkingGroupLeadOpeningProposalDetails()
     const specificDetails = proposalDetails.asFillWorkingGroupLeadOpening
-    const groupModuleName = getWorkingGroupModuleName(specificDetails.working_group)
-    details.openingId = `${groupModuleName}-${specificDetails.opening_id.toString()}`
-    details.applicationId = `${groupModuleName}-${specificDetails.successful_application_id.toString()}`
+    const groupModuleName = getWorkingGroupModuleName(specificDetails.workingGroup)
+    details.openingId = `${groupModuleName}-${specificDetails.openingId.toString()}`
+    details.applicationId = `${groupModuleName}-${specificDetails.applicationId.toString()}`
     return details
   }
   // UpdateWorkingGroupBudgetProposalDetails:
@@ -203,11 +201,9 @@ async function parseProposalDetails(
   else if (proposalDetails.isTerminateWorkingGroupLead) {
     const details = new TerminateWorkingGroupLeadProposalDetails()
     const specificDetails = proposalDetails.asTerminateWorkingGroupLead
-    details.leadId = `${getWorkingGroupModuleName(
-      specificDetails.working_group
-    )}-${specificDetails.worker_id.toString()}`
-    details.slashingAmount = specificDetails.slashing_amount.isSome
-      ? new BN(specificDetails.slashing_amount.unwrap().toString())
+    details.leadId = `${getWorkingGroupModuleName(specificDetails.group)}-${specificDetails.workerId.toString()}`
+    details.slashingAmount = specificDetails.slashingAmount.isSome
+      ? new BN(specificDetails.slashingAmount.unwrap().toString())
       : undefined
     return details
   }
@@ -215,7 +211,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isAmendConstitution) {
     const details = new AmendConstitutionProposalDetails()
     const specificDetails = proposalDetails.asAmendConstitution
-    details.text = perpareString(specificDetails.toString())
+    details.text = perpareString(specificDetails.toHuman() as string)
     return details
   }
   // CancelWorkingGroupLeadOpeningProposalDetails:
@@ -293,7 +289,6 @@ async function setProposalStatus(
   status: typeof ProposalStatus
 ): Promise<void> {
   proposal.status = status
-  proposal.updatedAt = new Date(event.blockTimestamp)
   proposal.statusSetAtBlock = event.blockNumber
   proposal.statusSetAtTime = new Date(event.blockTimestamp)
   if (
@@ -314,28 +309,22 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
 }
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [
-    proposalId,
-    generalProposalParameters,
-    runtimeProposalDetails,
-    proposalThreadId,
-  ] = new ProposalsCodex.ProposalCreatedEvent(event).params
+  const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
+    new ProposalsCodex.ProposalCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
   const proposal = new Proposal({
     id: proposalId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     details: proposalDetails,
     councilApprovals: 0,
-    creator: new Membership({ id: generalProposalParameters.member_id.toString() }),
-    title: perpareString(generalProposalParameters.title.toString()),
-    description: perpareString(generalProposalParameters.description.toString()),
-    exactExecutionBlock: generalProposalParameters.exact_execution_block.isSome
-      ? toNumber(generalProposalParameters.exact_execution_block.unwrap(), INT32MAX)
+    creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
+    title: perpareString(generalProposalParameters.title.toHuman() as string),
+    description: perpareString(generalProposalParameters.description.toHuman() as string),
+    exactExecutionBlock: generalProposalParameters.exactExecutionBlock.isSome
+      ? toNumber(generalProposalParameters.exactExecutionBlock.unwrap(), INT32MAX)
       : undefined,
-    stakingAccount: generalProposalParameters.staking_account_id.toString(),
+    stakingAccount: generalProposalParameters.stakingAccountId.toString(),
     status: new ProposalStatusDeciding(),
     isFinalized: false,
     statusSetAtBlock: event.blockNumber,
@@ -346,8 +335,6 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
   // Thread is always created along with the proposal
   const proposalThread = new ProposalDiscussionThread({
     id: proposalThreadId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     mode: new ProposalDiscussionThreadModeOpen(),
     proposal,
   })
@@ -439,12 +426,14 @@ export async function proposalsEngine_ProposalDecisionMade({
       'ProposalStatusVetoed',
     ].includes(decisionStatus.isTypeOf)
   ) {
-    ;(decisionStatus as
-      | ProposalStatusCanceledByRuntime
-      | ProposalStatusExpired
-      | ProposalStatusRejected
-      | ProposalStatusSlashed
-      | ProposalStatusVetoed).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
+    ;(
+      decisionStatus as
+        | ProposalStatusCanceledByRuntime
+        | ProposalStatusExpired
+        | ProposalStatusRejected
+        | ProposalStatusSlashed
+        | ProposalStatusVetoed
+    ).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
     await setProposalStatus(event, store, proposal, decisionStatus)
   }
 }

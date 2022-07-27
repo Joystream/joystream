@@ -227,6 +227,14 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
+       * Channel Transfers are blocked during revenue splits
+       **/
+      ChannelTransfersBlockedDuringRevenueSplits: AugmentedError<ApiType>;
+      /**
+       * Channel Transfers are blocked during token sales
+       **/
+      ChannelTransfersBlockedDuringTokenSales: AugmentedError<ApiType>;
+      /**
        * Creator token was already issued for this channel
        **/
       CreatorTokenAlreadyIssued: AugmentedError<ApiType>;
@@ -286,10 +294,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Auction extension period upper bound exceeded
        **/
       ExtensionPeriodUpperBoundExceeded: AugmentedError<ApiType>;
-      /**
-       * Feature Not Implemented
-       **/
-      FeatureNotImplemented: AugmentedError<ApiType>;
       GlobalNftDailyLimitExceeded: AugmentedError<ApiType>;
       GlobalNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
@@ -328,9 +332,9 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBidAmountSpecified: AugmentedError<ApiType>;
       /**
-       * Invalid Buy Now price commit provided
+       * `witness_price` provided to `buy_now` extrinsic does not match the current sell price
        **/
-      InvalidBuyNowPriceProvided: AugmentedError<ApiType>;
+      InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
        * Incorrect channel owner for an operation.
        **/
@@ -353,6 +357,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidMemberProvided: AugmentedError<ApiType>;
       /**
+       * Current nft offer price does not match the provided `witness_price`
+       **/
+      InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
+      /**
        * Invalid number of objects to delete provided for delete_video
        **/
       InvalidVideoDataObjectsCountProvided: AugmentedError<ApiType>;
@@ -372,6 +380,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Max auction whitelist length upper bound exceeded
        **/
       MaxAuctionWhiteListLengthUpperBoundExceeded: AugmentedError<ApiType>;
+      /**
+       * Attempt to set minimum cashout allowed above the limit
+       **/
+      MaxCashoutValueTooHigh: AugmentedError<ApiType>;
       /**
        * Member authentication failed
        **/
@@ -397,6 +409,10 @@ declare module '@polkadot/api-base/types/errors' {
        * min_cashout_allowed cannot exceed max_cashout_allowed
        **/
       MinCashoutAllowedExceedsMaxCashoutAllowed: AugmentedError<ApiType>;
+      /**
+       * Attempt to set minimum cashout allowed below the limit
+       **/
+      MinCashoutValueTooLow: AugmentedError<ApiType>;
       /**
        * Nft for given video id already exists
        **/
@@ -477,6 +493,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Auction starts at upper bound exceeded
        **/
       StartsAtUpperBoundExceeded: AugmentedError<ApiType>;
+      /**
+       * Nft offer target member does not exist
+       **/
+      TargetMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * Insufficient balance
        **/
@@ -920,13 +940,13 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AccountDoesNotMatchThreadAuthor: AugmentedError<ApiType>;
       /**
-       * Forum user has already voted.
-       **/
-      AlreadyVotedOnPoll: AugmentedError<ApiType>;
-      /**
        * Ancestor category immutable, i.e. deleted or archived
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
+      /**
+       * A thread with outstanding posts cannot be removed
+       **/
+      CannotDeleteThreadWithOutstandingPosts: AugmentedError<ApiType>;
       /**
        * Category does not exist.
        **/
@@ -999,26 +1019,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category path len should be greater than zero
        **/
       PathLengthShouldBeGreaterThanZero: AugmentedError<ApiType>;
-      /**
-       * Poll items number too short.
-       **/
-      PollAlternativesTooShort: AugmentedError<ApiType>;
-      /**
-       * Poll data committed after poll expired.
-       **/
-      PollCommitExpired: AugmentedError<ApiType>;
-      /**
-       * Poll data committed is wrong.
-       **/
-      PollData: AugmentedError<ApiType>;
-      /**
-       * Poll not exist.
-       **/
-      PollNotExist: AugmentedError<ApiType>;
-      /**
-       * Poll date setting is wrong.
-       **/
-      PollTimeSetting: AugmentedError<ApiType>;
       /**
        * Post does not exist.
        **/
@@ -2506,6 +2506,10 @@ declare module '@polkadot/api-base/types/errors' {
       TooManyValidators: AugmentedError<ApiType>;
     };
     storage: {
+      /**
+       * Generic Arithmetic Error due to internal accounting operation
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Blacklist size limit exceeded.
        **/

@@ -53,9 +53,11 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos
-  const createMembersFixture = new CreateMembersFixture(api, query, 3, sufficientTopupAmount)
+  const createMembersFixture = new CreateMembersFixture(api, query, 3, 0, sufficientTopupAmount)
   await new FixtureRunner(createMembersFixture).run()
-  const [channelOwner, ...participants] = createMembersFixture.getCreatedItems()
+  const {
+    members: [channelOwner, ...participants],
+  } = createMembersFixture.getCreatedItems()
 
   // create channels and videos
   const createChannelsAndVideos = new CreateChannelsAndVideosFixture(

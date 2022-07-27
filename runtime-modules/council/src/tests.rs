@@ -43,12 +43,10 @@ fn council_candidacy_invalid_time() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
         let late_candidate = MockUtils::generate_candidate(
-            u64::from(candidates.len() as u64),
+            candidates.len() as u64,
             council_settings.min_candidate_stake,
         );
 
@@ -62,7 +60,7 @@ fn council_candidacy_invalid_time() {
             cycle_start_block_number: 0,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
-            candidates_announcing: candidates.clone(),
+            candidates_announcing: candidates,
             expected_candidates,
             voters: vec![],
 
@@ -74,8 +72,8 @@ fn council_candidacy_invalid_time() {
 
         Mocks::announce_candidacy(
             late_candidate.origin.clone(),
-            late_candidate.account_id.clone(),
-            late_candidate.candidate.stake.clone(),
+            late_candidate.account_id,
+            late_candidate.candidate.stake,
             Err(Error::CantCandidateNow),
         );
     });
@@ -94,8 +92,8 @@ fn council_candidacy_stake_too_low() {
 
         Mocks::announce_candidacy(
             candidate.origin.clone(),
-            candidate.account_id.clone(),
-            candidate.candidate.stake.clone(),
+            candidate.account_id,
+            candidate.candidate.stake,
             Err(Error::CandidacyStakeTooLow),
         );
     });
@@ -113,9 +111,7 @@ fn council_can_vote_for_yourself() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         let expected_candidates = candidates
@@ -136,7 +132,7 @@ fn council_can_vote_for_yourself() {
             interrupt_point: Some(CouncilCycleInterrupt::BeforeVoting),
         };
 
-        InstanceMocks::simulate_council_cycle(params.clone());
+        InstanceMocks::simulate_council_cycle(params);
 
         let self_voting_candidate_index = candidates[0].account_id;
         let voter = MockUtils::generate_voter(
@@ -145,12 +141,7 @@ fn council_can_vote_for_yourself() {
             self_voting_candidate_index,
             AnnouncementPeriodNr::get(),
         );
-        Mocks::vote_for_candidate(
-            voter.origin.clone(),
-            voter.commitment.clone(),
-            voter.stake.clone(),
-            Ok(()),
-        );
+        Mocks::vote_for_candidate(voter.origin.clone(), voter.commitment, voter.stake, Ok(()));
 
         // forward to election-revealing period
         MockUtils::increase_block_number(council_settings.voting_stage_duration + 1);
@@ -182,8 +173,8 @@ fn vote_stake_locks_after_election_complete() {
 
         // When election is concluded and elected council is in idle periods,
         // only vote stake of losing candidates can be released
-        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
-        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
+        Mocks::release_vote_stake(voter_for_winner.origin, Err(()));
+        Mocks::release_vote_stake(voter_for_looser.origin, Ok(()));
     });
 }
 
@@ -204,8 +195,8 @@ fn vote_stake_locks_after_voting() {
         let voter_for_looser = params.voters[params.voters.len() - 1].clone();
 
         // While election is still in progress no vote stake can be released
-        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
-        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Err(()));
+        Mocks::release_vote_stake(voter_for_winner.origin, Err(()));
+        Mocks::release_vote_stake(voter_for_looser.origin, Err(()));
     });
 }
 
@@ -226,8 +217,8 @@ fn vote_stake_locks_after_revealing() {
         let voter_for_looser = params.voters[params.voters.len() - 1].clone();
 
         // While election is still in progress no vote stake can be released
-        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
-        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Err(()));
+        Mocks::release_vote_stake(voter_for_winner.origin, Err(()));
+        Mocks::release_vote_stake(voter_for_looser.origin, Err(()));
     });
 }
 
@@ -254,8 +245,8 @@ fn vote_stake_locks_after_new_election_starts() {
         );
 
         // Any vote from prior election can be released
-        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Ok(()));
-        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
+        Mocks::release_vote_stake(voter_for_winner.origin, Ok(()));
+        Mocks::release_vote_stake(voter_for_looser.origin, Ok(()));
     });
 }
 
@@ -272,16 +263,12 @@ fn council_candidacy_withdraw_candidacy() {
 
         Mocks::announce_candidacy(
             candidate.origin.clone(),
-            candidate.account_id.clone(),
-            candidate.candidate.stake.clone(),
+            candidate.account_id,
+            candidate.candidate.stake,
             Ok(()),
         );
 
-        Mocks::withdraw_candidacy(
-            candidate.origin.clone(),
-            candidate.account_id.clone(),
-            Ok(()),
-        );
+        Mocks::withdraw_candidacy(candidate.origin.clone(), candidate.account_id, Ok(()));
     });
 }
 
@@ -299,9 +286,7 @@ fn council_candidacy_release_candidate_stake() {
             params.candidates_announcing[not_elected_candidate_index]
                 .origin
                 .clone(),
-            params.candidates_announcing[not_elected_candidate_index]
-                .account_id
-                .clone(),
+            params.candidates_announcing[not_elected_candidate_index].account_id,
             Ok(()),
         );
     });
@@ -319,9 +304,7 @@ fn council_announcement_reset_on_insufficient_candidates() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count - 2) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         let params = CouncilCycleParams {
@@ -329,7 +312,7 @@ fn council_announcement_reset_on_insufficient_candidates() {
             cycle_start_block_number: 0,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
-            candidates_announcing: candidates.clone(),
+            candidates_announcing: candidates,
             expected_candidates: vec![], // not needed in this scenario
             voters: vec![],              // not needed in this scenario
 
@@ -363,9 +346,7 @@ fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdra
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0..council_settings.min_candidate_count)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         let params = CouncilCycleParams {
@@ -385,7 +366,7 @@ fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdra
 
         Mocks::withdraw_candidacy(
             candidates[0].origin.clone(),
-            candidates[0].account_id.clone(),
+            candidates[0].account_id,
             Ok(()),
         );
 
@@ -414,9 +395,7 @@ fn council_announcement_reset_on_not_enough_winners() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0..council_settings.min_candidate_count
             as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         // prepare candidates that are expected to get into candidacy list
@@ -443,7 +422,7 @@ fn council_announcement_reset_on_not_enough_winners() {
             cycle_start_block_number: 0,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
-            candidates_announcing: candidates.clone(),
+            candidates_announcing: candidates,
             expected_candidates,
             voters,
 
@@ -481,9 +460,7 @@ fn council_two_consecutive_rounds() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         // prepare candidates that are expected to get into candidacy list
@@ -588,7 +565,7 @@ fn council_two_consecutive_rounds() {
                 + council_settings.idle_stage_duration,
             voters: voters2,
             expected_final_council_members: expected_final_council_members2,
-            ..params.clone()
+            ..params
         };
 
         Mocks::simulate_council_cycle(params2);
@@ -647,7 +624,7 @@ fn council_candidate_stake_is_locked() {
             interrupt_point: Some(CouncilCycleInterrupt::AfterCandidatesAnnounce),
         };
 
-        Mocks::simulate_council_cycle(params.clone());
+        Mocks::simulate_council_cycle(params);
 
         candidates.iter().for_each(|council_member| {
             assert_eq!(
@@ -672,9 +649,7 @@ fn council_candidate_stake_can_be_unlocked() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         // prepare candidates that are expected to get into candidacy list
@@ -780,9 +755,7 @@ fn council_candidate_stake_automaticly_converted() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         // prepare candidates that are expected to get into candidacy list
@@ -834,7 +807,7 @@ fn council_candidate_stake_automaticly_converted() {
             cycle_start_block_number: 0,
             expected_initial_council_members: vec![],
             expected_final_council_members: expected_final_council_members.clone(),
-            candidates_announcing: candidates.clone(),
+            candidates_announcing: candidates,
             expected_candidates,
             voters,
 
@@ -871,9 +844,7 @@ fn council_member_stake_is_locked() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         // prepare candidates that are expected to get into candidacy list
@@ -925,7 +896,7 @@ fn council_member_stake_is_locked() {
             cycle_start_block_number: 0,
             expected_initial_council_members: vec![],
             expected_final_council_members: expected_final_council_members.clone(),
-            candidates_announcing: candidates.clone(),
+            candidates_announcing: candidates,
             expected_candidates,
             voters,
 
@@ -1008,8 +979,8 @@ fn council_member_stake_automaticly_unlocked() {
                 + council_settings.reveal_stage_duration
                 + council_settings.idle_stage_duration,
             voters: voters2,
-            expected_final_council_members: expected_final_council_members2.clone(),
-            ..params.clone()
+            expected_final_council_members: expected_final_council_members2,
+            ..params
         };
 
         Mocks::simulate_council_cycle(params2);
@@ -1034,9 +1005,7 @@ fn council_candidacy_set_note() {
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
-            })
+            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
 
         // prepare candidates that are expected to get into candidacy list
@@ -1085,25 +1054,20 @@ fn council_candidacy_set_note() {
         Mocks::check_candidacy_note(&membership_id, None);
 
         // set note - announcement stage
-        Mocks::set_candidacy_note(origin.clone(), membership_id.clone(), note1, Ok(()));
+        Mocks::set_candidacy_note(origin.clone(), membership_id, note1, Ok(()));
 
         // change note - announcement stage
-        Mocks::set_candidacy_note(origin.clone(), membership_id.clone(), note2, Ok(()));
+        Mocks::set_candidacy_note(origin.clone(), membership_id, note2, Ok(()));
 
         // forward to election-voting period
         MockUtils::increase_block_number(council_settings.announcing_stage_duration + 1);
 
         // change note - election stage
-        Mocks::set_candidacy_note(origin.clone(), membership_id.clone(), note3, Ok(()));
+        Mocks::set_candidacy_note(origin.clone(), membership_id, note3, Ok(()));
 
         // vote with all voters
         params.voters.iter().for_each(|voter| {
-            Mocks::vote_for_candidate(
-                voter.origin.clone(),
-                voter.commitment.clone(),
-                voter.stake.clone(),
-                Ok(()),
-            )
+            Mocks::vote_for_candidate(voter.origin.clone(), voter.commitment, voter.stake, Ok(()))
         });
 
         // forward to election-revealing period
@@ -1129,12 +1093,7 @@ fn council_candidacy_set_note() {
         );
 
         // check that note can be changed no longer
-        Mocks::set_candidacy_note(
-            origin.clone(),
-            membership_id.clone(),
-            note4,
-            Err(Error::NotCandidatingNow),
-        );
+        Mocks::set_candidacy_note(origin, membership_id, note4, Err(Error::NotCandidatingNow));
     });
 }
 
@@ -1167,7 +1126,7 @@ fn council_repeated_candidacy_unstakes() {
 
         Mocks::announce_candidacy(
             candidate.origin.clone(),
-            candidate.account_id.clone(),
+            candidate.account_id,
             new_stake,
             Ok(()),
         );
@@ -1203,7 +1162,7 @@ fn council_budget_refill_can_be_planned() {
         let origin = OriginType::Root;
         let next_refill = 1000;
 
-        Mocks::plan_budget_refill(origin.clone(), next_refill, Ok(()));
+        Mocks::plan_budget_refill(origin, next_refill, Ok(()));
 
         let current_block = frame_system::Pallet::<Runtime>::block_number();
 
@@ -1243,7 +1202,7 @@ fn council_budget_increment_can_be_upddated() {
         let budget_increment = 1000;
         let next_refill = <Runtime as Config>::BudgetRefillPeriod::get();
 
-        Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
+        Mocks::set_budget_increment(origin, budget_increment, Ok(()));
 
         let current_block = frame_system::Pallet::<Runtime>::block_number();
 
@@ -1276,7 +1235,7 @@ fn council_budget_increment_can_be_updated() {
         let budget_increment = 1000;
         let next_refill = <Runtime as Config>::BudgetRefillPeriod::get();
 
-        Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
+        Mocks::set_budget_increment(origin, budget_increment, Ok(()));
 
         let current_block = frame_system::Pallet::<Runtime>::block_number();
 
@@ -1310,7 +1269,7 @@ fn council_rewards_are_paid() {
 
         let sufficient_balance = 10000000;
 
-        Mocks::set_budget(origin.clone(), sufficient_balance, Ok(()));
+        Mocks::set_budget(origin, sufficient_balance, Ok(()));
 
         // run 1st council cycle
         let params = Mocks::run_full_council_cycle(0, &[], 0);
@@ -1333,7 +1292,7 @@ fn council_rewards_are_paid() {
         // run 2nd council cycle
         Mocks::run_full_council_cycle(
             council_settings.cycle_duration,
-            &tmp_council_members.as_slice(),
+            tmp_council_members.as_slice(),
             0,
         );
     });
@@ -1351,7 +1310,7 @@ fn councilor_reward_can_be_set() {
         let sufficient_balance = 10000000;
 
         Mocks::set_budget(origin.clone(), sufficient_balance, Ok(()));
-        Mocks::set_councilor_reward(origin.clone(), 1, Ok(()));
+        Mocks::set_councilor_reward(origin, 1, Ok(()));
 
         // run 1st council cycle
         let params = Mocks::run_full_council_cycle(0, &[], 0);
@@ -1419,7 +1378,7 @@ fn council_missed_rewards_are_paid_later() {
         }
 
         // set sufficitent budget
-        Mocks::set_budget(origin.clone(), sufficient_balance, Ok(()));
+        Mocks::set_budget(origin, sufficient_balance, Ok(()));
 
         // forward to block after second reward payment
         MockUtils::increase_block_number(<Runtime as Config>::ElectedMemberRewardPeriod::get());
@@ -1447,7 +1406,7 @@ fn council_discard_remaining_rewards_on_depose() {
         let sufficient_balance = 10000000;
         let second_cycle_user_offset = 10;
 
-        Mocks::set_budget(origin.clone(), sufficient_balance, Ok(()));
+        Mocks::set_budget(origin, sufficient_balance, Ok(()));
 
         // run 1st council cycle
         let params = Mocks::run_full_council_cycle(0, &[], 0);
@@ -1475,7 +1434,7 @@ fn council_discard_remaining_rewards_on_depose() {
         // run 2nd council cycle
         Mocks::run_full_council_cycle(
             council_settings.cycle_duration,
-            &tmp_council_members.as_slice(),
+            tmp_council_members.as_slice(),
             second_cycle_user_offset,
         );
 
@@ -1548,20 +1507,20 @@ fn council_membership_checks() {
         // test that staking_account_id has to be associated with membership_id
         Mocks::announce_candidacy_raw(
             candidate1.origin.clone(),
-            candidate1.account_id.clone(),
-            candidate2.candidate.staking_account_id.clone(), // second candidate's account id
-            candidate1.candidate.reward_account_id.clone(),
-            candidate1.candidate.stake.clone(),
+            candidate1.account_id,
+            candidate2.candidate.staking_account_id, // second candidate's account id
+            candidate1.candidate.reward_account_id,
+            candidate1.candidate.stake,
             Err(Error::MemberIdNotMatchAccount),
         );
 
         // test that reward_account_id not associated with membership_id can be used
         Mocks::announce_candidacy_raw(
             candidate1.origin.clone(),
-            candidate1.account_id.clone(),
-            candidate1.candidate.staking_account_id.clone(),
-            candidate2.candidate.reward_account_id.clone(), // second candidate's account id
-            candidate1.candidate.stake.clone(),
+            candidate1.account_id,
+            candidate1.candidate.staking_account_id,
+            candidate2.candidate.reward_account_id, // second candidate's account id
+            candidate1.candidate.stake,
             Ok(()),
         );
     });
@@ -1712,7 +1671,7 @@ fn council_origin_validator_succeeds() {
 
         CouncilMembers::<Runtime>::put(vec![councilor1]);
 
-        let origin = RawOrigin::Signed(councilor1_account_id.clone());
+        let origin = RawOrigin::Signed(councilor1_account_id);
 
         let validation_result =
             Council::ensure_member_consulate(origin.into(), councilor1_member_id);
@@ -1728,7 +1687,7 @@ fn test_funding_request_fails_permission() {
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Signed(0);
         Mocks::funding_request(
-            origin.into(),
+            origin,
             vec![common::FundingRequestParameters {
                 amount: 100,
                 account: 0,
@@ -1745,7 +1704,7 @@ fn council_origin_validator_fails_with_not_councilor() {
     build_test_externalities(config).execute_with(|| {
         let account_id = 1;
         let member_id = 1;
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         let validation_result = Council::ensure_member_consulate(origin.into(), member_id);
 
@@ -1771,7 +1730,7 @@ fn council_many_cycle_rewards() {
         let mut auto_topup_amount = 0;
 
         let origin = OriginType::Root;
-        Mocks::set_budget(origin.clone(), u64::MAX.into(), Ok(()));
+        Mocks::set_budget(origin, u64::MAX, Ok(()));
         for i in 0..num_iterations {
             let tmp_params = Mocks::run_full_council_cycle(
                 i * council_settings.cycle_duration,
@@ -1853,7 +1812,7 @@ fn test_council_budget_manager_works_correctly() {
         let origin = OriginType::Root;
         let initial_budget = 100;
 
-        Mocks::set_budget(origin.clone(), initial_budget, Ok(()));
+        Mocks::set_budget(origin, initial_budget, Ok(()));
 
         assert_eq!(
             <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
@@ -1926,7 +1885,7 @@ fn fund_council_budget_succeeded() {
         <Council as CouncilBudgetManager<u64, u64>>::set_budget(initial_budget);
 
         FundCouncilBudgetFixture::default()
-            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
             .with_rationale(rationale.clone())
@@ -1949,7 +1908,7 @@ fn fund_council_budget_failed_with_invalid_origin() {
 
     build_test_externalities(config).execute_with(|| {
         FundCouncilBudgetFixture::default()
-            .with_origin(RawOrigin::None.into())
+            .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
@@ -1964,7 +1923,7 @@ fn fund_council_budget_fails_with_insufficient_balance() {
         let amount = 100;
 
         FundCouncilBudgetFixture::default()
-            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
             .call_and_assert(Err(Error::<Runtime>::InsufficientTokensForFunding.into()));
@@ -1994,7 +1953,7 @@ fn councilor_remark_successful() {
         let account_id = 1;
         let member_id = 1;
         let msg = b"test".to_vec();
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         assert_ok!(Council::councilor_remark(origin.into(), member_id, msg));
     });
@@ -2008,7 +1967,7 @@ fn councilor_remark_unsuccessful_with_invalid_origin() {
         let account_id = 21;
         let member_id = 1;
         let msg = b"test".to_vec();
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         assert_err!(
             Council::councilor_remark(origin.into(), member_id, msg),
@@ -2025,7 +1984,7 @@ fn councilor_remark_unsuccessful_with_invalid_councilor() {
         let account_id = 2;
         let member_id = 2;
         let msg = b"test".to_vec();
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         assert_err!(
             Council::councilor_remark(origin.into(), member_id, msg),
@@ -2042,7 +2001,7 @@ fn candidate_remark_unsuccessful_with_invalid_candidate() {
         let account_id = 2;
         let member_id = 2;
         let msg = b"test".to_vec();
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         assert_err!(
             Council::candidate_remark(origin.into(), member_id, msg),
@@ -2059,7 +2018,7 @@ fn candidate_remark_unsuccessful_with_invalid_origin() {
         let account_id = 21;
         let member_id = 2;
         let msg = b"test".to_vec();
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         assert_err!(
             Council::candidate_remark(origin.into(), member_id, msg),

@@ -1,6 +1,5 @@
 import ExitCodes from '../ExitCodes'
-import { AccountId } from '@joystream/types/common'
-import { StakingLedger } from '@polkadot/types/interfaces'
+import { StakingLedger, AccountId } from '@polkadot/types/interfaces'
 import AccountsCommandBase from './AccountsCommandBase'
 import { formatBalance } from '@polkadot/util'
 
@@ -69,15 +68,15 @@ export default abstract class StakingCommandBase extends AccountsCommandBase {
     return await this.simplePrompt<number>({ message, type: 'number' })
   }
 
-  async checkElectionStatus() {
-    const electionStatus = await this.getApi().getEraElectionStatus()
-    if (electionStatus.isOpen === true) {
-      this.warn(
-        'There is currently an ongoing election for new validator candidates. As such staking operations are not permitted. You need to wait'
-      )
-      this.exit(ExitCodes.ActionCurrentlyUnavailable)
-    }
-  }
+  // async checkElectionStatus() {
+  //   const electionStatus = await this.getApi().getEraElectionStatus()
+  //   if (electionStatus.isOpen === true) {
+  //     this.warn(
+  //       'There is currently an ongoing election for new validator candidates. As such staking operations are not permitted. You need to wait'
+  //     )
+  //     this.exit(ExitCodes.ActionCurrentlyUnavailable)
+  //   }
+  // }
 
   async getValidatorPrefs(commission: number | undefined): Promise<any> {
     let validatorPrefs = { 'commission': 0 }

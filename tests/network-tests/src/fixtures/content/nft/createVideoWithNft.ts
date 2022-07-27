@@ -1,12 +1,9 @@
 import { Api } from '../../../Api'
-import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
+import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
-import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
-import BN from 'bn.js'
-import { assertNftOwner } from './utils'
-import { assert } from 'chai'
 import { Utils } from '../../../utils'
+import { IMember } from '../createMembersAndCurators'
+import { assertNftOwner } from './utils'
 
 export class CreateVideoWithNftFixture extends BaseQueryNodeFixture {
   private author: IMember

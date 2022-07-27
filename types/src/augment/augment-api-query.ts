@@ -286,7 +286,13 @@ declare module '@polkadot/api-base/types/storage' {
       minStartingPrice: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       nextChannelId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      nextTransferId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * NFT limits enabled or not
+       * Can be updated in flight by the Council
+       **/
+      nftLimitsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
       /**
        * Bids for open auctions
        **/
@@ -544,10 +550,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Thread identifier value to be used for next Thread in threadById.
        **/
       nextThreadId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Unique thread poll voters. This private double map prevents double voting.
-       **/
-      pollVotes: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<bool>, [u64, u64]>;
       /**
        * Map post identifier to corresponding post.
        **/

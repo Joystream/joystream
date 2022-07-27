@@ -5,8 +5,17 @@ use sp_std::convert::TryInto;
 decl_error! {
     /// Content directory errors
     pub enum Error for Module<T: Config> {
-        /// Feature Not Implemented
-        FeatureNotImplemented,
+        /// Invalid extrinsic call: Channel state bloat bond changed.
+        ChannelStateBloatBondChanged,
+
+        /// Invalid extrinsic call: video state bloat bond changed.
+        VideoStateBloatBondChanged,
+
+        /// Attempt to set minimum cashout allowed below the limit
+        MinCashoutValueTooLow,
+
+        /// Attempt to set minimum cashout allowed above the limit
+        MaxCashoutValueTooHigh,
 
         // Curator Management Errors
         // -------------------------
@@ -173,8 +182,8 @@ decl_error! {
         /// Given video nft is not in buy now state
         NftNotInBuyNowState,
 
-        /// Invalid Buy Now price commit provided
-        InvalidBuyNowPriceProvided,
+        /// `witness_price` provided to `buy_now` extrinsic does not match the current sell price
+        InvalidBuyNowWitnessPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -190,6 +199,12 @@ decl_error! {
 
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
+
+        /// Nft offer target member does not exist
+        TargetMemberDoesNotExist,
+
+        /// Current nft offer price does not match the provided `witness_price`
+        InvalidNftOfferWitnessPriceProvided,
 
         /// Max auction whitelist length upper bound exceeded
         MaxAuctionWhiteListLengthUpperBoundExceeded,
@@ -338,10 +353,10 @@ decl_error! {
         /// Patronage can only be claimed if channel is owned by a member
         PatronageCanOnlyBeClaimedForMemberOwnedChannels,
 
-        /// Invalid extrinsic call: Channel state bloat bond changed.
-        ChannelStateBloatBondChanged,
+        /// Channel Transfers are blocked during revenue splits
+        ChannelTransfersBlockedDuringRevenueSplits,
 
-        /// Invalid extrinsic call: video state bloat bond changed.
-        VideoStateBloatBondChanged
+        /// Channel Transfers are blocked during token sales
+        ChannelTransfersBlockedDuringTokenSales,
     }
 }

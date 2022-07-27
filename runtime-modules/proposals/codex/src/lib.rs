@@ -46,6 +46,8 @@ mod types;
 mod tests;
 
 mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
@@ -74,34 +76,6 @@ const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
 const MAX_VALIDATOR_COUNT: u32 = 300;
 // Max number of account that a fund request accept
 const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
-
-/// Proposal codex WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn create_proposal_signal(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_funding_request(i: u32, d: u32) -> Weight;
-    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_working_group_budget(t: u32, d: u32) -> Weight;
-    fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32) -> Weight;
-    fn create_proposal_slash_working_group_lead(d: u32) -> Weight;
-    fn create_proposal_set_working_group_lead_reward(t: u32, d: u32) -> Weight;
-    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight;
-    fn create_proposal_amend_constitution(i: u32, d: u32) -> Weight;
-    fn create_proposal_cancel_working_group_lead_opening(d: u32) -> Weight;
-    fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_council_budget_increment(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_councilor_reward(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_membership_lead_invitation_quota(d: u32) -> Weight;
-    fn create_proposal_set_referral_cut(t: u32, d: u32) -> Weight;
-    fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_global_nft_limit(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
-}
 
 type WeightInfoCodex<T> = <T as Config>::WeightInfo;
 
@@ -451,8 +425,8 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = Module::<T>::get_create_proposal_weight(
-                &general_proposal_parameters,
-                &proposal_details
+                general_proposal_parameters,
+                proposal_details
             )
         ]
         pub fn create_proposal(
@@ -630,7 +604,6 @@ impl<T: Config> Module<T> {
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 // Note: No checks for this proposal for now
             }
-
             ProposalDetails::UpdateChannelPayouts(params) => {
                 if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
                     ensure!(
@@ -732,6 +705,7 @@ impl<T: Config> Module<T> {
             ProposalDetails::FundingRequest(params) => {
                 WeightInfoCodex::<T>::create_proposal_funding_request(
                     params.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -768,6 +742,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SlashWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -786,6 +761,7 @@ impl<T: Config> Module<T> {
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
                     new_constitution.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -797,6 +773,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -826,6 +803,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -851,12 +829,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
                 WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
                     params
                         .payload
                         .as_ref()
                         .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
                 .saturated_into()
             }

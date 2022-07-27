@@ -44,7 +44,6 @@ fragment ChannelFields on Channel {
   language {
     iso
   }
-  rewardAccount
   isCensored
   ownerMember {
     id
@@ -65,6 +64,7 @@ fragment ChannelFields on Channel {
   bannedMembers {
     id
   }
+  rewardAccount
 }
 
 fragment ChannelCategoryFields on ChannelCategory {
@@ -280,5 +280,11 @@ query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
 query getChannelNftCollectors {
   channelNftCollectors {
     ...ChannelNftCollectorFields
+  }
+}
+
+query getDataObjectsByVideoId($videoId: ID) {
+  storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...StorageDataObjectFields
   }
 }

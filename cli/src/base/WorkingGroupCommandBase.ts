@@ -3,7 +3,7 @@ import { flags } from '@oclif/command'
 import { WorkingGroups, GroupMember } from '../Types'
 import _ from 'lodash'
 import MembershipsCommandBase from './MembershipsCommandBase'
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId } from '@joystream/types/primitives'
 
 /**
  * Abstract base class for commands relying on a specific working group context
@@ -59,7 +59,7 @@ export default abstract class WorkingGroupCommandBase extends MembershipsCommand
     const availableGroupMemberContexts = allowedGroupMembers.filter((m) =>
       expectedKeyType === 'Role'
         ? this.isKeyAvailable(m.roleAccount.toString())
-        : this.isKeyAvailable(m.profile.membership.controller_account.toString())
+        : this.isKeyAvailable(m.profile.membership.controllerAccount.toString())
     )
 
     if (!availableGroupMemberContexts.length) {

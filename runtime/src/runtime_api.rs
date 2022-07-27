@@ -1,22 +1,21 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
+use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
 use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Convert, NumberFor};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
-use sp_std::convert::{TryFrom, TryInto};
+
 use sp_std::vec::Vec;
 
 use crate::{
     AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
-    Balances, BlockNumber, Call, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Hash,
-    Historical, Index, InherentDataExt, MaxNominations, ProposalsEngine, RandomnessCollectiveFlip,
-    Runtime, RuntimeVersion, SessionKeys, Signature, System, TransactionPayment,
-    BABE_GENESIS_EPOCH_CONFIG, VERSION,
+    BlockNumber, Call, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
+    InherentDataExt, ProposalsEngine, Runtime, RuntimeVersion, SessionKeys, Signature, System,
+    TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
 };
 
 use frame_support::weights::Weight;
@@ -33,8 +32,8 @@ pub type SignedExtra = (
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 
-/// We don't use specific Address types (like Indices).
-pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
+/// Simply AccountId.
+pub type Address = AccountId;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
@@ -85,8 +84,6 @@ pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSI
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-    use crate::*;
-
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
@@ -115,6 +112,7 @@ mod benches {
         // [bounty, Bounty]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
+        [project_token, ProjectToken]
     );
 }
 
@@ -320,7 +318,7 @@ impl_runtime_apis! {
             Vec<frame_support::traits::StorageInfo>,
         ) {
             use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
-            use frame_support::traits::StorageInfoTrait;
+            // use frame_support::traits::StorageInfoTrait;
             use crate::*;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
@@ -398,7 +396,7 @@ impl_runtime_apis! {
                         working_group::OpeningType::Leader,
                         opening_id,
                         None,
-                        &caller_id,
+                        caller_id,
                         member_id,
                     )
                 }
@@ -432,6 +430,7 @@ impl_runtime_apis! {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::MaxNominations;
     use frame_election_provider_support::NposSolution;
     use frame_system::offchain::CreateSignedTransaction;
     use sp_runtime::UpperOf;

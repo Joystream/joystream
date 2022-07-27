@@ -9,15 +9,16 @@ pub use serde::{Deserialize, Serialize};
 use codec::{Codec, Decode, Encode};
 pub use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, ExistenceRequirement};
-use frame_support::weights::Weight;
+
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
 };
 use frame_system::ensure_signed;
 use scale_info::TypeInfo;
-use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
+use sp_runtime::DispatchError;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
@@ -28,10 +29,11 @@ use sp_std::prelude::*;
 use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupAuthenticator;
 
+mod benchmarking;
 mod mock;
 mod tests;
-
-mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
 /// Type for keeping track of number of posts in a thread
 pub type NumberOfPosts = u64;
@@ -41,19 +43,14 @@ pub type ModeratorId<T> = common::ActorId<T>;
 
 /// Forum user ID alias for the member of the system.
 pub type ForumUserId<T> = common::MemberId<T>;
+
 type WeightInfoForum<T> = <T as Config>::WeightInfo;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Alias for the thread
-pub type ThreadOf<T> = Thread<
-    ForumUserId<T>,
-    <T as Config>::CategoryId,
-    <T as pallet_timestamp::Config>::Moment,
-    <T as frame_system::Config>::Hash,
-    BalanceOf<T>,
->;
+pub type ThreadOf<T> = Thread<ForumUserId<T>, <T as Config>::CategoryId, BalanceOf<T>>;
 
 /// Type alias for `ExtendedPostIdObject`
 pub type ExtendedPostId<T> =
@@ -69,38 +66,6 @@ pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
 }
 
 type Balances<T> = balances::Pallet<T>;
-
-/// pallet_forum WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn create_category(i: u32, j: u32, k: u32) -> Weight;
-    fn update_category_membership_of_moderator_new() -> Weight;
-    fn update_category_membership_of_moderator_old() -> Weight;
-    fn update_category_archival_status_lead(i: u32) -> Weight;
-    fn update_category_archival_status_moderator(i: u32) -> Weight;
-    fn update_category_title_lead(i: u32, j: u32) -> Weight;
-    fn update_category_title_moderator(i: u32, j: u32) -> Weight;
-    fn update_category_description_lead(i: u32, j: u32) -> Weight;
-    fn update_category_description_moderator(i: u32, j: u32) -> Weight;
-    fn delete_category_lead(i: u32) -> Weight;
-    fn delete_category_moderator(i: u32) -> Weight;
-    fn create_thread(j: u32, k: u32, i: u32) -> Weight;
-    fn edit_thread_metadata(i: u32, j: u32) -> Weight;
-    fn delete_thread(i: u32) -> Weight;
-    fn move_thread_to_category_lead(i: u32) -> Weight;
-    fn move_thread_to_category_moderator(i: u32) -> Weight;
-    fn vote_on_poll(i: u32, j: u32) -> Weight;
-    fn moderate_thread_lead(i: u32, k: u32) -> Weight;
-    fn moderate_thread_moderator(i: u32, k: u32) -> Weight;
-    fn add_post(i: u32, j: u32) -> Weight;
-    fn react_post(i: u32) -> Weight;
-    fn edit_post_text(i: u32, j: u32) -> Weight;
-    fn moderate_post_lead(i: u32, j: u32) -> Weight;
-    fn moderate_post_moderator(i: u32, j: u32) -> Weight;
-    fn delete_posts(i: u32, j: u32, k: u32) -> Weight;
-    fn set_stickied_threads_lead(i: u32, j: u32) -> Weight;
-    fn set_stickied_threads_moderator(i: u32, j: u32) -> Weight;
-}
 
 pub trait Config:
     frame_system::Config
@@ -201,48 +166,6 @@ pub trait StorageLimits {
 
     /// Maximum total of all existing categories
     type MaxCategories: Get<u64>;
-
-    /// Maximum number of poll alternatives
-    type MaxPollAlternativesNumber: Get<u64>;
-}
-
-/// Represents all poll alternative text hashes and vote count for each one
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct PollAlternative<Hash> {
-    /// hash of alternative description
-    pub alternative_text_hash: Hash,
-
-    /// Vote count for the alternative
-    pub vote_count: u32,
-}
-
-/// Represents a poll input
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct PollInput<Timestamp> {
-    /// description
-    pub description: Vec<u8>,
-
-    /// timestamp of poll end
-    pub end_time: Timestamp,
-
-    /// Alternative polls description
-    pub poll_alternatives: Vec<Vec<u8>>,
-}
-
-/// Represents a poll
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct Poll<Timestamp, Hash> {
-    /// hash of description
-    pub description_hash: Hash,
-
-    /// timestamp of poll end
-    pub end_time: Timestamp,
-
-    /// Alternative description and count
-    pub poll_alternatives: Vec<PollAlternative<Hash>>,
 }
 
 /// Represents a thread post
@@ -268,15 +191,12 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
-pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
+pub struct Thread<ForumUserId, CategoryId, Balance> {
     /// Category in which this thread lives
     pub category_id: CategoryId,
 
     /// Author of post.
     pub author_id: ForumUserId,
-
-    /// poll description.
-    pub poll: Option<Poll<Moment, Hash>>,
 
     /// Pay off by deleting
     pub cleanup_pay_off: Balance,
@@ -374,6 +294,9 @@ decl_error! {
         /// Not enough balance to create thread
         InsufficientBalanceForThreadCreation,
 
+        /// A thread with outstanding posts cannot be removed
+        CannotDeleteThreadWithOutstandingPosts,
+
         // Errors about post.
 
         /// Post does not exist.
@@ -416,26 +339,6 @@ decl_error! {
 
         /// Duplicates for the stickied thread id collection.
         StickiedThreadIdsDuplicates,
-
-        // Errors about poll.
-
-        /// Poll items number too short.
-        PollAlternativesTooShort,
-
-        /// Poll not exist.
-        PollNotExist,
-
-        /// Poll date setting is wrong.
-        PollTimeSetting,
-
-        /// Poll data committed is wrong.
-        PollData,
-
-        /// Poll data committed after poll expired.
-        PollCommitExpired,
-
-        /// Forum user has already voted.
-        AlreadyVotedOnPoll,
 
         // Error data migration
 
@@ -480,11 +383,6 @@ decl_storage! {
         /// If data migration is done, set as configible for unit test purpose
         pub DataMigrationDone get(fn data_migration_done) config(): bool;
 
-        /// Unique thread poll voters. This private double map prevents double voting.
-        PollVotes get(fn poll_votes_by_thread_id_by_forum_user_id): double_map
-            hasher(blake2_128_concat) T::ThreadId,
-            hasher(blake2_128_concat) ForumUserId<T> => bool;
-
         /// Map post identifier to corresponding post.
         pub PostById get(fn post_by_id) config(): double_map hasher(blake2_128_concat) T::ThreadId,
             hasher(blake2_128_concat) T::PostId =>
@@ -510,7 +408,6 @@ decl_event!(
         <T as Config>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
         ExtendedPostId = ExtendedPostId<T>,
-        PollInput = PollInput<<T as pallet_timestamp::Config>::Moment>,
     {
         /// A category was introduced
         CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
@@ -532,7 +429,7 @@ decl_event!(
 
         /// A thread with given id was created.
         /// A third argument reflects the initial post id of the thread.
-        ThreadCreated(CategoryId, ThreadId, PostId, ForumUserId, Vec<u8>, Vec<u8>, Option<PollInput>),
+        ThreadCreated(CategoryId, ThreadId, PostId, ForumUserId, Vec<u8>, Vec<u8>),
 
         /// A thread with given id was moderated.
         ThreadModerated(ThreadId, Vec<u8>, PrivilegedActor, CategoryId),
@@ -565,9 +462,6 @@ decl_event!(
 
         /// Thumb up post
         PostReacted(ForumUserId, PostId, PostReactionId, CategoryId, ThreadId),
-
-        /// Vote on poll
-        VoteOnPoll(ThreadId, u32, ForumUserId, CategoryId),
 
         /// Sticky thread updated for category
         CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>, PrivilegedActor),
@@ -895,23 +789,22 @@ decl_module! {
             Ok(())
         }
 
-        /// Create new thread in category with poll
+        /// Create new thread in category
         ///
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W + V + X + Y)` where:
+        /// `O (W + V + X)` where:
         /// - `W` is the category depth
         /// - `V` is the length of the thread title.
         /// - `X` is the length of the thread text.
-        /// - `Y` is the number of poll alternatives.
         /// - DB:
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoForum::<T>::create_thread(
+            T::MaxCategoryDepth::get() as u32,
             metadata.len().saturated_into(),
             text.len().saturated_into(),
-            T::MaxCategoryDepth::get() as u32,
         )]
         fn create_thread(
             origin,
@@ -919,7 +812,6 @@ decl_module! {
             category_id: T::CategoryId,
             metadata: Vec<u8>,
             text: Vec<u8>,
-            poll_input: Option<PollInput<T::Moment>>,
         ) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
@@ -927,15 +819,6 @@ decl_module! {
             let account_id = ensure_signed(origin)?;
 
             Self::ensure_can_create_thread(&account_id, &forum_user_id, &category_id)?;
-
-            // Ensure poll is valid
-            if let Some(ref data) = poll_input {
-                // Check all poll alternatives
-                Self::ensure_poll_alternatives_length_is_valid(&data.poll_alternatives)?;
-
-                // Check poll self information
-                Self::ensure_poll_input_is_valid(data)?;
-            }
 
             //
             // == MUTATION SAFE ==
@@ -952,14 +835,10 @@ decl_module! {
                 &account_id
             )?;
 
-            // Hash poll description and poll alternatives description
-            let poll = poll_input.clone().map(Self::from_poll_input);
-
             // Build a new thread
             let new_thread = Thread {
                 category_id,
                 author_id: forum_user_id,
-                poll,
                 cleanup_pay_off: T::ThreadDeposit::get(),
                 number_of_posts: 0,
             };
@@ -993,7 +872,6 @@ decl_module! {
                     forum_user_id,
                     metadata,
                     text,
-                    poll_input,
                 )
             );
 
@@ -1149,80 +1027,6 @@ decl_module! {
             Ok(())
         }
 
-        /// Submit a poll
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (W + V)` where:
-        /// - `W` is the category depth,
-        /// - `V` is the number of poll alternatives.
-        /// - DB:
-        ///    - O(W)
-        /// # </weight>
-        #[weight = WeightInfoForum::<T>::vote_on_poll(
-            T::MaxCategoryDepth::get() as u32,
-            <T::MapLimits as StorageLimits>::MaxPollAlternativesNumber::get() as u32
-        )]
-        fn vote_on_poll(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, index: u32) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
-            let account_id = ensure_signed(origin)?;
-
-            // get forum user id.
-            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
-
-            // Get thread
-            let (_, thread) = Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
-
-            let category_id = thread.category_id;
-
-            // Make sure poll exist
-            let poll = Self::ensure_vote_is_valid(thread, index, &thread_id, &forum_user_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Store new poll alternative statistics
-            let new_poll_alternatives: Vec<PollAlternative<T::Hash>> = poll.poll_alternatives
-                .iter()
-                .enumerate()
-                .map(|(old_index, old_value)| if index as usize == old_index
-                    { PollAlternative {
-                        alternative_text_hash: old_value.alternative_text_hash,
-                        vote_count: old_value.vote_count + 1,
-                    }
-                    } else {
-                        old_value.clone()
-                    })
-                .collect();
-
-            Self::ensure_poll_alternatives_length_is_valid(&new_poll_alternatives)?;
-
-            // Update thread with one object
-            <ThreadById<T>>::mutate(category_id, thread_id, |value| {
-                *value = Thread {
-                    poll: Some( Poll {
-                        poll_alternatives: new_poll_alternatives,
-                        ..poll
-                    }),
-                    ..(value.clone())
-                }
-            });
-
-            // Update unique votes collection.
-            <PollVotes<T>>::insert(&thread_id, &forum_user_id, true);
-
-            // Store the event
-            Self::deposit_event(
-                RawEvent::VoteOnPoll(thread_id, index, forum_user_id, category_id)
-            );
-
-            Ok(())
-        }
-
         /// Moderate thread
         ///
         /// <weight>
@@ -1250,7 +1054,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            // Ensure actor is allowed to moderate post
+            // Ensure actor is allowed to moderate thread
             let thread = Self::ensure_can_moderate_thread(&account_id, &actor, &category_id, &thread_id)?;
 
             //
@@ -1520,9 +1324,9 @@ decl_module! {
                 let post = Self::ensure_can_delete_post(
                     &account_id,
                     &forum_user_id,
-                    &category_id,
-                    &thread_id,
-                    &post_id,
+                    category_id,
+                    thread_id,
+                    post_id,
                     *hide,
                 )?;
 
@@ -1594,22 +1398,6 @@ decl_module! {
 }
 
 impl<T: Config> Module<T> {
-    /// Hash poll description and poll alternatives descriptions, coverting `PollInput` into `Poll`
-    fn from_poll_input(poll_input: PollInput<T::Moment>) -> Poll<T::Moment, T::Hash> {
-        Poll {
-            description_hash: T::calculate_hash(poll_input.description.as_slice()),
-            poll_alternatives: poll_input
-                .poll_alternatives
-                .into_iter()
-                .map(|poll_alternative| PollAlternative {
-                    alternative_text_hash: T::calculate_hash(poll_alternative.as_slice()),
-                    vote_count: 0,
-                })
-                .collect(),
-            end_time: poll_input.end_time,
-        }
-    }
-
     fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
         let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         let _ = Balances::<T>::slash(&thread_account_id, amount);
@@ -1684,9 +1472,6 @@ impl<T: Config> Module<T> {
         // Delete thread
         <ThreadById<T>>::remove(category_id, thread_id);
 
-        // Remove all thread poll votes.
-        <PollVotes<T>>::remove_prefix(thread_id, None);
-
         // decrease category's thread counter
         <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
     }
@@ -1700,30 +1485,6 @@ impl<T: Config> Module<T> {
         }
 
         <PostById<T>>::remove(thread_id, post_id);
-    }
-
-    // Ensure poll is valid
-    fn ensure_poll_input_is_valid(poll: &PollInput<T::Moment>) -> Result<(), Error<T>> {
-        // Poll end time must larger than now
-        if poll.end_time < <pallet_timestamp::Pallet<T>>::now() {
-            return Err(Error::<T>::PollTimeSetting);
-        }
-
-        Ok(())
-    }
-
-    // Ensure poll alternative size is valid
-    fn ensure_poll_alternatives_length_is_valid<K>(alternatives: &[K]) -> Result<(), Error<T>> {
-        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>(
-            alternatives.len() as u64,
-        )?;
-
-        ensure!(
-            alternatives.len() as u64 >= 2,
-            Error::<T>::PollAlternativesTooShort
-        );
-
-        Ok(())
     }
 
     fn ensure_post_is_mutable(
@@ -1768,14 +1529,10 @@ impl<T: Config> Module<T> {
     ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
     {
         // Ensure the moderator can moderate the category
-        Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+        Self::ensure_can_moderate_category(&account_id, actor, category_id)?;
 
         // Make sure post exists and is mutable
-        let post = if Self::thread_exists(category_id, thread_id) {
-            Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
-        } else {
-            <PostById<T>>::get(thread_id, post_id)
-        };
+        let post = Self::ensure_post_is_mutable(category_id, thread_id, post_id)?;
 
         Ok(post)
     }
@@ -1789,19 +1546,15 @@ impl<T: Config> Module<T> {
         hide: bool,
     ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
     {
-        let post = if Self::thread_exists(category_id, thread_id) {
-            Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
-        } else {
-            <PostById<T>>::get(thread_id, post_id)
-        };
+        let post = Self::ensure_post_is_mutable(category_id, thread_id, post_id)?;
 
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         // Signer does not match creator of post with identifier postId
         ensure!(
             post.author_id == *forum_user_id
-                || Self::anyone_can_delete_post(&post, &thread_id, &category_id) && !hide,
+                || Self::anyone_can_delete_post(&post, thread_id, category_id) && !hide,
             Error::<T>::AccountDoesNotMatchPostAuthor
         );
 
@@ -1814,7 +1567,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
     ) -> bool {
         frame_system::Pallet::<T>::block_number() >= T::PostLifeTime::get() + post.last_edited
-            && !Self::thread_exists(&category_id, &thread_id)
+            && !Self::thread_exists(category_id, thread_id)
     }
 
     fn thread_exists(category_id: &T::CategoryId, thread_id: &T::ThreadId) -> bool {
@@ -1852,7 +1605,7 @@ impl<T: Config> Module<T> {
         forum_user_id: &ForumUserId<T>,
     ) -> Result<ThreadOf<T>, Error<T>> {
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(&account_id, forum_user_id)?;
 
         // Ensure thread is mutable
         let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
@@ -1884,7 +1637,7 @@ impl<T: Config> Module<T> {
                 Self::ensure_is_forum_lead_account(account_id)?;
             }
             PrivilegedActor::Moderator(moderator_id) => {
-                Self::ensure_is_moderator_account(account_id, &moderator_id)?;
+                Self::ensure_is_moderator_account(account_id, moderator_id)?;
             }
         };
         Ok(())
@@ -1922,17 +1675,20 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    // Ensure actor can manipulate thread.
+    // Ensure actor can moderate thread.
     fn ensure_can_moderate_thread(
         account_id: &T::AccountId,
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<ThreadOf<T>, Error<T>> {
+    ) -> Result<ThreadOf<T>, DispatchError> {
         // Check that account is forum member
         Self::ensure_can_moderate_category(account_id, actor, category_id)?;
 
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
+
+        // Ensure that the thread has no outstanding posts
+        Self::ensure_empty_thread(&thread)?;
 
         Ok(thread)
     }
@@ -1943,15 +1699,18 @@ impl<T: Config> Module<T> {
         forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<ThreadOf<T>, Error<T>> {
+    ) -> Result<ThreadOf<T>, DispatchError> {
         // Ensure thread exists and is mutable
         let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         // Ensure forum user is author of the thread
-        Self::ensure_is_thread_author(&thread, &forum_user_id)?;
+        Self::ensure_is_thread_author(&thread, forum_user_id)?;
+
+        // Ensure the thread has no outstanding posts
+        Self::ensure_empty_thread(&thread)?;
 
         Ok(thread)
     }
@@ -1962,14 +1721,18 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         new_category_id: &T::CategoryId,
-    ) -> Result<ThreadOf<T>, Error<T>> {
+    ) -> Result<ThreadOf<T>, DispatchError> {
         ensure!(
             category_id != new_category_id,
             Error::<T>::ThreadMoveInvalid,
         );
 
-        let thread = Self::ensure_can_moderate_thread(&account_id, actor, category_id, thread_id)
-            .map_err(|_| Error::<T>::ModeratorModerateOriginCategory)?;
+        ensure!(
+            Self::ensure_can_moderate_category(&account_id, actor, category_id).is_ok(),
+            Error::<T>::ModeratorModerateOriginCategory
+        );
+
+        let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
         Self::ensure_can_moderate_category_path(actor, new_category_id)
             .map_err(|_| Error::<T>::ModeratorModerateDestinationCategory)?;
@@ -1980,7 +1743,7 @@ impl<T: Config> Module<T> {
     fn ensure_category_is_mutable(
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
-        let category_tree_path = Self::build_category_tree_path(&category_id);
+        let category_tree_path = Self::build_category_tree_path(category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
@@ -2030,7 +1793,7 @@ impl<T: Config> Module<T> {
         );
 
         // Get path from parent to root of category tree.
-        let category_tree_path = Self::build_category_tree_path(&category_id);
+        let category_tree_path = Self::build_category_tree_path(category_id);
 
         if category_tree_path.is_empty() {
             debug_assert!(
@@ -2163,7 +1926,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
         moderator_id: &ModeratorId<T>,
         new_value: bool,
-    ) -> Result<(), Error<T>> {
+    ) -> Result<(), DispatchError> {
         // Not signed by forum LEAD
         Self::ensure_is_forum_lead_account(&account_id)?;
 
@@ -2171,6 +1934,8 @@ impl<T: Config> Module<T> {
         let category = Self::ensure_category_exists(category_id)?;
 
         if new_value {
+            // ensure worker by moderator_id exists
+            T::WorkingGroup::ensure_worker_exists(moderator_id)?;
             Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxModeratorsForCategory>(
                 category.num_direct_moderators as u64,
             )?;
@@ -2209,7 +1974,7 @@ impl<T: Config> Module<T> {
         // If not root, then check that we can create in parent category
         if let Some(tmp_parent_category_id) = parent_category_id {
             // Can we mutate in this category?
-            Self::ensure_can_add_subcategory_path_leaf(&tmp_parent_category_id)?;
+            Self::ensure_can_add_subcategory_path_leaf(tmp_parent_category_id)?;
 
             let parent_category = <CategoryById<T>>::get(tmp_parent_category_id);
 
@@ -2229,7 +1994,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Check that account is forum member
-        Self::ensure_is_forum_user(account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         Self::ensure_category_exists(category_id)?;
 
@@ -2238,7 +2003,7 @@ impl<T: Config> Module<T> {
         // The balance for creation of thread is the base cost plus the cost of a single post
         let minimum_balance = T::ThreadDeposit::get() + T::PostDeposit::get();
         ensure!(
-            Self::ensure_enough_balance(minimum_balance, &account_id),
+            Self::ensure_enough_balance(minimum_balance, account_id),
             Error::<T>::InsufficientBalanceForThreadCreation
         );
 
@@ -2256,7 +2021,7 @@ impl<T: Config> Module<T> {
         thread_id: &T::ThreadId,
     ) -> Result<(Category<T::CategoryId, T::ThreadId, T::Hash>, ThreadOf<T>), Error<T>> {
         // Check that account is forum member
-        Self::ensure_is_forum_user(account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         let (category, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
@@ -2270,7 +2035,7 @@ impl<T: Config> Module<T> {
         stickied_ids: &[T::ThreadId],
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Ensure actor can moderate the category
-        let category = Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+        let category = Self::ensure_can_moderate_category(&account_id, actor, category_id)?;
 
         // Ensure all thread id valid and is under the category
         // Helps to prevent thread ID duplicates.
@@ -2285,40 +2050,10 @@ impl<T: Config> Module<T> {
                 unique_stickied_ids.insert(*thread_id);
             }
 
-            Self::ensure_thread_exists(&category_id, thread_id)?;
+            Self::ensure_thread_exists(category_id, thread_id)?;
         }
 
         Ok(category)
-    }
-
-    /// Check the vote is valid
-    fn ensure_vote_is_valid(
-        thread: ThreadOf<T>,
-        index: u32,
-        thread_id: &T::ThreadId,
-        forum_user_id: &ForumUserId<T>,
-    ) -> Result<Poll<T::Moment, T::Hash>, Error<T>> {
-        // Ensure poll exists
-        let poll = thread.poll.ok_or(Error::<T>::PollNotExist)?;
-
-        // No previous votes for a forum user.
-        ensure!(
-            !Self::poll_votes_by_thread_id_by_forum_user_id(thread_id, forum_user_id),
-            Error::<T>::AlreadyVotedOnPoll
-        );
-
-        // Poll not expired
-        if poll.end_time < <pallet_timestamp::Pallet<T>>::now() {
-            Err(Error::<T>::PollCommitExpired)
-        } else {
-            let alternative_length = poll.poll_alternatives.len();
-            // The selected alternative index is valid
-            if index as usize >= alternative_length {
-                Err(Error::<T>::PollData)
-            } else {
-                Ok(poll)
-            }
-        }
     }
 
     // supposed to be called before mutations - checks if next entity can be added
@@ -2341,5 +2076,13 @@ impl<T: Config> Module<T> {
         } else {
             Err(Error::<T>::DataMigrationNotDone)
         }
+    }
+
+    fn ensure_empty_thread(thread: &ThreadOf<T>) -> DispatchResult {
+        ensure!(
+            thread.number_of_posts.is_zero(),
+            Error::<T>::CannotDeleteThreadWithOutstandingPosts
+        );
+        Ok(())
     }
 }
