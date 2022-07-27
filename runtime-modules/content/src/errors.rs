@@ -215,6 +215,9 @@ decl_error! {
         /// At least one of the whitelisted members does not exist
         WhitelistedMemberDoesNotExist,
 
+        /// Non-channel owner specified during nft issuance does not exist
+        NftNonChannelOwnerDoesNotExist,
+
         /// Extension period is greater then auction duration
         ExtensionPeriodIsGreaterThenAuctionDuration,
 

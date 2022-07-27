@@ -3092,6 +3092,10 @@ impl<T: Config> Module<T> {
         )?;
         // The content owner will be..
         let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
+            ensure!(
+                T::MemberAuthenticator::controller_account_id(to).is_ok(),
+                Error::<T>::NftNonChannelOwnerDoesNotExist
+            );
             NftOwner::Member(to)
         } else {
             // if `to` set to None, actor issues to ChannelOwner
