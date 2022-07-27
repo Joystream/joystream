@@ -212,6 +212,9 @@ decl_error! {
         /// Auction whitelist has only one member
         WhitelistHasOnlyOneMember,
 
+        /// At least one of the whitelisted members does not exist
+        WhitelistedMemberDoesNotExist,
+
         /// Extension period is greater then auction duration
         ExtensionPeriodIsGreaterThenAuctionDuration,
 
