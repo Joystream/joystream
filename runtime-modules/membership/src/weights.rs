@@ -44,9 +44,9 @@ use sp_std::marker::PhantomData;
 
 /// Weight functions needed for membership.
 pub trait WeightInfo {
-	fn buy_membership_without_referrer(i: u32, j: u32, ) -> Weight;
-	fn buy_membership_with_referrer(i: u32, j: u32, ) -> Weight;
-	fn update_profile(i: u32, ) -> Weight;
+	fn buy_membership_without_referrer(_i: u32, _j: u32, ) -> Weight;
+	fn buy_membership_with_referrer(_i: u32, _j: u32, ) -> Weight;
+	fn update_profile(_i: u32, ) -> Weight;
 	fn update_accounts_none() -> Weight;
 	fn update_accounts_root() -> Weight;
 	fn update_accounts_controller() -> Weight;
@@ -64,6 +64,7 @@ pub trait WeightInfo {
 	fn confirm_staking_account() -> Weight;
 	fn remove_staking_account() -> Weight;
 	fn member_remark() -> Weight;
+	fn create_founding_member(_i: u32, _j: u32, ) -> Weight;
 }
 
 /// Weights for membership using the Substrate node and recommended hardware.
@@ -124,7 +125,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:1)
 	fn update_accounts_both() -> Weight {
-		(14_000_000 as Weight)
+		(23_555_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -221,14 +222,27 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xc2261276cc9d1f8598ea4b6a74b15c2f218f26c73add634897550b4003b26bc6] (r:1 w:1)
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:1 w:1)
 	fn remove_staking_account() -> Weight {
-		(30_000_000 as Weight)
+		(48_370_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:0)
 	fn member_remark() -> Weight {
-		(13_000_000 as Weight)
+		(20_549_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+	}
+	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc6b8a2f06065bb1b4d3395eb9f6a6ce60] (r:1 w:1)
+	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc0d3094b474c99662ab2c5f2e2f8c27b6] (r:1 w:0)
+	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc4560c4f4db6b0f2ccd9ba01ebd9f4757] (r:1 w:1)
+	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:0 w:1)
+	fn create_founding_member(i: u32, j: u32, ) -> Weight {
+		(29_171_000 as Weight)
+			// Standard Error: 0
+			.saturating_add((2_000 as Weight).saturating_mul(i as Weight))
+			// Standard Error: 0
+			.saturating_add((1_000 as Weight).saturating_mul(j as Weight))
+			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 }
 
@@ -261,7 +275,7 @@ impl WeightInfo for () {
 	fn transfer_invites() -> Weight {
 		0
 	}
-	fn invite_member(_i: u32, _j: u32, ) -> Weight {
+	fn invite_member(i: u32, j: u32, ) -> Weight {
 		0
 	}
 	fn gift_membership(i: u32, j: u32, ) -> Weight {
@@ -292,6 +306,9 @@ impl WeightInfo for () {
 		0
 	}
 	fn member_remark() -> Weight {
+		0
+	}
+	fn create_founding_member(i: u32, j: u32, ) -> Weight {
 		0
 	}
 }

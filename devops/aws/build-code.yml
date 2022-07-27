@@ -9,11 +9,6 @@
         name: common
         tasks_from: "{{ 'get-code-local' if build_local_code|bool else 'get-code-git' }}"
 
-    - name: Run setup
-      include_role:
-        name: common
-        tasks_from: run-setup
-
 - name: Build joystream-node on build host and copy binary to local
   hosts: build
   gather_facts: no

@@ -73,7 +73,6 @@ typegen:
     - forum.ThreadMetadataUpdated
     - forum.ThreadDeleted
     - forum.ThreadMoved
-    - forum.VoteOnPoll
     - forum.PostAdded
     - forum.PostModerated
     - forum.PostDeleted
@@ -93,6 +92,11 @@ typegen:
     - content.VideoUpdated
     - content.VideoDeleted
     - content.ChannelDeleted
+    - content.ChannelDeletedByModerator
+    - content.VideoDeletedByModerator
+    - content.ChannelAssetsDeletedByModerator
+    - content.VideoAssetsDeletedByModerator
+    - content.VideoVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
     # Storage
@@ -100,6 +104,7 @@ typegen:
     - storage.StorageBucketInvitationAccepted
     - storage.StorageBucketsUpdatedForBag
     - storage.DataObjectsUploaded
+    - storage.DataObjectsUpdated
     - storage.StorageOperatorMetadataSet
     - storage.StorageBucketVoucherLimitsSet
     - storage.PendingDataObjectsAccepted
@@ -132,6 +137,7 @@ typegen:
     - storage.DistributionBucketMetadataSet
     - storage.DistributionBucketOperatorRemoved
     - storage.DistributionBucketFamilyMetadataSet
+    - storage.DataObjectStateBloatBondValueUpdated
     # Not required:
     # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
     # - storage.FamiliesInDynamicBagCreationPolicyUpdated
@@ -696,8 +702,6 @@ mappings:
       handler: forum_PostTextUpdated
     - event: forum.PostReacted
       handler: forum_PostReacted
-    - event: forum.VoteOnPoll
-      handler: forum_VoteOnPoll
     - event: forum.CategoryStickyThreadUpdate
       handler: forum_CategoryStickyThreadUpdate
     - event: forum.CategoryMembershipOfModeratorUpdated
@@ -725,6 +729,17 @@ mappings:
       handler: content_VideoDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
+    - event: content.ChannelDeletedByModerator
+      handler: content_ChannelDeletedByModerator
+    - event: content.VideoDeletedByModerator
+      handler: content_VideoDeletedByModerator
+    - event: content.ChannelAssetsDeletedByModerator
+      handler: content_ChannelAssetsDeletedByModerator
+    - event: content.VideoAssetsDeletedByModerator
+      handler: content_VideoAssetsDeletedByModerator
+    - event: content.VideoVisibilitySetByModerator
+      handler: content_VideoVisibilitySetByModerator
+
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked
     - event: content.ChannelAgentRemarked
@@ -774,6 +789,8 @@ mappings:
       handler: storage_StorageBucketsUpdatedForBag
     - event: storage.DataObjectsUploaded
       handler: storage_DataObjectsUploaded
+    - event: storage.DataObjectsUpdated
+      handler: storage_DataObjectsUpdated
     - event: storage.StorageOperatorMetadataSet
       handler: storage_StorageOperatorMetadataSet
     - event: storage.StorageBucketVoucherLimitsSet
@@ -838,6 +855,8 @@ mappings:
       handler: storage_DistributionBucketOperatorRemoved
     - event: storage.DistributionBucketFamilyMetadataSet
       handler: storage_DistributionBucketFamilyMetadataSet
+    - event: storage.DataObjectStateBloatBondValueUpdated
+      handler: storage_DataObjectStateBloatBondValueUpdated
 
     # Council
     - event: council.AnnouncingPeriodStarted

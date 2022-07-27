@@ -234,6 +234,22 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
     pub metadata: Vec<u8>,
 }
 
+/// Parameters for the create_founding_member extrinsic.
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
+pub struct CreateFoundingMemberParameters<AccountId> {
+    /// New member root account.
+    pub root_account: AccountId,
+
+    /// New member controller account.
+    pub controller_account: AccountId,
+
+    /// New member handle.
+    pub handle: Vec<u8>,
+
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
+}
+
 decl_error! {
     /// Membership module predefined errors
     pub enum Error for Module<T: Config> {
@@ -349,6 +365,7 @@ decl_storage! {
                     &member.controller_account,
                     handle_hash,
                     Zero::zero(),
+                    false
                 );
 
                 // ensure imported member id matches assigned id
@@ -360,17 +377,20 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as common::membership::MembershipTypes>::MemberId,
-      Balance = BalanceOf<T>,
-      <T as frame_system::Config>::AccountId,
-      BuyMembershipParameters = BuyMembershipParameters<
-          <T as frame_system::Config>::AccountId,
-          <T as common::membership::MembershipTypes>::MemberId,
+        <T as common::membership::MembershipTypes>::MemberId,
+        Balance = BalanceOf<T>,
+        <T as frame_system::Config>::AccountId,
+        BuyMembershipParameters = BuyMembershipParameters<
+            <T as frame_system::Config>::AccountId,
+            <T as common::membership::MembershipTypes>::MemberId,
+            >,
+        <T as common::membership::MembershipTypes>::ActorId,
+        InviteMembershipParameters = InviteMembershipParameters<
+            <T as frame_system::Config>::AccountId,
+            <T as common::membership::MembershipTypes>::MemberId,
         >,
-      <T as common::membership::MembershipTypes>::ActorId,
-      InviteMembershipParameters = InviteMembershipParameters<
-          <T as frame_system::Config>::AccountId,
-          <T as common::membership::MembershipTypes>::MemberId,
+        CreateFoundingMemberParameters = CreateFoundingMemberParameters<
+            <T as frame_system::Config>::AccountId
         >,
       GiftMembershipParameters = GiftMembershipParameters<
         <T as frame_system::Config>::AccountId,
@@ -397,6 +417,7 @@ decl_event! {
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
         MemberRemarked(MemberId, Vec<u8>),
+        FoundingMemberCreated(MemberId, CreateFoundingMemberParameters),
     }
 }
 
@@ -474,6 +495,7 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 Self::initial_invitation_count(),
+                false
             );
 
             // Collect membership fee (just burn it).
@@ -762,6 +784,7 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 Zero::zero(),
+                false
             );
 
             // Save the updated profile.
@@ -1180,6 +1203,45 @@ decl_module! {
 
             Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
         }
+
+        /// Create a founding member profile as root.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (I + J)` where:
+        /// - `I` is the length of the handle
+        /// - `J` is the length of the metadata
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::create_founding_member(
+            params.handle.len() as u32,
+            params.metadata.len() as u32
+        )]
+        pub fn create_founding_member(
+            origin,
+            params: CreateFoundingMemberParameters<T::AccountId>
+        ) {
+            ensure_root(origin)?;
+
+            let handle_hash = Self::get_handle_hash(&Some(params.handle.clone()))?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let member_id = Self::insert_member(
+                &params.root_account,
+                &params.controller_account,
+                handle_hash,
+                Self::initial_invitation_count(),
+                true
+            );
+
+            // Fire the event.
+            Self::deposit_event(RawEvent::FoundingMemberCreated(member_id, params));
+        }
     }
 }
 
@@ -1268,6 +1330,7 @@ impl<T: Config> Module<T> {
         controller_account: &T::AccountId,
         handle_hash: Vec<u8>,
         allowed_invites: u32,
+        verified: bool,
     ) -> T::MemberId {
         let new_member_id = Self::members_created();
 
@@ -1275,7 +1338,7 @@ impl<T: Config> Module<T> {
             handle_hash: handle_hash.clone(),
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
-            verified: false,
+            verified,
             invites: allowed_invites,
         };
 

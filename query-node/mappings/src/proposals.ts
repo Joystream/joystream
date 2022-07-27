@@ -122,8 +122,6 @@ async function parseProposalDetails(
       specificDetails.map(({ account, amount }) =>
         store.save(
           new FundingRequestDestination({
-            createdAt: eventTime,
-            updatedAt: eventTime,
             account: account.toString(),
             amount: new BN(amount.toString()),
             list: destinationsList,
@@ -291,7 +289,6 @@ async function setProposalStatus(
   status: typeof ProposalStatus
 ): Promise<void> {
   proposal.status = status
-  proposal.updatedAt = new Date(event.blockTimestamp)
   proposal.statusSetAtBlock = event.blockNumber
   proposal.statusSetAtTime = new Date(event.blockTimestamp)
   if (
@@ -319,8 +316,6 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
 
   const proposal = new Proposal({
     id: proposalId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     details: proposalDetails,
     councilApprovals: 0,
     creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
@@ -340,8 +335,6 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
   // Thread is always created along with the proposal
   const proposalThread = new ProposalDiscussionThread({
     id: proposalThreadId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     mode: new ProposalDiscussionThreadModeOpen(),
     proposal,
   })
