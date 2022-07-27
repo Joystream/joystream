@@ -167,17 +167,14 @@ export function setReactionsAndRepliesCount(
   reactionsCountByReactionId: VideoReactionsCountByReactionType | CommentReactionsCountByReactionId,
   operation: 'INCREMENT' | 'DECREMENT'
 ): void {
-  const eventTime = new Date(event.blockTimestamp)
   const change = operation === 'INCREMENT' ? 1 : -1
 
   reactionsCountByReactionId.count += change
-  reactionsCountByReactionId.updatedAt = eventTime
 
   entity.reactionsCount += change
   if (entity instanceof Comment) {
     entity.reactionsAndRepliesCount += change
   }
-  entity.updatedAt = eventTime
 }
 
 function parseVideoReaction(reaction: ReactVideo.Reaction): VideoReactionOptions {
@@ -197,7 +194,6 @@ export async function processReactVideoMessage(
   message: IReactVideo
 ): Promise<void> {
   const { videoId, reaction } = message
-  const eventTime = new Date(event.blockTimestamp)
   const reactionResult = parseVideoReaction(reaction)
 
   const changeOrRemovePreviousReaction = async (
@@ -217,7 +213,6 @@ export async function processReactVideoMessage(
 
     // increment reaction count of current reaction type
     ++reactionsCountByReactionType.count
-    reactionsCountByReactionType.updatedAt = eventTime
 
     const reactionsCountByReactionTypeOfPreviousReaction = await getOrCreateVideoReactionsCountByReactionId(
       store,
@@ -227,13 +222,11 @@ export async function processReactVideoMessage(
 
     // decrement reaction count of previous reaction type
     --reactionsCountByReactionTypeOfPreviousReaction.count
-    reactionsCountByReactionTypeOfPreviousReaction.updatedAt = eventTime
 
     // save reactionsCount of previous reaction
     await store.save<VideoReactionsCountByReactionType>(reactionsCountByReactionTypeOfPreviousReaction)
 
     previousReactionByMember.reaction = reaction
-    previousReactionByMember.updatedAt = eventTime
 
     // update reaction
     await store.save<VideoReaction>(previousReactionByMember)
@@ -262,8 +255,6 @@ export async function processReactVideoMessage(
     // new reaction
     const newReactionByMember = new VideoReaction({
       id: videoReactionEntityId({ memberId, videoId: videoId.toString() }),
-      createdAt: eventTime,
-      updatedAt: eventTime,
       video,
       reaction: reactionResult,
       memberId: memberId.toString(),
@@ -300,7 +291,6 @@ export async function processReactCommentMessage(
   message: IReactComment
 ): Promise<void> {
   const { commentId, reactionId } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load comment
   const comment = await getComment(store, commentId, ['video', 'video.channel', 'video.channel.bannedMembers'])
@@ -327,8 +317,6 @@ export async function processReactCommentMessage(
     // new reaction
     const newReactionByMember = new CommentReaction({
       id: commentReactionEntityId({ memberId, commentId, reactionId }),
-      createdAt: eventTime,
-      updatedAt: eventTime,
       comment,
       reactionId,
       video,
@@ -369,7 +357,6 @@ export async function processCreateCommentMessage(
 ): Promise<Comment> {
   // in case of null `parentCommentId` protobuf would assign it a default value i.e. ''
   const { videoId, parentCommentId, body } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load video
   const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
@@ -393,21 +380,17 @@ export async function processCreateCommentMessage(
 
   // increment video's comment count
   ++video.commentsCount
-  video.updatedAt = eventTime
   await store.save<Video>(video)
 
   // increment parent comment's replies count
   if (parentComment) {
     ++parentComment.repliesCount
     ++parentComment.reactionsAndRepliesCount
-    parentComment.updatedAt = eventTime
     await store.save<Comment>(parentComment)
   }
 
   const comment = new Comment({
     id: newMetaprotocolEntityId(event),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     text: body,
     video,
     status: CommentStatus.VISIBLE,
@@ -442,7 +425,6 @@ export async function processEditCommentMessage(
   message: IEditComment
 ): Promise<Comment> {
   const { commentId, newBody } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load comment
   const comment = await getComment(store, commentId, [
@@ -477,7 +459,6 @@ export async function processEditCommentMessage(
   })
   await store.save<CommentTextUpdatedEvent>(commentTextUpdatedEvent)
 
-  comment.updatedAt = eventTime
   comment.text = newBody
   comment.isEdited = true
   comment.edits?.push(commentTextUpdatedEvent)
@@ -493,7 +474,6 @@ export async function processDeleteCommentMessage(
   message: IDeleteComment
 ): Promise<Comment> {
   const { commentId } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load comment
   const comment = await getComment(store, commentId, [
@@ -519,18 +499,15 @@ export async function processDeleteCommentMessage(
 
   // decrement video's comment count
   --video.commentsCount
-  video.updatedAt = eventTime
   await store.save<Video>(video)
 
   // decrement parent comment's replies count
   if (parentComment) {
     --parentComment.repliesCount
     --parentComment.reactionsAndRepliesCount
-    parentComment.updatedAt = eventTime
     await store.save<Comment>(parentComment)
   }
 
-  comment.updatedAt = eventTime
   comment.text = ''
   comment.status = CommentStatus.DELETED
 
@@ -559,7 +536,6 @@ export async function processModerateCommentMessage(
   message: IModerateComment
 ): Promise<Comment> {
   const { commentId, rationale } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load comment
   const comment = await getComment(store, commentId, ['parentComment', 'video', 'video.channel'])
@@ -573,7 +549,6 @@ export async function processModerateCommentMessage(
 
   // decrement video's comment count
   --video.commentsCount
-  video.updatedAt = eventTime
 
   // update video
   await store.save<Video>(video)
@@ -582,13 +557,11 @@ export async function processModerateCommentMessage(
   if (parentComment) {
     --parentComment.repliesCount
     --parentComment.reactionsAndRepliesCount
-    parentComment.updatedAt = eventTime
 
     // update parent comment
     await store.save<Comment>(parentComment)
   }
 
-  comment.updatedAt = eventTime
   comment.text = ''
   comment.status = CommentStatus.MODERATED
 
@@ -619,7 +592,6 @@ export async function processPinOrUnpinCommentMessage(
   message: IPinOrUnpinComment
 ): Promise<void> {
   const { commentId, option } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load comment
   const comment = await getComment(store, commentId, ['video', 'video.channel'])
@@ -632,7 +604,6 @@ export async function processPinOrUnpinCommentMessage(
   ensureCommentIsNotDeleted(comment)
 
   video.pinnedComment = option === PinOrUnpinComment.Option.PIN ? comment : undefined
-  video.updatedAt = eventTime
   await store.save<Video>(video)
 
   // common event processing
@@ -655,7 +626,6 @@ export async function processBanOrUnbanMemberFromChannelMessage(
   message: IBanOrUnbanMemberFromChannel
 ): Promise<void> {
   const { memberId, option } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load channel
   const channel = await getChannel(store, channelId.toString(), ['bannedMembers'])
@@ -673,7 +643,6 @@ export async function processBanOrUnbanMemberFromChannelMessage(
     channel.bannedMembers = updatedBannedMemberList
   }
 
-  channel.updatedAt = eventTime
   await store.save<Channel>(channel)
 
   // common event processing
@@ -695,7 +664,6 @@ export async function processVideoReactionsPreferenceMessage(
   message: IVideoReactionsPreference
 ): Promise<void> {
   const { videoId, option } = message
-  const eventTime = new Date(event.blockTimestamp)
 
   // load video
   const video = await getVideo(store, videoId.toString(), ['channel'])
@@ -704,7 +672,6 @@ export async function processVideoReactionsPreferenceMessage(
   ensureChannelOwnsTheVideo(video, channelId.toString(), 'Cannot change video reactions preference')
 
   video.isCommentSectionEnabled = option === VideoReactionsPreference.Option.ENABLE
-  video.updatedAt = eventTime
   await store.save<Video>(video)
 
   // common event processing

@@ -225,11 +225,9 @@ async function processVideoMediaEncoding(
     existingVideoMediaEncoding ||
     new VideoMediaEncoding({
       id: deterministicEntityId(event),
-      createdAt: new Date(event.blockTimestamp),
     })
   // integrate media encoding-related data
   integrateMeta(encoding, metadata, ['codecName', 'container', 'mimeMediaType'])
-  encoding.updatedAt = new Date(event.blockTimestamp)
   await store.save<VideoMediaEncoding>(encoding)
 
   return encoding
@@ -247,7 +245,6 @@ async function processVideoMediaMetadata(
     new VideoMediaMetadata({
       id: deterministicEntityId(event),
       createdInBlock: event.blockNumber,
-      createdAt: new Date(event.blockTimestamp),
     })
 
   // integrate media-related data
@@ -257,7 +254,6 @@ async function processVideoMediaMetadata(
     pixelHeight: metadata.mediaPixelHeight,
   }
   integrateMeta(videoMedia, mediaMetadata, ['pixelWidth', 'pixelHeight', 'size'])
-  videoMedia.updatedAt = new Date(event.blockTimestamp)
   videoMedia.encoding = await processVideoMediaEncoding(ctx, videoMedia.encoding, metadata.mediaType || {})
   await store.save<VideoMediaMetadata>(videoMedia)
 
@@ -462,8 +458,6 @@ async function processLanguage(
     id: deterministicEntityId(event),
     iso: languageIso,
     createdInBlock: event.blockNumber,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
   })
 
   await store.save<Language>(newLanguage)
@@ -491,9 +485,7 @@ async function updateVideoLicense(
       previousLicense ||
       new License({
         id: deterministicEntityId(event),
-        createdAt: new Date(event.blockTimestamp),
       })
-    license.updatedAt = new Date(event.blockTimestamp)
     integrateMeta(license, licenseMetadata, ['attribution', 'code', 'customText'])
     await store.save<License>(license)
   }
@@ -502,7 +494,6 @@ async function updateVideoLicense(
   // FIXME: Note that we MUST to provide "null" here in order to unset a relation,
   // See: https://github.com/Joystream/hydra/issues/435
   video.license = license as License | undefined
-  video.updatedAt = new Date(ctx.event.blockTimestamp)
   await store.save<Video>(video)
 
   // Safely remove previous license if needed
