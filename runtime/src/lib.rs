@@ -202,12 +202,10 @@ pub enum CallFilter {}
 )))]
 fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool {
     match call {
-        Call::System(method) => {
-            // All methods except the remark call
-            match method {
-                frame_system::Call::<Runtime>::remark { .. } => false,
-                _ => true,
-            }
+        Call::System(method) =>
+        // All methods except the remark call
+        {
+            !matches!(method, frame_system::Call::<Runtime>::remark { .. })
         }
         // confirmed that Utility.batch dispatch does not bypass filter.
         Call::Utility(_) => true,
