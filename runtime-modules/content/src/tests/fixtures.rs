@@ -493,7 +493,7 @@ impl UpdateChannelFixture {
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-                channel_bag_witness: channel_bag_witness(ChannelId::one()),
+                channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
             },
         }
     }
@@ -521,7 +521,7 @@ impl UpdateChannelFixture {
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 channel_bag_witness,

@@ -170,7 +170,7 @@ benchmarks! {
             assets_to_remove,
             collaborators,
             expected_data_object_state_bloat_bond,
-            channel_bag_witness: channel_bag_witness::<T>(channel_id)?,
+            channel_bag_witness: Some(channel_bag_witness::<T>(channel_id)?),
         };
 
         let origin = RawOrigin::Signed(curator_account_id);
@@ -201,8 +201,7 @@ benchmarks! {
             (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
             (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let d in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
 
         let (channel_id,
             group_id,
@@ -233,13 +232,15 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
+        let new_meta = Some(vec![1u8].repeat(d as usize));
+
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: None,
-            new_meta: None,
+            new_meta,
             assets_to_remove: BTreeSet::new(),
             collaborators,
             expected_data_object_state_bloat_bond,
-            channel_bag_witness: channel_bag_witness::<T>(channel_id)?,
+            channel_bag_witness: Some(channel_bag_witness::<T>(channel_id)?),
         };
 
         let origin = RawOrigin::Signed(curator_account_id);
@@ -259,7 +260,7 @@ benchmarks! {
         );
     }
 
-    channel_delete_with_assets {
+    delete_channel {
 
         let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
@@ -284,42 +285,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
-    }: delete_channel(origin, actor, channel_id, channel_bag_witness, a.into())
-    verify {
-
-        assert_last_event::<T>(
-            Event::<T>::ChannelDeleted(
-                actor,
-                channel_id
-            ).into()
-        );
-    }
-
-    channel_delete_without_assets {
-
-
-        let a in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
-
-        let b in
-            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
-
-        let max_obj_size: u64 = T::MaxDataObjectSize::get();
-
-        let (
-            channel_id,
-            group_id,
-            lead_account_id,
-            curator_id,
-            curator_account_id
-        ) =
-        setup_worst_case_scenario_curator_channel::<T>(0, a, b,).unwrap();
-
-        let origin = RawOrigin::Signed(curator_account_id);
-        let actor = ContentActor::Curator(group_id, curator_id);
-        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
-    }: delete_channel(origin, actor, channel_id, channel_bag_witness, 0)
+    }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
     verify {
 
         assert_last_event::<T>(
@@ -358,16 +324,9 @@ pub mod tests {
     }
 
     #[test]
-    fn channel_delete_with_assets() {
+    fn delete_channel() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_channel_delete_with_assets());
-        });
-    }
-
-    #[test]
-    fn channel_delete_without_assets() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_channel_delete_without_assets());
+            assert_ok!(Content::test_benchmark_delete_channel());
         });
     }
 }

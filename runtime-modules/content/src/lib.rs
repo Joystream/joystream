@@ -586,9 +586,6 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            // verify channel bag witness
-            Self::verify_channel_bag_witness(channel_id, &params.channel_bag_witness)?;
-
             channel.ensure_has_no_active_transfer::<T>()?;
 
             // permissions check
@@ -605,17 +602,6 @@ decl_module! {
                 Self::validate_member_set(&new_collabs.keys().cloned().collect())?;
             }
 
-            Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
-
-            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
-
-            let updated_assets_set = Self::create_updated_channel_assets_set(
-                &channel.data_objects,
-                &new_data_object_ids,
-                &params.assets_to_remove
-            )?;
-
             let new_collabs: Option<ChannelCollaboratorsMap<T>> = params
                 .collaborators
                 .clone()
@@ -624,21 +610,48 @@ decl_module! {
                     .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))
                 ).transpose()?;
 
+            let (upload_parameters, new_data_object_ids) =
+            if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
+                // verify channel bag witness
+                match params.channel_bag_witness.as_ref() {
+                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                    None => Err(Error::<T>::MissingChannelBagWitness.into())
+                }?;
+
+                Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
+
+                let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+                let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+
+                let upload_parameters = UploadParameters::<T> {
+                    bag_id: Self::bag_id_for_channel(&channel_id),
+                    object_creation_list: assets_to_upload.object_creation_list,
+                    state_bloat_bond_source_account_id: sender,
+                    expected_data_size_fee: assets_to_upload.expected_data_size_fee,
+                    expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond};
+
+                (Some(upload_parameters), new_data_object_ids)
+            }
+            else{
+                (None, BTreeSet::new())
+            };
+
+            let updated_assets_set = Self::create_updated_channel_assets_set(
+                &channel.data_objects,
+                &new_data_object_ids,
+                &params.assets_to_remove
+            )?;
+
             //
             // == MUTATION SAFE ==
             //
 
-            let upload_parameters = UploadParameters::<T> {
-                bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: assets_to_upload.object_creation_list,
-                state_bloat_bond_source_account_id: sender,
-                expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond            };
-
-            Storage::<T>::upload_and_delete_data_objects(
-                upload_parameters,
-                params.assets_to_remove.clone(),
-            )?;
+            if let Some(upload_parameters) = upload_parameters {
+                Storage::<T>::upload_and_delete_data_objects(
+                    upload_parameters,
+                    params.assets_to_remove.clone(),
+                )?;
+            }
 
             // Update the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
@@ -3787,10 +3800,10 @@ impl<T: Config> Module<T> {
             let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
 
             //channel_bag_witness storage_buckets_num
-            let e = params.channel_bag_witness.storage_buckets_num;
-
             //channel_bag_witness distribution_buckets_num
-            let f = params.channel_bag_witness.distribution_buckets_num;
+            let (e, f) = params.channel_bag_witness.as_ref().map_or((0, 0), |v| {
+                (v.storage_buckets_num, v.distribution_buckets_num)
+            });
 
             WeightInfoContent::<T>::channel_update_with_assets(a, b, c, d, e, f)
         } else {
@@ -3798,12 +3811,15 @@ impl<T: Config> Module<T> {
             let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
 
             //channel_bag_witness storage_buckets_num
-            let b = params.channel_bag_witness.storage_buckets_num;
-
             //channel_bag_witness distribution_buckets_num
-            let c = params.channel_bag_witness.distribution_buckets_num;
+            let (b, c) = params.channel_bag_witness.as_ref().map_or((0, 0), |v| {
+                (v.storage_buckets_num, v.distribution_buckets_num)
+            });
 
-            WeightInfoContent::<T>::channel_update_without_assets(a, b, c)
+            //new metadata
+            let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+            WeightInfoContent::<T>::channel_update_without_assets(a, b, c, d)
         }
     }
 
@@ -3812,28 +3828,16 @@ impl<T: Config> Module<T> {
         channel_bag_witness: &ChannelBagWitness,
         num_objects_to_delete: &u64,
     ) -> Weight {
-        let assets_touched = *num_objects_to_delete > 0;
+        //num_objects_to_delete
+        let a = (*num_objects_to_delete) as u32;
 
-        if assets_touched {
-            //num_objects_to_delete
-            let a = (*num_objects_to_delete) as u32;
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
 
-            //channel_bag_witness storage_buckets_num
-            let b = (*channel_bag_witness).storage_buckets_num;
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
 
-            //channel_bag_witness distribution_buckets_num
-            let c = (*channel_bag_witness).distribution_buckets_num;
-
-            WeightInfoContent::<T>::channel_delete_with_assets(a, b, c)
-        } else {
-            //channel_bag_witness storage_buckets_num
-            let a = (*channel_bag_witness).storage_buckets_num;
-
-            //channel_bag_witness distribution_buckets_num
-            let b = (*channel_bag_witness).distribution_buckets_num;
-
-            WeightInfoContent::<T>::channel_delete_without_assets(a, b)
-        }
+        WeightInfoContent::<T>::delete_channel(a, b, c)
     }
 }
 

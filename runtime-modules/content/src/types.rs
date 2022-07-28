@@ -545,7 +545,7 @@ pub struct ChannelUpdateParametersRecord<
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
     /// Witness/commitment data related to channel bag (for weight calculation purposes)
-    pub channel_bag_witness: ChannelBagWitness,
+    pub channel_bag_witness: Option<ChannelBagWitness>,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
