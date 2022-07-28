@@ -5,9 +5,9 @@ mod benchmarking;
 use crate::permissions::*;
 use crate::types::{
     ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-    InitTransferParametersOf, StorageAssets,
+    InitTransferParametersOf, PullPayment, StorageAssets,
 };
-use crate::{Config, Module as Pallet};
+use crate::{BalanceOf, Config, Module as Pallet};
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
@@ -18,8 +18,8 @@ use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_arithmetic::traits::One;
-use sp_runtime::DispatchError;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::traits::Hash;
+use sp_runtime::{DispatchError, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
@@ -71,6 +71,8 @@ pub const MAX_CURATOR_IDS: usize = 100;
 
 pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
     gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
+
+pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
 const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[1];
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
@@ -844,4 +846,19 @@ pub fn all_channel_pausable_features_except(
     .filter(|&&x| x != feature)
     .map(|&x| x)
     .collect::<BTreeSet<_>>()
+}
+
+pub fn create_pull_payments_with_reward<T: Config>(
+    payments_number: u32,
+    cumulative_reward_earned: BalanceOf<T>,
+) -> Vec<PullPayment<T>> {
+    let mut payments = Vec::new();
+    for i in 1..payments_number {
+        payments.push(PullPayment::<T> {
+            channel_id: (i as u64).into(),
+            cumulative_reward_earned,
+            reason: T::Hashing::hash_of(&b"reason".to_vec()),
+        });
+    }
+    payments
 }

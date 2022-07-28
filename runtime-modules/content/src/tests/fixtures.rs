@@ -1909,7 +1909,7 @@ impl ClaimChannelRewardFixture {
         let proof = if self.payments.is_empty() {
             vec![]
         } else {
-            build_merkle_path_helper::<Test,_>(&self.payments, DEFAULT_PROOF_INDEX)
+            build_merkle_path_helper::<Test, _>(&self.payments, DEFAULT_PROOF_INDEX)
         };
 
         let actual_result = Content::claim_channel_reward(origin, self.actor, proof, self.item);
@@ -4886,7 +4886,7 @@ pub fn generate_merkle_root_helper<T: Config, E: Encode>(collection: &[E]) -> Ve
     out
 }
 
-fn build_merkle_path_helper<T: Config, E: Encode + Clone>(
+pub(crate) fn build_merkle_path_helper<T: Config, E: Encode + Clone>(
     collection: &[E],
     idx: usize,
 ) -> Vec<ProofElement<T>> {
@@ -4922,7 +4922,9 @@ pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
 }
 
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
-    let commit = generate_merkle_root_helper::<Test, _>(payments).pop().unwrap();
+    let commit = generate_merkle_root_helper::<Test, _>(payments)
+        .pop()
+        .unwrap();
     UpdateChannelPayoutsFixture::default()
         .with_commitment(Some(commit))
         .call_and_assert(Ok(()));

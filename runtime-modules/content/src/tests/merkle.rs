@@ -1057,7 +1057,9 @@ fn successful_channel_payouts_update() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         let payments = create_some_pull_payments_helper();
-        let merkle_root = generate_merkle_root_helper::<Test, _>(&payments).pop().unwrap();
+        let merkle_root = generate_merkle_root_helper::<Test, _>(&payments)
+            .pop()
+            .unwrap();
         let payload_params = ChannelPayoutsPayloadParameters::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond:
