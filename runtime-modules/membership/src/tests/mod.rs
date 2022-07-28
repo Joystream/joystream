@@ -59,14 +59,14 @@ fn gift_membership_succeeds() {
             params.credit_root_account
                 - params
                     .apply_root_account_invitation_lock
-                    .map_or(Zero::zero(), |b| b)
+                    .unwrap_or(Zero::zero())
         );
         assert_eq!(
             Balances::usable_balance(profile.controller_account),
             params.credit_controller_account
                 - params
                     .apply_controller_account_invitation_lock
-                    .map_or(Zero::zero(), |b| b)
+                    .unwrap_or(Zero::zero())
         );
 
         EventFixture::assert_last_crate_event(Event::<Test>::MembershipGifted(

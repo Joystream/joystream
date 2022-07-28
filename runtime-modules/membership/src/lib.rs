@@ -826,23 +826,18 @@ decl_module! {
 
             // Check that gifter has sufficient funds
             let membership_fee = Self::membership_price();
-            let gifter_free_balance = balances::Pallet::<T>::usable_balance(&gifter);
+            let gifter_usable_balance = balances::Pallet::<T>::usable_balance(&gifter);
             let total_credit = params
                 .credit_controller_account
-                .saturating_add(params.credit_root_account)
-                .saturating_add(membership_fee);
+                .saturating_add(params.credit_root_account);
 
             ensure!(
-                balances::Pallet::<T>::can_slash(&gifter, membership_fee),
+                balances::Pallet::<T>::can_slash(&gifter, membership_fee.saturating_add(total_credit)),
                 Error::<T>::InsufficientBalanceToGift
             );
 
             ensure!(
-                gifter_free_balance >= total_credit,
-                Error::<T>::InsufficientBalanceToGift
-            );
-            ensure!(
-                balances::Pallet::<T>::can_slash(&gifter, membership_fee),
+                gifter_usable_balance >= total_credit,
                 Error::<T>::InsufficientBalanceToGift
             );
 
@@ -888,7 +883,7 @@ decl_module! {
                 &gifter,
                 &params.controller_account,
                 params.credit_controller_account,
-                ExistenceRequirement::AllowDeath
+                ExistenceRequirement::KeepAlive
             )?;
 
             // Transfer funds to root account
@@ -896,7 +891,7 @@ decl_module! {
                 &gifter,
                 &params.root_account,
                 params.credit_root_account,
-                ExistenceRequirement::AllowDeath
+                ExistenceRequirement::KeepAlive
             )?;
 
             // slash fee, balance_not_slashed should be zero
@@ -930,11 +925,11 @@ decl_module! {
                     );
                 };
             } else {
-                let locked_balance: BalanceOf<T> = params.apply_controller_account_invitation_lock.map_or(Zero::zero(), |b| b)
-                    .saturating_add(params.apply_root_account_invitation_lock.map_or(Zero::zero(), |b| b))
+                let locked_balance: BalanceOf<T> = params.apply_controller_account_invitation_lock.unwrap_or_else(Zero::zero())
+                    .saturating_add(params.apply_root_account_invitation_lock.unwrap_or_else(Zero::zero()))
                     .saturated_into();
 
-                if locked_balance != Zero::zero() {
+                if !locked_balance.is_zero() {
                     T::InvitedMemberStakingHandler::lock_with_reasons(
                         &params.root_account,
                         locked_balance,
