@@ -1909,7 +1909,7 @@ impl ClaimChannelRewardFixture {
         let proof = if self.payments.is_empty() {
             vec![]
         } else {
-            build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
+            build_merkle_path_helper::<Test,_>(&self.payments, DEFAULT_PROOF_INDEX)
         };
 
         let actual_result = Content::claim_channel_reward(origin, self.actor, proof, self.item);
@@ -2125,7 +2125,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let proof = if self.payments.is_empty() {
             vec![]
         } else {
-            build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
+            build_merkle_path_helper::<Test, _>(&self.payments, DEFAULT_PROOF_INDEX)
         };
 
         let actual_result =
@@ -4847,7 +4847,7 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     path
 }
 
-pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
+pub fn generate_merkle_root_helper<T: Config, E: Encode>(collection: &[E]) -> Vec<T::Hash> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -4856,7 +4856,7 @@ pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutpu
     assert!(!collection.is_empty());
     let mut out = Vec::new();
     for e in collection.iter() {
-        out.push(Hashing::hash(&e.encode()));
+        out.push(T::Hashing::hash(&e.encode()));
     }
 
     let mut start: usize = 0;
@@ -4869,12 +4869,12 @@ pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutpu
     while max_len != 0 {
         last_len = out.len();
         for i in 0..max_len {
-            out.push(Hashing::hash(
+            out.push(T::Hashing::hash(
                 &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
             ));
         }
         if rem == 1 {
-            out.push(Hashing::hash(
+            out.push(T::Hashing::hash(
                 &[out[last_len - 1], out[last_len - 1]].encode(),
             ));
         }
@@ -4886,16 +4886,16 @@ pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutpu
     out
 }
 
-fn build_merkle_path_helper<E: Encode + Clone>(
+fn build_merkle_path_helper<T: Config, E: Encode + Clone>(
     collection: &[E],
     idx: usize,
-) -> Vec<ProofElement<Test>> {
-    let merkle_tree = generate_merkle_root_helper(collection);
+) -> Vec<ProofElement<T>> {
+    let merkle_tree = generate_merkle_root_helper::<T, _>(collection);
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = index_path_helper(collection.len(), idx + 1);
     index_path
         .iter()
-        .map(|idx_item| ProofElement::<Test> {
+        .map(|idx_item| ProofElement::<T> {
             hash: merkle_tree[idx_item.index - 1],
             side: idx_item.side,
         })
@@ -4922,7 +4922,7 @@ pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
 }
 
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
-    let commit = generate_merkle_root_helper(payments).pop().unwrap();
+    let commit = generate_merkle_root_helper::<Test, _>(payments).pop().unwrap();
     UpdateChannelPayoutsFixture::default()
         .with_commitment(Some(commit))
         .call_and_assert(Ok(()));
