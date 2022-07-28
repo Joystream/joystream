@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use std::iter::FromIterator;
 
 const AUCTION_DURATION: u64 = 10;
@@ -54,7 +51,7 @@ fn start_open_auction() {
         // Last event checked
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::OpenAuctionStarted(
+            MetaEvent::Content(RawEvent::OpenAuctionStarted(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 auction_params,
@@ -79,7 +76,7 @@ fn start_nft_auction_video_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -106,7 +103,7 @@ fn start_nft_auction_not_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -141,7 +138,7 @@ fn start_nft_auction_auth_failed() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -176,7 +173,7 @@ fn start_nft_auction_not_authorized() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -220,7 +217,7 @@ fn start_nft_auction_transactional_status_is_not_idle() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -261,7 +258,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -283,7 +280,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -306,7 +303,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -329,7 +326,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -354,7 +351,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -379,7 +376,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -404,7 +401,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -453,7 +450,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -502,7 +499,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -548,7 +545,7 @@ fn start_eng_auction_fails_with_invalid_forward_starting() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -571,13 +568,57 @@ fn start_eng_auction_fails_with_invalid_forward_starting() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
         assert_err!(
             start_nft_auction_result,
             Error::<Test>::StartsAtLowerBoundExceeded,
+        );
+    })
+}
+
+#[test]
+fn start_open_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::start_open_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                OpenAuctionParams::<Test>::default(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn start_english_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::start_english_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                EnglishAuctionParams::<Test>::default(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

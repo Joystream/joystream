@@ -1,4 +1,4 @@
-type PlaylistCreatedEvent implements Event @entity {
+type VideoReactedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -18,14 +18,20 @@ type PlaylistCreatedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Created playlist"
-  playlist: Playlist!
+  "The video being reacted to"
+  video: Video!
 
-  "Content actor that created the playlist."
-  contentActor: ContentActor!
+  "Video channel"
+  videoChannel: Channel!
+
+  "The reaction result"
+  reactionResult: VideoReactionOptions!
+
+  "The member reacting to the video"
+  reactingMember: Membership!
 }
 
-type PlaylistUpdatedEvent implements Event @entity {
+type CommentReactedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -45,14 +51,23 @@ type PlaylistUpdatedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Updated playlist"
-  playlist: Playlist!
+  "The comment being reacted to"
+  comment: Comment!
 
-  "Content actor that updated the playlist."
-  contentActor: ContentActor!
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
+  "The reaction id"
+  reactionResult: Int!
+
+  "The member reacting to the comment"
+  reactingMember: Membership!
 }
 
-type PlaylistDeletedEvent implements Event @entity {
+type CommentCreatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -72,9 +87,408 @@ type PlaylistDeletedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Deleted playlist"
-  deletedPlaylistId: String!
+  "The comment that was added"
+  comment: Comment!
 
-  "Content actor that deleted the playlist."
-  contentActor: ContentActor!
+  "Parent comment author (if any)"
+  parentCommentAuthor: Membership
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
+  "Comment's original text"
+  text: String!
+}
+
+type CommentTextUpdatedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The comment being updated"
+  comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
+  "New comment text"
+  newText: String!
+
+  # Only author can edit the comment, so no actor context required
+}
+
+type CommentDeletedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Comment deleted"
+  comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
+  # No actor context required, since commenter would delete the comment
+}
+
+type CommentModeratedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Comment deleted"
+  comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
+  "The actor responsible for the removal of comment"
+  actor: ContentActor!
+
+  "Comment deletion rationale"
+  rationale: String!
+}
+
+# This event entity is both pinning and unpinning the comment
+type CommentPinnedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The comment being pinned"
+  comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
+  "The action performed. true if comment is pinned, otherwise false."
+  action: Boolean!
+
+  # Only channel owner can pin the comment, so no actor context required
+}
+
+# This event is used for both banning & unbanning the member
+type MemberBannedFromChannelEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The chanel user is blocked from"
+  channel: Channel!
+
+  "The member being banned from channel"
+  member: Membership!
+
+  "The action performed. true if member is banned, false if member is unbanned"
+  action: Boolean!
+
+  # Only channel owner can pin the comment, so no actor context required
+}
+
+type VideoReactionsPreferenceEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The video on which the comment section status changed"
+  video: Video!
+
+  "Is comment section enabled (true if enabled)"
+  reactionsStatus: Boolean!
+
+  # Only channel owner can enable/disable the comment section, so no actor context required
+}
+
+type VideoDeletedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the video."
+  actor: ContentActor!
+
+  "ID  of the deleted video"
+  videoId: Int!
+}
+
+type VideoDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the video."
+  actor: ContentActor!
+
+  "ID  of the deleted video"
+  videoId: Int!
+
+  "Why the video was deleted"
+  rationale: String!
+}
+
+type ChannelDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the video."
+  actor: ContentActor!
+
+  "ID  of the deleted channel"
+  channelId: Int!
+
+  "Why the video was deleted"
+  rationale: String!
+}
+
+type ChannelAssetsDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the channel assets."
+  actor: ContentActor!
+
+  "Channel whose assets are deleted"
+  channelId: Int!
+
+  "ID  of the deleted video"
+  assetIds: [Int!]
+
+  "why the channel assets were deleted"
+  rationale: String!
+}
+
+type VideoAssetsDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the channel assets."
+  actor: ContentActor!
+
+  "Video whose assets are being deleted"
+  videoId: Int!
+
+  "Does deleted video assets belongs to NFT"
+  are_nft_assets: Boolean
+
+  "ID  of the deleted video"
+  assetIds: [Int!]
+
+  "why the channel assets were deleted"
+  rationale: String!
+}
+
+type VideoVisibilitySetByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the channel assets."
+  actor: ContentActor!
+
+  "Video whose visiblity/censorship status is changed"
+  videoId: Int!
+
+  "Is video being censored/hidden (yes if true)"
+  isHidden: Boolean!
+
+  "Why video's visibality status was set"
+  rationale: String!
 }

@@ -1,7 +1,8 @@
 import { scenario } from '../Scenario'
-import assertValues from '../misc/assertPostUpgradeConsts'
+import postRuntimeUpdateChecks from '../misc/postRuntimUpdateChecks'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Post Runtime Upgrade', async ({ job }) => {
   // Verify constants
-  job('Verify Values', assertValues)
+  job('Run Checks', postRuntimeUpdateChecks)
 })

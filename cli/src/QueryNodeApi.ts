@@ -46,14 +46,18 @@ import {
   UpcomingWorkingGroupOpeningsByGroupQuery,
   UpcomingWorkingGroupOpeningsByGroupQueryVariables,
   UpcomingWorkingGroupOpeningsByGroup,
-  GetDataObjectsByPlaylistIdQuery,
-  GetDataObjectsByPlaylistIdQueryVariables,
-  GetDataObjectsByPlaylistId,
+  GetStorageBucketsQuery,
+  GetStorageBucketsQueryVariables,
+  GetStorageBuckets,
+  StorageNodeInfoFragment,
+  DistributionBucketFamilyFieldsFragment,
+  GetDistributionFamiliesAdndBucketsQuery,
+  GetDistributionFamiliesAdndBucketsQueryVariables,
+  GetDistributionFamiliesAdndBuckets,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
-import { MemberId } from '@joystream/types/common'
-import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { MemberId, ApplicationId, OpeningId } from '@joystream/types/primitives'
 import { apiModuleByGroup } from './Api'
 
 export default class QueryNodeApi {
@@ -116,14 +120,6 @@ export default class QueryNodeApi {
     )
   }
 
-  async dataObjectsByPlaylistId(playlistId: string): Promise<DataObjectInfoFragment[]> {
-    return this.multipleEntitiesQuery<GetDataObjectsByPlaylistIdQuery, GetDataObjectsByPlaylistIdQueryVariables>(
-      GetDataObjectsByPlaylistId,
-      { playlistId },
-      'storageDataObjects'
-    )
-  }
-
   async dataObjectsByChannelId(channelId: string): Promise<DataObjectInfoFragment[]> {
     return this.multipleEntitiesQuery<GetDataObjectsByChannelIdQuery, GetDataObjectsByChannelIdQueryVariables>(
       GetDataObjectsByChannelId,
@@ -157,6 +153,21 @@ export default class QueryNodeApi {
       }
     }
     return validNodesInfo
+  }
+
+  async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
+    return this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      {},
+      'storageBuckets'
+    )
+  }
+
+  async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetDistributionFamiliesAdndBucketsQuery,
+      GetDistributionFamiliesAdndBucketsQueryVariables
+    >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
   }
 
   async membersByIds(ids: MemberId[] | string[]): Promise<MembershipFieldsFragment[]> {

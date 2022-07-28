@@ -17,10 +17,30 @@ query getStorageNodesInfoByBagId($bagId: ID) {
   }
 }
 
+query getStorageBuckets {
+  storageBuckets(where: { acceptingNewBags_eq: true }) {
+    ...StorageNodeInfo
+  }
+}
+
+fragment DistributionBucketFamilyFields on DistributionBucketFamily {
+  id
+  buckets {
+    id
+    bucketIndex
+  }
+}
+
+query getDistributionFamiliesAdndBuckets {
+  distributionBucketFamilies {
+    ...DistributionBucketFamilyFields
+  }
+}
+
 fragment DataObjectInfo on StorageDataObject {
   id
   size
-  deletionPrize
+  stateBloatBond
   type {
     __typename
     ... on DataObjectTypeVideoMedia {

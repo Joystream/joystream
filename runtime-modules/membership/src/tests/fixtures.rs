@@ -1,8 +1,12 @@
 use super::mock::*;
-use crate::{BuyMembershipParameters, InviteMembershipParameters};
+use crate::Event as MembershipEvent;
+use crate::{
+    BuyMembershipParameters, CreateFoundingMemberParameters, InviteMembershipParameters,
+    MembershipObject,
+};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::StorageMap;
+use frame_support::{assert_noop, assert_ok, StorageMap};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
 
@@ -21,12 +25,12 @@ pub fn run_to_block(n: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
-        let converted_event = TestEvent::membership_mod(expected_raw_event);
+        let converted_event = Event::Membership(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -39,7 +43,7 @@ impl EventFixture {
 
 pub fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     if <crate::MembershipById<Test>>::contains_key(member_id) {
-        Membership::membership(member_id)
+        Membership::membership(member_id).unwrap()
     } else {
         panic!("member profile not created");
     }
@@ -59,7 +63,7 @@ pub struct TestUserInfo {
 
 pub fn get_alice_info() -> TestUserInfo {
     let handle = b"alice".to_vec();
-    let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
+    let hashed = <Test as frame_system::Config>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
     let metadata = b"
@@ -80,7 +84,7 @@ pub fn get_alice_info() -> TestUserInfo {
 
 pub fn get_bob_info() -> TestUserInfo {
     let handle = b"bobby".to_vec();
-    let hashed = <Test as frame_system::Trait>::Hashing::hash(&handle);
+    let hashed = <Test as frame_system::Config>::Hashing::hash(&handle);
     let hash = hashed.as_ref().to_vec();
 
     let metadata = b"
@@ -199,11 +203,11 @@ impl Default for BuyMembershipFixture {
 impl BuyMembershipFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let params = BuyMembershipParameters {
-            root_account: self.root_account.clone(),
-            controller_account: self.controller_account.clone(),
+            root_account: self.root_account,
+            controller_account: self.controller_account,
             handle: self.handle.clone(),
             metadata: self.metadata.clone(),
-            referrer_id: self.referrer_id.clone(),
+            referrer_id: self.referrer_id,
         };
 
         let actual_result = Membership::buy_membership(self.origin.clone().into(), params);
@@ -361,9 +365,9 @@ impl Default for InviteMembershipFixture {
 impl InviteMembershipFixture {
     pub fn get_invite_membership_parameters(&self) -> InviteMembershipParameters<u64, u64> {
         InviteMembershipParameters {
-            inviting_member_id: self.member_id.clone(),
-            root_account: self.root_account.clone(),
-            controller_account: self.controller_account.clone(),
+            inviting_member_id: self.member_id,
+            root_account: self.root_account,
+            controller_account: self.controller_account,
             handle: self.handle.clone(),
             metadata: self.metadata.clone(),
         }
@@ -469,7 +473,10 @@ impl SetLeaderInvitationQuotaFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            assert_eq!(Membership::membership(ALICE_MEMBER_ID).invites, self.quota);
+            assert_eq!(
+                Membership::membership(ALICE_MEMBER_ID).unwrap().invites,
+                self.quota
+            );
         }
     }
 
@@ -574,7 +581,7 @@ impl Default for AddStakingAccountFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
             staking_account_id: ALICE_ACCOUNT_ID,
-            initial_balance: <Test as Trait>::CandidateStake::get(),
+            initial_balance: <Test as Config>::CandidateStake::get(),
         }
     }
 }
@@ -638,7 +645,7 @@ impl RemoveStakingAccountFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 Balances::usable_balance(&self.staking_account_id),
-                initial_balance + <Test as Trait>::CandidateStake::get()
+                initial_balance + <Test as Config>::CandidateStake::get()
             );
 
             assert!(!<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
@@ -693,5 +700,75 @@ impl ConfirmStakingAccountFixture {
 
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
+    }
+}
+
+pub struct CreateFoundingMemberFixture {
+    pub origin: RawOrigin<u64>,
+    pub params: CreateFoundingMemberParameters<u64>,
+}
+
+impl CreateFoundingMemberFixture {
+    pub fn default() -> Self {
+        let alice = get_alice_info();
+        Self {
+            origin: RawOrigin::Root,
+            params: CreateFoundingMemberParameters {
+                root_account: ALICE_ACCOUNT_ID,
+                controller_account: ALICE_ACCOUNT_ID,
+                handle: alice.handle.unwrap(),
+                metadata: alice.metadata,
+            },
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_handle(self, handle: Vec<u8>) -> Self {
+        Self {
+            params: CreateFoundingMemberParameters {
+                handle,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let expected_member_id = Membership::members_created();
+        let actual_result =
+            Membership::create_founding_member(self.origin.clone().into(), self.params.clone());
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+
+            let handle_hash: Vec<u8> =
+                <Test as frame_system::Config>::Hashing::hash(&self.params.handle.clone())
+                    .as_ref()
+                    .to_vec();
+            let profile = get_membership_by_id(expected_member_id);
+
+            assert_eq!(Membership::handles(handle_hash.clone()), expected_member_id);
+            assert_eq!(Membership::members_created(), expected_member_id + 1);
+            assert_eq!(
+                profile,
+                MembershipObject {
+                    handle_hash,
+                    root_account: self.params.root_account.clone(),
+                    controller_account: self.params.controller_account.clone(),
+                    verified: true,
+                    invites: Membership::initial_invitation_count()
+                }
+            );
+
+            EventFixture::assert_last_crate_event(MembershipEvent::<Test>::FoundingMemberCreated(
+                expected_member_id,
+                self.params.clone(),
+            ));
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
     }
 }

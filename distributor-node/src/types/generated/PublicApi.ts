@@ -28,6 +28,7 @@ export interface components {
     }
     'StatusResponse': {
       'id': string
+      'version': string
       'objectsInCache': number
       'storageLimit': number
       'storageUsed': number
@@ -43,7 +44,7 @@ export interface components {
         }
   }
   parameters: {
-    /** Data Object ID */
+    /** @description Data Object ID */
     'ObjectId': string
   }
   headers: {

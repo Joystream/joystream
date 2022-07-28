@@ -288,62 +288,6 @@ pub(crate) fn set_invitation_count_proposal() -> ProposalParameters<BlockNumber,
     }
 }
 
-// Proposal parameters for the 'Create Blog Post' proposal
-pub(crate) fn create_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 72000,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(25_000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Edit Blog Post' proposal
-pub(crate) fn edit_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 72000,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(25_000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Lock Blog Post' proposal
-pub(crate) fn lock_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 72000,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(25_000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Unlock Blog Post' proposal
-pub(crate) fn unlock_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 72000,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(25_000),
-        constitutionality: 1,
-    }
-}
-
 // Proposal parameters for the 'Veto Proposal' proposal
 pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
@@ -355,6 +299,34 @@ pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balanc
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 66,
         required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Update global NFT limit' proposal
+pub(crate) fn update_global_nft_limit_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72000,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(100_000),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Update Channel Payouts' proposal
+pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72000,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(100_000),
         constitutionality: 1,
     }
 }

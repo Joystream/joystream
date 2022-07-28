@@ -264,11 +264,7 @@ fn update_verification_status_fails_with_invalid_worker_id() {
         UpdateMembershipVerificationFixture::default()
             .with_member_id(next_member_id)
             .with_worker_id(invalid_worker_id)
-            .call_and_assert(Err(working_group::Error::<
-                Test,
-                MembershipWorkingGroupInstance,
-            >::WorkerDoesNotExist
-                .into()));
+            .call_and_assert(Err(DispatchError::Other("worker does not exist")));
     });
 }
 
@@ -395,8 +391,8 @@ fn transfer_invites_succeeds() {
 
         tranfer_invites_fixture.call_and_assert(Ok(()));
 
-        let alice = Membership::membership(ALICE_MEMBER_ID);
-        let bob = Membership::membership(bob_member_id);
+        let alice = Membership::membership(ALICE_MEMBER_ID).unwrap();
+        let bob = Membership::membership(bob_member_id).unwrap();
 
         assert_eq!(alice.invites, tranfer_invites_fixture.invites);
         assert_eq!(
@@ -501,11 +497,11 @@ fn invite_member_succeeds() {
         // controller account initially set to primary account
         assert_eq!(invitee_profile.controller_account, BOB_ACCOUNT_ID);
 
-        let initial_invitation_balance = <Test as Trait>::DefaultInitialInvitationBalance::get();
+        let initial_invitation_balance = <Test as Config>::DefaultInitialInvitationBalance::get();
         // Working group budget reduced.
         assert_eq!(
             WORKING_GROUP_BUDGET - initial_invitation_balance,
-            <Test as Trait>::WorkingGroup::get_budget()
+            <Test as Config>::WorkingGroup::get_budget()
         );
 
         // Invited member account filled.
@@ -568,7 +564,7 @@ fn invite_member_succeeds_with_additional_checks() {
         // Working group budget reduced.
         assert_eq!(
             WORKING_GROUP_BUDGET - initial_invitation_balance,
-            <Test as Trait>::WorkingGroup::get_budget()
+            <Test as Config>::WorkingGroup::get_budget()
         );
 
         // Invited member account filled.
@@ -600,7 +596,7 @@ fn invite_member_fails_with_existing_invitation_lock() {
 
         InviteMembershipFixture::default().call_and_assert(Ok(()));
 
-        <Test as Trait>::WorkingGroup::set_budget(initial_balance);
+        <Test as Config>::WorkingGroup::set_budget(initial_balance);
 
         InviteMembershipFixture::default()
             .with_handle(b"bob2".to_vec())
@@ -890,7 +886,7 @@ fn add_staking_account_candidate_fails_with_insufficient_balance() {
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         AddStakingAccountFixture::default()
-            .with_initial_balance(<Test as Trait>::CandidateStake::get() - 1)
+            .with_initial_balance(<Test as Config>::CandidateStake::get() - 1)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceToCoverStake.into()));
     });
 }
@@ -1067,7 +1063,7 @@ fn membership_origin_validator_succeeds() {
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         let account_id = ALICE_ACCOUNT_ID;
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         let validation_result =
             Membership::ensure_member_controller_account_origin(origin.into(), ALICE_MEMBER_ID);
@@ -1085,7 +1081,7 @@ fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id(
 
         let invalid_account_id = BOB_ACCOUNT_ID;
         let validation_result = Membership::ensure_member_controller_account_origin(
-            RawOrigin::Signed(invalid_account_id.into()).into(),
+            RawOrigin::Signed(invalid_account_id).into(),
             ALICE_MEMBER_ID,
         );
 
@@ -1167,5 +1163,45 @@ fn successful_member_remark() {
         );
 
         assert_eq!(validation_result, Ok(()),);
+    });
+}
+
+#[test]
+fn create_founding_member_succeeds() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        CreateFoundingMemberFixture::default().call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn create_founding_member_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        CreateFoundingMemberFixture::default()
+            .with_origin(RawOrigin::Signed(ALICE_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn create_founding_member_fails_with_empty_handle() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        CreateFoundingMemberFixture::default()
+            .with_handle(Vec::new())
+            .call_and_assert(Err(
+                Error::<Test>::HandleMustBeProvidedDuringRegistration.into()
+            ));
+    });
+}
+
+#[test]
+fn create_founding_member_fails_with_non_unique_handle() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        CreateFoundingMemberFixture::default().call_and_assert(Ok(()));
+        CreateFoundingMemberFixture::default()
+            .call_and_assert(Err(Error::<Test>::HandleAlreadyRegistered.into()));
     });
 }

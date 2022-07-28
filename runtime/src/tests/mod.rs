@@ -6,19 +6,17 @@ mod proposals_integration;
 
 mod locks;
 
-// Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
-// TODO: Restore after the Olympia release
-//mod fee_tests;
+mod fee_tests;
 
 use crate::primitives::MemberId;
 use crate::{BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
-use sp_runtime::{AccountId32, BuildStorage};
+use sp_runtime::{traits::One, AccountId32, BuildStorage};
 
 type Membership = membership::Module<Runtime>;
-type System = frame_system::Module<Runtime>;
+type System = frame_system::Pallet<Runtime>;
 type ProposalsEngine = proposals_engine::Module<Runtime>;
 type Council = council::Module<Runtime>;
 type Referendum = referendum::Module<Runtime, ReferendumInstance>;
@@ -40,11 +38,13 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
 
 // Simple unique account derived from member id
 pub(crate) fn account_from_member_id(member_id: MemberId) -> AccountId32 {
+    // Avoid AccountId Zero - cannot sign a transaction
+    let member_id: MemberId = member_id + MemberId::one();
     let b1: u8 = ((member_id >> 24) & 0xff) as u8;
     let b2: u8 = ((member_id >> 16) & 0xff) as u8;
     let b3: u8 = ((member_id >> 8) & 0xff) as u8;
     let b4: u8 = (member_id & 0xff) as u8;
-    let mut account: [u8; 32] = AccountId32::default().into();
+    let mut account: [u8; 32] = [0; 32];
     account[0] = b1;
     account[1] = b2;
     account[2] = b3;
@@ -69,9 +69,9 @@ pub(crate) fn create_new_members(count: u64) -> Vec<MemberId> {
 }
 
 pub(crate) fn setup_new_council(cycle_id: u64) {
-    let council_size = <Runtime as council::Trait>::CouncilSize::get();
-    let num_extra_candidates = <Runtime as council::Trait>::MinNumberOfExtraCandidates::get() + 1;
-    let councilor_stake: u128 = <Runtime as council::Trait>::MinCandidateStake::get().into();
+    let council_size = <Runtime as council::Config>::CouncilSize::get();
+    let num_extra_candidates = <Runtime as council::Config>::MinNumberOfExtraCandidates::get() + 1;
+    let councilor_stake: u128 = <Runtime as council::Config>::MinCandidateStake::get().into();
 
     // council members that will be elected
     let council_member_ids = create_new_members(council_size);
@@ -94,7 +94,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
         .unwrap();
     }
 
-    for member_id in extra_candidate_ids.clone() {
+    for member_id in extra_candidate_ids {
         let extra_councilor = account_from_member_id(member_id);
 
         increase_total_balance_issuance_using_account_id(
@@ -112,12 +112,12 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
     }
 
     let current_block = System::block_number();
-    run_to_block(current_block + <Runtime as council::Trait>::AnnouncingPeriodDuration::get());
+    run_to_block(current_block + <Runtime as council::Config>::AnnouncingPeriodDuration::get());
 
     let voter_stake: u128 =
-        <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get().into();
+        <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get().into();
 
-    for (i, member_id) in voter_ids.clone().iter().enumerate() {
+    for (i, member_id) in voter_ids.iter().enumerate() {
         let voter = account_from_member_id(*member_id);
         increase_total_balance_issuance_using_account_id(voter.clone(), voter_stake + 1);
 
@@ -139,7 +139,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
     let current_block = System::block_number();
     run_to_block(
         current_block
-            + <Runtime as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+            + <Runtime as referendum::Config<ReferendumInstance>>::VoteStageDuration::get(),
     );
 
     for (i, member_id) in voter_ids.iter().enumerate() {
@@ -147,7 +147,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
         Referendum::reveal_vote(
             RawOrigin::Signed(voter.clone()).into(),
             vec![0u8],
-            council_member_ids[i as usize].clone(),
+            council_member_ids[i as usize],
         )
         .unwrap();
     }
@@ -155,7 +155,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
     let current_block = System::block_number();
     run_to_block(
         current_block
-            + <Runtime as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+            + <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get(),
     );
 
     let council_members = council::Module::<Runtime>::council_members();
@@ -191,16 +191,16 @@ pub(crate) fn set_staking_account(
     staking_account_id: AccountId32,
     member_id: u64,
 ) {
-    let current_balance = pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id);
+    let current_balance = pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id);
 
-    let _ = pallet_balances::Module::<Runtime>::deposit_creating(
+    let _ = pallet_balances::Pallet::<Runtime>::deposit_creating(
         &staking_account_id,
-        <Runtime as membership::Trait>::CandidateStake::get(),
+        <Runtime as membership::Config>::CandidateStake::get(),
     );
 
     assert_eq!(
-        pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id),
-        current_balance + <Runtime as membership::Trait>::CandidateStake::get()
+        pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id),
+        current_balance + <Runtime as membership::Config>::CandidateStake::get()
     );
 
     membership::Module::<Runtime>::add_staking_account_candidate(
@@ -210,14 +210,14 @@ pub(crate) fn set_staking_account(
     .unwrap();
 
     assert_eq!(
-        pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id),
+        pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id),
         current_balance
     );
 
     membership::Module::<Runtime>::confirm_staking_account(
-        RawOrigin::Signed(controller_account_id.clone()).into(),
+        RawOrigin::Signed(controller_account_id).into(),
         member_id,
-        staking_account_id.clone(),
+        staking_account_id,
     )
     .unwrap();
 }
@@ -242,7 +242,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     account_id: AccountId32,
     balance: u128,
 ) {
-    type Balances = pallet_balances::Module<Runtime>;
+    type Balances = pallet_balances::Pallet<Runtime>;
     let initial_balance = Balances::total_issuance();
     {
         let _ = Balances::deposit_creating(&account_id, balance);
@@ -252,50 +252,52 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
 
 pub(crate) fn max_proposal_stake() -> u128 {
     let mut stakes = vec![];
-    stakes.push(<Runtime as proposals_codex::Trait>::SetMaxValidatorCountProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::RuntimeUpgradeProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::SignalProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::FundingRequestProposalParameters::get());
+    stakes
+        .push(<Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::RuntimeUpgradeProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SignalProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::FundingRequestProposalParameters::get());
     stakes.push(
-        <Runtime as proposals_codex::Trait>::CreateWorkingGroupLeadOpeningProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::CreateWorkingGroupLeadOpeningProposalParameters::get(
+        ),
     );
     stakes.push(
-        <Runtime as proposals_codex::Trait>::FillWorkingGroupLeadOpeningProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::FillWorkingGroupLeadOpeningProposalParameters::get(),
     );
     stakes.push(
-        <Runtime as proposals_codex::Trait>::UpdateWorkingGroupBudgetProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::UpdateWorkingGroupBudgetProposalParameters::get(),
     );
     stakes.push(
-        <Runtime as proposals_codex::Trait>::DecreaseWorkingGroupLeadStakeProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::DecreaseWorkingGroupLeadStakeProposalParameters::get(
+        ),
     );
     stakes
-        .push(<Runtime as proposals_codex::Trait>::SlashWorkingGroupLeadProposalParameters::get());
+        .push(<Runtime as proposals_codex::Config>::SlashWorkingGroupLeadProposalParameters::get());
     stakes.push(
-        <Runtime as proposals_codex::Trait>::SetWorkingGroupLeadRewardProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SetWorkingGroupLeadRewardProposalParameters::get(),
     );
     stakes.push(
-        <Runtime as proposals_codex::Trait>::TerminateWorkingGroupLeadProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::TerminateWorkingGroupLeadProposalParameters::get(),
     );
-    stakes.push(<Runtime as proposals_codex::Trait>::AmendConstitutionProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::AmendConstitutionProposalParameters::get());
     stakes.push(
-        <Runtime as proposals_codex::Trait>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::CancelWorkingGroupLeadOpeningProposalParameters::get(
+        ),
     );
-    stakes.push(<Runtime as proposals_codex::Trait>::SetMembershipPriceProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SetMembershipPriceProposalParameters::get());
     stakes.push(
-        <Runtime as proposals_codex::Trait>::SetCouncilBudgetIncrementProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SetCouncilBudgetIncrementProposalParameters::get(),
     );
-    stakes.push(<Runtime as proposals_codex::Trait>::SetCouncilorRewardProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SetCouncilorRewardProposalParameters::get());
     stakes.push(
-        <Runtime as proposals_codex::Trait>::SetInitialInvitationBalanceProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SetInitialInvitationBalanceProposalParameters::get(),
     );
-    stakes.push(<Runtime as proposals_codex::Trait>::SetInvitationCountProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::SetMembershipLeadInvitationQuotaProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::SetReferralCutProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::CreateBlogPostProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::EditBlogPostProoposalParamters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::LockBlogPostProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::UnlockBlogPostProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::VetoProposalProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SetInvitationCountProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SetMembershipLeadInvitationQuotaProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SetReferralCutProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::VetoProposalProposalParameters::get());
+    stakes
+        .push(<Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get());
 
     stakes
         .iter()

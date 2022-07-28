@@ -160,6 +160,7 @@ components:
       type: object
       required:
         - id
+        - version
         - objectsInCache
         - storageLimit
         - storageUsed
@@ -167,6 +168,8 @@ components:
         - downloadsInProgress
       properties:
         id:
+          type: string
+        version:
           type: string
         objectsInCache:
           type: integer

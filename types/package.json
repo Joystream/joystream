@@ -1,7 +1,7 @@
 {
   "name": "@joystream/types",
-  "version": "0.19.3",
-  "description": "Types for Joystream Substrate Runtime - Olympia release",
+  "version": "0.20.1",
+  "description": "Types for Joystream Substrate Runtime - Carthage release",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
@@ -9,25 +9,20 @@
     "prepack": "yarn clean && yarn build",
     "compile": "tsc --build tsconfig.json",
     "clean": "git clean -xdf -e node_modules",
-    "build": "yarn compile && yarn generate:all",
+    "build": "yarn generate:all && yarn compile",
     "lint": "eslint ./ --ext .ts",
     "format": "prettier ./ --write",
-    "check:augment": "tsc --build tsconfig-augment.json && tsc --build tsconfig-augment-codec.json",
-    "checks": "yarn build && madge --circular ./ && prettier ./ --check && yarn check:augment && yarn lint",
-    "generate:defs": "yarn ts-node node_modules/.bin/polkadot-types-from-defs --package . --input ./augment",
-    "generate:meta": "yarn ts-node node_modules/.bin/polkadot-types-from-chain --package . --endpoint ../chain-metadata.json --output ./augment --strict",
-    "generate:augment-codec": "yarn ts-node ./src/scripts/generateAugmentCodec.ts",
-    "generate:registry-json": "yarn ts-node ./src/scripts/generateRegistryJson.ts",
-    "generate:augment": "yarn generate:registry-json && yarn generate:defs && yarn generate:meta",
-    "generate:all": "yarn generate:augment && yarn generate:augment-codec",
-    "generate:json-schemas": "json2ts -i ./src/hiring/schemas/role.schema.json -o ./src/hiring/schemas/role.schema.typings.ts"
+    "checks": "yarn build && madge --circular ./ && prettier ./ --check && yarn lint",
+    "generate:interfaces": "yarn ts-node node_modules/.bin/polkadot-types-from-defs --package . --input ./src/augment --endpoint ../chain-metadata.json && rm ./src/augment/index.ts ./src/augment/types.ts",
+    "generate:meta": "yarn ts-node node_modules/.bin/polkadot-types-from-chain --package . --endpoint ../chain-metadata.json --output ./src/augment --strict",
+    "generate:all": "yarn generate:interfaces && yarn generate:meta"
   },
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/api": "5.9.1",
-    "@polkadot/types": "5.9.1",
-    "@polkadot/keyring": "7.3.1",
+    "@polkadot/api": "8.9.1",
+    "@polkadot/types": "8.9.1",
+    "@polkadot/keyring": "9.5.1",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "ajv": "^6.11.0",
@@ -35,11 +30,10 @@
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@polkadot/typegen": "5.9.1",
+    "@polkadot/typegen": "8.9.1",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3",
-    "madge": "^3.9.2",
-    "json-schema-to-typescript": "^10.1.4"
+    "madge": "^3.9.2"
   },
   "engines": {
     "node": ">=14.0.0",

@@ -35,7 +35,7 @@ fragment StorageDataObjectFields on StorageDataObject {
   type {
     ...DataObjectTypeFields
   }
-  deletionPrize
+  stateBloatBond
   unsetAt
   storageBagId
 }
@@ -49,7 +49,6 @@ fragment ChannelFields on Channel {
   language {
     iso
   }
-  rewardAccount
   isCensored
   ownerMember {
     id
@@ -66,6 +65,11 @@ fragment ChannelFields on Channel {
   coverPhoto {
     ...StorageDataObjectFields
   }
+
+  bannedMembers {
+    id
+  }
+  rewardAccount
 }
 
 fragment ChannelCategoryFields on ChannelCategory {
@@ -76,6 +80,63 @@ fragment ChannelCategoryFields on ChannelCategory {
 fragment VideoCategoryFields on VideoCategory {
   id
   activeVideosCounter
+}
+
+fragment VideoReactionFields on VideoReaction {
+  id
+  reaction
+  member {
+    id
+  }
+  video {
+    id
+  }
+}
+
+fragment CommentReactionFields on CommentReaction {
+  id
+  reactionId
+  member {
+    id
+  }
+  comment {
+    id
+  }
+}
+
+fragment CommentFields on Comment {
+  id
+  author {
+    id
+  }
+
+  video {
+    id
+  }
+
+  text
+  status
+  isEdited
+
+  reactions {
+    ...CommentReactionFields
+  }
+}
+
+fragment VideoFields on Video {
+  id
+  commentsCount
+  reactionsCount
+  comments {
+    ...CommentFields
+  }
+  reactions {
+    ...VideoReactionFields
+  }
+  isCommentSectionEnabled
+  pinnedComment {
+    id
+  }
 }
 
 fragment BidFields on Bid {
@@ -197,6 +258,12 @@ query getChannelById($id: ID!) {
   }
 }
 
+query getChannelsByIds($ids: [ID!]) {
+  channels(where: { id_in: $ids }) {
+    ...ChannelFields
+  }
+}
+
 query getChannelCategoryById($id: ID!) {
   channelCategoryByUniqueInput(where: { id: $id }) {
     ...ChannelCategoryFields
@@ -215,6 +282,18 @@ query getOwnedNftByVideoId($videoId: ID!) {
   }
 }
 
+query getCommentsByIds($ids: [ID!]) {
+  comments(where: { id_in: $ids }) {
+    ...CommentFields
+  }
+}
+
+query getVideosByIds($ids: [ID!]) {
+  videos(where: { id_in: $ids }) {
+    ...VideoFields
+  }
+}
+
 query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
   bids(where: { nft: { id_eq: $videoId }, bidder: { id_eq: $memberId } }) {
     ...BidFields
@@ -227,8 +306,8 @@ query getChannelNftCollectors {
   }
 }
 
-query getPlaylistById($id: ID!) {
-  playlistByUniqueInput(where: { id: $id }) {
-    ...PlaylistFields
+query getDataObjectsByVideoId($videoId: ID) {
+  storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...StorageDataObjectFields
   }
 }

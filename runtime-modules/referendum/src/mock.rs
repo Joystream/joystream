@@ -2,28 +2,28 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceOf, CastVote, Error, Instance, Module, OptionResult, RawEvent, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
-    WeightInfo,
+    BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
+    ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
+    Votes,
 };
 
 pub use crate::DefaultInstance;
 
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, LockIdentifier, OnFinalize, OnInitialize};
-use frame_support::weights::Weight;
-use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+use frame_support::traits::{
+    ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
 };
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+
+use frame_support::{parameter_types, traits::EnsureOneOf, StorageMap, StorageValue};
+use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use sp_core::H256;
 use sp_runtime::traits::One;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
+use sp_std::convert::{TryFrom, TryInto};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
@@ -31,22 +31,17 @@ use std::marker::PhantomData;
 
 use staking_handler::LockComparator;
 
-use crate::GenesisConfig;
+use crate as referendum;
 
 pub const USER_ADMIN: u64 = 1;
 pub const USER_REGULAR: u64 = 2;
 pub const USER_REGULAR_POWER_VOTES: u64 = 3;
 pub const USER_REGULAR_2: u64 = 4;
 pub const USER_REGULAR_3: u64 = 5;
+pub const USER_REGULAR_4: u64 = 6;
+pub const USER_REGULAR_5: u64 = 7;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
-
-/////////////////// Runtime and Instances //////////////////////////////////////
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Runtime;
-
-// module instances
 
 parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
@@ -62,7 +57,7 @@ thread_local! {
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
 
     // complete intermediate results
-    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait>::VotePower>::new());
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Config>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Config>::VotePower>::new());
 }
 
 impl LockComparator<u64> for Runtime {
@@ -74,14 +69,13 @@ impl LockComparator<u64> for Runtime {
     }
 }
 
-impl Trait for Runtime {
-    type Event = TestEvent;
+impl Config for Runtime {
+    type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -94,10 +88,10 @@ impl Trait for Runtime {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        account_id: &<Self as frame_system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Config>::AccountId,
         stake: &BalanceOf<Self>,
-    ) -> <Self as Trait<DefaultInstance>>::VotePower {
-        let stake: u64 = u64::from(*stake);
+    ) -> <Self as Config<DefaultInstance>>::VotePower {
+        let stake: u64 = *stake;
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
         }
@@ -144,95 +138,6 @@ impl Trait for Runtime {
     }
 }
 
-impl WeightInfo for () {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
-    }
-}
-
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
@@ -242,11 +147,11 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl membership::Trait for Runtime {
-    type Event = TestEvent;
+impl membership::Config for Runtime {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
-    type WeightInfo = Weights;
+    type WorkingGroup = Wg;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -255,14 +160,15 @@ impl membership::Trait for Runtime {
     type CandidateStake = CandidateStake;
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -270,17 +176,21 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
+        _origin: <Runtime as frame_system::Config>::Origin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
@@ -289,12 +199,18 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn get_worker_member_id(
+        _: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         true
     }
 
     fn is_worker_account_id(
-        _account_id: &<Runtime as frame_system::Trait>::AccountId,
+        _account_id: &<Runtime as frame_system::Config>::AccountId,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         true
@@ -323,14 +239,16 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
 }
 
-impl balances::Trait for Runtime {
+impl balances::Config for Runtime {
     type Balance = u64;
-    type Event = TestEvent;
     type DustRemoval = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = frame_system::Module<Self>;
+    type AccountStore = System;
+    type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
     type WeightInfo = ();
-    type MaxLocks = MaxLocks;
 }
 
 impl Runtime {
@@ -349,44 +267,35 @@ impl Runtime {
 
 /////////////////// Module implementation //////////////////////////////////////
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
 
-mod event_mod {
-    pub use super::DefaultInstance;
-    pub use crate::Event;
-}
-
-mod tmp {
-    pub use balances::Event;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        event_mod DefaultInstance <T>,
-        frame_system<T>,
-        tmp<T>,
-        membership_mod<T>,
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Pallet, Call, Storage, Event<T>},
+        Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Referendum: referendum::{Pallet, Call, Storage, Event<T>},
     }
-}
+);
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Runtime {
-    type BaseCallFilter = ();
+impl frame_system::Config for Runtime {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -394,21 +303,17 @@ impl frame_system::Trait for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
+    type Event = Event;
+    type BlockHashCount = BlockHashCount; // ConstU64<250>;
     type Version = ();
-    type PalletInfo = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -424,15 +329,15 @@ pub enum OriginType<AccountId> {
 
 /////////////////// Utility mocks //////////////////////////////////////////////s
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime, DefaultInstance> {
-    GenesisConfig::<Runtime, DefaultInstance> {
+pub fn default_genesis_config() -> referendum::GenesisConfig<Runtime, DefaultInstance> {
+    referendum::GenesisConfig::<Runtime, DefaultInstance> {
         stage: ReferendumStage::default(),
         votes: vec![],
     }
 }
 
 pub fn build_test_externalities(
-    config: GenesisConfig<Runtime, DefaultInstance>,
+    config: referendum::GenesisConfig<Runtime, DefaultInstance>,
 ) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
@@ -450,6 +355,8 @@ pub fn build_test_externalities(
         topup_account(USER_REGULAR, amount);
         topup_account(USER_REGULAR_2, amount);
         topup_account(USER_REGULAR_3, amount);
+        topup_account(USER_REGULAR_4, amount);
+        topup_account(USER_REGULAR_5, amount);
         topup_account(USER_REGULAR_POWER_VOTES, amount);
 
         InstanceMockUtils::<Runtime, DefaultInstance>::increase_block_number(1)
@@ -461,14 +368,14 @@ pub fn build_test_externalities(
 // topup currency to the account
 fn topup_account(account_id: u64, amount: u64) {
     let account_id = account_id;
-    let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount);
+    let _ = balances::Pallet::<Runtime>::deposit_creating(&account_id, amount);
 }
 
-pub struct InstanceMockUtils<T: Trait<I>, I: Instance> {
+pub struct InstanceMockUtils<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I>
+impl<T: Config<I>, I: Instance> InstanceMockUtils<T, I>
 where
     T::BlockNumber: From<u64> + Into<u64>,
 {
@@ -495,43 +402,43 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let mut block_number = frame_system::Module::<T>::block_number();
+        let mut block_number = frame_system::Pallet::<T>::block_number();
 
         for _ in 0..increase {
-            <frame_system::Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
+            <frame_system::Pallet<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
-            block_number = block_number + One::one();
-            frame_system::Module::<T>::set_block_number(block_number);
-            <frame_system::Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
+            block_number += One::one();
+            frame_system::Pallet::<T>::set_block_number(block_number);
+            <frame_system::Pallet<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
             <Module<T, I> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
         }
     }
 
     pub fn move_to_block(block_number: T::BlockNumber) {
-        let mut current_block = frame_system::Module::<T>::block_number();
+        let mut current_block = frame_system::Pallet::<T>::block_number();
         while current_block < block_number {
             Self::increase_block_number(1);
-            current_block = frame_system::Module::<T>::block_number();
+            current_block = frame_system::Pallet::<T>::block_number();
         }
     }
 
     pub fn calculate_commitment(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
+        Self::calculate_commitment_for_cycle(account_id, cycle_id, vote_option_index, None)
     }
 
     pub fn calculate_commitment_custom_salt(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         custom_salt: &[u8],
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         Self::calculate_commitment_for_cycle(
             account_id,
-            &cycle_id,
+            cycle_id,
             vote_option_index,
             Some(custom_salt),
         )
@@ -544,7 +451,7 @@ where
     }
 
     pub fn calculate_commitment_for_cycle(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         cycle_id: &u64,
         vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         custom_salt: Option<&[u8]>,
@@ -556,10 +463,10 @@ where
 
         (
             <Module<T, I> as ReferendumManager<
-                <T as frame_system::Trait>::Origin,
-                <T as frame_system::Trait>::AccountId,
+                <T as frame_system::Config>::Origin,
+                <T as frame_system::Config>::AccountId,
                 <T as common::membership::MembershipTypes>::MemberId,
-                <T as frame_system::Trait>::Hash,
+                <T as frame_system::Config>::Hash,
             >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
         )
@@ -579,13 +486,13 @@ where
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
 
-pub struct InstanceMocks<T: Trait<I>, I: Instance> {
+pub struct InstanceMocks<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
 impl InstanceMocks<Runtime, DefaultInstance> {
     pub fn start_referendum_extrinsic(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
         winning_target_count: u64,
         cycle_id: u64,
         expected_result: Result<(), ()>,
@@ -625,10 +532,10 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime> as ReferendumManager<
-                <Runtime as frame_system::Trait>::Origin,
-                <Runtime as frame_system::Trait>::AccountId,
+                <Runtime as frame_system::Config>::Origin,
+                <Runtime as frame_system::Config>::AccountId,
                 <Runtime as common::membership::MembershipTypes>::MemberId,
-                <Runtime as frame_system::Trait>::Hash,
+                <Runtime as frame_system::Config>::Hash,
             >>::start_referendum(
                 InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(OriginType::Root),
                 extra_winning_target_count,
@@ -645,10 +552,10 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         let extra_winning_target_count = winning_target_count - 1;
 
         <Module<Runtime> as ReferendumManager<
-            <Runtime as frame_system::Trait>::Origin,
-            <Runtime as frame_system::Trait>::AccountId,
+            <Runtime as frame_system::Config>::Origin,
+            <Runtime as frame_system::Config>::AccountId,
             <Runtime as common::membership::MembershipTypes>::MemberId,
-            <Runtime as frame_system::Trait>::Hash,
+            <Runtime as frame_system::Config>::Hash,
         >>::force_start(extra_winning_target_count, cycle_id);
     }
 
@@ -662,7 +569,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         }
 
         let winning_target_count = extra_winning_target_count + 1;
-        let block_number = frame_system::Module::<Runtime>::block_number();
+        let block_number = frame_system::Pallet::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -676,16 +583,16 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         InstanceMockUtils::<Runtime, DefaultInstance>::increase_block_number(1);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::from(RawEvent::ReferendumStarted(winning_target_count))
+            Event::from(RawEvent::ReferendumStarted(winning_target_count))
         );
     }
 
     pub fn check_voting_finished(winning_target_count: u64, cycle_id: u64) {
-        let block_number = frame_system::Module::<Runtime>::block_number();
+        let block_number = frame_system::Pallet::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -699,11 +606,11 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::RevealingStageStarted())
+            Event::Referendum(RawEvent::RevealingStageStarted())
         );
     }
 
@@ -711,10 +618,22 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         expected_winners: Vec<
             OptionResult<
                 <Runtime as common::membership::MembershipTypes>::MemberId,
-                <Runtime as Trait>::VotePower,
+                <Runtime as Config>::VotePower,
             >,
         >,
-        expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
+        expected_referendum_result: BTreeMap<u64, <Runtime as Config>::VotePower>,
+    ) {
+        Self::check_revealing_finished_winners(expected_winners);
+        Self::check_revealing_finished_referendum_results(expected_referendum_result);
+    }
+
+    pub fn check_revealing_finished_winners(
+        expected_winners: Vec<
+            OptionResult<
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as Config>::VotePower,
+            >,
+        >,
     ) {
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -723,20 +642,29 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::ReferendumFinished(expected_winners,))
+            Event::Referendum(RawEvent::ReferendumFinished(expected_winners,))
+        );
+    }
+
+    pub fn check_revealing_finished_referendum_results(
+        expected_referendum_result: BTreeMap<u64, <Runtime as Config>::VotePower>,
+    ) {
+        assert_eq!(
+            Stage::<Runtime, DefaultInstance>::get(),
+            ReferendumStage::Inactive,
         );
 
         INTERMEDIATE_RESULTS.with(|value| assert_eq!(*value.borrow(), expected_referendum_result,));
     }
 
     pub fn vote(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
-        account_id: <Runtime as frame_system::Trait>::AccountId,
-        commitment: <Runtime as frame_system::Trait>::Hash,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        account_id: <Runtime as frame_system::Config>::AccountId,
+        commitment: <Runtime as frame_system::Config>::Hash,
         stake: BalanceOf<Runtime>,
         cycle_id: u64,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
@@ -759,7 +687,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             Votes::<Runtime, DefaultInstance>::get(account_id),
             CastVote {
                 commitment,
-                cycle_id: cycle_id.clone(),
+                cycle_id,
                 stake,
                 vote_for: None,
             },
@@ -767,17 +695,17 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::VoteCast(account_id, commitment, stake))
+            Event::Referendum(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
     pub fn reveal_vote(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
-        account_id: <Runtime as frame_system::Trait>::AccountId,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        account_id: <Runtime as frame_system::Config>::AccountId,
         salt: Vec<u8>,
         vote_option_index: u64,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
@@ -798,21 +726,17 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::VoteRevealed(
-                account_id,
-                vote_option_index,
-                salt
-            ))
+            Event::Referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
         );
     }
 
     pub fn release_stake(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
-        account_id: <Runtime as frame_system::Trait>::AccountId,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        account_id: <Runtime as frame_system::Config>::AccountId,
         expected_result: Result<(), Error<Runtime, DefaultInstance>>,
     ) -> () {
         // check method returns expected result
@@ -829,11 +753,29 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod_DefaultInstance(RawEvent::StakeReleased(account_id))
+            Event::Referendum(RawEvent::StakeReleased(account_id))
         );
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl
+    crate::OptionCreator<
+        <Runtime as frame_system::Config>::AccountId,
+        <Runtime as common::membership::MembershipTypes>::MemberId,
+    > for Runtime
+{
+    fn create_option(
+        _: <Runtime as frame_system::Config>::AccountId,
+        option_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+    ) {
+        // clear saved option power from previous cycle
+        INTERMEDIATE_RESULTS.with(|value| {
+            value.borrow_mut().insert(option_id, 0);
+        });
     }
 }

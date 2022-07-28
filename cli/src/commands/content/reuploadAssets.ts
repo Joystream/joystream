@@ -33,7 +33,7 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
 
     // Upload assets
     await this.uploadAssets(
-      await this.getDecodedPair(membership.controller_account),
+      await this.getDecodedPair(membership.controllerAccount),
       memberId.toNumber(),
       bagId,
       inputAssets,

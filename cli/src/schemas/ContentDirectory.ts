@@ -31,21 +31,45 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
     title: { type: 'string' },
     coverPhotoPath: { type: 'string' },
     avatarPhotoPath: { type: 'string' },
-    rewardAccount: { type: ['string', 'null'] },
     collaborators: {
       type: 'array',
       items: {
-        type: 'integer',
-        min: 0,
+        type: 'object',
+        properties: {
+          memberId: { type: 'integer' },
+          channelAgentPermissions: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: [
+                'UpdateChannelMetadata',
+                'ManageNonVideoChannelAssets',
+                'ManageChannelCollaborators',
+                'UpdateVideoMetadata',
+                'AddVideo',
+                'ManageVideoAssets',
+                'DeleteChannel',
+                'DeleteVideo',
+                'ManageVideoNfts',
+                'AgentRemark',
+                'TransferChannel',
+                'ClaimChannelReward',
+                'WithdrawFromChannelBalance',
+                'IssueCreatorToken',
+                'ClaimCreatorTokenPatronage',
+                'InitAndManageCreatorTokenSale',
+                'CreatorTokenIssuerTransfer',
+                'MakeCreatorTokenPermissionless',
+                'ReduceCreatorTokenPatronageRate',
+                'ManageRevenueSplits',
+                'DeissueCreatorToken',
+              ],
+            },
+          },
+        },
       },
     },
-    moderators: {
-      type: 'array',
-      items: {
-        type: 'integer',
-        min: 0,
-      },
-    },
+    privilegeLevel: { type: 'integer' },
   },
 }
 

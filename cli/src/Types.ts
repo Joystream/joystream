@@ -3,9 +3,13 @@ import { Codec, IEvent } from '@polkadot/types/types'
 import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Membership } from '@joystream/types/members'
-import { MemberId } from '@joystream/types/common'
+import {
+  PalletMembershipMembershipObject as Membership,
+  PalletWorkingGroupOpeningType as OpeningType,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+  PalletContentChannelActionPermission as ChannelActionPermission,
+} from '@polkadot/types/lookup'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import {
@@ -25,7 +29,6 @@ import {
   IPlaylistMetadata,
   ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
 import {
   MembershipFieldsFragment,
   WorkingGroupApplicationDetailsFragment,
@@ -215,9 +218,8 @@ export type PlaylistInputParameters = Omit<IPlaylistMetadata, 'thumbnailPhoto'> 
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
-  rewardAccount?: string
-  collaborators?: number[]
-  moderators?: number[]
+  collaborators?: { memberId: number; channelAgentPermissions: ChannelActionPermission['type'][] }[]
+  privilegeLevel?: number
 }
 
 export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>

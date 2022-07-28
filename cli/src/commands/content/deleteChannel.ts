@@ -2,7 +2,6 @@ import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import { createType } from '@joystream/types'
-import { BagId } from '@joystream/types/storage'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
@@ -38,12 +37,12 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       })
     }
 
-    return dataObjects.map((o) => [o.id, new BN(o.deletionPrize)])
+    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
   }
 
   async getDataObjectsInfoFromChain(channelId: number): Promise<[string, BN][]> {
     const dataObjects = await this.getApi().dataObjectsInBag(
-      createType<BagId, 'BagId'>('BagId', { Dynamic: { Channel: channelId } })
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
     )
 
     if (dataObjects.length) {
@@ -51,7 +50,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       this.log(`Following data objects are still associated with the channel: ${dataObjectIds.join(', ')}`)
     }
 
-    return dataObjects.map(([id, o]) => [id.toString(), o.deletion_prize])
+    return dataObjects.map(([id, o]) => [id.toString(), o.stateBloatBond])
   }
 
   async run(): Promise<void> {
@@ -62,9 +61,9 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelOwnerActor(channel)
 
-    if (channel.num_videos.toNumber()) {
+    if (channel.numVideos.toNumber()) {
       this.error(
-        `This channel still has ${channel.num_videos.toNumber()} associated video(s)!\n` +
+        `This channel still has ${channel.numVideos.toNumber()} associated video(s)!\n` +
           `Delete the videos first using ${chalk.magentaBright('content:deleteVideo')} command`
       )
     }
@@ -79,10 +78,10 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const deletionPrize = dataObjectsInfo.reduce((sum, [, prize]) => sum.add(prize), new BN(0))
+      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects deletion prize of ${chalk.cyanBright(
-          formatBalance(deletionPrize)
+        `Data objects state bloat bond of ${chalk.cyanBright(
+          formatBalance(stateBloatBond)
         )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }

@@ -2,7 +2,8 @@ import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { Option } from '@polkadot/types'
 import { apiModuleByGroup } from '../../Api'
 import { CreateInterface } from '@joystream/types'
-import { ApplicationId, StakeParameters } from '@joystream/types/working-group'
+import { ApplicationId } from '@joystream/types/primitives'
+import { PalletWorkingGroupStakeParameters as StakeParameters } from '@polkadot/types/lookup'
 import { flags } from '@oclif/command'
 import ExitCodes from '../../ExitCodes'
 import { metadataToBytes } from '../../helpers/serialization'
@@ -73,7 +74,7 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
 
       stakeParams = {
         stake: opening.stake.value,
-        staking_account_id: stakingAccount,
+        stakingAccountId: stakingAccount,
       }
     }
 
@@ -107,7 +108,7 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
     await this.requireConfirmation('Do you confirm the provided input?')
 
     const result = await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(memberContext.membership.controller_account.toString()),
+      await this.getDecodedPair(memberContext.membership.controllerAccount.toString()),
       apiModuleByGroup[this.group],
       'applyOnOpening',
       [

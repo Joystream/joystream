@@ -11,7 +11,7 @@ pub type MemberId<T> = <T as MembershipTypes>::MemberId;
 pub type ActorId<T> = <T as MembershipTypes>::ActorId;
 
 /// Generic trait for membership dependent pallets.
-pub trait MembershipTypes: frame_system::Trait {
+pub trait MembershipTypes: frame_system::Config {
     /// Describes the common type for the members.
     type MemberId: Parameter
         + Member

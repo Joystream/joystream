@@ -27,8 +27,6 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
 async function initMembershipSystem(store: DatabaseManager): Promise<void> {
   await store.save<MembershipSystemSnapshot>(
     new MembershipSystemSnapshot({
-      createdAt: new Date(0),
-      updatedAt: new Date(0),
       snapshotBlock: 0,
       ...membershipSystemData,
       membershipPrice: new BN(membershipSystemData.membershipPrice),
@@ -54,8 +52,6 @@ async function initWorkingGroups(store: DatabaseManager): Promise<void> {
     workingGroupsData.map(async (group) =>
       store.save<WorkingGroup>(
         new WorkingGroup({
-          createdAt: new Date(0),
-          updatedAt: new Date(0),
           id: group.name,
           name: group.name,
           budget: new BN(group.budget),

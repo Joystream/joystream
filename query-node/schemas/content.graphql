@@ -35,9 +35,6 @@ type Channel @entity {
 
   category: ChannelCategory
 
-  "Reward account where revenue is sent if set."
-  rewardAccount: String
-
   "The title of the Channel"
   title: String @fulltext(query: "search")
 
@@ -73,13 +70,17 @@ type Channel @entity {
   "List of channel collaborators (members)"
   collaborators: [Membership!]
 
+  "List of members blocked from from participating on any video of the channel."
+  bannedMembers: [Membership!]
+
   "Owners of video NFTs belonging to this channel."
   channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
 
-  ##########################
+  "Channel's reward account, storing the income from the nft sales and channel payouts."
+  rewardAccount: String!
 
-  "List of channel's playlists"
-  channelPlaylists: [Playlist!] @derivedFrom(field: "channel")
+  "Channel's privilege level"
+  privilegeLevel: Int
 }
 
 type VideoCategory @entity {
@@ -159,6 +160,31 @@ type Video @entity {
   isFeatured: Boolean!
 
   subtitles: [VideoSubtitle!]
+  ##########################
+
+  "Is comment section enabled (true if enabled)"
+  isCommentSectionEnabled: Boolean!
+
+  "channel owner pinned comment"
+  pinnedComment: Comment @derivedFrom(field: "video")
+
+  "List of all video comments"
+  comments: [Comment!] @derivedFrom(field: "video")
+
+  "Comments count"
+  commentsCount: Int!
+
+  "Is reactions feature enabled on video (true if enabled i.e. video can be reacted)"
+  isReactionFeatureEnabled: Boolean!
+
+  "List of all video reactions"
+  reactions: [VideoReaction!] @derivedFrom(field: "video")
+
+  "Reactions count by reaction Id"
+  reactionsCountByReactionId: [VideoReactionsCountByReactionType!] @derivedFrom(field: "video")
+
+  "Reactions count"
+  reactionsCount: Int!
 }
 
 type VideoMediaMetadata @entity {
@@ -207,70 +233,133 @@ type License @entity {
   custom_text: String
 }
 
-type PlaylistVideo @entity {
-  "{playlistId}-{videoId}"
+type VideoReactionsCountByReactionType @entity {
+  "{videoId}-{reactionId}"
   id: ID!
 
-  # Required for Playlist<->PlaylistVideos Many-to-Many relationship
-  "List of playlists this video is part of."
-  videoInPlaylists: [Playlist!] @derivedFrom(field: "videos")
+  "The reaction option"
+  reaction: VideoReactionOptions!
 
-  "Playlist's video"
+  "No of times the video has been reacted with given reaction"
+  count: Int!
+
+  "The video which has been react with given reaction"
   video: Video!
-
-  "The Playlist"
-  playlist: Playlist!
-
-  "Position of video in playlist"
-  position: Int!
 }
 
-type Playlist @entity {
+enum VideoReactionOptions {
+  "Reacting again with the same option will cancel the previous reaction"
+  LIKE
+  UNLIKE
+}
+
+type VideoReaction @entity {
+  "{memberId}-{videoId}"
+  id: ID!
+
+  "The Reaction"
+  reaction: VideoReactionOptions!
+
+  "The member that reacted"
+  member: Membership!
+
+  "ID of the member that reacted"
+  memberId: String!
+
+  "The video that has been reacted to"
+  video: Video!
+}
+
+type CommentReaction @entity {
+  "{memberId}-{commentId}-{reactionId}"
+  id: ID!
+
+  "The Reaction id"
+  reaction_id: Int!
+
+  "The member that reacted"
+  member: Membership!
+
+  "ID of the member that reacted"
+  memberId: String!
+
+  "The comment that has been reacted to"
+  comment: Comment!
+
+  # Added to efficiently delete all reactions of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
+}
+
+enum CommentStatus {
+  VISIBLE
+  DELETED
+  MODERATED
+}
+
+type CommentReactionsCountByReactionId @entity {
+  "{commentId}-{reactionId}"
+  id: ID!
+
+  "The reaction id"
+  reaction_id: Int!
+
+  "No of times the comment has been reacted with given reaction Id"
+  count: Int!
+
+  "The comment which has been react with given reaction Id"
+  comment: Comment!
+
+  # Added to efficiently delete all reactions counts of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
+}
+
+type Comment @entity {
   "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
   id: ID!
 
-  "Playlist associated channel"
-  channel: Channel!
+  "Author of the video comment"
+  author: Membership!
 
-  "Title of the playlist"
-  title: String!
+  "Comment text"
+  text: String! @fulltext(query: "commentText")
 
-  "Description of the playlist"
-  description: String!
+  "Video the comment was added to"
+  video: Video!
 
-  "List of videos in the playlist"
-  videos: [PlaylistVideo!]!
+  "Status of the comment; either it is visible, deleted, or moderated (deleted by moderator)"
+  status: CommentStatus!
 
-  "Number of public uncensored videos in the playlist"
-  publicUncensoredVideosCount: Int
+  "List of all reactions to the comment"
+  reactions: [CommentReaction!] @derivedFrom(field: "comment")
 
-  "Total duration of public uncensored videos in the playlist"
-  publicUncensoredVideosDuration: Int
+  "Reactions count by reaction Id"
+  reactionsCountByReactionId: [CommentReactionsCountByReactionId!] @derivedFrom(field: "comment")
 
-  "Whether the Playlist is supposed to be publicly displayed"
-  isPublic: Boolean
+  "A (parent) comment that this comment replies to (if any)"
+  parentComment: Comment
 
-  "Playlist thumbnail asset (If not provided, the thumbnail of the first video will be used)"
-  thumbnailPhoto: StorageDataObject
-}
+  "How many comments has replied to this comment"
+  repliesCount: Int!
 
-type VideoSubtitle @entity {
-  "{type}-{language}"
-  id: ID!
+  "Total number of reactions to this comment"
+  reactionsCount: Int!
 
-  "Subtitle's video"
-  video: Video! @derivedFrom(field: "subtitles")
+  "Sum of replies and reactions"
+  reactionsAndRepliesCount: Int!
 
-  # Atlas will use 'subtitles' | 'closed-captions' for now and possible other types in the future.
-  "Subtitle's type"
-  type: String!
+  "Whether comment has been edited or not"
+  isEdited: Boolean!
 
-  "Subtitle's language"
-  language: Language!
+  "List of all text update events (edits)"
+  edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
 
-  "MIME type description of format used for this subtitle"
-  mimeType: String!
+  "The event the comment was deleted in (if any)"
+  deletedInEvent: CommentDeletedEvent @derivedFrom(field: "comment")
 
-  "Storage object representing the subtitle file"
-  asset: StorageDataObject!
+  "The event the comment was moderated in (if any)"
+  moderatedInEvent: CommentModeratedEvent @derivedFrom(field: "comment")
 }

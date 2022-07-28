@@ -23,6 +23,9 @@ type StorageSystemParameters @entity {
 
   "ID of the next data object when created"
   nextDataObjectId: BigInt!
+
+  "Data Object state bloat bond value"
+  dataObjectStateBloatBondValue: Int!
 }
 
 type StorageBucketOperatorStatusMissing @variant {
@@ -233,8 +236,8 @@ type StorageDataObject @entity {
   "The type of the asset that the data object represents (if known)"
   type: DataObjectType!
 
-  "Prize for removing the data object"
-  deletionPrize: BigInt!
+  "State Bloat Bond for removing the data object"
+  stateBloatBond: BigInt!
 
   "If the object is no longer used as an asset - the time at which it was unset (if known)"
   unsetAt: DateTime

@@ -17,7 +17,7 @@ import {
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../helpers/serialization'
-import { OpeningId } from '@joystream/types/working-group'
+import { OpeningId } from '@joystream/types/primitives'
 import Long from 'long'
 import moment from 'moment'
 import { UpcomingWorkingGroupOpeningDetailsFragment } from '../../graphql/generated/queries'
@@ -79,8 +79,8 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       metadataToBytes(OpeningMetadata, this.prepareMetadata(openingParamsJson)),
       'Regular',
       {
-        stake_amount: openingParamsJson.stakingPolicy.amount,
-        leaving_unstaking_period: openingParamsJson.stakingPolicy.unstakingPeriod,
+        stakeAmount: openingParamsJson.stakingPolicy.amount,
+        leavingUnstakingPeriod: openingParamsJson.stakingPolicy.unstakingPeriod,
       },
       // TODO: Proper bigint handling?
       openingParamsJson.rewardPerBlock?.toString() || null,

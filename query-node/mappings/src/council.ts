@@ -1,7 +1,14 @@
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import {
+  EventContext,
+  StoreContext,
+  DatabaseManager,
+  SubstrateEvent,
+  FindOptionsOrder,
+  FindOptionsWhere,
+} from '@joystream/hydra-common'
 import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
-import { FindConditions, SelectQueryBuilder } from 'typeorm'
+import { FindOneOptions } from 'typeorm'
 
 import {
   // Council events
@@ -82,14 +89,20 @@ async function getCandidate(
   electionRound?: ElectionRound,
   relations: string[] = []
 ): Promise<Candidate> {
+  /* TODO: nested filtering is needed here to work properly
+           it is better approach then `where` function used below
+  */
+
+  const where: FindOptionsWhere<NewCandidateEvent> = {
+    candidate: { memberId: memberId.toString() } as any, // TODO: get rid of `any` typecast
+  }
+
+  if (electionRound) {
+    where.electionRound = { id: electionRound.id.toString() }
+  }
+
   const event = await store.get(NewCandidateEvent, {
-    join: { alias: 'event', innerJoin: { candidate: 'event.candidate' } },
-    where: (qb: SelectQueryBuilder<NewCandidateEvent>) => {
-      qb.where('candidate.memberId = :memberId', { memberId })
-      if (electionRound) {
-        qb.andWhere('candidate.electionRoundId = :electionRoundId', { electionRoundId: electionRound.id })
-      }
-    },
+    where,
     order: { inBlock: 'DESC', indexInBlock: 'DESC' },
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
   })
@@ -108,7 +121,7 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
   const councilMember = await store.get(CouncilMember, {
     where: { memberId: memberId },
     order: { createdAt: 'DESC' },
-  })
+  } as FindOneOptions<CouncilMember>)
 
   if (!councilMember) {
     throw new Error(`Council member not found. memberId '${memberId}'`)
@@ -134,7 +147,7 @@ async function getCurrentElectionRound(store: DatabaseManager, relations: string
   Returns the last council stage update.
 */
 async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilStageUpdate> {
-  const stageUpdate = await store.get(CouncilStageUpdate, { order: { changedAt: 'DESC' } })
+  const stageUpdate = await store.get(CouncilStageUpdate, { order: { changedAt: 'DESC' } as FindOptionsOrder<any> }) // TODO: get rid of `any` typecast
 
   if (!stageUpdate) {
     throw new Error('No stage update found.')
@@ -162,12 +175,13 @@ async function getAccountCastVote(
   account: string,
   electionRound?: ElectionRound
 ): Promise<CastVote> {
-  const where = { castBy: account } as FindConditions<Candidate>
+  const where: FindOptionsWhere<CastVote> = { castBy: account }
+
   if (electionRound) {
-    where.electionRound = electionRound
+    where.electionRound = { id: electionRound.id.toString() }
   }
 
-  const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } })
+  const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } } as FindOneOptions<CastVote>)
 
   if (!castVote) {
     throw new Error(
@@ -217,33 +231,51 @@ async function updateCouncilStage(
 }
 
 /*
-  Concludes current election round and starts the next one.
+  Concludes current election round and records new council if it was elected
+*/
+async function concludeElectionRound(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  electedCouncil?: ElectedCouncil
+): Promise<ElectionRound> {
+  // finish last election round
+  const currentElection = await getCurrentElectionRound(store)
+  currentElection.isFinished = true
+  currentElection.endedAtBlock = event.blockNumber
+  currentElection.endedAtTime = new Date(event.blockTimestamp)
+  currentElection.endedAtNetwork = CURRENT_NETWORK
+
+  // if election resulted in a new council update it
+  if (electedCouncil) {
+    // Council that was elected in this election round
+    currentElection.nextElectedCouncil = electedCouncil
+  }
+
+  // save last election
+  await store.save<ElectionRound>(currentElection)
+
+  return currentElection
+}
+
+/*
+  Starts next election round
 */
 async function startNextElectionRound(
   store: DatabaseManager,
-  electedCouncil: ElectedCouncil,
   event: SubstrateEvent,
+  cycleId: number,
   electionProblem?: ElectionProblem
 ): Promise<ElectionRound> {
-  // finish last election round
-  const lastElectionRound = await getCurrentElectionRound(store)
-  lastElectionRound.isFinished = true
-  lastElectionRound.endedAtBlock = event.blockNumber
-  lastElectionRound.endedAtTime = new Date(event.blockTimestamp)
-  lastElectionRound.endedAtNetwork = CURRENT_NETWORK
-
-  lastElectionRound.nextElectedCouncil = electedCouncil
-
-  // save last election
-  await store.save<ElectionRound>(lastElectionRound)
+  // Council that is ruling during the election
+  const electedCouncil = await getCurrentElectedCouncil(store)
 
   // create election round record
   const electionRound = new ElectionRound({
-    cycleId: lastElectionRound.cycleId + 1,
+    cycleId,
     isFinished: false,
     castVotes: [],
-    electedCouncil,
     candidates: [],
+    electedCouncil,
   })
 
   // save new election
@@ -291,7 +323,7 @@ async function convertCandidatesToCouncilMembers(
 async function abortCandidacies(store: DatabaseManager) {
   const electionRound = await getCurrentElectionRound(store)
   const candidates = await store.getMany(Candidate, {
-    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+    where: { electionRound: { id: electionRound.id }, status: CandidacyStatus.ACTIVE },
   })
 
   await Promise.all(
@@ -307,8 +339,8 @@ async function abortCandidacies(store: DatabaseManager) {
 /// /////////////// Council events /////////////////////////////////////////////
 
 /*
-  The event is emitted when a new round of elections begins (can be caused by multiple reasons) and candidates can announce
-  their candidacies.
+  The event is emitted when the idle period ends and a new round of elections begins.
+  candidates can announce their candidacies.
 */
 export async function council_AnnouncingPeriodStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
@@ -323,9 +355,10 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
 
   // specific event processing
 
+  // Get last cycleId
+  const { cycleId } = await getCurrentElectionRound(store)
   // restart elections
-  const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event)
+  await startNextElectionRound(store, event, cycleId + 1)
 }
 
 /*
@@ -347,8 +380,8 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
   // specific event processing
 
   // restart elections
-  const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event, ElectionProblem.NOT_ENOUGH_CANDIDATES)
+  const { cycleId } = await concludeElectionRound(store, event)
+  await startNextElectionRound(store, event, cycleId + 1, ElectionProblem.NOT_ENOUGH_CANDIDATES)
 }
 
 /*
@@ -423,6 +456,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
   const newCandidateEvent = new NewCandidateEvent({
     ...genericEventFields(event),
     candidate,
+    electionRound,
     stakingAccount: stakingAccount.toString(),
     rewardAccount: rewardAccount.toString(),
     balance,
@@ -453,7 +487,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   // get election round and its candidates
   const electionRound = await getCurrentElectionRound(store)
   const candidates = (await store.getMany(Candidate, {
-    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+    where: { electionRound: { id: electionRound.id }, status: CandidacyStatus.ACTIVE },
   })) as Array<Candidate & { memberId: string }>
 
   const electedCandidates = candidates.filter((candidate) => electedMemberIds.includes(candidate.memberId))
@@ -479,12 +513,15 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
     electedAtBlock: event.blockNumber,
     electedAtTime: new Date(event.blockTimestamp),
     electedAtNetwork: CURRENT_NETWORK,
-    councilElections: oldElectedCouncil?.nextCouncilElections || [],
+    councilElections: [],
     nextCouncilElections: [],
     isResigned: false,
   })
 
   await store.save<ElectedCouncil>(electedCouncil)
+
+  // mark last election round as finished and save elected council
+  await concludeElectionRound(store, event, electedCouncil)
 
   // save new council members
   await Promise.all(
@@ -549,8 +586,8 @@ export async function council_NewCouncilNotElected({ event, store }: EventContex
   // specific event processing
 
   // restart elections
-  const electedCouncil = await getCurrentElectedCouncil(store)
-  await startNextElectionRound(store, electedCouncil, event, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
+  const { cycleId } = await concludeElectionRound(store, event)
+  await startNextElectionRound(store, event, cycleId + 1, ElectionProblem.NEW_COUNCIL_NOT_ELECTED)
 }
 
 /*

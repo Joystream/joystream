@@ -24,6 +24,27 @@
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
   
+- [proto/Metaprotocol.proto](#proto/Metaprotocol.proto)
+    - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
+    - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
+    - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
+    - [CommentSectionPreference](#.CommentSectionPreference)
+    - [CreateComment](#.CreateComment)
+    - [DeleteComment](#.DeleteComment)
+    - [EditComment](#.EditComment)
+    - [MemberRemarked](#.MemberRemarked)
+    - [ModerateComment](#.ModerateComment)
+    - [PinOrUnpinComment](#.PinOrUnpinComment)
+    - [ReactComment](#.ReactComment)
+    - [ReactVideo](#.ReactVideo)
+    - [VideoReactionsPreference](#.VideoReactionsPreference)
+  
+    - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
+    - [CommentSectionPreference.Option](#.CommentSectionPreference.Option)
+    - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
+    - [ReactVideo.Reaction](#.ReactVideo.Reaction)
+    - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
+  
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
   
@@ -313,6 +334,297 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
 
+<a name="proto/Metaprotocol.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Metaprotocol.proto
+
+
+
+<a name=".BanOrUnbanMemberFromChannel"></a>
+
+### BanOrUnbanMemberFromChannel
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member_id | [uint64](#uint64) | required | ID of the member that channel owner wants to ban from participating on any video. |
+| option | [BanOrUnbanMemberFromChannel.Option](#BanOrUnbanMemberFromChannel.Option) | required | Selected option to ban or unban member from the channel |
+
+
+
+
+
+
+<a name=".ChannelModeratorRemarked"></a>
+
+### ChannelModeratorRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
+
+
+
+
+
+
+<a name=".ChannelOwnerRemarked"></a>
+
+### ChannelOwnerRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
+| ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
+| video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
+| comment_section_preference | [CommentSectionPreference](#CommentSectionPreference) | optional |  |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
+
+
+
+
+
+
+<a name=".CommentSectionPreference"></a>
+
+### CommentSectionPreference
+Enable or disable comment section for a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [CommentSectionPreference.Option](#CommentSectionPreference.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+
+<a name=".CreateComment"></a>
+
+### CreateComment
+create comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| parent_comment_id | [string](#string) | optional | ID of comment member wants to reply (empty if new comment is parent comment) |
+| body | [string](#string) | required | Comment text |
+
+
+
+
+
+
+<a name=".DeleteComment"></a>
+
+### DeleteComment
+delete comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment which will be deleted |
+
+
+
+
+
+
+<a name=".EditComment"></a>
+
+### EditComment
+edit comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment whose text is being edited |
+| new_body | [string](#string) | required | New comment body |
+
+
+
+
+
+
+<a name=".MemberRemarked"></a>
+
+### MemberRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| react_video | [ReactVideo](#ReactVideo) | optional |  |
+| react_comment | [ReactComment](#ReactComment) | optional |  |
+| create_comment | [CreateComment](#CreateComment) | optional |  |
+| edit_comment | [EditComment](#EditComment) | optional |  |
+| delete_comment | [DeleteComment](#DeleteComment) | optional |  |
+
+
+
+
+
+
+<a name=".ModerateComment"></a>
+
+### ModerateComment
+delete comment by moderator or channel owner;
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of comment that will be deleted by moderator |
+| rationale | [string](#string) | required | why moderator wants to delete this comment |
+
+
+
+
+
+
+<a name=".PinOrUnpinComment"></a>
+
+### PinOrUnpinComment
+pin comment on a video by channel owner
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [string](#string) | required | ID of the comment which will be pinned |
+| option | [PinOrUnpinComment.Option](#PinOrUnpinComment.Option) | required | Selected option to pin or unpin comment from channel |
+
+
+
+
+
+
+<a name=".ReactComment"></a>
+
+### ReactComment
+reacting, unreacting to a comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment to react |
+| reaction_id | [uint32](#uint32) | required | ID of the selected reaction |
+
+
+
+
+
+
+<a name=".ReactVideo"></a>
+
+### ReactVideo
+reacting, unreacting, and changing reaction to video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video to react |
+| reaction | [ReactVideo.Reaction](#ReactVideo.Reaction) | required | Selected reaction |
+
+
+
+
+
+
+<a name=".VideoReactionsPreference"></a>
+
+### VideoReactionsPreference
+Enable or disable reactions on a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [VideoReactionsPreference.Option](#VideoReactionsPreference.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+ 
+
+
+<a name=".BanOrUnbanMemberFromChannel.Option"></a>
+
+### BanOrUnbanMemberFromChannel.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BAN | 0 | Ban member (nothing happens if member is already banned) |
+| UNBAN | 1 | Unban member (nothing happens if member is already unbanned) |
+
+
+
+<a name=".CommentSectionPreference.Option"></a>
+
+### CommentSectionPreference.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable comment section (nothing happens if it is already enabled) |
+| DISABLE | 1 | Disable comment section (nothing happens if it is already disabled) |
+
+
+
+<a name=".PinOrUnpinComment.Option"></a>
+
+### PinOrUnpinComment.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PIN | 0 | Pin comment on video (nothing happens if comment is already pinned) |
+| UNPIN | 1 | Unpin comment from video (nothing happens if comment is already unpinned) |
+
+
+
+<a name=".ReactVideo.Reaction"></a>
+
+### ReactVideo.Reaction
+The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
+Reacting again with the same message option will cancel the previous reaction
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LIKE | 0 |  |
+| UNLIKE | 1 |  |
+
+
+
+<a name=".VideoReactionsPreference.Option"></a>
+
+### VideoReactionsPreference.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable reactions (nothing happens if they are already enabled) |
+| DISABLE | 1 | Disable reactions (nothing happens if they are already disabled) |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="proto/Person.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -369,6 +681,38 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | video_ids | [uint64](#uint64) | repeated | IDs of the videos to include in playlist (in given order) |
 | thumbnail_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | is_public | [bool](#bool) | optional | Playlist status, whether it is public or private. If the field is omitted the default playlist status would be public??? |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/ProposalsDiscussion.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/ProposalsDiscussion.proto
+
+
+
+<a name=".ProposalsDiscussionPostMetadata"></a>
+
+### ProposalsDiscussionPostMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| text | [string](#string) | optional | Post text content (md-formatted) |
+| repliesTo | [uint32](#uint32) | optional | Id of the post that given post replies to (if any) |
 
 
 

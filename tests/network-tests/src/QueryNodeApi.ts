@@ -1,7 +1,15 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
+import {
+  MemberId,
+  ApplicationId,
+  OpeningId,
+  WorkerId,
+  ProposalId,
+  ForumCategoryId,
+  ForumPostId,
+  ForumThreadId,
+} from '@joystream/types/primitives'
 import { extendDebug, Debugger } from './Debugger'
-import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
 import {
   ElectedCouncilFieldsFragment,
@@ -187,10 +195,6 @@ import {
   GetThreadCreatedEventsByEventIdsQuery,
   GetThreadCreatedEventsByEventIds,
   GetThreadCreatedEventsByEventIdsQueryVariables,
-  VoteOnPollEventFieldsFragment,
-  GetVoteOnPollEventsByEventIdsQuery,
-  GetVoteOnPollEventsByEventIdsQueryVariables,
-  GetVoteOnPollEventsByEventIds,
   ThreadDeletedEventFieldsFragment,
   GetThreadDeletedEventsByEventIdsQuery,
   GetThreadDeletedEventsByEventIdsQueryVariables,
@@ -299,6 +303,9 @@ import {
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
   ChannelFieldsFragment,
+  GetChannelsByIds,
+  GetChannelsByIdsQuery,
+  GetChannelsByIdsQueryVariables,
   ChannelCategoryFieldsFragment,
   GetChannelCategoryByIdQuery,
   GetChannelCategoryByIdQueryVariables,
@@ -319,6 +326,44 @@ import {
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
   GetMemberVerificationStatusUpdatedEventsByEventIds,
+  CommentCreatedEventFieldsFragment,
+  GetCommentCreatedEventsByEventIdsQuery,
+  GetCommentCreatedEventsByEventIdsQueryVariables,
+  GetCommentCreatedEventsByEventIds,
+  GetCommentsByIds,
+  GetCommentsByIdsQuery,
+  GetCommentsByIdsQueryVariables,
+  CommentDeletedEventFieldsFragment,
+  GetCommentDeletedEventsByEventIdsQuery,
+  GetCommentDeletedEventsByEventIdsQueryVariables,
+  GetCommentDeletedEventsByEventIds,
+  VideoReactionFieldsFragment,
+  VideoReactedEventFieldsFragment,
+  GetVideoReactedEventsByEventIds,
+  GetVideoReactedEventsByEventIdsQuery,
+  GetVideoReactedEventsByEventIdsQueryVariables,
+  CommentReactedEventFieldsFragment,
+  GetCommentReactedEventsByEventIds,
+  GetCommentReactedEventsByEventIdsQuery,
+  GetCommentReactedEventsByEventIdsQueryVariables,
+  CommentReactionFieldsFragment,
+  MemberBannedFromChannelEventFieldsFragment,
+  GetMemberBannedFromChannelEventsByEventIdsQuery,
+  GetMemberBannedFromChannelEventsByEventIdsQueryVariables,
+  GetMemberBannedFromChannelEventsByEventIds,
+  VideoFieldsFragment,
+  GetVideosByIdsQuery,
+  GetVideosByIdsQueryVariables,
+  GetVideosByIds,
+  CommentPinnedEventFieldsFragment,
+  GetCommentPinnedEventsByEventIdsQuery,
+  GetCommentPinnedEventsByEventIdsQueryVariables,
+  GetCommentPinnedEventsByEventIds,
+  CommentTextUpdatedEventFieldsFragment,
+  GetCommentEditedEventsByEventIdsQuery,
+  GetCommentEditedEventsByEventIdsQueryVariables,
+  GetCommentEditedEventsByEventIds,
+  CommentModeratedEventFieldsFragment,
   EnglishAuctionStartedEventFieldsFragment,
   GetEnglishAuctionStartedEventsByEventIdsQuery,
   GetEnglishAuctionStartedEventsByEventIdsQueryVariables,
@@ -328,25 +373,58 @@ import {
   GetNftIssuedEventsByEventIdsQuery,
   GetNftIssuedEventsByEventIdsQueryVariables,
   EnglishAuctionSettledEventFieldsFragment,
-  EnglishAuctionSettledEventFields,
   GetEnglishAuctionSettledEventsByEventIdsQuery,
   GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
   GetEnglishAuctionSettledEventsByEventIds,
+  GetCommentModeratedEventsByEventIdsQuery,
+  GetCommentModeratedEventsByEventIdsQueryVariables,
+  GetCommentModeratedEventsByEventIds,
+  CommentFieldsFragment,
   BidFieldsFragment,
   GetBidsByMemberIdQuery,
   GetBidsByMemberIdQueryVariables,
   GetBidsByMemberId,
-  PlaylistFieldsFragment,
-  GetPlaylistByIdQuery,
-  GetPlaylistByIdQueryVariables,
-  GetPlaylistById,
+  VideoDeletedByModeratorEventFieldsFragment,
+  GetVideoDeletedByModeratorEventsByEventIdsQuery,
+  GetVideoDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetVideoDeletedByModeratorEventsByEventIds,
+  ChannelAssetsDeletedByModeratorEventFieldsFragment,
+  GetChannelAssetsDeletedByModeratorEventsByEventIdsQuery,
+  GetChannelAssetsDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetChannelAssetsDeletedByModeratorEventsByEventIds,
+  VideoAssetsDeletedByModeratorEventFieldsFragment,
+  GetVideoAssetsDeletedByModeratorEventsByEventIdsQuery,
+  GetVideoAssetsDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetVideoAssetsDeletedByModeratorEventsByEventIds,
+  VideoVisibilitySetByModeratorEventFieldsFragment,
+  GetVideoVisibilitySetByModeratorEventsByEventIdsQuery,
+  GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables,
+  GetDataObjectsByVideoIdQuery,
+  GetDataObjectsByVideoIdQueryVariables,
+  GetDataObjectsByVideoId,
+  StorageDataObjectFieldsFragment,
+  GetChannelDeletedByModeratorEventsByEventIdsQuery,
+  GetChannelDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetChannelDeletedByModeratorEventsByEventIds,
+  ChannelDeletedByModeratorEventFieldsFragment,
+  VideoReactionsPreferenceEventFieldsFragment,
+  GetVideoReactionsPreferenceEventsByEventIdsQuery,
+  GetVideoReactionsPreferenceEventsByEventIdsQueryVariables,
+  GetVideoReactionsPreferenceEventsByEventIds,
+  StorageNodeInfoFragment,
+  GetStorageBucketsQuery,
+  GetStorageBucketsQueryVariables,
+  GetStorageBuckets,
+  DistributionBucketFamilyFieldsFragment,
+  GetDistributionFamiliesAdndBucketsQuery,
+  GetDistributionFamiliesAdndBucketsQueryVariables,
+  GetDistributionFamiliesAdndBuckets,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
-import { ProposalId } from '@joystream/types/proposals'
 import { BLOCKTIME } from './consts'
-import { CategoryId } from '@joystream/types/forum'
 import { Utils } from './utils'
+
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
   private readonly debug: Debugger.Debugger
@@ -894,7 +972,7 @@ export class QueryNodeApi {
     >(GetProposalCancelledEventsByEventIds, { eventIds }, 'proposalCancelledEvents')
   }
 
-  public async getCategoriesByIds(ids: CategoryId[]): Promise<ForumCategoryFieldsFragment[]> {
+  public async getCategoriesByIds(ids: ForumCategoryId[]): Promise<ForumCategoryFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetCategoriesByIdsQuery, GetCategoriesByIdsQueryVariables>(
       GetCategoriesByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -946,20 +1024,11 @@ export class QueryNodeApi {
     >(GetThreadMetadataUpdatedEventsByEventIds, { eventIds }, 'threadMetadataUpdatedEvents')
   }
 
-  public async getThreadsWithInitialPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithInitialPostFragment[]> {
+  public async getThreadsWithInitialPostsByIds(ids: ForumThreadId[]): Promise<ForumThreadWithInitialPostFragment[]> {
     return this.multipleEntitiesQuery<
       GetThreadsWithInitialPostsByIdsQuery,
       GetThreadsWithInitialPostsByIdsQueryVariables
     >(GetThreadsWithInitialPostsByIds, { ids: ids.map((id) => id.toString()) }, 'forumThreads')
-  }
-
-  public async getVoteOnPollEvents(events: EventDetails[]): Promise<VoteOnPollEventFieldsFragment[]> {
-    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
-    return this.multipleEntitiesQuery<GetVoteOnPollEventsByEventIdsQuery, GetVoteOnPollEventsByEventIdsQueryVariables>(
-      GetVoteOnPollEventsByEventIds,
-      { eventIds },
-      'voteOnPollEvents'
-    )
   }
 
   public async getThreadDeletedEvents(events: EventDetails[]): Promise<ThreadDeletedEventFieldsFragment[]> {
@@ -970,7 +1039,7 @@ export class QueryNodeApi {
     >(GetThreadDeletedEventsByEventIds, { eventIds }, 'threadDeletedEvents')
   }
 
-  public async getPostsByIds(ids: PostId[]): Promise<ForumPostFieldsFragment[]> {
+  public async getPostsByIds(ids: ForumPostId[]): Promise<ForumPostFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetPostsByIdsQuery, GetPostsByIdsQueryVariables>(
       GetPostsByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -1100,7 +1169,7 @@ export class QueryNodeApi {
   }
 
   public async getProposalDiscussionPostsByIds(
-    ids: (PostId | number)[]
+    ids: (ForumPostId | number)[]
   ): Promise<ProposalDiscussionPostFieldsFragment[]> {
     return this.multipleEntitiesQuery<
       GetProposalDiscussionPostsByIdsQuery,
@@ -1109,7 +1178,7 @@ export class QueryNodeApi {
   }
 
   public async getProposalDiscussionThreadsByIds(
-    ids: (PostId | number)[]
+    ids: (ForumPostId | number)[]
   ): Promise<ProposalDiscussionThreadFieldsFragment[]> {
     return this.multipleEntitiesQuery<
       GetProposalDiscussionThreadsByIdsQuery,
@@ -1122,6 +1191,14 @@ export class QueryNodeApi {
       GetChannelById,
       { id },
       'channelByUniqueInput'
+    )
+  }
+
+  public async channelsByIds(ids: string[]): Promise<ChannelFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelsByIdsQuery, GetChannelsByIdsQueryVariables>(
+      GetChannelsByIds,
+      { ids },
+      'channels'
     )
   }
 
@@ -1165,6 +1242,14 @@ export class QueryNodeApi {
     )
   }
 
+  public async dataObjectsByVideoId(videoId: string): Promise<StorageDataObjectFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetDataObjectsByVideoIdQuery, GetDataObjectsByVideoIdQueryVariables>(
+      GetDataObjectsByVideoId,
+      { videoId },
+      'storageDataObjects'
+    )
+  }
+
   public async getMembershipVerificationStatusUpdatedEvents(
     events: EventDetails[]
   ): Promise<MemberVerificationStatusUpdatedEventFieldsFragment[]> {
@@ -1173,6 +1258,98 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async getVideosByIds(ids: string[]): Promise<VideoFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideosByIdsQuery, GetVideosByIdsQueryVariables>(
+      GetVideosByIds,
+      { ids },
+      'videos'
+    )
+  }
+
+  public async getCommentsByIds(ids: string[]): Promise<CommentFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCommentsByIdsQuery, GetCommentsByIdsQueryVariables>(
+      GetCommentsByIds,
+      { ids: ids.map((id) => id.toString()) },
+      'comments'
+    )
+  }
+
+  public async getCommentCreatedEvents(events: EventDetails[]): Promise<CommentCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentCreatedEventsByEventIdsQuery,
+      GetCommentCreatedEventsByEventIdsQueryVariables
+    >(GetCommentCreatedEventsByEventIds, { eventIds }, 'commentCreatedEvents')
+  }
+
+  public async getCommentEditedEvents(events: EventDetails[]): Promise<CommentTextUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentEditedEventsByEventIdsQuery,
+      GetCommentEditedEventsByEventIdsQueryVariables
+    >(GetCommentEditedEventsByEventIds, { eventIds }, 'commentTextUpdatedEvents')
+  }
+
+  public async getCommentDeletedEvents(events: EventDetails[]): Promise<CommentDeletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentDeletedEventsByEventIdsQuery,
+      GetCommentDeletedEventsByEventIdsQueryVariables
+    >(GetCommentDeletedEventsByEventIds, { eventIds }, 'commentDeletedEvents')
+  }
+
+  public async getCommentModeratedEvents(events: EventDetails[]): Promise<CommentModeratedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentModeratedEventsByEventIdsQuery,
+      GetCommentModeratedEventsByEventIdsQueryVariables
+    >(GetCommentModeratedEventsByEventIds, { eventIds }, 'commentModeratedEvents')
+  }
+
+  public async getVideoReactedEvents(events: EventDetails[]): Promise<VideoReactedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoReactedEventsByEventIdsQuery,
+      GetVideoReactedEventsByEventIdsQueryVariables
+    >(GetVideoReactedEventsByEventIds, { eventIds }, 'videoReactedEvents')
+  }
+
+  public async getCommentReactedEvents(events: EventDetails[]): Promise<CommentReactedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentReactedEventsByEventIdsQuery,
+      GetCommentReactedEventsByEventIdsQueryVariables
+    >(GetCommentReactedEventsByEventIds, { eventIds }, 'commentReactedEvents')
+  }
+
+  public async getCommentPinnedEvents(events: EventDetails[]): Promise<CommentPinnedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentPinnedEventsByEventIdsQuery,
+      GetCommentPinnedEventsByEventIdsQueryVariables
+    >(GetCommentPinnedEventsByEventIds, { eventIds }, 'commentPinnedEvents')
+  }
+
+  public async getMemberBannedFromChannelEvents(
+    events: EventDetails[]
+  ): Promise<MemberBannedFromChannelEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMemberBannedFromChannelEventsByEventIdsQuery,
+      GetMemberBannedFromChannelEventsByEventIdsQueryVariables
+    >(GetMemberBannedFromChannelEventsByEventIds, { eventIds }, 'memberBannedFromChannelEvents')
+  }
+
+  public async getVideoReactionsPreferenceEvents(
+    events: EventDetails[]
+  ): Promise<VideoReactionsPreferenceEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoReactionsPreferenceEventsByEventIdsQuery,
+      GetVideoReactionsPreferenceEventsByEventIdsQueryVariables
+    >(GetVideoReactionsPreferenceEventsByEventIds, { eventIds }, 'videoReactionsPreferenceEvents')
   }
 
   public async getEnglishAuctionStartedEvents(
@@ -1204,11 +1381,68 @@ export class QueryNodeApi {
     >(GetEnglishAuctionSettledEventsByEventIds, { eventIds }, 'englishAuctionSettledEvents')
   }
 
-  public async playlistById(id: string): Promise<Maybe<PlaylistFieldsFragment>> {
-    return this.uniqueEntityQuery<GetPlaylistByIdQuery, GetPlaylistByIdQueryVariables>(
-      GetPlaylistById,
-      { id },
-      'playlistByUniqueInput'
+  public async getVideoDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<VideoDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoDeletedByModeratorEventsByEventIdsQuery,
+      GetVideoDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetVideoDeletedByModeratorEventsByEventIds, { eventIds }, 'videoDeletedByModeratorEvents')
+  }
+
+  public async getChannelDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<ChannelDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelDeletedByModeratorEventsByEventIdsQuery,
+      GetChannelDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetChannelDeletedByModeratorEventsByEventIds, { eventIds }, 'channelDeletedByModeratorEvents')
+  }
+
+  public async getChannelAssetsDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<ChannelAssetsDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelAssetsDeletedByModeratorEventsByEventIdsQuery,
+      GetChannelAssetsDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetChannelAssetsDeletedByModeratorEventsByEventIds, { eventIds }, 'channelAssetsDeletedByModeratorEvents')
+  }
+
+  public async getVideoAssetsDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<VideoAssetsDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoAssetsDeletedByModeratorEventsByEventIdsQuery,
+      GetVideoAssetsDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetVideoAssetsDeletedByModeratorEventsByEventIds, { eventIds }, 'videoAssetsDeletedByModeratorEvents')
+  }
+
+  public async getVideoVisibilitySetByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<VideoVisibilitySetByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoVisibilitySetByModeratorEventsByEventIdsQuery,
+      GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables
+    >(GetVideoAssetsDeletedByModeratorEventsByEventIds, { eventIds }, 'videoVisibilitySetByModeratorEvents')
+  }
+
+  async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
+    return this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      {},
+      'storageBuckets'
     )
+  }
+
+  async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetDistributionFamiliesAdndBucketsQuery,
+      GetDistributionFamiliesAdndBucketsQueryVariables
+    >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
   }
 }

@@ -10,6 +10,7 @@ import {
 } from '../../fixtures/workingGroups'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
 import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals'
+import { createType } from '@joystream/types'
 
 export default async function creatingProposals({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:creating-proposals')
@@ -58,51 +59,54 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
 
   const accountsToFund = (await api.createKeyPairs(5)).map(({ key }) => key.address)
   const proposalsToTest: TestedProposal[] = [
-    { details: { AmendConstitution: 'New constitution' } },
+    { details: createType('PalletProposalsCodexProposalDetails', { AmendConstitution: 'New constitution' }) },
+    // {
+    //   details: createType('PalletProposalsCodexProposalDetails', {
+    //     FundingRequest: accountsToFund.map((a, i) => ({ account: a, amount: (i + 1) * 1000 })),
+    //   }),
+    //   expectExecutionFailure: true, // InsufficientFunds
+    // },
+    { details: createType('PalletProposalsCodexProposalDetails', { Signal: 'Text' }) },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetCouncilBudgetIncrement: 1_000_000 }) },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetCouncilorReward: 100 }) },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetInitialInvitationBalance: 10 }) },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetInitialInvitationCount: 5 }) },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetMaxValidatorCount: 100 }) },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetMembershipPrice: 500 }) },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetReferralCut: 25 }) },
     {
-      details: { FundingRequest: accountsToFund.map((a, i) => ({ account: a, amount: (i + 1) * 1000 })) },
+      details: createType('PalletProposalsCodexProposalDetails', {
+        UpdateWorkingGroupBudget: [10_000_000, 'Content', 'Negative'],
+      }),
       expectExecutionFailure: true, // InsufficientFunds
     },
-    { details: { Signal: 'Text' } },
-    { details: { SetCouncilBudgetIncrement: 1_000_000 } },
-    { details: { SetCouncilorReward: 100 } },
-    { details: { SetInitialInvitationBalance: 10 } },
-    { details: { SetInitialInvitationCount: 5 } },
-    { details: { SetMaxValidatorCount: 100 } },
-    { details: { SetMembershipPrice: 500 } },
-    { details: { SetReferralCut: 25 } },
     {
-      details: { UpdateWorkingGroupBudget: [10_000_000, 'Content', 'Negative'] },
-      expectExecutionFailure: true, // InsufficientFunds
-    },
-    {
-      details: {
+      details: createType('PalletProposalsCodexProposalDetails', {
         CreateWorkingGroupLeadOpening: {
           description: Utils.metadataToBytes(OpeningMetadata, DEFAULT_OPENING_PARAMS.metadata),
-          reward_per_block: DEFAULT_OPENING_PARAMS.reward,
-          stake_policy: {
-            leaving_unstaking_period: DEFAULT_OPENING_PARAMS.unstakingPeriod,
-            stake_amount: DEFAULT_OPENING_PARAMS.stake,
+          rewardPerBlock: DEFAULT_OPENING_PARAMS.reward,
+          stakePolicy: {
+            leavingUnstakingPeriod: DEFAULT_OPENING_PARAMS.unstakingPeriod,
+            stakeAmount: DEFAULT_OPENING_PARAMS.stake,
           },
-          working_group: 'Membership',
+          group: 'Membership',
         },
-      },
+      }),
     },
-    { details: { CancelWorkingGroupLeadOpening: [openingToCancelId, 'Membership'] } },
     {
-      details: {
-        FillWorkingGroupLeadOpening: {
-          opening_id: openingToFillId,
-          successful_application_id: applicationId,
-          working_group: 'Membership',
-        },
-      },
+      details: createType('PalletProposalsCodexProposalDetails', {
+        CancelWorkingGroupLeadOpening: [openingToCancelId, 'Membership'],
+      }),
     },
-    { details: { CreateBlogPost: ['Blog title', 'Blog text'] } },
-    // Blogs not supported yet, so we currently use invalid id and expect failure
-    { details: { EditBlogPost: [999, 'New title', 'New text'] }, expectExecutionFailure: true },
-    { details: { LockBlogPost: 999 }, expectExecutionFailure: true },
-    { details: { UnlockBlogPost: 999 }, expectExecutionFailure: true },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        FillWorkingGroupLeadOpening: {
+          openingId: openingToFillId,
+          applicationId,
+          workingGroup: 'Membership',
+        },
+      }),
+    },
   ]
 
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, proposalsToTest)
@@ -112,17 +116,31 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
 
   const leadId = (await api.query.membershipWorkingGroup.currentLead()).unwrap()
   const leadProposalsToTest: TestedProposal[] = [
-    { details: { SetMembershipLeadInvitationQuota: 50 } },
-    { details: { DecreaseWorkingGroupLeadStake: [leadId, 100, 'Membership'] } },
-    { details: { SetWorkingGroupLeadReward: [leadId, 50, 'Membership'] } },
-    { details: { SlashWorkingGroupLead: [leadId, 100, 'Membership'] } },
+    { details: createType('PalletProposalsCodexProposalDetails', { SetMembershipLeadInvitationQuota: 50 }) },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        DecreaseWorkingGroupLeadStake: [leadId, 100, 'Membership'],
+      }),
+    },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        SetWorkingGroupLeadReward: [leadId, 50, 'Membership'],
+      }),
+    },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        SlashWorkingGroupLead: [leadId, 100, 'Membership'],
+      }),
+    },
   ]
   const leadProposalsOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, leadProposalsToTest)
   await new FixtureRunner(leadProposalsOutcomesFixture).run()
 
   const terminateLeadProposalOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, [
     {
-      details: { TerminateWorkingGroupLead: { worker_id: leadId, working_group: 'Membership', slashing_amount: 100 } },
+      details: createType('PalletProposalsCodexProposalDetails', {
+        TerminateWorkingGroupLead: { workerId: leadId, group: 'Membership', slashingAmount: 100 },
+      }),
     },
   ])
   await new FixtureRunner(terminateLeadProposalOutcomesFixture).run()
