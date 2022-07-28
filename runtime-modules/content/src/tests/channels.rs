@@ -608,6 +608,51 @@ fn unsuccessful_channel_update_with_number_of_collaborators_exceeded() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_update_with_assets_to_upload_and_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_channel_bag_witness(Some(invalid_witness))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channels_update_with_assets_to_upload_and_missing_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_channel_bag_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channels_update_with_assets_to_remove_and_missing_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        UpdateChannelFixture::default()
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .with_channel_bag_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
+    })
+}
 /////////////////////////////////////////////////////////////////////
 /////////////////// Channel privilege level tests ///////////////////
 /////////////////////////////////////////////////////////////////////
@@ -705,6 +750,21 @@ fn unsuccessful_channel_deletion_with_creator_token_issued() {
 
         DeleteChannelFixture::default()
             .call_and_assert(Err(Error::<Test>::CreatorTokenAlreadyIssued.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_deletion_with_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        DeleteChannelFixture::default()
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
     })
 }
 

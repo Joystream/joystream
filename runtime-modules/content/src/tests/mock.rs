@@ -60,21 +60,17 @@ pub const MAX_COLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
     gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
-/// Account Ids and Runtime Id's
-///
-///
-///
-pub const LEAD_ACCOUNT_ID: u128 = MEMBER_IDS[0] as u128;
-pub const LEAD_MEMBER_ID: u64 = MEMBER_IDS[0];
+pub const LEAD_ACCOUNT_ID: u128 = 100005;
+pub const LEAD_MEMBER_ID: u64 = 100005;
 
-pub const DEFAULT_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[1] as u128;
-pub const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[1];
+pub const DEFAULT_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[0] as u128;
+pub const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[0];
 
-pub const SECOND_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[2] as u128;
-pub const SECOND_MEMBER_ID: u64 = MEMBER_IDS[2];
+pub const SECOND_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[1] as u128;
+pub const SECOND_MEMBER_ID: u64 = MEMBER_IDS[1];
 
-pub const THIRD_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[3] as u128;
-pub const THIRD_MEMBER_ID: u64 = MEMBER_IDS[3];
+pub const THIRD_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[2] as u128;
+pub const THIRD_MEMBER_ID: u64 = MEMBER_IDS[2];
 
 pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = COLABORATOR_IDS[0] as u128;
 pub const COLLABORATOR_MEMBER_ID: u64 = COLABORATOR_IDS[0];
@@ -83,10 +79,10 @@ pub const DEFAULT_CURATOR_ACCOUNT_ID: u128 = CURATOR_IDS[0] as u128;
 pub const DEFAULT_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[0];
 pub const DEFAULT_CURATOR_ID: u64 = CURATOR_IDS[0];
 
-pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = MEMBER_IDS[4] as u128;
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = 100008;
 
-pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[5] as u128;
-pub const UNAUTHORIZED_MEMBER_ID: u64 = MEMBER_IDS[5];
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[3] as u128;
+pub const UNAUTHORIZED_MEMBER_ID: u64 = MEMBER_IDS[3];
 
 pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u128 = CURATOR_IDS[1] as u128;
 pub const UNAUTHORIZED_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[1];
@@ -150,6 +146,7 @@ frame_support::construct_runtime!(
         Content: crate::{Pallet, Call, Storage, Config<T>, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
+        ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
     }
 );
 
@@ -512,6 +509,22 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
+// Content working group instance alias.
+pub type ContentWorkingGroupInstance = working_group::Instance3;
+
+impl working_group::Config<ContentWorkingGroupInstance> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = Weights;
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
 impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
@@ -822,7 +835,7 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const MaxWorkerNumberLimit: u32 = 9;
     pub const LockId: LockIdentifier = [9; 8];
     pub const LockId2: LockIdentifier = [10; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;

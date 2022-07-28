@@ -478,7 +478,7 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        #[weight = Module::<T>::create_channel_weight(params)] // TODO: adjust weight
+        #[weight = Module::<T>::create_channel_weight(params)]
         pub fn create_channel(
             origin,
             channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -574,7 +574,7 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::update_channel_weight(params)]
         pub fn update_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -602,17 +602,6 @@ decl_module! {
                 Self::validate_member_set(&new_collabs.keys().cloned().collect())?;
             }
 
-            Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
-
-            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
-
-            let updated_assets_set = Self::create_updated_channel_assets_set(
-                &channel.data_objects,
-                &new_data_object_ids,
-                &params.assets_to_remove
-            )?;
-
             let new_collabs: Option<ChannelCollaboratorsMap<T>> = params
                 .collaborators
                 .clone()
@@ -621,21 +610,48 @@ decl_module! {
                     .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))
                 ).transpose()?;
 
+            let (upload_parameters, new_data_object_ids) =
+            if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
+                // verify channel bag witness
+                match params.channel_bag_witness.as_ref() {
+                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                    None => Err(Error::<T>::MissingChannelBagWitness.into())
+                }?;
+
+                Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
+
+                let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+                let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+
+                let upload_parameters = UploadParameters::<T> {
+                    bag_id: Self::bag_id_for_channel(&channel_id),
+                    object_creation_list: assets_to_upload.object_creation_list,
+                    state_bloat_bond_source_account_id: sender,
+                    expected_data_size_fee: assets_to_upload.expected_data_size_fee,
+                    expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond};
+
+                (Some(upload_parameters), new_data_object_ids)
+            }
+            else{
+                (None, BTreeSet::new())
+            };
+
+            let updated_assets_set = Self::create_updated_channel_assets_set(
+                &channel.data_objects,
+                &new_data_object_ids,
+                &params.assets_to_remove
+            )?;
+
             //
             // == MUTATION SAFE ==
             //
 
-            let upload_parameters = UploadParameters::<T> {
-                bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: assets_to_upload.object_creation_list,
-                state_bloat_bond_source_account_id: sender,
-                expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond            };
-
-            Storage::<T>::upload_and_delete_data_objects(
-                upload_parameters,
-                params.assets_to_remove.clone(),
-            )?;
+            if let Some(upload_parameters) = upload_parameters {
+                Storage::<T>::upload_and_delete_data_objects(
+                    upload_parameters,
+                    params.assets_to_remove.clone(),
+                )?;
+            }
 
             // Update the channel
             ChannelById::<T>::mutate(channel_id, |channel| {
@@ -705,17 +721,21 @@ decl_module! {
         }
 
         // extrinsics for channel deletion
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::delete_channel_weight(channel_bag_witness, num_objects_to_delete)]
         pub fn delete_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // ensure no creator token is issued for the channel
             channel.ensure_creator_token_not_issued::<T>()?;
@@ -3713,9 +3733,29 @@ impl<T: Config> Module<T> {
             ChannelOwner::CuratorGroup(..) => Ok(ChannelFundsDestination::CouncilBudget),
         }
     }
+
+    fn verify_channel_bag_witness(
+        channel_id: T::ChannelId,
+        witness: &ChannelBagWitness,
+    ) -> DispatchResult {
+        let bag_id = Self::bag_id_for_channel(&channel_id);
+        let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+
+        ensure!(
+            channel_bag.stored_by.len() == witness.storage_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+        ensure!(
+            channel_bag.distributed_by.len() == witness.distribution_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+
+        Ok(())
+    }
+
     //Weight functions
 
-    // Calculates weight for channel_creation_weight extrinsic.
+    // Calculates weight for create_channel extrinsic.
     fn create_channel_weight(params: &ChannelCreationParameters<T>) -> Weight {
         //collaborators
         let a = params.collaborators.len() as u32;
@@ -3732,7 +3772,72 @@ impl<T: Config> Module<T> {
             .as_ref()
             .map_or(0, |v| v.object_creation_list.len()) as u32;
 
-        WeightInfoContent::<T>::create_channel(a, b, c, d)
+        //metadata
+        let e = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+        WeightInfoContent::<T>::create_channel(a, b, c, d, e)
+    }
+
+    // Calculates weight for update_channel extrinsic.
+    fn update_channel_weight(params: &ChannelUpdateParameters<T>) -> Weight {
+        let assets_touched =
+            !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some();
+
+        if assets_touched {
+            //collaborators
+            let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
+
+            // assets_to_upload
+            let b = params
+                .assets_to_upload
+                .as_ref()
+                .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+            //assets_to_remove
+            let c = params.assets_to_remove.len() as u32;
+
+            //new metadata
+            let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+            //channel_bag_witness storage_buckets_num
+            //channel_bag_witness distribution_buckets_num
+            let (e, f) = params.channel_bag_witness.as_ref().map_or((0, 0), |v| {
+                (v.storage_buckets_num, v.distribution_buckets_num)
+            });
+
+            WeightInfoContent::<T>::channel_update_with_assets(a, b, c, d, e, f)
+        } else {
+            //collaborators
+            let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
+
+            //channel_bag_witness storage_buckets_num
+            //channel_bag_witness distribution_buckets_num
+            let (b, c) = params.channel_bag_witness.as_ref().map_or((0, 0), |v| {
+                (v.storage_buckets_num, v.distribution_buckets_num)
+            });
+
+            //new metadata
+            let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+            WeightInfoContent::<T>::channel_update_without_assets(a, b, c, d)
+        }
+    }
+
+    // Calculates weight for delete_channel extrinsic.
+    fn delete_channel_weight(
+        channel_bag_witness: &ChannelBagWitness,
+        num_objects_to_delete: &u64,
+    ) -> Weight {
+        //num_objects_to_delete
+        let a = (*num_objects_to_delete) as u32;
+
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
+
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
+
+        WeightInfoContent::<T>::delete_channel(a, b, c)
     }
 }
 
