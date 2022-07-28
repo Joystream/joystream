@@ -16,13 +16,16 @@ use frame_system::EventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
-use proposals_discussion::Module as Discussion;
 use proposals_engine::Module as Engine;
 use sp_core::Hasher;
 use sp_runtime::traits::One;
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
+use working_group::{
+    ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
+    StakeParameters, StakePolicy, WorkerById,
+};
 
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
@@ -54,12 +57,10 @@ fn handle_from_id(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Config + membership::Config>(
-    name: &'static str,
-    id: u32,
-) -> (T::AccountId, T::MemberId) {
-    let account_id = account::<T::AccountId>(name, id, SEED);
-    let handle = handle_from_id(id);
+fn member_funded_account<T: Config + membership::Config>() -> (T::AccountId, T::MemberId) {
+    let member_id = Membership::<T>::members_created();
+    let account_id = account::<T::AccountId>("member", member_id.saturated_into(), SEED);
+    let handle = handle_from_id(member_id.saturated_into());
 
     // Give balance for buying membership
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
@@ -76,7 +77,6 @@ fn member_funded_account<T: Config + membership::Config>(
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
 
-    let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
         member_id,
@@ -89,14 +89,14 @@ fn member_funded_account<T: Config + membership::Config>(
     )
     .unwrap();
 
-    (account_id, T::MemberId::from(id.try_into().unwrap()))
+    (account_id, member_id)
 }
 
 fn create_proposal_parameters<T: Config + membership::Config>(
     title_length: u32,
     description_length: u32,
 ) -> (T::AccountId, T::MemberId, GeneralProposalParameters<T>) {
-    let (account_id, member_id) = member_funded_account::<T>("account", 0);
+    let (account_id, member_id) = member_funded_account::<T>();
 
     let general_proposal_paramters = GeneralProposalParameters::<T> {
         member_id,
@@ -115,18 +115,18 @@ fn create_proposal_verify<T: Config>(
     proposal_parameters: GeneralProposalParameters<T>,
     proposal_details: ProposalDetailsOf<T>,
 ) {
-    assert_eq!(Discussion::<T>::thread_count(), 1, "No threads created");
-    let thread_id = T::ThreadId::from(1);
-    assert!(
-        proposals_discussion::ThreadById::<T>::contains_key(thread_id),
-        "No thread created"
-    );
+    let proposal_id = T::ProposalId::from(Engine::<T>::proposal_count());
 
-    let proposal_id = T::ProposalId::from(1);
     assert!(
         proposals_engine::Proposals::<T>::contains_key(proposal_id),
         "Proposal not inserted in engine"
     );
+
+    assert!(
+        ThreadIdByProposalId::<T>::contains_key(proposal_id),
+        "No thread created"
+    );
+    let thread_id = ThreadIdByProposalId::<T>::get(proposal_id);
 
     assert_eq!(
         Engine::<T>::proposals(proposal_id),
@@ -155,14 +155,8 @@ fn create_proposal_verify<T: Config>(
     );
 
     assert_eq!(
-        Engine::<T>::proposal_count(),
-        1,
-        "Proposal count not updated"
-    );
-
-    assert_eq!(
         Engine::<T>::active_proposal_count(),
-        1,
+        Engine::<T>::proposal_count(),
         "Active proposal count not updated"
     );
 
@@ -185,6 +179,102 @@ fn create_proposal_verify<T: Config>(
         thread_id,
         "Proposal and thread ID doesn't match"
     );
+}
+
+fn insert_leader<T, I>() -> (working_group::WorkerId<T>, T::AccountId)
+where
+    T: Config + membership::Config + working_group::Config<I> + balances::Config,
+    I: Instance,
+{
+    let (opening_id, lead_acc_id, _, application_id) = add_and_apply_on_lead_opening::<T, I>();
+
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
+
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    working_group::Module::<T, I>::fill_opening(
+        RawOrigin::Root.into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    assert!(WorkerById::<T, I>::contains_key(worker_id));
+
+    (worker_id, lead_acc_id)
+}
+
+fn add_and_apply_on_lead_opening<
+    T: Config + membership::Config + working_group::Config<I>,
+    I: Instance,
+>() -> (OpeningId, T::AccountId, T::MemberId, ApplicationId) {
+    let opening_id = add_lead_opening_helper::<T, I>();
+
+    let (applicant_acc_id, applicant_member_id, application_id) =
+        apply_on_opening_helper::<T, I>(&opening_id);
+
+    (
+        opening_id,
+        applicant_acc_id,
+        applicant_member_id,
+        application_id,
+    )
+}
+
+fn add_lead_opening_helper<T: Config + working_group::Config<I>, I: Instance>() -> OpeningId {
+    let opening_id = working_group::Module::<T, I>::next_opening_id();
+
+    working_group::Module::<T, I>::add_opening(
+        RawOrigin::Root.into(),
+        vec![],
+        OpeningType::Leader,
+        StakePolicy {
+            stake_amount: <T as working_group::Config<I>>::MinimumApplicationStake::get(),
+            leaving_unstaking_period: <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get(
+            ) + One::one(),
+        },
+        Some(One::one()),
+    )
+    .unwrap();
+
+    assert!(
+        OpeningById::<T, I>::contains_key(opening_id),
+        "Opening not added"
+    );
+
+    opening_id
+}
+
+fn apply_on_opening_helper<
+    T: Config + membership::Config + working_group::Config<I>,
+    I: Instance,
+>(
+    opening_id: &OpeningId,
+) -> (T::AccountId, T::MemberId, ApplicationId) {
+    let (applicant_acc_id, applicant_member_id) = member_funded_account::<T>();
+    let application_id = working_group::Module::<T, I>::next_application_id();
+
+    working_group::Module::<T, I>::apply_on_opening(
+        RawOrigin::Signed(applicant_acc_id.clone()).into(),
+        ApplyOnOpeningParameters::<T> {
+            member_id: applicant_member_id,
+            opening_id: *opening_id,
+            role_account_id: applicant_acc_id.clone(),
+            reward_account_id: applicant_acc_id.clone(),
+            description: vec![],
+            stake_parameters: StakeParameters {
+                stake: <T as working_group::Config<I>>::MinimumApplicationStake::get(),
+                staking_account_id: applicant_acc_id.clone(),
+            },
+        },
+    )
+    .unwrap();
+
+    assert!(
+        ApplicationById::<T, I>::contains_key(application_id),
+        "Application not added"
+    );
+
+    (applicant_acc_id, applicant_member_id, application_id)
 }
 
 benchmarks! {
@@ -307,7 +397,16 @@ benchmarks! {
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::VetoProposal(0.into());
+        // Create proposal to be vetoed first
+        let signal_proposal_details = ProposalDetails::Signal(vec![0u8]);
+        Module::<T>::create_proposal(
+            RawOrigin::Signed(account_id.clone()).into(),
+            general_proposal_paramters.clone(),
+            signal_proposal_details
+        )?;
+        let proposal_id = proposals_engine::Module::<T>::proposal_count();
+
+        let proposal_details = ProposalDetails::VetoProposal(proposal_id.into());
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
@@ -360,12 +459,14 @@ benchmarks! {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
 
+        let (opening_id, _, _, application_id) = add_and_apply_on_lead_opening::<T, ForumWorkingGroupInstance>();
+
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::FillWorkingGroupLeadOpening(FillOpeningParameters {
-            opening_id: working_group::OpeningId::zero(),
-            application_id: working_group::ApplicationId::zero(),
+            opening_id,
+            application_id,
             working_group: WorkingGroup::Forum,
         });
     }: create_proposal(
@@ -412,11 +513,13 @@ benchmarks! {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
 
+        let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
+
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::DecreaseWorkingGroupLeadStake(
-            working_group::WorkerId::<T>::zero(),
+            lead_id,
             BalanceOf::<T>::one(),
             WorkingGroup::Forum,
         );
@@ -437,6 +540,8 @@ benchmarks! {
     create_proposal_slash_working_group_lead {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
+
+        let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -464,6 +569,8 @@ benchmarks! {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
 
+        let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
+
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
@@ -489,6 +596,8 @@ benchmarks! {
     create_proposal_terminate_working_group_lead {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
+
+        let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -542,11 +651,13 @@ benchmarks! {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
 
+        let opening_id = add_lead_opening_helper::<T, ForumWorkingGroupInstance>();
+
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::CancelWorkingGroupLeadOpening(
-            working_group::OpeningId::zero(),
+            opening_id,
             WorkingGroup::Forum);
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
