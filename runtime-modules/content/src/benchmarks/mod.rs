@@ -831,7 +831,7 @@ where
 }
 
 pub fn all_channel_pausable_features_except(
-    feature: crate::PausableChannelFeature,
+    except: BTreeSet<crate::PausableChannelFeature>,
 ) -> BTreeSet<crate::PausableChannelFeature> {
     [
         crate::PausableChannelFeature::ChannelFundsTransfer,
@@ -843,7 +843,7 @@ pub fn all_channel_pausable_features_except(
         crate::PausableChannelFeature::CreatorTokenIssuance,
     ]
     .iter()
-    .filter(|&&x| x != feature)
+    .filter(|&&x| !except.contains(&x))
     .map(|&x| x)
     .collect::<BTreeSet<_>>()
 }

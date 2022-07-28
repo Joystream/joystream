@@ -338,7 +338,7 @@ benchmarks! {
             origin.clone().into(),
             crate::ContentActor::Lead,
             channel_id,
-            super::all_channel_pausable_features_except(crate::PausableChannelFeature::ChannelFundsTransfer),
+            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![crate::PausableChannelFeature::ChannelFundsTransfer])),
             b"reason".to_vec(),
         ).unwrap();
 
@@ -378,15 +378,15 @@ benchmarks! {
             origin.clone().into(),
             crate::ContentActor::Lead,
             channel_id,
-            super::all_channel_pausable_features_except(crate::PausableChannelFeature::CreatorCashout),
+            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![
+                crate::PausableChannelFeature::CreatorCashout,
+            ])),
             b"reason".to_vec(),
         ).unwrap();
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
             ..Default::default()
         })?;
-
-
 
         let actor = crate::ContentActor::Lead;
         let item = payments[0].clone();
@@ -402,6 +402,49 @@ benchmarks! {
             assert_eq!(
                 T::CouncilBudgetManager::get_budget(),
                 T::ExistentialDeposit::get(),
+            );
+        }
+
+    claim_and_withdraw_channel_reward {
+        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
+
+        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
+        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
+        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
+        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
+        let (channel_id, group_id, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel::<T>(false)?;
+        let origin = RawOrigin::Signed(lead_account_id.clone());
+
+        Pallet::<T>::set_channel_paused_features_as_moderator(
+            origin.clone().into(),
+            crate::ContentActor::Lead,
+            channel_id,
+            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![
+                crate::PausableChannelFeature::CreatorCashout,
+                crate::PausableChannelFeature::ChannelFundsTransfer,
+            ])),
+            b"reason".to_vec(),
+        ).unwrap();
+        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
+           commitment: Some(commitment),
+            ..Default::default()
+        })?;
+
+        let actor = crate::ContentActor::Lead;
+        let item = payments[0].clone();
+        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
+    }: _ (origin, actor, proof, item)
+        verify {
+            let cashout = item
+                 .cumulative_reward_earned - cumulative_reward_claimed;
+            assert_eq!(
+                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
+                item.cumulative_reward_earned
+            );
+            assert_eq!(
+                T::CouncilBudgetManager::get_budget(),
+                cumulative_reward_claimed + T::ExistentialDeposit::get(),
             );
         }
 }
@@ -493,6 +536,12 @@ pub mod tests {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_claim_channel_reward());
         })
+    }
 
+    #[test]
+    fn claim_channel_and_withdraw_reward() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_claim_and_withdraw_channel_reward());
+        })
     }
 }
