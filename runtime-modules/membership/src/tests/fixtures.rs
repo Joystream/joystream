@@ -1,8 +1,8 @@
 use super::mock::*;
 use crate::Event as MembershipEvent;
 use crate::{
-    BuyMembershipParameters, CreateFoundingMemberParameters, GiftMembershipParameters, InviteMembershipParameters,
-    MembershipObject,
+    BuyMembershipParameters, CreateFoundingMemberParameters, GiftMembershipParameters,
+    InviteMembershipParameters, MembershipObject,
 };
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
