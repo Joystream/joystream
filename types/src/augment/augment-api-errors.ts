@@ -940,10 +940,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AccountDoesNotMatchThreadAuthor: AugmentedError<ApiType>;
       /**
-       * Forum user has already voted.
-       **/
-      AlreadyVotedOnPoll: AugmentedError<ApiType>;
-      /**
        * Ancestor category immutable, i.e. deleted or archived
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
@@ -1023,26 +1019,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category path len should be greater than zero
        **/
       PathLengthShouldBeGreaterThanZero: AugmentedError<ApiType>;
-      /**
-       * Poll items number too short.
-       **/
-      PollAlternativesTooShort: AugmentedError<ApiType>;
-      /**
-       * Poll data committed after poll expired.
-       **/
-      PollCommitExpired: AugmentedError<ApiType>;
-      /**
-       * Poll data committed is wrong.
-       **/
-      PollData: AugmentedError<ApiType>;
-      /**
-       * Poll not exist.
-       **/
-      PollNotExist: AugmentedError<ApiType>;
-      /**
-       * Poll date setting is wrong.
-       **/
-      PollTimeSetting: AugmentedError<ApiType>;
       /**
        * Post does not exist.
        **/
