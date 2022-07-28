@@ -11,7 +11,7 @@ use balances::Pallet as Balances;
 use crate::{Call, ChannelById, Config, Event};
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
-use frame_support::traits::Get;
+use frame_support::traits::{Get, Currency};
 use sp_runtime::traits::Hash;
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::{One, Saturating};
@@ -346,7 +346,7 @@ benchmarks! {
         let (channel_owner_account_id, channel_owner_member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
         let origin = RawOrigin::Signed(channel_owner_account_id.clone());
         let owner = crate::ChannelOwner::Member(channel_owner_member_id);
-        let channel_id = setup_worst_case_scenario_curator_channel::<T>(false);
+        let (channel_id, _,_,_,_) = setup_worst_case_scenario_curator_channel::<T>(false)?;
         Pallet::<T>::set_channel_paused_features_as_moderator(
             RawOrigin::Signed(lead_account).into(),
             crate::ContentActor::Lead,
