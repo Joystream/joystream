@@ -369,7 +369,6 @@ async function createBid(
     nft,
     bidder: member,
     amount: amount,
-    createdAt: new Date(event.blockTimestamp),
     createdInBlock: event.blockNumber,
     indexInBlock: event.indexInBlock,
     isCanceled: false,
@@ -1307,7 +1306,6 @@ export async function contentNft_NftSlingedBackToTheOriginalArtist({
   nft.ownerMember = video.channel?.ownerMember
   nft.ownerCuratorGroup = video.channel?.ownerCuratorGroup
   nft.isOwnedByChannel = true
-  nft.updatedAt = new Date(event.blockTimestamp)
 
   await getAllManagers(store).videoNfts.onMainEntityUpdate(nft)
 
