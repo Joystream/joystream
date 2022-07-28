@@ -28,7 +28,7 @@ use working_group::{
 };
 
 const SEED: u32 = 0;
-const MAX_BYTES: u32 = 16384;
+const MAX_BYTES: u32 = 3 * 1024 * 1024;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
@@ -398,10 +398,14 @@ benchmarks! {
             create_proposal_parameters::<T>(t, d);
 
         // Create proposal to be vetoed first
-        let signal_proposal_details = ProposalDetails::Signal(vec![0u8]);
+        let (signal_account_id, signal_member_id, signal_general_proposal_params) = create_proposal_parameters::<T>(
+            T::TitleMaxLength::get(),
+            T::DescriptionMaxLength::get()
+        );
+        let signal_proposal_details = ProposalDetails::Signal(vec![0u8].repeat(MAX_BYTES as usize));
         Module::<T>::create_proposal(
-            RawOrigin::Signed(account_id.clone()).into(),
-            general_proposal_paramters.clone(),
+            RawOrigin::Signed(signal_account_id).into(),
+            signal_general_proposal_params,
             signal_proposal_details
         )?;
         let proposal_id = proposals_engine::Module::<T>::proposal_count();
