@@ -433,6 +433,12 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
+impl common::membership::MembershipInfoProvider<Test> for () {
+    fn controller_account_id(member_id: u64) -> Result<u64, DispatchError> {
+        Ok(member_id)
+    }
+}
+
 impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
@@ -453,6 +459,7 @@ parameter_types! {
 impl proposals_discussion::Config for Test {
     type Event = Event;
     type AuthorOriginValidator = ();
+    type MembershipInfoProvider = ();
     type CouncilOriginValidator = ();
     type ThreadId = u64;
     type PostId = u64;

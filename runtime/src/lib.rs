@@ -1325,6 +1325,7 @@ macro_rules! call_wg {
 impl proposals_discussion::Config for Runtime {
     type Event = Event;
     type AuthorOriginValidator = Members;
+    type MembershipInfoProvider = Members;
     type CouncilOriginValidator = Council;
     type ThreadId = ThreadId;
     type PostId = PostId;

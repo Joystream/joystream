@@ -69,7 +69,7 @@ use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
-use common::membership::MemberOriginValidator;
+use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::MemberId;
 use types::{DiscussionPost, DiscussionThread};
 
@@ -123,6 +123,9 @@ pub trait Config:
     /// Validates post author id and origin combination
     type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
+    /// For checking member existance
+    type MembershipInfoProvider: MembershipInfoProvider<Self>;
+
     /// Defines whether the member is an active councilor.
     type CouncilOriginValidator: CouncilOriginValidator<
         Self::Origin,
@@ -172,6 +175,10 @@ decl_error! {
 
         /// Max allowed authors list limit exceeded.
         MaxWhiteListSizeExceeded,
+
+        /// At least one of the member ids provided as part of closed thread whitelist belongs
+        /// to a non-existing member.
+        WhitelistedMemberDoesNotExist,
 
         /// Account has insufficient balance to create a post
         InsufficientBalanceForPost,
@@ -409,6 +416,12 @@ decl_module! {
                     list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
                     Error::<T>::MaxWhiteListSizeExceeded
                 );
+                for member_id in list {
+                    ensure!(
+                        T::MembershipInfoProvider::controller_account_id(*member_id).is_ok(),
+                        Error::<T>::WhitelistedMemberDoesNotExist
+                    )
+                }
             }
 
             let thread = Self::thread_by_id(&thread_id);
