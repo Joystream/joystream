@@ -949,6 +949,7 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 Zero::zero(),
+                false,
             );
 
             Self::deposit_event(RawEvent::MembershipGifted(invited_member_id, params));
