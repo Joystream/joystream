@@ -2,8 +2,13 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { VideoMetadata } from '@joystream/metadata-protobuf'
-import { VideoId } from '@joystream/types/primitives'
+import { ContentMetadata, IContentMetadata, VideoMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { ChannelId, VideoId } from '@joystream/types/primitives'
+import {
+  PalletContentPermissionsContentActor as ContentActor,
+  PalletContentVideoCreationParametersRecord as VideoCreationParameters,
+  PalletContentVideoUpdateParametersRecord as VideoUpdateParameters,
+} from '@polkadot/types/lookup'
 import { In, FindOptionsWhere } from 'typeorm'
 import { BaseModel } from '@joystream/warthog'
 import {
@@ -31,6 +36,7 @@ import {
 } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { createNft } from './nft'
 import {
@@ -42,16 +48,16 @@ import {
 } from './utils'
 
 interface ContentCreatedEventData {
-  contentActor: joystreamTypes.ContentActor
+  contentActor: ContentActor
   channelId: ChannelId
   contentId: VideoId // eventually this would be generic `Content` type in runtime
-  contentCreationParameters: joystreamTypes.VideoCreationParameters
+  contentCreationParameters: VideoCreationParameters
 }
 
 interface ContentUpdatedEventData {
-  contentActor: joystreamTypes.ContentActor
+  contentActor: ContentActor
   contentId: VideoId // eventually this would be generic `Content` type in runtime
-  contentUpdateParameters: joystreamTypes.VideoUpdateParameters
+  contentUpdateParameters: VideoUpdateParameters
 }
 
 /// //////////////// Video //////////////////////////////////////////////////////
@@ -178,15 +184,6 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
     return
   }
 
-  // prepare changed metadata
-  const newMetadataBytes = contentUpdateParameters.newMeta.unwrapOr(null)
-
-  // update metadata if it was changed
-  if (newMetadataBytes) {
-    const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video, newMetadata, contentUpdateParameters.assetsToUpload.unwrapOr(undefined))
-  }
-
   inconsistentState('Non-existing content update requested', contentId)
 }
 
@@ -200,7 +197,7 @@ export async function processUpdateVideoMessage(
   const { contentActor, contentId, contentUpdateParameters } = contentUpdatedEventData
 
   if (metadata)
-    await processVideoMetadata(ctx, video, metadata, contentUpdateParameters.assets_to_upload.unwrapOr(undefined))
+    await processVideoMetadata(ctx, video, metadata, contentUpdateParameters.assetsToUpload.unwrapOr(undefined))
 
   // create nft if requested
   const issuanceParameters = contentUpdateParameters.autoIssueNft.unwrapOr(null)

@@ -43,7 +43,6 @@ export type DataObjectInfoFragment = {
     | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoMedia'; video?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoThumbnail'; video?: Types.Maybe<{ id: string }> }
-    | { __typename: 'DataObjectTypePlaylistThumbnail'; playlist?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoSubtitle' }
     | { __typename: 'DataObjectTypeUnknown' }
 }
@@ -184,11 +183,6 @@ export const DataObjectInfo = gql`
       }
       ... on DataObjectTypeVideoThumbnail {
         video {
-          id
-        }
-      }
-      ... on DataObjectTypePlaylistThumbnail {
-        playlist {
           id
         }
       }

@@ -20,11 +20,6 @@ fragment DataObjectTypeFields on DataObjectType {
       id
     }
   }
-  ... on DataObjectTypePlaylistThumbnail {
-    playlist {
-      id
-    }
-  }
 }
 
 fragment StorageDataObjectFields on StorageDataObject {
@@ -232,24 +227,6 @@ fragment ChannelNftCollectorFields on ChannelNftCollectors {
   }
   amount
   lastIncreaseAt
-}
-
-fragment PlaylistFields on Playlist {
-  id
-  channel {
-    ...ChannelFields
-  }
-  title
-  description
-  videos {
-    video {
-      id
-    }
-    position
-  }
-  publicUncensoredVideosCount
-  publicUncensoredVideosDuration
-  isPublic
 }
 
 query getChannelById($id: ID!) {
