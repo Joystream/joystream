@@ -6,17 +6,18 @@ use crate::types::{
     TransferCommitmentParameters, TransferCommitmentWitnessOf, ModuleAccount,
 };
 use crate::Module as Pallet;
-use storage::Pallet as Storage;
-use balances::Pallet as Balances;
-use crate::{Call, ChannelById, Config, Event};
+use crate::{Call, ChannelById, Config, Event, ContentTreasury};
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Get, Currency};
-use sp_runtime::traits::Hash;
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::{One, Saturating};
+use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use sp_std::convert::TryInto;
+use storage::Pallet as Storage;
+use common::BudgetManager;
+use balances::Pallet as Balances;
 
 use super::{
     assert_last_event, clone_curator_group, generate_channel_creation_params,
@@ -337,33 +338,36 @@ benchmarks! {
     }
 
     withdraw_from_channel_balance {
-        let lead_account = insert_content_leader::<T>();
-        let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get()
-        )?;
-        let group = Pallet::<T>::curator_group_by_id(group_id);
-
-        let (channel_owner_account_id, channel_owner_member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
-        let origin = RawOrigin::Signed(channel_owner_account_id.clone());
-        let owner = crate::ChannelOwner::Member(channel_owner_member_id);
-        let (channel_id, _,_,_,_) = setup_worst_case_scenario_curator_channel::<T>(false)?;
+        let (channel_id, group_id, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel::<T>(false)?;
+        let origin= RawOrigin::Signed(lead_account_id.clone());
         Pallet::<T>::set_channel_paused_features_as_moderator(
-            RawOrigin::Signed(lead_account).into(),
+            origin.clone().into(),
             crate::ContentActor::Lead,
             channel_id,
             super::all_channel_pausable_features_except(crate::PausableChannelFeature::ChannelFundsTransfer),
             b"reason".to_vec(),
         ).unwrap();
 
-        let channel_account_id = crate::ContentTreasury::<T>::account_for_channel(channel_id);
         let amount = <T as balances::Config>::Balance::from(100u32);
-        let _ = Balances::<T>::deposit_creating(&channel_account_id, amount + T::ExistentialDeposit::get());
+        let _ = Balances::<T>::deposit_creating(
+            &ContentTreasury::<T>::account_for_channel(channel_id),
+            amount + T::ExistentialDeposit::get(),
+        );
 
-        let balance_pre = Balances::<T>::usable_balance(&channel_owner_account_id);
-        let actor = crate::ContentActor::Member(channel_owner_member_id);
+        let actor = crate::ContentActor::Lead;
+        let origin = RawOrigin::Signed(lead_account_id.clone());
     }: _ (origin, actor, channel_id, amount)
         verify {
-            assert_eq!(Balances::<T>::usable_balance(channel_owner_account_id), balance_pre.saturating_add(amount));
+            assert_eq!(
+                T::CouncilBudgetManager::get_budget(),
+                amount,
+            );
+
+            assert_eq!(
+                Balances::<T>::usable_balance(ContentTreasury::<T>::account_for_channel(channel_id)),
+                T::ExistentialDeposit::get(),
+            );
         }
 }
 
@@ -448,5 +452,4 @@ pub mod tests {
             assert_ok!(Content::test_benchmark_withdraw_from_channel_balance());
         })
     }
-
 }

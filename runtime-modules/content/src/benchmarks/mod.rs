@@ -827,3 +827,21 @@ where
 
     Ok(new_group_id)
 }
+
+pub fn all_channel_pausable_features_except(
+    feature: crate::PausableChannelFeature,
+) -> BTreeSet<crate::PausableChannelFeature> {
+    [
+        crate::PausableChannelFeature::ChannelFundsTransfer,
+        crate::PausableChannelFeature::CreatorCashout,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::VideoNftIssuance,
+        crate::PausableChannelFeature::VideoCreation,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::CreatorTokenIssuance,
+    ]
+    .iter()
+    .filter(|&&x| x != feature)
+    .map(|&x| x)
+    .collect::<BTreeSet<_>>()
+}
