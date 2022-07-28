@@ -925,8 +925,14 @@ decl_module! {
                     );
                 };
             } else {
-                let locked_balance: BalanceOf<T> = params.apply_controller_account_invitation_lock.unwrap_or_else(Zero::zero)
-                    .saturating_add(params.apply_root_account_invitation_lock.unwrap_or_else(Zero::zero))
+                let locked_balance: BalanceOf<T> = params
+                    .apply_controller_account_invitation_lock
+                    .unwrap_or_else(Zero::zero)
+                    .saturating_add(
+                        params
+                            .apply_root_account_invitation_lock
+                            .unwrap_or_else(Zero::zero),
+                    )
                     .saturated_into();
 
                 if !locked_balance.is_zero() {

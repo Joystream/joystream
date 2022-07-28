@@ -146,7 +146,8 @@ pub fn get_bob_gift_membership_parameters() -> GiftMembershipParameters<u64, u64
     }
 }
 
-pub fn get_bob_gift_membership_parameters_invalid() -> GiftMembershipParameters<u64, u64> {
+pub fn get_bob_gift_membership_parameters_invalid_root_credit() -> GiftMembershipParameters<u64, u64>
+{
     let info = get_bob_info();
 
     GiftMembershipParameters {
@@ -155,9 +156,41 @@ pub fn get_bob_gift_membership_parameters_invalid() -> GiftMembershipParameters<
         handle: info.handle,
         metadata: info.metadata,
         credit_controller_account: 1000,
-        apply_controller_account_invitation_lock: Some(10_000),
+        apply_controller_account_invitation_lock: None,
         credit_root_account: 1000,
-        apply_root_account_invitation_lock: Some(10_000),
+        apply_root_account_invitation_lock: Some(10_000), // more than credit
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_invalid_controller_credit(
+) -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        controller_account: BOB_CONTROLLER_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(10_000), // more than credit
+        credit_root_account: 1000,
+        apply_root_account_invitation_lock: None,
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_single_account() -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        // same as root account
+        controller_account: BOB_ROOT_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(500),
+        credit_root_account: 2000,
+        apply_root_account_invitation_lock: Some(600),
     }
 }
 
