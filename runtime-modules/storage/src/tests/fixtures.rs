@@ -3,6 +3,7 @@ use derive_new::new;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::{assert_noop, assert_ok};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
@@ -193,8 +194,8 @@ impl EventFixture {
     }
 }
 
-const DEFAULT_ACCOUNT_ID: u64 = 1;
-const DEFAULT_WORKER_ID: u64 = 1;
+pub const DEFAULT_ACCOUNT_ID: u64 = 1;
+pub const DEFAULT_WORKER_ID: u64 = 1;
 pub const DEFAULT_DATA_OBJECTS_NUMBER: u64 = DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT / 2;
 pub const DEFAULT_DATA_OBJECTS_SIZE: u64 =
     DEFAULT_STORAGE_BUCKET_SIZE_LIMIT / DEFAULT_DATA_OBJECTS_NUMBER - 1;
@@ -381,9 +382,8 @@ impl UploadFixture {
             .collect::<Vec<_>>();
         let end_id = Storage::next_data_object_id();
 
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
             // balance check
             assert_eq!(
                 balance_pre.saturating_sub(balance_post),
@@ -432,6 +432,7 @@ impl UploadFixture {
             assert!((start_id..end_id)
                 .all(|id| <crate::DataObjectsById<Test>>::contains_key(&self.params.bag_id, id)));
         } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
             assert_eq!(start_id, end_id);
             assert_eq!(balance_pre, balance_post);
 
@@ -1205,14 +1206,15 @@ impl CreateDynamicBagFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::create_dynamic_bag(self.params.clone());
 
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
             let bag_id: BagId<Test> = self.params.bag_id.clone().into();
             assert!(<crate::Bags<Test>>::contains_key(&bag_id));
 
             let bag = <crate::Bags<Test>>::get(&bag_id);
             assert!(!bag.stored_by.is_empty());
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
         }
     }
 }

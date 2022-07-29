@@ -1061,7 +1061,7 @@ declare module '@polkadot/types/lookup' {
     readonly isStorageBucketsUpdatedForBag: boolean;
     readonly asStorageBucketsUpdatedForBag: ITuple<[PalletStorageBagIdType, BTreeSet<u64>, BTreeSet<u64>]>;
     readonly isDataObjectsUploaded: boolean;
-    readonly asDataObjectsUploaded: ITuple<[Vec<u64>, PalletStorageUploadParametersRecord, u128]>;
+    readonly asDataObjectsUploaded: ITuple<[BTreeSet<u64>, PalletStorageUploadParametersRecord, u128]>;
     readonly isStorageOperatorMetadataSet: boolean;
     readonly asStorageOperatorMetadataSet: ITuple<[u64, u64, Bytes]>;
     readonly isStorageBucketVoucherLimitsSet: boolean;
@@ -1100,8 +1100,6 @@ declare module '@polkadot/types/lookup' {
     readonly asStorageBucketDeleted: u64;
     readonly isNumberOfStorageBucketsInDynamicBagCreationPolicyUpdated: boolean;
     readonly asNumberOfStorageBucketsInDynamicBagCreationPolicyUpdated: ITuple<[PalletStorageDynamicBagType, u64]>;
-    readonly isBagObjectsChanged: boolean;
-    readonly asBagObjectsChanged: ITuple<[PalletStorageBagIdType, u64, u64]>;
     readonly isDistributionBucketFamilyCreated: boolean;
     readonly asDistributionBucketFamilyCreated: u64;
     readonly isDistributionBucketFamilyDeleted: boolean;
@@ -1135,12 +1133,12 @@ declare module '@polkadot/types/lookup' {
     readonly isDataObjectStateBloatBondValueUpdated: boolean;
     readonly asDataObjectStateBloatBondValueUpdated: u128;
     readonly isDataObjectsUpdated: boolean;
-    readonly asDataObjectsUpdated: ITuple<[PalletStorageUploadParametersRecord, BTreeSet<u64>]>;
+    readonly asDataObjectsUpdated: ITuple<[PalletStorageUploadParametersRecord, BTreeSet<u64>, BTreeSet<u64>]>;
     readonly isStorageOperatorRemarked: boolean;
     readonly asStorageOperatorRemarked: ITuple<[u64, u64, Bytes]>;
     readonly isDistributionOperatorRemarked: boolean;
     readonly asDistributionOperatorRemarked: ITuple<[u64, PalletStorageDistributionBucketIdRecord, Bytes]>;
-    readonly type: 'StorageBucketCreated' | 'StorageBucketInvitationAccepted' | 'StorageBucketsUpdatedForBag' | 'DataObjectsUploaded' | 'StorageOperatorMetadataSet' | 'StorageBucketVoucherLimitsSet' | 'PendingDataObjectsAccepted' | 'StorageBucketInvitationCancelled' | 'StorageBucketOperatorInvited' | 'StorageBucketOperatorRemoved' | 'UploadingBlockStatusUpdated' | 'DataObjectPerMegabyteFeeUpdated' | 'StorageBucketsPerBagLimitUpdated' | 'StorageBucketsVoucherMaxLimitsUpdated' | 'DataObjectsMoved' | 'DataObjectsDeleted' | 'StorageBucketStatusUpdated' | 'UpdateBlacklist' | 'DynamicBagDeleted' | 'DynamicBagCreated' | 'VoucherChanged' | 'StorageBucketDeleted' | 'NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated' | 'BagObjectsChanged' | 'DistributionBucketFamilyCreated' | 'DistributionBucketFamilyDeleted' | 'DistributionBucketCreated' | 'DistributionBucketStatusUpdated' | 'DistributionBucketDeleted' | 'DistributionBucketsUpdatedForBag' | 'DistributionBucketsPerBagLimitUpdated' | 'DistributionBucketModeUpdated' | 'FamiliesInDynamicBagCreationPolicyUpdated' | 'DistributionBucketOperatorInvited' | 'DistributionBucketInvitationCancelled' | 'DistributionBucketInvitationAccepted' | 'DistributionBucketMetadataSet' | 'DistributionBucketOperatorRemoved' | 'DistributionBucketFamilyMetadataSet' | 'DataObjectStateBloatBondValueUpdated' | 'DataObjectsUpdated' | 'StorageOperatorRemarked' | 'DistributionOperatorRemarked';
+    readonly type: 'StorageBucketCreated' | 'StorageBucketInvitationAccepted' | 'StorageBucketsUpdatedForBag' | 'DataObjectsUploaded' | 'StorageOperatorMetadataSet' | 'StorageBucketVoucherLimitsSet' | 'PendingDataObjectsAccepted' | 'StorageBucketInvitationCancelled' | 'StorageBucketOperatorInvited' | 'StorageBucketOperatorRemoved' | 'UploadingBlockStatusUpdated' | 'DataObjectPerMegabyteFeeUpdated' | 'StorageBucketsPerBagLimitUpdated' | 'StorageBucketsVoucherMaxLimitsUpdated' | 'DataObjectsMoved' | 'DataObjectsDeleted' | 'StorageBucketStatusUpdated' | 'UpdateBlacklist' | 'DynamicBagDeleted' | 'DynamicBagCreated' | 'VoucherChanged' | 'StorageBucketDeleted' | 'NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated' | 'DistributionBucketFamilyCreated' | 'DistributionBucketFamilyDeleted' | 'DistributionBucketCreated' | 'DistributionBucketStatusUpdated' | 'DistributionBucketDeleted' | 'DistributionBucketsUpdatedForBag' | 'DistributionBucketsPerBagLimitUpdated' | 'DistributionBucketModeUpdated' | 'FamiliesInDynamicBagCreationPolicyUpdated' | 'DistributionBucketOperatorInvited' | 'DistributionBucketInvitationCancelled' | 'DistributionBucketInvitationAccepted' | 'DistributionBucketMetadataSet' | 'DistributionBucketOperatorRemoved' | 'DistributionBucketFamilyMetadataSet' | 'DataObjectStateBloatBondValueUpdated' | 'DataObjectsUpdated' | 'StorageOperatorRemarked' | 'DistributionOperatorRemarked';
   }
 
   /** @name PalletStorageUploadParametersRecord (137) */

@@ -2247,14 +2247,6 @@ declare module '@polkadot/api-base/types/events' {
     };
     storage: {
       /**
-       * Bag objects changed.
-       * Params
-       * - bag id
-       * - new total objects size
-       * - new total objects number
-       **/
-      BagObjectsChanged: AugmentedEvent<ApiType, [PalletStorageBagIdType, u64, u64]>;
-      /**
        * Emits on changing the size-based pricing of new objects uploaded.
        * Params
        * - new data size fee
@@ -2286,9 +2278,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on storage assets being uploaded and deleted at the same time
        * Params
        * - UploadParameters
-       * - Objects Id of assets to be removed
+       * - Ids of the uploaded objects
+       * - Ids of the removed objects
        **/
-      DataObjectsUpdated: AugmentedEvent<ApiType, [PalletStorageUploadParametersRecord, BTreeSet<u64>]>;
+      DataObjectsUpdated: AugmentedEvent<ApiType, [PalletStorageUploadParametersRecord, BTreeSet<u64>, BTreeSet<u64>]>;
       /**
        * Emits on uploading data objects.
        * Params
@@ -2296,7 +2289,7 @@ declare module '@polkadot/api-base/types/events' {
        * - initial uploading parameters
        * - state bloat bond for objects
        **/
-      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<u64>, PalletStorageUploadParametersRecord, u128]>;
+      DataObjectsUploaded: AugmentedEvent<ApiType, [BTreeSet<u64>, PalletStorageUploadParametersRecord, u128]>;
       /**
        * Emits on creating distribution bucket.
        * Params
