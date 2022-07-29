@@ -1283,7 +1283,16 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Update channel payouts
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` where:
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeightInfoContent::<T>::update_channel_payouts()]
         pub fn update_channel_payouts(
             origin,
             params: UpdateChannelPayoutsParameters<T>
@@ -1343,7 +1352,17 @@ decl_module! {
             ));
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Claim reward in JOY from channel account
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the lenght of the provided merkle `proof`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeightInfoContent::<T>::claim_channel_reward(proof.len() as u32)]
         pub fn claim_channel_reward(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1366,7 +1385,16 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Claim reward in JOY from channel account
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeightInfoContent::<T>::withdraw_from_channel_balance()]
         pub fn withdraw_from_channel_balance(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1457,7 +1485,17 @@ decl_module! {
                     new_video_state_bloat_bond));
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Claim and withdraw reward in JOY from channel account
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the lenght of the provided merkle `proof`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeightInfoContent::<T>::claim_and_withdraw_channel_reward(proof.len() as u32)]
         pub fn claim_and_withdraw_channel_reward(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
