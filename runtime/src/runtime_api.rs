@@ -1,7 +1,6 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
 use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
-use frame_support::StorageValue;
 use pallet_grandpa::fg_primitives;
 use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
@@ -357,6 +356,7 @@ impl_runtime_apis! {
             use pallet_election_provider_support_benchmarking::Pallet as EPSBench;
             use frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
+            use frame_support::StorageValue;
 
             use frame_system::RawOrigin;
 
