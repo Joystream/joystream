@@ -7,6 +7,7 @@ import { MemberId } from '@joystream/types/primitives'
 import {
   PalletMembershipBuyMembershipParameters as BuyMembershipParameters,
   PalletMembershipInviteMembershipParameters as InviteMembershipParameters,
+  PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
 } from '@polkadot/types/lookup'
 import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
 import {
@@ -24,6 +25,7 @@ import {
   MembershipSystemSnapshot,
   MemberMetadata,
   MembershipBoughtEvent,
+  MembershipGiftedEvent,
   MemberProfileUpdatedEvent,
   MemberAccountsUpdatedEvent,
   MemberInvitedEvent,
@@ -39,6 +41,7 @@ import {
   LeaderInvitationQuotaUpdatedEvent,
   MembershipEntryPaid,
   MembershipEntryInvited,
+  MembershipEntryGifted,
   AvatarUri,
   WorkingGroup,
   MetaprotocolTransactionStatusEvent,
@@ -91,7 +94,7 @@ async function createNewMemberFromParams(
   event: SubstrateEvent,
   memberId: MemberId,
   entryMethod: typeof MembershipEntryMethod,
-  params: BuyMembershipParameters | InviteMembershipParameters
+  params: BuyMembershipParameters | InviteMembershipParameters | GiftMembershipParameters
 ): Promise<Membership> {
   const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(store)
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
@@ -118,7 +121,7 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as BuyMembershipParameters).referrerId.unwrap().toString() })
         : undefined,
     isVerified: false,
-    inviteCount: entryMethod.isTypeOf === 'MembershipEntryInvited' ? 0 : defaultInviteCount,
+    inviteCount: entryMethod.isTypeOf === 'MembershipEntryPaid' ? defaultInviteCount : 0,
     boundAccounts: [],
     invitees: [],
     referredMembers: [],
@@ -209,6 +212,32 @@ export async function members_MembershipBought({ store, event }: EventContext & 
 
   // Update the other side of event<->membership relation
   memberEntry.membershipBoughtEventId = membershipBoughtEvent.id
+  await store.save<Membership>(member)
+}
+
+export async function members_MembershipGifted({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId, giftMembershipParameters] = new Members.MembershipGiftedEvent(event).params
+
+  const memberEntry = new MembershipEntryGifted()
+  const member = await createNewMemberFromParams(store, event, memberId, memberEntry, giftMembershipParameters)
+
+  const membershipGiftedEvent = new MembershipGiftedEvent({
+    ...genericEventFields(event),
+    newMember: member,
+    controllerAccount: member.controllerAccount,
+    rootAccount: member.rootAccount,
+    handle: member.handle,
+    metadata: new MemberMetadata({
+      ...member.metadata,
+      id: undefined,
+    }),
+  })
+
+  await store.save<MemberMetadata>(membershipGiftedEvent.metadata)
+  await store.save<MembershipGiftedEvent>(membershipGiftedEvent)
+
+  // Update the other side of event<->membership relation
+  memberEntry.membershipGiftedEventId = membershipGiftedEvent.id
   await store.save<Membership>(member)
 }
 
