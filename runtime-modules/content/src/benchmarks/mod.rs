@@ -5,7 +5,7 @@ mod benchmarking;
 use crate::permissions::*;
 use crate::types::{
     ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-    InitTransferParametersOf, PullPayment, StorageAssets, Side,
+    InitTransferParametersOf, PullPayment, Side, StorageAssets,
 };
 use crate::{BalanceOf, Config, Module as Pallet};
 use balances::Pallet as Balances;
