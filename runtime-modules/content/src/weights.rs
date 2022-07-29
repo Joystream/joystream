@@ -53,6 +53,10 @@ pub trait WeightInfo {
 	fn initialize_channel_transfer(_a: u32, ) -> Weight;
 	fn cancel_channel_transfer() -> Weight;
 	fn accept_channel_transfer(_a: u32, ) -> Weight;
+	fn update_channel_payouts() -> Weight;
+	fn withdraw_from_channel_balance() -> Weight;
+	fn claim_channel_reward(_h: u32) -> Weight;
+	fn claim_and_withdraw_channel_reward(_h: u32) -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -169,6 +173,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
+
+	fn update_channel_payouts() -> Weight {
+		0
+	}
+	fn withdraw_from_channel_balance() -> Weight {
+		0
+	}
+	fn claim_channel_reward(_h: u32) -> Weight {
+		0
+	}
+	fn claim_and_withdraw_channel_reward(_h: u32) -> Weight {
+		0
+	}
 }
 
 // Default implementation for tests
@@ -198,6 +215,18 @@ impl WeightInfo for () {
 		0
 	}
 	fn accept_channel_transfer(a: u32, ) -> Weight {
+		0
+	}
+	fn update_channel_payouts() -> Weight {
+		0
+	}
+	fn withdraw_from_channel_balance() -> Weight {
+		0
+	}
+	fn claim_channel_reward(_h: u32) -> Weight {
+		0
+	}
+	fn claim_and_withdraw_channel_reward(_h: u32) -> Weight {
 		0
 	}
 }
