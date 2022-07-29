@@ -71,6 +71,8 @@ fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T
 }
 
 fn start_announcing_period<T: Config>() {
+    let previous_announcing_period_nr = Council::<T>::announcement_period_nr();
+
     Mutations::<T>::start_announcing_period();
 
     let current_block_number = System::<T>::block_number();
@@ -90,7 +92,7 @@ fn start_announcing_period<T: Config>() {
 
     assert_eq!(
         Council::<T>::announcement_period_nr(),
-        1,
+        previous_announcing_period_nr + 1,
         "Announcement period not updated"
     );
 }
@@ -184,6 +186,7 @@ where
     let id = START_ID + id;
 
     let (account_id, member_id) = member_funded_account::<T>(id);
+    let cycle_id = Council::<T>::announcement_period_nr();
 
     // Announce once before to take the branch that release the stake
     Council::<T>::announce_candidacy(
@@ -204,7 +207,7 @@ where
         Council::<T>::candidates(member_id),
         Some(Candidate {
             staking_account_id: account_id.clone(),
-            cycle_id: 1,
+            cycle_id,
             stake: T::MinCandidateStake::get(),
             note_hash: None,
             reward_account_id: account_id.clone(),
@@ -486,9 +489,9 @@ benchmarks! {
         let i in
             ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get()).try_into().unwrap()) ..
             ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get() + MAX_CANDIDATES)
-                .try_into().unwrap()) => {
-                    start_period_announce_multiple_candidates::<T>(i + 1);
-                };
+                .try_into().unwrap());
+
+        start_period_announce_multiple_candidates::<T>(i + 1);
         let current_block_number = System::<T>::block_number();
         let current_stage =
             CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
@@ -566,6 +569,7 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             member_id
         ).unwrap();
+        let cycle_id = Council::<T>::announcement_period_nr();
     }: _ (
         RawOrigin::Signed(account_id.clone()),
         member_id,
@@ -580,7 +584,7 @@ benchmarks! {
             candidate,
             Some(Candidate {
                 staking_account_id: account_id.clone(),
-                cycle_id: 2,
+                cycle_id,
                 stake: T::MinCandidateStake::get(),
                 note_hash: None,
                 reward_account_id: account_id.clone(),

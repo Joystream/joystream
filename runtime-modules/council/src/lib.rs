@@ -55,7 +55,7 @@ use frame_system::ensure_root;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
+use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
@@ -77,9 +77,9 @@ pub use weights::WeightInfo;
 /// Information about council's current state and when it changed the last time.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
-pub struct CouncilStageUpdate<BlockNumber: Zero> {
-    stage: CouncilStage<BlockNumber>,
-    changed_at: BlockNumber,
+pub struct CouncilStageUpdate<BlockNumber: One> {
+    pub stage: CouncilStage<BlockNumber>,
+    pub changed_at: BlockNumber,
 }
 
 /// Possible council states.
@@ -94,11 +94,10 @@ pub enum CouncilStage<BlockNumber> {
     Idle(CouncilStageIdle<BlockNumber>),
 }
 
-impl<BlockNumber: Zero> Default for CouncilStage<BlockNumber> {
+impl<BlockNumber: One> Default for CouncilStage<BlockNumber> {
     fn default() -> CouncilStage<BlockNumber> {
-        CouncilStage::Announcing(CouncilStageAnnouncing {
-            candidates_count: 0,
-            ends_at: BlockNumber::zero(),
+        CouncilStage::Idle(CouncilStageIdle {
+            ends_at: BlockNumber::one(),
         })
     }
 }
@@ -107,10 +106,10 @@ impl<BlockNumber: Zero> Default for CouncilStage<BlockNumber> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct CouncilStageAnnouncing<BlockNumber> {
-    candidates_count: u64,
+    pub candidates_count: u64,
     // We store the pre-computed end block in case the duration of the announcing period is
     // updated via runtime upgrade while there is already an ongoing announcing stage
-    ends_at: BlockNumber,
+    pub ends_at: BlockNumber,
 }
 
 /// Representation for new council members election stage state.
@@ -345,18 +344,6 @@ decl_storage! {
 
         /// Councilor reward per block
         pub CouncilorReward get(fn councilor_reward) config(): Balance<T>;
-    }
-
-    add_extra_genesis {
-        build(|_| {
-            Stage::<T>::put(CouncilStageUpdate {
-                changed_at: T::BlockNumber::zero(),
-                stage: CouncilStage::Announcing(CouncilStageAnnouncing {
-                    candidates_count: 0,
-                    ends_at: T::AnnouncingPeriodDuration::get()
-                })
-            })
-        });
     }
 }
 

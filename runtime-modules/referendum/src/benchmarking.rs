@@ -31,13 +31,13 @@ fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>:
 }
 
 fn start_voting_cycle<T: Config<I>, I: Instance>(winning_target_count: u32) {
-    Referendum::<T, I>::force_start(winning_target_count.into(), 0);
+    Referendum::<T, I>::force_start(winning_target_count.into(), 1);
     assert_eq!(
         Stage::<T, I>::get(),
         ReferendumStage::Voting(ReferendumStageVoting {
             started: System::<T>::block_number(),
             winning_target_count: (winning_target_count + 1).into(),
-            current_cycle_id: 0,
+            current_cycle_id: 1,
             ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
         }),
         "Vote cycle not started"
@@ -301,7 +301,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 ) -> MultipleVotesWithExtraVote<T, I> {
     start_voting_cycle::<T, I>(target_winners);
 
-    let cycle_id = 0;
+    let cycle_id = 1;
     let multiple_votes =
         make_multiple_votes_for_multiple_options::<T, I>(number_of_voters, cycle_id);
 
@@ -381,7 +381,7 @@ benchmarks_instance! {
     on_initialize_revealing {
         let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
-        let cycle_id = 0;
+        let cycle_id = 1;
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
         let started_voting_block_number = System::<T>::block_number();
@@ -427,7 +427,7 @@ benchmarks_instance! {
 
     on_initialize_voting {
         let winning_target_count = 0;
-        let cycle_id = 0;
+        let cycle_id = 1;
         start_voting_cycle::<T, I>(winning_target_count);
 
         let started_voting_block_number = System::<T>::block_number();
@@ -468,7 +468,7 @@ benchmarks_instance! {
         let account_id = funded_account::<T, I>("caller", 0);
 
         let salt = vec![0u8];
-        let cycle_id = 0;
+        let cycle_id = 1;
         let vote_option = 0;
         let commitment =
             Referendum::<T, I>::calculate_commitment(
@@ -518,7 +518,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         multiple_votes_with_extra.intermediate_winners.insert(
             0,
@@ -582,7 +582,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         assert_eq!(
             Referendum::<T, I>::stage(),
@@ -636,7 +636,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         multiple_votes_with_extra.intermediate_winners.pop();
 
@@ -702,7 +702,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         multiple_votes_with_extra.intermediate_winners[i as usize] = OptionResult {
             option_id: multiple_votes_with_extra.member_id,
@@ -746,7 +746,7 @@ benchmarks_instance! {
     release_vote_stake {
         start_voting_cycle::<T, I>(0);
 
-        let cycle_id = 0;
+        let cycle_id = 1;
         let option = 0;
         let stake = T::MinimumStake::get() + One::one();
         let salt = vec![0u8];
