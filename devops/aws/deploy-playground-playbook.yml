@@ -74,6 +74,8 @@
         COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
         DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
         SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
+        BALANCE_CREDIT: 500000000000
+        BALANCE_LOCKED: 0
       async: 1800
       poll: 0
       register: compose_result
