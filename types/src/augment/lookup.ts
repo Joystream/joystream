@@ -919,7 +919,7 @@ export default {
       StorageBucketCreated: '(u64,Option<u64>,bool,u64,u64)',
       StorageBucketInvitationAccepted: '(u64,u64,AccountId32)',
       StorageBucketsUpdatedForBag: '(PalletStorageBagIdType,BTreeSet<u64>,BTreeSet<u64>)',
-      DataObjectsUploaded: '(Vec<u64>,PalletStorageUploadParametersRecord,u128)',
+      DataObjectsUploaded: '(BTreeSet<u64>,PalletStorageUploadParametersRecord,u128)',
       StorageOperatorMetadataSet: '(u64,u64,Bytes)',
       StorageBucketVoucherLimitsSet: '(u64,u64,u64)',
       PendingDataObjectsAccepted: '(u64,u64,PalletStorageBagIdType,BTreeSet<u64>)',
@@ -939,7 +939,6 @@ export default {
       VoucherChanged: '(u64,PalletStorageVoucher)',
       StorageBucketDeleted: 'u64',
       NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated: '(PalletStorageDynamicBagType,u64)',
-      BagObjectsChanged: '(PalletStorageBagIdType,u64,u64)',
       DistributionBucketFamilyCreated: 'u64',
       DistributionBucketFamilyDeleted: 'u64',
       DistributionBucketCreated: '(u64,bool,PalletStorageDistributionBucketIdRecord)',
@@ -956,7 +955,7 @@ export default {
       DistributionBucketOperatorRemoved: '(PalletStorageDistributionBucketIdRecord,u64)',
       DistributionBucketFamilyMetadataSet: '(u64,Bytes)',
       DataObjectStateBloatBondValueUpdated: 'u128',
-      DataObjectsUpdated: '(PalletStorageUploadParametersRecord,BTreeSet<u64>)',
+      DataObjectsUpdated: '(PalletStorageUploadParametersRecord,BTreeSet<u64>,BTreeSet<u64>)',
       StorageOperatorRemarked: '(u64,u64,Bytes)',
       DistributionOperatorRemarked: '(u64,PalletStorageDistributionBucketIdRecord,Bytes)'
     }
