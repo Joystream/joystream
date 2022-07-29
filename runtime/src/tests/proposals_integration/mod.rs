@@ -471,7 +471,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         working_group::OpeningType::Leader,
         StakePolicy {
             stake_amount:
-                <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::LeaderOpeningStake::get(
+                <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(
                 ) as u128,
             leaving_unstaking_period: 1000000,
         },
@@ -486,7 +486,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8],
         stake_parameters: StakeParameters {
-            stake: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::LeaderOpeningStake::get() as
+            stake: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get() as
                 u128,
             staking_account_id: lead_account_id.clone(),
         },
@@ -517,7 +517,7 @@ where
 
                 let min_stake = <Runtime as working_group::Config<
                     MembershipWorkingGroupInstance,
-                >>::LeaderOpeningStake::get();
+                >>::MinimumApplicationStake::get();
 
                 increase_total_balance_issuance_using_account_id(
                     lead_account_id.clone(),
@@ -528,7 +528,6 @@ where
             }
         }
 
-        // are we missing one proposal when getting max stake?
         increase_total_balance_issuance_using_account_id(account_id, max_proposal_stake());
 
         assert_eq!((self.successful_call)(), Ok(()));

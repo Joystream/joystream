@@ -761,7 +761,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         increase_total_balance_issuance_using_account_id(account_id.into(), stake_amount * 2);
 
@@ -945,7 +945,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -1532,7 +1532,7 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -1708,7 +1708,7 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
