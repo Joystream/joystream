@@ -23,14 +23,17 @@ fn runtime_upgrade_total_fee_is_correct() {
             pays_fee: frame_support::weights::Pays::Yes,
         };
         let x = TransactionPayment::<Runtime>::compute_fee(tx_length_bytes, &dispatch_info, 0);
-        let weight_fee = WeightToFeeImpl::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT); // between 21 and 22 * DOLLARS;
+        let weight_fee = WeightToFeeImpl::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
         let length_fee = TransactionByteFee::get().saturating_mul(tx_length_bytes as u128);
         let base_weight_fee = CENTS.saturating_div(10);
-        let y = weight_fee + length_fee + base_weight_fee;
+        let y = weight_fee
+            .saturating_add(length_fee)
+            .saturating_add(base_weight_fee);
 
-        // There is a rounding error of 1.. where is it coming from?
+        // due to rounding errors can't get the diff down to zero..
         assert_eq!(x.max(y) - x.min(y), 1);
-        // No more than 30 DOLLARS
-        assert!(weight_fee < 30 * DOLLARS);
+        // between 83 and 84 DOLLARS
+        assert!(y.lt(&DOLLARS.saturating_mul(84)));
+        assert!(y.gt(&DOLLARS.saturating_mul(83)));
     });
 }
