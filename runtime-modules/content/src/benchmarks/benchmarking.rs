@@ -302,13 +302,16 @@ benchmarks! {
     // ======================== CHANNEL PAYOUTS & WITHDRAWALS =========================
     // ================================================================================
 
+    // WORST CASE SCENARIO:
+    // - DB read cost already maxed out due to `payload` being a struct of `Option`s
+    // - `payload` fields `Some(..)` in order to maximize the number of storage mutation performed
     update_channel_payouts {
         let origin = RawOrigin::Root;
         let (account_id, _) = member_funded_account::<T>(1);
         let hash = <<T as frame_system::Config>::Hashing as Hash>::hash(&"test".encode());
         let params = crate::UpdateChannelPayoutsParameters::<T> {
             commitment: Some(hash.clone()),
-            payload: Some(crate::ChannelPayoutsPayloadParameters::<T>{
+                        payload: Some(crate::ChannelPayoutsPayloadParameters::<T>{
                 uploader_account: account_id,
                 object_creation_params: storage::DataObjectCreationParameters {
                     size: 1u64,
@@ -329,6 +332,9 @@ benchmarks! {
             );
         }
 
+    // WORST CASE SCENARIO:
+    // - curator channel belonging to a group with max number curator and max curator permissions
+    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     withdraw_from_channel_balance {
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel::<T>(false)?;
@@ -362,6 +368,9 @@ benchmarks! {
             );
         }
 
+    // Worst case scenario:
+    // - curator channel belonging to a group with max number curator and max curator permissions
+    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     claim_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 
@@ -404,6 +413,9 @@ benchmarks! {
             );
         }
 
+    // Worst case scenario:
+    // - curator channel belonging to a group with max number curator and max curator permissions
+    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     claim_and_withdraw_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 

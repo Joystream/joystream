@@ -1290,7 +1290,7 @@ decl_module! {
         /// ## Weight
         /// `O (1)` where:
         /// - DB:
-        ///    - O(1)
+        /// - O(1)
         /// # </weight>//
         #[weight = WeightInfoContent::<T>::update_channel_payouts()]
         pub fn update_channel_payouts(
