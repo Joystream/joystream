@@ -7,6 +7,7 @@ import { MemberId } from '@joystream/types/primitives'
 import {
   PalletMembershipBuyMembershipParameters as BuyMembershipParameters,
   PalletMembershipInviteMembershipParameters as InviteMembershipParameters,
+  PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
 } from '@polkadot/types/lookup'
 import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
 import {
@@ -24,6 +25,7 @@ import {
   MembershipSystemSnapshot,
   MemberMetadata,
   MembershipBoughtEvent,
+  MembershipGiftedEvent,
   MemberProfileUpdatedEvent,
   MemberAccountsUpdatedEvent,
   MemberInvitedEvent,
@@ -39,6 +41,7 @@ import {
   LeaderInvitationQuotaUpdatedEvent,
   MembershipEntryPaid,
   MembershipEntryInvited,
+  MembershipEntryGifted,
   AvatarUri,
   WorkingGroup,
   MetaprotocolTransactionStatusEvent,
@@ -81,7 +84,6 @@ async function getOrCreateMembershipSnapshot({ store, event }: EventContext & St
     : new MembershipSystemSnapshot({
         ...latestSnapshot,
         createdAt: eventTime,
-        updatedAt: eventTime,
         id: undefined,
         snapshotBlock: event.blockNumber,
       })
@@ -92,27 +94,22 @@ async function createNewMemberFromParams(
   event: SubstrateEvent,
   memberId: MemberId,
   entryMethod: typeof MembershipEntryMethod,
-  params: BuyMembershipParameters | InviteMembershipParameters
+  params: BuyMembershipParameters | InviteMembershipParameters | GiftMembershipParameters
 ): Promise<Membership> {
   const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(store)
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
   const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
-  const eventTime = new Date(event.blockTimestamp)
 
   const avatar = new AvatarUri()
   avatar.avatarUri = metadata?.avatarUri ?? ''
 
   const metadataEntity = new MemberMetadata({
-    createdAt: eventTime,
-    updatedAt: eventTime,
     name: metadata?.name || undefined,
     about: metadata?.about || undefined,
     avatar,
   })
 
   const member = new Membership({
-    createdAt: eventTime,
-    updatedAt: eventTime,
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
@@ -124,7 +121,7 @@ async function createNewMemberFromParams(
         ? new Membership({ id: (params as BuyMembershipParameters).referrerId.unwrap().toString() })
         : undefined,
     isVerified: false,
-    inviteCount: entryMethod.isTypeOf === 'MembershipEntryInvited' ? 0 : defaultInviteCount,
+    inviteCount: entryMethod.isTypeOf === 'MembershipEntryPaid' ? defaultInviteCount : 0,
     boundAccounts: [],
     invitees: [],
     referredMembers: [],
@@ -160,16 +157,12 @@ export async function createNewMember(
   avatar.avatarUri = metadata?.avatarUri ?? ''
 
   const metadataEntity = new MemberMetadata({
-    createdAt: eventTime,
-    updatedAt: eventTime,
     name: metadata?.name || undefined,
     about: metadata?.about || undefined,
     avatar,
   })
 
   const member = new Membership({
-    createdAt: eventTime,
-    updatedAt: eventTime,
     id: memberId,
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
@@ -222,20 +215,43 @@ export async function members_MembershipBought({ store, event }: EventContext & 
   await store.save<Membership>(member)
 }
 
+export async function members_MembershipGifted({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId, giftMembershipParameters] = new Members.MembershipGiftedEvent(event).params
+
+  const memberEntry = new MembershipEntryGifted()
+  const member = await createNewMemberFromParams(store, event, memberId, memberEntry, giftMembershipParameters)
+
+  const membershipGiftedEvent = new MembershipGiftedEvent({
+    ...genericEventFields(event),
+    newMember: member,
+    controllerAccount: member.controllerAccount,
+    rootAccount: member.rootAccount,
+    handle: member.handle,
+    metadata: new MemberMetadata({
+      ...member.metadata,
+      id: undefined,
+    }),
+  })
+
+  await store.save<MemberMetadata>(membershipGiftedEvent.metadata)
+  await store.save<MembershipGiftedEvent>(membershipGiftedEvent)
+
+  // Update the other side of event<->membership relation
+  memberEntry.membershipGiftedEventId = membershipGiftedEvent.id
+  await store.save<Membership>(member)
+}
+
 export async function members_MemberProfileUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, newHandle, newMetadata] = new Members.MemberProfileUpdatedEvent(event).params
   const metadata = newMetadata.isSome ? deserializeMetadata(MembershipMetadata, newMetadata.unwrap()) : undefined
   const member = await getMemberById(store, memberId)
-  const eventTime = new Date(event.blockTimestamp)
 
   // FIXME: https://github.com/Joystream/hydra/issues/435
   if (typeof metadata?.name === 'string') {
     member.metadata.name = (metadata.name || null) as string | undefined
-    member.metadata.updatedAt = eventTime
   }
   if (typeof metadata?.about === 'string') {
     member.metadata.about = (metadata.about || null) as string | undefined
-    member.metadata.updatedAt = eventTime
   }
 
   if (typeof metadata?.avatarUri === 'string') {
@@ -245,7 +261,6 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
 
   if (newHandle.isSome) {
     member.handle = bytesToString(newHandle.unwrap())
-    member.updatedAt = eventTime
   }
 
   await store.save<MemberMetadata>(member.metadata)
@@ -268,7 +283,6 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
 export async function members_MemberAccountsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, newRootAccount, newControllerAccount] = new Members.MemberAccountsUpdatedEvent(event).params
   const member = await getMemberById(store, memberId)
-  const eventTime = new Date(event.blockTimestamp)
 
   if (newControllerAccount.isSome) {
     member.controllerAccount = newControllerAccount.unwrap().toString()
@@ -276,7 +290,6 @@ export async function members_MemberAccountsUpdated({ store, event }: EventConte
   if (newRootAccount.isSome) {
     member.rootAccount = newRootAccount.unwrap().toString()
   }
-  member.updatedAt = eventTime
 
   await store.save<Membership>(member)
 
@@ -297,10 +310,8 @@ export async function members_MemberVerificationStatusUpdated({
   const [memberId, verificationStatus, workerId] = new Members.MemberVerificationStatusUpdatedEvent(event).params
   const member = await getMemberById(store, memberId)
   const worker = await getWorker(store, 'membershipWorkingGroup', workerId)
-  const eventTime = new Date(event.blockTimestamp)
 
   member.isVerified = verificationStatus.valueOf()
-  member.updatedAt = eventTime
 
   await store.save<Membership>(member)
 
@@ -318,12 +329,9 @@ export async function members_InvitesTransferred({ store, event }: EventContext 
   const [sourceMemberId, targetMemberId, numberOfInvites] = new Members.InvitesTransferredEvent(event).params
   const sourceMember = await getMemberById(store, sourceMemberId)
   const targetMember = await getMemberById(store, targetMemberId)
-  const eventTime = new Date(event.blockTimestamp)
 
   sourceMember.inviteCount -= numberOfInvites.toNumber()
-  sourceMember.updatedAt = eventTime
   targetMember.inviteCount += numberOfInvites.toNumber()
-  targetMember.updatedAt = eventTime
 
   await store.save<Membership>(sourceMember)
   await store.save<Membership>(targetMember)
@@ -340,14 +348,12 @@ export async function members_InvitesTransferred({ store, event }: EventContext 
 
 export async function members_MemberInvited({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, inviteMembershipParameters] = new Members.MemberInvitedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
   const entryMethod = new MembershipEntryInvited()
   const invitedMember = await createNewMemberFromParams(store, event, memberId, entryMethod, inviteMembershipParameters)
 
   // Decrease invite count of inviting member
   const invitingMember = await getMemberById(store, inviteMembershipParameters.invitingMemberId)
   invitingMember.inviteCount -= 1
-  invitingMember.updatedAt = eventTime
   await store.save<Membership>(invitingMember)
 
   const memberInvitedEvent = new MemberInvitedEvent({
@@ -385,10 +391,8 @@ export async function members_StakingAccountAdded({ store, event }: EventContext
 export async function members_StakingAccountConfirmed({ store, event }: EventContext & StoreContext): Promise<void> {
   const [accountId, memberId] = new Members.StakingAccountConfirmedEvent(event).params
   const member = await getMemberById(store, memberId)
-  const eventTime = new Date(event.blockTimestamp)
 
   member.boundAccounts.push(accountId.toString())
-  member.updatedAt = eventTime
 
   await store.save<Membership>(member)
 
@@ -403,14 +407,12 @@ export async function members_StakingAccountConfirmed({ store, event }: EventCon
 
 export async function members_StakingAccountRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   const [accountId, memberId] = new Members.StakingAccountRemovedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
   const member = await getMemberById(store, memberId)
 
   member.boundAccounts.splice(
     member.boundAccounts.findIndex((a) => a === accountId.toString()),
     1
   )
-  member.updatedAt = eventTime
 
   await store.save<Membership>(member)
 
