@@ -5,7 +5,7 @@
 #![allow(clippy::unused_unit)]
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;

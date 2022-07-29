@@ -1,7 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::permissions::*;
-use crate::tests::fixtures::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::types::{
     ChannelOwner, ChannelTransferStatus, InitTransferParametersOf, ModuleAccount, PendingTransfer,
     TransferCommitmentParameters, TransferCommitmentWitnessOf,
