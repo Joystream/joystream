@@ -23,7 +23,7 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
     rationale: flags.string({
       char: 'r',
       required: true,
-      description: 'Reasonof deleting the channel by moderator',
+      description: 'Reason of deleting the channel by moderator',
     }),
     ...ContentDirectoryCommandBase.flags,
   }
