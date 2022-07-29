@@ -5,7 +5,6 @@ import {
   VideoCategoryInputParameters,
   ChannelCategoryInputParameters,
   JsonSchema,
-  PlaylistInputParameters,
 } from '../Types'
 
 export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> = {
@@ -159,24 +158,6 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
     thumbnailPhotoPath: { type: 'string' },
     title: { type: 'string' },
     videoPath: { type: 'string' },
-    enableComments: { type: 'boolean' },
-  },
-}
-
-export const PlaylistInputSchema: JsonSchema<PlaylistInputParameters> = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    title: { type: 'string' },
-    description: { type: 'string' },
-    videoIds: {
-      type: 'array',
-      items: {
-        type: 'integer',
-      },
-    },
-    thumbnailPhotoPath: { type: 'string' },
-    isPublic: { type: 'boolean' },
     enableComments: { type: 'boolean' },
   },
 }

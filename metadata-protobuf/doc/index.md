@@ -28,7 +28,6 @@
     - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
     - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
     - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
-    - [CommentSectionPreference](#.CommentSectionPreference)
     - [CreateComment](#.CreateComment)
     - [DeleteComment](#.DeleteComment)
     - [EditComment](#.EditComment)
@@ -40,7 +39,6 @@
     - [VideoReactionsPreference](#.VideoReactionsPreference)
   
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
-    - [CommentSectionPreference.Option](#.CommentSectionPreference.Option)
     - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
     - [ReactVideo.Reaction](#.ReactVideo.Reaction)
     - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
@@ -383,24 +381,7 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
 | ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
 | video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
-| comment_section_preference | [CommentSectionPreference](#CommentSectionPreference) | optional |  |
 | moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
-
-
-
-
-
-
-<a name=".CommentSectionPreference"></a>
-
-### CommentSectionPreference
-Enable or disable comment section for a single video
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| option | [CommentSectionPreference.Option](#CommentSectionPreference.Option) | required | Selected option to enable or disable comment section |
 
 
 
@@ -569,18 +550,6 @@ Enable or disable reactions on a single video
 
 
 
-<a name=".CommentSectionPreference.Option"></a>
-
-### CommentSectionPreference.Option
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENABLE | 0 | Enable comment section (nothing happens if it is already enabled) |
-| DISABLE | 1 | Disable comment section (nothing happens if it is already disabled) |
-
-
-
 <a name=".PinOrUnpinComment.Option"></a>
 
 ### PinOrUnpinComment.Option
@@ -681,38 +650,6 @@ Reacting again with the same message option will cancel the previous reaction
 | video_ids | [uint64](#uint64) | repeated | IDs of the videos to include in playlist (in given order) |
 | thumbnail_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | is_public | [bool](#bool) | optional | Playlist status, whether it is public or private. If the field is omitted the default playlist status would be public??? |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="proto/ProposalsDiscussion.proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## proto/ProposalsDiscussion.proto
-
-
-
-<a name=".ProposalsDiscussionPostMetadata"></a>
-
-### ProposalsDiscussionPostMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| text | [string](#string) | optional | Post text content (md-formatted) |
-| repliesTo | [uint32](#uint32) | optional | Id of the post that given post replies to (if any) |
 
 
 
@@ -962,8 +899,7 @@ Reacting again with the same message option will cancel the previous reaction
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| video_metadata | [VideoMetadata](#VideoMetadata) | optional | For backward compatibility reasons, apps that deserialize metadata (e.g. Query Node) need to handle the deserialization of `VideoMetadata` message both as independent message and as a variant of `ContentMetadata`. Though, apps that serialize protobuf messages (mostly frontend apps) are advised to use `ContentMetadata` message for all new videos &amp; playlists |
-| playlist_metadata | [PlaylistMetadata](#PlaylistMetadata) | optional |  |
+| video_metadata | [VideoMetadata](#VideoMetadata) | optional | ... Other possible metadata standards, e.g. `PlaylistMetadata` |
 
 
 
@@ -1078,6 +1014,7 @@ Publication status before joystream
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
 | category | [uint64](#uint64) | optional | Video Category Id |
 | subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
+| enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
 
 
 

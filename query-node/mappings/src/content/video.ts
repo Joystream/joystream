@@ -242,7 +242,7 @@ export async function content_ContentDeleted({ store, event }: EventContext & St
   })
 
   if (!video) {
-    inconsistentState('Non-existing content(video or playlist) deletion requested', contentId)
+    inconsistentState('Non-existing content(video) deletion requested', contentId)
   }
 
   // update video active counters

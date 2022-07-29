@@ -26,7 +26,6 @@ import {
   IChannelCategoryMetadata,
   IOpeningMetadata,
   IWorkingGroupMetadata,
-  IPlaylistMetadata,
   ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import {
@@ -208,11 +207,6 @@ export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhot
 
 export type VideoSubtitleInputParameters = Omit<ISubtitleMetadata, 'newAsset'> & {
   subtitleAssetPath?: string
-}
-
-export type PlaylistInputParameters = Omit<IPlaylistMetadata, 'thumbnailPhoto'> & {
-  thumbnailPhotoPath?: string
-  enableComments?: boolean
 }
 
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {

@@ -5,7 +5,6 @@ import {
   ILicense,
   IMediaType,
   IChannelMetadata,
-  IPlaylistMetadata,
   ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'

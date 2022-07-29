@@ -65,12 +65,6 @@ export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
 
 export type GetDataObjectsByVideoIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
 
-export type GetDataObjectsByPlaylistIdQueryVariables = Types.Exact<{
-  playlistId?: Types.Maybe<Types.Scalars['ID']>
-}>
-
-export type GetDataObjectsByPlaylistIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
-
 export type WorkingGroupOpeningMetadataFieldsFragment = {
   description?: Types.Maybe<string>
   shortDescription?: Types.Maybe<string>
@@ -300,14 +294,6 @@ export const GetDataObjectsByChannelId = gql`
 export const GetDataObjectsByVideoId = gql`
   query getDataObjectsByVideoId($videoId: ID) {
     storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
-      ...DataObjectInfo
-    }
-  }
-  ${DataObjectInfo}
-`
-export const GetDataObjectsByPlaylistId = gql`
-  query getDataObjectsByPlaylistId($playlistId: ID) {
-    storageDataObjects(where: { type_json: { playlistId_eq: $playlistId } }) {
       ...DataObjectInfo
     }
   }
