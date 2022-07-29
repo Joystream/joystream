@@ -1086,13 +1086,9 @@ parameter_types! {
     pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
     pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
     pub const DistributionRewardPeriod: u32 = 14400 + 90;
-    // This should be more costly than `apply_on_opening` fee with the current configuration
-    // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
-    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    // This should be more costly than `apply_on_opening` fee
     pub const MinimumApplicationStake: Balance = 20 * currency::DOLLARS;
-    // This should be more costly than `add_opening` fee with the current configuration
-    // the base cost of `add_opening` in tokens is 81. And has a very slight slope
-    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    // This should be more costly than `add_opening` fee
     pub const LeaderOpeningStake: Balance = 20 * currency::DOLLARS;
 }
 
