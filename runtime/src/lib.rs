@@ -802,7 +802,6 @@ parameter_types! {
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 100 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
 }
@@ -823,7 +822,6 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 400;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 100 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -858,7 +856,6 @@ parameter_types! {
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 20 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
