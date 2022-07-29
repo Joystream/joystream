@@ -4,8 +4,8 @@
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, Call, H256, MultiAddress, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPollInput, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
+import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
+import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -77,13 +77,13 @@ declare module '@polkadot/api-base/types/submittable' {
        * assumed to be in the overlay.
        * # </weight>
        **/
-      forceTransfer: AugmentedSubmittable<(source: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, dest: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, MultiAddress, Compact<u128>]>;
+      forceTransfer: AugmentedSubmittable<(source: AccountId32 | string | Uint8Array, dest: AccountId32 | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, AccountId32, Compact<u128>]>;
       /**
        * Unreserve some balance from a user by force.
        * 
        * Can only be called by ROOT.
        **/
-      forceUnreserve: AugmentedSubmittable<(who: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, u128]>;
+      forceUnreserve: AugmentedSubmittable<(who: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128]>;
       /**
        * Set the balances of a given account.
        * 
@@ -94,7 +94,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * The dispatch origin for this call is `root`.
        **/
-      setBalance: AugmentedSubmittable<(who: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, newFree: Compact<u128> | AnyNumber | Uint8Array, newReserved: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, Compact<u128>, Compact<u128>]>;
+      setBalance: AugmentedSubmittable<(who: AccountId32 | string | Uint8Array, newFree: Compact<u128> | AnyNumber | Uint8Array, newReserved: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Compact<u128>, Compact<u128>]>;
       /**
        * Transfer some liquid free balance to another account.
        * 
@@ -122,7 +122,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - Origin account is already in memory, so no DB operations for them.
        * # </weight>
        **/
-      transfer: AugmentedSubmittable<(dest: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, Compact<u128>]>;
+      transfer: AugmentedSubmittable<(dest: AccountId32 | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Compact<u128>]>;
       /**
        * Transfer the entire transferable balance from the caller account.
        * 
@@ -142,7 +142,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1). Just like transfer, but reading the user's transferable balance first.
        * #</weight>
        **/
-      transferAll: AugmentedSubmittable<(dest: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, keepAlive: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, bool]>;
+      transferAll: AugmentedSubmittable<(dest: AccountId32 | string | Uint8Array, keepAlive: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, bool]>;
       /**
        * Same as the [`transfer`] call, but with a check that the transfer will not kill the
        * origin account.
@@ -151,7 +151,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * [`transfer`]: struct.Pallet.html#method.transfer
        **/
-      transferKeepAlive: AugmentedSubmittable<(dest: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, Compact<u128>]>;
+      transferKeepAlive: AugmentedSubmittable<(dest: AccountId32 | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Compact<u128>]>;
     };
     constitution: {
       /**
@@ -1102,21 +1102,20 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       createCategory: AugmentedSubmittable<(parentCategoryId: Option<u64> | null | object | string | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<u64>, Bytes, Bytes]>;
       /**
-       * Create new thread in category with poll
+       * Create new thread in category
        * 
        * <weight>
        * 
        * ## Weight
-       * `O (W + V + X + Y)` where:
+       * `O (W + V + X)` where:
        * - `W` is the category depth
        * - `V` is the length of the thread title.
        * - `X` is the length of the thread text.
-       * - `Y` is the number of poll alternatives.
        * - DB:
        * - O(W)
        * # </weight>
        **/
-      createThread: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array, pollInput: Option<PalletForumPollInput> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, Bytes, Bytes, Option<PalletForumPollInput>]>;
+      createThread: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, Bytes, Bytes]>;
       /**
        * Delete category
        * 
@@ -1309,20 +1308,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateCategoryTitle: AugmentedSubmittable<(actor: PalletForumPrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletForumPrivilegedActor, u64, Bytes]>;
-      /**
-       * Submit a poll
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (W + V)` where:
-       * - `W` is the category depth,
-       * - `V` is the number of poll alternatives.
-       * - DB:
-       * - O(W)
-       * # </weight>
-       **/
-      voteOnPoll: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, u32]>;
     };
     forumWorkingGroup: {
       /**
@@ -1961,6 +1946,26 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       confirmStakingAccount: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, stakingAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Create a founding member profile as root.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (I + J)` where:
+       * - `I` is the length of the handle
+       * - `J` is the length of the metadata
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      createFoundingMember: AugmentedSubmittable<(params: PalletMembershipCreateFoundingMemberParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipCreateFoundingMemberParameters]>;
+      /**
+       * Gift a membership using own funds. Gifter does not need to be a member.
+       * Can optinally apply a lock on a portion of the funds transferred to root and controller
+       * accounts. Gifter also pays the membership fee.
+       **/
+      giftMembership: AugmentedSubmittable<(params: PalletMembershipGiftMembershipParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any; creditControllerAccount?: any; applyControllerAccountInvitationLock?: any; creditRootAccount?: any; applyRootAccountInvitationLock?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipGiftMembershipParameters]>;
       /**
        * Invite a new member.
        * 
@@ -3138,6 +3143,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * is reduced by `min(amount, split_staking_status.amount)`
        * - `account.amount` is reduced by `amount`
        * - token supply is reduced by `amount`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       burn: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
@@ -3153,6 +3166,13 @@ declare module '@polkadot/api-base/types/submittable' {
        * Postconditions:
        * - Account information for `token_id` x `member_id` removed from storage
        * - bloat bond refunded to `member_id` controller account
+       * 
+       * <weight>
+       * 
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       dustAccount: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
       /**
@@ -3167,6 +3187,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * Postconditions
        * - `account.staking_status` set to None
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       exitRevenueSplit: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
       /**
@@ -3180,6 +3208,15 @@ declare module '@polkadot/api-base/types/submittable' {
        * Postconditions:
        * - account for `member_id` created and added to pallet storage
        * - `bloat_bond` transferred from sender to treasury account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (H)` where:
+       * - `H` is the length of `proof.0`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       joinWhitelist: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, proof: PalletProjectTokenMerkleProof) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenMerkleProof]>;
       /**
@@ -3201,6 +3238,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `dividend` amount of JOYs transferred from `treasury_account` to `sender`
        * - `token` revenue split dividends payed tracking variable increased by `dividend`
        * - `account.staking_status` set to Some(..) with `amount` and `token.latest_split`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       participateInSplit: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
@@ -3255,6 +3300,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * `token_data.sale` is set to None, otherwise `token_data.sale.quantity_left` is
        * decreased by `amount` and `token_data.sale.funds_collected` in increased by
        * `amount * sale.unit_price`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - `O(1)` - doesn't depend on the state or parameters
+       * # </weight>
        **/
       purchaseTokensOnSale: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
@@ -3274,6 +3327,15 @@ declare module '@polkadot/api-base/types/submittable' {
        * - total bloat bond transferred from sender's JOY balance into the treasury account
        * in case destination(s) have been added to storage
        * - `outputs.beneficiary` tokens amount increased by `amount`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (T)` where:
+       * - `T` is the length of `outputs`
+       * - DB:
+       * - `O(T)` - from the the generated weights
+       * # </weight>
        **/
       transfer: AugmentedSubmittable<(srcMemberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPayment) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenTransfersPayment]>;
     };
@@ -3292,7 +3354,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      createProposal: AugmentedSubmittable<(generalProposalParameters: PalletProposalsCodexGeneralProposalParams | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any } | string | Uint8Array, proposalDetails: PalletProposalsCodexProposalDetails | { Signal: any } | { RuntimeUpgrade: any } | { FundingRequest: any } | { SetMaxValidatorCount: any } | { CreateWorkingGroupLeadOpening: any } | { FillWorkingGroupLeadOpening: any } | { UpdateWorkingGroupBudget: any } | { DecreaseWorkingGroupLeadStake: any } | { SlashWorkingGroupLead: any } | { SetWorkingGroupLeadReward: any } | { TerminateWorkingGroupLead: any } | { AmendConstitution: any } | { CancelWorkingGroupLeadOpening: any } | { SetMembershipPrice: any } | { SetCouncilBudgetIncrement: any } | { SetCouncilorReward: any } | { SetInitialInvitationBalance: any } | { SetInitialInvitationCount: any } | { SetMembershipLeadInvitationQuota: any } | { SetReferralCut: any } | { VetoProposal: any } | { UpdateGlobalNftLimit: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]>;
+      createProposal: AugmentedSubmittable<(generalProposalParameters: PalletProposalsCodexGeneralProposalParams | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any } | string | Uint8Array, proposalDetails: PalletProposalsCodexProposalDetails | { Signal: any } | { RuntimeUpgrade: any } | { FundingRequest: any } | { SetMaxValidatorCount: any } | { CreateWorkingGroupLeadOpening: any } | { FillWorkingGroupLeadOpening: any } | { UpdateWorkingGroupBudget: any } | { DecreaseWorkingGroupLeadStake: any } | { SlashWorkingGroupLead: any } | { SetWorkingGroupLeadReward: any } | { TerminateWorkingGroupLead: any } | { AmendConstitution: any } | { CancelWorkingGroupLeadOpening: any } | { SetMembershipPrice: any } | { SetCouncilBudgetIncrement: any } | { SetCouncilorReward: any } | { SetInitialInvitationBalance: any } | { SetInitialInvitationCount: any } | { SetMembershipLeadInvitationQuota: any } | { SetReferralCut: any } | { VetoProposal: any } | { UpdateGlobalNftLimit: any } | { UpdateChannelPayouts: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]>;
     };
     proposalsDiscussion: {
       /**
@@ -3497,7 +3559,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ------------------
        * # </weight>
        **/
-      bond: AugmentedSubmittable<(controller: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array, payee: PalletStakingRewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | { None: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, Compact<u128>, PalletStakingRewardDestination]>;
+      bond: AugmentedSubmittable<(controller: AccountId32 | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array, payee: PalletStakingRewardDestination | { Staked: any } | { Stash: any } | { Controller: any } | { Account: any } | { None: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Compact<u128>, PalletStakingRewardDestination]>;
       /**
        * Add some extra amount that have appeared in the stash `free_balance` into the balance up
        * for staking.
@@ -3651,7 +3713,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Note: Making this call only makes sense if you first set the validator preferences to
        * block any further nominations.
        **/
-      kick: AugmentedSubmittable<(who: Vec<MultiAddress> | (MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<MultiAddress>]>;
+      kick: AugmentedSubmittable<(who: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<AccountId32>]>;
       /**
        * Declare the desire to nominate `targets` for the origin controller.
        * 
@@ -3665,7 +3727,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - Both the reads and writes follow a similar pattern.
        * # </weight>
        **/
-      nominate: AugmentedSubmittable<(targets: Vec<MultiAddress> | (MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<MultiAddress>]>;
+      nominate: AugmentedSubmittable<(targets: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<AccountId32>]>;
       /**
        * Pay out all the stakers behind a single validator for a single era.
        * 
@@ -3745,7 +3807,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - Write: Bonded, Ledger New Controller, Ledger Old Controller
        * # </weight>
        **/
-      setController: AugmentedSubmittable<(controller: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress]>;
+      setController: AugmentedSubmittable<(controller: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32]>;
       /**
        * Set `HistoryDepth` value. This function will delete any history information
        * when `HistoryDepth` is reduced.
@@ -4550,7 +4612,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - One DB change.
        * # </weight>
        **/
-      setKey: AugmentedSubmittable<(updated: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress]>;
+      setKey: AugmentedSubmittable<(updated: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32]>;
       /**
        * Authenticates the sudo key and dispatches a function call with `Root` origin.
        * 
@@ -4577,7 +4639,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - Weight of derivative `call` execution + 10,000.
        * # </weight>
        **/
-      sudoAs: AugmentedSubmittable<(who: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, Call]>;
+      sudoAs: AugmentedSubmittable<(who: AccountId32 | string | Uint8Array, call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Call]>;
       /**
        * Authenticates the sudo key and dispatches a function call with `Root` origin.
        * This function does not check the weight of the call, and instead allows the
@@ -4785,7 +4847,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - Writes: Vesting Storage, Balances Locks, Target Account, Source Account
        * # </weight>
        **/
-      forceVestedTransfer: AugmentedSubmittable<(source: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, target: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, schedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, MultiAddress, PalletVestingVestingInfo]>;
+      forceVestedTransfer: AugmentedSubmittable<(source: AccountId32 | string | Uint8Array, target: AccountId32 | string | Uint8Array, schedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, AccountId32, PalletVestingVestingInfo]>;
       /**
        * Merge two vesting schedules together, creating a new vesting schedule that unlocks over
        * the highest possible start and end blocks. If both schedules have already started the
@@ -4845,7 +4907,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - Writes: Vesting Storage, Balances Locks, Target Account, [Sender Account]
        * # </weight>
        **/
-      vestedTransfer: AugmentedSubmittable<(target: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array, schedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress, PalletVestingVestingInfo]>;
+      vestedTransfer: AugmentedSubmittable<(target: AccountId32 | string | Uint8Array, schedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo]>;
       /**
        * Unlock any vested funds of a `target` account.
        * 
@@ -4863,7 +4925,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - Writes: Vesting Storage, Balances Locks, Target Account
        * # </weight>
        **/
-      vestOther: AugmentedSubmittable<(target: MultiAddress | { Id: any } | { Index: any } | { Raw: any } | { Address32: any } | { Address20: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [MultiAddress]>;
+      vestOther: AugmentedSubmittable<(target: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32]>;
     };
   } // AugmentedSubmittables
 } // declare module

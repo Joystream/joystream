@@ -294,10 +294,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Auction extension period upper bound exceeded
        **/
       ExtensionPeriodUpperBoundExceeded: AugmentedError<ApiType>;
-      /**
-       * Feature Not Implemented
-       **/
-      FeatureNotImplemented: AugmentedError<ApiType>;
       GlobalNftDailyLimitExceeded: AugmentedError<ApiType>;
       GlobalNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
@@ -385,6 +381,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MaxAuctionWhiteListLengthUpperBoundExceeded: AugmentedError<ApiType>;
       /**
+       * Attempt to set minimum cashout allowed above the limit
+       **/
+      MaxCashoutValueTooHigh: AugmentedError<ApiType>;
+      /**
        * Member authentication failed
        **/
       MemberAuthFailed: AugmentedError<ApiType>;
@@ -409,6 +409,10 @@ declare module '@polkadot/api-base/types/errors' {
        * min_cashout_allowed cannot exceed max_cashout_allowed
        **/
       MinCashoutAllowedExceedsMaxCashoutAllowed: AugmentedError<ApiType>;
+      /**
+       * Attempt to set minimum cashout allowed below the limit
+       **/
+      MinCashoutValueTooLow: AugmentedError<ApiType>;
       /**
        * Nft for given video id already exists
        **/
@@ -936,10 +940,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AccountDoesNotMatchThreadAuthor: AugmentedError<ApiType>;
       /**
-       * Forum user has already voted.
-       **/
-      AlreadyVotedOnPoll: AugmentedError<ApiType>;
-      /**
        * Ancestor category immutable, i.e. deleted or archived
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
@@ -1019,26 +1019,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category path len should be greater than zero
        **/
       PathLengthShouldBeGreaterThanZero: AugmentedError<ApiType>;
-      /**
-       * Poll items number too short.
-       **/
-      PollAlternativesTooShort: AugmentedError<ApiType>;
-      /**
-       * Poll data committed after poll expired.
-       **/
-      PollCommitExpired: AugmentedError<ApiType>;
-      /**
-       * Poll data committed is wrong.
-       **/
-      PollData: AugmentedError<ApiType>;
-      /**
-       * Poll not exist.
-       **/
-      PollNotExist: AugmentedError<ApiType>;
-      /**
-       * Poll date setting is wrong.
-       **/
-      PollTimeSetting: AugmentedError<ApiType>;
       /**
        * Post does not exist.
        **/
@@ -1390,6 +1370,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ControllerAccountRequired: AugmentedError<ApiType>;
       /**
+       * Locked amount is greater than credit amount
+       **/
+      GifLockExceedsCredit: AugmentedError<ApiType>;
+      /**
        * Handle already registered.
        **/
       HandleAlreadyRegistered: AugmentedError<ApiType>;
@@ -1401,6 +1385,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient balance to cover stake.
        **/
       InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
+      /**
+       * Gifter doesn't have sufficient balance to credit
+       **/
+      InsufficientBalanceToGift: AugmentedError<ApiType>;
       /**
        * Member profile not found (invalid member id).
        **/
@@ -1434,7 +1422,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       StakingAccountIsAlreadyRegistered: AugmentedError<ApiType>;
       /**
-       * Invalid origin.
+       * Unsigned origin.
        **/
       UnsignedOrigin: AugmentedError<ApiType>;
       /**
@@ -2526,6 +2514,10 @@ declare module '@polkadot/api-base/types/errors' {
       TooManyValidators: AugmentedError<ApiType>;
     };
     storage: {
+      /**
+       * Generic Arithmetic Error due to internal accounting operation
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Blacklist size limit exceeded.
        **/

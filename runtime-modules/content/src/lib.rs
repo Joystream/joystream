@@ -138,6 +138,12 @@ pub trait Config:
         UploadContextOf<Self>,
         TransfersWithVestingOf<Self>,
     >;
+
+    /// Minimum cashout allowed limit
+    type MinimumCashoutAllowedLimit: Get<BalanceOf<Self>>;
+
+    /// Max cashout allowed limit
+    type MaximumCashoutAllowedLimit: Get<BalanceOf<Self>>;
 }
 
 decl_storage! {
@@ -531,7 +537,10 @@ decl_module! {
             // add channel to onchain state
             ChannelById::<T>::insert(channel_id, channel.clone());
 
-            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
+            // retrieve channel account and emit it as part of the event
+            let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
+
+            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params, channel_account));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1158,6 +1167,8 @@ decl_module! {
             params: UpdateChannelPayoutsParameters<T>
         ) {
             ensure_root(origin)?;
+
+            Self::verify_cashout_limits(&params)?;
 
             let new_min_cashout_allowed = params.min_cashout_allowed
                 .unwrap_or_else(Self::min_cashout_allowed);
@@ -3529,6 +3540,22 @@ impl<T: Config> Module<T> {
         Ok((channel, reward_account, cashout))
     }
 
+    fn verify_cashout_limits(params: &UpdateChannelPayoutsParameters<T>) -> DispatchResult {
+        if let Some(ref min_cashout) = params.min_cashout_allowed {
+            ensure!(
+                *min_cashout >= T::MinimumCashoutAllowedLimit::get(),
+                Error::<T>::MinCashoutValueTooLow
+            );
+        }
+        if let Some(ref max_cashout) = params.max_cashout_allowed {
+            ensure!(
+                *max_cashout <= T::MaximumCashoutAllowedLimit::get(),
+                Error::<T>::MaxCashoutValueTooHigh
+            );
+        }
+        Ok(())
+    }
+
     fn execute_channel_reward_claim(
         channel_id: T::ChannelId,
         reward_account: &T::AccountId,
@@ -3632,7 +3659,7 @@ decl_event!(
         CuratorRemoved(CuratorGroupId, CuratorId),
 
         // Channels
-        ChannelCreated(ChannelId, Channel, ChannelCreationParameters),
+        ChannelCreated(ChannelId, Channel, ChannelCreationParameters, AccountId),
         ChannelUpdated(
             ContentActor,
             ChannelId,
@@ -3726,7 +3753,7 @@ decl_event!(
         CancelChannelTransfer(ChannelId, ContentActor),
         ChannelTransferAccepted(ChannelId, TransferCommitment),
 
-        /// Nft limits
+        // Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
         ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
         ToggledNftLimits(bool),

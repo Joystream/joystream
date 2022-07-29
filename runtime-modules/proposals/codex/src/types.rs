@@ -27,8 +27,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::WorkerId<T>,
     working_group::OpeningId,
     <T as proposals_engine::Config>::ProposalId,
-    // TODO: enable after Carthage
-    //content::UpdateChannelPayoutsParameters<T>,
+    content::UpdateChannelPayoutsParameters<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -41,8 +40,7 @@ pub enum ProposalDetails<
     WorkerId,
     OpeningId,
     ProposalId,
-    // TODO: enable after Carthage
-    // UpdateChannelPayoutsParameters,
+    UpdateChannelPayoutsParameters,
 > {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
@@ -114,9 +112,9 @@ pub enum ProposalDetails<
 
     /// `Update global NFT limit` proposal
     UpdateGlobalNftLimit(NftLimitPeriod, u64),
-    // TODO: enable after Carthage
-    // /// `Update Channel Payouts` proposal
-    // UpdateChannelPayouts(UpdateChannelPayoutsParameters),
+
+    /// `Update Channel Payouts` proposal
+    UpdateChannelPayouts(UpdateChannelPayoutsParameters),
 }
 
 impl<
@@ -126,8 +124,7 @@ impl<
         WorkerId,
         OpeningId,
         ProposalId,
-        // TODO: enable after Carthage
-        // UpdateChannelPayoutsParameters,
+        UpdateChannelPayoutsParameters,
     > Default
     for ProposalDetails<
         Balance,
@@ -136,8 +133,7 @@ impl<
         WorkerId,
         OpeningId,
         ProposalId,
-        // TODO: enable after Carthage
-        // UpdateChannelPayoutsParameters,
+        UpdateChannelPayoutsParameters,
     >
 {
     fn default() -> Self {

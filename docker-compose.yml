@@ -7,7 +7,7 @@ services:
     container_name: joystream-node
     volumes:
       - chain-data:/data
-    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
+    command: --dev --alice --validator --pruning=archive --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
     ports:
       - 9944:9944
       - 9933:9933
@@ -259,8 +259,8 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:rhodes
-    restart: on-failure
+    image: joystream/faucet:carthage-1.0
+    restart: unless-stopped
     container_name: faucet
     env_file:
       - .env

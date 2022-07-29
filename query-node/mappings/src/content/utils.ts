@@ -7,7 +7,7 @@ import {
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
+import { invalidMetadata, inconsistentState, logger, deterministicEntityId, EntityType } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -225,11 +225,9 @@ async function processVideoMediaEncoding(
     existingVideoMediaEncoding ||
     new VideoMediaEncoding({
       id: deterministicEntityId(event),
-      createdAt: new Date(event.blockTimestamp),
     })
   // integrate media encoding-related data
   integrateMeta(encoding, metadata, ['codecName', 'container', 'mimeMediaType'])
-  encoding.updatedAt = new Date(event.blockTimestamp)
   await store.save<VideoMediaEncoding>(encoding)
 
   return encoding
@@ -247,7 +245,6 @@ async function processVideoMediaMetadata(
     new VideoMediaMetadata({
       id: deterministicEntityId(event),
       createdInBlock: event.blockNumber,
-      createdAt: new Date(event.blockTimestamp),
     })
 
   // integrate media-related data
@@ -257,7 +254,6 @@ async function processVideoMediaMetadata(
     pixelHeight: metadata.mediaPixelHeight,
   }
   integrateMeta(videoMedia, mediaMetadata, ['pixelWidth', 'pixelHeight', 'size'])
-  videoMedia.updatedAt = new Date(event.blockTimestamp)
   videoMedia.encoding = await processVideoMediaEncoding(ctx, videoMedia.encoding, metadata.mediaType || {})
   await store.save<VideoMediaMetadata>(videoMedia)
 
@@ -462,8 +458,6 @@ async function processLanguage(
     id: deterministicEntityId(event),
     iso: languageIso,
     createdInBlock: event.blockNumber,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
   })
 
   await store.save<Language>(newLanguage)
@@ -491,9 +485,7 @@ async function updateVideoLicense(
       previousLicense ||
       new License({
         id: deterministicEntityId(event),
-        createdAt: new Date(event.blockTimestamp),
       })
-    license.updatedAt = new Date(event.blockTimestamp)
     integrateMeta(license, licenseMetadata, ['attribution', 'code', 'customText'])
     await store.save<License>(license)
   }
@@ -502,7 +494,6 @@ async function updateVideoLicense(
   // FIXME: Note that we MUST to provide "null" here in order to unset a relation,
   // See: https://github.com/Joystream/hydra/issues/435
   video.license = license as License | undefined
-  video.updatedAt = new Date(ctx.event.blockTimestamp)
   await store.save<Video>(video)
 
   // Safely remove previous license if needed
@@ -568,53 +559,57 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
   const videoAssets = ['thumbnailPhoto', 'media'] as const
 
-  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
-  // is allowed to be associated only with one channel/video in runtime
-  const channel = await store.get(Channel, {
-    where: channelAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
+  async function unconnectAsset<T extends EntityType<Channel | Video>>(
+    entity: T,
+    targetAsset: string,
+    relations: typeof channelAssets | typeof videoAssets
+  ) {
+    // load video/channel
+    const result = await store.get(entity, {
+      where: {
+        [targetAsset]: {
+          id: dataObject.id,
+        },
       },
-    })),
-    relations: [...channelAssets],
-  })
-  const video = await store.get(Video, {
-    where: videoAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
-      },
-    })),
-    relations: [...videoRelationsForCounters],
-  })
+      relations: [...relations],
+    })
 
-  if (channel) {
-    channelAssets.forEach((assetName) => {
-      if (channel[assetName] && channel[assetName]?.id === dataObject.id) {
-        channel[assetName] = null as any
+    if (!result) {
+      return
+    }
+
+    // unset relation
+    relations.forEach((assetName) => {
+      if (result[assetName] && result[assetName]?.id === dataObject.id) {
+        result[assetName] = null as any
       }
     })
-    await store.save<Channel>(channel)
 
-    // emit log event
-    logger.info('Content has been disconnected from Channel', {
-      channelId: channel.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+    await store.save(result)
+
+    // log event
+    if (result instanceof Video) {
+      logger.info('Content has been disconnected from Video', {
+        videoId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    } else {
+      logger.info('Content has been disconnected from Channel', {
+        channelId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    }
   }
 
-  if (video) {
-    videoAssets.forEach((assetName) => {
-      if (video[assetName] && video[assetName]?.id === dataObject.id) {
-        video[assetName] = null as any
-      }
-    })
-    await store.save<Video>(video)
+  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
+  // is allowed to be associated only with one channel/video in runtime
 
-    // emit log event
-    logger.info('Content has been disconnected from Video', {
-      videoId: video.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+  for (const channelAsset of channelAssets) {
+    await unconnectAsset(Channel, channelAsset, channelAssets)
+  }
+
+  for (const videoAsset of videoAssets) {
+    await unconnectAsset(Video, videoAsset, videoAssets)
   }
 
   // remove data object

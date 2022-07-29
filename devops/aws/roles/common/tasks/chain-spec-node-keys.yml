@@ -35,7 +35,8 @@
   run_once: true
 
 - name: Run subkey to generate node keys
-  shell: subkey generate-node-key
+  shell: > 
+    {{ remote_code_path }}/target/release/joystream-node key generate-node-key
   delegate_to: '{{ build_instance }}'
   register: subkey_output
 
