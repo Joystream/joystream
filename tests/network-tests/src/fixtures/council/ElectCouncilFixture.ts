@@ -36,10 +36,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     await new FixtureRunner(addStakingAccountsFixture).run()
 
     const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
-    await api.treasuryTransferBalanceToAccounts(
-      votersStakingAccounts,
-      voteStake.add(api.consts.referendum.minimumStake)
-    )
+    await api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake)
 
     // Announcing stage
     await this.api.untilCouncilStage('Announcing')
