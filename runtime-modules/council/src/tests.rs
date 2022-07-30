@@ -28,7 +28,7 @@ fn council_lifecycle() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        Mocks::run_full_council_cycle(0, &[], 0);
+        Mocks::run_full_council_cycle(1, &[], 0);
     });
 }
 
@@ -57,7 +57,7 @@ fn council_candidacy_invalid_time() {
 
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
             candidates_announcing: candidates,
@@ -121,7 +121,7 @@ fn council_can_vote_for_yourself() {
 
         let params = CouncilCycleParams {
             council_settings: council_settings.clone(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
             candidates_announcing: candidates.clone(),
@@ -162,7 +162,7 @@ fn vote_stake_locks_after_election_complete() {
     build_test_externalities(config).execute_with(|| {
         // run first election round stop at start of IdlePeriod / After election is completed
         let params = Mocks::run_council_cycle_with_interrupt(
-            0,
+            1,
             &[],
             0,
             Some(CouncilCycleInterrupt::AfterElectionComplete),
@@ -185,7 +185,7 @@ fn vote_stake_locks_after_voting() {
     build_test_externalities(config).execute_with(|| {
         // run first election round stop after votes have been cast
         let params = Mocks::run_council_cycle_with_interrupt(
-            0,
+            1,
             &[],
             0,
             Some(CouncilCycleInterrupt::AfterVoting),
@@ -207,7 +207,7 @@ fn vote_stake_locks_after_revealing() {
     build_test_externalities(config).execute_with(|| {
         // run first election round stop at after votes are revealed
         let params = Mocks::run_council_cycle_with_interrupt(
-            0,
+            1,
             &[],
             0,
             Some(CouncilCycleInterrupt::AfterRevealing),
@@ -230,7 +230,7 @@ fn vote_stake_locks_after_new_election_starts() {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
 
         // run first election to completion
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
         let second_round_user_offset = 100; // some number higher than the number of voters
 
         let voter_for_winner = params.voters[0].clone();
@@ -238,7 +238,7 @@ fn vote_stake_locks_after_new_election_starts() {
 
         // start next election round
         Mocks::run_council_cycle_with_interrupt(
-            council_settings.cycle_duration,
+            params.cycle_start_block_number + council_settings.cycle_duration,
             &params.expected_final_council_members,
             second_round_user_offset,
             Some(CouncilCycleInterrupt::AfterCandidatesAnnounce),
@@ -280,7 +280,7 @@ fn council_candidacy_release_candidate_stake() {
     build_test_externalities(config).execute_with(|| {
         let not_elected_candidate_index = 2;
 
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
 
         Mocks::release_candidacy_stake(
             params.candidates_announcing[not_elected_candidate_index]
@@ -309,7 +309,7 @@ fn council_announcement_reset_on_insufficient_candidates() {
 
         let params = CouncilCycleParams {
             council_settings: council_settings.clone(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
             candidates_announcing: candidates,
@@ -328,8 +328,10 @@ fn council_announcement_reset_on_insufficient_candidates() {
         // check announcements were reset
         Mocks::check_announcing_period(
             params.cycle_start_block_number + council_settings.announcing_stage_duration,
-            CouncilStageAnnouncing {
+            CouncilStageAnnouncing::<u64> {
                 candidates_count: 0,
+                ends_at: params.cycle_start_block_number
+                    + council_settings.announcing_stage_duration * 2,
             },
         );
     });
@@ -351,7 +353,7 @@ fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdra
 
         let params = CouncilCycleParams {
             council_settings: council_settings.clone(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
             candidates_announcing: candidates.clone(),
@@ -376,8 +378,10 @@ fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdra
         // check announcements were reset
         Mocks::check_announcing_period(
             params.cycle_start_block_number + council_settings.announcing_stage_duration,
-            CouncilStageAnnouncing {
+            CouncilStageAnnouncing::<u64> {
                 candidates_count: 0,
+                ends_at: params.cycle_start_block_number
+                    + council_settings.announcing_stage_duration * 2,
             },
         );
     });
@@ -419,14 +423,12 @@ fn council_announcement_reset_on_not_enough_winners() {
 
         let params = CouncilCycleParams {
             council_settings: council_settings.clone(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
             candidates_announcing: candidates,
             expected_candidates,
             voters,
-
-            // escape before voting
             interrupt_point: Some(CouncilCycleInterrupt::AfterRevealing),
         };
 
@@ -436,13 +438,15 @@ fn council_announcement_reset_on_not_enough_winners() {
         MockUtils::increase_block_number(council_settings.reveal_stage_duration);
 
         // check announcements were reset
+        let expected_update_block_number = params.cycle_start_block_number
+            + council_settings.announcing_stage_duration
+            + council_settings.voting_stage_duration
+            + council_settings.reveal_stage_duration;
         Mocks::check_announcing_period(
-            params.cycle_start_block_number
-                + council_settings.announcing_stage_duration
-                + council_settings.voting_stage_duration
-                + council_settings.reveal_stage_duration,
-            CouncilStageAnnouncing {
+            expected_update_block_number,
+            CouncilStageAnnouncing::<u64> {
                 candidates_count: 0,
+                ends_at: expected_update_block_number + council_settings.announcing_stage_duration,
             },
         );
     });
@@ -473,21 +477,21 @@ fn council_two_consecutive_rounds() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -509,7 +513,7 @@ fn council_two_consecutive_rounds() {
 
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: expected_final_council_members.clone(),
             candidates_announcing: candidates.clone(),
@@ -537,21 +541,21 @@ fn council_two_consecutive_rounds() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration,
+                1 + council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration,
+                1 + council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[2].candidate.clone(),
                 candidates[2].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration,
+                1 + council_settings.cycle_duration + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -559,7 +563,8 @@ fn council_two_consecutive_rounds() {
 
         let params2 = CouncilCycleParams {
             expected_initial_council_members: expected_final_council_members,
-            cycle_start_block_number: council_settings.announcing_stage_duration
+            cycle_start_block_number: params.cycle_start_block_number
+                + council_settings.announcing_stage_duration
                 + council_settings.voting_stage_duration
                 + council_settings.reveal_stage_duration
                 + council_settings.idle_stage_duration,
@@ -613,7 +618,7 @@ fn council_candidate_stake_is_locked() {
 
         let params = CouncilCycleParams {
             council_settings: council_settings.clone(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
             candidates_announcing: candidates.clone(),
@@ -662,21 +667,21 @@ fn council_candidate_stake_can_be_unlocked() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -698,7 +703,7 @@ fn council_candidate_stake_can_be_unlocked() {
 
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members,
             candidates_announcing: candidates.clone(),
@@ -768,21 +773,21 @@ fn council_candidate_stake_automaticly_converted() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -804,7 +809,7 @@ fn council_candidate_stake_automaticly_converted() {
 
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: expected_final_council_members.clone(),
             candidates_announcing: candidates,
@@ -857,21 +862,21 @@ fn council_member_stake_is_locked() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[0].candidate.clone(),
                 candidates[0].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.election_duration,
+                1 + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -893,7 +898,7 @@ fn council_member_stake_is_locked() {
 
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: expected_final_council_members.clone(),
             candidates_announcing: candidates,
@@ -926,7 +931,7 @@ fn council_member_stake_automaticly_unlocked() {
         let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
         let not_reelected_candidate_index = 0;
 
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
 
         let candidates = params.candidates_announcing.clone();
 
@@ -952,21 +957,27 @@ fn council_member_stake_automaticly_unlocked() {
             (
                 candidates[3].candidate.clone(),
                 candidates[3].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration,
+                params.cycle_start_block_number
+                    + council_settings.cycle_duration
+                    + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[1].candidate.clone(),
                 candidates[1].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration,
+                params.cycle_start_block_number
+                    + council_settings.cycle_duration
+                    + council_settings.election_duration,
                 0,
             )
                 .into(),
             (
                 candidates[2].candidate.clone(),
                 candidates[2].membership_id,
-                council_settings.cycle_duration + council_settings.election_duration,
+                params.cycle_start_block_number
+                    + council_settings.cycle_duration
+                    + council_settings.election_duration,
                 0,
             )
                 .into(),
@@ -974,7 +985,8 @@ fn council_member_stake_automaticly_unlocked() {
 
         let params2 = CouncilCycleParams {
             expected_initial_council_members: params.expected_final_council_members.clone(),
-            cycle_start_block_number: council_settings.announcing_stage_duration
+            cycle_start_block_number: params.cycle_start_block_number
+                + council_settings.announcing_stage_duration
                 + council_settings.voting_stage_duration
                 + council_settings.reveal_stage_duration
                 + council_settings.idle_stage_duration,
@@ -1030,7 +1042,7 @@ fn council_candidacy_set_note() {
 
         let params = CouncilCycleParams {
             council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
+            cycle_start_block_number: 1,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![],
             candidates_announcing: candidates.clone(),
@@ -1108,7 +1120,7 @@ fn council_repeated_candidacy_unstakes() {
         let not_elected_candidate_index = 2;
 
         // run one council cycle
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
 
         // forward to next candidacy announcing period
         MockUtils::increase_block_number(council_settings.idle_stage_duration + 1);
@@ -1272,12 +1284,12 @@ fn council_rewards_are_paid() {
         Mocks::set_budget(origin, sufficient_balance, Ok(()));
 
         // run 1st council cycle
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
 
         // calculate council member last reward block
-        // the duration of the complete cycle minus the part of the idle cycle where there was
-        // no time to pay out the the reward
-        let last_payment_block = council_settings.cycle_duration
+        // cycle start block number plus the duration of the complete cycle
+        // minus the part of the idle cycle where there was no time to pay out the the reward
+        let last_payment_block = params.cycle_start_block_number + council_settings.cycle_duration
             - (council_settings.idle_stage_duration
                 % <Runtime as Config>::ElectedMemberRewardPeriod::get());
         let tmp_council_members: Vec<CouncilMemberOf<Runtime>> = params
@@ -1291,7 +1303,7 @@ fn council_rewards_are_paid() {
 
         // run 2nd council cycle
         Mocks::run_full_council_cycle(
-            council_settings.cycle_duration,
+            params.cycle_start_block_number + council_settings.cycle_duration,
             tmp_council_members.as_slice(),
             0,
         );
@@ -1313,14 +1325,15 @@ fn councilor_reward_can_be_set() {
         Mocks::set_councilor_reward(origin, 1, Ok(()));
 
         // run 1st council cycle
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
 
         // calculate council member last reward block
-        let last_payment_block = council_settings.cycle_duration
+        let last_payment_block = params.cycle_start_block_number + council_settings.cycle_duration
             - (council_settings.idle_stage_duration
                 % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
-        let start_rewarding_block = council_settings.reveal_stage_duration
+        let start_rewarding_block = params.cycle_start_block_number
+            + council_settings.reveal_stage_duration
             + council_settings.announcing_stage_duration
             + council_settings.voting_stage_duration;
 
@@ -1358,12 +1371,12 @@ fn council_missed_rewards_are_paid_later() {
         Mocks::set_budget(origin.clone(), insufficient_balance, Ok(()));
 
         // run 1st council cycle
-        Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
 
         // forward to block after first reward payment
         MockUtils::increase_block_number(<Runtime as Config>::ElectedMemberRewardPeriod::get());
 
-        let last_payment_block = council_settings.cycle_duration
+        let last_payment_block = params.cycle_start_block_number + council_settings.cycle_duration
             - (council_settings.idle_stage_duration
                 % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
@@ -1372,8 +1385,7 @@ fn council_missed_rewards_are_paid_later() {
             assert_eq!(council_member.unpaid_reward, 0,);
             assert_eq!(
                 council_member.last_payment_block,
-                //last_payment_block + reward_period,
-                council_settings.election_duration,
+                params.cycle_start_block_number + council_settings.election_duration,
             );
         }
 
@@ -1409,12 +1421,12 @@ fn council_discard_remaining_rewards_on_depose() {
         Mocks::set_budget(origin, sufficient_balance, Ok(()));
 
         // run 1st council cycle
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
 
         // calculate council member last reward block
         // the duration of the complete cycle minus the part of the idle cycle where there was
         // no time to pay out the the reward
-        let last_payment_block = council_settings.cycle_duration
+        let last_payment_block = params.cycle_start_block_number + council_settings.cycle_duration
             - (council_settings.idle_stage_duration
                 % <Runtime as Config>::ElectedMemberRewardPeriod::get());
         let tmp_council_members: Vec<CouncilMemberOf<Runtime>> = params
@@ -1433,7 +1445,7 @@ fn council_discard_remaining_rewards_on_depose() {
 
         // run 2nd council cycle
         Mocks::run_full_council_cycle(
-            council_settings.cycle_duration,
+            params.cycle_start_block_number + council_settings.cycle_duration,
             tmp_council_members.as_slice(),
             second_cycle_user_offset,
         );
@@ -1532,7 +1544,7 @@ fn council_new_council_elected_hook() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        Mocks::run_full_council_cycle(0, &[], 0);
+        Mocks::run_full_council_cycle(1, &[], 0);
 
         Mocks::check_new_council_elected_hook();
     });
@@ -1733,7 +1745,7 @@ fn council_many_cycle_rewards() {
         Mocks::set_budget(origin, u64::MAX, Ok(()));
         for i in 0..num_iterations {
             let tmp_params = Mocks::run_full_council_cycle(
-                i * council_settings.cycle_duration,
+                1 + i * council_settings.cycle_duration,
                 &council_members,
                 0,
             );
@@ -1748,10 +1760,10 @@ fn council_many_cycle_rewards() {
              */
 
             // This is the last paid block taking into account the last idle period
-            let last_payment_block = i * council_settings.cycle_duration
-                + council_settings.cycle_duration
-                - (council_settings.idle_stage_duration
-                    % <Runtime as Config>::ElectedMemberRewardPeriod::get());
+            let last_payment_block =
+                1 + i * council_settings.cycle_duration + council_settings.cycle_duration
+                    - (council_settings.idle_stage_duration
+                        % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
             // Update the expected final council from `run_full_council_cycle` to use the current
             // `last_payment_block`
