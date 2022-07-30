@@ -557,7 +557,7 @@ benchmarks! {
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(controller_account),
-            (3_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
