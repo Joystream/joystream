@@ -510,13 +510,17 @@ decl_module! {
             let storage_assets = params.assets.clone().unwrap_or_default();
             let num_objs = storage_assets.object_creation_list.len();
 
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
-
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
             let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
             let total_funds_needed = channel_state_bloat_bond.saturating_add(funds_needed);
 
             Self::ensure_channel_creation_sufficient_balance(&sender, total_funds_needed)?;
+
+            ensure!(
+                storage_assets.object_creation_list.len()
+                    <= T::MaxNumberOfAssetsPerChannel::get() as usize,
+                Error::<T>::MaxNumberOfChannelAssetsExceeded
+            );
 
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
@@ -527,10 +531,6 @@ decl_module! {
                 storage_buckets: params.storage_buckets.clone(),
                 distribution_buckets: params.distribution_buckets.clone(),
             };
-
-            let data_objects: ChannelAssetsSet<T> = data_objects_ids
-                .try_into()
-                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelAssetsExceeded))?;
 
             let collaborators: ChannelCollaboratorsMap<T> = params
                 .collaborators
@@ -545,12 +545,15 @@ decl_module! {
             let _ = Balances::<T>::slash(&sender, channel_state_bloat_bond);
 
             // create channel bag
-            Storage::<T>::create_dynamic_bag(bag_creation_params)?;
+            let (_, data_objects_ids) = Storage::<T>::create_dynamic_bag(bag_creation_params)?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
             // channel creation
+            let data_objects = data_objects_ids
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelAssetsExceeded))?;
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
                 num_videos: 0u64,
@@ -571,7 +574,10 @@ decl_module! {
             // add channel to onchain state
             ChannelById::<T>::insert(channel_id, channel.clone());
 
-            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
+            // retrieve channel account and emit it as part of the event
+            let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
+
+            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params, channel_account));
         }
 
         #[weight = Module::<T>::update_channel_weight(params)]
@@ -610,52 +616,58 @@ decl_module! {
                     .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))
                 ).transpose()?;
 
-            let (upload_parameters, new_data_object_ids) =
-            if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
-                // verify channel bag witness
-                match params.channel_bag_witness.as_ref() {
-                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
-                    None => Err(Error::<T>::MissingChannelBagWitness.into())
-                }?;
+            let upload_parameters =
+                if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
+                    // verify channel bag witness
+                    match params.channel_bag_witness.as_ref() {
+                        Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                        None => Err(Error::<T>::MissingChannelBagWitness.into())
+                    }?;
 
-                Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
+                    Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
 
-                let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-                let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+                    let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
 
-                let upload_parameters = UploadParameters::<T> {
-                    bag_id: Self::bag_id_for_channel(&channel_id),
-                    object_creation_list: assets_to_upload.object_creation_list,
-                    state_bloat_bond_source_account_id: sender,
-                    expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                    expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond};
+                    Self::ensure_max_channel_assets_not_exceeded(&channel.data_objects, &assets_to_upload, &params.assets_to_remove)?;
 
-                (Some(upload_parameters), new_data_object_ids)
-            }
-            else{
-                (None, BTreeSet::new())
-            };
+                    let upload_parameters = UploadParameters::<T> {
+                        bag_id: Self::bag_id_for_channel(&channel_id),
+                        object_creation_list: assets_to_upload.object_creation_list,
+                        state_bloat_bond_source_account_id: sender,
+                        expected_data_size_fee: assets_to_upload.expected_data_size_fee,
+                        expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond};
 
-            let updated_assets_set = Self::create_updated_channel_assets_set(
-                &channel.data_objects,
-                &new_data_object_ids,
-                &params.assets_to_remove
-            )?;
+                    Some(upload_parameters)
+                }
+                else {
+                    None
+                };
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(upload_parameters) = upload_parameters {
-                Storage::<T>::upload_and_delete_data_objects(
+            let new_data_object_ids = if let Some(upload_parameters) = upload_parameters {
+                // Upload/remove data objects and update channel assets set
+                let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
                     upload_parameters,
                     params.assets_to_remove.clone(),
                 )?;
-            }
+                let updated_assets_set = Self::create_updated_channel_assets_set(
+                    &channel.data_objects,
+                    &new_data_object_ids,
+                    &params.assets_to_remove
+                )?;
+                ChannelById::<T>::mutate(channel_id, |channel| {
+                    channel.data_objects = updated_assets_set;
+                });
+                new_data_object_ids
+            } else {
+                BTreeSet::new()
+            };
 
-            // Update the channel
+            // Update channel collaborators
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.data_objects = updated_assets_set;
                 if let Some(new_collabs) = new_collabs {
                     channel.collaborators = new_collabs;
                 }
@@ -927,7 +939,10 @@ decl_module! {
             let storage_assets = params.assets.clone().unwrap_or_default();
             let num_objs = storage_assets.object_creation_list.len();
 
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
+            ensure!(
+                storage_assets.object_creation_list.len() <= T::MaxNumberOfAssetsPerVideo::get() as usize,
+                Error::<T>::MaxNumberOfVideoAssetsExceeded
+            );
 
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
             let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
@@ -939,7 +954,26 @@ decl_module! {
                 Self::check_nft_limits(&channel)?;
             }
 
-            let data_objects: VideoAssetsSet<T> = data_objects_ids
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let _ = Balances::<T>::slash(&sender, video_state_bloat_bond);
+
+            // Upload data objects
+            let data_objects_ids = if let Some(upload_assets) = params.assets.as_ref() {
+                let params = Self::construct_upload_parameters(
+                    upload_assets,
+                    &channel_id,
+                    &sender,
+                    params.expected_data_object_state_bloat_bond,
+                );
+                Storage::<T>::upload_data_objects(params)
+            } else {
+                Ok(BTreeSet::new())
+            }?;
+
+            let data_objects = data_objects_ids
                 .clone()
                 .try_into()
                 .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfVideoAssetsExceeded))?;
@@ -951,22 +985,6 @@ decl_module! {
                 data_objects,
                 video_state_bloat_bond
             };
-
-            if let Some(upload_assets) = params.assets.as_ref() {
-                let params = Self::construct_upload_parameters(
-                    upload_assets,
-                    &channel_id,
-                    &sender,
-                    params.expected_data_object_state_bloat_bond,
-                );
-                Storage::<T>::upload_data_objects(params)?;
-            }
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let _ = Balances::<T>::slash(&sender, video_state_bloat_bond);
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -1023,7 +1041,8 @@ decl_module! {
             Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &video.data_objects)?;
 
             let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
+
+            Self::ensure_max_video_assets_not_exceeded(&video.data_objects, &assets_to_upload, &params.assets_to_remove)?;
 
             let nft_status = params.auto_issue_nft
                 .as_ref()
@@ -1038,12 +1057,6 @@ decl_module! {
                 Self::check_nft_limits(&channel)?;
             }
 
-            let updated_assets = Self::create_updated_video_assets_set(
-                &video.data_objects,
-                &new_data_object_ids,
-                &params.assets_to_remove
-            )?;
-
             //
             // == MUTATION SAFE ==
             //
@@ -1051,18 +1064,22 @@ decl_module! {
             // upload/delete video assets from storage with commit or rollback semantics
             let upload_parameters = UploadParameters::<T> {
                 bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.object_creation_list),
+                object_creation_list: assets_to_upload.object_creation_list,
                 state_bloat_bond_source_account_id: sender,
-                expected_data_size_fee: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.expected_data_size_fee),
+                expected_data_size_fee: assets_to_upload.expected_data_size_fee,
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
             };
 
-            Storage::<T>::upload_and_delete_data_objects(
+            let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
                 upload_parameters,
                 params.assets_to_remove.clone(),
-                )?;
+            )?;
+
+            let updated_assets = Self::create_updated_video_assets_set(
+                &video.data_objects,
+                &new_data_object_ids,
+                &params.assets_to_remove
+            )?;
 
             if nft_status.is_some() {
                 ChannelById::<T>::mutate(channel_id, |channel| {
@@ -3382,6 +3399,22 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    fn ensure_max_channel_assets_not_exceeded(
+        current_set: &ChannelAssetsSet<T>,
+        assets_to_upload: &StorageAssets<T>,
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        ensure!(
+            current_set
+                .len()
+                .saturating_sub(assets_to_remove.len())
+                .saturating_add(assets_to_upload.object_creation_list.len())
+                <= T::MaxNumberOfAssetsPerChannel::get() as usize,
+            Error::<T>::MaxNumberOfChannelAssetsExceeded
+        );
+        Ok(())
+    }
+
     fn create_updated_channel_assets_set(
         current_set: &ChannelAssetsSet<T>,
         ids_to_add: &BTreeSet<DataObjectId<T>>,
@@ -3396,6 +3429,22 @@ impl<T: Config> Module<T> {
             .collect::<BTreeSet<_>>()
             .try_into()
             .map_err(|_| Error::<T>::MaxNumberOfChannelAssetsExceeded.into())
+    }
+
+    fn ensure_max_video_assets_not_exceeded(
+        current_set: &VideoAssetsSet<T>,
+        assets_to_upload: &StorageAssets<T>,
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        ensure!(
+            current_set
+                .len()
+                .saturating_sub(assets_to_remove.len())
+                .saturating_add(assets_to_upload.object_creation_list.len())
+                <= T::MaxNumberOfAssetsPerVideo::get() as usize,
+            Error::<T>::MaxNumberOfVideoAssetsExceeded
+        );
+        Ok(())
     }
 
     fn create_updated_video_assets_set(
@@ -3882,7 +3931,7 @@ decl_event!(
         CuratorRemoved(CuratorGroupId, CuratorId),
 
         // Channels
-        ChannelCreated(ChannelId, Channel, ChannelCreationParameters),
+        ChannelCreated(ChannelId, Channel, ChannelCreationParameters, AccountId),
         ChannelUpdated(
             ContentActor,
             ChannelId,

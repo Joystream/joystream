@@ -8,6 +8,7 @@ import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import { scenario } from '../Scenario'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Proposals', async ({ job, env }) => {
   const councilJob = job('electing council', electCouncil)
   const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH

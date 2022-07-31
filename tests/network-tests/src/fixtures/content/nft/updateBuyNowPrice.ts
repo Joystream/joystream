@@ -1,7 +1,7 @@
 import { Api } from '../../../Api'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { BaseQueryNodeFixture } from '../../../Fixture'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Utils } from '../../../utils'
@@ -42,7 +42,7 @@ export class NftUpdateBuyNowPriceFixture extends BaseQueryNodeFixture {
     )
 
     this.debug('Check NFT buy now price change')
-    this.assertBuyNowPrice(this.query, this.videoId, newBuyNowPrice)
+    await this.assertBuyNowPrice(this.query, this.videoId, newBuyNowPrice)
   }
 
   private async assertBuyNowPrice(query: QueryNodeApi, videoId: number, newPrice: BN) {
