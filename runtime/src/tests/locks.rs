@@ -13,9 +13,9 @@ fn compatible_stakes_check_passed_successfully() {
     initial_test_ext().execute_with(|| {
         let account_id = account_from_member_id(0);
         let stake_amount = currency::DOLLARS * 100;
-        let total_amout = stake_amount * 100;
+        let total_amount = stake_amount * 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amount);
 
         assert_eq!(
             BoundStakingAccountStakingManager::set_stake(&account_id, stake_amount),
@@ -32,9 +32,9 @@ fn compatible_stakes_check_reversed_order_passed_successfully() {
     initial_test_ext().execute_with(|| {
         let account_id = account_from_member_id(0);
         let stake_amount = currency::DOLLARS * 100;
-        let total_amout = stake_amount * 100;
+        let total_amount = stake_amount * 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amount);
 
         assert_eq!(
             ContentWorkingGroupStakingManager::set_stake(&account_id, stake_amount),
@@ -51,9 +51,9 @@ fn incompatible_stakes_check_passed_successfully() {
     initial_test_ext().execute_with(|| {
         let account_id = account_from_member_id(0);
         let stake_amount = currency::DOLLARS * 100;
-        let total_amout = stake_amount * 100;
+        let total_amount = stake_amount * 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amount);
 
         assert_eq!(
             GatewayWorkingGroupStakingManager::set_stake(&account_id, stake_amount),

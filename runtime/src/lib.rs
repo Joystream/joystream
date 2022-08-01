@@ -189,48 +189,102 @@ parameter_types! {
 
 const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO.deconstruct());
 
-pub struct LockedDownBaseFilter {}
+/// Our extrinsics call filter
+pub enum CallFilter {}
 
-// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
-#[cfg(not(feature = "runtime-benchmarks"))]
-impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        match call {
-            // TODO: adjust after Carthage
-            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
-                ..
-            }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
-            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
-                ..
-            }) => false,
-            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
-                general_proposal_parameters: _,
-                proposal_details,
-            }) => !matches!(
-                proposal_details,
-                proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
-                    | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
-            ),
-            _ => true, // Enable all other calls
+/// Filter that disables all non-essential calls.
+/// Allowing only calls for successful block authoring, staking, nominating.
+/// Since balances calls are disabled, his means that stash and controller
+/// accounts must already be funded. If this is not practical to setup at genesis
+/// then consider enabling Balances calls?
+/// This will be used at initial launch, and other calls will be enabled as we rollout.
+#[cfg(not(any(
+    feature = "staging_runtime",
+    feature = "testing_runtime",
+    feature = "runtime-benchmarks"
+)))]
+fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool {
+    match call {
+        Call::System(method) =>
+        // All methods except the remark call
+        {
+            !matches!(method, frame_system::Call::<Runtime>::remark { .. })
         }
+        // confirmed that Utility.batch dispatch does not bypass filter.
+        Call::Utility(_) => true,
+        Call::Babe(_) => true,
+        Call::Timestamp(_) => true,
+        Call::Authorship(_) => true,
+        Call::ElectionProviderMultiPhase(_) => true,
+        Call::Staking(_) => true,
+        Call::Session(_) => true,
+        Call::Grandpa(_) => true,
+        Call::ImOnline(_) => true,
+        Call::Sudo(_) => true,
+        Call::BagsList(_) => true,
+        // Disable all other calls
+        _ => false,
     }
 }
 
+// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
+// Filter out a subset of calls on content pallet and some specific proposals
+#[cfg(not(feature = "runtime-benchmarks"))]
+fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
+    match call {
+        // TODO: adjust after Carthage
+        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
+        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+            ..
+        }) => false,
+        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+            general_proposal_parameters: _,
+            proposal_details,
+        }) => !matches!(
+            proposal_details,
+            proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
+                | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+        ),
+        _ => true, // Enable all other calls
+    }
+}
+
+// Live Production config
+#[cfg(not(any(
+    feature = "staging_runtime",
+    feature = "testing_runtime",
+    feature = "runtime-benchmarks"
+)))]
+impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        filter_non_essential(call) && filter_content_and_proposals(call)
+    }
+}
+
+// Do not filter any calls when building benchmarks so we can benchmark everything
 #[cfg(feature = "runtime-benchmarks")]
-impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
         true
     }
 }
 
+// Staging and Testing - filter joystream pallet calls only to test they are properly disabled
+#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
+impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        filter_content_and_proposals(call)
+    }
+}
+
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = LockedDownBaseFilter;
+    type BaseCallFilter = CallFilter;
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
@@ -802,7 +856,6 @@ parameter_types! {
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 100 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
 }
@@ -823,7 +876,6 @@ parameter_types! {
     pub const IdlePeriodDuration: BlockNumber = 400;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 100 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -858,7 +910,6 @@ parameter_types! {
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: Balance = 20 * currency::DOLLARS;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -1086,13 +1137,9 @@ parameter_types! {
     pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
     pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
     pub const DistributionRewardPeriod: u32 = 14400 + 90;
-    // This should be more costly than `apply_on_opening` fee with the current configuration
-    // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
-    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    // This should be more costly than `apply_on_opening` fee
     pub const MinimumApplicationStake: Balance = 20 * currency::DOLLARS;
-    // This should be more costly than `add_opening` fee with the current configuration
-    // the base cost of `add_opening` in tokens is 81. And has a very slight slope
-    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
+    // This should be more costly than `add_opening` fee
     pub const LeaderOpeningStake: Balance = 20 * currency::DOLLARS;
 }
 
