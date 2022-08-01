@@ -1,10 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::permissions::*;
-use crate::types::{
-    ChannelOwner, ChannelTransferStatus, InitTransferParametersOf, ModuleAccount, PendingTransfer,
-    TransferCommitmentParameters, TransferCommitmentWitnessOf,
-};
+use crate::types::*;
 use crate::Module as Pallet;
 use crate::{Call, ChannelById, Config, ContentTreasury, Event, UpdateChannelPayoutsParameters};
 use balances::Pallet as Balances;
@@ -458,6 +455,41 @@ benchmarks! {
                 cumulative_reward_claimed + T::ExistentialDeposit::get(),
             );
         }
+
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - actor has max permission + max curators
+    // - max number of paused features (except necessary ones)
+    // - English Auction with max whitelisted member & some royalty
+    // - nft limits are set
+    // DB OPERATIONS:
+    // - DB Read : channel -> O(1)
+    // - DB Read : video -> O(1)
+    // - DB Write: params.metadata -> O(params.whitelist.len())
+    // - DB Write: video -> O(1)
+    // - DB Write: channel -> O(1)
+    issue_nft {
+        let (channel_id, group_id, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel::<T>(false)?;
+        let origin = RawOrigin::Signed(lead_account_id.clone());
+        let actor = ContentActor::Lead;
+        let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
+        let video_id = Pallet::<T>::next_video_id();
+        set_nft_limits_helper::<T>(channel_id);
+        Pallet::<T>::create_video(origin.clone().into(), actor.clone(), channel_id, VideoCreationParameters::<T> {
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            assets: None,
+            auto_issue_nft: None,
+            meta: None,
+        })?;
+
+        let params = worst_case_nft_issuance_params_helper::<T>(Pallet::<T>::max_auction_whitelist_length());
+    }: _ (origin, actor, video_id, params)
+        verify {
+            assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_some());
+        }
+
 }
 
 #[cfg(test)]
@@ -553,6 +585,13 @@ pub mod tests {
     fn claim_channel_and_withdraw_reward() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_claim_and_withdraw_channel_reward());
+        })
+    }
+
+    #[test]
+    fn issue_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_issue_nft());
         })
     }
 }

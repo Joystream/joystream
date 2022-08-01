@@ -5,8 +5,10 @@ mod benchmarking;
 use crate::permissions::*;
 use crate::types::{
     ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-    InitTransferParametersOf, PullPayment, Side, StorageAssets,
+    InitTransferParametersOf, NftLimitId, PullPayment, Side, StorageAssets,
 };
+
+use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters};
 use crate::{BalanceOf, Config, Module as Pallet};
 use balances::Pallet as Balances;
 use common::MembershipTypes;
@@ -956,3 +958,103 @@ struct IndexItem {
     index: usize,
     side: Side,
 }
+
+fn set_nft_limits_helper<T: RuntimeConfig>(channel_id: T::ChannelId) {
+    let global_daily_limit = 2u64;
+    let global_weekly_limit = 14u64;
+    let channel_daily_limit = 2u64;
+    let channel_weekly_limit = 14u64;
+
+    Pallet::<T>::set_nft_limit(NftLimitId::GlobalDaily, global_daily_limit);
+    Pallet::<T>::set_nft_limit(NftLimitId::GlobalWeekly, global_weekly_limit);
+    Pallet::<T>::set_nft_limit(NftLimitId::ChannelDaily(channel_id), channel_daily_limit);
+    Pallet::<T>::set_nft_limit(NftLimitId::ChannelWeekly(channel_id), channel_weekly_limit);
+}
+
+type BloatBonds<T> = (
+    <T as balances::Config>::Balance, // channel_state_bloat_bond
+    <T as balances::Config>::Balance, // video_state_bloat_bond
+    <T as balances::Config>::Balance, // data_object_state_bloat_bond
+    <T as balances::Config>::Balance, // data_size_fee
+);
+
+fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
+    let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let channel_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let video_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let data_object_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    let data_size_fee = <T as balances::Config>::Balance::one();
+    // Set non-zero channel bloat bond
+    Pallet::<T>::update_channel_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc.clone()).into(),
+        channel_state_bloat_bond,
+    )?;
+    // Set non-zero video bloat bond
+    Pallet::<T>::update_video_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc).into(),
+        video_state_bloat_bond,
+    )?;
+    // Set non-zero data object bloat bond
+    storage::Pallet::<T>::update_data_object_state_bloat_bond(
+        RawOrigin::Signed(storage_lead_acc.clone()).into(),
+        data_object_state_bloat_bond,
+    )?;
+    // Set non-zero fee per mb
+    storage::Pallet::<T>::update_data_size_fee(
+        RawOrigin::Signed(storage_lead_acc).into(),
+        data_size_fee,
+    )?;
+
+    Ok((
+        channel_state_bloat_bond,
+        video_state_bloat_bond,
+        data_object_state_bloat_bond,
+        data_size_fee,
+    ))
+}
+
+fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
+    whitelist_size: u32,
+) -> NftIssuanceParameters<T>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let mut next_member_id = membership::Pallet::<T>::members_created();
+
+    NftIssuanceParameters::<T> {
+        royalty: Some(Pallet::<T>::max_creator_royalty()),
+        nft_metadata: Vec::new(),
+        non_channel_owner: None,
+        init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
+            EnglishAuctionParams::<T> {
+                buy_now_price: Some(
+                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
+                ),
+                duration: Pallet::<T>::min_auction_duration(),
+                extension_period: Pallet::<T>::min_auction_extension_period(),
+                min_bid_step: Pallet::<T>::min_bid_step(),
+                starting_price: Pallet::<T>::min_starting_price(),
+                starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+                whitelist: (0..(whitelist_size as usize))
+                    .map(|_| {
+                        let (_, member_id) =
+                            member_funded_account::<T>(next_member_id.saturated_into());
+                        next_member_id += T::MemberId::one();
+                        member_id
+                    })
+                    .collect(),
+            },
+        ),
+    }
+}
+
+// fn setup_worst_case_scenario_curator_channel_with_video_nft<T: RuntimeConfig>(is_transfer: bool)
