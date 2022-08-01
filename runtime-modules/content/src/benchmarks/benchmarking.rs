@@ -1,28 +1,29 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::{
-    types::{ChannelAgentPermissions, ChannelOwner},
-    Call, ChannelById, ChannelUpdateParameters, Config, ContentActor, Event, Module as Pallet,
-    StorageAssets,
+    types::{ChannelAgentPermissions, ChannelOwner, ModuleAccount},
+    Call, ChannelById, ChannelUpdateParameters, Config, ContentActor, ContentTreasury, Event,
+    Module as Pallet, StorageAssets,
 };
 use frame_benchmarking::benchmarks;
 use frame_support::{storage::StorageMap, traits::Get};
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
+use sp_runtime::SaturatedConversion;
 use sp_std::{
     cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     vec,
 };
-use storage::{DataObjectStorage, Module as Storage};
+use storage::Module as Storage;
 
 use super::{
     assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
     generate_channel_creation_params, insert_content_leader, insert_distribution_leader,
     insert_storage_leader, setup_worst_case_curator_group_with_curators,
-    setup_worst_case_scenario_curator_channel, worst_case_channel_agent_permissions,
-    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
-    StorageWorkingGroupInstance, MAX_BYTES_METADATA,
+    setup_worst_case_scenario_curator_channel, storage_buckets_num_witness,
+    worst_case_channel_agent_permissions, ContentWorkingGroupInstance, CreateAccountId,
+    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, MAX_BYTES_METADATA,
 };
 
 benchmarks! {
@@ -92,12 +93,15 @@ benchmarks! {
         assert!(ChannelById::<T>::contains_key(&channel_id));
 
         let channel = ChannelById::<T>::get(channel_id);
+        let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
 
         assert_last_event::<T>(
             Event::<T>::ChannelCreated(
                 channel_id,
                 channel,
-                params).into()
+                params,
+                channel_acc
+            ).into()
         );
     }
 
@@ -114,21 +118,20 @@ benchmarks! {
         let e in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
          (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
-        let f in
-            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
-
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
-        let assets_to_remove =
-            Storage::<T>::get_next_data_object_ids(c as usize);
+        let assets_to_remove: BTreeSet<T::DataObjectId> = (0..c).map(|i| i.saturated_into()).collect();
 
         let (channel_id,
             group_id,
             lead_account_id,
             curator_id,
             curator_account_id) =
-        setup_worst_case_scenario_curator_channel::<T>(c, e, f,).unwrap();
+        setup_worst_case_scenario_curator_channel::<T>(
+            c,
+            e,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+        ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
 
@@ -155,9 +158,7 @@ benchmarks! {
                 ),
         };
 
-        let new_data_object_ids =
-            Storage::<T>::get_next_data_object_ids(
-                assets_to_upload.object_creation_list.len());
+        let new_data_object_ids: BTreeSet<T::DataObjectId> = (c..c+b).map(|i| i.saturated_into()).collect();
 
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
@@ -170,7 +171,7 @@ benchmarks! {
             assets_to_remove,
             collaborators,
             expected_data_object_state_bloat_bond,
-            channel_bag_witness: Some(channel_bag_witness::<T>(channel_id)?),
+            storage_buckets_num_witness: Some(storage_buckets_num_witness::<T>(channel_id)?),
         };
 
         let origin = RawOrigin::Signed(curator_account_id);
@@ -194,14 +195,7 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
-
-        let c in
-            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
-
-        let d in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
+        let b in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
 
         let (channel_id,
             group_id,
@@ -210,8 +204,9 @@ benchmarks! {
             curator_account_id) =
         setup_worst_case_scenario_curator_channel::<T>(
             T::MaxNumberOfAssetsPerChannel::get(),
-            b,
-            c,).unwrap();
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+        ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
 
@@ -232,7 +227,7 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
-        let new_meta = Some(vec![1u8].repeat(d as usize));
+        let new_meta = Some(vec![1u8].repeat(b as usize));
 
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: None,
@@ -240,7 +235,7 @@ benchmarks! {
             assets_to_remove: BTreeSet::new(),
             collaborators,
             expected_data_object_state_bloat_bond,
-            channel_bag_witness: Some(channel_bag_witness::<T>(channel_id)?),
+            storage_buckets_num_witness: None
         };
 
         let origin = RawOrigin::Signed(curator_account_id);

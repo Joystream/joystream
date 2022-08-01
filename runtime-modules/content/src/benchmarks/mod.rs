@@ -863,6 +863,12 @@ fn channel_bag_witness<T: Config>(
     })
 }
 
+fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u32, DispatchError> {
+    let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
+    let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+    Ok(channel_bag.stored_by.len() as u32)
+}
+
 // fn worst_case_scenario_assets<T: Config>(num: u32) -> StorageAssets<T> {
 //     StorageAssets::<T> {
 //         expected_data_size_fee: storage::Pallet::<T>::data_object_per_mega_byte_fee(),

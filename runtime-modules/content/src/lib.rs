@@ -619,9 +619,9 @@ decl_module! {
             let upload_parameters =
                 if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
                     // verify channel bag witness
-                    match params.channel_bag_witness.as_ref() {
-                        Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
-                        None => Err(Error::<T>::MissingChannelBagWitness.into())
+                    match params.storage_buckets_num_witness {
+                        Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
+                        None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
                     }?;
 
                     Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
@@ -3802,6 +3802,21 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    fn verify_storage_buckets_num_witness(
+        channel_id: T::ChannelId,
+        witness_num: u32,
+    ) -> DispatchResult {
+        let bag_id = Self::bag_id_for_channel(&channel_id);
+        let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+
+        ensure!(
+            channel_bag.stored_by.len() as u32 == witness_num,
+            Error::<T>::InvalidStorageBucketsNumWitnessProvided
+        );
+
+        Ok(())
+    }
+
     //Weight functions
 
     // Calculates weight for create_channel extrinsic.
@@ -3848,27 +3863,18 @@ impl<T: Config> Module<T> {
             //new metadata
             let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
 
-            //channel_bag_witness storage_buckets_num
-            //channel_bag_witness distribution_buckets_num
-            let (e, f) = params.channel_bag_witness.as_ref().map_or((0, 0), |v| {
-                (v.storage_buckets_num, v.distribution_buckets_num)
-            });
+            // storage_buckets_num witness
+            let e = params.storage_buckets_num_witness.unwrap_or(0);
 
-            WeightInfoContent::<T>::channel_update_with_assets(a, b, c, d, e, f)
+            WeightInfoContent::<T>::channel_update_with_assets(a, b, c, d, e)
         } else {
             //collaborators
             let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
 
-            //channel_bag_witness storage_buckets_num
-            //channel_bag_witness distribution_buckets_num
-            let (b, c) = params.channel_bag_witness.as_ref().map_or((0, 0), |v| {
-                (v.storage_buckets_num, v.distribution_buckets_num)
-            });
-
             //new metadata
-            let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+            let b = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
 
-            WeightInfoContent::<T>::channel_update_without_assets(a, b, c, d)
+            WeightInfoContent::<T>::channel_update_without_assets(a, b)
         }
     }
 

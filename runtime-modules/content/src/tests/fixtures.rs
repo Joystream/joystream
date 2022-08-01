@@ -33,6 +33,13 @@ fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
         distribution_buckets_num: channel_bag.distributed_by.len() as u32,
     }
 }
+
+fn storage_buckets_num_witness(channel_id: ChannelId) -> u32 {
+    let bag_id = Content::bag_id_for_channel(&channel_id);
+    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
+    channel_bag.stored_by.len() as u32
+}
+
 // fixtures
 
 pub struct CreateCuratorGroupFixture {
@@ -496,7 +503,7 @@ impl UpdateChannelFixture {
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-                channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             },
         }
     }
@@ -524,10 +531,13 @@ impl UpdateChannelFixture {
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
-                channel_bag_witness,
+                storage_buckets_num_witness,
                 ..self.params.clone()
             },
             ..self
