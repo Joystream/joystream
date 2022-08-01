@@ -1144,7 +1144,7 @@ fn setup_council(start_id: u64) {
         let commitment = referendum::Module::<Test, ReferendumInstance>::calculate_commitment(
             voter_id,
             &[0u8],
-            &0,
+            &1,
             &council[i],
         );
 

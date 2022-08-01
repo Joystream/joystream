@@ -44,7 +44,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::traits::{MaybeSerialize, Member, Saturating};
 use sp_runtime::SaturatedConversion;
 use sp_std::convert::TryInto;
 use sp_std::vec;
@@ -96,6 +96,10 @@ pub struct ReferendumStageVoting<BlockNumber> {
     pub started: BlockNumber,      // block in which referendum started
     pub winning_target_count: u64, // target number of winners
     pub current_cycle_id: u64,     // index of current election
+    // Block at which the stage is supposed to end.
+    // We store the pre-computed end block in case the duration of the voting stage is changed
+    // via runtime upgrade during already ongoing voting stage.
+    pub ends_at: BlockNumber,
 }
 
 /// Representation for revealing stage state.
@@ -110,6 +114,10 @@ pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
     pub intermediate_winners: Vec<OptionResult<MemberId, VotePower>>,
     // index of current election
     pub current_cycle_id: u64,
+    // Block at which the stage is supposed to end.
+    // We store the pre-computed end block in case the duration of the revealing stage is changed
+    // via runtime upgrade during already ongoing revealing stage.
+    pub ends_at: BlockNumber,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -295,6 +303,7 @@ decl_storage! {
 decl_event! {
     pub enum Event<T, I = DefaultInstance>
     where
+        BlockNumber = <T as frame_system::Config>::BlockNumber,
         Balance = BalanceOf<T>,
         <T as frame_system::Config>::Hash,
         <T as frame_system::Config>::AccountId,
@@ -302,13 +311,13 @@ decl_event! {
         <T as common::membership::MembershipTypes>::MemberId,
     {
         /// Referendum started
-        ReferendumStarted(u64),
+        ReferendumStarted(u64, BlockNumber),
 
         /// Referendum started
-        ReferendumStartedForcefully(u64),
+        ReferendumStartedForcefully(u64, BlockNumber),
 
         /// Revealing phase has begun
-        RevealingStageStarted(),
+        RevealingStageStarted(BlockNumber),
 
         /// Referendum ended and winning option was selected
         ReferendumFinished(Vec<OptionResult<MemberId, VotePower>>),
@@ -532,12 +541,12 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
-                if now == stage_data.started + T::VoteStageDuration::get() {
+                if now == stage_data.ends_at {
                     Self::end_voting_period(stage_data);
                 }
             }
             ReferendumStage::Revealing(stage_data) => {
-                if now == stage_data.started + T::RevealStageDuration::get() {
+                if now == stage_data.ends_at {
                     Self::end_reveal_period(stage_data);
                 }
             }
@@ -547,10 +556,10 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
     // Finish voting and start ravealing.
     fn end_voting_period(stage_data: ReferendumStageVotingOf<T>) {
         // start revealing phase
-        Mutations::<T, I>::start_revealing_period(stage_data);
+        let revealing_period_end_block = Mutations::<T, I>::start_revealing_period(stage_data);
 
         // emit event
-        Self::deposit_event(RawEvent::RevealingStageStarted());
+        Self::deposit_event(RawEvent::RevealingStageStarted(revealing_period_end_block));
     }
 
     // Conclude the referendum.
@@ -592,10 +601,14 @@ impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Me
         //
 
         // update state
-        Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
+        let voting_period_end_block =
+            Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
+        Self::deposit_event(RawEvent::ReferendumStarted(
+            winning_target_count,
+            voting_period_end_block,
+        ));
 
         Ok(())
     }
@@ -613,13 +626,20 @@ impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Me
         let referendum_running = !matches!(Stage::<T, I>::get(), ReferendumStage::Inactive);
 
         // update state
-        Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
+        let voting_period_end_block =
+            Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
 
         // emit event
         if referendum_running {
-            Self::deposit_event(RawEvent::ReferendumStartedForcefully(winning_target_count));
+            Self::deposit_event(RawEvent::ReferendumStartedForcefully(
+                winning_target_count,
+                voting_period_end_block,
+            ));
         } else {
-            Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
+            Self::deposit_event(RawEvent::ReferendumStarted(
+                winning_target_count,
+                voting_period_end_block,
+            ));
         }
     }
 
@@ -651,29 +671,39 @@ struct Mutations<T: Config<I>, I: Instance> {
 
 impl<T: Config<I>, I: Instance> Mutations<T, I> {
     // Change the referendum stage from inactive to voting stage.
-    fn start_voting_period(winning_target_count: &u64, cycle_id: &u64) {
+    fn start_voting_period(winning_target_count: &u64, cycle_id: &u64) -> T::BlockNumber {
+        let now = <frame_system::Pallet<T>>::block_number();
+        let ends_at = now.saturating_add(T::VoteStageDuration::get());
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            started: <frame_system::Pallet<T>>::block_number(),
+            started: now,
             winning_target_count: *winning_target_count,
             current_cycle_id: *cycle_id,
+            ends_at,
         }));
+
+        ends_at
     }
 
     // Change the referendum stage from inactive to the voting stage.
-    fn start_revealing_period(old_stage: ReferendumStageVotingOf<T>) {
+    fn start_revealing_period(old_stage: ReferendumStageVotingOf<T>) -> T::BlockNumber {
+        let now = <frame_system::Pallet<T>>::block_number();
+        let ends_at = now.saturating_add(T::RevealStageDuration::get());
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(ReferendumStageRevealingOf::<
             T,
             I,
         > {
-            started: <frame_system::Pallet<T>>::block_number(),
+            started: now,
             winning_target_count: old_stage.winning_target_count,
             intermediate_winners: vec![],
             current_cycle_id: old_stage.current_cycle_id,
+            ends_at,
         }));
+
+        ends_at
     }
 
     // Conclude referendum, count votes, and select the winners.

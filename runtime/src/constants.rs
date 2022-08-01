@@ -147,10 +147,7 @@ lazy_static! {
     .to_vec();
 }
 
-// Change it when changing the currency constants!
 parameter_types! {
-    // TODO: Update invited member initial balance in membership to be greater than this!
-    // and any other relevant places in runtime/pallets.
     pub const ExistentialDeposit: Balance = currency::MILLICENTS;
 }
 

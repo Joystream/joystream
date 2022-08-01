@@ -21,10 +21,7 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
     // create voters
     const voteStake = this.api.consts.referendum.minimumStake
     const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
-    await this.api.treasuryTransferBalanceToAccounts(
-      votersStakingAccounts,
-      voteStake.add(this.api.consts.referendum.minimumStake)
-    )
+    await this.api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake)
 
     // announcing stage
     await this.api.untilCouncilStage('Announcing')

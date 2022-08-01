@@ -500,6 +500,9 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: MemberId = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
@@ -606,6 +609,9 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
     <T as pallet_balances::Config>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
@@ -758,10 +764,13 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
     <T as pallet_balances::Config>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         increase_total_balance_issuance_using_account_id(account_id.into(), stake_amount * 2);
 
@@ -942,10 +951,13 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     <T as pallet_balances::Config>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -1113,7 +1125,10 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        setup_new_council(0);
+        // start at block 1
+        run_to_block(1);
+
+        setup_new_council(1);
 
         let member_id: MemberId = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
@@ -1152,6 +1167,9 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
@@ -1355,6 +1373,9 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
@@ -1529,10 +1550,13 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     <T as pallet_balances::Config>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
@@ -1705,10 +1729,13 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
     <T as pallet_balances::Config>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id: u64 = create_new_members(1)[0];
         let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = <Runtime as working_group::Config<
-            MembershipWorkingGroupInstance,>>::LeaderOpeningStake::get();
+            MembershipWorkingGroupInstance,>>::MinimumApplicationStake::get();
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
