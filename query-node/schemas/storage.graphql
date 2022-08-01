@@ -25,7 +25,7 @@ type StorageSystemParameters @entity {
   nextDataObjectId: BigInt!
 
   "Data Object state bloat bond value"
-  dataObjectStateBloatBondValue: Int!
+  dataObjectStateBloatBondValue: BigInt!
 }
 
 type StorageBucketOperatorStatusMissing @variant {
