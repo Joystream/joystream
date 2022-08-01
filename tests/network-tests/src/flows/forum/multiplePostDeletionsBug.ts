@@ -2,7 +2,6 @@ import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { DeletePostsFixture, InitializeForumFixture, PostsRemovalInput } from '../../fixtures/forum'
-import { POST_DEPOSIT } from '../../consts'
 import { formatBalance } from '@polkadot/util'
 
 export default async function threads({ api, query, env }: FlowProps): Promise<void> {
@@ -42,7 +41,7 @@ export default async function threads({ api, query, env }: FlowProps): Promise<v
 
   const memberBalaceAfter = await api.getBalance(await api.getControllerAccountOfMember(memberId))
 
-  debug('Post deposit:', formatBalance(POST_DEPOSIT))
+  debug('Post deposit:', formatBalance(api.consts.forum.postDeposit))
   debug('Balance before:', formatBalance(memberBalaceBefore))
   debug('Balance after:', formatBalance(memberBalaceAfter))
 

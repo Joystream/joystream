@@ -2,7 +2,7 @@ use super::{
     account_from_member_id, increase_total_balance_issuance_using_account_id, initial_test_ext,
 };
 use crate::{
-    BoundStakingAccountStakingManager, ContentWorkingGroupStakingManager,
+    currency, BoundStakingAccountStakingManager, ContentWorkingGroupStakingManager,
     GatewayWorkingGroupStakingManager,
 };
 
@@ -12,10 +12,10 @@ use staking_handler::StakingHandler;
 fn compatible_stakes_check_passed_successfully() {
     initial_test_ext().execute_with(|| {
         let account_id = account_from_member_id(0);
-        let total_amout = 10000;
-        let stake_amount = 100;
+        let stake_amount = currency::DOLLARS * 100;
+        let total_amount = stake_amount * 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amount);
 
         assert_eq!(
             BoundStakingAccountStakingManager::set_stake(&account_id, stake_amount),
@@ -31,10 +31,10 @@ fn compatible_stakes_check_passed_successfully() {
 fn compatible_stakes_check_reversed_order_passed_successfully() {
     initial_test_ext().execute_with(|| {
         let account_id = account_from_member_id(0);
-        let total_amout = 10000;
-        let stake_amount = 100;
+        let stake_amount = currency::DOLLARS * 100;
+        let total_amount = stake_amount * 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amount);
 
         assert_eq!(
             ContentWorkingGroupStakingManager::set_stake(&account_id, stake_amount),
@@ -50,10 +50,10 @@ fn compatible_stakes_check_reversed_order_passed_successfully() {
 fn incompatible_stakes_check_passed_successfully() {
     initial_test_ext().execute_with(|| {
         let account_id = account_from_member_id(0);
-        let total_amout = 10000;
-        let stake_amount = 100;
+        let stake_amount = currency::DOLLARS * 100;
+        let total_amount = stake_amount * 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amount);
 
         assert_eq!(
             GatewayWorkingGroupStakingManager::set_stake(&account_id, stake_amount),

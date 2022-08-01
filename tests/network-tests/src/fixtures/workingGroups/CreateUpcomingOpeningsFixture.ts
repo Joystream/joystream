@@ -14,18 +14,20 @@ import {
 import Long from 'long'
 import { Bytes } from '@polkadot/types'
 import moment from 'moment'
-import { DEFAULT_OPENING_PARAMS } from './CreateOpeningsFixture'
+import { createDefaultOpeningParams } from './CreateOpeningsFixture'
 import { createType } from '@joystream/types'
 import { assertQueriedOpeningMetadataIsValid } from './utils'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { encodeDecode, isSet } from '@joystream/metadata-protobuf/utils'
 
-export const DEFAULT_UPCOMING_OPENING_META: IUpcomingOpeningMetadata = {
-  minApplicationStake: Long.fromString(DEFAULT_OPENING_PARAMS.stake.toString()),
-  rewardPerBlock: Long.fromString(DEFAULT_OPENING_PARAMS.reward.toString()),
-  expectedStart: moment().unix() + 3600,
-  metadata: DEFAULT_OPENING_PARAMS.metadata,
+export const createDefaultUpcomingMeta = (api: Api): IUpcomingOpeningMetadata => {
+  return {
+    minApplicationStake: Long.fromString(createDefaultOpeningParams(api).stake.toString()),
+    rewardPerBlock: Long.fromString(createDefaultOpeningParams(api).reward.toString()),
+    expectedStart: moment().unix() + 3600,
+    metadata: createDefaultOpeningParams(api).metadata,
+  }
 }
 
 export type UpcomingOpeningParams = {
@@ -39,7 +41,7 @@ export class CreateUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
 
   public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, params?: UpcomingOpeningParams[]) {
     super(api, query, group)
-    this.upcomingOpeningsParams = params || [{ meta: DEFAULT_UPCOMING_OPENING_META }]
+    this.upcomingOpeningsParams = params || [{ meta: createDefaultUpcomingMeta(api) }]
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {

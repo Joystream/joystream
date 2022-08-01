@@ -1125,6 +1125,9 @@ impl CreateDynamicBagFixture {
             params: DynBagCreationParameters::<Test> {
                 bag_id: DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID),
                 state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(
+                ),
+                expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
                 ..Default::default()
             },
         }
