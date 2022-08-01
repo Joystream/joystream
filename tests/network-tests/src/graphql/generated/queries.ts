@@ -21,7 +21,10 @@ type DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment = {
   video?: Types.Maybe<{ id: string }>
 }
 
-type DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment = { __typename: 'DataObjectTypeVideoSubtitle' }
+type DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment = {
+  __typename: 'DataObjectTypeVideoSubtitle'
+  subtitle?: Types.Maybe<{ id: string; video: Array<{ id: string }> }>
+}
 
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
 
@@ -125,7 +128,7 @@ export type OwnedNftFieldsFragment = {
   creatorRoyalty?: Types.Maybe<number>
   lastSalePrice?: Types.Maybe<any>
   lastSaleDate?: Types.Maybe<any>
-  video: { id: string }
+  video: VideoFieldsFragment
   ownerMember?: Types.Maybe<{ id: string }>
   transactionalStatus?: Types.Maybe<
     | { __typename: 'TransactionalStatusIdle'; dummy?: Types.Maybe<number> }
@@ -2436,6 +2439,14 @@ export const DataObjectTypeFields = gql`
         id
       }
     }
+    ... on DataObjectTypeVideoSubtitle {
+      subtitle {
+        id
+        video {
+          id
+        }
+      }
+    }
   }
 `
 export const StorageDataObjectFields = gql`
@@ -2589,7 +2600,7 @@ export const OwnedNftFields = gql`
   fragment OwnedNftFields on OwnedNft {
     id
     video {
-      id
+      ...VideoFields
     }
     ownerMember {
       id
@@ -2639,6 +2650,7 @@ export const OwnedNftFields = gql`
     lastSalePrice
     lastSaleDate
   }
+  ${VideoFields}
   ${BidFields}
 `
 export const ChannelNftCollectorFields = gql`

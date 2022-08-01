@@ -8948,6 +8948,8 @@ export type DataObjectTypeVideoMedia = {
 export type DataObjectTypeVideoSubtitle = {
   /** Related subtitle entity */
   subtitle?: Maybe<VideoSubtitle>
+  /** Related video entity */
+  video?: Maybe<Video>
 }
 
 export type DataObjectTypeVideoThumbnail = {

@@ -20,6 +20,14 @@ fragment DataObjectTypeFields on DataObjectType {
       id
     }
   }
+  ... on DataObjectTypeVideoSubtitle {
+    subtitle {
+      id
+      video {
+        id
+      }
+    }
+  }
 }
 
 fragment StorageDataObjectFields on StorageDataObject {
@@ -163,7 +171,7 @@ fragment BidFields on Bid {
 fragment OwnedNftFields on OwnedNft {
   id
   video {
-    id
+    ...VideoFields
   }
   ownerMember {
     id

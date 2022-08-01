@@ -43,7 +43,11 @@ export type DataObjectInfoFragment = {
     | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoMedia'; video?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoThumbnail'; video?: Types.Maybe<{ id: string }> }
-    | { __typename: 'DataObjectTypeVideoSubtitle' }
+    | {
+        __typename: 'DataObjectTypeVideoSubtitle'
+        video?: Types.Maybe<{ id: string }>
+        subtitle?: Types.Maybe<{ id: string }>
+      }
     | { __typename: 'DataObjectTypeUnknown' }
 }
 
@@ -177,6 +181,14 @@ export const DataObjectInfo = gql`
       }
       ... on DataObjectTypeVideoThumbnail {
         video {
+          id
+        }
+      }
+      ... on DataObjectTypeVideoSubtitle {
+        video {
+          id
+        }
+        subtitle {
           id
         }
       }
