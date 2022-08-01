@@ -15,6 +15,7 @@ use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use sp_std::convert::TryInto;
 use storage::Pallet as Storage;
+use crate::nft::NftOwner;
 
 use super::*;
 
@@ -511,6 +512,27 @@ benchmarks! {
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_none());
         }
+
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - context = Curator with max permission and channel has max curators
+    // - NFT owner == channel owner
+    // DB OPERATIONS:
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1), case ensure_actor_authorized_to_manage_nft
+    // - DB Read: NFT -> O(1)
+    // - DB Write: Video -> O(1)
+    sling_nft_back {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
+        let origin = RawOrigin::Signed(curator_account_id);
+    }: _ (origin, video_id, actor)
+        verify {
+            assert!(Pallet::<T>::video_by_id(video_id).nft_status.unwrap().owner == NftOwner::ChannelOwner);
+        }
 }
 
 #[cfg(test)]
@@ -620,6 +642,13 @@ pub mod tests {
     fn destroy_nft() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_destroy_nft());
+        })
+    }
+
+    #[test]
+    fn sling_nft_back() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_sling_nft_back());
         })
     }
 }
