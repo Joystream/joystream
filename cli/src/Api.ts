@@ -30,6 +30,7 @@ import {
   PalletMembershipMembershipObject as Membership,
   PalletMembershipStakingAccountMemberBinding as StakingAccountMemberBinding,
   PalletStorageBagIdType as BagId,
+  PalletStorageBagRecord,
   PalletStorageDataObject as DataObject,
   PalletWorkingGroupGroupWorker as Worker,
   PalletWorkingGroupJobApplication as Application,
@@ -458,6 +459,10 @@ export default class Api {
     const channel = await this._api.query.content.channelById(channelId)
 
     return channel
+  }
+
+  async channelBagByChannelId(channelId: ChannelId | number): Promise<PalletStorageBagRecord> {
+    return this._api.query.storage.bags(createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } }))
   }
 
   async videoById(videoId: VideoId | number | string): Promise<Video> {

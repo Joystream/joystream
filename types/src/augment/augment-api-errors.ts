@@ -336,6 +336,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Channel bag witness parameters don't match the current runtime state
+       **/
+      InvalidChannelBagWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Incorrect channel owner for an operation.
        **/
       InvalidChannelOwner: AugmentedError<ApiType>;
@@ -361,6 +365,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Storage buckets number witness parameter does not match the current runtime state
+       **/
+      InvalidStorageBucketsNumWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Invalid number of objects to delete provided for delete_video
        **/
       InvalidVideoDataObjectsCountProvided: AugmentedError<ApiType>;
@@ -384,6 +392,18 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to set minimum cashout allowed above the limit
        **/
       MaxCashoutValueTooHigh: AugmentedError<ApiType>;
+      /**
+       * Number of channel assets exceeds MaxNumberOfAssetsPerChannel
+       **/
+      MaxNumberOfChannelAssetsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
+       **/
+      MaxNumberOfChannelCollaboratorsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
+       **/
+      MaxNumberOfVideoAssetsExceeded: AugmentedError<ApiType>;
       /**
        * Member authentication failed
        **/
@@ -413,6 +433,15 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to set minimum cashout allowed below the limit
        **/
       MinCashoutValueTooLow: AugmentedError<ApiType>;
+      /**
+       * Channel bag witness must be provided when channel is being deleted
+       **/
+      MissingChannelBagWitness: AugmentedError<ApiType>;
+      /**
+       * Storage buckets number witness parameter must be provided when channel/video assets
+       * are being updated.
+       **/
+      MissingStorageBucketsNumWitness: AugmentedError<ApiType>;
       /**
        * Nft for given video id already exists
        **/
