@@ -458,21 +458,22 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - actor has max permission + max curators
+    // - context = Curator with max permission and channel has max curators
     // - max number of paused features (except necessary ones)
     // - English Auction with max whitelisted member & some royalty
     // - nft limits are set
     // DB OPERATIONS:
     // - DB Read : channel -> O(1)
     // - DB Read : video -> O(1)
-    // - DB Write: params.metadata -> O(params.whitelist.len())
+    // - DB Write: params.metadata -> O(params.metadata.len())
     // - DB Write: video -> O(1)
     // - DB Write: channel -> O(1)
     issue_nft {
-        let (channel_id, group_id, lead_account_id, _, _) =
+        let i in 0..MAX_BYTES;
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
-        let actor = ContentActor::Lead;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
         let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
         let video_id = Pallet::<T>::next_video_id();
         set_nft_limits_helper::<T>(channel_id);
@@ -484,12 +485,32 @@ benchmarks! {
             meta: None,
         })?;
 
-        let params = worst_case_nft_issuance_params_helper::<T>(Pallet::<T>::max_auction_whitelist_length());
+        let params = worst_case_nft_issuance_params_helper::<T>(i);
     }: _ (origin, actor, video_id, params)
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_some());
         }
 
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - context = Curator with max permission and channel has max curators
+    // - NFT owner == channel owner
+    // DB OPERATIONS:
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1), case ensure_actor_authorized_to_manage_nft
+    // - DB Read: NFT -> O(1)
+    // - DB Write: Video -> O(1)
+    destroy_nft {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
+        let origin = RawOrigin::Signed(curator_account_id);
+    }: _ (origin, actor, video_id)
+        verify {
+            assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_none());
+        }
 }
 
 #[cfg(test)]
@@ -592,6 +613,13 @@ pub mod tests {
     fn issue_nft() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_issue_nft());
+        })
+    }
+
+    #[test]
+    fn destroy_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_destroy_nft());
         })
     }
 }

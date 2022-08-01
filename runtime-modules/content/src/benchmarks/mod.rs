@@ -3,10 +3,7 @@
 mod benchmarking;
 
 use crate::permissions::*;
-use crate::types::{
-    ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-    InitTransferParametersOf, NftLimitId, PullPayment, Side, StorageAssets,
-};
+use crate::types::*;
 
 use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters};
 use crate::{BalanceOf, Config, Module as Pallet};
@@ -1022,17 +1019,18 @@ where
 }
 
 fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
-    whitelist_size: u32,
+    metadata_len: u32,
 ) -> NftIssuanceParameters<T>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
+    let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     let mut next_member_id = membership::Pallet::<T>::members_created();
 
     NftIssuanceParameters::<T> {
         royalty: Some(Pallet::<T>::max_creator_royalty()),
-        nft_metadata: Vec::new(),
+        nft_metadata: sp_std::iter::repeat(1u8).take(metadata_len as usize).collect(),
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
@@ -1057,4 +1055,73 @@ where
     }
 }
 
-// fn setup_worst_case_scenario_curator_channel_with_video_nft<T: RuntimeConfig>(is_transfer: bool)
+#[allow(dead_code)]
+fn setup_worst_case_video_nft<T>(
+    account_id: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+) -> Result<T::VideoId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let video_id = Pallet::<T>::next_video_id();
+    let origin: T::Origin = RawOrigin::Signed(account_id).into();
+    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
+    Pallet::<T>::create_video(
+        origin.clone(),
+        actor.clone(),
+        channel_id,
+        VideoCreationParameters::<T> {
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            assets: None,
+            auto_issue_nft: None,
+            meta: None,
+        },
+    )?;
+    set_nft_limits_helper::<T>(channel_id);
+    let params =
+        worst_case_nft_issuance_params_helper::<T>(Pallet::<T>::max_auction_whitelist_length());
+    Pallet::<T>::issue_nft(origin, actor, video_id, params)?;
+    Ok(video_id)
+}
+
+fn setup_video_with_idle_nft<T>(
+    account_id: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+) -> Result<T::VideoId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let video_id = Pallet::<T>::next_video_id();
+    let origin: T::Origin = RawOrigin::Signed(account_id).into();
+    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
+    Pallet::<T>::create_video(
+        origin.clone(),
+        actor.clone(),
+        channel_id,
+        VideoCreationParameters::<T> {
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            assets: None,
+            auto_issue_nft: None,
+            meta: None,
+        },
+    )?;
+    set_nft_limits_helper::<T>(channel_id);
+    Pallet::<T>::issue_nft(
+        origin,
+        actor,
+        video_id,
+        NftIssuanceParameters::<T> {
+            royalty: Some(Pallet::<T>::max_creator_royalty()),
+            nft_metadata: Vec::new(),
+            non_channel_owner: None,
+            init_transactional_status: InitTransactionalStatus::<T>::Idle,
+        },
+    )?;
+    Ok(video_id)
+}
