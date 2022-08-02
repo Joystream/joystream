@@ -29,9 +29,6 @@ decl_error! {
         /// Channel bag witness parameters don't match the current runtime state
         InvalidChannelBagWitnessProvided,
 
-        /// Channel bag witness must be provided when channel is being deleted
-        MissingChannelBagWitness,
-
         /// Storage buckets number witness parameter does not match the current runtime state
         InvalidStorageBucketsNumWitnessProvided,
 
