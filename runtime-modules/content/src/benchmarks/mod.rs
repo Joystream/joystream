@@ -1030,8 +1030,6 @@ where
     T::AccountId: CreateAccountId,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    // this initial value is needed in order to avoid overlaps MEMBERS, COLLABORATORS .. members id
-    let start: u64 = 1000;
     NftIssuanceParameters::<T> {
         royalty: Some(Pallet::<T>::max_creator_royalty()),
         nft_metadata: Vec::new(),
@@ -1046,13 +1044,14 @@ where
                 min_bid_step: Pallet::<T>::min_bid_step(),
                 starting_price: Pallet::<T>::min_starting_price(),
                 starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-                whitelist: WHITELISTED_MEMBERS_IDS.iter()
-                    .map(|i| member_funded_account::<T>((start as u128) + (i as u128)).1)
+                whitelist: (0..(whitelist_size as usize))
+                    .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
                     .collect(),
             },
         ),
     }
 }
+
 
 #[allow(dead_code)]
 fn setup_worst_case_video_nft<T>(
