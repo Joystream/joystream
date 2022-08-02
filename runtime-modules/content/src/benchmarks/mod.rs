@@ -73,7 +73,6 @@ pub const MAX_WHITELISTED_MEMBERS_IDS: usize = 100;
 pub const WHITELISTED_MEMBERS_IDS: [u128; MAX_WHITELISTED_MEMBERS_IDS] =
     gen_array_u128::<MAX_WHITELISTED_MEMBERS_IDS>(WHITELISTED_MEMBERS_IDS_INIT);
 
-
 pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
 const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[1];
@@ -1023,8 +1022,7 @@ where
     ))
 }
 
-fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
-) -> NftIssuanceParameters<T>
+fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>() -> NftIssuanceParameters<T>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -1052,7 +1050,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 fn setup_worst_case_video_nft<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1078,8 +1075,7 @@ where
         },
     )?;
     set_nft_limits_helper::<T>(channel_id);
-    let params =
-        worst_case_nft_issuance_params_helper::<T>();
+    let params = worst_case_nft_issuance_params_helper::<T>();
     Pallet::<T>::issue_nft(origin, actor, video_id, params)?;
     Ok(video_id)
 }
@@ -1106,7 +1102,7 @@ fn setup_video_with_offered_nft<T>(
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel_id: T::ChannelId,
     to_member: T::MemberId,
-    price: BalanceOf<T>,
+    price: Option<BalanceOf<T>>,
 ) -> Result<T::VideoId, DispatchError>
 where
     T::AccountId: CreateAccountId,
@@ -1116,7 +1112,7 @@ where
         account_id,
         actor,
         channel_id,
-        InitTransactionalStatus::<T>::InitiatedOfferToMember(to_member, Some(price)),
+        InitTransactionalStatus::<T>::InitiatedOfferToMember(to_member, price),
     )
 }
 
@@ -1124,13 +1120,13 @@ fn setup_video_with_nft_transactional_status<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel_id: T::ChannelId,
-    transactional_status: InitTransactionalStatus<T>
+    transactional_status: InitTransactionalStatus<T>,
 ) -> Result<T::VideoId, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-        let video_id = Pallet::<T>::next_video_id();
+    let video_id = Pallet::<T>::next_video_id();
     let origin: T::Origin = RawOrigin::Signed(account_id).into();
     let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
     Pallet::<T>::create_video(
