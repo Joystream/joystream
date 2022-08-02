@@ -434,10 +434,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MinCashoutValueTooLow: AugmentedError<ApiType>;
       /**
-       * Channel bag witness must be provided when channel is being deleted
-       **/
-      MissingChannelBagWitness: AugmentedError<ApiType>;
-      /**
        * Storage buckets number witness parameter must be provided when channel/video assets
        * are being updated.
        **/
