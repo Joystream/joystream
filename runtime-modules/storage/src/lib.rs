@@ -2964,10 +2964,10 @@ decl_module! {
             );
         }
 
-        // ===== Sudo actions (development mode) =====
-
         /// Upload new data objects. Development mode.
         #[weight = 10_000_000]
+        #[allow(dead_code)]
+        #[allow(unused_variables)]
         pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
             ensure_root(origin)?;
 
@@ -2975,18 +2975,12 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            #[cfg(any(
+                feature = "staging_runtime",
+                feature = "testing_runtime",
+                feature = "playground_runtime"
+            ))]
             Self::upload_data_objects(params)?;
-        }
-
-        /// Create a dynamic bag. Development mode.
-        #[weight = 10_000_000]
-        pub fn sudo_create_dynamic_bag(
-            origin,
-            params: DynBagCreationParameters<T>,
-        ) {
-            ensure_root(origin)?;
-
-            Self::create_dynamic_bag(params)?;
         }
 
         /// Create a dynamic bag. Development mode.

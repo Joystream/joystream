@@ -22,7 +22,7 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters,
+    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters, DataObjectStorage,
     DistributionBucketByFamilyIdById, DistributionBucketFamilyById, DistributionBucketId,
     DynamicBagType, Module, Module as Pallet, RawEvent, StaticBagId, StorageBucketById,
     StorageBucketOperatorStatus, UploadParameters, WorkerId,
@@ -952,8 +952,7 @@ benchmarks! {
             object_creation_list: object_parameters
         };
 
-        Module::<T>::sudo_upload_data_objects(
-            RawOrigin::Root.into(),
+        <Module::<T> as DataObjectStorage::<T>>::upload_data_objects(
             upload_parameters,
         )
         .unwrap();
