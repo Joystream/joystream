@@ -33,6 +33,7 @@ import {
   VideoDeletedByModeratorEvent,
   VideoDeletedEvent,
   VideoVisibilitySetByModeratorEvent,
+  VideoSubtitle,
 } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
@@ -87,22 +88,13 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   }
 
   // deserialize & process metadata
-  const metadata = meta.isSome
-    ? deserializeMetadata(ContentMetadata, meta.unwrap()) || deserializeMetadata(VideoMetadata, meta.unwrap())
-    : undefined
-
-  const asContentMetadata = metadata as DecodedMetadataObject<IContentMetadata> | undefined
+  const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
 
   // Content Creation Preference
-  // 1. metadata == `PlaylistMetadata` -> create Playlist
-  // 2. metadata == `VideoMetadata` || undefined -> create Video
+  // 1. metadata == `VideoMetadata` || undefined -> create Video
+  // 1. metadata == `PlaylistMetadata` -> create Playlist (Not Supported Yet)
 
-  await processCreateVideoMessage(
-    ctx,
-    channel,
-    asContentMetadata?.videoMetadata || (metadata as DecodedMetadataObject<IVideoMetadata>),
-    contentCreatedEventData
-  )
+  await processCreateVideoMessage(ctx, channel, contentMetadata?.videoMetadata || undefined, contentCreatedEventData)
 }
 
 export async function processCreateVideoMessage(
@@ -176,11 +168,9 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   })
 
   if (video) {
-    const videoMetadata = newMeta.isSome
-      ? deserializeMetadata(ContentMetadata, newMeta.unwrap())?.videoMetadata
-      : undefined
+    const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
 
-    await processUpdateVideoMessage(ctx, video, videoMetadata || undefined, contentUpdatedEventData)
+    await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
     return
   }
 
@@ -233,37 +223,16 @@ export async function processUpdateVideoMessage(
 
 export async function content_ContentDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [contentActor, contentId] = new Content.VideoDeletedEvent(event).params
+  const [actor, contentId] = new Content.VideoDeletedEvent(event).params
 
-  // load video
-  const video = await store.get(Video, {
-    where: { id: contentId.toString() },
-    relations: [...videoRelationsForCounters],
-  })
-
-  if (!video) {
-    inconsistentState('Non-existing content(video) deletion requested', contentId)
-  }
-
-  // update video active counters
-  await getAllManagers(store).videos.onMainEntityDeletion(video)
-
-  // remove video
-  await store.remove<Video>(video)
-
-  // emit log event
-  logger.info('Video has been deleted', { id: contentId })
-
-  const [actor, videoId] = new Content.VideoDeletedEvent(event).params
-
-  await deleteVideo(store, videoId)
+  await deleteVideo(store, contentId)
 
   // common event processing - second
 
   const videoDeletedEvent = new VideoDeletedEvent({
     ...genericEventFields(event),
 
-    videoId: Number(videoId),
+    videoId: contentId.toNumber(),
     actor: await convertContentActor(store, actor),
   })
 
@@ -412,6 +381,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
   // Entities in the list should be removed in the order. i.e. all `Comment` relations
   // should be removed in the last after all other referencing relations has been removed
   const referencingEntities: typeof BaseModel[] = [
+    VideoSubtitle,
     CommentReaction,
     VideoReaction,
     VideoReactionsCountByReactionType,
