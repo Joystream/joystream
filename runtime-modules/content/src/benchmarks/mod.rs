@@ -1103,6 +1103,25 @@ where
     )
 }
 
+fn setup_video_with_offered_nft<T>(
+    account_id: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    to_member: T::MemberId,
+    price: BalanceOf<T>,
+) -> Result<T::VideoId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    setup_video_with_nft_transactional_status::<T>(
+        account_id,
+        actor,
+        channel_id,
+        InitTransactionalStatus::<T>::InitiatedOfferToMember(to_member, Some(price)),
+    )
+}
+
 fn setup_video_with_nft_transactional_status<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
