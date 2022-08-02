@@ -132,14 +132,14 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       videoId,
       videoUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
+    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUpdated')
     if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+      const [, objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
         keypair,
         memberId.toNumber(),
         `dynamic:channel:${video.inChannel.toString()}`,
-        objectIds.map((id, index) => ({
+        [...objectIds.values()].map((id, index) => ({
           dataObjectId: id,
           path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
         })),

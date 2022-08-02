@@ -120,9 +120,10 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
       assetsToUpload: assetsToUpload,
-      expectedDataObjectStateBloatBond: 0,
+      expectedDataObjectStateBloatBond,
       collaborators: [],
       assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
       newMeta: metadataToBytes(ChannelMetadata, meta),

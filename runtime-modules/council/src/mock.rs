@@ -5,7 +5,7 @@ use crate as council;
 use crate::{
     AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, Candidate, CandidateOf, Candidates,
     Config, CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing,
-    CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, Module,
+    CouncilStageElection, CouncilStageIdle, CouncilStageUpdate, CouncilorReward, Error, Module,
     NextBudgetRefill, RawEvent, ReferendumConnection, Stage,
 };
 
@@ -721,12 +721,12 @@ where
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
-        expected_state: CouncilStageAnnouncing,
+        expected_state: CouncilStageAnnouncing<T::BlockNumber>,
     ) -> () {
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageUpdateOf::<T> {
+            CouncilStageUpdate::<T::BlockNumber> {
                 stage: CouncilStage::Announcing(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -740,7 +740,7 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageUpdateOf::<T> {
+            CouncilStageUpdate::<T::BlockNumber> {
                 stage: CouncilStage::Election(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -751,8 +751,10 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageUpdateOf::<T> {
-                stage: CouncilStage::Idle,
+            CouncilStageUpdate::<T::BlockNumber> {
+                stage: CouncilStage::Idle(CouncilStageIdle::<T::BlockNumber> {
+                    ends_at: expected_update_block_number + T::IdlePeriodDuration::get()
+                }),
                 changed_at: expected_update_block_number,
             },
         );
@@ -797,6 +799,9 @@ where
                     })
                     .collect(),
                 current_cycle_id: AnnouncementPeriodNr::get(),
+                ends_at:
+                    <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get()
+                        + expected_update_block_number.into()
             }),
         );
 
@@ -1213,6 +1218,7 @@ where
             params.cycle_start_block_number,
             CouncilStageAnnouncing {
                 candidates_count: 0,
+                ends_at: params.cycle_start_block_number + T::AnnouncingPeriodDuration::get(),
             },
         );
 

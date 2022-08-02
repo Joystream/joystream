@@ -31,13 +31,14 @@ fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>:
 }
 
 fn start_voting_cycle<T: Config<I>, I: Instance>(winning_target_count: u32) {
-    Referendum::<T, I>::force_start(winning_target_count.into(), 0);
+    Referendum::<T, I>::force_start(winning_target_count.into(), 1);
     assert_eq!(
         Stage::<T, I>::get(),
         ReferendumStage::Voting(ReferendumStageVoting {
             started: System::<T>::block_number(),
             winning_target_count: (winning_target_count + 1).into(),
-            current_cycle_id: 0,
+            current_cycle_id: 1,
+            ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
         }),
         "Vote cycle not started"
     );
@@ -300,7 +301,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 ) -> MultipleVotesWithExtraVote<T, I> {
     start_voting_cycle::<T, I>(target_winners);
 
-    let cycle_id = 0;
+    let cycle_id = 1;
     let multiple_votes =
         make_multiple_votes_for_multiple_options::<T, I>(number_of_voters, cycle_id);
 
@@ -330,6 +331,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
         winning_target_count: (target_winners + 1).into(),
         intermediate_winners: vec![],
         current_cycle_id: cycle_id.into(),
+        ends_at: target_block_number + T::RevealStageDuration::get(),
     });
 
     move_to_block::<T, I>(
@@ -351,6 +353,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
         started: target_block_number,
         winning_target_count: (target_winners + 1).into(),
         current_cycle_id: cycle_id.into(),
+        ends_at: target_block_number + T::RevealStageDuration::get(),
     });
 
     assert_eq!(
@@ -378,7 +381,7 @@ benchmarks_instance! {
     on_initialize_revealing {
         let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
 
-        let cycle_id = 0;
+        let cycle_id = 1;
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
         let started_voting_block_number = System::<T>::block_number();
@@ -401,6 +404,7 @@ benchmarks_instance! {
                 started: started_voting_block_number + T::VoteStageDuration::get(),
                 winning_target_count: (i + 1).into(),
                 current_cycle_id: cycle_id,
+                ends_at: started_voting_block_number + T::VoteStageDuration::get() + T::RevealStageDuration::get()
             }
         );
 
@@ -423,7 +427,7 @@ benchmarks_instance! {
 
     on_initialize_voting {
         let winning_target_count = 0;
-        let cycle_id = 0;
+        let cycle_id = 1;
         start_voting_cycle::<T, I>(winning_target_count);
 
         let started_voting_block_number = System::<T>::block_number();
@@ -434,16 +438,19 @@ benchmarks_instance! {
                 started: System::<T>::block_number(),
                 winning_target_count: (winning_target_count + 1).into(),
                 current_cycle_id: cycle_id,
+                ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
         });
 
         move_to_block_before_initialize::<T, I>(target_block_number, target_stage);
     }: { Referendum::<T, I>::on_initialize(System::<T>::block_number()); }
     verify {
+        let revealing_ends_at = target_block_number + T::RevealStageDuration::get();
         let current_stage = ReferendumStage::Revealing(ReferendumStageRevealing {
             started: target_block_number,
             winning_target_count: 1,
             intermediate_winners: vec![],
             current_cycle_id: cycle_id,
+            ends_at: revealing_ends_at
         });
 
         assert_eq!(
@@ -452,7 +459,7 @@ benchmarks_instance! {
             "Voting period not ended"
         );
 
-        assert_last_event::<T, I>(RawEvent::RevealingStageStarted().into());
+        assert_last_event::<T, I>(RawEvent::RevealingStageStarted(revealing_ends_at).into());
     }
 
     vote {
@@ -461,7 +468,7 @@ benchmarks_instance! {
         let account_id = funded_account::<T, I>("caller", 0);
 
         let salt = vec![0u8];
-        let cycle_id = 0;
+        let cycle_id = 1;
         let vote_option = 0;
         let commitment =
             Referendum::<T, I>::calculate_commitment(
@@ -511,7 +518,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         multiple_votes_with_extra.intermediate_winners.insert(
             0,
@@ -529,6 +536,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
@@ -574,7 +582,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         assert_eq!(
             Referendum::<T, I>::stage(),
@@ -583,6 +591,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
@@ -627,7 +636,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         multiple_votes_with_extra.intermediate_winners.pop();
 
@@ -644,6 +653,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
@@ -692,7 +702,7 @@ benchmarks_instance! {
     )
     verify {
         let stake = T::MinimumStake::get() + One::one();
-        let cycle_id = 0;
+        let cycle_id = 1;
 
         multiple_votes_with_extra.intermediate_winners[i as usize] = OptionResult {
             option_id: multiple_votes_with_extra.member_id,
@@ -708,6 +718,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
@@ -735,7 +746,7 @@ benchmarks_instance! {
     release_vote_stake {
         start_voting_cycle::<T, I>(0);
 
-        let cycle_id = 0;
+        let cycle_id = 1;
         let option = 0;
         let stake = T::MinimumStake::get() + One::one();
         let salt = vec![0u8];
