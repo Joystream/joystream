@@ -33,6 +33,7 @@ import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import commentsAndReactions from '../flows/content/commentsAndReactions'
+import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -95,6 +96,7 @@ scenario('Full', async ({ job, env }) => {
   // Content directory (with CLI)
   const contentDirectoryJob = job('content directory (with CLI)', [
     createChannel,
+    addAndUpdateVideoSubtitles,
     nftAuctionAndOffers,
     commentsAndReactions,
     // TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950

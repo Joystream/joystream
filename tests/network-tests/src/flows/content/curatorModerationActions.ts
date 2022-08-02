@@ -115,11 +115,12 @@ export default async function curatorModerationActions({ api, query, env }: Flow
    * delete video as moderator
    */
 
+  const numOfVideoObjectsToDelete = (await query.dataObjectsByVideoId(videosData[0].videoId.toString())).length
   const deleteVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
     {
       asCurator: [curatorGroupId, curatorId],
       videoId: videosData[0].videoId, // first video
-      numOfObjectsToDelete: 2,
+      numOfObjectsToDelete: numOfVideoObjectsToDelete,
       rationale: 'Deleted video due to offensive content',
     },
   ]

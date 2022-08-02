@@ -136,7 +136,7 @@ export class JoystreamCLI extends CLI {
   */
   async createVideo(
     channelId: number,
-    video: Modify<VideoInputParameters, { category: number }>,
+    video: Modify<VideoInputParameters, { category?: number }>,
     canOmitUpload = true
   ): Promise<ICreatedVideoData> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
@@ -186,7 +186,7 @@ export class JoystreamCLI extends CLI {
   /**
     Updates an existing video.
   */
-  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category: number }>): Promise<void> {
+  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category?: number }>): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
     const { stderr, exitCode } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
