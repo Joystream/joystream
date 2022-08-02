@@ -8,7 +8,11 @@ use crate::{
 use frame_benchmarking::benchmarks;
 use frame_support::{storage::StorageMap, traits::Get};
 use frame_system::RawOrigin;
-use sp_arithmetic::traits::One;
+use project_token::types::{
+    BlockRate, JoyBalanceOf, PatronageData, RevenueSplitStateOf, TokenBalanceOf, TokenDataOf,
+    TokenSale,
+};
+use sp_arithmetic::traits::{One, Zero};
 use sp_std::{
     cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -18,11 +22,15 @@ use storage::{DataObjectStorage, Module as Storage};
 
 use super::{
     assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
+    create_token_issuance_params, curator_member_id, default_vesting_schedule_params,
     generate_channel_creation_params, insert_content_leader, insert_distribution_leader,
-    insert_storage_leader, setup_worst_case_curator_group_with_curators,
-    setup_worst_case_scenario_curator_channel, worst_case_channel_agent_permissions,
-    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
-    StorageWorkingGroupInstance, MAX_BYTES_METADATA,
+    insert_storage_leader, issue_creator_token_with_worst_case_scenario_owner,
+    setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
+    worst_case_channel_agent_permissions, worst_case_scenario_initial_allocation,
+    worst_case_scenario_token_sale_params, ContentWorkingGroupInstance, CreateAccountId,
+    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
+    DEFAULT_CRT_SALE_DURATION, DEFAULT_CRT_SALE_PRICE, DEFAULT_CRT_SALE_UPPER_BOUND,
+    MAX_BYTES_METADATA, MAX_CRT_INITIAL_ALLOCATION_MEMBERS,
 };
 
 benchmarks! {
@@ -94,10 +102,13 @@ benchmarks! {
         let channel = ChannelById::<T>::get(channel_id);
 
         assert_last_event::<T>(
-            Event::<T>::ChannelCreated(
-                channel_id,
-                channel,
-                params).into()
+            <T as Config>::Event::from(
+                Event::<T>::ChannelCreated(
+                    channel_id,
+                    channel,
+                    params
+                )
+            ).into()
         );
     }
 
@@ -183,10 +194,14 @@ benchmarks! {
         assert!(ChannelById::<T>::contains_key(&channel_id));
 
         assert_last_event::<T>(
-            Event::<T>::ChannelUpdated(actor,
-                channel_id,
-                update_params,
-                new_data_object_ids).into()
+            <T as Config>::Event::from(
+                Event::<T>::ChannelUpdated(
+                    actor,
+                    channel_id,
+                    update_params,
+                    new_data_object_ids
+                )
+            ).into()
         );
     }
 
@@ -253,10 +268,13 @@ benchmarks! {
         assert!(ChannelById::<T>::contains_key(&channel_id));
 
         assert_last_event::<T>(
-            Event::<T>::ChannelUpdated(actor,
-                channel_id,
-                update_params,
-                BTreeSet::new()).into()
+            <T as Config>::Event::from(
+                Event::<T>::ChannelUpdated(actor,
+                    channel_id,
+                    update_params,
+                    BTreeSet::new()
+                )
+            ).into()
         );
     }
 
@@ -289,9 +307,121 @@ benchmarks! {
     verify {
 
         assert_last_event::<T>(
-            Event::<T>::ChannelDeleted(
+            <T as Config>::Event::from(
+                Event::<T>::ChannelDeleted(
+                    actor,
+                    channel_id
+                )
+            ).into()
+        );
+    }
+
+    issue_creator_token {
+        let a in 1 .. MAX_CRT_INITIAL_ALLOCATION_MEMBERS;
+
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            )?;
+        let params = create_token_issuance_params::<T>(worst_case_scenario_initial_allocation::<T>(a));
+        let actor = ContentActor::Curator(group_id, curator_id);
+    }: _ (
+        RawOrigin::Signed(curator_acc_id),
+        actor,
+        channel_id,
+        params.clone()
+    )
+    verify {
+        let execution_block = frame_system::Pallet::<T>::block_number();
+        let channel = ChannelById::<T>::get(channel_id);
+        assert!(channel.creator_token_id.is_some());
+        let token_id = channel.creator_token_id.unwrap();
+        let token = project_token::Module::<T>::token_info_by_id(token_id);
+        assert_eq!(token, TokenDataOf::<T> {
+            total_supply: (100u32 * a).into(),
+            tokens_issued: (100u32 * a).into(),
+            next_sale_id: 0,
+            sale: None,
+            transfer_policy: params.transfer_policy.into(),
+            symbol: params.symbol,
+            patronage_info: PatronageData::<TokenBalanceOf<T>, T::BlockNumber> {
+                rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
+                unclaimed_patronage_tally_amount: Zero::zero(),
+                last_unclaimed_patronage_tally_block: execution_block
+            },
+            accounts_number: a as u64,
+            revenue_split_rate: params.revenue_split_rate,
+            revenue_split: RevenueSplitStateOf::<T>::Inactive,
+            next_revenue_split_id: 0
+        });
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::CreatorTokenIssued(
+                    actor,
+                    channel_id,
+                    token_id
+                )
+            ).into()
+        );
+    }
+
+    init_creator_token_sale {
+        let a in 1 .. MAX_BYTES_METADATA;
+
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            )?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id,
                 actor,
-                channel_id
+                channel_id,
+                curator_member_id
+            )?;
+        let params = worst_case_scenario_token_sale_params::<T>(a);
+    }: _ (
+        origin, actor, channel_id, params
+    )
+    verify {
+        let start_block = frame_system::Pallet::<T>::block_number();
+        let token = project_token::Module::<T>::token_info_by_id(token_id);
+        // Verify token sale data
+        assert_eq!(token.sale, Some(TokenSale {
+            auto_finalize: false,
+            cap_per_member: Some(DEFAULT_CRT_SALE_CAP_PER_MEMBER.into()),
+            duration: DEFAULT_CRT_SALE_DURATION.into(),
+            earnings_destination: None,
+            funds_collected: JoyBalanceOf::<T>::zero(),
+            quantity_left: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
+            start_block,
+            tokens_source: curator_member_id,
+            unit_price: DEFAULT_CRT_SALE_PRICE.into(),
+            vesting_schedule_params: Some(default_vesting_schedule_params::<T>())
+        }));
+        // Verify that owner has max amount of locks possible
+        let owner_acc_data = project_token::Module::<T>::account_info_by_token_and_member(token_id, curator_member_id);
+        assert_eq!(
+            owner_acc_data.vesting_schedules.len(),
+            T::MaxVestingBalancesPerAccountPerToken::get() as usize
+        );
+        assert!(owner_acc_data.split_staking_status.is_some());
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::TokenSaleInitialized(
+                    token_id,
+                    token.next_sale_id - 1,
+                    token.sale.unwrap(),
+                    Some(vec![0xf].repeat(a as usize))
+                )
             ).into()
         );
     }
@@ -327,6 +457,20 @@ pub mod tests {
     fn delete_channel() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_delete_channel());
+        });
+    }
+
+    #[test]
+    fn issue_creator_token() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_issue_creator_token());
+        });
+    }
+
+    #[test]
+    fn init_creator_token_sale() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_init_creator_token_sale());
         });
     }
 }

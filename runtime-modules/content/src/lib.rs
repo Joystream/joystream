@@ -2686,7 +2686,18 @@ decl_module! {
         }
 
         /// Issue creator token
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `params.initial_allocation` map
+        /// - DB:
+        ///    - `O(A)` - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::issue_creator_token(
+            params.initial_allocation.len() as u32
+        )]
         pub fn issue_creator_token(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2733,7 +2744,18 @@ decl_module! {
         }
 
         /// Initialize creator token sale
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `params.metadata` (or 0 if not provided)
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::init_creator_token_sale(
+            params.metadata.as_ref().map_or(0u32, |v| v.len() as u32)
+        )]
         pub fn init_creator_token_sale(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

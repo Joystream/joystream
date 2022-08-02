@@ -6,27 +6,31 @@ use crate::{
         ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness,
         ChannelCreationParameters, ChannelOwner, StorageAssets,
     },
-    Config, ContentModerationAction, ModerationPermissionsByLevel, Module as Pallet,
+    Config, ContentActor, ContentModerationAction, ModerationPermissionsByLevel, Module as Pallet,
 };
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
 use frame_support::{
     dispatch::DispatchError,
-    storage::{StorageMap, StorageValue},
+    storage::{StorageDoubleMap, StorageMap, StorageValue},
     traits::{Currency, Get, Instance},
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
+use project_token::types::{
+    SingleDataObjectUploadParams, TokenAllocationOf, TokenBalanceOf, TokenIssuanceParametersOf,
+    TokenSaleParamsOf, TransferPolicyParamsOf, VestingSchedule, VestingScheduleParamsOf,
+    VestingSource, WhitelistParamsOf, YearlyRate,
+};
+use project_token::AccountInfoByTokenAndMember;
 use sp_arithmetic::traits::One;
+use sp_runtime::traits::Hash;
+use sp_runtime::Permill;
 use sp_runtime::SaturatedConversion;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::{
-    cmp::min,
-    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    convert::TryInto,
-    iter::FromIterator,
-    vec,
-    vec::Vec,
+    cmp::min, collections::btree_map::BTreeMap, convert::TryInto, iter::FromIterator, vec, vec::Vec,
 };
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
@@ -36,6 +40,7 @@ use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -74,20 +79,36 @@ const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
 const MAX_BYTES_METADATA: u32 = 5000;
 
-const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
+// Creator tokens
+const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
+const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
+const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
+const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
+const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
+const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
+
+const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
+    ChannelActionPermission::UpdateChannelMetadata,
+    ChannelActionPermission::ManageNonVideoChannelAssets,
+    ChannelActionPermission::ManageChannelCollaborators,
+    ChannelActionPermission::UpdateVideoMetadata,
     ChannelActionPermission::AddVideo,
-    ChannelActionPermission::AgentRemark,
-    ChannelActionPermission::ClaimChannelReward,
+    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::DeleteChannel,
     ChannelActionPermission::DeleteVideo,
-    ChannelActionPermission::ManageChannelCollaborators,
-    ChannelActionPermission::ManageNonVideoChannelAssets,
-    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::ManageVideoNfts,
+    ChannelActionPermission::AgentRemark,
     ChannelActionPermission::TransferChannel,
-    ChannelActionPermission::UpdateChannelMetadata,
-    ChannelActionPermission::UpdateVideoMetadata,
+    ChannelActionPermission::ClaimChannelReward,
     ChannelActionPermission::WithdrawFromChannelBalance,
+    ChannelActionPermission::IssueCreatorToken,
+    ChannelActionPermission::ClaimCreatorTokenPatronage,
+    ChannelActionPermission::InitAndManageCreatorTokenSale,
+    ChannelActionPermission::CreatorTokenIssuerTransfer,
+    ChannelActionPermission::MakeCreatorTokenPermissionless,
+    ChannelActionPermission::ReduceCreatorTokenPatronageRate,
+    ChannelActionPermission::ManageRevenueSplits,
+    ChannelActionPermission::DeissueCreatorToken,
 ];
 
 const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
@@ -152,12 +173,11 @@ where
     RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
+    assert_eq!(event, &expected_event);
 }
 
 // fn assert_was_fired<T: Config>(generic_event: <T as Config>::Event) {
@@ -872,3 +892,133 @@ fn channel_bag_witness<T: Config>(
 //         ),
 //     }
 // }
+
+fn create_token_issuance_params<T: Config>(
+    initial_allocation: BTreeMap<T::MemberId, TokenAllocationOf<T>>,
+) -> TokenIssuanceParametersOf<T> {
+    let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
+    let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
+    let patronage_rate = YearlyRate(Permill::from_percent(10));
+    let revenue_split_rate = Permill::from_percent(50);
+    TokenIssuanceParametersOf::<T> {
+        initial_allocation,
+        symbol: token_symbol.clone(),
+        transfer_policy: TransferPolicyParamsOf::<T>::Permissioned(WhitelistParamsOf::<T> {
+            commitment: transfer_policy_commit.clone(),
+            payload: Some(SingleDataObjectUploadParams {
+                object_creation_params: DataObjectCreationParameters {
+                    ipfs_content_id: vec![0],
+                    size: T::MaxDataObjectSize::get(),
+                },
+                expected_data_object_state_bloat_bond:
+                    Storage::<T>::data_object_state_bloat_bond_value(),
+                expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+            }),
+        }),
+        patronage_rate,
+        revenue_split_rate,
+    }
+}
+
+fn default_vesting_schedule_params<T: Config>() -> VestingScheduleParamsOf<T> {
+    VestingScheduleParamsOf::<T> {
+        linear_vesting_duration: 100u32.into(),
+        blocks_before_cliff: 100u32.into(),
+        cliff_amount_percentage: Permill::from_percent(10),
+    }
+}
+
+fn worst_case_scenario_initial_allocation<T: Config>(
+    members_num: u32,
+) -> BTreeMap<T::MemberId, TokenAllocationOf<T>>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    (0..members_num)
+        .map(|i| {
+            let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+            let allocation = TokenAllocationOf::<T> {
+                amount: 100u32.into(),
+                vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+            };
+            (member_id, allocation)
+        })
+        .collect()
+}
+
+fn setup_account_with_max_number_of_locks<T: Config>(
+    token_id: T::TokenId,
+    member_id: &T::MemberId,
+    usable_balance: Option<TokenBalanceOf<T>>,
+) {
+    AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
+        (0u32..T::MaxVestingBalancesPerAccountPerToken::get().into()).for_each(|i| {
+            a.add_or_update_vesting_schedule(
+                VestingSource::Sale(i),
+                VestingSchedule::from_params(
+                    frame_system::Pallet::<T>::block_number(),
+                    TokenBalanceOf::<T>::one(),
+                    VestingScheduleParamsOf::<T> {
+                        linear_vesting_duration: 0u32.into(),
+                        blocks_before_cliff: u32::MAX.into(),
+                        cliff_amount_percentage: Permill::from_percent(100),
+                    },
+                ),
+                None,
+            );
+        });
+        a.stake(0u32, TokenBalanceOf::<T>::one());
+        a.increase_amount_by(usable_balance.unwrap_or_default() + 2u32.into());
+    });
+}
+
+fn curator_member_id<T: Config + working_group::Config<ContentWorkingGroupInstance>>(
+    curator_id: T::CuratorId,
+) -> T::MemberId {
+    working_group::Pallet::<T, ContentWorkingGroupInstance>::worker_by_id::<T::ActorId>(
+        curator_id.saturated_into::<u64>().saturated_into(),
+    )
+    .unwrap()
+    .member_id
+}
+
+fn issue_creator_token_with_worst_case_scenario_owner<T: Config>(
+    sender: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    owner_member_id: T::MemberId,
+) -> Result<T::TokenId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+{
+    let initial_allocation = BTreeMap::<T::MemberId, TokenAllocationOf<T>>::from_iter(vec![(
+        owner_member_id,
+        TokenAllocationOf::<T> {
+            amount: DEFAULT_CRT_OWNER_ISSUANCE.into(),
+            vesting_schedule_params: None,
+        },
+    )]);
+    let issuance_params = create_token_issuance_params::<T>(initial_allocation);
+    let token_id = project_token::Pallet::<T>::next_token_id();
+    Pallet::<T>::issue_creator_token(
+        RawOrigin::Signed(sender).into(),
+        actor,
+        channel_id,
+        issuance_params,
+    )?;
+    setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
+    Ok(token_id)
+}
+
+fn worst_case_scenario_token_sale_params<T: Config>(metatada_len: u32) -> TokenSaleParamsOf<T> {
+    TokenSaleParamsOf::<T> {
+        cap_per_member: Some(1_000_000u32.into()),
+        duration: DEFAULT_CRT_SALE_DURATION.into(),
+        starts_at: None,
+        unit_price: DEFAULT_CRT_SALE_PRICE.into(),
+        upper_bound_quantity: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
+        vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+        metadata: Some(vec![0xf].repeat(metatada_len as usize)),
+    }
+}

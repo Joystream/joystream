@@ -56,26 +56,26 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
     /// Account's total unvested (locked) balance at current block (b)
     /// can be calculated by summing `v.locks()` of all
     /// VestingSchedule (v) instances in the map.
-    pub(crate) vesting_schedules: BTreeMap<VestingSource, VestingSchedule>,
+    pub vesting_schedules: BTreeMap<VestingSource, VestingSchedule>,
 
     /// Represents total amount of tokens held by the account, including
     /// unvested and staked tokens.
-    pub(crate) amount: Balance,
+    pub amount: Balance,
 
     /// Account's current split staking status
-    pub(crate) split_staking_status: Option<StakingStatus>,
+    pub split_staking_status: Option<StakingStatus>,
 
     /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
     /// account, returned when this account is removed
-    pub(crate) bloat_bond: JoyBalance,
+    pub bloat_bond: JoyBalance,
 
     /// Id of the next incoming transfer that includes tokens subject to vesting
     /// (for the purpose of generating VestingSource)
-    pub(crate) next_vesting_transfer_id: u64,
+    pub next_vesting_transfer_id: u64,
 
     /// The sum of all tokens purchased on the last sale the account participated in
     /// along with the id of that sale.
-    pub(crate) last_sale_total_purchased_amount: Option<(TokenSaleId, Balance)>,
+    pub last_sale_total_purchased_amount: Option<(TokenSaleId, Balance)>,
 }
 
 /// Info for the token
@@ -235,13 +235,13 @@ impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug, TypeInfo)]
 pub struct PatronageData<Balance, BlockNumber> {
     /// Patronage rate
-    pub(crate) rate: BlockRate,
+    pub rate: BlockRate,
 
     /// Tally count for the outstanding credit before latest patronage config change
-    pub(crate) unclaimed_patronage_tally_amount: Balance,
+    pub unclaimed_patronage_tally_amount: Balance,
 
     /// Last block the patronage configuration was updated
-    pub(crate) last_unclaimed_patronage_tally_block: BlockNumber,
+    pub last_unclaimed_patronage_tally_block: BlockNumber,
 }
 
 /// Input parameters describing token transfer policy
@@ -298,11 +298,11 @@ impl<Hash> Default for TransferPolicy<Hash> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct VestingScheduleParams<BlockNumber> {
     // Duration of the linear vesting period
-    pub(crate) linear_vesting_duration: BlockNumber,
+    pub linear_vesting_duration: BlockNumber,
     // Number of blocks before the linear vesting begins
-    pub(crate) blocks_before_cliff: BlockNumber,
+    pub blocks_before_cliff: BlockNumber,
     // Initial, instantly vested amount once linear vesting begins (percentage of total amount)
-    pub(crate) cliff_amount_percentage: Permill,
+    pub cliff_amount_percentage: Permill,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -330,7 +330,7 @@ where
     ///
     /// `init_block` is a block from which to start counting remaining blocks until cliff, making:
     /// `linear_vesting_start_block = init_block + blocks_before_cliff`
-    pub(crate) fn from_params(
+    pub fn from_params(
         init_block: BlockNumber,
         amount: Balance,
         params: VestingScheduleParams<BlockNumber>,
@@ -883,12 +883,12 @@ where
     }
 
     /// Check whether an account is empty
-    pub(crate) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.amount.is_zero()
     }
 
     /// Calculate account's unvested balance at block `b`
-    pub(crate) fn unvested<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
+    pub fn unvested<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
         &self,
         b: BlockNumber,
     ) -> Balance {
@@ -900,7 +900,7 @@ where
 
     /// Ensure user is a valid revenue split participant, namely:
     /// - staking status is Some
-    pub(crate) fn ensure_account_is_valid_split_participant<T: Config>(
+    pub fn ensure_account_is_valid_split_participant<T: Config>(
         &self,
     ) -> Result<StakingStatus<Balance>, DispatchError> {
         self.split_staking_status
@@ -909,7 +909,7 @@ where
     }
 
     /// Determine Wether user can stake `amount` of tokens
-    pub(crate) fn ensure_can_stake<T: Config>(
+    pub fn ensure_can_stake<T: Config>(
         self,
         to_stake: Balance,
         next_split_id: RevenueSplitId,
@@ -929,17 +929,17 @@ where
     }
 
     /// Set self.staking_status to Some(..)
-    pub(crate) fn stake(&mut self, split_id: RevenueSplitId, amount: Balance) {
+    pub fn stake(&mut self, split_id: RevenueSplitId, amount: Balance) {
         self.split_staking_status = Some(StakingStatus { split_id, amount });
     }
 
     /// Set self.staking status to None
-    pub(crate) fn unstake(&mut self) {
+    pub fn unstake(&mut self) {
         self.split_staking_status = None;
     }
 
     /// Calculate account's transferrable balance at block `b`
-    pub(crate) fn transferrable<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
+    pub fn transferrable<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
         &self,
         b: BlockNumber,
     ) -> Balance {
@@ -947,13 +947,13 @@ where
             .saturating_sub(max(self.unvested::<T>(b), self.staked()))
     }
 
-    pub(crate) fn staked(&self) -> Balance {
+    pub fn staked(&self) -> Balance {
         self.split_staking_status
             .as_ref()
             .map_or(Balance::zero(), |info| info.amount)
     }
 
-    pub(crate) fn ensure_can_add_or_update_vesting_schedule<
+    pub fn ensure_can_add_or_update_vesting_schedule<
         T: Config<Balance = Balance, BlockNumber = BlockNumber>,
     >(
         &self,
@@ -980,7 +980,7 @@ where
         }
     }
 
-    pub(crate) fn add_or_update_vesting_schedule(
+    pub fn add_or_update_vesting_schedule(
         &mut self,
         source: VestingSource,
         new_schedule: VestingSchedule<BlockNumber, Balance>,
@@ -1012,17 +1012,17 @@ where
     }
 
     /// Increase account's total tokens amount by given amount
-    pub(crate) fn increase_amount_by(&mut self, amount: Balance) {
+    pub fn increase_amount_by(&mut self, amount: Balance) {
         self.amount = self.amount.saturating_add(amount);
     }
 
     /// Decrease account's total tokens amount by given amount
-    pub(crate) fn decrease_amount_by(&mut self, amount: Balance) {
+    pub fn decrease_amount_by(&mut self, amount: Balance) {
         self.amount = self.amount.saturating_sub(amount);
     }
 
     /// Ensure that given amount of tokens can be transferred from the account at block `b`
-    pub(crate) fn ensure_can_transfer<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
+    pub fn ensure_can_transfer<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
         &self,
         b: BlockNumber,
         amount: Balance,
@@ -1035,7 +1035,7 @@ where
     }
 
     /// Process changes related to new sale purchase
-    pub(crate) fn process_sale_purchase(
+    pub fn process_sale_purchase(
         &mut self,
         sale_id: TokenSaleId,
         amount: Balance,
@@ -1062,7 +1062,7 @@ where
     }
 
     /// Burn a specified amount of tokens belonging to the account
-    pub(crate) fn burn<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
+    pub fn burn<T: Config<Balance = Balance, BlockNumber = BlockNumber>>(
         &mut self,
         amount: Balance,
         b: BlockNumber,
@@ -1318,10 +1318,10 @@ impl BlockRate {
 // ------ Aliases ---------------------------------------------
 
 /// Creator token balance
-pub(crate) type TokenBalanceOf<T> = <T as Config>::Balance;
+pub type TokenBalanceOf<T> = <T as Config>::Balance;
 
 /// JOY balance
-pub(crate) type JoyBalanceOf<T> = <T as balances::Config>::Balance;
+pub type JoyBalanceOf<T> = <T as balances::Config>::Balance;
 
 /// JOY balances module
 pub(crate) type Joy<T> = balances::Pallet<T>;
@@ -1334,7 +1334,7 @@ pub(crate) type AccountDataOf<T> =
     AccountData<VestingScheduleOf<T>, TokenBalanceOf<T>, StakingStatusOf<T>, JoyBalanceOf<T>>;
 
 /// Alias for Token Data
-pub(crate) type TokenDataOf<T> = TokenData<
+pub type TokenDataOf<T> = TokenData<
     TokenBalanceOf<T>,
     <T as frame_system::Config>::Hash,
     <T as frame_system::Config>::BlockNumber,
@@ -1357,7 +1357,7 @@ pub type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
 pub type TransferPolicyParamsOf<T> = TransferPolicyParams<WhitelistParamsOf<T>>;
 
 /// Alias for TransferPolicy
-pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Config>::Hash>;
+pub type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Config>::Hash>;
 
 /// Alias for the Merkle Proof type
 pub(crate) type MerkleProofOf<T> = MerkleProof<<T as frame_system::Config>::Hashing>;
