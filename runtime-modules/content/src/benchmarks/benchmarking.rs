@@ -466,7 +466,6 @@ benchmarks! {
     // DB OPERATIONS:
     // - DB Read : channel -> O(1)
     // - DB Read : video -> O(1)
-    // - DB Write: params.metadata -> O(params.metadata.len())
     // - DB Write: video -> O(1)
     // - DB Write: channel -> O(1)
     issue_nft {
