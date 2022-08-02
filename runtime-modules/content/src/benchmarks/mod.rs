@@ -1095,7 +1095,25 @@ where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-    let video_id = Pallet::<T>::next_video_id();
+    setup_video_with_nft_transactional_status::<T>(
+        account_id,
+        actor,
+        channel_id,
+        InitTransactionalStatus::<T>::Idle,
+    )
+}
+
+fn setup_video_with_nft_transactional_status<T>(
+    account_id: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    transactional_status: InitTransactionalStatus<T>
+) -> Result<T::VideoId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+        let video_id = Pallet::<T>::next_video_id();
     let origin: T::Origin = RawOrigin::Signed(account_id).into();
     let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
     Pallet::<T>::create_video(
@@ -1119,8 +1137,9 @@ where
             royalty: Some(Pallet::<T>::max_creator_royalty()),
             nft_metadata: Vec::new(),
             non_channel_owner: None,
-            init_transactional_status: InitTransactionalStatus::<T>::Idle,
+            init_transactional_status: transactional_status,
         },
     )?;
+
     Ok(video_id)
 }
