@@ -34,7 +34,7 @@ export AUTO_CONFIRM=true
 export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
 
 #######################################
-# create initial-balances.json & initial-members.json files
+# create initial-balances.json files
 # Globals:
 #   SUDO_INITIAL_BALANCES
 #   SUDO_ACCOUNT
@@ -45,31 +45,13 @@ export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
 #   None
 #######################################
 function create_initial_config {
-    echo "{
-  \"balances\":[
-    [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
-    [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
-  ]
-}" > ${DATA_PATH}/initial-balances.json
+  echo "{
+    \"balances\":[
+      [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
+      [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
+    ]
+  }" > ${DATA_PATH}/initial-balances.json
 
-    # Remember if there are initial members at genesis query-node needs to be bootstrapped
-    # or any events processed for this member will cause processor to fail.
-    if [ "${MAKE_SUDO_MEMBER}" == true ]
-    then
-	echo "
-    [{
-      \"member_id\":0,
-      \"root_account\":\"$SUDO_ACCOUNT\",
-      \"controller_account\":\"$SUDO_ACCOUNT\",
-      \"handle\":\"sudosudo\",
-      \"avatar_uri\":\"https://sudo.com/avatar.png\",
-      \"about\":\"Sudo\",
-      \"registered_at_time\":0
-    }]
-  " > ${DATA_PATH}/initial-members.json
-    else
-	echo "[]" > ${DATA_PATH}/initial-members.json
-    fi
 }
 
 #######################################
@@ -89,8 +71,7 @@ function create_chainspec_file {
 	   --sudo-account ${SUDO_ACCOUNT} \
 	   --deployment dev \
 	   --chain-spec-path /data/chain-spec.json \
-	   --initial-balances-path /data/initial-balances.json \
-	   --initial-members-path /data/initial-members.json
+	   --initial-balances-path /data/initial-balances.json
 }
 
 #######################################
