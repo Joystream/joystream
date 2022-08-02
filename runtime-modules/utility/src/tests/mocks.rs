@@ -101,7 +101,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Balances: balances,
         Timestamp: pallet_timestamp,
-        Membership: membership::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
         Utility: utility::{Pallet, Call, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T, I>, Config<T>},

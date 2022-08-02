@@ -49,7 +49,7 @@ frame_support::construct_runtime!(
         Balances: balances,
         CollectiveFlip: randomness_collective_flip,
         Timestamp: pallet_timestamp,
-        Membership: membership::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
         Storage: crate::{Pallet, Call, Storage, Config<T>, Event<T>},
         // Need to be added for benchmarks to work
         Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
