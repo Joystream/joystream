@@ -30873,15 +30873,16 @@ export type VideoSubtitle = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['ID']>
   version: Scalars['Int']
-  video: Array<Video>
+  video: Video
+  videoId: Scalars['String']
   /** Subtitle's type */
   type: Scalars['String']
   language: Language
   languageId: Scalars['String']
   /** MIME type description of format used for this subtitle */
   mimeType: Scalars['String']
-  asset: StorageDataObject
-  assetId: Scalars['String']
+  asset?: Maybe<StorageDataObject>
+  assetId?: Maybe<Scalars['String']>
 }
 
 export type VideoSubtitleConnection = {
@@ -30891,10 +30892,11 @@ export type VideoSubtitleConnection = {
 }
 
 export type VideoSubtitleCreateInput = {
+  video: Scalars['ID']
   type: Scalars['String']
   language: Scalars['ID']
   mimeType: Scalars['String']
-  asset: Scalars['ID']
+  asset?: Maybe<Scalars['ID']>
 }
 
 export type VideoSubtitleEdge = {
@@ -30909,6 +30911,8 @@ export enum VideoSubtitleOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   TypeAsc = 'type_ASC',
   TypeDesc = 'type_DESC',
   LanguageAsc = 'language_ASC',
@@ -30920,6 +30924,7 @@ export enum VideoSubtitleOrderByInput {
 }
 
 export type VideoSubtitleUpdateInput = {
+  video?: Maybe<Scalars['ID']>
   type?: Maybe<Scalars['String']>
   language?: Maybe<Scalars['ID']>
   mimeType?: Maybe<Scalars['String']>
@@ -30961,9 +30966,7 @@ export type VideoSubtitleWhereInput = {
   mimeType_startsWith?: Maybe<Scalars['String']>
   mimeType_endsWith?: Maybe<Scalars['String']>
   mimeType_in?: Maybe<Array<Scalars['String']>>
-  video_none?: Maybe<VideoWhereInput>
-  video_some?: Maybe<VideoWhereInput>
-  video_every?: Maybe<VideoWhereInput>
+  video?: Maybe<VideoWhereInput>
   language?: Maybe<LanguageWhereInput>
   asset?: Maybe<StorageDataObjectWhereInput>
   AND?: Maybe<Array<VideoSubtitleWhereInput>>

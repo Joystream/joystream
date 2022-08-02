@@ -128,6 +128,12 @@ fragment CommentFields on Comment {
 
 fragment VideoFields on Video {
   id
+  title
+  description
+  isPublic
+  language {
+    iso
+  }
   commentsCount
   reactionsCount
   comments {
@@ -139,6 +145,12 @@ fragment VideoFields on Video {
   isCommentSectionEnabled
   pinnedComment {
     id
+  }
+  subtitles {
+    id
+    asset {
+      ...StorageDataObjectFields
+    }
   }
 }
 
@@ -270,6 +282,12 @@ query getOwnedNftByVideoId($videoId: ID!) {
 query getCommentsByIds($ids: [ID!]) {
   comments(where: { id_in: $ids }) {
     ...CommentFields
+  }
+}
+
+query getVideoById($videoId: ID!) {
+  videoByUniqueInput(where: { id: $videoId }) {
+    ...VideoFields
   }
 }
 

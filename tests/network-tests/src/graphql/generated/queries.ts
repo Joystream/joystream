@@ -23,7 +23,7 @@ type DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment = {
 
 type DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment = {
   __typename: 'DataObjectTypeVideoSubtitle'
-  subtitle?: Types.Maybe<{ id: string; video: Array<{ id: string }> }>
+  subtitle?: Types.Maybe<{ id: string; video: { id: string } }>
 }
 
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
@@ -100,12 +100,17 @@ export type CommentFieldsFragment = {
 
 export type VideoFieldsFragment = {
   id: string
+  title?: Types.Maybe<string>
+  description?: Types.Maybe<string>
+  isPublic?: Types.Maybe<boolean>
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  language?: Types.Maybe<{ iso: string }>
   comments: Array<CommentFieldsFragment>
   reactions: Array<VideoReactionFieldsFragment>
   pinnedComment?: Types.Maybe<{ id: string }>
+  subtitles: Array<{ id: string; asset?: Types.Maybe<StorageDataObjectFieldsFragment> }>
 }
 
 export type BidFieldsFragment = {
@@ -199,6 +204,12 @@ export type GetCommentsByIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetCommentsByIdsQuery = { comments: Array<CommentFieldsFragment> }
+
+export type GetVideoByIdQueryVariables = Types.Exact<{
+  videoId: Types.Scalars['ID']
+}>
+
+export type GetVideoByIdQuery = { videoByUniqueInput?: Types.Maybe<VideoFieldsFragment> }
 
 export type GetVideosByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -2554,6 +2565,12 @@ export const VideoReactionFields = gql`
 export const VideoFields = gql`
   fragment VideoFields on Video {
     id
+    title
+    description
+    isPublic
+    language {
+      iso
+    }
     commentsCount
     reactionsCount
     comments {
@@ -2566,9 +2583,16 @@ export const VideoFields = gql`
     pinnedComment {
       id
     }
+    subtitles {
+      id
+      asset {
+        ...StorageDataObjectFields
+      }
+    }
   }
   ${CommentFields}
   ${VideoReactionFields}
+  ${StorageDataObjectFields}
 `
 export const BidFields = gql`
   fragment BidFields on Bid {
@@ -4703,6 +4727,14 @@ export const GetCommentsByIds = gql`
     }
   }
   ${CommentFields}
+`
+export const GetVideoById = gql`
+  query getVideoById($videoId: ID!) {
+    videoByUniqueInput(where: { id: $videoId }) {
+      ...VideoFields
+    }
+  }
+  ${VideoFields}
 `
 export const GetVideosByIds = gql`
   query getVideosByIds($ids: [ID!]) {
