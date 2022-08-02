@@ -624,7 +624,7 @@ export async function storage_DataObjectStateBloatBondValueUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [newStateBloatBondValue] = new Storage.DataObjectStateBloatBondValueUpdatedEvent(event).params
   const storageSystem = await getStorageSystem(store)
-  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue.toNumber()
+  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue
 
   await store.save<StorageSystemParameters>(storageSystem)
 }
