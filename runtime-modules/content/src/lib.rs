@@ -1530,7 +1530,15 @@ decl_module! {
         }
 
         /// Issue NFT
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeighInfoContent::<T>::issue_nft()]
         pub fn issue_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1583,7 +1591,15 @@ decl_module! {
         }
 
         /// Destroy NFT
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeighInfoContent::<T>::destroy_nft()]
         pub fn destroy_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2352,7 +2368,15 @@ decl_module! {
         }
 
         /// Return Nft back to the original artist at no cost
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeighInfoContent::<T>::sling_nft_back()]
         pub fn sling_nft_back(
             origin,
             video_id: T::VideoId,

@@ -470,7 +470,6 @@ benchmarks! {
     // - DB Write: video -> O(1)
     // - DB Write: channel -> O(1)
     issue_nft {
-        let i in 0..MAX_BYTES;
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
@@ -486,7 +485,7 @@ benchmarks! {
             meta: None,
         })?;
 
-        let params = worst_case_nft_issuance_params_helper::<T>(i);
+        let params = worst_case_nft_issuance_params_helper::<T>();
     }: _ (origin, actor, video_id, params)
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_some());

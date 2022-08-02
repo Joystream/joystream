@@ -1024,7 +1024,6 @@ where
 }
 
 fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
-    metadata_len: u32,
 ) -> NftIssuanceParameters<T>
 where
     T: RuntimeConfig,
@@ -1035,9 +1034,7 @@ where
     let start: u64 = 1000;
     NftIssuanceParameters::<T> {
         royalty: Some(Pallet::<T>::max_creator_royalty()),
-        nft_metadata: sp_std::iter::repeat(1u8)
-            .take(metadata_len as usize)
-            .collect(),
+        nft_metadata: Vec::new(),
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
