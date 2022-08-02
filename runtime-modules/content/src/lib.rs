@@ -83,9 +83,6 @@ pub trait Config:
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
-    /// Price per byte
-    type PricePerByte: Get<<Self as balances::Config>::Balance>;
-
     /// Content Module Id
     type ModuleId: Get<PalletId>;
 
@@ -167,10 +164,10 @@ decl_storage! {
         pub Commitment get(fn commitment): <T as frame_system::Config>::Hash;
 
         /// The state bloat bond for the channel (helps preventing the state bloat).
-        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value): BalanceOf<T>;
+        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value) config(): BalanceOf<T>;
 
         ///The state bloat bond for the video (helps preventing the state bloat).
-        pub VideoStateBloatBondValue get (fn video_state_bloat_bond_value): BalanceOf<T>;
+        pub VideoStateBloatBondValue get (fn video_state_bloat_bond_value) config(): BalanceOf<T>;
 
         pub MaxCashoutAllowed get(fn max_cashout_allowed) config(): BalanceOf<T>;
 
@@ -489,8 +486,6 @@ decl_module! {
             let storage_assets = params.assets.clone().unwrap_or_default();
             let num_objs = storage_assets.object_creation_list.len();
 
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
-
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
             let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
             let total_funds_needed = channel_state_bloat_bond.saturating_add(funds_needed);
@@ -514,7 +509,7 @@ decl_module! {
             let _ = Balances::<T>::slash(&sender, channel_state_bloat_bond);
 
             // create channel bag
-            Storage::<T>::create_dynamic_bag(bag_creation_params)?;
+            let (_, data_objects_ids) = Storage::<T>::create_dynamic_bag(bag_creation_params)?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -581,7 +576,6 @@ decl_module! {
             //
 
             let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
 
             let upload_parameters = UploadParameters::<T> {
                 bag_id: Self::bag_id_for_channel(&channel_id),
@@ -590,7 +584,7 @@ decl_module! {
                 expected_data_size_fee: assets_to_upload.expected_data_size_fee,
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond            };
 
-            Storage::<T>::upload_and_delete_data_objects(
+            let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
                 upload_parameters,
                 params.assets_to_remove.clone(),
             )?;
@@ -859,8 +853,6 @@ decl_module! {
             let storage_assets = params.assets.clone().unwrap_or_default();
             let num_objs = storage_assets.object_creation_list.len();
 
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
-
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
             let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
             let total_funds_needed = video_state_bloat_bond.saturating_add(funds_needed);
@@ -871,6 +863,18 @@ decl_module! {
                 Self::check_nft_limits(&channel)?;
             }
 
+            let data_objects_ids = if let Some(upload_assets) = params.assets.as_ref() {
+                let params = Self::construct_upload_parameters(
+                    upload_assets,
+                    &channel_id,
+                    &sender,
+                    params.expected_data_object_state_bloat_bond,
+                );
+                Storage::<T>::upload_data_objects(params)
+            } else {
+                Ok(BTreeSet::new())
+            }?;
+
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
@@ -878,16 +882,6 @@ decl_module! {
                 data_objects: data_objects_ids.clone(),
                 video_state_bloat_bond
             };
-
-            if let Some(upload_assets) = params.assets.as_ref() {
-                let params = Self::construct_upload_parameters(
-                    upload_assets,
-                    &channel_id,
-                    &sender,
-                    params.expected_data_object_state_bloat_bond,
-                );
-                Storage::<T>::upload_data_objects(params)?;
-            }
 
             //
             // == MUTATION SAFE ==
@@ -950,7 +944,6 @@ decl_module! {
             Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &video.data_objects)?;
 
             let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-            let new_data_object_ids = Storage::<T>::get_next_data_object_ids(assets_to_upload.object_creation_list.len());
 
             let nft_status = params.auto_issue_nft
                 .as_ref()
@@ -972,15 +965,13 @@ decl_module! {
             // upload/delete video assets from storage with commit or rollback semantics
             let upload_parameters = UploadParameters::<T> {
                 bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.object_creation_list),
+                object_creation_list: assets_to_upload.object_creation_list,
                 state_bloat_bond_source_account_id: sender,
-                expected_data_size_fee: params.assets_to_upload.clone()
-                    .map_or(Default::default(), |assets| assets.expected_data_size_fee),
+                expected_data_size_fee: assets_to_upload.expected_data_size_fee,
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
             };
 
-            Storage::<T>::upload_and_delete_data_objects(
+            let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
                 upload_parameters,
                 params.assets_to_remove.clone(),
                 )?;

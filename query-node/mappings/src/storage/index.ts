@@ -230,18 +230,27 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
   const [objectIds, { bagId, objectCreationList }, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
-  await createDataObjects(store, { storageBagOrId: bagId, objectCreationList, stateBloatBond, objectIds })
+  await createDataObjects(store, {
+    storageBagOrId: bagId,
+    objectCreationList,
+    stateBloatBond,
+    objectIds: [...objectIds.values()],
+  })
 }
 
 export async function storage_DataObjectsUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [{ bagId, objectCreationList, expectedDataObjectStateBloatBond: stateBloatBond }, objectsToRemove] =
-    new Storage.DataObjectsUpdatedEvent(event).params
+  const [
+    { bagId, objectCreationList, expectedDataObjectStateBloatBond: stateBloatBond },
+    uploadedObjectIds,
+    objectsToRemove,
+  ] = new Storage.DataObjectsUpdatedEvent(event).params
 
   // create new objects
   await createDataObjects(store, {
     storageBagOrId: bagId,
     objectCreationList,
     stateBloatBond,
+    objectIds: [...uploadedObjectIds.values()],
   })
 
   // remove objects
@@ -615,7 +624,7 @@ export async function storage_DataObjectStateBloatBondValueUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [newStateBloatBondValue] = new Storage.DataObjectStateBloatBondValueUpdatedEvent(event).params
   const storageSystem = await getStorageSystem(store)
-  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue.toNumber()
+  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue
 
   await store.save<StorageSystemParameters>(storageSystem)
 }

@@ -85,9 +85,6 @@ pub mod fees {
     pub type SlowAdjustingFeeUpdate<R> =
         TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 
-    /// The block saturation level. Fees will be updates based on this value.
-    pub const TARGET_BLOCK_FULLNESS: Perbill = Perbill::from_percent(25);
-
     /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
     /// node's balance type.
     ///
@@ -150,61 +147,78 @@ lazy_static! {
     .to_vec();
 }
 
-// Change it when changing the currency constants!
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 1;
+    pub const ExistentialDeposit: Balance = currency::MILLICENTS;
 }
 
 pub mod currency {
     use super::Balance;
 
-    pub const JOYS: Balance = 250_000_000;
-    pub const DOLLARS: Balance = JOYS / 12500; // 20_000
-    pub const CENTS: Balance = DOLLARS / 100; // 200
+    /// One JOY equals 10 Billion base units (HAPIs). Hence we use 10 decimal places in
+    /// currency representation.
+    pub const BASE_UNIT_PER_JOY: Balance = 10_000_000_000;
+    /// Total base unit issuance. 1 Billion JOY
+    const BASE_UNIT_ISSUANCE: Balance = BASE_UNIT_PER_JOY.saturating_mul(1_000_000_000);
+    /// Valuation of total issued base unit tokens in USD.
+    const BASE_UNIT_ISSUANCE_USD_MCAP: Balance = 60_000_000;
+    // Constants used to derive balance configurations of pallets more human readable
 
+    /// Balance estimated worth one USD.
+    pub const DOLLARS: Balance = BASE_UNIT_ISSUANCE.saturating_div(BASE_UNIT_ISSUANCE_USD_MCAP);
+    /// Balance estimated worth one hundredth of a USD.
+    pub const CENTS: Balance = DOLLARS.saturating_div(100);
+    /// Balance estimated worth one thousandths of a cent.
+    pub const MILLICENTS: Balance = CENTS.saturating_div(1_000);
+
+    /// Genesis balance for each endowed account
+    pub const ENDOWMENT: Balance = DOLLARS.saturating_mul(1_000_000);
+    /// Genesis balance for each initial validator stash account
+    pub const STASH: Balance = DOLLARS.saturating_mul(10_000);
+
+    /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+        (items as Balance).saturating_mul(CENTS).saturating_mul(15)
+            + (bytes as Balance).saturating_mul(CENTS).saturating_mul(6)
     }
 }
 
-// TODO: These tests need to be updated when we finalize weights configuration
-// #[cfg(test)]
-// mod tests {
-//     use super::currency::{CENTS, DOLLARS};
-//     use super::fees::WeightToFee;
-//     use crate::{ExtrinsicBaseWeight, MAXIMUM_BLOCK_WEIGHT};
-//     use frame_support::weights::WeightToFeePolynomial;
-//     use pallet_balances::WeightInfo;
+#[cfg(test)]
+mod tests {
+    use super::currency::{CENTS, DOLLARS, MILLICENTS};
+    use super::fees::WeightToFee;
+    use crate::MAXIMUM_BLOCK_WEIGHT;
+    use frame_support::weights::{constants::ExtrinsicBaseWeight, WeightToFee as WeightToFeeT};
+    use pallet_balances::WeightInfo;
 
-//     #[test]
-//     // This function tests that the fee for `pallet_balances::transfer` of weight is correct
-//     fn extrinsic_transfer_fee_is_correct() {
-//         // Transfer fee should be less than 100 tokens and should be non-zero (Initially ~30)
-//         // let transfer_weight = crate::weights::pallet_balances::WeightInfo::transfer();
-//         let transfer_weight = pallet_balances::weights::SubstrateWeight::transfer();
-//         println!("Transfer weight: {}", transfer_weight);
-//         let transfer_fee = WeightToFee::calc(&transfer_weight);
-//         println!("Transfer fee: {}", transfer_fee);
-//         assert!(0 < transfer_fee && transfer_fee < 100);
-//     }
+    #[test]
+    // This function tests that the fee for `pallet_balances::transfer` of weight is correct
+    fn extrinsic_transfer_fee_is_correct() {
+        // Transfer fee should be less than 1 CENTS
+        let transfer_weight =
+            crate::weights::pallet_balances::SubstrateWeight::<crate::Runtime>::transfer();
+        println!("Transfer weight: {}", transfer_weight);
+        let transfer_fee = WeightToFee::weight_to_fee(&transfer_weight);
+        println!("Transfer fee: {}", transfer_fee);
+        assert!(0 < transfer_fee && transfer_fee < CENTS);
+    }
 
-//     #[test]
-//     // This function tests that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight is correct
-//     fn full_block_fee_is_correct() {
-//         // A full block should cost 16 DOLLARS
-//         println!("Base: {}", ExtrinsicBaseWeight::get());
-//         let x = WeightToFee::calc(&MAXIMUM_BLOCK_WEIGHT);
-//         let y = 16 * DOLLARS;
-//         assert!(x.max(y) - x.min(y) < 1);
-//     }
+    #[test]
+    // This function tests that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight is correct
+    fn full_block_fee_is_correct() {
+        println!("Base: {}", ExtrinsicBaseWeight::get());
+        // A full block should cost between 10 and 100 DOLLARS.
+        let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
+        assert!(full_block >= DOLLARS.saturating_mul(10));
+        assert!(full_block <= DOLLARS.saturating_mul(100));
+    }
 
-//     #[test]
-//     // This function tests that the fee for `ExtrinsicBaseWeight` of weight is correct
-//     fn extrinsic_base_fee_is_correct() {
-//         // `ExtrinsicBaseWeight` should cost 1/10 of a CENT
-//         println!("Base: {}", ExtrinsicBaseWeight::get());
-//         let x = WeightToFee::calc(&ExtrinsicBaseWeight::get());
-//         let y = CENTS / 10;
-//         assert!(x.max(y) - x.min(y) < 1);
-//     }
-// }
+    #[test]
+    // This function tests that the fee for `ExtrinsicBaseWeight` of weight is correct
+    fn extrinsic_base_fee_is_correct() {
+        // `ExtrinsicBaseWeight` should cost 1/10 of a CENT
+        println!("Base: {}", ExtrinsicBaseWeight::get());
+        let x = WeightToFee::weight_to_fee(&ExtrinsicBaseWeight::get());
+        let y = CENTS.saturating_div(10);
+        assert!(x.max(y) - x.min(y) < MILLICENTS);
+    }
+}

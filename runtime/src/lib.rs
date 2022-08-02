@@ -63,16 +63,19 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
-use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use pallet_transaction_payment::CurrencyAdapter;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 
-use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys};
 use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
+    create_runtime_str,
+    curve::PiecewiseLinear,
+    generic, impl_opaque_keys,
+    traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
+    Perbill,
 };
+
 use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
 use sp_std::{vec, vec::Vec};
@@ -157,7 +160,7 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
@@ -186,48 +189,102 @@ parameter_types! {
 
 const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO.deconstruct());
 
-pub struct LockedDownBaseFilter {}
+/// Our extrinsics call filter
+pub enum CallFilter {}
 
-// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
-#[cfg(not(feature = "runtime-benchmarks"))]
-impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        match call {
-            // TODO: adjust after Carthage
-            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
-                ..
-            }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
-            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
-                ..
-            }) => false,
-            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
-                general_proposal_parameters: _,
-                proposal_details,
-            }) => !matches!(
-                proposal_details,
-                proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
-                    | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
-            ),
-            _ => true, // Enable all other calls
+/// Filter that disables all non-essential calls.
+/// Allowing only calls for successful block authoring, staking, nominating.
+/// Since balances calls are disabled, his means that stash and controller
+/// accounts must already be funded. If this is not practical to setup at genesis
+/// then consider enabling Balances calls?
+/// This will be used at initial launch, and other calls will be enabled as we rollout.
+#[cfg(not(any(
+    feature = "staging_runtime",
+    feature = "testing_runtime",
+    feature = "runtime-benchmarks"
+)))]
+fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool {
+    match call {
+        Call::System(method) =>
+        // All methods except the remark call
+        {
+            !matches!(method, frame_system::Call::<Runtime>::remark { .. })
         }
+        // confirmed that Utility.batch dispatch does not bypass filter.
+        Call::Utility(_) => true,
+        Call::Babe(_) => true,
+        Call::Timestamp(_) => true,
+        Call::Authorship(_) => true,
+        Call::ElectionProviderMultiPhase(_) => true,
+        Call::Staking(_) => true,
+        Call::Session(_) => true,
+        Call::Grandpa(_) => true,
+        Call::ImOnline(_) => true,
+        Call::Sudo(_) => true,
+        Call::BagsList(_) => true,
+        // Disable all other calls
+        _ => false,
     }
 }
 
+// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
+// Filter out a subset of calls on content pallet and some specific proposals
+#[cfg(not(feature = "runtime-benchmarks"))]
+fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
+    match call {
+        // TODO: adjust after Carthage
+        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
+        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+            ..
+        }) => false,
+        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+            general_proposal_parameters: _,
+            proposal_details,
+        }) => !matches!(
+            proposal_details,
+            proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
+                | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+        ),
+        _ => true, // Enable all other calls
+    }
+}
+
+// Live Production config
+#[cfg(not(any(
+    feature = "staging_runtime",
+    feature = "testing_runtime",
+    feature = "runtime-benchmarks"
+)))]
+impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        filter_non_essential(call) && filter_content_and_proposals(call)
+    }
+}
+
+// Do not filter any calls when building benchmarks so we can benchmark everything
 #[cfg(feature = "runtime-benchmarks")]
-impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
         true
     }
 }
 
+// Staging and Testing - filter joystream pallet calls only to test they are properly disabled
+#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
+impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        filter_content_and_proposals(call)
+    }
+}
+
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = LockedDownBaseFilter;
+    type BaseCallFilter = CallFilter;
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
@@ -407,19 +464,18 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 1;
-    pub const OperationalFeeMultiplier: u8 = 1;
-    pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
-    pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
-    pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+    pub const TransactionByteFee: Balance = 2 * currency::MILLICENTS; // TODO: adjust value
+    /// This value increases the priority of `Operational` transactions by adding
+    /// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+    pub const OperationalFeeMultiplier: u8 = 5; // TODO: adjust value
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
-    type WeightToFee = constants::fees::WeightToFee; // frame_support::weights::IdentityFee<Balance>;
+    type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>; // (); // TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -525,9 +581,9 @@ parameter_types! {
     pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
 
     // signed config
-    pub const SignedRewardBase: Balance = currency::DOLLARS;
-    pub const SignedDepositBase: Balance = currency::DOLLARS;
-    pub const SignedDepositByte: Balance = currency::CENTS;
+    pub const SignedRewardBase: Balance = currency::DOLLARS; // TODO: adjust value
+    pub const SignedDepositBase: Balance = currency::DOLLARS; // TODO: adjust value
+    pub const SignedDepositByte: Balance = currency::CENTS; // TODO: adjust value
 
     pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
 
@@ -714,9 +770,7 @@ impl pallet_authority_discovery::Config for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
-    pub const BagDeletionPrize: Balance = 0; // TODO: update
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
         block_number_period: DAYS,
@@ -734,8 +788,8 @@ parameter_types! {
         block_number_period: WEEKS,
         limit: 500,
     };  // TODO: update
-    pub const MinimumCashoutAllowedLimit: Balance = 1; // TODO: update
-    pub const MaximumCashoutAllowedLimit: Balance = 1_000_000; // TODO: update
+    pub const MinimumCashoutAllowedLimit: Balance = ExistentialDeposit::get() + 1; // TODO: update
+    pub const MaximumCashoutAllowedLimit: Balance = 1_000_000 * currency::DOLLARS; // TODO: update
 }
 
 impl content::Config for Runtime {
@@ -744,7 +798,6 @@ impl content::Config for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
-    type PricePerByte = PricePerByte;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
@@ -763,7 +816,7 @@ impl content::Config for Runtime {
 
 parameter_types! {
     pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
-    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust value
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
 }
 
@@ -794,16 +847,15 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32;
     pub const VoteStageDuration: BlockNumber = 14400;
     pub const RevealStageDuration: BlockNumber = 14400;
-    pub const MinimumVotingStake: u64 = 10000;
+    pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 14400;
     pub const IdlePeriodDuration: BlockNumber = 57600;
     pub const CouncilSize: u64 = 5;
-    pub const MinCandidateStake: u64 = 11000;
+    pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: u64 = 5000000;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
 }
@@ -816,15 +868,14 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32;
     pub const VoteStageDuration: BlockNumber = 100;
     pub const RevealStageDuration: BlockNumber = 50;
-    pub const MinimumVotingStake: u64 = 10000;
+    pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 200;
     pub const IdlePeriodDuration: BlockNumber = 400;
-    pub const MinCandidateStake: u64 = 11000;
+    pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: u64 = 10000000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -833,7 +884,7 @@ parameter_types! {
 #[cfg(feature = "staging_runtime")]
 #[cfg(not(feature = "playground_runtime"))]
 parameter_types! {
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u64 = 3;
 }
 
 // Playground council size
@@ -850,16 +901,15 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32;
     pub const VoteStageDuration: BlockNumber = 20;
     pub const RevealStageDuration: BlockNumber = 20;
-    pub const MinimumVotingStake: u64 = 10000;
+    pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 20;
     pub const IdlePeriodDuration: BlockNumber = 20;
     pub const CouncilSize: u64 = 5;
-    pub const MinCandidateStake: u64 = 11000;
+    pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
-    pub const DefaultBudgetIncrement: u64 = 10000000;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
@@ -1003,11 +1053,11 @@ impl common::membership::MembershipTypes for Runtime {
 }
 
 parameter_types! {
-    pub const DefaultMembershipPrice: Balance = 100;
+    pub const DefaultMembershipPrice: Balance = 100 * currency::CENTS;
     pub const ReferralCutMaximumPercent: u8 = 50;
-    pub const DefaultInitialInvitationBalance: Balance = 100;
-    // The candidate stake should be more than the transaction fee which currently is 53
-    pub const CandidateStake: Balance = 200;
+    pub const DefaultInitialInvitationBalance: Balance = 100 * currency::CENTS;
+    // The candidate stake should be more than the transaction fee
+    pub const CandidateStake: Balance = 200 * currency::CENTS;
 }
 
 impl membership::Config for Runtime {
@@ -1029,8 +1079,8 @@ parameter_types! {
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 40;
-    pub const ThreadDeposit: u64 = 30;
-    pub const PostDeposit: u64 = 10;
+    pub const ThreadDeposit: Balance = 25 * currency::CENTS;
+    pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
 }
@@ -1087,14 +1137,10 @@ parameter_types! {
     pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
     pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
     pub const DistributionRewardPeriod: u32 = 14400 + 90;
-    // This should be more costly than `apply_on_opening` fee with the current configuration
-    // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
-    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
-    pub const MinimumApplicationStake: Balance = 2000;
-    // This should be more costly than `add_opening` fee with the current configuration
-    // the base cost of `add_opening` in tokens is 81. And has a very slight slope
-    // with the lenght with the length of rationale, with 2000 stake we are probably safe.
-    pub const LeaderOpeningStake: Balance = 2000;
+    // This should be more costly than `apply_on_opening` fee
+    pub const MinimumApplicationStake: Balance = 20 * currency::DOLLARS;
+    // This should be more costly than `add_opening` fee
+    pub const LeaderOpeningStake: Balance = 20 * currency::DOLLARS;
 }
 
 // Staking managers type aliases.
@@ -1267,8 +1313,8 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
 }
 
 parameter_types! {
-    pub const ProposalCancellationFee: u64 = 10000;
-    pub const ProposalRejectionFee: u64 = 5000;
+    pub const ProposalCancellationFee: Balance = 100 * currency::CENTS;
+    pub const ProposalRejectionFee: Balance = 50 * currency::CENTS;
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 20;
@@ -1300,7 +1346,7 @@ impl Default for Call {
 
 parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
-    pub const ProposalsPostDeposit: Balance = 2000;
+    pub const ProposalsPostDeposit: Balance = 10 * currency::CENTS;
     // module : proposals_discussion
     pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:prdis");
     pub const ForumPostLifeTime: BlockNumber = 3600;
@@ -1351,6 +1397,7 @@ impl joystream_utility::Config for Runtime {
 
 parameter_types! {
     // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
+    // The new compressed wasm format is much smaller in size ~ 1MB
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_500_000;
 }
 
@@ -1422,7 +1469,7 @@ impl pallet_constitution::Config for Runtime {
 pub type CategoryId = u64;
 
 parameter_types! {
-    pub const MinVestedTransfer: Balance = 100; // TODO: Adjust value
+    pub const MinVestedTransfer: Balance = 100 * currency::CENTS; // TODO: adjust value
 }
 
 impl pallet_vesting::Config for Runtime {
@@ -1490,7 +1537,7 @@ construct_runtime!(
         // Bounty: bounty::{Pallet, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Storage: storage::{Pallet, Call, Storage, Event<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},

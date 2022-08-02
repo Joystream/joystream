@@ -7,8 +7,8 @@ use frame_support::{
     dispatch::DispatchError,
     parameter_types,
     traits::{
-        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnFinalize,
-        OnInitialize, OnUnbalanced, OneSessionHandler,
+        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnUnbalanced,
+        OneSessionHandler,
     },
     weights::constants::RocksDbWeight,
     PalletId,
@@ -36,6 +36,7 @@ use crate::{
 };
 use proposals_engine::VotersParameters;
 
+use super::run_to_block;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::{TryFrom, TryInto};
 use std::cell::RefCell;
@@ -785,8 +786,12 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = frame_system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
+        .unwrap();
+
+    council::GenesisConfig::<Test>::default()
+        .assimilate_storage(&mut t)
         .unwrap();
 
     let mut result = Into::<sp_io::TestExternalities>::into(t);
@@ -794,11 +799,7 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
     // Make sure we are not in block 1 where no events are emitted
     // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
-        let mut block_number = frame_system::Pallet::<Test>::block_number();
-        <System as OnFinalize<u64>>::on_finalize(block_number);
-        block_number += 1;
-        System::set_block_number(block_number);
-        <System as OnInitialize<u64>>::on_initialize(block_number);
+        run_to_block(1);
     });
 
     result
