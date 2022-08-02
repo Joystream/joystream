@@ -22,7 +22,8 @@ pub trait MembershipTypes: frame_system::Config {
         + Copy
         + MaybeSerialize
         + Ord
-        + PartialEq;
+        + PartialEq
+        + Into<u64>;
 
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter

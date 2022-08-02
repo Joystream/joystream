@@ -1,5 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
+use crate::nft::NftOwner;
 use crate::permissions::*;
 use crate::types::*;
 use crate::Module as Pallet;
@@ -15,7 +16,6 @@ use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use sp_std::convert::TryInto;
 use storage::Pallet as Storage;
-use crate::nft::NftOwner;
 
 use super::*;
 

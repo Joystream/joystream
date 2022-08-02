@@ -56,20 +56,23 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
 
 pub const MEMBER_IDS_INIT: u128 = 500;
 pub const MAX_MEMBER_IDS: usize = 100;
-
 pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
 
 pub const COLABORATOR_IDS_INIT: u128 = 700;
 pub const MAX_COLABORATOR_IDS: usize = 100;
-
 pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
     gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
 pub const CURATOR_IDS_INIT: u128 = 800;
 pub const MAX_CURATOR_IDS: usize = 100;
-
 pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
     gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
+
+pub const WHITELISTED_MEMBERS_IDS_INIT: u128 = 900;
+pub const MAX_WHITELISTED_MEMBERS_IDS: usize = 100;
+pub const WHITELISTED_MEMBERS_IDS: [u128; MAX_WHITELISTED_MEMBERS_IDS] =
+    gen_array_u128::<MAX_WHITELISTED_MEMBERS_IDS>(WHITELISTED_MEMBERS_IDS_INIT);
+
 
 pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
@@ -367,6 +370,8 @@ where
     let account_id = T::AccountId::create_account_id(id);
 
     let handle = handle_from_id::<T>(id);
+
+    //println!("account_id : handle :: {:?} : {:?}", account_id, handle);
 
     // Give balance for buying membership
     let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
@@ -1026,11 +1031,13 @@ where
     T::AccountId: CreateAccountId,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    let mut next_member_id = membership::Pallet::<T>::members_created();
-
+    // this initial value is needed in order to avoid overlaps MEMBERS, COLLABORATORS .. members id
+    let start: u64 = 1000;
     NftIssuanceParameters::<T> {
         royalty: Some(Pallet::<T>::max_creator_royalty()),
-        nft_metadata: sp_std::iter::repeat(1u8).take(metadata_len as usize).collect(),
+        nft_metadata: sp_std::iter::repeat(1u8)
+            .take(metadata_len as usize)
+            .collect(),
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
@@ -1042,13 +1049,8 @@ where
                 min_bid_step: Pallet::<T>::min_bid_step(),
                 starting_price: Pallet::<T>::min_starting_price(),
                 starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-                whitelist: (0..(whitelist_size as usize))
-                    .map(|_| {
-                        let (_, member_id) =
-                            member_funded_account::<T>(next_member_id.saturated_into());
-                        next_member_id += T::MemberId::one();
-                        member_id
-                    })
+                whitelist: WHITELISTED_MEMBERS_IDS.iter()
+                    .map(|i| member_funded_account::<T>((start as u128) + (i as u128)).1)
                     .collect(),
             },
         ),
