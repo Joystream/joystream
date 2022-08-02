@@ -5,7 +5,7 @@ import { VideoInputParameters, VideoFileMetadata } from '../../Types'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
 import { VideoId } from '@joystream/types/primitives'
-import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
+import { ContentMetadata, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
@@ -92,7 +92,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     const videoCreationParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets,
-      meta: metadataToBytes(VideoMetadata, meta),
+      meta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
       expectedVideoStateBloatBond,
       expectedDataObjectStateBloatBond,
       autoIssueNft: null,

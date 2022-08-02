@@ -6,7 +6,7 @@ import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import { PalletContentVideoUpdateParametersRecord as VideoUpdateParameters } from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
-import { VideoMetadata } from '@joystream/metadata-protobuf'
+import { ContentMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
@@ -117,7 +117,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       expectedDataObjectStateBloatBond,
       autoIssueNft: null,
       assetsToUpload,
-      newMeta: metadataToBytes(VideoMetadata, meta),
+      newMeta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
       assetsToRemove,
     }
 
