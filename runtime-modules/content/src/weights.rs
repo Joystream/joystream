@@ -57,7 +57,7 @@ pub trait WeightInfo {
 	fn withdraw_from_channel_balance() -> Weight;
 	fn claim_channel_reward(_h: u32, ) -> Weight;
 	fn claim_and_withdraw_channel_reward(_h: u32, ) -> Weight;
-	fn issue_nft(_i: u32, ) -> Weight;
+	fn issue_nft() -> Weight;
 	fn destroy_nft() -> Weight;
 	fn sling_nft_back() -> Weight;
 }
@@ -322,7 +322,7 @@ impl WeightInfo for () {
 	fn claim_and_withdraw_channel_reward(h: u32, ) -> Weight {
 		0
 	}
-	fn issue_nft(_i: u32, ) -> Weight {
+	fn issue_nft() -> Weight {
 		0
 	}
 	fn destroy_nft() -> Weight {

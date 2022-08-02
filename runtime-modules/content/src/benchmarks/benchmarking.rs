@@ -1,6 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::nft::NftOwner;
+use crate::nft::{NftOwner, TransactionalStatus, Nft};
 use crate::permissions::*;
 use crate::types::*;
 use crate::Module as Pallet;
@@ -459,7 +459,7 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel has max curators
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
     // - max number of paused features (except necessary ones)
     // - English Auction with max whitelisted member & some royalty
     // - nft limits are set
@@ -492,7 +492,7 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel has max curators
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -513,7 +513,7 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel has max curators
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -531,6 +531,25 @@ benchmarks! {
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.unwrap().owner == NftOwner::ChannelOwner);
         }
+
+    offer_nft {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
+        let origin = RawOrigin::Signed(curator_account_id);
+        let (_, to_member) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let price = Some(BalanceOf::<T>::one());
+
+    }: _ (origin, video_id, actor, to_member, price)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::InitiatedOfferToMember(to_memeber, price),
+                ..
+            })));
+        }
+
 }
 
 #[cfg(test)]
@@ -647,6 +666,13 @@ pub mod tests {
     fn sling_nft_back() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_sling_nft_back());
+        })
+    }
+
+    #[test]
+    fn offer_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_offer_nft());
         })
     }
 }
