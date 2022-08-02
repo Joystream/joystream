@@ -11,6 +11,5 @@ pub fn empty() -> ForumConfig {
         next_thread_id: 1,
         next_post_id: 1,
         category_counter: 0,
-        data_migration_done: true,
     }
 }
