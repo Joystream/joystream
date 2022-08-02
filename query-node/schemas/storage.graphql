@@ -196,6 +196,11 @@ type DataObjectTypeVideoThumbnail @variant {
 type DataObjectTypeVideoSubtitle @variant {
   "Related subtitle entity"
   subtitle: VideoSubtitle!
+
+  # Useful for filtering subtitles against video, since
+  # relationship filtering through variant is not supported
+  "Related video entity"
+  video: Video!
 }
 
 type DataObjectTypeUnknown @variant {
