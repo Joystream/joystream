@@ -634,6 +634,18 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params, channel_account));
         }
 
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D + E)` where:
+        /// - `A` is the number of entries in `params.collaborators`
+        /// - `B` is the number of items in `params.assets_to_upload.object_creation_list` (if provided)
+        /// - `C` is the number of items in `params.assets_to_remove`
+        /// - `D` is the length `params.new_meta`
+        /// - `E` is `params.storage_buckets_num_witness` (if provided)
+        /// - DB:
+        ///    - `O(A + B + C + E)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::update_channel_weight(params)]
         pub fn update_channel(
             origin,
@@ -787,6 +799,17 @@ decl_module! {
         }
 
         // extrinsics for channel deletion
+
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is `num_objects_to_delete`
+        /// - `B` is `channel_bag_witness.storage_buckets_num`
+        /// - `C` is `channel_bag_witness.distribution_buckets_num`
+        /// - DB:
+        ///    - `O(A + B + C)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::delete_channel_weight(channel_bag_witness, num_objects_to_delete)]
         pub fn delete_channel(
             origin,
