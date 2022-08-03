@@ -51,7 +51,7 @@ export const singleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-      transactorBalance: new BN(10_000_000_000),
+      transactorBalance: new BN(9_000_000_000_000_000),
     },
   ],
 }
@@ -69,7 +69,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-      transactorBalance: new BN(10_000_000_000),
+      transactorBalance: new BN(9_000_000_000_000_000),
     },
     {
       metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
@@ -78,7 +78,7 @@ export const doubleBucketConfig: InitStorageConfig = {
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_2_TRANSACTOR_URI || '//Colossus2',
-      transactorBalance: new BN(10_000_000_000),
+      transactorBalance: new BN(9_000_000_000_000_000),
     },
   ],
 }
