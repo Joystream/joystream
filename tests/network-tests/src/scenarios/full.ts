@@ -1,5 +1,4 @@
 import categories from '../flows/forum/categories'
-import polls from '../flows/forum/polls'
 import threads from '../flows/forum/threads'
 import posts from '../flows/forum/posts'
 import moderation from '../flows/forum/moderation'
@@ -28,13 +27,14 @@ import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import initDistributionBucket from '../flows/clis/initDistributionBucket'
 import initStorageBucket from '../flows/clis/initStorageBucket'
-import createChannel from '../flows/clis/createChannel'
+import createChannel from '../flows/clis/createAndUpdateChannel'
 import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
@@ -89,7 +89,6 @@ scenario('Full', async ({ job, env }) => {
   job('forum categories', categories).requires(sudoHireLead)
   job('forum threads', threads).requires(sudoHireLead)
   job('forum thread tags', threadTags).requires(sudoHireLead)
-  job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
 

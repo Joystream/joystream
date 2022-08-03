@@ -538,6 +538,9 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    /// Required if assets_to_upload or assets_to_remove are provided.
+    pub storage_buckets_num_witness: Option<u32>,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -563,12 +566,7 @@ pub type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoCreationParametersRecord<
-    StorageAssets,
-    NftIssuanceParameters,
-    Balance,
-    ChannelBagWitness,
-> {
+pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, Balance> {
     /// Asset collection for the video
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
@@ -579,8 +577,8 @@ pub struct VideoCreationParametersRecord<
     pub expected_video_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
-    /// Witness/commitment data related to channel bag (for weight calculation purposes)
-    pub channel_bag_witness: ChannelBagWitness,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    pub storage_buckets_num_witness: u32,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -592,12 +590,8 @@ pub struct ChannelBagWitness {
     pub distribution_buckets_num: u32,
 }
 
-pub type VideoCreationParameters<T> = VideoCreationParametersRecord<
-    StorageAssets<T>,
-    NftIssuanceParameters<T>,
-    BalanceOf<T>,
-    ChannelBagWitness,
->;
+pub type VideoCreationParameters<T> =
+    VideoCreationParametersRecord<StorageAssets<T>, NftIssuanceParameters<T>, BalanceOf<T>>;
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -607,7 +601,6 @@ pub struct VideoUpdateParametersRecord<
     DataObjectId: Ord,
     NftIssuanceParameters,
     Balance,
-    ChannelBagWitness,
 > {
     /// Assets referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
@@ -619,8 +612,9 @@ pub struct VideoUpdateParametersRecord<
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
-    /// Witness/commitment data related to channel bag (for weight calculation purposes)
-    pub channel_bag_witness: Option<ChannelBagWitness>,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    /// Required if assets_to_upload or assets_to_remove are provided.
+    pub storage_buckets_num_witness: Option<u32>,
 }
 
 pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
@@ -628,7 +622,6 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
     DataObjectId<T>,
     NftIssuanceParameters<T>,
     BalanceOf<T>,
-    ChannelBagWitness,
 >;
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.

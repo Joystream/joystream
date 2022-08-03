@@ -68,11 +68,8 @@ export function newMetaprotocolEntityId(substrateEvent: SubstrateEvent): string 
 }
 
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
-  const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
-  const eventTime = new Date(blockTimestamp)
+  const { blockNumber, indexInBlock, extrinsic } = substrateEvent
   return {
-    createdAt: eventTime,
-    updatedAt: eventTime,
     id: `${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`,
     inBlock: blockNumber,
     network: CURRENT_NETWORK,

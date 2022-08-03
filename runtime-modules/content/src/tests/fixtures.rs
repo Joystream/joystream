@@ -25,6 +25,21 @@ use strum::IntoEnumIterator;
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
+fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
+    let bag_id = Content::bag_id_for_channel(&channel_id);
+    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
+    ChannelBagWitness {
+        storage_buckets_num: channel_bag.stored_by.len() as u32,
+        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
+    }
+}
+
+fn storage_buckets_num_witness(channel_id: ChannelId) -> u32 {
+    let bag_id = Content::bag_id_for_channel(&channel_id);
+    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
+    channel_bag.stored_by.len() as u32
+}
+
 // fixtures
 
 pub struct CreateCuratorGroupFixture {
@@ -225,6 +240,8 @@ impl CreateChannelFixture {
             // dynamic bag for channel is created
             assert_ok!(Storage::<Test>::ensure_bag_exists(&channel_bag_id));
 
+            let channel_account = ContentTreasury::<Test>::account_for_channel(channel_id);
+
             // event correctly deposited
             assert_eq!(
                 System::events().last().unwrap().event,
@@ -249,6 +266,7 @@ impl CreateChannelFixture {
                         channel_state_bloat_bond: self.params.expected_channel_state_bloat_bond
                     },
                     self.params.clone(),
+                    channel_account
                 ))
             );
 
@@ -299,16 +317,16 @@ impl CreateVideoFixture {
                 auto_issue_nft: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
                 expected_video_state_bloat_bond: DEFAULT_VIDEO_STATE_BLOAT_BOND,
-                channel_bag_witness: channel_bag_witness(ChannelId::one()),
+                storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             },
             channel_id: ChannelId::one(), // channel index starts at 1
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
         Self {
             params: VideoCreationParameters::<Test> {
-                channel_bag_witness,
+                storage_buckets_num_witness,
                 ..self.params
             },
             ..self
@@ -361,7 +379,7 @@ impl CreateVideoFixture {
         Self {
             channel_id,
             params: VideoCreationParameters::<Test> {
-                channel_bag_witness: channel_bag_witness(channel_id),
+                storage_buckets_num_witness: storage_buckets_num_witness(channel_id),
                 ..self.params
             },
             ..self
@@ -503,6 +521,7 @@ impl UpdateChannelFixture {
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             },
         }
     }
@@ -524,6 +543,19 @@ impl UpdateChannelFixture {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 expected_data_object_state_bloat_bond,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                storage_buckets_num_witness,
                 ..self.params.clone()
             },
             ..self
@@ -749,7 +781,7 @@ impl UpdateVideoFixture {
                 new_meta: None,
                 auto_issue_nft: Default::default(),
                 expected_data_object_state_bloat_bond: Default::default(),
-                channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             },
         }
     }
@@ -800,17 +832,20 @@ impl UpdateVideoFixture {
         Self {
             video_id,
             params: VideoUpdateParameters::<Test> {
-                channel_bag_witness: Some(channel_bag_witness(video.in_channel)),
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(video.in_channel)),
                 ..self.params
             },
             ..self
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
         Self {
             params: VideoUpdateParameters::<Test> {
-                channel_bag_witness,
+                storage_buckets_num_witness,
                 ..self.params
             },
             ..self
@@ -1106,6 +1141,7 @@ pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
+    channel_bag_witness: ChannelBagWitness,
     num_objects_to_delete: u64,
 }
 
@@ -1115,6 +1151,7 @@ impl DeleteChannelFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
+            channel_bag_witness: channel_bag_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
         }
     }
@@ -1137,6 +1174,13 @@ impl DeleteChannelFixture {
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+        Self {
+            channel_bag_witness,
+            ..self
+        }
+    }
 }
 
 impl ChannelDeletion for DeleteChannelFixture {
@@ -1158,6 +1202,7 @@ impl ChannelDeletion for DeleteChannelFixture {
             Origin::signed(self.sender),
             self.actor,
             self.channel_id,
+            self.channel_bag_witness.clone(),
             self.num_objects_to_delete,
         )
     }
@@ -1610,7 +1655,7 @@ pub struct DeleteVideoFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
     num_objects_to_delete: u64,
-    channel_bag_witness: Option<ChannelBagWitness>,
+    storage_buckets_num_witness: Option<u32>,
 }
 
 impl DeleteVideoFixture {
@@ -1620,7 +1665,7 @@ impl DeleteVideoFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
             num_objects_to_delete: DATA_OBJECTS_NUMBER,
-            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
         }
     }
 
@@ -1643,14 +1688,17 @@ impl DeleteVideoFixture {
         let video = Content::video_by_id(video_id);
         Self {
             video_id,
-            channel_bag_witness: Some(channel_bag_witness(video.in_channel)),
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(video.in_channel)),
             ..self
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
         Self {
-            channel_bag_witness,
+            storage_buckets_num_witness,
             ..self
         }
     }
@@ -1673,7 +1721,7 @@ impl VideoDeletion for DeleteVideoFixture {
             self.actor,
             self.video_id,
             self.num_objects_to_delete,
-            self.channel_bag_witness.clone(),
+            self.storage_buckets_num_witness.clone(),
         )
     }
 
@@ -5507,15 +5555,6 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err);
-    }
-}
-
-fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
-    let bag_id = Content::bag_id_for_channel(&channel_id);
-    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
-    ChannelBagWitness {
-        storage_buckets_num: channel_bag.stored_by.len() as u32,
-        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
     }
 }
 

@@ -10,7 +10,7 @@ import {
 import { CLIError } from '@oclif/errors'
 import { flags } from '@oclif/command'
 import { memberHandle } from '../helpers/display'
-import { MemberId, CuratorGroupId } from '@joystream/types/primitives'
+import { MemberId, CuratorGroupId, ChannelId } from '@joystream/types/primitives'
 import { createType } from '@joystream/types'
 import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 
@@ -332,6 +332,16 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       this.error(`Invalid ${setName} set! All ${setName} set members must be existing members!`, {
         exit: ExitCodes.InvalidInput,
       })
+    }
+  }
+
+  public async getChannelBagWitness(
+    channelId: ChannelId | number
+  ): Promise<{ storageBucketsNum: number; distributionBucketsNum: number }> {
+    const channelBag = await this.getApi().channelBagByChannelId(channelId)
+    return {
+      storageBucketsNum: channelBag.storedBy.size,
+      distributionBucketsNum: channelBag.distributedBy.size,
     }
   }
 }

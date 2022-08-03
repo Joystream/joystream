@@ -462,7 +462,7 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         let max_vesting_schedules =
-            <Test as crate::Config>::MaxVestingBalancesPerAccountPerToken::get();
+            <Test as crate::Config>::MaxVestingSchedulesPerAccountPerToken::get();
         increase_account_balance(
             &member!(2).1,
             <Test as crate::Config>::JoyExistentialDeposit::get()
@@ -470,7 +470,7 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
                     .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
                     .saturating_mul((max_vesting_schedules + 1).into()),
         );
-        for _ in 0..<Test as crate::Config>::MaxVestingBalancesPerAccountPerToken::get() {
+        for _ in 0..<Test as crate::Config>::MaxVestingSchedulesPerAccountPerToken::get() {
             InitTokenSaleFixture::default()
                 .with_upper_bound_quantity(DEFAULT_SALE_PURCHASE_AMOUNT)
                 .with_vesting_schedule_params(Some(VestingScheduleParams {
