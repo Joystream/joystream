@@ -17,6 +17,12 @@ decl_error! {
         /// Attempt to set minimum cashout allowed above the limit
         MaxCashoutValueTooHigh,
 
+        /// Provided channel owner (member) does not exist
+        ChannelOwnerMemberDoesNotExist,
+
+        /// Provided channel owner (curator group) does not exist
+        ChannelOwnerCuratorGroupDoesNotExist,
+
         // Curator Management Errors
         // -------------------------
 
@@ -211,6 +217,12 @@ decl_error! {
 
         /// Auction whitelist has only one member
         WhitelistHasOnlyOneMember,
+
+        /// At least one of the whitelisted members does not exist
+        WhitelistedMemberDoesNotExist,
+
+        /// Non-channel owner specified during nft issuance does not exist
+        NftNonChannelOwnerDoesNotExist,
 
         /// Extension period is greater then auction duration
         ExtensionPeriodIsGreaterThenAuctionDuration,

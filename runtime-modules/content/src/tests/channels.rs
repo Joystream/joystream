@@ -327,6 +327,19 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_creation_with_invalid_owner() {
+    with_default_mock_builder(|| {
+        let invalid_curator_group_id = 111;
+        CreateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::CuratorGroup(invalid_curator_group_id))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelOwnerCuratorGroupDoesNotExist.into()
+            ));
+    })
+}
+
 /////////////////////////////////////////////////////////////////////
 // Channel update failures (excluding invalid context/permissions) //
 /////////////////////////////////////////////////////////////////////

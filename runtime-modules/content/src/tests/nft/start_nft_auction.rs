@@ -622,3 +622,54 @@ fn start_english_auction_fails_during_channel_transfer() {
         );
     })
 }
+
+#[test]
+fn start_open_auction_fails_with_non_existing_member_in_whitelist() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+        assert_noop!(
+            Content::start_open_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                OpenAuctionParams::<Test> {
+                    bid_lock_duration: Content::min_bid_lock_duration(),
+                    buy_now_price: None,
+                    starting_price: Content::min_starting_price(),
+                    starts_at: None,
+                    whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID, 9999]),
+                }
+            ),
+            Error::<Test>::WhitelistedMemberDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn start_english_auction_fails_with_non_existing_member_in_whitelist() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::start_english_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                EnglishAuctionParams::<Test> {
+                    buy_now_price: None,
+                    duration: Content::min_auction_duration(),
+                    extension_period: Content::min_auction_extension_period(),
+                    min_bid_step: Content::min_bid_step(),
+                    starting_price: Content::min_starting_price(),
+                    starts_at: None,
+                    whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID, 9999]),
+                }
+            ),
+            Error::<Test>::WhitelistedMemberDoesNotExist,
+        );
+    })
+}
