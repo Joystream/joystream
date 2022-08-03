@@ -128,7 +128,8 @@ benchmarks! {
         setup_worst_case_scenario_curator_channel::<T>(
             c,
             e,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
         ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
@@ -203,7 +204,8 @@ benchmarks! {
         setup_worst_case_scenario_curator_channel::<T>(
             T::MaxNumberOfAssetsPerChannel::get(),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
         ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
@@ -273,7 +275,7 @@ benchmarks! {
             curator_id,
             curator_account_id
         ) =
-        setup_worst_case_scenario_curator_channel::<T>(a, b, c,).unwrap();
+        setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
 
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -413,7 +415,7 @@ benchmarks! {
         );
         let price = <T as balances::Config>::Balance::one();
         let (channel_id, group_id, _, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>()?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let transfer_params = InitTransferParametersOf::<T> {
             new_owner: new_owner.clone(),
             new_collaborators: new_collaborators.clone(),
@@ -424,8 +426,8 @@ benchmarks! {
     }: initialize_channel_transfer (
         RawOrigin::Signed(curator_account_id),
         channel_id,
-        actor.clone(),
-        transfer_params.clone()
+        actor,
+        transfer_params
     ) verify {
         let channel = Pallet::<T>::channel_by_id(channel_id);
         let pending_transfer = PendingTransfer {
@@ -450,32 +452,13 @@ benchmarks! {
     }
 
     cancel_channel_transfer {
-        let (_, new_owner_id) = member_funded_account::<T>(0);
-        let new_owner = ChannelOwner::Member(new_owner_id);
-        let new_collaborators = worst_case_scenario_collaborators::<T>(
-            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
-            T::MaxNumberOfCollaboratorsPerChannel::get() // number of collaborators
-        );
-        let price = <T as balances::Config>::Balance::one();
-
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-        setup_worst_case_scenario_curator_channel_all_max::<T>()?;
-        let transfer_params = InitTransferParametersOf::<T> {
-            new_owner: new_owner.clone(),
-            new_collaborators: new_collaborators.clone(),
-            price
-        };
-        Pallet::<T>::initialize_channel_transfer(
-            RawOrigin::Signed(lead_account_id).into(),
-            channel_id,
-            ContentActor::Lead,
-            transfer_params.clone()
-        )?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(true)?;
         let actor = ContentActor::Curator(group_id, curator_id);
     }: _ (
         RawOrigin::Signed(curator_account_id),
         channel_id,
-        actor.clone()
+        actor
     ) verify {
         let channel = Pallet::<T>::channel_by_id(channel_id);
         assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
@@ -491,7 +474,7 @@ benchmarks! {
         let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
 
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>()?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let new_owner_group_id = clone_curator_group::<T>(group_id)?;
         let new_owner = ChannelOwner::CuratorGroup(new_owner_group_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
@@ -513,7 +496,7 @@ benchmarks! {
             RawOrigin::Signed(lead_account_id.clone()).into(),
             channel_id,
             ContentActor::Lead,
-            transfer_params.clone()
+            transfer_params
         )?;
         let witness = TransferCommitmentWitnessOf::<T> {
             transfer_id,
