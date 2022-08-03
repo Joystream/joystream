@@ -7,8 +7,8 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
 use crate::traits::PalletToken;
 use crate::types::{
-    BlockRate, Joy, MerkleProofOf, PatronageData, RevenueSplitState, TokenIssuanceParametersOf,
-    VestingSource, YearlyRate,
+    BlockRate, Joy, MerkleProofOf, PatronageData, RevenueSplitState, TokenAllocationOf,
+    TokenIssuanceParametersOf, VestingSource, YearlyRate,
 };
 use crate::{
     account, assert_approx_eq, balance, block, joy, last_event_eq, member, merkle_proof,
@@ -1022,6 +1022,47 @@ fn issue_token_fails_with_zero_split_rate() {
         assert_noop!(
             Token::issue_token(owner_acc, params.clone(), default_upload_context()),
             Error::<Test>::RevenueSplitRateIsZero,
+        );
+    })
+}
+
+#[test]
+fn issue_token_fails_with_non_existing_initial_allocation_member() {
+    let token_id = token!(1);
+    let (_, owner_acc) = member!(1);
+    let (valid_member_id, _) = member!(2);
+    let (invalid_member_id, _) = member!(9999);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
+        initial_allocation: vec![
+            (
+                valid_member_id,
+                TokenAllocationOf::<Test> {
+                    amount: balance!(100),
+                    vesting_schedule_params: None,
+                },
+            ),
+            (
+                invalid_member_id,
+                TokenAllocationOf::<Test> {
+                    amount: balance!(100),
+                    vesting_schedule_params: None,
+                },
+            ),
+        ]
+        .iter()
+        .cloned()
+        .collect(),
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            Token::issue_token(owner_acc, params.clone(), default_upload_context()),
+            Error::<Test>::InitialAllocationToNonExistingMember,
         );
     })
 }

@@ -474,6 +474,9 @@ decl_module! {
                 Error::<T>::ChannelStateBloatBondChanged,
             );
 
+            // ensure owner is valid
+            Self::validate_channel_owner(&channel_owner)?;
+
             // ensure collaborator member ids are valid
             Self::validate_member_set(&params.collaborators.keys().cloned().collect())?;
 
@@ -3083,6 +3086,10 @@ impl<T: Config> Module<T> {
         )?;
         // The content owner will be..
         let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
+            ensure!(
+                T::MemberAuthenticator::controller_account_id(to).is_ok(),
+                Error::<T>::NftNonChannelOwnerDoesNotExist
+            );
             NftOwner::Member(to)
         } else {
             // if `to` set to None, actor issues to ChannelOwner
@@ -3136,6 +3143,7 @@ impl<T: Config> Module<T> {
         params: InitTransferParametersOf<T>,
     ) -> Result<PendingTransferOf<T>, DispatchError> {
         Self::validate_member_set(&params.new_collaborators.keys().cloned().collect())?;
+        Self::validate_channel_owner(&params.new_owner)?;
         let transfer_id = Self::next_transfer_id();
         Ok(PendingTransferOf::<T> {
             new_owner: params.new_owner,
@@ -3605,6 +3613,27 @@ impl<T: Config> Module<T> {
                 Ok(ChannelFundsDestination::AccountId(controller_account))
             }
             ChannelOwner::CuratorGroup(..) => Ok(ChannelFundsDestination::CouncilBudget),
+        }
+    }
+
+    fn validate_channel_owner(
+        channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+    ) -> DispatchResult {
+        match channel_owner {
+            ChannelOwner::Member(member_id) => {
+                ensure!(
+                    T::MemberAuthenticator::controller_account_id(*member_id).is_ok(),
+                    Error::<T>::ChannelOwnerMemberDoesNotExist
+                );
+                Ok(())
+            }
+            ChannelOwner::CuratorGroup(curator_group_id) => {
+                ensure!(
+                    Self::ensure_curator_group_under_given_id_exists(curator_group_id).is_ok(),
+                    Error::<T>::ChannelOwnerCuratorGroupDoesNotExist
+                );
+                Ok(())
+            }
         }
     }
 }
