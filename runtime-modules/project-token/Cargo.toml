@@ -19,6 +19,9 @@ codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = 
 serde = {version = '1.0.101', features = ['derive'], optional = true}
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 
+# Benchmarking dependencies
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true}
+
 [dev-dependencies]
 randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
@@ -27,6 +30,7 @@ sp-storage = { package = 'sp-storage', default-features = false, git = 'https://
 
 [features]
 default = ['std']
+runtime-benchmarks = ["frame-benchmarking"]
 std = [
 	'sp-std/std',
 	'sp-io/std',

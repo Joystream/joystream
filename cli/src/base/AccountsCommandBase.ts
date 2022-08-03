@@ -349,7 +349,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const { balances } = await this.getApi().getAccountSummary(address)
     const stakingStatus = await this.getApi().stakingAccountStatus(address)
 
-    if (lockId && !this.getApi().areAccountLocksCompatibleWith(address, lockId)) {
+    if (lockId && !(await this.getApi().areAccountLocksCompatibleWith(address, lockId))) {
       throw new CLIError(
         'This account is already used for other, incompatible staking purposes. Choose a different account...'
       )

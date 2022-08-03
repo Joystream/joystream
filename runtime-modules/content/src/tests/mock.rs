@@ -61,21 +61,17 @@ pub const MAX_COLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
     gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
-/// Account Ids and Runtime Id's
-///
-///
-///
-pub const LEAD_ACCOUNT_ID: u128 = MEMBER_IDS[0] as u128;
-pub const LEAD_MEMBER_ID: u64 = MEMBER_IDS[0];
+pub const LEAD_ACCOUNT_ID: u128 = 100005;
+pub const LEAD_MEMBER_ID: u64 = 100005;
 
-pub const DEFAULT_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[1] as u128;
-pub const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[1];
+pub const DEFAULT_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[0] as u128;
+pub const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[0];
 
-pub const SECOND_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[2] as u128;
-pub const SECOND_MEMBER_ID: u64 = MEMBER_IDS[2];
+pub const SECOND_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[1] as u128;
+pub const SECOND_MEMBER_ID: u64 = MEMBER_IDS[1];
 
-pub const THIRD_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[3] as u128;
-pub const THIRD_MEMBER_ID: u64 = MEMBER_IDS[3];
+pub const THIRD_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[2] as u128;
+pub const THIRD_MEMBER_ID: u64 = MEMBER_IDS[2];
 
 pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = COLABORATOR_IDS[0] as u128;
 pub const COLLABORATOR_MEMBER_ID: u64 = COLABORATOR_IDS[0];
@@ -84,10 +80,10 @@ pub const DEFAULT_CURATOR_ACCOUNT_ID: u128 = CURATOR_IDS[0] as u128;
 pub const DEFAULT_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[0];
 pub const DEFAULT_CURATOR_ID: u64 = CURATOR_IDS[0];
 
-pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = MEMBER_IDS[4] as u128;
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = 100008;
 
-pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[5] as u128;
-pub const UNAUTHORIZED_MEMBER_ID: u64 = MEMBER_IDS[5];
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[3] as u128;
+pub const UNAUTHORIZED_MEMBER_ID: u64 = MEMBER_IDS[3];
 
 pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u128 = CURATOR_IDS[1] as u128;
 pub const UNAUTHORIZED_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[1];
@@ -511,7 +507,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-// The content working group instance alias.
+// Content working group instance alias.
 pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
@@ -1153,7 +1149,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Distributio
 // pallet_project_token trait implementation and related stuff
 parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
-    pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
 }
 
@@ -1165,10 +1161,11 @@ impl project_token::Config for Test {
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
-    type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type WeightInfo = ();
 }
 
 pub struct Block2Balance {}

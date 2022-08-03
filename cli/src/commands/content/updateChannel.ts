@@ -126,6 +126,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       collaborators: [],
       assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
       newMeta: metadataToBytes(ChannelMetadata, meta),
+      storageBucketsNumWitness: (await this.getChannelBagWitness(channelId)).storageBucketsNum,
     })
     this.jsonPrettyPrint(
       JSON.stringify({

@@ -95,6 +95,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannel', [
       actor,
       channelId,
+      await this.getChannelBagWitness(channelId),
       force ? dataObjectsInfo.length : 0,
     ])
   }
