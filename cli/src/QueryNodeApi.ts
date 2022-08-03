@@ -51,9 +51,13 @@ import {
   GetStorageBuckets,
   StorageNodeInfoFragment,
   DistributionBucketFamilyFieldsFragment,
-  GetDistributionFamiliesAdndBucketsQuery,
-  GetDistributionFamiliesAdndBucketsQueryVariables,
-  GetDistributionFamiliesAdndBuckets,
+  GetDistributionFamiliesAndBucketsQuery,
+  GetDistributionFamiliesAndBucketsQueryVariables,
+  GetDistributionFamiliesAndBuckets,
+  GetChannelByIdQuery,
+  GetChannelByIdQueryVariables,
+  GetChannelById,
+  ChannelFieldsFragment,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -128,6 +132,14 @@ export default class QueryNodeApi {
     )
   }
 
+  async getChannelById(channelId: string): Promise<ChannelFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetChannelByIdQuery, GetChannelByIdQueryVariables>(
+      GetChannelById,
+      { channelId },
+      'channelByUniqueInput'
+    )
+  }
+
   async storageNodesInfoByBagId(bagId: string): Promise<StorageNodeInfo[]> {
     const result = await this.multipleEntitiesQuery<
       GetStorageNodesInfoByBagIdQuery,
@@ -165,9 +177,9 @@ export default class QueryNodeApi {
 
   async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
     return this.multipleEntitiesQuery<
-      GetDistributionFamiliesAdndBucketsQuery,
-      GetDistributionFamiliesAdndBucketsQueryVariables
-    >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
+      GetDistributionFamiliesAndBucketsQuery,
+      GetDistributionFamiliesAndBucketsQueryVariables
+    >(GetDistributionFamiliesAndBuckets, {}, 'distributionBucketFamilies')
   }
 
   async membersByIds(ids: MemberId[] | string[]): Promise<MembershipFieldsFragment[]> {

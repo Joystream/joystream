@@ -18,7 +18,7 @@ query getStorageNodesInfoByBagId($bagId: ID) {
 }
 
 query getStorageBuckets {
-  storageBuckets(where: { acceptingNewBags_eq: true }) {
+  storageBuckets(where: { acceptingNewBags_eq: true }, orderBy: [dataObjectsSize_ASC]) {
     ...StorageNodeInfo
   }
 }
@@ -31,7 +31,7 @@ fragment DistributionBucketFamilyFields on DistributionBucketFamily {
   }
 }
 
-query getDistributionFamiliesAdndBuckets {
+query getDistributionFamiliesAndBuckets {
   distributionBucketFamilies {
     ...DistributionBucketFamilyFields
   }

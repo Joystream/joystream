@@ -469,16 +469,16 @@ export default class Api {
     return video
   }
 
-  async videoStateBloatBond(): Promise<number> {
-    return (await this._api.query.content.videoStateBloatBondValue()).toNumber()
+  async videoStateBloatBond(): Promise<BN> {
+    return await this._api.query.content.videoStateBloatBondValue()
   }
 
-  async channelStateBloatBond(): Promise<number> {
-    return (await this._api.query.content.channelStateBloatBondValue()).toNumber()
+  async channelStateBloatBond(): Promise<BN> {
+    return await this._api.query.content.channelStateBloatBondValue()
   }
 
-  async dataObjectStateBloatBond(): Promise<number> {
-    return (await this._api.query.storage.dataObjectStateBloatBondValue()).toNumber()
+  async dataObjectStateBloatBond(): Promise<BN> {
+    return await this._api.query.storage.dataObjectStateBloatBondValue()
   }
 
   async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {
@@ -492,10 +492,10 @@ export default class Api {
     )
 
     if (!storageBuckets || storageBuckets.length < storageBucketsPolicy.toNumber()) {
-      throw new CLIError(`Storage buckets policy constraint unsatifified. Not enough storage buckets exist`)
+      throw new CLIError(`Storage buckets policy constraint unsatisfied. Not enough storage buckets exist`)
     }
 
-    return storageBuckets.map((b) => Number(b.id)).slice(0, storageBucketsPolicy.toNumber())
+    return _.sampleSize(storageBuckets, storageBucketsPolicy.toNumber()).map((b) => Number(b.id))
   }
 
   async selectDistributionBucketsForNewChannel(): Promise<
@@ -509,20 +509,22 @@ export default class Api {
     const distributionBucketIds = []
 
     for (const { id, buckets } of families || []) {
-      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get(id as unknown as DistributionBucketFamilyId)
-      if (bucketsCountPolicy && bucketsCountPolicy.toNumber() < buckets.length) {
-        throw new CLIError(`Distribution buckets policy constraint unsatifified. Not enough distribution buckets exist`)
+      const bucketsCountPolicy = distributionBucketFamiliesPolicy
+        .get(id as unknown as DistributionBucketFamilyId)
+        ?.toNumber()
+      if (bucketsCountPolicy && bucketsCountPolicy < buckets.length) {
+        throw new CLIError(
+          `Distribution buckets policy constraint unsatisfied. Not enough buckets exist in Bucket Family ${id}`
+        )
       }
 
       distributionBucketIds.push(
-        ...buckets
-          .map(({ bucketIndex }) => {
-            return {
-              distributionBucketFamilyId: Number(id),
-              distributionBucketIndex: bucketIndex,
-            }
-          })
-          .slice(0, bucketsCountPolicy?.toNumber())
+        ..._.sampleSize(buckets, bucketsCountPolicy).map(({ bucketIndex }) => {
+          return {
+            distributionBucketFamilyId: Number(id),
+            distributionBucketIndex: bucketIndex,
+          }
+        })
       )
     }
     return distributionBucketIds
