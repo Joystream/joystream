@@ -18,7 +18,7 @@ export default class UpdateVideoStateBloatBondCommand extends ContentDirectoryCo
     const lead = await this.getRequiredLeadContext()
     const keypair = await this.getDecodedPair(lead.roleAccount)
 
-    this.jsonPrettyPrint(JSON.stringify({ newChannelStateBloatBond: value }))
+    this.jsonPrettyPrint(JSON.stringify({ newVideoStateBloatBond: value }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 

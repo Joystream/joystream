@@ -1,6 +1,14 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type ChannelFieldsFragment = { id: string; videos: Array<{ id: string; videoStateBloatBond: any }> }
+
+export type GetChannelByIdQueryVariables = Types.Exact<{
+  channelId: Types.Scalars['ID']
+}>
+
+export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = { id: string; handle: string; metadata: MemberMetadataFieldsFragment }
@@ -28,9 +36,9 @@ export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFrag
 
 export type DistributionBucketFamilyFieldsFragment = { id: string; buckets: Array<{ id: string; bucketIndex: number }> }
 
-export type GetDistributionFamiliesAdndBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetDistributionFamiliesAndBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
 
-export type GetDistributionFamiliesAdndBucketsQuery = {
+export type GetDistributionFamiliesAndBucketsQuery = {
   distributionBucketFamilies: Array<DistributionBucketFamilyFieldsFragment>
 }
 
@@ -129,6 +137,15 @@ export type UpcomingWorkingGroupOpeningByIdQuery = {
   upcomingWorkingGroupOpeningByUniqueInput?: Types.Maybe<UpcomingWorkingGroupOpeningDetailsFragment>
 }
 
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    videos {
+      id
+      videoStateBloatBond
+    }
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -236,6 +253,14 @@ export const UpcomingWorkingGroupOpeningDetails = gql`
   }
   ${WorkingGroupOpeningMetadataFields}
 `
+export const GetChannelById = gql`
+  query getChannelById($channelId: ID!) {
+    channelByUniqueInput(where: { id: $channelId }) {
+      ...ChannelFields
+    }
+  }
+  ${ChannelFields}
+`
 export const GetMembersByIds = gql`
   query getMembersByIds($ids: [ID!]) {
     memberships(where: { id_in: $ids }) {
@@ -260,14 +285,14 @@ export const GetStorageNodesInfoByBagId = gql`
 `
 export const GetStorageBuckets = gql`
   query getStorageBuckets {
-    storageBuckets(where: { acceptingNewBags_eq: true }) {
+    storageBuckets(where: { acceptingNewBags_eq: true }, orderBy: [dataObjectsSize_ASC]) {
       ...StorageNodeInfo
     }
   }
   ${StorageNodeInfo}
 `
-export const GetDistributionFamiliesAdndBuckets = gql`
-  query getDistributionFamiliesAdndBuckets {
+export const GetDistributionFamiliesAndBuckets = gql`
+  query getDistributionFamiliesAndBuckets {
     distributionBucketFamilies {
       ...DistributionBucketFamilyFields
     }

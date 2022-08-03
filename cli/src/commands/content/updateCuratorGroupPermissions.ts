@@ -20,7 +20,7 @@ export default class UpdateCuratorGroupPermissionsCommand extends ContentDirecto
     permissions: flags.string({
       char: 'p',
       required: true,
-      description: `Path to JSON file containing moderation permissions by channel previledge to use as input`,
+      description: `Path to JSON file containing moderation permissions by channel privilege level to use as input`,
     }),
     ...ContentDirectoryCommandBase.flags,
   }
@@ -59,6 +59,6 @@ export default class UpdateCuratorGroupPermissionsCommand extends ContentDirecto
       moderationPermissionsByLevel,
     ])
 
-    console.log(chalk.green(`New group successfully created!`))
+    console.log(chalk.green(`Curator Group permissions successfully updated!`))
   }
 }
