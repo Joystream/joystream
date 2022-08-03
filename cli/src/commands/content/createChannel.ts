@@ -57,7 +57,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const storageBuckets = await this.getApi().selectStorageBucketsForNewChannel()
     const distributionBuckets = await this.getApi().selectDistributionBucketsForNewChannel()
 
-    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets, 'createChannel')
     const channelCreationParameters = createType('PalletContentChannelCreationParametersRecord', {
       assets,
       expectedChannelStateBloatBond,

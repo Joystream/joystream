@@ -57,11 +57,15 @@ export default class DeleteVideoAsModeratorCommand extends ContentDirectoryComma
           exit: ExitCodes.InvalidInput,
         })
       }
+      const { videoStateBloatBond } = await this.getApi().videoById(videoId)
       const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects state bloat bond of ${chalk.cyanBright(
-          formatBalance(stateBloatBond)
-        )} will be transferred to ${chalk.magentaBright(address)}`
+        `Video state bloat bond of ${chalk.cyanBright(
+          formatBalance(videoStateBloatBond)
+        )} will be transferred to ${chalk.magentaBright(address)}\n` +
+          `Data objects state bloat bond of ${chalk.cyanBright(
+            formatBalance(stateBloatBond)
+          )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
 

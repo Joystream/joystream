@@ -73,6 +73,7 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
       )
     }
 
+    const videosInfo = await this.getVideosInfoFromQueryNode(channelId)
     const dataObjectsInfo = this.isQueryNodeUriSet()
       ? await this.getDataObjectsInfoFromQueryNode(channelId)
       : await this.getDataObjectsInfoFromChain(channelId)
@@ -83,11 +84,15 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
           exit: ExitCodes.InvalidInput,
         })
       }
+      const videosStateBloatBond = videosInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects state bloat bond of ${chalk.cyanBright(
-          formatBalance(stateBloatBond)
-        )} will be transferred to ${chalk.magentaBright(address)}`
+        `Videos state bloat bond of ${chalk.cyanBright(
+          formatBalance(videosStateBloatBond)
+        )} will be transferred to ${chalk.magentaBright(address)}\n` +
+          `Data objects state bloat bond of ${chalk.cyanBright(
+            formatBalance(stateBloatBond)
+          )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
 

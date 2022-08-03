@@ -334,4 +334,13 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       })
     }
   }
+
+  async getVideosInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {
+    const channel = await this.getQNApi().getChannelById(channelId.toString())
+    if (!channel) {
+      this.error('Could not fetch the channel info from the query node', { exit: ExitCodes.QueryNodeError })
+    }
+
+    return channel.videos.map(({ id, videoStateBloatBond }) => [id, videoStateBloatBond])
+  }
 }

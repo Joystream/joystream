@@ -68,8 +68,8 @@ export default class CreateVideoCommand extends UploadCommandBase {
       meta = this.setVideoMetadataDefaults(meta, videoFileMetadata)
     }
 
-    // Preare and send the extrinsic
-    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    // Prepare and send the extrinsic
+    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets, 'createVideo')
     const expectedVideoStateBloatBond = await this.getApi().videoStateBloatBond()
     const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
 

@@ -55,11 +55,14 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
+      const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects state bloat bond of ${chalk.cyanBright(
-          formatBalance(stateBloatBond)
-        )} will be transferred to ${chalk.magentaBright(address)}`
+        `Video state bloat bond of ${chalk.cyanBright(
+          formatBalance(video.videoStateBloatBond)
+        )} will be transferred to ${chalk.magentaBright(address)}\n` +
+          `Data objects state bloat bond of ${chalk.cyanBright(
+            formatBalance(dataObjectsStateBloatBond)
+          )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
 

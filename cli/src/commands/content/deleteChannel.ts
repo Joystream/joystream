@@ -68,6 +68,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       )
     }
 
+    const videosInfo = await this.getVideosInfoFromQueryNode(channelId)
     const dataObjectsInfo = this.isQueryNodeUriSet()
       ? await this.getDataObjectsInfoFromQueryNode(channelId)
       : await this.getDataObjectsInfoFromChain(channelId)
@@ -78,11 +79,15 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
+      const videosStateBloatBond = videosInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
+      const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects state bloat bond of ${chalk.cyanBright(
-          formatBalance(stateBloatBond)
-        )} will be transferred to ${chalk.magentaBright(address)}`
+        `Videos state bloat bond of ${chalk.cyanBright(
+          formatBalance(videosStateBloatBond)
+        )} will be transferred to ${chalk.magentaBright(address)}\n` +
+          `Data objects state bloat bond of ${chalk.cyanBright(
+            formatBalance(dataObjectsStateBloatBond)
+          )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
 
