@@ -8,30 +8,28 @@ Command Line Interface for Joystream community and governance activities
 [![License](https://img.shields.io/npm/l/@joystream/cli.svg)](https://github.com/Joystream/joystream/blob/master/cli/package.json)
 
 <!-- toc -->
-
-- [Usage](#usage)
-- [Development](#development)
-- [First steps](#first-steps)
-- [Useful environment settings](#useful-environment-settings)
-- [Commands](#commands)
+* [@joystream/cli](#joystreamcli)
+* [Usage](#usage)
+* [Development](#development)
+* [First steps](#first-steps)
+* [Useful environment settings](#useful-environment-settings)
+* [Commands](#commands)
 <!-- tocstop -->
 
 # Usage
 
 <!-- usage -->
-
 ```sh-session
 $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.7.0 darwin-x64 node-v14.16.1
+@joystream/cli/0.8.0 darwin-x64 node-v14.16.1
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
 ...
 ```
-
 <!-- usagestop -->
 
 # Development
@@ -80,89 +78,88 @@ When using the CLI for the first time there are a few common steps you might wan
 # Commands
 
 <!-- commands -->
-
-- [`joystream-cli account:create`](#joystream-cli-accountcreate)
-- [`joystream-cli account:export DESTPATH`](#joystream-cli-accountexport-destpath)
-- [`joystream-cli account:forget`](#joystream-cli-accountforget)
-- [`joystream-cli account:import`](#joystream-cli-accountimport)
-- [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
-- [`joystream-cli account:list`](#joystream-cli-accountlist)
-- [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
-- [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
-- [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
-- [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
-- [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
-- [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
-- [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
-- [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
-- [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
-- [`joystream-cli content:channels`](#joystream-cli-contentchannels)
-- [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
-- [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
-- [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
-- [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
-- [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
-- [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
-- [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
-- [`joystream-cli content:deleteChannelAsModerator`](#joystream-cli-contentdeletechannelasmoderator)
-- [`joystream-cli content:deleteChannelAssetsAsModerator`](#joystream-cli-contentdeletechannelassetsasmoderator)
-- [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
-- [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
-- [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
-- [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
-- [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
-- [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
-- [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
-- [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
-- [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
-- [`joystream-cli content:updateChannelStateBloatBond VALUE`](#joystream-cli-contentupdatechannelstatebloatbond-value)
-- [`joystream-cli content:updateCuratorGroupPermissions GROUPID`](#joystream-cli-contentupdatecuratorgrouppermissions-groupId)
-- [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
-- [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
-- [`joystream-cli content:updateVideoStateBloatBond VALUE`](#joystream-cli-contentupdatevideostatebloatbond-value)
-- [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
-- [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
-- [`joystream-cli forum:addPost`](#joystream-cli-forumaddpost)
-- [`joystream-cli forum:categories`](#joystream-cli-forumcategories)
-- [`joystream-cli forum:category`](#joystream-cli-forumcategory)
-- [`joystream-cli forum:createCategory`](#joystream-cli-forumcreatecategory)
-- [`joystream-cli forum:createThread`](#joystream-cli-forumcreatethread)
-- [`joystream-cli forum:deleteCategory`](#joystream-cli-forumdeletecategory)
-- [`joystream-cli forum:moderatePost`](#joystream-cli-forummoderatepost)
-- [`joystream-cli forum:moderateThread`](#joystream-cli-forummoderatethread)
-- [`joystream-cli forum:moveThread`](#joystream-cli-forummovethread)
-- [`joystream-cli forum:posts`](#joystream-cli-forumposts)
-- [`joystream-cli forum:setStickiedThreads`](#joystream-cli-forumsetstickiedthreads)
-- [`joystream-cli forum:threads`](#joystream-cli-forumthreads)
-- [`joystream-cli forum:updateCategoryArchivalStatus`](#joystream-cli-forumupdatecategoryarchivalstatus)
-- [`joystream-cli forum:updateCategoryModeratorStatus`](#joystream-cli-forumupdatecategorymoderatorstatus)
-- [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
-- [`joystream-cli membership:addStakingAccount`](#joystream-cli-membershipaddstakingaccount)
-- [`joystream-cli membership:buy`](#joystream-cli-membershipbuy)
-- [`joystream-cli membership:details`](#joystream-cli-membershipdetails)
-- [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
-- [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
-- [`joystream-cli staking:validate`](#joystream-cli-stakingvalidate)
-- [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
-- [`joystream-cli working-groups:apply`](#joystream-cli-working-groupsapply)
-- [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
-- [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
-- [`joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT`](#joystream-cli-working-groupsdecreaseworkerstake-workerid-amount)
-- [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
-- [`joystream-cli working-groups:fillOpening`](#joystream-cli-working-groupsfillopening)
-- [`joystream-cli working-groups:increaseStake AMOUNT`](#joystream-cli-working-groupsincreasestake-amount)
-- [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
-- [`joystream-cli working-groups:opening`](#joystream-cli-working-groupsopening)
-- [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
-- [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
-- [`joystream-cli working-groups:removeUpcomingOpening`](#joystream-cli-working-groupsremoveupcomingopening)
-- [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
-- [`joystream-cli working-groups:slashWorker WORKERID AMOUNT`](#joystream-cli-working-groupsslashworker-workerid-amount)
-- [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
-- [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
-- [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
-- [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
-- [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
+* [`joystream-cli account:create`](#joystream-cli-accountcreate)
+* [`joystream-cli account:export DESTPATH`](#joystream-cli-accountexport-destpath)
+* [`joystream-cli account:forget`](#joystream-cli-accountforget)
+* [`joystream-cli account:import`](#joystream-cli-accountimport)
+* [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
+* [`joystream-cli account:list`](#joystream-cli-accountlist)
+* [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
+* [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
+* [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
+* [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
+* [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
+* [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
+* [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
+* [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
+* [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
+* [`joystream-cli content:channels`](#joystream-cli-contentchannels)
+* [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
+* [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
+* [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
+* [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
+* [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
+* [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
+* [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
+* [`joystream-cli content:deleteChannelAsModerator`](#joystream-cli-contentdeletechannelasmoderator)
+* [`joystream-cli content:deleteChannelAssetsAsModerator`](#joystream-cli-contentdeletechannelassetsasmoderator)
+* [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
+* [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
+* [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
+* [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
+* [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
+* [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
+* [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
+* [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
+* [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
+* [`joystream-cli content:updateChannelStateBloatBond VALUE`](#joystream-cli-contentupdatechannelstatebloatbond-value)
+* [`joystream-cli content:updateCuratorGroupPermissions [ID]`](#joystream-cli-contentupdatecuratorgrouppermissions-id)
+* [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
+* [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
+* [`joystream-cli content:updateVideoStateBloatBond VALUE`](#joystream-cli-contentupdatevideostatebloatbond-value)
+* [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
+* [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+* [`joystream-cli forum:addPost`](#joystream-cli-forumaddpost)
+* [`joystream-cli forum:categories`](#joystream-cli-forumcategories)
+* [`joystream-cli forum:category`](#joystream-cli-forumcategory)
+* [`joystream-cli forum:createCategory`](#joystream-cli-forumcreatecategory)
+* [`joystream-cli forum:createThread`](#joystream-cli-forumcreatethread)
+* [`joystream-cli forum:deleteCategory`](#joystream-cli-forumdeletecategory)
+* [`joystream-cli forum:moderatePost`](#joystream-cli-forummoderatepost)
+* [`joystream-cli forum:moderateThread`](#joystream-cli-forummoderatethread)
+* [`joystream-cli forum:moveThread`](#joystream-cli-forummovethread)
+* [`joystream-cli forum:posts`](#joystream-cli-forumposts)
+* [`joystream-cli forum:setStickiedThreads`](#joystream-cli-forumsetstickiedthreads)
+* [`joystream-cli forum:threads`](#joystream-cli-forumthreads)
+* [`joystream-cli forum:updateCategoryArchivalStatus`](#joystream-cli-forumupdatecategoryarchivalstatus)
+* [`joystream-cli forum:updateCategoryModeratorStatus`](#joystream-cli-forumupdatecategorymoderatorstatus)
+* [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
+* [`joystream-cli membership:addStakingAccount`](#joystream-cli-membershipaddstakingaccount)
+* [`joystream-cli membership:buy`](#joystream-cli-membershipbuy)
+* [`joystream-cli membership:details`](#joystream-cli-membershipdetails)
+* [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
+* [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
+* [`joystream-cli staking:validate`](#joystream-cli-stakingvalidate)
+* [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
+* [`joystream-cli working-groups:apply`](#joystream-cli-working-groupsapply)
+* [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
+* [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
+* [`joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT`](#joystream-cli-working-groupsdecreaseworkerstake-workerid-amount)
+* [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
+* [`joystream-cli working-groups:fillOpening`](#joystream-cli-working-groupsfillopening)
+* [`joystream-cli working-groups:increaseStake AMOUNT`](#joystream-cli-working-groupsincreasestake-amount)
+* [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
+* [`joystream-cli working-groups:opening`](#joystream-cli-working-groupsopening)
+* [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
+* [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
+* [`joystream-cli working-groups:removeUpcomingOpening`](#joystream-cli-working-groupsremoveupcomingopening)
+* [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
+* [`joystream-cli working-groups:slashWorker WORKERID AMOUNT`](#joystream-cli-working-groupsslashworker-workerid-amount)
+* [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
+* [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
+* [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
+* [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
+* [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
 
 ## `joystream-cli account:create`
 
@@ -406,8 +403,17 @@ ARGUMENTS
   CURATORID  ID of the curator
 
 OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=UpdateChannelMetadata|ManageNonVideoChannelAssets|ManageChannelCollaborators|UpdateVideoMetadata|Add
+  Video|ManageVideoAssets|DeleteChannel|DeleteVideo|ManageVideoNfts|AgentRemark|TransferChannel|ClaimChannelReward|Withd
+  rawFromChannelBalance|IssueCreatorToken|ClaimCreatorTokenPatronage|InitAndManageCreatorTokenSale|CreatorTokenIssuerTra
+  nsfer|MakeCreatorTokenPermissionless|ReduceCreatorTokenPatronageRate|ManageRevenueSplits|DeissueCreatorToken
+      List of permissions to associate with the curator, e.g. -p ManageChannelCollaborators UpdateVideoMetadata
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/addCuratorToGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/addCuratorToGroup.ts)_
@@ -454,10 +460,10 @@ USAGE
   $ joystream-cli content:createChannel
 
 OPTIONS
-  -i, --input=input           (required) Path to JSON file to use as input
-  --context=(Member|Curator)  Actor context to execute the command in (Member/Curator)
-  --useMemberId=useMemberId   Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId   Try using the specified worker id as context whenever possible
+  -i, --input=input                (required) Path to JSON file to use as input
+  --context=(Member|CuratorGroup)  Actor context to execute the command in (Member/CuratorGroup)
+  --useMemberId=useMemberId        Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId        Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createChannel.ts)_
@@ -471,11 +477,14 @@ USAGE
   $ joystream-cli content:createCuratorGroup
 
 OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=permissions  Path to JSON file containing moderation permissions by channel privilege level to use
+                                 as input
 
-ALIASES
-  $ joystream-cli createCuratorGroup
+  --status=(ACTIVE|INACTIVE)     (required) Status of newly created Curator Group: (ACTIVE/INACTIVE)
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createCuratorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createCuratorGroup.ts)_
@@ -567,7 +576,7 @@ _See code: [src/commands/content/deleteChannel.ts](https://github.com/Joystream/
 
 ## `joystream-cli content:deleteChannelAsModerator`
 
-Delete channel as Moderator.
+Delete the channel and optionally all associated data objects.
 
 ```
 USAGE
@@ -576,7 +585,7 @@ USAGE
 OPTIONS
   -c, --channelId=channelId  (required) ID of the Channel
   -f, --force                Force-remove all associated channel data objects
-  -r, --rationale            Reason of deleting the channel by moderator
+  -r, --rationale=rationale  (required) Reason of deleting the channel by moderator
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
@@ -592,9 +601,9 @@ USAGE
   $ joystream-cli content:deleteChannelAssetsAsModerator
 
 OPTIONS
+  -a, --assetIds=assetIds    (required) List of data object IDs to delete
   -c, --channelId=channelId  (required) ID of the Channel
-  -a, --assetIds             Comma separated list of data object IDs to delete
-  -r, --rationale            Reason of deleting the channel by moderator
+  -r, --rationale=rationale  (required) Reason for removing the channel assets by moderator
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
@@ -621,39 +630,39 @@ _See code: [src/commands/content/deleteVideo.ts](https://github.com/Joystream/jo
 
 ## `joystream-cli content:deleteVideoAsModerator`
 
-Delete Video as Moderator.
+Delete the video and optionally all associated data objects.
 
 ```
 USAGE
   $ joystream-cli content:deleteVideoAsModerator
 
 OPTIONS
-  -c, --videoId=videoId      (required) ID of the Video
   -f, --force                Force-remove all associated video data objects
-  -r, --rationale            Reason of deleting the video by moderator
+  -r, --rationale=rationale  (required) reason of deleting the video by moderator
+  -v, --videoId=videoId      (required) ID of the Video
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/deleteVideoAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAsModerator.ts)_
 
-## `joystream-cli content:deleteVideoAsssetsAsModerator`
+## `joystream-cli content:deleteVideoAssetsAsModerator`
 
-Delete Video assets as Moderator.
+Delete the video assets.
 
 ```
 USAGE
-  $ joystream-cli content:deleteVideoAsssetsAsModerator
+  $ joystream-cli content:deleteVideoAssetsAsModerator
 
 OPTIONS
-  -c, --videoId=videoId      (required) ID of the Video
-  -a, --assetIds                Comma separated list of data object IDs to delete
-  -r, --rationale            Reason of deleting the video by moderator
+  -a, --assetIds=assetIds    (required) List of data object IDs to delete
+  -r, --rationale=rationale  (required) Reason for removing the video assets by moderator
+  -v, --videoId=videoId      (required) ID of the Video
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/deleteVideoAsssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAsssetsAsModerator.ts)_
+_See code: [src/commands/content/deleteVideoAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAssetsAsModerator.ts)_
 
 ## `joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`
 
@@ -768,11 +777,11 @@ _See code: [src/commands/content/updateChannel.ts](https://github.com/Joystream/
 
 ## `joystream-cli content:updateChannelStateBloatBond VALUE`
 
-Update Channel state bloat bond value
+Update channel state bloat bond.
 
 ```
 USAGE
-  $ joystream-cli content:updateChannelStateBloatBond
+  $ joystream-cli content:updateChannelStateBloatBond VALUE
 
 ARGUMENTS
   VALUE  New state bloat bond value
@@ -784,22 +793,24 @@ OPTIONS
 
 _See code: [src/commands/content/updateChannelStateBloatBond.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelStateBloatBond.ts)_
 
-## `joystream-cli content:updateCuratorGroupPermissions GROUPID`
+## `joystream-cli content:updateCuratorGroupPermissions [ID]`
 
-Update Curator Group Permissions.
+Update existing Curator Group.
 
 ```
 USAGE
-  $ joystream-cli content:updateCuratorGroupPermissions
+  $ joystream-cli content:updateCuratorGroupPermissions [ID]
 
 ARGUMENTS
-  GROUPID  ID of the Gurator Group
+  ID  ID of the Curator Group
 
 OPTIONS
-  -i, --input=input          (required) Path to JSON file containing moderation permissions
-                             by channel previledge to use as input
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=permissions  (required) Path to JSON file containing moderation permissions by channel privilege
+                                 level to use as input
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateCuratorGroupPermissions.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateCuratorGroupPermissions.ts)_
@@ -846,11 +857,11 @@ _See code: [src/commands/content/updateVideoCategory.ts](https://github.com/Joys
 
 ## `joystream-cli content:updateVideoStateBloatBond VALUE`
 
-Update Video state bloat bond value
+Update video state bloat bond.
 
 ```
 USAGE
-  $ joystream-cli content:updateVideoStateBloatBond
+  $ joystream-cli content:updateVideoStateBloatBond VALUE
 
 ARGUMENTS
   VALUE  New state bloat bond value
@@ -1163,7 +1174,7 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.3.1/src/commands/help.ts)_
 
 ## `joystream-cli membership:addStakingAccount`
 
@@ -1840,5 +1851,4 @@ OPTIONS
 ```
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
-
 <!-- commandsstop -->
