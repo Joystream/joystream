@@ -19,6 +19,11 @@ use working_group::StakePolicy;
 use crate::*;
 use crate::{Error, ProposalDetails};
 pub use mock::*;
+use sp_runtime::traits::One;
+use working_group::{
+    ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
+    StakeParameters, WorkerId,
+};
 
 use strum::IntoEnumIterator;
 
@@ -35,6 +40,138 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
         Balances::total_issuance(),
         initial_balance.saturating_add(balance)
     );
+}
+
+fn insert_leader<I: Instance>() -> WorkerId<Test>
+where
+    Test: working_group::Config<I>,
+{
+    let (opening_id, application_id) = add_and_apply_on_lead_opening::<I>();
+
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
+
+    let worker_id = working_group::NextWorkerId::<Test, I>::get();
+    working_group::Module::<Test, I>::fill_opening(
+        RawOrigin::Root.into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    assert!(working_group::Module::<Test, I>::current_lead()
+        .map(|id| id == worker_id)
+        .unwrap_or(false));
+
+    worker_id
+}
+
+fn add_and_apply_on_lead_opening<I: Instance>() -> (OpeningId, ApplicationId)
+where
+    Test: working_group::Config<I>,
+{
+    let opening_id = add_lead_opening_helper::<I>();
+
+    let application_id = apply_on_opening_helper::<I>(&opening_id);
+
+    (opening_id, application_id)
+}
+
+fn add_lead_opening_helper<I: Instance>() -> OpeningId
+where
+    Test: working_group::Config<I>,
+{
+    let opening_id = working_group::Module::<Test, I>::next_opening_id();
+
+    working_group::Module::<Test, I>::add_opening(
+        RawOrigin::Root.into(),
+        vec![],
+        OpeningType::Leader,
+        StakePolicy {
+            stake_amount: <Test as working_group::Config<I>>::MinimumApplicationStake::get(),
+            leaving_unstaking_period:
+                <Test as working_group::Config<I>>::MinUnstakingPeriodLimit::get() + 1,
+        },
+        Some(One::one()),
+    )
+    .unwrap();
+
+    assert!(
+        OpeningById::<Test, I>::contains_key(opening_id),
+        "Opening not added"
+    );
+
+    opening_id
+}
+
+fn apply_on_opening_helper<I: Instance>(opening_id: &OpeningId) -> ApplicationId
+where
+    Test: working_group::Config<I>,
+{
+    let stake = <Test as working_group::Config<I>>::MinimumApplicationStake::get();
+    increase_total_balance_issuance_using_account_id(LEADER_ACCOUNT_ID, stake);
+
+    let application_id = working_group::Module::<Test, I>::next_application_id();
+
+    working_group::Module::<Test, I>::apply_on_opening(
+        RawOrigin::Signed(LEADER_ACCOUNT_ID).into(),
+        ApplyOnOpeningParameters::<Test> {
+            member_id: LEADER_MEMBER_ID,
+            opening_id: *opening_id,
+            role_account_id: LEADER_ACCOUNT_ID,
+            reward_account_id: LEADER_ACCOUNT_ID,
+            description: vec![],
+            stake_parameters: StakeParameters {
+                stake,
+                staking_account_id: LEADER_ACCOUNT_ID,
+            },
+        },
+    )
+    .unwrap();
+
+    assert!(
+        ApplicationById::<Test, I>::contains_key(application_id),
+        "Application not added"
+    );
+
+    application_id
+}
+
+fn setup_lead_opening_and_application(working_group: WorkingGroup) -> (OpeningId, ApplicationId) {
+    match working_group {
+        WorkingGroup::Forum => add_and_apply_on_lead_opening::<ForumWorkingGroupInstance>(),
+        WorkingGroup::Storage => add_and_apply_on_lead_opening::<StorageWorkingGroupInstance>(),
+        WorkingGroup::Content => add_and_apply_on_lead_opening::<ContentWorkingGroupInstance>(),
+        WorkingGroup::OperationsAlpha => {
+            add_and_apply_on_lead_opening::<OperationsWorkingGroupInstanceAlpha>()
+        }
+        WorkingGroup::Gateway => add_and_apply_on_lead_opening::<GatewayWorkingGroupInstance>(),
+        WorkingGroup::Membership => {
+            add_and_apply_on_lead_opening::<MembershipWorkingGroupInstance>()
+        }
+        WorkingGroup::OperationsBeta => {
+            add_and_apply_on_lead_opening::<OperationsWorkingGroupInstanceBeta>()
+        }
+        WorkingGroup::OperationsGamma => {
+            add_and_apply_on_lead_opening::<OperationsWorkingGroupInstanceGamma>()
+        }
+        WorkingGroup::Distribution => {
+            add_and_apply_on_lead_opening::<DistributionWorkingGroupInstance>()
+        }
+    }
+}
+
+fn setup_lead(working_group: WorkingGroup) -> WorkerId<Test> {
+    match working_group {
+        WorkingGroup::Forum => insert_leader::<ForumWorkingGroupInstance>(),
+        WorkingGroup::Storage => insert_leader::<StorageWorkingGroupInstance>(),
+        WorkingGroup::Content => insert_leader::<ContentWorkingGroupInstance>(),
+        WorkingGroup::OperationsAlpha => insert_leader::<OperationsWorkingGroupInstanceAlpha>(),
+        WorkingGroup::Gateway => insert_leader::<GatewayWorkingGroupInstance>(),
+        WorkingGroup::Membership => insert_leader::<MembershipWorkingGroupInstance>(),
+        WorkingGroup::OperationsBeta => insert_leader::<OperationsWorkingGroupInstanceBeta>(),
+        WorkingGroup::OperationsGamma => insert_leader::<OperationsWorkingGroupInstanceGamma>(),
+        WorkingGroup::Distribution => insert_leader::<DistributionWorkingGroupInstance>(),
+    }
 }
 
 fn assert_last_event(generic_event: <Test as Config>::Event) {
@@ -116,11 +253,14 @@ where
 
         assert_eq!((self.successful_call)(), Ok(()));
 
+        let proposal_id =
+            <Test as proposals_engine::Config>::ProposalId::from(ProposalsEngine::proposal_count());
         // a discussion was created
-        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(1);
-        assert_eq!(thread_id, 1);
+        assert!(<crate::ThreadIdByProposalId<Test>>::contains_key(
+            proposal_id
+        ));
+        let thread_id = <crate::ThreadIdByProposalId<Test>>::get(proposal_id);
 
-        let proposal_id = 1;
         let proposal = ProposalsEngine::proposals(proposal_id);
         // check for correct proposal parameters
         assert_eq!(proposal.parameters, self.proposal_parameters);
@@ -612,7 +752,23 @@ fn create_veto_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
-        let proposal_details = ProposalDetails::VetoProposal(0);
+        // Create proposal to be vetoed
+        increase_total_balance_issuance_using_account_id(2, 15000000);
+        ProposalsCodex::create_proposal(
+            RawOrigin::Signed(2).into(),
+            GeneralProposalParameters::<Test> {
+                member_id: 2,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(2),
+                exact_execution_block: None,
+            },
+            ProposalDetails::Signal(vec![0u8]),
+        )
+        .unwrap();
+
+        let proposal_details =
+            ProposalDetails::VetoProposal(ProposalsEngine::proposal_count().into());
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -648,6 +804,31 @@ fn create_veto_proposal_common_checks_succeed() {
             proposal_parameters: <Test as crate::Config>::VetoProposalProposalParameters::get(),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_veto_proposal_fails_with_invalid_proposal_id() {
+    initial_test_ext().execute_with(|| {
+        let account_id = 1;
+        increase_total_balance_issuance_using_account_id(account_id, 15000000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(account_id),
+            exact_execution_block: None,
+        };
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                ProposalDetails::VetoProposal(1u32.into()),
+            ),
+            Err(Error::<Test>::InvalidProposalId.into())
+        );
     });
 }
 
@@ -784,7 +965,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
-        let opening_id = 1; // random opening id.
+        let (opening_id, application_id) = setup_lead_opening_and_application(working_group);
 
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -812,7 +993,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
 
         let fill_opening_parameters = FillOpeningParameters {
             opening_id,
-            application_id: 1,
+            application_id,
             working_group,
         };
 
@@ -854,6 +1035,88 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                 <Test as crate::Config>::FillWorkingGroupLeadOpeningProposalParameters::get(),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_fill_working_group_leader_opening_proposal_with_invalid_opening_id_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_fill_working_group_leader_opening_proposal_with_invalid_opening_id_fails(group);
+    }
+}
+
+fn run_create_fill_working_group_leader_opening_proposal_with_invalid_opening_id_fails(
+    working_group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        setup_council(2);
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::FillWorkingGroupLeadOpening(FillOpeningParameters {
+                    opening_id: 1,
+                    application_id: 1,
+                    working_group,
+                })
+            ),
+            Err(Error::<Test>::InvalidLeadOpeningId.into())
+        );
+    });
+}
+
+#[test]
+fn create_fill_working_group_leader_opening_proposal_with_invalid_application_id_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_fill_working_group_leader_opening_proposal_with_invalid_application_id_fails(
+            group,
+        );
+    }
+}
+
+fn run_create_fill_working_group_leader_opening_proposal_with_invalid_application_id_fails(
+    working_group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        let (opening_id, application_id) = setup_lead_opening_and_application(working_group);
+
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        setup_council(2);
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::FillWorkingGroupLeadOpening(FillOpeningParameters {
+                    opening_id,
+                    application_id: application_id + 1,
+                    working_group,
+                })
+            ),
+            Err(Error::<Test>::InvalidLeadApplicationId.into())
+        );
     });
 }
 
@@ -948,6 +1211,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
+        let lead_id = setup_lead(working_group);
         increase_total_balance_issuance(500000);
 
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
@@ -974,11 +1238,8 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
             exact_execution_block: None,
         };
 
-        let decrease_lead_stake_details =
-            ProposalDetails::DecreaseWorkingGroupLeadStake(0, 10, working_group);
-
         let proposal_details =
-            ProposalDetails::DecreaseWorkingGroupLeadStake(10, 10, working_group);
+            ProposalDetails::DecreaseWorkingGroupLeadStake(lead_id, 10, working_group);
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -987,7 +1248,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                 ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
-                    decrease_lead_stake_details.clone(),
+                    proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
@@ -1001,7 +1262,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                 ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
-                    decrease_lead_stake_details.clone(),
+                    proposal_details.clone(),
                 )
             },
             successful_call: || {
@@ -1030,6 +1291,8 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
+        let lead_id = setup_lead(working_group);
+
         increase_total_balance_issuance(500000);
 
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
@@ -1056,9 +1319,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
-        let slash_lead_details = ProposalDetails::SlashWorkingGroupLead(0, 10, working_group);
-
-        let proposal_details = ProposalDetails::SlashWorkingGroupLead(10, 10, working_group);
+        let proposal_details = ProposalDetails::SlashWorkingGroupLead(lead_id, 10, working_group);
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -1067,7 +1328,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                 ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
-                    slash_lead_details.clone(),
+                    proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
@@ -1081,7 +1342,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                 ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
-                    slash_lead_details.clone(),
+                    proposal_details.clone(),
                 )
             },
             successful_call: || {
@@ -1095,6 +1356,41 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                 <Test as crate::Config>::SlashWorkingGroupLeadProposalParameters::get(),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_slash_working_group_leader_stake_proposal_with_invalid_worker_id_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_slash_working_group_leader_stake_proposal_with_invalid_worker_id_fails(group);
+    }
+}
+
+fn run_create_slash_working_group_leader_stake_proposal_with_invalid_worker_id_fails(
+    working_group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        setup_council(2);
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::SlashWorkingGroupLead(1, 10, working_group)
+            ),
+            Err(Error::<Test>::InvalidLeadWorkerId.into())
+        );
     });
 }
 
@@ -1196,6 +1492,8 @@ fn decrease_stake_with_zero_staking_balance_fails() {
 
 fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) {
     initial_test_ext().execute_with(|| {
+        let lead_id = setup_lead(working_group);
+
         increase_total_balance_issuance_using_account_id(1, 500000);
 
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
@@ -1212,9 +1510,42 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters,
-                ProposalDetails::DecreaseWorkingGroupLeadStake(10, 0, working_group,)
+                ProposalDetails::DecreaseWorkingGroupLeadStake(lead_id, 0, working_group,)
             ),
             Err(Error::<Test>::DecreasingStakeIsZero.into())
+        );
+    });
+}
+
+#[test]
+fn create_decrease_stake_proposal_with_invalid_worker_id_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_decrease_stake_proposal_with_invalid_worker_id_fails(group);
+    }
+}
+
+fn run_create_decrease_stake_proposal_with_invalid_worker_id_fails(working_group: WorkingGroup) {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        setup_council(2);
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::DecreaseWorkingGroupLeadStake(1, 0, working_group,)
+            ),
+            Err(Error::<Test>::InvalidLeadWorkerId.into())
         );
     });
 }
@@ -1231,6 +1562,8 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
+        let lead_id = setup_lead(working_group);
+
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1255,11 +1588,8 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
             exact_execution_block: None,
         };
 
-        let set_lead_reward_details =
-            ProposalDetails::SetWorkingGroupLeadReward(0, Some(10), working_group);
-
         let proposal_details =
-            ProposalDetails::SetWorkingGroupLeadReward(10, Some(10), working_group);
+            ProposalDetails::SetWorkingGroupLeadReward(lead_id, Some(10), working_group);
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
@@ -1267,7 +1597,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                 ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
-                    set_lead_reward_details.clone(),
+                    proposal_details.clone(),
                 )
             },
 
@@ -1282,7 +1612,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                 ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
-                    set_lead_reward_details.clone(),
+                    proposal_details.clone(),
                 )
             },
             successful_call: || {
@@ -1300,6 +1630,41 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
 }
 
 #[test]
+fn create_set_working_group_leader_reward_proposal_with_invalid_worker_id_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_set_working_group_leader_reward_proposal_with_invalid_worker_id_fails(group);
+    }
+}
+
+fn run_create_set_working_group_leader_reward_proposal_with_invalid_worker_id_fails(
+    working_group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        setup_council(2);
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetWorkingGroupLeadReward(1, Some(10), working_group,)
+            ),
+            Err(Error::<Test>::InvalidLeadWorkerId.into())
+        );
+    });
+}
+
+#[test]
 fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
     // This uses strum crate for enum iteration
     for group in WorkingGroup::iter() {
@@ -1311,6 +1676,8 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
     group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
+        let lead_id = setup_lead(group);
+
         increase_total_balance_issuance(500000);
 
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
@@ -1338,7 +1705,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
         };
 
         let terminate_role_parameters = TerminateRoleParameters {
-            worker_id: 10,
+            worker_id: lead_id,
             slashing_amount: None,
             group,
         };
@@ -1381,6 +1748,45 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                 <Test as crate::Config>::TerminateWorkingGroupLeadProposalParameters::get(),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_terminate_working_group_leader_role_proposal_with_invalid_worker_id_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_terminate_working_group_leader_role_proposal_with_invalid_worker_id_fails(group);
+    }
+}
+
+fn run_create_terminate_working_group_leader_role_proposal_with_invalid_worker_id_fails(
+    group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        setup_council(2);
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::TerminateWorkingGroupLead(TerminateRoleParameters {
+                    worker_id: 1,
+                    slashing_amount: None,
+                    group,
+                })
+            ),
+            Err(Error::<Test>::InvalidLeadWorkerId.into())
+        );
     });
 }
 
@@ -1530,6 +1936,8 @@ fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed
     working_group: WorkingGroup,
 ) {
     initial_test_ext().execute_with(|| {
+        let (opening_id, _) = setup_lead_opening_and_application(working_group);
+
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
             title: b"title".to_vec(),
@@ -1554,7 +1962,6 @@ fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed
             exact_execution_block: None,
         };
 
-        let opening_id = 0;
         let proposal_details =
             ProposalDetails::CancelWorkingGroupLeadOpening(opening_id, working_group);
 
@@ -1593,6 +2000,43 @@ fn run_create_cancel_working_group_leader_opening_proposal_common_checks_succeed
                 <Test as crate::Config>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_cancel_working_group_leader_opening_proposal_with_invalid_opening_id_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_cancel_working_group_leader_opening_proposal_with_invalid_opening_id_fails(
+            group,
+        );
+    }
+}
+
+fn run_create_cancel_working_group_leader_opening_proposal_with_invalid_opening_id_fails(
+    working_group: WorkingGroup,
+) {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        setup_council(2);
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::CancelWorkingGroupLeadOpening(1, working_group)
+            ),
+            Err(Error::<Test>::InvalidLeadOpeningId.into())
+        );
     });
 }
 

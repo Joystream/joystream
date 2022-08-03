@@ -223,6 +223,14 @@ declare module '@polkadot/api-base/types/errors' {
       ChannelNftDailyLimitExceeded: AugmentedError<ApiType>;
       ChannelNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Provided channel owner (curator group) does not exist
+       **/
+      ChannelOwnerCuratorGroupDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Provided channel owner (member) does not exist
+       **/
+      ChannelOwnerMemberDoesNotExist: AugmentedError<ApiType>;
+      /**
        * Invalid extrinsic call: Channel state bloat bond changed.
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
@@ -430,6 +438,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NftIsNotIdle: AugmentedError<ApiType>;
       /**
+       * Non-channel owner specified during nft issuance does not exist
+       **/
+      NftNonChannelOwnerDoesNotExist: AugmentedError<ApiType>;
+      /**
        * Given video nft is not in buy now state
        **/
       NftNotInBuyNowState: AugmentedError<ApiType>;
@@ -513,6 +525,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Invalid extrinsic call: video state bloat bond changed.
        **/
       VideoStateBloatBondChanged: AugmentedError<ApiType>;
+      /**
+       * At least one of the whitelisted members does not exist
+       **/
+      WhitelistedMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * Auction whitelist has only one member
        **/
@@ -1985,6 +2001,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CannotParticipateInSplitWithZeroAmount: AugmentedError<ApiType>;
       /**
+       * At least one of the members provided as part of InitialAllocation does not exist
+       **/
+      InitialAllocationToNonExistingMember: AugmentedError<ApiType>;
+      /**
        * User does not posses enough balance to participate in the revenue split
        **/
       InsufficientBalanceForSplitParticipation: AugmentedError<ApiType>;
@@ -2141,6 +2161,9 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient funds for 'Update Working Group Budget' proposal execution
        **/
       InsufficientFundsForBudgetUpdate: AugmentedError<ApiType>;
+      /**
+       * The specified min channel cashout is greater than the specified max channel cashout in `Update Channel Payouts` proposal.
+       **/
       InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout: AugmentedError<ApiType>;
       /**
        * Invalid council election parameter - announcing_period
@@ -2186,6 +2209,22 @@ declare module '@polkadot/api-base/types/errors' {
        * Repeated account in 'Funding Request' proposal.
        **/
       InvalidFundingRequestProposalRepeatedAccount: AugmentedError<ApiType>;
+      /**
+       * Provided lead application id is not valid
+       **/
+      InvalidLeadApplicationId: AugmentedError<ApiType>;
+      /**
+       * Provided lead opening id is not valid
+       **/
+      InvalidLeadOpeningId: AugmentedError<ApiType>;
+      /**
+       * Provided lead worker id is not valid
+       **/
+      InvalidLeadWorkerId: AugmentedError<ApiType>;
+      /**
+       * Provided proposal id is not valid
+       **/
+      InvalidProposalId: AugmentedError<ApiType>;
       /**
        * Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
        **/
@@ -2248,6 +2287,11 @@ declare module '@polkadot/api-base/types/errors' {
        * Thread doesn't exist
        **/
       ThreadDoesntExist: AugmentedError<ApiType>;
+      /**
+       * At least one of the member ids provided as part of closed thread whitelist belongs
+       * to a non-existing member.
+       **/
+      WhitelistedMemberDoesNotExist: AugmentedError<ApiType>;
     };
     proposalsEngine: {
       /**
