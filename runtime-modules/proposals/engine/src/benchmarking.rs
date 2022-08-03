@@ -241,6 +241,7 @@ fn elect_council<
     let mut voters = Vec::new();
     let mut candidates = Vec::new();
 
+    run_to_block::<T>(T::BlockNumber::one());
     for i in
         start_id as usize..start_id as usize + (council_size + number_of_extra_candidates) as usize
     {
@@ -277,7 +278,7 @@ fn elect_council<
         let commitment = Referendum::<T, ReferendumInstance>::calculate_commitment(
             &voters[i].0,
             &[0u8],
-            &0,
+            &1,
             &candidates[i].member_id,
         );
         Referendum::<T, ReferendumInstance>::vote(

@@ -2,7 +2,7 @@ use codec::Decode;
 use node_runtime::{
     forum,
     forum::{Category, Post, Thread},
-    AccountId, Balance, BlockNumber, ForumConfig, Moment, PostId, Runtime, ThreadId,
+    AccountId, Balance, BlockNumber, ForumConfig, PostId, Runtime, ThreadId,
 };
 use serde::Deserialize;
 use sp_core::H256;
@@ -17,7 +17,7 @@ type PostOf = Post<ForumUserId, ThreadId, H256, Balance, BlockNumber>;
 type ThreadOf = (
     CategoryId,
     ThreadId,
-    Thread<ForumUserId, CategoryId, Moment, Hash, Balance>,
+    Thread<ForumUserId, CategoryId, Balance>,
 );
 
 #[derive(Decode)]

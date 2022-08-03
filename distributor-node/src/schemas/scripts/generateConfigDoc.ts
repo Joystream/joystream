@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore-next-line
 import { jsonschema2md } from '@adobe/jsonschema2md'
 import { configSchema } from '../configSchema'
 import path from 'path'
