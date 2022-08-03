@@ -1,6 +1,6 @@
 [
   {
-    "channelPreviledgeLevel": 0,
+    "channelPrivilegeLevel": 0,
     "permissions": [
       { "HideVideo": null },
       { "ChangeChannelFeatureStatus": "CreatorTokenIssuance" },
@@ -8,7 +8,7 @@
     ]
   },
   {
-    "channelPreviledgeLevel": 1,
+    "channelPrivilegeLevel": 1,
     "permissions": [
       { "HideChannel": null },
       { "ChangeChannelFeatureStatus": "VideoUpdate" },

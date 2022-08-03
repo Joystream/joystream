@@ -18,8 +18,7 @@ export default class CreateCuratorGroupCommand extends ContentDirectoryCommandBa
     }),
     permissions: flags.string({
       char: 'p',
-      required: true,
-      description: `Path to JSON file containing moderation permissions by channel previledge to use as input`,
+      description: `Path to JSON file containing moderation permissions by channel privilege level to use as input`,
     }),
     ...ContentDirectoryCommandBase.flags,
   }
@@ -28,17 +27,19 @@ export default class CreateCuratorGroupCommand extends ContentDirectoryCommandBa
     const { status, permissions } = this.parse(CreateCuratorGroupCommand).flags
     const lead = await this.getRequiredLeadContext()
     const keypair = await this.getDecodedPair(lead.roleAccount)
-    const moderationPermissionsByLevelInput = await getInputJson<ModerationPermissionsByLevelInputParameters[]>(
-      permissions,
-      ModerationPermissionsByLevelInputSchema
-    )
-    console.log(moderationPermissionsByLevelInput)
+
+    const moderationPermissionsByLevelInput = permissions
+      ? await getInputJson<ModerationPermissionsByLevelInputParameters>(
+          permissions,
+          ModerationPermissionsByLevelInputSchema
+        )
+      : []
 
     const moderationPermissionsByLevel = createType(
       'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
       new Map(
-        moderationPermissionsByLevelInput.map(({ channelPreviledgeLevel, permissions }) => [
-          channelPreviledgeLevel,
+        moderationPermissionsByLevelInput.map(({ channelPrivilegeLevel, permissions }) => [
+          channelPrivilegeLevel,
           permissions,
         ])
       )

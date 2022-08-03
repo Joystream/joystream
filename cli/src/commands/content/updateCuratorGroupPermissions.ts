@@ -38,7 +38,7 @@ export default class UpdateCuratorGroupPermissionsCommand extends ContentDirecto
     const lead = await this.getRequiredLeadContext()
     const keypair = await this.getDecodedPair(lead.roleAccount)
 
-    const moderationPermissionsByLevelInput = await getInputJson<ModerationPermissionsByLevelInputParameters[]>(
+    const moderationPermissionsByLevelInput = await getInputJson<ModerationPermissionsByLevelInputParameters>(
       permissions,
       ModerationPermissionsByLevelInputSchema
     )
@@ -47,8 +47,8 @@ export default class UpdateCuratorGroupPermissionsCommand extends ContentDirecto
     const moderationPermissionsByLevel = createType(
       'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
       new Map(
-        moderationPermissionsByLevelInput.map(({ channelPreviledgeLevel, permissions }) => [
-          channelPreviledgeLevel,
+        moderationPermissionsByLevelInput.map(({ channelPrivilegeLevel, permissions }) => [
+          channelPrivilegeLevel,
           permissions,
         ])
       )
