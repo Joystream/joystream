@@ -20,23 +20,14 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
   ]
 
   static flags = {
-    permissions: flags.build({
-      parse: (value: string) => {
-        const arr = value.split(/[, ]+/).map((v) => {
-          const possibleActions = keysOf<ChannelActionPermission, 'PalletContentChannelActionPermission'>(
-            'PalletContentChannelActionPermission'
-          )
-          if (!possibleActions.includes(v as ChannelActionPermission['type'])) {
-            throw new Error(`Expected comma-separated permissions[${possibleActions}], but received: ${value}`)
-          }
-          return v as ChannelActionPermission['type']
-        })
-        return arr
-      },
-    })({
+    permissions: flags.string({
+      options: keysOf<ChannelActionPermission, 'PalletContentChannelActionPermission'>(
+        'PalletContentChannelActionPermission'
+      ),
       char: 'p',
-      description: `Comma separated list of permissions to associate with the curator`,
-      required: true,
+      description: `List of permissions to associate with the curator, e.g. -p ManageChannelCollaborators UpdateVideoMetadata`,
+      required: false,
+      multiple: true,
     }),
     ...ContentDirectoryCommandBase.flags,
   }
@@ -62,7 +53,10 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
     await this.sendAndFollowNamedTx(await this.getDecodedPair(lead.roleAccount), 'content', 'addCuratorToGroup', [
       groupId,
       curatorId,
-      createType('BTreeSet<PalletContentChannelActionPermission>', permissions),
+      createType(
+        'BTreeSet<PalletContentChannelActionPermission>',
+        (typeof permissions === 'string' ? [permissions] : permissions) as ChannelActionPermission['type'][]
+      ),
     ])
 
     console.log(
