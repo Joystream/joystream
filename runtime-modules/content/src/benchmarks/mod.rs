@@ -394,6 +394,10 @@ fn member_funded_account<T: RuntimeConfig>(id: u128) -> (T::AccountId, T::Member
 where
     T::AccountId: CreateAccountId,
 {
+    if membership::MembershipById::<T>::contains_key::<T::MemberId>(id.saturated_into()) {
+        panic!("Member {:?} already exists!", id)
+    }
+
     let account_id = T::AccountId::create_account_id(id);
 
     let handle = handle_from_id::<T>(id);
