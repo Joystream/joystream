@@ -4,6 +4,7 @@ import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import ExitCodes from '../../ExitCodes'
+import BN from 'bn.js'
 
 export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the video assets.'
@@ -16,20 +17,11 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
       required: true,
       description: 'ID of the Video',
     }),
-    assetIds: flags.build({
-      parse: (value: string) => {
-        const arr = value.split(',').map((v) => {
-          if (!/^-?\d+$/.test(v)) {
-            throw new Error(`Expected comma-separated integers, but received: ${value}`)
-          }
-          return v
-        })
-        return arr
-      },
-    })({
+    assetIds: flags.string({
       char: 'a',
-      description: `Comma separated list of data object IDs to delete`,
+      description: `List of data object IDs to delete`,
       required: true,
+      multiple: true,
     }),
     rationale: flags.string({
       char: 'r',
@@ -39,16 +31,18 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
     ...ContentDirectoryCommandBase.flags,
   }
 
-  async getDataObjectsInfo(videoId: number, assetIds: string[]): Promise<number[]> {
-    const dataObjects = (await this.getQNApi().dataObjectsByVideoId(videoId.toString())).map((o) => o.id)
+  async getDataObjectsInfo(videoId: number, assetIds: string[]): Promise<[string, BN][]> {
+    const dataObjects = await this.getQNApi().dataObjectsByVideoId(videoId.toString())
 
     return assetIds.map((id) => {
-      if (!dataObjects.includes(id)) {
-        this.error(`Data object ${id} is not associated eith video ${videoId}`, {
-          exit: ExitCodes.InvalidInput,
-        })
+      const dataObject = dataObjects.find((o) => o.id === id)
+      if (dataObject) {
+        return [dataObject.id, new BN(dataObject.stateBloatBond)]
       }
-      return parseInt(id)
+
+      this.error(`Data object ${id} is not associated with video ${videoId}`, {
+        exit: ExitCodes.InvalidInput,
+      })
     })
   }
 
@@ -59,8 +53,8 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
     // Context
     const [actor, address] = await this.getCuratorContext()
 
-    const dataObjects = await this.getDataObjectsInfo(videoId, assetIds)
-    const stateBloatBond = dataObjects.length * (await this.getApi().dataObjectStateBloatBond())
+    const dataObjectsInfo = await this.getDataObjectsInfo(videoId, assetIds)
+    const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
     this.log(
       `Data objects state bloat bond of ${chalk.cyanBright(
         formatBalance(stateBloatBond)
@@ -74,7 +68,10 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideoAssetsAsModerator', [
       actor,
       videoId,
-      createType('BTreeSet<u64>', dataObjects),
+      createType(
+        'BTreeSet<u64>',
+        dataObjectsInfo.map(([id]) => Number(id))
+      ),
       rationale,
     ])
   }
