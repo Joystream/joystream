@@ -13,6 +13,7 @@ import { memberHandle } from '../helpers/display'
 import { MemberId, CuratorGroupId } from '@joystream/types/primitives'
 import { createType } from '@joystream/types'
 import WorkingGroupCommandBase from './WorkingGroupCommandBase'
+import BN from 'bn.js'
 
 const CHANNEL_CREATION_CONTEXTS = ['Member', 'CuratorGroup'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
@@ -339,6 +340,36 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
         exit: ExitCodes.InvalidInput,
       })
     }
+  }
+
+  async getDataObjectsInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {
+    const dataObjects = await this.getQNApi().dataObjectsByBagId(`dynamic:channel:${channelId}`)
+
+    if (dataObjects.length) {
+      this.log('Following data objects are still associated with the channel:')
+      dataObjects.forEach((o) => {
+        let parentStr = ''
+        if ('video' in o.type && o.type.video) {
+          parentStr = ` (video: ${o.type.video.id})`
+        }
+        this.log(`- ${o.id} - ${o.type.__typename}${parentStr}`)
+      })
+    }
+
+    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
+  }
+
+  async getDataObjectsInfoFromChain(channelId: number): Promise<[string, BN][]> {
+    const dataObjects = await this.getApi().dataObjectsInBag(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+
+    if (dataObjects.length) {
+      const dataObjectIds = dataObjects.map(([id]) => id.toString())
+      this.log(`Following data objects are still associated with the channel: ${dataObjectIds.join(', ')}`)
+    }
+
+    return dataObjects.map(([id, o]) => [id.toString(), o.stateBloatBond])
   }
 
   async getVideosInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {
