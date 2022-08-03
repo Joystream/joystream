@@ -40,9 +40,9 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
   const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos
-  const createMembersFixture = new CreateMembersFixture(api, query, 1, sufficientTopupAmount)
+  const createMembersFixture = new CreateMembersFixture(api, query, 1, 0, sufficientTopupAmount)
   await new FixtureRunner(createMembersFixture).run()
-  const author = createMembersFixture.getCreatedItems()[0]
+  const author = createMembersFixture.getCreatedItems().members[0]
 
   // create channels and videos
   const createChannelsAndVideos = new CreateChannelsAndVideosFixture(

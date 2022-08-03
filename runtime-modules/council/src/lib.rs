@@ -55,7 +55,7 @@ use frame_system::ensure_root;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
+use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
@@ -77,27 +77,27 @@ pub use weights::WeightInfo;
 /// Information about council's current state and when it changed the last time.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
-pub struct CouncilStageUpdate<BlockNumber> {
-    stage: CouncilStage,
-    changed_at: BlockNumber,
+pub struct CouncilStageUpdate<BlockNumber: One> {
+    pub stage: CouncilStage<BlockNumber>,
+    pub changed_at: BlockNumber,
 }
 
 /// Possible council states.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo)]
-pub enum CouncilStage {
+pub enum CouncilStage<BlockNumber> {
     /// Candidacy announcement period.
-    Announcing(CouncilStageAnnouncing),
+    Announcing(CouncilStageAnnouncing<BlockNumber>),
     /// Election of the new council.
     Election(CouncilStageElection),
     /// The idle phase - no new council election is running now.
-    Idle,
+    Idle(CouncilStageIdle<BlockNumber>),
 }
 
-impl Default for CouncilStage {
-    fn default() -> CouncilStage {
-        CouncilStage::Announcing(CouncilStageAnnouncing {
-            candidates_count: 0,
+impl<BlockNumber: One> Default for CouncilStage<BlockNumber> {
+    fn default() -> CouncilStage<BlockNumber> {
+        CouncilStage::Idle(CouncilStageIdle {
+            ends_at: BlockNumber::one(),
         })
     }
 }
@@ -105,8 +105,11 @@ impl Default for CouncilStage {
 /// Representation for announcing candidacy stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
-pub struct CouncilStageAnnouncing {
-    candidates_count: u64,
+pub struct CouncilStageAnnouncing<BlockNumber> {
+    pub candidates_count: u64,
+    // We store the pre-computed end block in case the duration of the announcing period is
+    // updated via runtime upgrade while there is already an ongoing announcing stage
+    pub ends_at: BlockNumber,
 }
 
 /// Representation for new council members election stage state.
@@ -114,6 +117,15 @@ pub struct CouncilStageAnnouncing {
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct CouncilStageElection {
     candidates_count: u64,
+}
+
+/// Representation for idle council stage state.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
+pub struct CouncilStageIdle<BlockNumber> {
+    // We store the pre-computed end block in case the duration of the idle period is
+    // updated via runtime upgrade while there is already an ongoing idle stage
+    ends_at: BlockNumber,
 }
 
 /// Candidate representation.
@@ -344,10 +356,10 @@ decl_event! {
         <T as frame_system::Config>::AccountId,
     {
         /// New council was elected
-        AnnouncingPeriodStarted(),
+        AnnouncingPeriodStarted(BlockNumber),
 
         /// Announcing period can't finish because of insufficient candidtate count
-        NotEnoughCandidates(),
+        NotEnoughCandidates(BlockNumber),
 
         /// Candidates are announced and voting starts
         VotingPeriodStarted(u64),
@@ -356,10 +368,10 @@ decl_event! {
         NewCandidate(MemberId, AccountId, AccountId, Balance),
 
         /// New council was elected and appointed
-        NewCouncilElected(Vec<MemberId>),
+        NewCouncilElected(Vec<MemberId>, BlockNumber),
 
         /// New council was not elected
-        NewCouncilNotElected(),
+        NewCouncilNotElected(BlockNumber),
 
         /// Candidacy stake that was no longer needed was released
         CandidacyStakeRelease(MemberId),
@@ -974,14 +986,14 @@ impl<T: Config> Module<T> {
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
                 let number_of_candidates = stage_data.candidates_count;
-                if now == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
-                    Self::end_announcement_period(stage_data);
+                if now == stage_data.ends_at {
+                    Self::end_announcement_period(stage_data.candidates_count);
                 }
 
                 Some(number_of_candidates)
             }
-            CouncilStage::Idle => {
-                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
+            CouncilStage::Idle(stage_data) => {
+                if now == stage_data.ends_at {
                     Self::end_idle_period();
                 }
 
@@ -1005,24 +1017,26 @@ impl<T: Config> Module<T> {
     }
 
     // Finish voting and start ravealing.
-    fn end_announcement_period(stage_data: CouncilStageAnnouncing) {
+    fn end_announcement_period(candidates_count: u64) {
         let min_candidate_count = T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get();
 
         // reset announcing period when not enough candidates registered
-        if stage_data.candidates_count < min_candidate_count {
-            Mutations::<T>::start_announcing_period();
+        if candidates_count < min_candidate_count {
+            let new_announcing_period_end_block = Mutations::<T>::start_announcing_period();
 
             // emit event
-            Self::deposit_event(RawEvent::NotEnoughCandidates());
+            Self::deposit_event(RawEvent::NotEnoughCandidates(
+                new_announcing_period_end_block,
+            ));
 
             return;
         }
 
         // update state
-        Mutations::<T>::finalize_announcing_period(&stage_data);
+        Mutations::<T>::finalize_announcing_period(candidates_count);
 
         // emit event
-        Self::deposit_event(RawEvent::VotingPeriodStarted(stage_data.candidates_count));
+        Self::deposit_event(RawEvent::VotingPeriodStarted(candidates_count));
     }
 
     // Conclude election period and elect new council if possible.
@@ -1035,10 +1049,12 @@ impl<T: Config> Module<T> {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
             // reset candidacy announcement period
-            Mutations::<T>::start_announcing_period();
+            let new_announcing_period_end_block = Mutations::<T>::start_announcing_period();
 
             // emit event
-            Self::deposit_event(RawEvent::NewCouncilNotElected());
+            Self::deposit_event(RawEvent::NewCouncilNotElected(
+                new_announcing_period_end_block,
+            ));
 
             return;
         }
@@ -1067,7 +1083,10 @@ impl<T: Config> Module<T> {
         Mutations::<T>::elect_new_council(elected_members.as_slice(), now);
 
         // emit event
-        Self::deposit_event(RawEvent::NewCouncilElected(elected_council_users));
+        Self::deposit_event(RawEvent::NewCouncilElected(
+            elected_council_users,
+            now.saturating_add(T::IdlePeriodDuration::get()),
+        ));
 
         // trigger new-council-elected hook
         T::new_council_elected(elected_members.as_slice());
@@ -1076,10 +1095,12 @@ impl<T: Config> Module<T> {
     // Finish idle period and start new council election cycle (announcing period).
     fn end_idle_period() {
         // update state
-        Mutations::<T>::start_announcing_period();
+        let new_announcing_period_end_block = Mutations::<T>::start_announcing_period();
 
         // emit event
-        Self::deposit_event(RawEvent::AnnouncingPeriodStarted());
+        Self::deposit_event(RawEvent::AnnouncingPeriodStarted(
+            new_announcing_period_end_block,
+        ));
     }
 
     /////////////////// Budget-related /////////////////////////////////////
@@ -1237,7 +1258,7 @@ impl<T: Config> ReferendumConnection<T> for Module<T> {
 
         // The vote is for the current election cycle.
 
-        if Stage::<T>::get().stage == CouncilStage::Idle {
+        if let CouncilStage::Idle(_) = Stage::<T>::get().stage {
             // The election is concluded..
             let voted_for_winner = CouncilMembers::<T>::get()
                 .iter()
@@ -1335,12 +1356,14 @@ impl<T: Config> Mutations<T> {
     /////////////////// Election-related ///////////////////////////////////
 
     // Change the council stage to candidacy announcing stage.
-    fn start_announcing_period() {
+    fn start_announcing_period() -> T::BlockNumber {
+        let block_number = <frame_system::Pallet<T>>::block_number();
+        let ends_at = block_number.saturating_add(T::AnnouncingPeriodDuration::get());
+
         let stage_data = CouncilStageAnnouncing {
             candidates_count: 0,
+            ends_at,
         };
-
-        let block_number = <frame_system::Pallet<T>>::block_number();
 
         // set stage
         Stage::<T>::put(CouncilStageUpdate {
@@ -1350,10 +1373,12 @@ impl<T: Config> Mutations<T> {
 
         // increase anouncement cycle id
         AnnouncementPeriodNr::mutate(|value| *value += 1);
+
+        ends_at
     }
 
     // Change the council stage from the announcing to the election stage.
-    fn finalize_announcing_period(stage_data: &CouncilStageAnnouncing) {
+    fn finalize_announcing_period(candidates_count: u64) {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
 
         // start referendum
@@ -1363,22 +1388,20 @@ impl<T: Config> Mutations<T> {
 
         // change council state
         Stage::<T>::put(CouncilStageUpdate {
-            stage: CouncilStage::Election(CouncilStageElection {
-                candidates_count: stage_data.candidates_count,
-            }),
+            stage: CouncilStage::Election(CouncilStageElection { candidates_count }),
             changed_at: block_number,
         });
     }
 
     // Elect new council after successful election.
     fn elect_new_council(elected_members: &[CouncilMemberOf<T>], now: T::BlockNumber) {
-        let block_number = <frame_system::Pallet<T>>::block_number();
-
         // change council state
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
-                stage: CouncilStage::Idle,
-                changed_at: block_number, // set current block as the start of next phase
+                stage: CouncilStage::Idle(CouncilStageIdle {
+                    ends_at: now.saturating_add(T::IdlePeriodDuration::get()),
+                }),
+                changed_at: now, // set current block as the start of next phase
             }
         });
 
@@ -1402,7 +1425,7 @@ impl<T: Config> Mutations<T> {
 
     // Announce user's candidacy.
     fn announce_candidacy(
-        stage_data: &CouncilStageAnnouncing,
+        stage_data: &CouncilStageAnnouncing<T::BlockNumber>,
         membership_id: &T::MemberId,
         candidate: &CandidateOf<T>,
         stake: &Balance<T>,
@@ -1411,8 +1434,9 @@ impl<T: Config> Mutations<T> {
         Candidates::<T>::insert(membership_id, candidate.clone());
 
         // prepare new stage
-        let new_stage_data = CouncilStageAnnouncing {
+        let new_stage_data = CouncilStageAnnouncing::<T::BlockNumber> {
             candidates_count: stage_data.candidates_count + 1,
+            ..*stage_data
         };
 
         // store new stage
@@ -1430,7 +1454,7 @@ impl<T: Config> Mutations<T> {
     }
 
     fn withdraw_candidacy(
-        stage_data: &CouncilStageAnnouncing,
+        stage_data: &CouncilStageAnnouncing<T::BlockNumber>,
         membership_id: &T::MemberId,
         candidate: &CandidateOf<T>,
     ) {
@@ -1438,8 +1462,9 @@ impl<T: Config> Mutations<T> {
         Self::release_candidacy_stake(membership_id, &candidate.staking_account_id);
 
         // prepare new stage
-        let new_stage_data = CouncilStageAnnouncing {
+        let new_stage_data = CouncilStageAnnouncing::<T::BlockNumber> {
             candidates_count: stage_data.candidates_count.saturating_sub(1),
+            ..*stage_data
         };
 
         // store new stage
@@ -1570,7 +1595,7 @@ impl<T: Config> EnsureChecks<T> {
         membership_id: &T::MemberId,
         staking_account_id: &T::AccountId,
         stake: &Balance<T>,
-    ) -> Result<(CouncilStageAnnouncing, Option<T::AccountId>), Error<T>> {
+    ) -> Result<(CouncilStageAnnouncing<T::BlockNumber>, Option<T::AccountId>), Error<T>> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
 
@@ -1628,7 +1653,7 @@ impl<T: Config> EnsureChecks<T> {
         Candidates::<T>::get(membership_id).map_or(Err(Error::NoStake), |candidate| {
             // prevent user from releasing candidacy stake during election
             if candidate.cycle_id == AnnouncementPeriodNr::get()
-                && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
+                && !matches!(Stage::<T>::get().stage, CouncilStage::Idle(_))
             {
                 return Err(Error::StakeStillNeeded);
             }
@@ -1641,7 +1666,7 @@ impl<T: Config> EnsureChecks<T> {
     fn can_withdraw_candidacy(
         origin: T::Origin,
         membership_id: &T::MemberId,
-    ) -> Result<(CouncilStageAnnouncing, CandidateOf<T>), Error<T>> {
+    ) -> Result<(CouncilStageAnnouncing<T::BlockNumber>, CandidateOf<T>), Error<T>> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
 
@@ -1678,7 +1703,7 @@ impl<T: Config> EnsureChecks<T> {
             }
 
             // ensure election hasn't ended yet
-            if let CouncilStage::Idle = Stage::<T>::get().stage {
+            if let CouncilStage::Idle(_) = Stage::<T>::get().stage {
                 return Err(Error::NotCandidatingNow);
             }
 

@@ -98,34 +98,6 @@ query getThreadMetadataUpdatedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-fragment VoteOnPollEventFields on VoteOnPollEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  pollAlternative {
-    id
-    index
-    text
-    poll {
-      thread {
-        id
-      }
-    }
-  }
-  votingMember {
-    id
-  }
-}
-
-query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
-  voteOnPollEvents(where: { id_in: $eventIds }) {
-    ...VoteOnPollEventFields
-  }
-}
-
 fragment ThreadDeletedEventFields on ThreadDeletedEvent {
   id
   createdAt

@@ -4,6 +4,7 @@
 
 Most of the events processed by the query node are now mapped to corresponding `{event_name}Event` entities, which implement the [`Event`](./schemas/common.graphql) interface.
 Events of different types can be queried together, for example, take a look at the query below:
+
 ```graphql
 {
   events(
@@ -73,7 +74,9 @@ Events of different types can be queried together, for example, take a look at t
   }
 }
 ```
+
 There is a separate file with the event input schemas for each module that has some events mapped to entities:
+
 - [`membershipEvents.graphql`](./schemas/membershipEvents.graphql)
 - [`councilEvents.graphql`](./schemas/councilEvents.graphql)
 - [`forumEvents.graphql`](./schemas/forumEvents.graphql)
@@ -84,6 +87,7 @@ There is a separate file with the event input schemas for each module that has s
 ### New mappings
 
 Runtime modules for which the mappings have been introduced in Olympia (there were no mappings in Giza):
+
 - [Council](./schemas/council.graphql)
 - [Forum](./schemas/forum.graphql)
 - [Proposals](./schemas/proposals.graphql)
@@ -92,6 +96,7 @@ Runtime modules for which the mappings have been introduced in Olympia (there we
 ### Changes in existing schemas & mappings
 
 #### [Memberships](./schemas/membership.graphql)
+
 - `avatarUri` and `about` fields have been removed from `Membership` entity. They are now part of `MemberMetadata`, along with the new `name` field. Additionally, `avatarUri` is now of `Avatar` union type with `AvatarUri` and `AvatarObject` variants. Currently only `AvatarUri` variant is actually being used.
 - `MembershipEntryMethod` (`Membership.entry`) is now an `union` (previously an `enum`) with 3 variants: `MembershipEntryPaid`, `MembershipEntryInvited` and `MembershipEntryGenesis`. The first two include a reference to the event which caused the membership to be created (`MembershipBoughtEvent` / `MemberInvitedEvent`)
 - `createdInBlock` field has been removed from the `Membership` entity. Use `.entry.{membershipBoughtEvent|memberInvitedEvent}.inBlock` instead.
@@ -100,6 +105,7 @@ Runtime modules for which the mappings have been introduced in Olympia (there we
 - A new `MembershipSystemSnapshot` entity has been introduced, which describes a snapshot of the membership system configuration parameters that can be changed through proposals. Those include default invitations count for new members, membership price, referral cut and initial balance of an invited member.
 
 #### [Working groups](./schemas/workingGroups.graphql)
+
 - All working groups are now supported by the query node (previously only `Gateway` and `Storage` groups were supported)
 - `Worker.id` now has a `{workingGroupModuleName}-{workerId}` format, for example: `storageWorkingGroup-1`.
 - `Worker.isActive` field has been removed in favor of `Worker.status` union (Note that `isActive` may be re-introduced after https://github.com/Joystream/joystream/issues/2657)

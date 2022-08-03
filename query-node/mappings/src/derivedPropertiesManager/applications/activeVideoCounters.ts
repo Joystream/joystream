@@ -200,7 +200,8 @@ interface IAvcExecutorAdapter<Entity> {
 class ActiveVideoCounterExecutor<
   Entity extends Video | StorageDataObject,
   DerivedEntity extends VideoCategory | Channel | ChannelCategory = VideoCategory | Channel | ChannelCategory
-> implements IExecutor<Entity, IAvcChange, DerivedEntity> {
+> implements IExecutor<Entity, IAvcChange, DerivedEntity>
+{
   private adapter: IAvcExecutorAdapter<Entity>
 
   constructor(adapter: IAvcExecutorAdapter<Entity>) {
