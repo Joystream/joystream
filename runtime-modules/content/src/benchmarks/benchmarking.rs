@@ -14,7 +14,6 @@ use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
 use sp_runtime::SaturatedConversion;
 use sp_std::{
-    cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     vec,
 };
@@ -23,11 +22,11 @@ use storage::Module as Storage;
 use super::{
     assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
     generate_channel_creation_params, insert_content_leader, insert_curator,
-    insert_distribution_leader, insert_storage_leader,
+    insert_distribution_leader, insert_storage_leader, max_curators_per_group,
     setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
     storage_buckets_num_witness, worst_case_channel_agent_permissions,
-    worst_case_content_moderation_actions_set, ContentWorkingGroupInstance, CreateAccountId,
-    RuntimeConfig, CURATOR_IDS, MAX_BYTES_METADATA,
+    worst_case_content_moderation_actions_set, CreateAccountId, RuntimeConfig, CURATOR_IDS,
+    MAX_BYTES_METADATA,
 };
 
 benchmarks! {
@@ -70,9 +69,7 @@ benchmarks! {
         let sender = RawOrigin::Signed(lead_account_id);
 
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            min(<T as working_group::Config<ContentWorkingGroupInstance>>::
-                MaxWorkerNumberLimit::get(),
-            T::MaxNumberOfCuratorsPerGroup::get())
+            max_curators_per_group::<T>()
         )?;
 
         let channel_owner = ChannelOwner::CuratorGroup(group_id);
@@ -319,7 +316,7 @@ benchmarks! {
 
         let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get()
+            max_curators_per_group::<T>()
         )?;
         let permissions_by_level: ModerationPermissionsByLevel::<T> = (0..a).map(
             |i| (i.saturated_into(), worst_case_content_moderation_actions_set())
@@ -341,7 +338,7 @@ benchmarks! {
     set_curator_group_status {
         let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get()
+            max_curators_per_group::<T>()
         )?;
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert!(group.is_active());
@@ -360,10 +357,10 @@ benchmarks! {
         let (_, lead_account) = insert_content_leader::<T>();
         let permissions = worst_case_channel_agent_permissions();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get() - 1
+            max_curators_per_group::<T>() - 1
         )?;
         let (curator_id, _) = insert_curator::<T>(
-            CURATOR_IDS[T::MaxNumberOfCuratorsPerGroup::get() as usize - 1]
+            CURATOR_IDS[max_curators_per_group::<T>() as usize - 1]
         );
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert_eq!(group.get_curators().get(&curator_id), None);
@@ -382,7 +379,7 @@ benchmarks! {
     remove_curator_from_group {
         let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get()
+            max_curators_per_group::<T>()
         )?;
         let group = Pallet::<T>::curator_group_by_id(group_id);
         let curator_id = *group.get_curators().keys().next().unwrap();

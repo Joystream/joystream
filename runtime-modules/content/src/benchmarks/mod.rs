@@ -813,10 +813,8 @@ where
 {
     let (_, lead_account_id) = insert_content_leader::<T>();
 
-    let group_id = setup_worst_case_curator_group_with_curators::<T>(min(
-        <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
-        T::MaxNumberOfCuratorsPerGroup::get(),
-    ))?;
+    let group_id =
+        setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
 
     let channel_id = setup_worst_case_scenario_channel::<T>(
         lead_account_id.clone(),
@@ -854,4 +852,11 @@ fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u3
     let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
     let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
     Ok(channel_bag.stored_by.len() as u32)
+}
+
+fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
+    min(
+        <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
+        T::MaxNumberOfCuratorsPerGroup::get(),
+    )
 }
