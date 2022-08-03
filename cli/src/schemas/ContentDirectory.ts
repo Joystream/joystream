@@ -1,3 +1,9 @@
+import { keysOf } from '@joystream/types'
+import {
+  PalletContentChannelActionPermission,
+  PalletContentPermissionsCuratorGroupContentModerationAction,
+  PalletContentPermissionsCuratorGroupPausableChannelFeature,
+} from '@polkadot/types/lookup'
 import {
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
@@ -6,6 +12,8 @@ import {
   ChannelCategoryInputParameters,
   JsonSchema,
   ModerationPermissionsByLevelInputParameters,
+  PropertySchema,
+  ContentModerationActionNullEnum,
 } from '../Types'
 
 export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> = {
@@ -41,28 +49,9 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
             type: 'array',
             items: {
               type: 'string',
-              enum: [
-                'ManageNonVideoChannelAssets',
-                'ManageChannelCollaborators',
-                'UpdateVideoMetadata',
-                'AddVideo',
-                'ManageVideoAssets',
-                'DeleteChannel',
-                'DeleteVideo',
-                'ManageVideoNfts',
-                'AgentRemark',
-                'TransferChannel',
-                'ClaimChannelReward',
-                'WithdrawFromChannelBalance',
-                'IssueCreatorToken',
-                'ClaimCreatorTokenPatronage',
-                'InitAndManageCreatorTokenSale',
-                'CreatorTokenIssuerTransfer',
-                'MakeCreatorTokenPermissionless',
-                'ReduceCreatorTokenPatronageRate',
-                'ManageRevenueSplits',
-                'DeissueCreatorToken',
-              ],
+              enum: keysOf<PalletContentChannelActionPermission, 'PalletContentChannelActionPermission'>(
+                'PalletContentChannelActionPermission'
+              ),
             },
           },
         },
@@ -72,46 +61,38 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
   },
 }
 
-export const ModerationPermissionsByLevelInputSchema: JsonSchema<ModerationPermissionsByLevelInputParameters> = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    channelPreviledgeLevel: { type: 'integer' },
-    permissions: {
-      type: 'array',
-      items: {
-        type: 'object',
-        enum: [
-          { DeleteVideo: null },
-          { DeleteChannel: null },
-          { HideVideo: null },
-          { HideChannel: null },
-          { DeleteNonVideoChannelAssets: null },
-          { UpdateChannelNftLimits: null },
-          { DeleteVideoAssets: true },
-          { DeleteVideoAssets: false },
-          {
-            ChangeChannelFeatureStatus: 'ChannelFundsTransfer',
-          },
-          {
-            ChangeChannelFeatureStatus: 'CreatorCashout',
-          },
-          {
-            ChangeChannelFeatureStatus: 'VideoNftIssuance',
-          },
-          {
-            ChangeChannelFeatureStatus: 'VideoCreation',
-          },
-          {
-            ChangeChannelFeatureStatus: 'VideoUpdate',
-          },
-          {
-            ChangeChannelFeatureStatus: 'ChannelUpdate',
-          },
-          {
-            ChangeChannelFeatureStatus: 'CreatorTokenIssuance',
-          },
-        ],
+const contentModerationActionsEnumOptions = [
+  { DeleteVideoAssets: true },
+  { DeleteVideoAssets: false },
+
+  ...keysOf<
+    PalletContentPermissionsCuratorGroupContentModerationAction,
+    'PalletContentPermissionsCuratorGroupContentModerationAction'
+  >('PalletContentPermissionsCuratorGroupContentModerationAction')
+    .filter((e) => e !== 'DeleteVideoAssets' && e !== 'ChangeChannelFeatureStatus')
+    .map((e) => ({ [e]: null } as ContentModerationActionNullEnum)),
+
+  ...keysOf<
+    PalletContentPermissionsCuratorGroupPausableChannelFeature,
+    'PalletContentPermissionsCuratorGroupPausableChannelFeature'
+  >('PalletContentPermissionsCuratorGroupPausableChannelFeature').map((c) => ({
+    ChangeChannelFeatureStatus: c,
+  })),
+]
+
+export const ModerationPermissionsByLevelInputSchema: PropertySchema<ModerationPermissionsByLevelInputParameters> = {
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      channelPrivilegeLevel: { type: 'number' },
+      permissions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          enum: contentModerationActionsEnumOptions,
+        },
       },
     },
   },

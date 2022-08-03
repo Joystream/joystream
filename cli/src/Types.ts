@@ -33,6 +33,7 @@ import {
   WorkingGroupApplicationDetailsFragment,
   WorkingGroupOpeningDetailsFragment,
 } from './graphql/generated/queries'
+import { EnumVariant } from '@joystream/types'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -50,7 +51,7 @@ export type AccountSummary = {
 
 // Object with "name" and "value" properties, used for rendering simple CLI tables like:
 // Total balance:   100 JOY
-// Free calance:     50 JOY
+// Free balance:     50 JOY
 export type NameValueObj = { name: string; value: string }
 
 // Working groups related types
@@ -97,7 +98,7 @@ export type GroupMember = {
 export type ApplicationDetails = {
   applicationId: number
   member: MemberDetails
-  roleAccout: AccountId
+  roleAccount: AccountId
   stakingAccount: AccountId
   rewardAccount: AccountId
   descriptionHash: string
@@ -211,14 +212,26 @@ export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto'
   privilegeLevel?: number
 }
 
+export type ContentModerationActionNullEnumLiteral = Exclude<
+  ContentModerationAction['type'],
+  'ChangeChannelFeatureStatus' | 'DeleteVideoAssets'
+>
+
+export type ContentModerationActionNullEnum = Exclude<
+  EnumVariant<{
+    [K in ContentModerationActionNullEnumLiteral]: null
+  }>,
+  ContentModerationActionNullEnumLiteral
+>
+
 export type ModerationPermissionsByLevelInputParameters = {
-  channelPreviledgeLevel: number
+  channelPrivilegeLevel: number
   permissions: (
-    | Exclude<ContentModerationAction['type'], 'ChangeChannelFeatureStatus' | 'DeleteVideoAssets'>
-    | { 'DeleteVideoAssets': boolean }
-    | { 'ChangeChannelFeatureStatus': ContentModerationAction['asChangeChannelFeatureStatus']['type'] }
+    | ContentModerationActionNullEnum
+    | { DeleteVideoAssets: boolean }
+    | { ChangeChannelFeatureStatus: ContentModerationAction['asChangeChannelFeatureStatus']['type'] }
   )[]
-}
+}[]
 
 export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>
 
@@ -251,6 +264,8 @@ type RemoveIndex<T> = {
 
 type AnyJSONSchema = RemoveIndex<JSONSchema4>
 
+type IsBoolean<T> = T | boolean extends boolean ? true : false
+
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
@@ -263,9 +278,18 @@ export type JSONTypeName<T> = T extends string
   ? 'number' | ['number', 'null'] | 'integer' | ['integer', 'null']
   : 'object' | ['object', 'null']
 
+// tweaked version of https://stackoverflow.com/questions/53953814/typescript-check-if-a-type-is-a-union
+type IsUnion<T, U extends T = T> = (T extends unknown ? (U extends T ? false : true) : never) extends false
+  ? false
+  : IsBoolean<T> extends true
+  ? false
+  : true
+
 export type PropertySchema<P> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
   type: JSONTypeName<P>
-} & (P extends AnyPrimitive
+} & (IsUnion<NonNullable<P>> extends true
+    ? { enum?: P[] }
+    : P extends AnyPrimitive
     ? { properties?: never }
     : P extends (infer T)[]
     ? { properties?: never; items: PropertySchema<T> }
