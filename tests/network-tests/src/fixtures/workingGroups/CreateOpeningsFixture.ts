@@ -8,7 +8,6 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { OpeningAddedEventFieldsFragment, OpeningFieldsFragment } from '../../graphql/generated/queries'
 import { WorkingGroupOpeningType } from '../../graphql/generated/schema'
 import { assert } from 'chai'
-import { MIN_APPLICATION_STAKE, MIN_UNSTANKING_PERIOD } from '../../consts'
 import moment from 'moment'
 import BN from 'bn.js'
 import { IOpeningMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
@@ -29,21 +28,25 @@ export type OpeningParams = {
 // 'contentWorkingGroup' used just as a reference group (all working-group events are the same)
 type OpeningAddedEventDetails = EventDetails<EventType<'contentWorkingGroup', 'OpeningAdded'>>
 
-export const DEFAULT_OPENING_PARAMS: Omit<OpeningParams, 'metadata'> & { metadata: IOpeningMetadata } = {
-  stake: MIN_APPLICATION_STAKE,
-  unstakingPeriod: MIN_UNSTANKING_PERIOD,
-  reward: new BN(10),
-  metadata: {
-    shortDescription: 'Test opening',
-    description: '# Test opening',
-    expectedEndingTimestamp: moment().unix() + 60,
-    hiringLimit: 1,
-    applicationDetails: '- This is automatically created opening, do not apply!',
-    applicationFormQuestions: [
-      { question: 'Question 1?', type: OpeningMetadata.ApplicationFormQuestion.InputType.TEXT },
-      { question: 'Question 2?', type: OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA },
-    ],
-  },
+export const createDefaultOpeningParams = (
+  api: Api
+): Omit<OpeningParams, 'metadata'> & { metadata: IOpeningMetadata } => {
+  return {
+    stake: api.consts.contentWorkingGroup.minimumApplicationStake,
+    unstakingPeriod: api.consts.contentWorkingGroup.minUnstakingPeriodLimit.toNumber(),
+    reward: new BN(10),
+    metadata: {
+      shortDescription: 'Test opening',
+      description: '# Test opening',
+      expectedEndingTimestamp: moment().unix() + 60,
+      hiringLimit: 1,
+      applicationDetails: '- This is automatically created opening, do not apply!',
+      applicationFormQuestions: [
+        { question: 'Question 1?', type: OpeningMetadata.ApplicationFormQuestion.InputType.TEXT },
+        { question: 'Question 2?', type: OpeningMetadata.ApplicationFormQuestion.InputType.TEXTAREA },
+      ],
+    },
+  }
 }
 
 export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
@@ -60,7 +63,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
     asSudo = false
   ) {
     super(api, query, group)
-    this.openingsParams = openingsParams || [DEFAULT_OPENING_PARAMS]
+    this.openingsParams = openingsParams || [createDefaultOpeningParams(api)]
     this.asSudo = asSudo
   }
 

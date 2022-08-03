@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perquintill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
+import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/events' {
   export interface AugmentedEvents<ApiType extends ApiTypes> {
@@ -324,7 +324,7 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * New council was elected
        **/
-      AnnouncingPeriodStarted: AugmentedEvent<ApiType, []>;
+      AnnouncingPeriodStarted: AugmentedEvent<ApiType, [u32]>;
       /**
        * Budget balance was changed by the root.
        **/
@@ -380,15 +380,15 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * New council was elected and appointed
        **/
-      NewCouncilElected: AugmentedEvent<ApiType, [Vec<u64>]>;
+      NewCouncilElected: AugmentedEvent<ApiType, [Vec<u64>, u32]>;
       /**
        * New council was not elected
        **/
-      NewCouncilNotElected: AugmentedEvent<ApiType, []>;
+      NewCouncilNotElected: AugmentedEvent<ApiType, [u32]>;
       /**
        * Announcing period can't finish because of insufficient candidtate count
        **/
-      NotEnoughCandidates: AugmentedEvent<ApiType, []>;
+      NotEnoughCandidates: AugmentedEvent<ApiType, [u32]>;
       /**
        * Request has been funded
        **/
@@ -1147,6 +1147,7 @@ declare module '@polkadot/api-base/types/events' {
       MemberProfileUpdated: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
       MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
       MembershipBought: AugmentedEvent<ApiType, [u64, PalletMembershipBuyMembershipParameters]>;
+      MembershipGifted: AugmentedEvent<ApiType, [u64, PalletMembershipGiftMembershipParameters]>;
       MembershipPriceUpdated: AugmentedEvent<ApiType, [u128]>;
       MemberVerificationStatusUpdated: AugmentedEvent<ApiType, [u64, bool, u64]>;
       ReferralCutUpdated: AugmentedEvent<ApiType, [u8]>;
@@ -2152,15 +2153,15 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Referendum started
        **/
-      ReferendumStarted: AugmentedEvent<ApiType, [u64]>;
+      ReferendumStarted: AugmentedEvent<ApiType, [u64, u32]>;
       /**
        * Referendum started
        **/
-      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64]>;
+      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64, u32]>;
       /**
        * Revealing phase has begun
        **/
-      RevealingStageStarted: AugmentedEvent<ApiType, []>;
+      RevealingStageStarted: AugmentedEvent<ApiType, [u32]>;
       /**
        * User released his stake
        **/
@@ -2246,14 +2247,6 @@ declare module '@polkadot/api-base/types/events' {
     };
     storage: {
       /**
-       * Bag objects changed.
-       * Params
-       * - bag id
-       * - new total objects size
-       * - new total objects number
-       **/
-      BagObjectsChanged: AugmentedEvent<ApiType, [PalletStorageBagIdType, u64, u64]>;
-      /**
        * Emits on changing the size-based pricing of new objects uploaded.
        * Params
        * - new data size fee
@@ -2285,9 +2278,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on storage assets being uploaded and deleted at the same time
        * Params
        * - UploadParameters
-       * - Objects Id of assets to be removed
+       * - Ids of the uploaded objects
+       * - Ids of the removed objects
        **/
-      DataObjectsUpdated: AugmentedEvent<ApiType, [PalletStorageUploadParametersRecord, BTreeSet<u64>]>;
+      DataObjectsUpdated: AugmentedEvent<ApiType, [PalletStorageUploadParametersRecord, BTreeSet<u64>, BTreeSet<u64>]>;
       /**
        * Emits on uploading data objects.
        * Params
@@ -2295,7 +2289,7 @@ declare module '@polkadot/api-base/types/events' {
        * - initial uploading parameters
        * - state bloat bond for objects
        **/
-      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<u64>, PalletStorageUploadParametersRecord, u128]>;
+      DataObjectsUploaded: AugmentedEvent<ApiType, [BTreeSet<u64>, PalletStorageUploadParametersRecord, u128]>;
       /**
        * Emits on creating distribution bucket.
        * Params

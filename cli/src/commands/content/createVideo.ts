@@ -101,7 +101,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
         keypair,
         memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...objectIds.values()].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )
     }

@@ -7,7 +7,10 @@ import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Content directory', async ({ job }) => {
-  const leadSetupJob = job('Set content working group leads', leadOpening(true, ['contentWorkingGroup']))
+  const leadSetupJob = job(
+    'Set content working group leads',
+    leadOpening(true, ['contentWorkingGroup', 'storageWorkingGroup'])
+  )
   const channelJob = job('Create and Update Channel with assets', createAndUpdateChannel).requires(leadSetupJob)
   job('nft auction and offers', nftAuctionAndOffers).requires(channelJob)
   job('curator moderation actions', curatorModerationActions).requires(channelJob)

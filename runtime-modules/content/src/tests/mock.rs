@@ -349,7 +349,6 @@ parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
-    pub const PricePerByte: u32 = 2;
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const ModuleAccountInitialBalance: u64 = 1;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
@@ -389,9 +388,6 @@ impl Config for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
-
-    /// price per byte
-    type PricePerByte = PricePerByte;
 
     /// module id
     type ModuleId = ContentModuleId;
@@ -521,6 +517,8 @@ pub struct ExtBuilder {
     auction_starts_at_max_delta: u64,
     max_auction_whitelist_length: u32,
     nft_limits_enabled: bool,
+    channel_state_bloat_bond_value: BalanceOf<Test>,
+    video_state_bloat_bond_value: BalanceOf<Test>,
 }
 
 impl Default for ExtBuilder {
@@ -550,6 +548,8 @@ impl Default for ExtBuilder {
             auction_starts_at_max_delta: 90_000,
             max_auction_whitelist_length: 4,
             nft_limits_enabled: true,
+            channel_state_bloat_bond_value: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+            video_state_bloat_bond_value: DEFAULT_VIDEO_STATE_BLOAT_BOND,
         }
     }
 }
@@ -605,6 +605,8 @@ impl ExtBuilder {
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
             max_auction_whitelist_length: self.max_auction_whitelist_length,
             nft_limits_enabled: self.nft_limits_enabled,
+            channel_state_bloat_bond_value: self.channel_state_bloat_bond_value,
+            video_state_bloat_bond_value: self.video_state_bloat_bond_value,
         }
         .assimilate_storage(&mut t)
         .unwrap();

@@ -22,6 +22,9 @@ decl_error! {
         /// Symbol already in use
         TokenSymbolAlreadyInUse,
 
+        /// At least one of the members provided as part of InitialAllocation does not exist
+        InitialAllocationToNonExistingMember,
+
         /// Account Already exists
         AccountAlreadyExists,
 

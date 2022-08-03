@@ -121,6 +121,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
       expectedDataObjectStateBloatBond,
       assetsToUpload,

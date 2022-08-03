@@ -780,6 +780,22 @@ fn change_thread_mode_fails_with_exceeded_max_author_list_size() {
 }
 
 #[test]
+fn change_thread_mode_fails_with_invalid_whitelisted_member_id() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_mode(ThreadMode::Closed(vec![2, 3, 9999]));
+        change_thread_mode_fixture
+            .call_and_assert(Err(Error::<Test>::WhitelistedMemberDoesNotExist.into()));
+    });
+}
+
+#[test]
 fn create_discussion_call_fails_with_exceeded_max_author_list_size() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture =
