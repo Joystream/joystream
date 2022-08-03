@@ -344,7 +344,7 @@ export default class Api {
     return {
       applicationId,
       member: await this.expectedMemberDetailsById(application.memberId),
-      roleAccout: application.roleAccountId,
+      roleAccount: application.roleAccountId,
       rewardAccount: application.rewardAccountId,
       stakingAccount: application.stakingAccountId,
       descriptionHash: application.descriptionHash.toString(),
