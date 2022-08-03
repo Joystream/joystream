@@ -708,6 +708,10 @@ fn worst_case_scenario_collaborators<T: RuntimeConfig>(
 where
     T::AccountId: CreateAccountId,
 {
+    assert!(
+        start_id + num <= MAX_COLABORATOR_IDS as u32,
+        "Too many collaborators created"
+    );
     (0..num)
         .map(|i| {
             let (_, collaborator_id) =
@@ -809,6 +813,11 @@ where
         working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
             .saturated_into::<u32>()
             .saturating_sub(1);
+
+    assert!(
+        already_existing_curators_num + curators_len <= MAX_COLABORATOR_IDS as u32,
+        "Too many curators created"
+    );
 
     for c in CURATOR_IDS
         .iter()
