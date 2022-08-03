@@ -92,7 +92,10 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
     const { collaborators, coverPhotoPath, avatarPhotoPath } = channelInput
 
-    if (collaborators !== undefined && !this.isChannelOwner(channel, actor)) {
+    if (
+      collaborators !== undefined &&
+      (!this.isChannelOwner(channel, actor) || this.hasManageChannelCollaboratorsPermission(channel, actor))
+    ) {
       this.error("Only channel owner is allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
     }
 
@@ -112,7 +115,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     meta.coverPhoto = assetIndices.coverPhotoPath
     meta.avatarPhoto = assetIndices.avatarPhotoPath
 
-    // Preare and send the extrinsic
+    // Prepare and send the extrinsic
     const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(
@@ -121,7 +124,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
-    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
       expectedDataObjectStateBloatBond,
       assetsToUpload,

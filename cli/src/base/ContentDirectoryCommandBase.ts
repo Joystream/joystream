@@ -109,6 +109,12 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       : actor.isMember && actor.asMember.eq(channel.owner.asMember)
   }
 
+  hasManageChannelCollaboratorsPermission(channel: Channel, actor: ContentActor): boolean {
+    return !![...channel.collaborators].find(
+      ([id, permissions]) => actor.asMember === id && [...permissions].find((p) => p.isManageChannelCollaborators)
+    )
+  }
+
   async getChannelManagementActor(
     channel: Channel,
     context: ChannelManagementContext
