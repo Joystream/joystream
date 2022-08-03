@@ -19,14 +19,14 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
 
   async run(): Promise<void> {
     const { id } = this.parse(CuratorGroupCommand).args
-    const group = await this.getCuratorGroup(id)
+    const { active, curators, permissionsByLevel } = await this.getCuratorGroup(id)
     const members = (await this.getApi().groupMembers(WorkingGroups.Curators)).filter((curator) =>
-      Array.from(group.curators).some(([groupCurator]) => groupCurator.eq(curator.workerId))
+      Array.from(curators).some(([groupCurator]) => groupCurator.eq(curator.workerId))
     )
 
     displayCollapsedRow({
       'ID': id,
-      'Status': group.active.valueOf() ? 'Active' : 'Inactive',
+      'Status': active.valueOf() ? 'Active' : 'Inactive',
     })
     displayHeader(`Group Members (${members.length})`)
     this.log(
@@ -34,6 +34,12 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
         .map((curator) =>
           chalk.magentaBright(`${memberHandle(curator.profile)} (WorkerID: ${curator.workerId.toString()})`)
         )
+        .join(', ')
+    )
+    displayHeader(`Group Permissions (${[...permissionsByLevel].length})`)
+    this.log(
+      [...permissionsByLevel]
+        .map(([level, permissions]) => chalk.magentaBright(`Privilege Level: ${level}; (Permissions: ${permissions})`))
         .join(', ')
     )
   }
