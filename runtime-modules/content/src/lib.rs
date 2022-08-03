@@ -684,7 +684,7 @@ decl_module! {
 
             let upload_parameters =
                 if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
-                    // verify channel bag witness
+                    // verify storage buckets num witness
                     match params.storage_buckets_num_witness {
                         Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
                         None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
@@ -1002,7 +1002,7 @@ decl_module! {
                 channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
 
-            // verify channel bag witness
+            // verify storage buckets num witness
             Self::verify_storage_buckets_num_witness(channel_id, params.storage_buckets_num_witness)?;
 
             // next video id
@@ -1141,7 +1141,7 @@ decl_module! {
 
             let upload_parameters =
                 if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
-                    // verify channel bag witness
+                    // verify storage buckets num witness
                     match params.storage_buckets_num_witness {
                         Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
                         None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
@@ -1264,7 +1264,7 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
-            // Verify channel_bag_witness
+            // Verify storage buckets num witness
             if !num_objects_to_delete.is_zero() {
                 match storage_buckets_num_witness {
                     Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),

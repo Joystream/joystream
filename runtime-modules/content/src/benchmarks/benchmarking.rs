@@ -413,7 +413,6 @@ benchmarks! {
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
             Some(a),
             b,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
             None
         )?;
         let expected_video_id = Pallet::<T>::next_video_id();
@@ -453,7 +452,6 @@ benchmarks! {
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
             Some(a),
             b,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
             Some(c)
         )?;
         let expected_video_id = Pallet::<T>::next_video_id();
@@ -501,7 +499,6 @@ benchmarks! {
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
         )?;
         let params = VideoUpdateParameters::<T> {
             assets_to_upload: None,
@@ -551,11 +548,7 @@ benchmarks! {
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
-        ) = setup_worst_case_scenario_mutable_video::<T>(
-            Some(num_preexisting_assets),
-            c,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-        )?;
+        ) = setup_worst_case_scenario_mutable_video::<T>(Some(num_preexisting_assets), c)?;
 
         let max_channel_assets: T::DataObjectId =
             T::MaxNumberOfAssetsPerChannel::get().saturated_into();
@@ -606,7 +599,6 @@ benchmarks! {
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
         )?;
         let params = VideoUpdateParameters::<T> {
             assets_to_upload: None,
@@ -668,11 +660,7 @@ benchmarks! {
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
-        ) = setup_worst_case_scenario_mutable_video::<T>(
-            Some(num_preexisting_assets),
-            c,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-        )?;
+        ) = setup_worst_case_scenario_mutable_video::<T>(Some(num_preexisting_assets), c)?;
 
         let max_channel_assets: T::DataObjectId =
             T::MaxNumberOfAssetsPerChannel::get().saturated_into();
@@ -732,7 +720,6 @@ benchmarks! {
         ) = setup_worst_case_scenario_mutable_video::<T>(
             None,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
         )?;
     }: delete_video (
         RawOrigin::Signed(curator_account_id.clone()),
@@ -756,11 +743,7 @@ benchmarks! {
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
-        ) = setup_worst_case_scenario_mutable_video::<T>(
-            Some(a),
-            b,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-        )?;
+        ) = setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
         let witness = storage_buckets_num_witness::<T>(channel_id)?;
     }: delete_video (
         RawOrigin::Signed(curator_account_id.clone()),
