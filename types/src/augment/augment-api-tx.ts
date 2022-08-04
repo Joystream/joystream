@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, WrapperKeepOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPollInput, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
+import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -1102,21 +1102,20 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       createCategory: AugmentedSubmittable<(parentCategoryId: Option<u64> | null | object | string | Uint8Array, title: Bytes | string | Uint8Array, description: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<u64>, Bytes, Bytes]>;
       /**
-       * Create new thread in category with poll
+       * Create new thread in category
        * 
        * <weight>
        * 
        * ## Weight
-       * `O (W + V + X + Y)` where:
+       * `O (W + V + X)` where:
        * - `W` is the category depth
        * - `V` is the length of the thread title.
        * - `X` is the length of the thread text.
-       * - `Y` is the number of poll alternatives.
        * - DB:
        * - O(W)
        * # </weight>
        **/
-      createThread: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array, pollInput: Option<PalletForumPollInput> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, Bytes, Bytes, Option<PalletForumPollInput>]>;
+      createThread: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array, text: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, Bytes, Bytes]>;
       /**
        * Delete category
        * 
@@ -1309,20 +1308,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateCategoryTitle: AugmentedSubmittable<(actor: PalletForumPrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, title: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletForumPrivilegedActor, u64, Bytes]>;
-      /**
-       * Submit a poll
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (W + V)` where:
-       * - `W` is the category depth,
-       * - `V` is the number of poll alternatives.
-       * - DB:
-       * - O(W)
-       * # </weight>
-       **/
-      voteOnPoll: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, u32]>;
     };
     forumWorkingGroup: {
       /**
@@ -1975,6 +1960,12 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       createFoundingMember: AugmentedSubmittable<(params: PalletMembershipCreateFoundingMemberParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipCreateFoundingMemberParameters]>;
+      /**
+       * Gift a membership using own funds. Gifter does not need to be a member.
+       * Can optinally apply a lock on a portion of the funds transferred to root and controller
+       * accounts. Gifter also pays the membership fee.
+       **/
+      giftMembership: AugmentedSubmittable<(params: PalletMembershipGiftMembershipParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any; creditControllerAccount?: any; applyControllerAccountInvitationLock?: any; creditRootAccount?: any; applyRootAccountInvitationLock?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipGiftMembershipParameters]>;
       /**
        * Invite a new member.
        * 

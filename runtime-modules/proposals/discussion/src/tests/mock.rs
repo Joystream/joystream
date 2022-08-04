@@ -17,7 +17,7 @@ use sp_runtime::{
 };
 
 use crate::CouncilOriginValidator;
-use crate::MemberOriginValidator;
+use crate::{MemberOriginValidator, MembershipInfoProvider};
 
 use frame_support::dispatch::DispatchError;
 use sp_std::convert::{TryFrom, TryInto};
@@ -210,6 +210,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
 impl crate::Config for Test {
     type Event = Event;
     type AuthorOriginValidator = ();
+    type MembershipInfoProvider = ();
     type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
     type PostId = u64;
@@ -246,6 +247,16 @@ impl MemberOriginValidator<Origin, u64, u128> for () {
 
     fn is_member_controller_account(_member_id: &u64, _account_id: &u128) -> bool {
         unimplemented!()
+    }
+}
+
+impl MembershipInfoProvider<Test> for () {
+    fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
+        if member_id <= 12 {
+            Ok(member_id.into())
+        } else {
+            Err(DispatchError::Other("member does not exist"))
+        }
     }
 }
 
@@ -368,8 +379,12 @@ impl referendum::Config<ReferendumInstance> for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = frame_system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
+        .unwrap();
+
+    council::GenesisConfig::<Test>::default()
+        .assimilate_storage(&mut t)
         .unwrap();
 
     t.into()

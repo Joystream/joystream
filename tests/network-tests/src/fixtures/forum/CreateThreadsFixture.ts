@@ -7,26 +7,17 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithInitialPostFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { PalletForumPollInput as PollInput } from '@polkadot/types/lookup'
 import { MemberId, ForumThreadId, ForumCategoryId, ForumPostId } from '@joystream/types/primitives'
-import { POST_DEPOSIT, THREAD_DEPOSIT } from '../../consts'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { EventDetails } from '@joystream/cli/src/Types'
 import { createType } from '@joystream/types'
-
-export type PollParams = {
-  description: string
-  endTime: Date
-  alternatives: string[]
-}
 
 export type ThreadParams = {
   metadata: MetadataInput<IForumThreadMetadata>
   text: string
   categoryId: ForumCategoryId
   asMember: MemberId
-  poll?: PollParams
 }
 
 type ThreadCreatedEventDetails = EventDetails<EventType<'forum', 'ThreadCreated'>>
@@ -66,20 +57,9 @@ export class CreateThreadsFixture extends StandardizedFixture {
   public async execute(): Promise<void> {
     const accounts = await this.getSignerAccountOrAccounts()
     // Send required funds to accounts (ThreadDeposit + PostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, THREAD_DEPOSIT.add(POST_DEPOSIT))))
+    const funds = this.api.consts.forum.postDeposit.add(this.api.consts.forum.threadDeposit)
+    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, funds)))
     await super.execute()
-  }
-
-  protected parsePollParams(pollParams?: PollParams): PollInput | null {
-    if (!pollParams) {
-      return null
-    }
-
-    return createType('PalletForumPollInput', {
-      description: pollParams.description,
-      endTime: pollParams.endTime.getTime(),
-      pollAlternatives: pollParams.alternatives,
-    })
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
@@ -88,8 +68,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
         params.asMember,
         params.categoryId,
         Utils.getMetadataBytesFromInput(ForumThreadMetadata, params.metadata),
-        params.text,
-        this.parsePollParams(params.poll)
+        params.text
       )
     )
   }
@@ -132,15 +111,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
       // assert.equal(initialPost.origin.threadCreatedEvent.id, qEvent.id)
       assert.equal(initialPost.author.id, threadParams.asMember.toString())
       assert.equal(initialPost.status.__typename, 'PostStatusActive')
-      if (threadParams.poll) {
-        Utils.assert(qThread.poll, 'Query node: Thread poll is missing')
-        assert.equal(qThread.poll.description, threadParams.poll.description)
-        assert.sameDeepMembers(
-          qThread.poll.pollAlternatives.map((a) => [a.text, a.index]),
-          threadParams.poll.alternatives.map((text, index) => [text, index])
-        )
-        assert.equal(new Date(qThread.poll.endTime).getTime(), threadParams.poll.endTime.getTime())
-      }
+
       if (metadata && isSet(metadata?.tags)) {
         assert.sameDeepMembers(
           qThread.tags.map((t) => t.id),

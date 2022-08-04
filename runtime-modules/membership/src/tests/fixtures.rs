@@ -1,8 +1,8 @@
 use super::mock::*;
 use crate::Event as MembershipEvent;
 use crate::{
-    BuyMembershipParameters, CreateFoundingMemberParameters, InviteMembershipParameters,
-    MembershipObject,
+    BuyMembershipParameters, CreateFoundingMemberParameters, GiftMembershipParameters,
+    InviteMembershipParameters, MembershipObject,
 };
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
@@ -105,6 +105,8 @@ pub fn get_bob_info() -> TestUserInfo {
 
 pub const ALICE_ACCOUNT_ID: u64 = 1;
 pub const BOB_ACCOUNT_ID: u64 = 2;
+pub const BOB_ROOT_ACCOUNT_ID: u64 = 3;
+pub const BOB_CONTROLLER_ACCOUNT_ID: u64 = BOB_ACCOUNT_ID;
 pub const ALICE_MEMBER_ID: u64 = 0;
 pub const BOB_MEMBER_ID: u64 = 1;
 
@@ -127,6 +129,73 @@ pub fn buy_default_membership_as_alice() -> DispatchResult {
 
 pub fn set_alice_free_balance(balance: u64) {
     let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
+}
+
+pub fn get_bob_gift_membership_parameters() -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        controller_account: BOB_CONTROLLER_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(500),
+        credit_root_account: 600,
+        apply_root_account_invitation_lock: Some(300),
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_invalid_root_credit() -> GiftMembershipParameters<u64, u64>
+{
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        controller_account: BOB_CONTROLLER_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: None,
+        credit_root_account: 1000,
+        apply_root_account_invitation_lock: Some(10_000), // more than credit
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_invalid_controller_credit(
+) -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        controller_account: BOB_CONTROLLER_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(10_000), // more than credit
+        credit_root_account: 1000,
+        apply_root_account_invitation_lock: None,
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_single_account() -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        // same as root account
+        controller_account: BOB_ROOT_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(500),
+        credit_root_account: 2000,
+        apply_root_account_invitation_lock: Some(600),
+    }
+}
+
+pub fn gift_bob_membership_as_alice(params: GiftMembershipParameters<u64, u64>) -> DispatchResult {
+    Membership::gift_membership(Origin::signed(ALICE_ACCOUNT_ID), params)
 }
 
 pub struct UpdateMembershipVerificationFixture {
@@ -354,8 +423,8 @@ impl Default for InviteMembershipFixture {
         Self {
             member_id: ALICE_MEMBER_ID,
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
-            root_account: BOB_ACCOUNT_ID,
-            controller_account: BOB_ACCOUNT_ID,
+            root_account: BOB_ROOT_ACCOUNT_ID,
+            controller_account: BOB_CONTROLLER_ACCOUNT_ID,
             handle: bob.handle,
             metadata: bob.metadata,
         }

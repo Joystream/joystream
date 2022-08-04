@@ -13,6 +13,7 @@ typegen:
   events:
     # Membership
     - members.MembershipBought
+    - members.MembershipGifted
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
     - members.MemberVerificationStatusUpdated
@@ -72,7 +73,6 @@ typegen:
     - forum.ThreadMetadataUpdated
     - forum.ThreadDeleted
     - forum.ThreadMoved
-    - forum.VoteOnPoll
     - forum.PostAdded
     - forum.PostModerated
     - forum.PostDeleted
@@ -104,6 +104,7 @@ typegen:
     - storage.StorageBucketInvitationAccepted
     - storage.StorageBucketsUpdatedForBag
     - storage.DataObjectsUploaded
+    - storage.DataObjectsUpdated
     - storage.StorageOperatorMetadataSet
     - storage.StorageBucketVoucherLimitsSet
     - storage.PendingDataObjectsAccepted
@@ -136,6 +137,7 @@ typegen:
     - storage.DistributionBucketMetadataSet
     - storage.DistributionBucketOperatorRemoved
     - storage.DistributionBucketFamilyMetadataSet
+    - storage.DataObjectStateBloatBondValueUpdated
     # Not required:
     # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
     # - storage.FamiliesInDynamicBagCreationPolicyUpdated
@@ -216,6 +218,8 @@ mappings:
     # Membership module
     - event: members.MembershipBought
       handler: members_MembershipBought
+    - event: members.MembershipGifted
+      handler: members_MembershipGifted
     - event: members.MemberProfileUpdated
       handler: members_MemberProfileUpdated
     - event: members.MemberAccountsUpdated
@@ -698,8 +702,6 @@ mappings:
       handler: forum_PostTextUpdated
     - event: forum.PostReacted
       handler: forum_PostReacted
-    - event: forum.VoteOnPoll
-      handler: forum_VoteOnPoll
     - event: forum.CategoryStickyThreadUpdate
       handler: forum_CategoryStickyThreadUpdate
     - event: forum.CategoryMembershipOfModeratorUpdated
@@ -787,6 +789,8 @@ mappings:
       handler: storage_StorageBucketsUpdatedForBag
     - event: storage.DataObjectsUploaded
       handler: storage_DataObjectsUploaded
+    - event: storage.DataObjectsUpdated
+      handler: storage_DataObjectsUpdated
     - event: storage.StorageOperatorMetadataSet
       handler: storage_StorageOperatorMetadataSet
     - event: storage.StorageBucketVoucherLimitsSet
@@ -851,6 +855,8 @@ mappings:
       handler: storage_DistributionBucketOperatorRemoved
     - event: storage.DistributionBucketFamilyMetadataSet
       handler: storage_DistributionBucketFamilyMetadataSet
+    - event: storage.DataObjectStateBloatBondValueUpdated
+      handler: storage_DataObjectStateBloatBondValueUpdated
 
     # Council
     - event: council.AnnouncingPeriodStarted

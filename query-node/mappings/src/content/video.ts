@@ -65,8 +65,6 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     isCensored: false,
     isFeatured: false,
     createdInBlock: event.blockNumber,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
     isCommentSectionEnabled: true,
     isReactionFeatureEnabled: true,
     commentsCount: 0,
@@ -152,9 +150,6 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
     await store.save<NftIssuedEvent>(nftIssuedEvent)
   }
 
-  // set last update time
-  video.updatedAt = new Date(event.blockTimestamp)
-
   // update video active counters
   await getAllManagers(store).videos.onMainEntityUpdate(video)
 
@@ -196,7 +191,9 @@ export async function content_VideoAssetsDeletedByModerator({
     },
   })
 
-  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
+  for (const asset of assets) {
+    await unsetAssetRelations(store, asset)
+  }
   logger.info('Video assets have been removed', { ids: dataObjectIds })
 
   // common event processing - second
@@ -254,9 +251,6 @@ export async function content_VideoVisibilitySetByModerator({
 
   // update video
   video.isCensored = isCensored.isTrue
-
-  // set last update time
-  video.updatedAt = new Date(event.blockTimestamp)
 
   // update video active counters
   await getAllManagers(store).videos.onMainEntityUpdate(video)

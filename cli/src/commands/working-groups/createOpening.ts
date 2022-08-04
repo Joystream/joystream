@@ -90,9 +90,10 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
   async promptForData(
     rememberedInput?: WorkingGroupOpeningInputParameters
   ): Promise<WorkingGroupOpeningInputParameters> {
+    const api = this.getOriginalApi()
     const openingDefaults = rememberedInput
     const openingPrompt = new JsonSchemaPrompter<WorkingGroupOpeningInputParameters>(
-      WorkingGroupOpeningInputSchema,
+      WorkingGroupOpeningInputSchema(api),
       openingDefaults
     )
     const openingParamsJson = await openingPrompt.promptAll()
@@ -101,7 +102,8 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
   }
 
   async getInputFromFile(filePath: string): Promise<WorkingGroupOpeningInputParameters> {
-    return getInputJson<WorkingGroupOpeningInputParameters>(filePath, WorkingGroupOpeningInputSchema)
+    const api = this.getOriginalApi()
+    return getInputJson<WorkingGroupOpeningInputParameters>(filePath, WorkingGroupOpeningInputSchema(api))
   }
 
   async promptForStakeTopUp({ stake, stakingAccount }: GroupMember, fundsSource?: string): Promise<void> {

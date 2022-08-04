@@ -4,7 +4,7 @@ import {
   CreateOpeningsFixture,
   FillOpeningsFixture,
   ApplicantDetails,
-  DEFAULT_OPENING_PARAMS,
+  createDefaultOpeningParams,
 } from '../../fixtures/workingGroups'
 import { WorkingGroupModuleName } from '../../types'
 import { extendDebug } from '../../Debugger'
@@ -32,7 +32,7 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         const openingRunner = new FixtureRunner(createOpeningFixture)
         await openingRunner.run()
         const [openingId] = createOpeningFixture.getCreatedOpeningIds()
-        const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
+        const { stake: openingStake, metadata: openingMetadata } = createDefaultOpeningParams(api)
 
         const [roleAccount, stakingAccount, rewardAccount] = (await api.createKeyPairs(3)).map(({ key }) => key.address)
         const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [roleAccount])

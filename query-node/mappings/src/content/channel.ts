@@ -60,10 +60,6 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     createdInBlock: event.blockNumber,
     activeVideosCounter: 0,
 
-    // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
-
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
 
@@ -142,9 +138,6 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
     channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id.toString() }))
   }
 
-  // set last update time
-  channel.updatedAt = new Date(event.blockTimestamp)
-
   // transfer video active counter value to new category
   await getAllManagers(store).channels.onMainEntityUpdate(channel)
 
@@ -165,7 +158,7 @@ export async function content_ChannelAssetsDeletedByModerator({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [, channelId, dataObjectIds, rationale] = new Content.ChannelAssetsDeletedByModeratorEvent(event).params
+  const [actor, channelId, dataObjectIds, rationale] = new Content.ChannelAssetsDeletedByModeratorEvent(event).params
 
   await deleteChannelAssets(store, [...dataObjectIds])
 
@@ -173,7 +166,7 @@ export async function content_ChannelAssetsDeletedByModerator({
 
   const channelAssetsDeletedByModeratorEvent = new ChannelAssetsDeletedByModeratorEvent({
     ...genericEventFields(event),
-
+    actor: await convertContentActor(store, actor),
     channelId: channelId.toNumber(),
     assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
     rationale: rationale.toHuman() as string,
@@ -204,13 +197,6 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
   const [actor, channelId, rationale] = new Content.ChannelDeletedByModeratorEvent(event).params
-  const assets = await store.getMany(StorageDataObject, {
-    where: {
-      type: { channelId: channelId.toString() },
-    },
-  })
-
-  console.log('assets: ', assets)
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 
   // common event processing - second
