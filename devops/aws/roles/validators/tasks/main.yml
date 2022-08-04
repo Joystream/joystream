@@ -21,7 +21,7 @@
 - name: Copy node key to remote host
   copy:
     dest: "{{ node_secret_path }}"
-    content: "{{ subkey_output.stdout }}"
+    content: "{{ generate_node_keys_output.stdout }}"
 
 - name: Copy auth directory to remote host
   copy:

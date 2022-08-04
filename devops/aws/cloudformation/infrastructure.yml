@@ -22,9 +22,8 @@ Parameters:
   StorageEc2InstanceType:
     Type: String
     Default: t2.xlarge
-  EC2AMI:
+  JoystreamAmi:
     Type: String
-    Default: 'ami-0a8273bdc1bfaedf7'
   DefaultAMI:
     Type: String
     Default: 'ami-0a8273bdc1bfaedf7'
@@ -55,7 +54,7 @@ Parameters:
     Default: 200
 
 Conditions:
-  HasAMIId: !Not [!Equals [!Ref EC2AMI, '']]
+  HasAMIId: !Not [!Equals [!Ref JoystreamAmi, '']]
 
 Resources:
   # Common security group for all instances
@@ -104,7 +103,7 @@ Resources:
     Properties:
       LaunchTemplateName: !Sub 'LaunchTemplate_${AWS::StackName}'
       LaunchTemplateData:
-        ImageId: !If [HasAMIId, !Ref EC2AMI, !Ref DefaultAMI]
+        ImageId: !If [HasAMIId, !Ref JoystreamAmi, !Ref DefaultAMI]
         InstanceType: !Ref EC2InstanceType
         KeyName: !Ref KeyName
         SecurityGroupIds:
