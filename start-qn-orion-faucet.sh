@@ -7,10 +7,9 @@ set -e
 ## Orion
 docker-compose up -d orion
 
+## Faucet
 export SKIP_QUERY_NODE_CHECKS=true
-./tests/network-tests/run-test-scenario.sh faucet
+./tests/network-tests/run-test-scenario.sh setupFaucet
 
-## Member faucet
-export SCREENING_AUTHORITY_SEED=$(cat ./tests/network-tests/output.json | jq -r .faucet.suri)
-export INVITING_MEMBER_ID=$(cat ./tests/network-tests/output.json | jq -r .faucet.memberId)
+export INVITER_KEY=$(cat ./tests/network-tests/output.json | jq -r .faucet.suri)
 docker-compose up -d faucet

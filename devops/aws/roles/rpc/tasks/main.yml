@@ -51,7 +51,9 @@
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
     TREASURY_ACCOUNT_URI: '{{ endowed_key }}'
     SUDO_ACCOUNT_URI: '{{ sudo_key }}'
-    SCREENING_AUTHORITY_SEED: '//Faucet'
+    INVITER_KEY: "//Faucet"
+    BALANCE_CREDIT: "500000000"
+    BALANCE_LOCKED: "500000000"
   args:
     chdir: '{{ remote_code_path }}'
   async: 3600
