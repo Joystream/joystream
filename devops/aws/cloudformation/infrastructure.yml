@@ -268,19 +268,19 @@ Outputs:
     Description: The Auto Scaling ID
     Value: !Ref ValidatorsGroup
     Export:
-      Name: !Sub '${AWS::StackName}AutoScalingGroup'
+      Name: !Sub '${AWS::StackName}ValidatorsGroup'
 
   StorageNodesAutoScalingId:
     Description: The Auto Scaling ID
     Value: !Ref StorageNodesGroup
     Export:
-      Name: !Sub '${AWS::StackName}AutoScalingGroup'
+      Name: !Sub '${AWS::StackName}StorageNodesGroup'
 
   DistributorNodesAutoScalingId:
     Description: The Auto Scaling ID
     Value: !Ref DistributorNodesGroup
     Export:
-      Name: !Sub '${AWS::StackName}AutoScalingGroup'
+      Name: !Sub '${AWS::StackName}DistributorNodesGroup'
 
   RPCPublicIp:
     Description: The DNS name for the created instance
