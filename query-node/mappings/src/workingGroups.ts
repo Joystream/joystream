@@ -18,7 +18,6 @@ import {
   IUpdateVideoCategory,
   IDeleteVideoCategory,
   WorkerGroupLeadRemarked,
-  ModerateVideoCategories,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
 import {
@@ -941,15 +940,8 @@ export async function workingGroups_content_LeadRemarked({ store, event }: Event
 
   try {
     const decodedMessage = WorkerGroupLeadRemarked.decode(message.toU8a(true))
-    const messageType = decodedMessage.workerGroupLeadRemarked
 
-    if (messageType !== 'moderateVideoCategories') {
-      logger.error('Not implemented working group lead remark type', { decodedMessage })
-      throw new Error('Not-implemented ContentActor type used')
-    }
-
-    const tmp = decodedMessage.moderateVideoCategories as ModerateVideoCategories
-    const metaTransactionInfo = await processVideoCategoriesModeration(store, event, tmp)
+    const metaTransactionInfo = await processVideoCategoriesModeration(store, event, decodedMessage)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
@@ -967,20 +959,20 @@ export async function workingGroups_content_LeadRemarked({ store, event }: Event
 async function processVideoCategoriesModeration(
   store: DatabaseManager,
   event: SubstrateEvent,
-  moderationParameters: ModerateVideoCategories
+  moderationParameters: WorkerGroupLeadRemarked
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
-  const messageType = moderationParameters.videoCategoryModeration
+  const messageType = moderationParameters.workerGroupLeadRemarked
 
-  if (messageType === 'createCategory') {
-    const createParams = moderationParameters.createCategory as ICreateVideoCategory
+  if (messageType === 'createVideoCategory') {
+    const createParams = moderationParameters.createVideoCategory as ICreateVideoCategory
 
     const videoCategory = await createVideoCategory(store, event, createParams.name)
 
     return { videoCategoryCreatedId: videoCategory.id }
   }
 
-  if (messageType === 'updateCategory') {
-    const updateParams = moderationParameters.updateCategory as IUpdateVideoCategory
+  if (messageType === 'updateVideoCategory') {
+    const updateParams = moderationParameters.updateVideoCategory as IUpdateVideoCategory
 
     const videoCategory = await updateVideoCategory(
       store,
@@ -992,8 +984,8 @@ async function processVideoCategoriesModeration(
     return { videoCategoryUpdatedId: videoCategory.id }
   }
 
-  if (messageType === 'deleteCategory') {
-    const deleteParams = moderationParameters.deleteCategory as IDeleteVideoCategory
+  if (messageType === 'deleteVideoCategory') {
+    const deleteParams = moderationParameters.deleteVideoCategory as IDeleteVideoCategory
 
     const videoCategory = await deleteVideoCategory(store, event, deleteParams.videoCategoryId.toString())
 

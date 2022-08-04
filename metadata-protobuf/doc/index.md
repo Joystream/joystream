@@ -8,7 +8,6 @@
     - [BountyWorkData](#.BountyWorkData)
   
 - [proto/Channel.proto](#proto/Channel.proto)
-    - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
   
 - [proto/Council.proto](#proto/Council.proto)
@@ -28,19 +27,21 @@
     - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
     - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
     - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
-    - [CommentSectionPreference](#.CommentSectionPreference)
     - [CreateComment](#.CreateComment)
+    - [CreateVideoCategory](#.CreateVideoCategory)
     - [DeleteComment](#.DeleteComment)
+    - [DeleteVideoCategory](#.DeleteVideoCategory)
     - [EditComment](#.EditComment)
     - [MemberRemarked](#.MemberRemarked)
     - [ModerateComment](#.ModerateComment)
     - [PinOrUnpinComment](#.PinOrUnpinComment)
     - [ReactComment](#.ReactComment)
     - [ReactVideo](#.ReactVideo)
+    - [UpdateVideoCategory](#.UpdateVideoCategory)
     - [VideoReactionsPreference](#.VideoReactionsPreference)
+    - [WorkerGroupLeadRemarked](#.WorkerGroupLeadRemarked)
   
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
-    - [CommentSectionPreference.Option](#.CommentSectionPreference.Option)
     - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
     - [ReactVideo.Reaction](#.ReactVideo.Reaction)
     - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
@@ -72,7 +73,6 @@
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
-    - [VideoCategoryMetadata](#.VideoCategoryMetadata)
     - [VideoMetadata](#.VideoMetadata)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
@@ -149,21 +149,6 @@
 
 
 
-<a name=".ChannelCategoryMetadata"></a>
-
-### ChannelCategoryMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category Name |
-
-
-
-
-
-
 <a name=".ChannelMetadata"></a>
 
 ### ChannelMetadata
@@ -178,7 +163,6 @@
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-| category | [uint64](#uint64) | optional | Channel Category Id |
 
 
 
@@ -381,24 +365,7 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
 | ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
 | video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
-| comment_section_preference | [CommentSectionPreference](#CommentSectionPreference) | optional |  |
 | moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
-
-
-
-
-
-
-<a name=".CommentSectionPreference"></a>
-
-### CommentSectionPreference
-Enable or disable comment section for a single video
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| option | [CommentSectionPreference.Option](#CommentSectionPreference.Option) | required | Selected option to enable or disable comment section |
 
 
 
@@ -422,6 +389,21 @@ create comment
 
 
 
+<a name=".CreateVideoCategory"></a>
+
+### CreateVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".DeleteComment"></a>
 
 ### DeleteComment
@@ -431,6 +413,21 @@ delete comment by author
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | comment_id | [string](#string) | required | ID of the comment which will be deleted |
+
+
+
+
+
+
+<a name=".DeleteVideoCategory"></a>
+
+### DeleteVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_category_id | [string](#string) | required |  |
 
 
 
@@ -537,6 +534,22 @@ reacting, unreacting, and changing reaction to video
 
 
 
+<a name=".UpdateVideoCategory"></a>
+
+### UpdateVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_category_id | [string](#string) | required |  |
+| name | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".VideoReactionsPreference"></a>
 
 ### VideoReactionsPreference
@@ -547,6 +560,23 @@ Enable or disable reactions on a single video
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
 | option | [VideoReactionsPreference.Option](#VideoReactionsPreference.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+
+<a name=".WorkerGroupLeadRemarked"></a>
+
+### WorkerGroupLeadRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
+| update_video_category | [UpdateVideoCategory](#UpdateVideoCategory) | optional |  |
+| delete_video_category | [DeleteVideoCategory](#DeleteVideoCategory) | optional |  |
 
 
 
@@ -564,18 +594,6 @@ Enable or disable reactions on a single video
 | ---- | ------ | ----------- |
 | BAN | 0 | Ban member (nothing happens if member is already banned) |
 | UNBAN | 1 | Unban member (nothing happens if member is already unbanned) |
-
-
-
-<a name=".CommentSectionPreference.Option"></a>
-
-### CommentSectionPreference.Option
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENABLE | 0 | Enable comment section (nothing happens if it is already enabled) |
-| DISABLE | 1 | Disable comment section (nothing happens if it is already disabled) |
 
 
 
@@ -967,21 +985,6 @@ Publication status before joystream
 
 
 
-<a name=".VideoCategoryMetadata"></a>
-
-### VideoCategoryMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category name |
-
-
-
-
-
-
 <a name=".VideoMetadata"></a>
 
 ### VideoMetadata
@@ -1005,7 +1008,8 @@ Publication status before joystream
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
-| category | [uint64](#uint64) | optional | Video Category Id |
+| category | [string](#string) | optional | Video Category Id |
+| enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
 
 
 

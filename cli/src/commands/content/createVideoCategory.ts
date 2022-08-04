@@ -1,7 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { metadataToString } from '../../helpers/serialization'
 import chalk from 'chalk'
-import { CreateVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
+import { CreateVideoCategory, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
 import WorkerGroupLeadRemarkedCommand from '../working-groups/leadRemark'
 
 export default class CreateVideoCategoryCommand extends ContentDirectoryCommandBase {
@@ -22,10 +22,8 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
     const { name } = this.parse(CreateVideoCategoryCommand).args
 
     const meta = new WorkerGroupLeadRemarked({
-      moderateVideoCategories: new ModerateVideoCategories({
-        createCategory: new CreateVideoCategory({
-          name,
-        }),
+      createVideoCategory: new CreateVideoCategory({
+        name,
       }),
     })
     const metaMessage = metadataToString(WorkerGroupLeadRemarked, meta)

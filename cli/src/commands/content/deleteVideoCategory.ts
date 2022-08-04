@@ -1,7 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { metadataToString } from '../../helpers/serialization'
 import chalk from 'chalk'
-import { DeleteVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
+import { DeleteVideoCategory, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
 import WorkerGroupLeadRemarkedCommand from '../working-groups/leadRemark'
 
 export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandBase {
@@ -22,10 +22,8 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
     const { videoCategoryId } = this.parse(DeleteVideoCategoryCommand).args
 
     const meta = new WorkerGroupLeadRemarked({
-      moderateVideoCategories: new ModerateVideoCategories({
-        deleteCategory: new DeleteVideoCategory({
-          videoCategoryId,
-        }),
+      deleteVideoCategory: new DeleteVideoCategory({
+        videoCategoryId,
       }),
     })
     const metaMessage = metadataToString(WorkerGroupLeadRemarked, meta)

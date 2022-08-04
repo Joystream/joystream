@@ -728,10 +728,8 @@ export class Api {
     const account = lead.roleAccountId
 
     const meta = new WorkerGroupLeadRemarked({
-      moderateVideoCategories: new ModerateVideoCategories({
-        createCategory: new CreateVideoCategory({
-          name,
-        }),
+      createVideoCategory: new CreateVideoCategory({
+        name,
       }),
     })
 
