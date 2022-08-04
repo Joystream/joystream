@@ -24,7 +24,7 @@ if [ ! -f "$KEY_PATH" ]; then
 fi
 
 # Deploy the CloudFormation template
-echo -e "\n\n=========== Deploying main.yml ==========="
+echo -e "\n\n=========== Deploying infrastructure ==========="
 aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
@@ -40,6 +40,8 @@ aws cloudformation deploy \
     KeyName=$AWS_KEY_PAIR_NAME \
     EC2AMI=$EC2_AMI_ID \
     NumberOfValidators=$NUMBER_OF_VALIDATORS \
+    NumberOfStorageNodes=$NUMBER_OF_STORAGE_NODES \
+    NumberOfDistributorNodes=$NUMBER_OF_DISTRIBUTOR_NODES \
     VolumeSize=$VOLUME_SIZE \
     RPCVolumeSize=$RPC_VOLUME_SIZE
 
@@ -48,28 +50,44 @@ if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
   ansible-galaxy install -r requirements.yml
 
-  ASG=$(get_aws_export $STACK_NAME "AutoScalingGroup")
-
+  ASG=$(get_aws_export $STACK_NAME "ValidatorsGroup")
   VALIDATORS=""
-
   INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
     --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-
   for ID in $INSTANCES
   do
     IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
     VALIDATORS+="$IP\n"
   done
 
-  RPC_NODES=$(get_aws_export $STACK_NAME "RPCPublicIp")
+  ASG=$(get_aws_export $STACK_NAME "StorageNodesGroup")
+  STORAGE_NODES=""
+  INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
+    --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
+  for ID in $INSTANCES
+  do
+    IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
+    STORAGE_NODES+="$IP\n"
+  done
 
+  ASG=$(get_aws_export $STACK_NAME "DistributorNodesGroup")
+  DISTRIBUTOR_NODES=""
+  INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
+    --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
+  for ID in $INSTANCES
+  do
+    IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
+    DISTRIBUTOR_NODES+="$IP\n"
+  done
+
+  RPC_NODE=$(get_aws_export $STACK_NAME "RPCPublicIp")
   BUILD_SERVER=$(get_aws_export $STACK_NAME "BuildPublicIp")
-
   BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
 
   mkdir -p $DATA_PATH
 
-  echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
+  echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODE\n\n[storage]
+    \n$STORAGE_NODES\n\n[distribution]\n$DISTRIBUTOR_NODES" > $INVENTORY_PATH
 
   # Build binaries if AMI not specified
   if [ -z "$EC2_AMI_ID" ]
@@ -80,14 +98,17 @@ if [ $? -eq 0 ]; then
                     data_path=$DATA_PATH runtime_profile=$RUNTIME_PROFILE"
   fi
 
-  echo -e "\n\n=========== Configure and start new validators and rpc node ==========="
+  echo -e "\n\n=========== Configure and start validators, rpc node, and query node ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.yml \
-    --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX
-                  data_path=$DATA_PATH number_of_validators=$NUMBER_OF_VALIDATORS
+    --extra-vars "local_dir=$LOCAL_CODE_PATH network_name=$NETWORK_NAME
+                  data_path=$DATA_PATH
                   deployment_type=$DEPLOYMENT_TYPE
                   initial_balances_file=$INITIAL_BALANCES_PATH
                   initial_members_file=$INITIAL_MEMBERS_PATH
-                  skip_chain_setup=$SKIP_CHAIN_SETUP"
+                  number_of_validators=$NUMBER_OF_VALIDATORS
+                  number_of_storage_nodes=$NUMBER_OF_STORAGE_NODES
+                  number_of_distributor_nodes=$NUMBER_OF_DISTRIBUTOR_NODES
+                  "
 
   echo -e "\n\n=========== Delete Build instance ==========="
   DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)

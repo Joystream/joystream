@@ -9,16 +9,19 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   EC2InstanceType:
     Type: String
-    Default: t2.micro
+    Default: t2.xlarge
   ValidatorEC2InstanceType:
     Type: String
-    Default: t2.micro
+    Default: t2.xlarge
   RPCEC2InstanceType:
     Type: String
-    Default: t2.micro
+    Default: t2.xlarge
   BuildEC2InstanceType:
     Type: String
-    Default: t2.micro
+    Default: c4.2xlarge
+  StorageEc2InstanceType:
+    Type: String
+    Default: t2.xlarge
   EC2AMI:
     Type: String
     Default: 'ami-0a8273bdc1bfaedf7'
@@ -34,20 +37,28 @@ Parameters:
     Description: Number of validator instances to launch
     Type: Number
     Default: 2
+  NumberOfStorageNodes:
+    Description: Number of storage node instances to launch
+    Type: Number
+    Default: 0
+  NumberOfDistributorNodes:
+    Description: Number of distributor node instances to launch
+    Type: Number
+    Default: 0
   VolumeSize:
     Description: Validator and Build instance volume size in GB
     Type: Number
-    Default: 120
+    Default: 200
   RPCVolumeSize:
-    Description: RPC Instance volume size in GB
+    Description: RPC and Storage nodes Instance volume size in GB
     Type: Number
-    Default: 120
+    Default: 400
 
 Conditions:
   HasAMIId: !Not [!Equals [!Ref EC2AMI, '']]
 
 Resources:
-  SecurityGroup:
+  ValidatorSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
@@ -113,7 +124,7 @@ Resources:
         InstanceType: !Ref EC2InstanceType
         KeyName: !Ref KeyName
         SecurityGroupIds:
-          - !GetAtt SecurityGroup.GroupId
+          - !GetAtt ValidatorSecurityGroup.GroupId
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
@@ -139,11 +150,11 @@ Resources:
 
             /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
 
-  AutoScalingGroup:
+  ValidatorsGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      MinSize: '0'
-      MaxSize: '10'
+      MinSize: '1'
+      MaxSize: '4'
       DesiredCapacity: !Ref NumberOfValidators
       AvailabilityZones:
         Fn::GetAZs:
@@ -155,6 +166,60 @@ Resources:
             Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
           Overrides:
             - InstanceType: !Ref ValidatorEC2InstanceType
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}'
+          PropagateAtLaunch: 'true'
+
+  StorageNodesGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: '0'
+      MaxSize: '4'
+      DesiredCapacity: !Ref NumberOfStorageNodes
+      SecurityGroupIds:
+        - !GetAtt RPCSecurityGroup.GroupId
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RPCVolumeSize
+      AvailabilityZones:
+        Fn::GetAZs:
+          Ref: 'AWS::Region'
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref InstanceLaunchTemplate
+            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref RPCEC2InstanceType
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}'
+          PropagateAtLaunch: 'true'
+
+  DistributorNodesGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: '0'
+      MaxSize: '4'
+      DesiredCapacity: !Ref NumberOfDistributorNodes
+      SecurityGroupIds:
+        - !GetAtt RPCSecurityGroup.GroupId
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RPCVolumeSize
+      AvailabilityZones:
+        Fn::GetAZs:
+          Ref: 'AWS::Region'
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref InstanceLaunchTemplate
+            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref RPCEC2InstanceType
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}'
@@ -199,9 +264,21 @@ Resources:
       Count: !Ref NumberOfValidators
 
 Outputs:
-  AutoScalingId:
+  ValidatorsAutoScalingId:
     Description: The Auto Scaling ID
-    Value: !Ref AutoScalingGroup
+    Value: !Ref ValidatorsGroup
+    Export:
+      Name: !Sub '${AWS::StackName}AutoScalingGroup'
+
+  StorageNodesAutoScalingId:
+    Description: The Auto Scaling ID
+    Value: !Ref StorageNodesGroup
+    Export:
+      Name: !Sub '${AWS::StackName}AutoScalingGroup'
+
+  DistributorNodesAutoScalingId:
+    Description: The Auto Scaling ID
+    Value: !Ref DistributorNodesGroup
     Export:
       Name: !Sub '${AWS::StackName}AutoScalingGroup'
 

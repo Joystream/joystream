@@ -11,7 +11,7 @@
       rustup component add rustfmt
 
 - name: Build joystream node
-  shell: . ~/.bash_profile && yarn cargo-build
+  shell: . ~/.bash_profile && yarn cargo-build && yarn build:packages
   args:
     chdir: '{{ remote_code_path }}'
   environment:

@@ -6,20 +6,6 @@
     msg: 'Remote Data path: {{ remote_data_path }}, Local Data path: {{ data_path }}, Chain Spec path: {{ chain_spec_path }}'
   run_once: true
 
-- name: Copying initial members file to the server
-  copy:
-    src: '{{ initial_members_file }}'
-    dest: '{{ remote_code_path }}/query-node/mappings/src/bootstrap-data/data/members.json'
-  when: initial_members_file is defined and initial_members_file|length > 0
-  run_once: true
-
-- name: Copying initial balances file to the server
-  copy:
-    src: '{{ initial_balances_file }}'
-    dest: '{{ remote_code_path }}/initial-balances.json'
-  when: initial_balances_file is defined and initial_balances_file|length > 0
-  run_once: true
-
 - name: Run chain-spec-builder to generate chainspec.json file (with initial data)
   shell: >
     {{ remote_code_path }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
@@ -31,7 +17,7 @@
   delegate_to: '{{ build_instance }}'
   run_once: true
 
-- name: Run subkey to generate node keys
+- name: generate node keys
   shell: > 
     {{ remote_code_path }}/target/release/joystream-node key generate-node-key
   delegate_to: '{{ build_instance }}'
@@ -66,10 +52,10 @@
   delegate_to: '{{ build_instance }}'
   run_once: true
 
-- name: Change chain spec name, id, protocolId
-  json_modify:
+- name: Set chain name, id, protocolId, and bootNodes
+  update_chainspec_name_id_boot_nodes:
     chain_spec_path: '{{ chain_spec_path }}'
-    prefix: '{{ network_suffix }}'
+    network_name: '{{ network_name }}'
     all_nodes: '{{ hostvars }}'
   delegate_to: '{{ build_instance }}'
   register: result
@@ -80,7 +66,7 @@
     var: result.result
   run_once: true
 
-- name: Run build-spec to generate raw chainspec file
+- name: Generate raw chainspec file
   shell: '{{ remote_code_path }}/target/release/joystream-node build-spec --chain {{ chain_spec_path }} --raw > {{ raw_chain_spec_path }}'
   delegate_to: '{{ build_instance }}'
   run_once: true
