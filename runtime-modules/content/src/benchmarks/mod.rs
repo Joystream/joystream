@@ -4,9 +4,10 @@ use crate::{
     permissions::PausableChannelFeature,
     types::{
         ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness,
-        ChannelCreationParameters, ChannelOwner, StorageAssets,
+        ChannelCreationParameters, ChannelOwner, StorageAssets, VideoCreationParameters,
     },
-    Config, ContentModerationAction, ModerationPermissionsByLevel, Module as Pallet,
+    Config, ContentActor, ContentModerationAction, InitTransactionalStatus,
+    ModerationPermissionsByLevel, Module as Pallet, NextVideoId, NftIssuanceParameters,
 };
 use balances::Pallet as Balances;
 use common::MembershipTypes;
@@ -110,6 +111,16 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::DeleteVideoAssets(false),
     ContentModerationAction::DeleteNonVideoChannelAssets,
     ContentModerationAction::UpdateChannelNftLimits,
+];
+
+const CONTENT_PAUSABLE_CHANNEL_FEATURE: [PausableChannelFeature; 7] = [
+    PausableChannelFeature::ChannelFundsTransfer,
+    PausableChannelFeature::CreatorCashout,
+    PausableChannelFeature::VideoNftIssuance,
+    PausableChannelFeature::VideoCreation,
+    PausableChannelFeature::VideoUpdate,
+    PausableChannelFeature::ChannelUpdate,
+    PausableChannelFeature::CreatorTokenIssuance,
 ];
 
 fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
@@ -700,6 +711,10 @@ fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
     CHANNEL_AGENT_PERMISSIONS.iter().cloned().collect()
 }
 
+fn worst_case_pausable_channel_feature() -> BTreeSet<PausableChannelFeature> {
+    CONTENT_PAUSABLE_CHANNEL_FEATURE.iter().cloned().collect()
+}
+
 fn worst_case_scenario_collaborators<T: Config>(
     start_id: u32,
     num: u32,
@@ -850,6 +865,63 @@ where
         curator_id,
         curator_account_id,
     ))
+}
+
+fn setup_video<T>(
+    origin: T::Origin,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    assets_num: u32,
+    issue_nft: bool,
+    meta: u32,
+) -> T::VideoId
+where
+    T: Config
+        + working_group::Config<ContentWorkingGroupInstance>
+        + working_group::Config<StorageWorkingGroupInstance>
+        + working_group::Config<DistributionWorkingGroupInstance>,
+    T::AccountId: CreateAccountId,
+{
+    let max_obj_size: u64 = T::MaxDataObjectSize::get();
+
+    let assets = if assets_num > 0 {
+        Some(StorageAssets::<T> {
+            expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_object_candidates_helper(assets_num, max_obj_size),
+        })
+    } else {
+        None
+    };
+
+    let auto_issue_nft = if issue_nft {
+        Some(NftIssuanceParameters::<T> {
+            royalty: None,
+            nft_metadata: vec![0u8].repeat(meta as usize),
+            non_channel_owner: None,
+            init_transactional_status: InitTransactionalStatus::<T>::Idle,
+        })
+    } else {
+        None
+    };
+
+    let expected_data_object_state_bloat_bond = Storage::<T>::data_object_state_bloat_bond_value();
+
+    let expected_video_state_bloat_bond = Pallet::<T>::video_state_bloat_bond_value();
+    let meta = Some(vec![1u8].repeat(meta as usize));
+
+    let params = VideoCreationParameters::<T> {
+        assets,
+        meta,
+        auto_issue_nft,
+        expected_data_object_state_bloat_bond,
+        expected_video_state_bloat_bond,
+    };
+
+    let video_id = NextVideoId::<T>::get();
+
+    Pallet::<T>::create_video(origin, actor, channel_id, params).unwrap();
+
+    video_id
 }
 
 fn channel_bag_witness<T: Config>(

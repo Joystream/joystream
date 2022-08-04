@@ -1601,6 +1601,61 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_lead() {
 }
 
 #[test]
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_channel_bag_witness(Some(invalid_witness))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_missing_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_channel_bag_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
+    })
+}
+
+#[test]
 fn successful_moderation_action_video_deletion_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1938,6 +1993,63 @@ fn unsuccessful_moderation_action_non_existing_video_assets_deletion() {
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
             .with_video_id(2)
             .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_invalid_channel_bag_witness(
+) {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
+            )]),
+        );
+
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_channel_bag_witness(Some(invalid_witness))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_missing_channel_bag_witness(
+) {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_channel_bag_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
     })
 }
 

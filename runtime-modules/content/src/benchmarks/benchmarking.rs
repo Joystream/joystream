@@ -2,8 +2,8 @@
 
 use crate::{
     types::{ChannelAgentPermissions, ChannelOwner},
-    Call, ChannelById, ChannelUpdateParameters, Config, ContentActor, Event, Module as Pallet,
-    StorageAssets,
+    Call, ChannelBagWitness, ChannelById, ChannelUpdateParameters, Config, ContentActor, Event,
+    Module as Pallet, StorageAssets,
 };
 use frame_benchmarking::benchmarks;
 use frame_support::{storage::StorageMap, traits::Get};
@@ -19,10 +19,10 @@ use storage::{DataObjectStorage, Module as Storage};
 use super::{
     assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
     generate_channel_creation_params, insert_content_leader, insert_distribution_leader,
-    insert_storage_leader, setup_worst_case_curator_group_with_curators,
+    insert_storage_leader, setup_video, setup_worst_case_curator_group_with_curators,
     setup_worst_case_scenario_curator_channel, worst_case_channel_agent_permissions,
-    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
-    StorageWorkingGroupInstance, MAX_BYTES_METADATA,
+    worst_case_pausable_channel_feature, ContentWorkingGroupInstance, CreateAccountId,
+    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, MAX_BYTES_METADATA,
 };
 
 benchmarks! {
@@ -271,8 +271,6 @@ benchmarks! {
             (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
             (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
-        let max_obj_size: u64 = T::MaxDataObjectSize::get();
-
         let (
             channel_id,
             group_id,
@@ -294,6 +292,493 @@ benchmarks! {
                 channel_id
             ).into()
         );
+    }
+
+    update_channel_privilege_level {
+
+        let (
+            channel_id,
+            _,
+            lead_account_id,
+            _,
+            _
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        ).unwrap();
+
+        let origin = RawOrigin::Signed(lead_account_id);
+        let privilege_level = T::ChannelPrivilegeLevel::one();
+
+    }: _ (origin, channel_id, privilege_level)
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelPrivilegeLevelUpdated(
+                channel_id,
+                privilege_level,
+            ).into()
+        );
+    }
+
+    set_channel_paused_features_as_moderator {
+
+        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        ).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+        let new_paused_features = worst_case_pausable_channel_feature();
+        let rationale = vec![0u8].repeat(a as usize);
+
+    }: _ (origin, actor,
+        channel_id, new_paused_features.clone(), rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelPausedFeaturesUpdatedByModerator(
+                actor,
+                channel_id,
+                new_paused_features,
+                rationale,
+            ).into());
+    }
+
+    delete_channel_assets_as_moderator_with_assets {
+
+        let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
+
+        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+
+        let d in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let assets_to_remove =
+            Storage::<T>::get_next_data_object_ids(a as usize);
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(a, b, c,).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+        let rationale = vec![1u8].repeat(d as usize);
+        let channel_bag_witness = Some(channel_bag_witness::<T>(channel_id)?);
+
+    }: delete_channel_assets_as_moderator (
+        origin,
+        actor,
+        channel_id,
+        assets_to_remove.clone(),
+        channel_bag_witness,
+        rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelAssetsDeletedByModerator(
+                actor,
+                channel_id,
+                assets_to_remove,
+                rationale,
+            ).into());
+    }
+
+    delete_channel_assets_as_moderator_without_assets {
+
+        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+        ).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let channel_bag_witness: Option<ChannelBagWitness> = None;
+        let rationale = vec![1u8].repeat(a as usize);
+
+    }: delete_channel_assets_as_moderator (origin, actor,
+        channel_id, BTreeSet::new(), channel_bag_witness, rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelAssetsDeletedByModerator(
+                actor,
+                channel_id,
+                BTreeSet::new(),
+                rationale,
+            ).into());
+    }
+
+    delete_channel_as_moderator{
+
+        let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
+
+        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+
+        let d in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(a, b, c,).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
+        let rationale = vec![1u8].repeat(d as usize);
+
+    }: _ (origin,
+        actor,
+        channel_id,
+        channel_bag_witness,
+        a.into(),
+        rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelDeletedByModerator(
+                actor,
+                channel_id,
+                rationale
+            ).into()
+        );
+    }
+
+    set_channel_visibility_as_moderator{
+
+        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        ).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+        let rationale = vec![0u8].repeat(a as usize);
+
+    }: _ (origin, actor, channel_id, true, rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelVisibilitySetByModerator(
+                actor,
+                channel_id,
+                true,
+                rationale,
+            ).into());
+    }
+
+    delete_video_assets_as_moderator_with_assets {
+
+        let a in 1 .. T::MaxNumberOfAssetsPerVideo::get(); //max objs number
+
+        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+
+        let d in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            b,
+            c,).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+        let rationale = vec![1u8].repeat(d as usize);
+        let channel_bag_witness = Some(channel_bag_witness::<T>(channel_id)?);
+
+        let assets_to_remove =
+        Storage::<T>::get_next_data_object_ids(a as usize);
+
+        let video_id = setup_video::<T>(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            a,
+            true,
+            MAX_BYTES_METADATA);
+
+    }: delete_video_assets_as_moderator (
+        origin,
+        actor,
+        video_id,
+        channel_bag_witness,
+        assets_to_remove.clone(),
+        rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::VideoAssetsDeletedByModerator(
+                actor,
+                video_id,
+                assets_to_remove,
+                true,
+                rationale,
+            ).into());
+    }
+
+    delete_video_assets_as_moderator_without_assets {
+
+        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+        ).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let channel_bag_witness: Option<ChannelBagWitness> = None;
+
+        let video_id = setup_video::<T>(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            T::MaxNumberOfAssetsPerVideo::get(),
+            true,
+            MAX_BYTES_METADATA);
+
+        let rationale = vec![1u8].repeat(a as usize);
+
+    }: delete_video_assets_as_moderator (
+        origin,
+        actor,
+        video_id,
+        channel_bag_witness,
+        BTreeSet::new(),
+        rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::VideoAssetsDeletedByModerator(
+                actor,
+                video_id,
+                BTreeSet::new(),
+                true,
+                rationale,
+            ).into());
+    }
+
+    delete_video_as_moderator_with_assets {
+
+        let a in 1 .. T::MaxNumberOfAssetsPerVideo::get(); //max objs number
+
+        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+
+        let d in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            b,
+            c,).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+        let rationale = vec![1u8].repeat(d as usize);
+        let channel_bag_witness = Some(channel_bag_witness::<T>(channel_id)?);
+
+        let assets_to_remove =
+        Storage::<T>::get_next_data_object_ids(a as usize).len() as u64;
+
+        let video_id = setup_video::<T>(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            a,
+            false,
+            MAX_BYTES_METADATA);
+
+    }: delete_video_as_moderator (
+        origin,
+        actor,
+        video_id,
+        channel_bag_witness,
+        assets_to_remove,
+        rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::VideoDeletedByModerator(
+                actor,
+                video_id,
+                rationale,
+            ).into());
+    }
+
+    delete_video_as_moderator_without_assets {
+
+        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+        ).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let channel_bag_witness: Option<ChannelBagWitness> = None;
+
+        let video_id = setup_video::<T>(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            0,
+            false,
+            MAX_BYTES_METADATA);
+
+        let rationale = vec![1u8].repeat(a as usize);
+
+    }: delete_video_as_moderator (
+        origin,
+        actor,
+        video_id,
+        channel_bag_witness,
+        0,
+        rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::VideoDeletedByModerator(
+                actor,
+                video_id,
+                rationale,
+            ).into());
+    }
+
+    set_video_visibility_as_moderator{
+
+        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+
+        let (
+            channel_id,
+            group_id,
+            _,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        ).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+        let video_id = setup_video::<T>(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            0,
+            false,
+            MAX_BYTES_METADATA);
+
+        let rationale = vec![0u8].repeat(a as usize);
+
+    }: _ (origin, actor, video_id, true, rationale.clone())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::VideoVisibilitySetByModerator(
+                actor,
+                video_id,
+                true,
+                rationale,
+            ).into());
     }
 }
 
@@ -327,6 +812,83 @@ pub mod tests {
     fn delete_channel() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_delete_channel());
+        });
+    }
+
+    #[test]
+    fn update_channel_privilege_level() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_channel_privilege_level());
+        });
+    }
+
+    #[test]
+    fn set_channel_paused_features_as_moderator() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_set_channel_paused_features_as_moderator());
+        });
+    }
+
+    #[test]
+    fn delete_channel_assets_as_moderator_with_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_channel_assets_as_moderator_with_assets());
+        });
+    }
+
+    #[test]
+    fn delete_channel_assets_as_moderator_without_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_channel_assets_as_moderator_without_assets());
+        });
+    }
+
+    #[test]
+    fn delete_channel_as_moderator() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_channel_as_moderator());
+        });
+    }
+
+    #[test]
+    fn set_channel_visibility_as_moderator() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_set_channel_visibility_as_moderator());
+        });
+    }
+
+    #[test]
+    fn delete_video_assets_as_moderator_with_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_assets_as_moderator_with_assets());
+        });
+    }
+
+    #[test]
+    fn delete_video_assets_as_moderator_without_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_assets_as_moderator_without_assets());
+        });
+    }
+
+    #[test]
+    fn delete_video_as_moderator_with_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_as_moderator_with_assets());
+        });
+    }
+
+    #[test]
+    fn delete_video_as_moderator_without_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_as_moderator_without_assets());
+        });
+    }
+
+    #[test]
+    fn set_video_visibility_as_moderator() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_set_video_visibility_as_moderator());
         });
     }
 }

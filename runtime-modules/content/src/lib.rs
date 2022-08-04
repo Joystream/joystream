@@ -665,7 +665,7 @@ decl_module! {
         }
 
         // Extrinsic for updating channel privilege level (requires lead access)
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::update_channel_privilege_level()]
         pub fn update_channel_privilege_level(
             origin,
             channel_id: T::ChannelId,
@@ -689,7 +689,7 @@ decl_module! {
         }
 
         // extrinsics for pausing/re-enabling channel features
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::set_channel_paused_features_as_moderator_weight(rationale)]
         pub fn set_channel_paused_features_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -765,12 +765,13 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::delete_channel_assets_as_moderator_weight(assets_to_remove, channel_bag_witness, rationale)]
         pub fn delete_channel_assets_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
+            channel_bag_witness: Option<ChannelBagWitness>,
             rationale: Vec<u8>,
         ) {
             let sender = ensure_signed(origin)?;
@@ -797,6 +798,13 @@ decl_module! {
 
             // remove the assets
             if !assets_to_remove.is_empty() {
+
+                // verify channel bag witness
+                match channel_bag_witness.as_ref(){
+                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                    None => Err(Error::<T>::MissingChannelBagWitness.into())
+                }?;
+
                 Storage::<T>::delete_data_objects(
                     sender,
                     Self::bag_id_for_channel(&channel_id),
@@ -814,11 +822,12 @@ decl_module! {
         }
 
         // extrinsics for channel deletion as moderator
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::delete_channel_as_moderator_weight(channel_bag_witness, num_objects_to_delete, rationale)]
         pub fn delete_channel_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
             rationale: Vec<u8>,
         ) -> DispatchResult {
@@ -827,6 +836,9 @@ decl_module! {
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteChannel];
@@ -855,7 +867,7 @@ decl_module! {
         }
 
         // extrinsics for channel visibility status (hidden/visible) setting by moderator
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::set_channel_visibility_as_moderator_weight(rationale)]
         pub fn set_channel_visibility_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1124,11 +1136,12 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::delete_video_assets_as_moderator_weight(assets_to_remove, channel_bag_witness, rationale)]
         pub fn delete_video_assets_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
+            channel_bag_witness: Option<ChannelBagWitness>,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
             rationale: Vec<u8>,
         ) {
@@ -1161,6 +1174,13 @@ decl_module! {
 
             // remove the assets
             if !assets_to_remove.is_empty() {
+
+                // verify channel bag witness
+                match channel_bag_witness.as_ref(){
+                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                    None => Err(Error::<T>::MissingChannelBagWitness.into())
+                }?;
+
                 Storage::<T>::delete_data_objects(
                     sender,
                     Self::bag_id_for_channel(&channel_id),
@@ -1177,11 +1197,12 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoAssetsDeletedByModerator(actor, video_id, assets_to_remove, is_nft, rationale));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::delete_video_as_moderator_weight(num_objects_to_delete, channel_bag_witness, rationale)]
         pub fn delete_video_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
+            channel_bag_witness: Option<ChannelBagWitness>,
             num_objects_to_delete: u64,
             rationale: Vec<u8>,
         ) {
@@ -1205,7 +1226,7 @@ decl_module! {
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
             // Try removing the video
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video)?;
+            Self::try_to_perform_video_deletion_as_moderator(&sender, channel_id, video_id, &video, channel_bag_witness)?;
 
             //
             // == MUTATION SAFE ==
@@ -3295,6 +3316,42 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    //TODO When implementing video benchmark group we should use only the
+    //try_to_perform_video_deletion with (channel_bag_witness)
+    fn try_to_perform_video_deletion_as_moderator(
+        sender: &T::AccountId,
+        channel_id: T::ChannelId,
+        video_id: T::VideoId,
+        video: &Video<T>,
+        channel_bag_witness: Option<ChannelBagWitness>,
+    ) -> DispatchResult {
+        // delete assets from storage with upload and rollback semantics
+        if !video.data_objects.is_empty() {
+            // verify channel bag witness
+            match channel_bag_witness.as_ref() {
+                Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                None => Err(Error::<T>::MissingChannelBagWitness.into()),
+            }?;
+
+            Storage::<T>::delete_data_objects(
+                sender.clone(),
+                Self::bag_id_for_channel(&channel_id),
+                video.data_objects.clone().into(),
+            )?;
+        }
+
+        // Remove video
+        VideoById::<T>::remove(video_id);
+
+        // Update corresponding channel
+        // Remove recently deleted video from the channel
+        ChannelById::<T>::mutate(channel_id, |channel| {
+            channel.num_videos = channel.num_videos.saturating_sub(1)
+        });
+
+        Ok(())
+    }
+
     fn ensure_channel_bag_can_be_dropped(
         channel_id: T::ChannelId,
         num_objects_to_delete: u64,
@@ -3838,6 +3895,123 @@ impl<T: Config> Module<T> {
         let c = (*channel_bag_witness).distribution_buckets_num;
 
         WeightInfoContent::<T>::delete_channel(a, b, c)
+    }
+
+    // Calculates weight for set_channel_paused_features_as_moderator extrinsic.
+    fn set_channel_paused_features_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
+        let a = (*rationale).len() as u32;
+
+        WeightInfoContent::<T>::set_channel_paused_features_as_moderator(a)
+    }
+
+    // Calculates weight for delete_channel_assets_as_moderator extrinsic.
+    fn delete_channel_assets_as_moderator_weight(
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+        channel_bag_witness: &Option<ChannelBagWitness>,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        if !assets_to_remove.is_empty() {
+            //assets_to_remove
+            let a = (*assets_to_remove).len() as u32;
+
+            //channel_bag_witness storage_buckets_num
+            //channel_bag_witness distribution_buckets_num
+            let (b, c) = channel_bag_witness.as_ref().map_or((0, 0), |v| {
+                (v.storage_buckets_num, v.distribution_buckets_num)
+            });
+
+            //rationale
+            let d = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_channel_assets_as_moderator_with_assets(a, b, c, d)
+        } else {
+            //rationale
+            let a = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_channel_assets_as_moderator_without_assets(a)
+        }
+    }
+
+    // Calculates weight for delete_channel_as_moderator extrinsic.
+    fn delete_channel_as_moderator_weight(
+        channel_bag_witness: &ChannelBagWitness,
+        num_objects_to_delete: &u64,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        //num_objects_to_delete
+        let a = (*num_objects_to_delete) as u32;
+
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
+
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
+        //rationale
+        let d = (*rationale).len() as u32;
+        WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c, d)
+    }
+
+    // Calculates weight for set_channel_visibility_as_moderator extrinsic.
+    fn set_channel_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
+        let a = (*rationale).len() as u32;
+
+        WeightInfoContent::<T>::set_channel_visibility_as_moderator(a)
+    }
+
+    // Calculates weight for delete_channel_assets_as_moderator extrinsic.
+    fn delete_video_assets_as_moderator_weight(
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+        channel_bag_witness: &Option<ChannelBagWitness>,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        if !assets_to_remove.is_empty() {
+            //assets_to_remove
+            let a = (*assets_to_remove).len() as u32;
+
+            //channel_bag_witness storage_buckets_num
+            //channel_bag_witness distribution_buckets_num
+            let (b, c) = channel_bag_witness.as_ref().map_or((0, 0), |v| {
+                (v.storage_buckets_num, v.distribution_buckets_num)
+            });
+
+            //rationale
+            let d = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_video_assets_as_moderator_with_assets(a, b, c, d)
+        } else {
+            //rationale
+            let a = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_video_assets_as_moderator_without_assets(a)
+        }
+    }
+
+    // Calculates weight for delete_channel_assets_as_moderator extrinsic.
+    fn delete_video_as_moderator_weight(
+        num_objects_to_delete: &u64,
+        channel_bag_witness: &Option<ChannelBagWitness>,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        if (*num_objects_to_delete) > 0 {
+            //assets_to_remove
+            let a = (*num_objects_to_delete) as u32;
+
+            //channel_bag_witness storage_buckets_num
+            //channel_bag_witness distribution_buckets_num
+            let (b, c) = channel_bag_witness.as_ref().map_or((0, 0), |v| {
+                (v.storage_buckets_num, v.distribution_buckets_num)
+            });
+
+            //rationale
+            let d = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_video_as_moderator_with_assets(a, b, c, d)
+        } else {
+            //rationale
+            let a = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_video_as_moderator_without_assets(a)
+        }
     }
 }
 

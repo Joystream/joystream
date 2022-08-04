@@ -913,6 +913,7 @@ pub struct DeleteChannelAssetsAsModeratorFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    channel_bag_witness: Option<ChannelBagWitness>,
     rationale: Vec<u8>,
 }
 
@@ -923,6 +924,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
             assets_to_remove: BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER),
+            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
             rationale: b"rationale".to_vec(),
         }
     }
@@ -945,6 +947,14 @@ impl DeleteChannelAssetsAsModeratorFixture {
             ..self
         }
     }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+        Self {
+            channel_bag_witness,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -967,6 +977,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             self.actor,
             self.channel_id,
             self.assets_to_remove.clone(),
+            self.channel_bag_witness.clone(),
             self.rationale.clone(),
         );
 
@@ -1163,6 +1174,7 @@ pub struct DeleteChannelAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
+    channel_bag_witness: ChannelBagWitness,
     num_objects_to_delete: u64,
     rationale: Vec<u8>,
 }
@@ -1173,6 +1185,7 @@ impl DeleteChannelAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
+            channel_bag_witness: channel_bag_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
             rationale: b"rationale".to_vec(),
         }
@@ -1189,6 +1202,13 @@ impl DeleteChannelAsModeratorFixture {
     pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
         Self {
             num_objects_to_delete,
+            ..self
+        }
+    }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+        Self {
+            channel_bag_witness,
             ..self
         }
     }
@@ -1213,6 +1233,7 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.channel_id,
+            self.channel_bag_witness.clone(),
             self.num_objects_to_delete,
             self.rationale.clone(),
         )
@@ -1416,6 +1437,7 @@ pub struct DeleteVideoAssetsAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
+    channel_bag_witness: Option<ChannelBagWitness>,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
     rationale: Vec<u8>,
 }
@@ -1426,6 +1448,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
+            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
             assets_to_remove: BTreeSet::from_iter(DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)),
             rationale: b"rationale".to_vec(),
         }
@@ -1449,6 +1472,14 @@ impl DeleteVideoAssetsAsModeratorFixture {
             ..self
         }
     }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+        Self {
+            channel_bag_witness,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -1470,6 +1501,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             origin,
             self.actor,
             self.video_id,
+            self.channel_bag_witness.clone(),
             self.assets_to_remove.clone(),
             self.rationale.clone(),
         );
@@ -1663,6 +1695,7 @@ pub struct DeleteVideoAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
+    channel_bag_witness: Option<ChannelBagWitness>,
     num_objects_to_delete: u64,
     rationale: Vec<u8>,
 }
@@ -1673,6 +1706,7 @@ impl DeleteVideoAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
+            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
             num_objects_to_delete: DATA_OBJECTS_NUMBER,
             rationale: b"rationale".to_vec(),
         }
@@ -1684,6 +1718,13 @@ impl DeleteVideoAsModeratorFixture {
 
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
+    }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+        Self {
+            channel_bag_witness,
+            ..self
+        }
     }
 }
 
@@ -1703,6 +1744,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.video_id,
+            self.channel_bag_witness.clone(),
             self.num_objects_to_delete,
             self.rationale.clone(),
         )
