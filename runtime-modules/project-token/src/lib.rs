@@ -183,6 +183,7 @@ decl_module! {
             src_member_id: T::MemberId,
             token_id: T::TokenId,
             outputs: TransfersOf<T>,
+            metadata: Vec<u8>
         ) -> DispatchResult {
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -201,6 +202,7 @@ decl_module! {
                 token_id,
                 src_member_id,
                 validated_transfers,
+                metadata
             ));
             Ok(())
         }
@@ -910,6 +912,7 @@ impl<T: Config>
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
         outputs: TransfersWithVestingOf<T>,
+        metadata: Vec<u8>,
     ) -> DispatchResult {
         let treasury = Self::module_treasury_account();
 
@@ -937,6 +940,7 @@ impl<T: Config>
             token_id,
             src_member_id,
             validated_transfers,
+            metadata,
         ));
         Ok(())
     }

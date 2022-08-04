@@ -2427,6 +2427,7 @@ pub struct CreatorTokenIssuerTransferFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     outputs: TransfersWithVestingOf<Test>,
+    metadata: Vec<u8>,
 }
 
 impl CreatorTokenIssuerTransferFixture {
@@ -2441,13 +2442,13 @@ impl CreatorTokenIssuerTransferFixture {
                     PaymentWithVestingOf::<Test> {
                         amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
                         vesting_schedule: None,
-                        remark: Vec::new(),
                     },
                 )]
                 .iter()
                 .cloned()
                 .collect(),
             ),
+            metadata: b"metadata".to_vec(),
         }
     }
 
@@ -2467,6 +2468,7 @@ impl CreatorTokenIssuerTransferFixture {
             self.actor,
             self.channel_id,
             self.outputs.clone(),
+            self.metadata.clone(),
         );
 
         if expected_result.is_ok() {

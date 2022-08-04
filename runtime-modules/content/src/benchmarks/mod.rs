@@ -1033,7 +1033,6 @@ where
             .map(|i| {
                 let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
                 let payment = PaymentWithVestingOf::<T> {
-                    remark: vec![0xf].repeat((MAX_BYTES_METADATA / num) as usize),
                     amount: 100u32.into(),
                     vesting_schedule: Some(default_vesting_schedule_params::<T>()),
                 };

@@ -372,6 +372,7 @@ benchmarks! {
 
     creator_token_issuer_transfer {
         let a in 1 .. MAX_CRT_ISSUER_TRANSFER_OUTPUTS;
+        let b in 1 .. MAX_BYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
             setup_worst_case_scenario_curator_channel::<T>(
@@ -392,9 +393,10 @@ benchmarks! {
 
         let outputs = worst_case_scenario_issuer_transfer_outputs::<T>(a);
         let balance_pre = balances::Pallet::<T>::usable_balance(&curator_acc_id);
+        let metadata = vec![0xf].repeat(b as usize);
         TokenAccountBloatBond::<T>::set(100u32.into());
     }: _ (
-        origin, actor, channel_id, outputs.clone()
+        origin, actor, channel_id, outputs.clone(), metadata.clone()
     )
     verify {
         let block_number = frame_system::Pallet::<T>::block_number();
@@ -428,7 +430,8 @@ benchmarks! {
                         .map(|(member_id, payment)|
                             (Validated::NonExisting(*member_id), payment.clone().into())
                         ).collect()
-                    )
+                    ),
+                    metadata
                 )
             ).into()
         );

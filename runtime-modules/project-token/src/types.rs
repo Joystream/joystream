@@ -711,9 +711,6 @@ pub struct MerkleProof<Hasher: Hash>(pub Vec<(Hasher::Output, MerkleSide)>);
 /// Information about a payment
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Payment<Balance> {
-    /// Ignored by runtime
-    pub remark: Vec<u8>,
-
     /// Amount
     pub amount: Balance,
 }
@@ -721,9 +718,6 @@ pub struct Payment<Balance> {
 /// Information about a payment with optional vesting schedule
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PaymentWithVesting<Balance, VestingScheduleParams> {
-    /// Ignored by runtime
-    pub remark: Vec<u8>,
-
     /// Amount
     pub amount: Balance,
 
@@ -736,7 +730,6 @@ impl<Balance, VestingScheduleParams> From<Payment<Balance>>
 {
     fn from(payment: Payment<Balance>) -> Self {
         Self {
-            remark: payment.remark,
             amount: payment.amount,
             vesting_schedule: None,
         }

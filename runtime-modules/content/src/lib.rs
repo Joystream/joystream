@@ -2848,6 +2848,7 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             outputs: TransfersWithVestingOf<T>,
+            metadata: Vec<u8>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -2871,7 +2872,8 @@ decl_module! {
                 token_id,
                 member_id,
                 sender,
-                outputs
+                outputs,
+                metadata
             )?;
         }
 
