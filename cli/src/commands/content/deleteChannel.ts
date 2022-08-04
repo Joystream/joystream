@@ -9,6 +9,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the channel and optionally all associated data objects.'
 
   static flags = {
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
     channelId: flags.integer({
       char: 'c',
       required: true,
@@ -23,16 +24,27 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
   }
 
   async run(): Promise<void> {
-    const {
-      flags: { channelId, force },
-    } = this.parse(DeleteChannelCommand)
+    const { context, channelId, force } = this.parse(DeleteChannelCommand).flags
     // Context
     const channel = await this.getApi().channelById(channelId)
-    const [actor, address] = await this.getChannelOwnerActor(channel)
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
+
+    if (
+      !this.isChannelOwner(channel, actor) &&
+      !this.isCollaboratorWithRequiredPermission(channel, actor, 'DeleteChannel')
+    ) {
+      this.error(
+        `Only channelOwner or collaborator with "DeleteChannel" permission is allowed to delete channel! ${channelId}`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
 
     if (channel.numVideos.toNumber()) {
       this.error(
-        `This channel still has ${channel.numVideos.toNumber()} associated video(s)!\n` +
+        `This channel still has 
+        ${channel.numVideos.toNumber()} associated video(s)!\n` +
           `Delete the videos first using ${chalk.magentaBright('content:deleteVideo')} command`
       )
     }

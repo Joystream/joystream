@@ -33,19 +33,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     },
   ]
 
-  parseRewardAccountInput(rewardAccount?: string | null): string | null | Uint8Array {
-    if (rewardAccount === undefined) {
-      // Reward account remains unchanged
-      return null
-    } else if (rewardAccount === null) {
-      // Reward account changed to empty
-      return new Uint8Array([1, 0])
-    } else {
-      // Reward account set to new account
-      return rewardAccount
-    }
-  }
-
   async getAssetsToRemove(
     channelId: number,
     coverPhotoIndex: number | undefined,
@@ -94,9 +81,16 @@ export default class UpdateChannelCommand extends UploadCommandBase {
 
     if (
       collaborators !== undefined &&
-      (!this.isChannelOwner(channel, actor) || this.hasManageChannelCollaboratorsPermission(channel, actor))
+      !this.isChannelOwner(channel, actor) &&
+      !this.isCollaboratorWithRequiredPermission(channel, actor, 'ManageChannelCollaborators')
     ) {
-      this.error("Only channel owner is allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
+      this.error(
+        `Only channel owner or collaborator with "ManageChannelCollaborators" 
+        permission is allowed to update channel's collaborators!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
     }
 
     if (collaborators) {

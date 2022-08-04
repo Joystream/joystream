@@ -40,13 +40,23 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
   }
 
   async run(): Promise<void> {
-    const {
-      flags: { videoId, force, context },
-    } = this.parse(DeleteVideoCommand)
+    const { videoId, force, context } = this.parse(DeleteVideoCommand).flags
     // Context
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
+
+    if (
+      !this.isChannelOwner(channel, actor) &&
+      !this.isCollaboratorWithRequiredPermission(channel, actor, 'DeleteVideo')
+    ) {
+      this.error(
+        `Only channel owner or collaborator with "DeleteVideo" permission is allowed to delete video ${videoId}!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
 
     const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
     if (dataObjectsInfo.length) {

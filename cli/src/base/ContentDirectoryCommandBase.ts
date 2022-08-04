@@ -1,12 +1,14 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
 import {
+  PalletContentChannelActionPermission as ChannelActionPermission,
   PalletContentPermissionsCuratorGroup as CuratorGroup,
   PalletWorkingGroupGroupWorker as Worker,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentChannelRecord as Channel,
   PalletContentChannelOwner as ChannelOwner,
 } from '@polkadot/types/lookup'
+
 import { CLIError } from '@oclif/errors'
 import { flags } from '@oclif/command'
 import { memberHandle } from '../helpers/display'
@@ -110,10 +112,13 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       : actor.isMember && actor.asMember.eq(channel.owner.asMember)
   }
 
-  hasManageChannelCollaboratorsPermission(channel: Channel, actor: ContentActor): boolean {
-    return !![...channel.collaborators].find(
-      ([id, permissions]) => actor.asMember === id && [...permissions].find((p) => p.isManageChannelCollaborators)
-    )
+  isCollaboratorWithRequiredPermission(
+    channel: Channel,
+    actor: ContentActor,
+    permission: ChannelActionPermission['type']
+  ): boolean {
+    const collaborator = channel.collaborators.get(actor.asMember)
+    return !!(collaborator && [...collaborator].find((p) => p[`is${permission}`]))
   }
 
   async getChannelManagementActor(
