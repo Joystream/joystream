@@ -22,6 +22,8 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': videoId.toString(),
         'InChannel': aVideo.inChannel.toString(),
+        'VideoStateBloatBond': aVideo.videoStateBloatBond.toString(),
+        'DataObjects': aVideo.dataObjects.toString(),
       })
     } else {
       this.error(`Video not found by channel id: "${videoId}"!`)

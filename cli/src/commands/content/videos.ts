@@ -31,6 +31,8 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
         videos.map(([id, v]) => ({
           'ID': id.toString(),
           'InChannel': v.inChannel.toString(),
+          'VideoStateBloatBond': v.videoStateBloatBond.toString(),
+          'DataObjects': v.dataObjects.toString(),
         })),
         3
       )
