@@ -23,6 +23,8 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
+let TotalNumberOfInstancesInGroups=$NUMBER_OF_VALIDATORS+$NUMBER_OF_STORAGE_NODES+$NUMBER_OF_DISTRIBUTOR_NODES
+
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying infrastructure ==========="
 aws cloudformation deploy \
@@ -42,8 +44,8 @@ aws cloudformation deploy \
     NumberOfValidators=$NUMBER_OF_VALIDATORS \
     NumberOfStorageNodes=$NUMBER_OF_STORAGE_NODES \
     NumberOfDistributorNodes=$NUMBER_OF_DISTRIBUTOR_NODES \
-    VolumeSize=$VOLUME_SIZE \
-    RPCVolumeSize=$RPC_VOLUME_SIZE
+    TotalNumberOfInstancesInGroups=$TotalNumberOfInstancesInGroups \
+    VolumeSize=$VOLUME_SIZE
 
 # If the deploy succeeded, get the IP, create inventory and configure the created instances
 if [ $? -eq 0 ]; then

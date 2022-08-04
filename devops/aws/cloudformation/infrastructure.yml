@@ -45,37 +45,21 @@ Parameters:
     Description: Number of distributor node instances to launch
     Type: Number
     Default: 0
+  TotalNumberOfInstancesInGroups:
+    Description: Sum of NumberOfValidators,NumberOfStorageNodes,NumberOfDistributorNodes
+    Type: Number
+    Default: 2
   VolumeSize:
-    Description: Validator and Build instance volume size in GB
+    Description: volume size in GB for all instances
     Type: Number
     Default: 200
-  RPCVolumeSize:
-    Description: RPC and Storage nodes Instance volume size in GB
-    Type: Number
-    Default: 400
 
 Conditions:
   HasAMIId: !Not [!Equals [!Ref EC2AMI, '']]
 
 Resources:
-  ValidatorSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 30333
-          ToPort: 30333
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}_validator'
-
-  RPCSecurityGroup:
+  # Common security group for all instances
+  SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: !Sub 'Internal Security group for RPC nodes ${AWS::StackName}'
@@ -124,7 +108,7 @@ Resources:
         InstanceType: !Ref EC2InstanceType
         KeyName: !Ref KeyName
         SecurityGroupIds:
-          - !GetAtt ValidatorSecurityGroup.GroupId
+          - !GetAtt SecurityGroup.GroupId
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
@@ -177,8 +161,6 @@ Resources:
       MinSize: '0'
       MaxSize: '4'
       DesiredCapacity: !Ref NumberOfStorageNodes
-      SecurityGroupIds:
-        - !GetAtt RPCSecurityGroup.GroupId
       AvailabilityZones:
         Fn::GetAZs:
           Ref: 'AWS::Region'
@@ -189,10 +171,6 @@ Resources:
             Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
           Overrides:
             - InstanceType: !Ref RPCEC2InstanceType
-            - BlockDeviceMappings:
-              - DeviceName: /dev/sda1
-                Ebs:
-                  VolumeSize: !Ref RPCVolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}'
@@ -204,8 +182,6 @@ Resources:
       MinSize: '0'
       MaxSize: '4'
       DesiredCapacity: !Ref NumberOfDistributorNodes
-      SecurityGroupIds:
-        - !GetAtt RPCSecurityGroup.GroupId
       AvailabilityZones:
         Fn::GetAZs:
           Ref: 'AWS::Region'
@@ -216,10 +192,6 @@ Resources:
             Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
           Overrides:
             - InstanceType: !Ref RPCEC2InstanceType
-            - BlockDeviceMappings:
-              - DeviceName: /dev/sda1
-                Ebs:
-                  VolumeSize: !Ref RPCVolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}'
@@ -229,7 +201,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       SecurityGroupIds:
-        - !GetAtt RPCSecurityGroup.GroupId
+        - !GetAtt SecurityGroup.GroupId
       InstanceType: !Ref RPCEC2InstanceType
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
@@ -237,7 +209,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: !Ref RPCVolumeSize
+            VolumeSize: !Ref VolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}_rpc'
@@ -261,7 +233,7 @@ Resources:
     Properties:
       Handle: !Ref 'WaitHandle'
       Timeout: '1000'
-      Count: !Ref NumberOfValidators
+      Count: !Ref TotalNumberOfInstancesInGroups
 
 Outputs:
   ValidatorsAutoScalingId:
