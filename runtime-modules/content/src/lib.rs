@@ -1826,7 +1826,15 @@ decl_module! {
         }
 
         /// Cancel Nft offer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeightInfoContent::<T>::cancel_offer()]
         pub fn cancel_offer(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2314,7 +2322,15 @@ decl_module! {
         }
 
         /// Offer Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeighInfoContent::<T>::offer_nft()]
         pub fn offer_nft(
             origin,
             video_id: T::VideoId,
@@ -2421,7 +2437,15 @@ decl_module! {
         }
 
         /// Accept incoming Nft offer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>//
+        #[weight = WeightInfoContent::<T>::accept_incoming_offer()]
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
