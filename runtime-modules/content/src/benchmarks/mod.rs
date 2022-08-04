@@ -19,9 +19,10 @@ use frame_support::{
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
 use project_token::types::{
-    SingleDataObjectUploadParams, TokenAllocationOf, TokenBalanceOf, TokenIssuanceParametersOf,
-    TokenSaleParamsOf, TransferPolicyParamsOf, VestingSchedule, VestingScheduleParamsOf,
-    VestingSource, WhitelistParamsOf, YearlyRate,
+    PaymentWithVestingOf, SingleDataObjectUploadParams, TokenAllocationOf, TokenBalanceOf,
+    TokenIssuanceParametersOf, TokenSaleParamsOf, TransferPolicyParamsOf, Transfers,
+    TransfersWithVestingOf, VestingSchedule, VestingScheduleParamsOf, VestingSource,
+    WhitelistParamsOf, YearlyRate,
 };
 use project_token::AccountInfoByTokenAndMember;
 use sp_arithmetic::traits::One;
@@ -77,10 +78,11 @@ pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES_METADATA: u32 = 5000;
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksize available for regular extrinsics
 
 // Creator tokens
 const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
+const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
 const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
 const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
 const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
@@ -950,7 +952,6 @@ where
 fn setup_account_with_max_number_of_locks<T: Config>(
     token_id: T::TokenId,
     member_id: &T::MemberId,
-    usable_balance: Option<TokenBalanceOf<T>>,
 ) {
     AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
         (0u32..T::MaxVestingBalancesPerAccountPerToken::get().into()).for_each(|i| {
@@ -969,7 +970,6 @@ fn setup_account_with_max_number_of_locks<T: Config>(
             );
         });
         a.stake(0u32, TokenBalanceOf::<T>::one());
-        a.increase_amount_by(usable_balance.unwrap_or_default() + 2u32.into());
     });
 }
 
@@ -1007,7 +1007,7 @@ where
         channel_id,
         issuance_params,
     )?;
-    setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
+    setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id);
     Ok(token_id)
 }
 
@@ -1021,4 +1021,24 @@ fn worst_case_scenario_token_sale_params<T: Config>(metatada_len: u32) -> TokenS
         vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
         metadata: Some(vec![0xf].repeat(metatada_len as usize)),
     }
+}
+
+fn worst_case_scenario_issuer_transfer_outputs<T: Config>(num: u32) -> TransfersWithVestingOf<T>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    Transfers(
+        (0..num)
+            .map(|i| {
+                let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+                let payment = PaymentWithVestingOf::<T> {
+                    remark: vec![0xf].repeat((MAX_BYTES_METADATA / num) as usize),
+                    amount: 100u32.into(),
+                    vesting_schedule: Some(default_vesting_schedule_params::<T>()),
+                };
+                (member_id, payment)
+            })
+            .collect(),
+    )
 }

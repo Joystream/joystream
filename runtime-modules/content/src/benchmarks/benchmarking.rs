@@ -6,12 +6,14 @@ use crate::{
     StorageAssets,
 };
 use frame_benchmarking::benchmarks;
-use frame_support::{storage::StorageMap, traits::Get};
+use frame_support::{storage::StorageMap, traits::Get, IterableStorageDoubleMap, StorageValue};
 use frame_system::RawOrigin;
 use project_token::types::{
     BlockRate, JoyBalanceOf, PatronageData, RevenueSplitStateOf, TokenBalanceOf, TokenDataOf,
-    TokenSale,
+    TokenSale, TransferPolicy, Transfers, Validated,
 };
+use project_token::BloatBond as TokenAccountBloatBond;
+use project_token::{AccountInfoByTokenAndMember, TokenInfoById};
 use sp_arithmetic::traits::{One, Zero};
 use sp_std::{
     cmp::min,
@@ -27,10 +29,11 @@ use super::{
     insert_storage_leader, issue_creator_token_with_worst_case_scenario_owner,
     setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
     worst_case_channel_agent_permissions, worst_case_scenario_initial_allocation,
-    worst_case_scenario_token_sale_params, ContentWorkingGroupInstance, CreateAccountId,
-    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
+    worst_case_scenario_issuer_transfer_outputs, worst_case_scenario_token_sale_params,
+    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
+    StorageWorkingGroupInstance, DEFAULT_CRT_OWNER_ISSUANCE, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
     DEFAULT_CRT_SALE_DURATION, DEFAULT_CRT_SALE_PRICE, DEFAULT_CRT_SALE_UPPER_BOUND,
-    MAX_BYTES_METADATA, MAX_CRT_INITIAL_ALLOCATION_MEMBERS,
+    MAX_BYTES_METADATA, MAX_CRT_INITIAL_ALLOCATION_MEMBERS, MAX_CRT_ISSUER_TRANSFER_OUTPUTS,
 };
 
 benchmarks! {
@@ -367,6 +370,132 @@ benchmarks! {
         );
     }
 
+    creator_token_issuer_transfer {
+        let a in 1 .. MAX_CRT_ISSUER_TRANSFER_OUTPUTS;
+
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            )?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+
+        let outputs = worst_case_scenario_issuer_transfer_outputs::<T>(a);
+        let balance_pre = balances::Pallet::<T>::usable_balance(&curator_acc_id);
+        TokenAccountBloatBond::<T>::set(100u32.into());
+    }: _ (
+        origin, actor, channel_id, outputs.clone()
+    )
+    verify {
+        let block_number = frame_system::Pallet::<T>::block_number();
+        let balance_post = balances::Pallet::<T>::usable_balance(&curator_acc_id);
+        // Ensure bloat bond total amount transferred
+        assert_eq!(balance_post, balance_pre - (100u32 * a).into());
+        for (member_id, acc_data) in AccountInfoByTokenAndMember::<T>::iter_prefix(token_id) {
+            if member_id == curator_member_id {
+                assert_eq!(
+                    acc_data.transferrable::<T>(block_number),
+                    (DEFAULT_CRT_OWNER_ISSUANCE - 100u32 * a).into()
+                );
+                assert_eq!(
+                    acc_data.vesting_schedules.len(),
+                    T::MaxVestingBalancesPerAccountPerToken::get() as usize
+                );
+                assert!(acc_data.split_staking_status.is_some());
+            } else {
+                assert_eq!(acc_data.amount, 100u32.into());
+                assert_eq!(acc_data.vesting_schedules.len(), 1);
+            }
+        }
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::TokenAmountTransferredByIssuer(
+                    token_id,
+                    curator_member_id,
+                    Transfers(outputs.0
+                        .iter()
+                        .map(|(member_id, payment)|
+                            (Validated::NonExisting(*member_id), payment.clone().into())
+                        ).collect()
+                    )
+                )
+            ).into()
+        );
+    }
+
+    make_creator_token_permissionless {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            )?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+    }: _ (
+        origin, actor, channel_id
+    )
+    verify {
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        assert_eq!(token.transfer_policy, TransferPolicy::Permissionless);
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::TransferPolicyChangedToPermissionless(
+                    token_id
+                )
+            ).into()
+        );
+    }
+
+    deissue_creator_token {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            )?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_params = create_token_issuance_params::<T>(BTreeMap::new());
+        let token_id = project_token::Pallet::<T>::next_token_id();
+        Pallet::<T>::issue_creator_token(origin.clone().into(), actor, channel_id, token_params)?;
+    }: _ (
+        origin, actor, channel_id
+    )
+    verify {
+        assert!(!TokenInfoById::<T>::contains_key(token_id));
+        let channel = ChannelById::<T>::get(channel_id);
+        assert_eq!(channel.creator_token_id, None);
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::TokenDeissued(token_id)
+            ).into()
+        );
+    }
+
     init_creator_token_sale {
         let a in 1 .. MAX_BYTES_METADATA;
 
@@ -464,6 +593,27 @@ pub mod tests {
     fn issue_creator_token() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_issue_creator_token());
+        });
+    }
+
+    #[test]
+    fn creator_token_issuer_transfer() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_creator_token_issuer_transfer());
+        });
+    }
+
+    #[test]
+    fn make_creator_token_permissionless() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_make_creator_token_permissionless());
+        });
+    }
+
+    #[test]
+    fn deissue_creator_token() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_deissue_creator_token());
         });
     }
 

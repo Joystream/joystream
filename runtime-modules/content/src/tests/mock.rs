@@ -953,16 +953,18 @@ impl MembershipInfoProvider<Test> for TestMemberships {
     fn controller_account_id(
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
-        let account_id = member_id as u128;
-        if MEMBER_IDS.contains(&member_id) {
-            Ok(account_id)
-        } else if COLABORATOR_IDS.contains(&member_id) {
-            Ok(account_id)
-        } else if CURATOR_IDS.contains(&member_id) {
-            Ok(account_id)
-        } else {
-            Err(DispatchError::Other("no account found"))
-        }
+        Membership::controller_account_id(member_id).or_else(|_| {
+            let account_id = member_id as u128;
+            if MEMBER_IDS.contains(&member_id) {
+                Ok(account_id)
+            } else if COLABORATOR_IDS.contains(&member_id) {
+                Ok(account_id)
+            } else if CURATOR_IDS.contains(&member_id) {
+                Ok(account_id)
+            } else {
+                Err(DispatchError::Other("no account found"))
+            }
+        })
     }
 }
 
