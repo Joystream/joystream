@@ -45,7 +45,7 @@
   command: systemctl start docker
   become: yes
 
-- name: Run service containers
+- name: Start Services
   shell: . ~/.bash_profile && ./start-qn-orion-faucet.sh
   environment:
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
@@ -60,7 +60,7 @@
   poll: 0
   register: compose_result
 
-- name: Check on yarn start task
+- name: Check on services startup
   async_status:
     jid: '{{ compose_result.ansible_job_id }}'
   register: job_result
@@ -90,8 +90,6 @@
     all_services: |
       websocket_rpc: wss://{{ nip_domain }}/ws-rpc
       http_rpc: https://{{ nip_domain }}/http-rpc
-      colossus: https://{{ nip_domain }}/colossus-1
-      distributor: https://{{ nip_domain }}/distributor-1
       graphql_server: https://{{ nip_domain }}/query-node/server/graphql
       graphql_server_websocket: wss://{{ nip_domain }}/query-node/server/graphql
       indexer: https://{{ nip_domain }}/query-node/indexer/graphql
