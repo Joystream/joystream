@@ -13,7 +13,7 @@
     --endowed 1 --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_code_path }}/initial-balances.json{% endif %}
-  register: chain_spec_output
+  register: chain_secrets_output
   delegate_to: '{{ build_instance }}'
   run_once: true
 
@@ -21,34 +21,34 @@
   shell: > 
     {{ remote_code_path }}/target/release/joystream-node key generate-node-key
   delegate_to: '{{ build_instance }}'
-  register: subkey_output
+  register: generate_node_keys_output
 
 - name: Print to stdout
   debug:
     msg:
-      - 'Public Key: {{ subkey_output.stderr }}'
-      - 'Private Key: {{ subkey_output.stdout }}'
+      - 'Public Key: {{ generate_node_keys_output.stderr }}'
+      - 'Private Key: {{ generate_node_keys_output.stdout }}'
 
 - name: Print to stdout chain spec
-  debug: var=chain_spec_output.stdout
+  debug: var=chain_secrets_output.stdout
   run_once: true
 
 - name: Save output of chain spec to local file
   copy:
-    content: '{{ chain_spec_output.stdout }}'
-    dest: '{{ remote_data_path }}/chain_spec_output.txt'
+    content: '{{ chain_secrets_output.stdout }}'
+    dest: '{{ remote_data_path }}/chain_secrets_output.txt'
   delegate_to: '{{ build_instance }}'
   run_once: true
 
 - name: Format chain spec output
   set_fact:
-    chain_spec_output_formatted: '{{ chain_spec_output.stdout | regex_replace("=", ": ") | from_yaml }}'
+    chain_secrets_output_formatted: '{{ chain_secrets_output.stdout | regex_replace("=", ": ") | from_yaml }}'
   run_once: true
 
 - name: Extract keys from chain spec output
   set_fact:
-    sudo_key: '{{ chain_spec_output_formatted.sudo }}'
-    endowed_key: '{{ chain_spec_output_formatted.endowed_0 }}'
+    sudo_key: '{{ chain_secrets_output_formatted.sudo }}'
+    endowed_key: '{{ chain_secrets_output_formatted.endowed_0 }}'
   delegate_to: '{{ build_instance }}'
   run_once: true
 

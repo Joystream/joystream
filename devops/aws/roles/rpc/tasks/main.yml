@@ -110,5 +110,5 @@
 - name: Save output as file on local
   copy:
     content: '{{ all_services | from_yaml | to_json }}'
-    dest: 'endpoints.json'
+    dest: '{{ data_path }}/endpoints.json'
   delegate_to: localhost
