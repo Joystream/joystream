@@ -179,10 +179,6 @@ Resources:
       DesiredCapacity: !Ref NumberOfStorageNodes
       SecurityGroupIds:
         - !GetAtt RPCSecurityGroup.GroupId
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: !Ref RPCVolumeSize
       AvailabilityZones:
         Fn::GetAZs:
           Ref: 'AWS::Region'
@@ -193,6 +189,10 @@ Resources:
             Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
           Overrides:
             - InstanceType: !Ref RPCEC2InstanceType
+            - BlockDeviceMappings:
+              - DeviceName: /dev/sda1
+                Ebs:
+                  VolumeSize: !Ref RPCVolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}'
@@ -206,10 +206,6 @@ Resources:
       DesiredCapacity: !Ref NumberOfDistributorNodes
       SecurityGroupIds:
         - !GetAtt RPCSecurityGroup.GroupId
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: !Ref RPCVolumeSize
       AvailabilityZones:
         Fn::GetAZs:
           Ref: 'AWS::Region'
@@ -220,6 +216,10 @@ Resources:
             Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
           Overrides:
             - InstanceType: !Ref RPCEC2InstanceType
+            - BlockDeviceMappings:
+              - DeviceName: /dev/sda1
+                Ebs:
+                  VolumeSize: !Ref RPCVolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}'
