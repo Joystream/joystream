@@ -532,7 +532,15 @@ benchmarks! {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.unwrap().owner == NftOwner::ChannelOwner);
         }
 
-    offer_nft {
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - NFT owner == channel owner
+    // DB OPERATIONS:
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
+     offer_nft {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
@@ -550,6 +558,13 @@ benchmarks! {
             })));
         }
 
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - NFT owner == channel owner
+    // DB OPERATIONS:
+    // - DB Read: Video -> O(1)
+    // - DB Write: Video -> O(1)
     cancel_offer {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel::<T>(false)?;
@@ -568,6 +583,14 @@ benchmarks! {
             })));
         }
 
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - NFT owner == channel owner
+    // DB OPERATIONS:
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
     accept_incoming_offer {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel::<T>(false)?;
