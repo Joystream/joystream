@@ -7,17 +7,8 @@ import {
   VideoInputParameters,
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
-  VideoCategoryInputParameters,
 } from '@joystream/cli/src/Types'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
-import {
-  CreateVideoCategory,
-  UpdateVideoCategory,
-  DeleteVideoCategory,
-  ModerateVideoCategories,
-  WorkerGroupLeadRemarked,
-} from '@joystream/metadata-protobuf'
-import Long from 'long'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 

@@ -3,7 +3,6 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
-import { BaseModel } from '@joystream/warthog'
 import { ChannelId, DataObjectId } from '@joystream/types/primitives'
 import {
   Channel,
@@ -12,8 +11,6 @@ import {
   ContentActorMember,
   CuratorGroup,
   Membership,
-  MetaprotocolTransactionErrored,
-  MetaprotocolTransactionStatusEvent,
   MetaprotocolTransactionSuccessful,
   StorageBag,
   StorageDataObject,
@@ -30,7 +27,6 @@ import {
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
 } from '../common'
-import { getAllManagers } from '../derivedPropertiesManager/applications'
 import {
   processBanOrUnbanMemberFromChannelMessage,
   processModerateCommentMessage,

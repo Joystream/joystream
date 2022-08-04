@@ -54,7 +54,7 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { CreateVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
+import { CreateVideoCategory, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
