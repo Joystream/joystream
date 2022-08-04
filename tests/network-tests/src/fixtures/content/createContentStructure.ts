@@ -9,7 +9,7 @@ import { assert } from 'chai'
 import BN from 'bn.js'
 
 // settings
-const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
+const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
 export class CreateContentStructureFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI

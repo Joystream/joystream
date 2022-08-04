@@ -35,7 +35,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   const videoCount = 2
   const videoCategoryCount = 2
   const channelCount = 1
-  const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // flow itself
 

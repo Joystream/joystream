@@ -16,12 +16,12 @@ mkdir -p ${DATA_PATH}
 RUNTIME=${RUNTIME:=$(RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh)}
 
 # Initial account balance for sudo account
-SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=100000000}
+SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=1000000000000000000}
 SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
 SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # Source of funds for all new accounts that are created in the tests.
-TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=100000000}
+TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=1000000000000000000}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
 TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
@@ -35,25 +35,6 @@ echo "{
   ]
 }" > ${DATA_PATH}/initial-balances.json
 
-# Remember if there are initial members at genesis query-node needs to be bootstrapped
-# or any events processed for this member will cause processor to fail.
-if [ "${MAKE_SUDO_MEMBER}" == true ]
-then
-  echo "
-    [{
-      \"member_id\":0,
-      \"root_account\":\"$SUDO_ACCOUNT\",
-      \"controller_account\":\"$SUDO_ACCOUNT\",
-      \"handle\":\"sudosudo\",
-      \"avatar_uri\":\"https://sudo.com/avatar.png\",
-      \"about\":\"Sudo\",
-      \"registered_at_time\":0
-    }]
-  " > ${DATA_PATH}/initial-members.json
-else
-  echo "[]" > ${DATA_PATH}/initial-members.json
-fi
-
 # Create a chain spec file
 docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
@@ -61,8 +42,7 @@ docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystrea
   --sudo-account ${SUDO_ACCOUNT} \
   --deployment dev \
   --chain-spec-path /spec/chain-spec.json \
-  --initial-balances-path /spec/initial-balances.json \
-  --initial-members-path /spec/initial-members.json
+  --initial-balances-path /spec/initial-balances.json
 
 # Convert the chain spec file to a raw chainspec file
 docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \

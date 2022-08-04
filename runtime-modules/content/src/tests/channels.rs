@@ -198,7 +198,7 @@ fn unsuccessful_channel_creation_with_insufficient_balance() {
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available() {
+fn unsuccessful_channel_creation_with_bucket_objects_size_limit_reached() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
@@ -218,13 +218,13 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available()
             })
             .with_default_storage_buckets()
             .call_and_assert(Err(
-                storage::Error::<Test>::StorageBucketIdCollectionsAreEmpty.into(),
+                storage::Error::<Test>::StorageBucketObjectSizeLimitReached.into(),
             ));
     })
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available() {
+fn unsuccessful_channel_creation_with_bucket_objects_number_limit_reached() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
@@ -249,7 +249,7 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available
             })
             .with_default_storage_buckets()
             .call_and_assert(Err(
-                storage::Error::<Test>::StorageBucketIdCollectionsAreEmpty.into(),
+                storage::Error::<Test>::StorageBucketObjectNumberLimitReached.into(),
             ));
     })
 }
@@ -324,6 +324,19 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
                     .collect(),
             )
             .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_invalid_owner() {
+    with_default_mock_builder(|| {
+        let invalid_curator_group_id = 111;
+        CreateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::CuratorGroup(invalid_curator_group_id))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelOwnerCuratorGroupDoesNotExist.into()
+            ));
     })
 }
 

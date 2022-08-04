@@ -8,7 +8,6 @@ import { ForumPostFieldsFragment, PostAddedEventFieldsFragment } from '../../gra
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { MemberId, ForumPostId, ForumThreadId, ForumCategoryId } from '@joystream/types/primitives'
-import { POST_DEPOSIT } from '../../consts'
 import { ForumPostMetadata, IForumPostMetadata } from '@joystream/metadata-protobuf'
 
 export type PostParams = {
@@ -49,7 +48,7 @@ export class AddPostsFixture extends StandardizedFixture {
   public async execute(): Promise<void> {
     const accounts = await this.getSignerAccountOrAccounts()
     // Send required funds to accounts (PostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, POST_DEPOSIT)))
+    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, this.api.consts.forum.postDeposit)))
     await super.execute()
   }
 

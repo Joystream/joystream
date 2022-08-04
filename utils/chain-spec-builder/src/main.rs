@@ -25,7 +25,7 @@ use std::{
 
 use joystream_node::chain_spec::{
     self, content_config, forum_config, initial_balances, initial_members,
-    joy_chain_spec_properties, AccountId, JOY_ADDRESS_PREFIX,
+    joy_chain_spec_properties, storage_config, AccountId, JOY_ADDRESS_PREFIX,
 };
 
 use sc_chain_spec::ChainType;
@@ -239,6 +239,11 @@ fn genesis_constructor(
         _ => content_config::testing_config(),
     };
 
+    let storage_cfg = match deployment {
+        ChainDeployment::live => storage_config::production_config(),
+        _ => storage_config::testing_config(),
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         nominator_accounts.to_vec(),
@@ -248,6 +253,7 @@ fn genesis_constructor(
         forum_cfg,
         genesis_balances,
         content_cfg,
+        storage_cfg,
     )
 }
 

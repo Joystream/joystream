@@ -34,7 +34,7 @@ export default async function nftAuctionAndOffers({ api, query }: FlowProps): Pr
   const videoCategoryCount = 1
   const channelCount = 1
   const auctionParticipantsCount = 3
-  const sufficientTopupAmount = new BN(1_000_000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // prepare content
 

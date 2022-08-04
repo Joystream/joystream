@@ -150,7 +150,7 @@ export async function content_ChannelAssetsDeletedByModerator({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [, channelId, dataObjectIds, rationale] = new Content.ChannelAssetsDeletedByModeratorEvent(event).params
+  const [actor, channelId, dataObjectIds, rationale] = new Content.ChannelAssetsDeletedByModeratorEvent(event).params
 
   await deleteChannelAssets(store, [...dataObjectIds])
 
@@ -158,7 +158,7 @@ export async function content_ChannelAssetsDeletedByModerator({
 
   const channelAssetsDeletedByModeratorEvent = new ChannelAssetsDeletedByModeratorEvent({
     ...genericEventFields(event),
-
+    actor: await convertContentActor(store, actor),
     channelId: channelId.toNumber(),
     assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
     rationale: rationale.toHuman() as string,

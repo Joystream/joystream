@@ -13,6 +13,7 @@ typegen:
   events:
     # Membership
     - members.MembershipBought
+    - members.MembershipGifted
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
     - members.MemberVerificationStatusUpdated
@@ -218,6 +219,8 @@ mappings:
     # Membership module
     - event: members.MembershipBought
       handler: members_MembershipBought
+    - event: members.MembershipGifted
+      handler: members_MembershipGifted
     - event: members.MemberProfileUpdated
       handler: members_MemberProfileUpdated
     - event: members.MemberAccountsUpdated

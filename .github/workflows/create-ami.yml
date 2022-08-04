@@ -1,5 +1,5 @@
-# Creates an AWS AMI (system image) with compiled joystream-node and subkey
-# 
+# Creates an AWS AMI (system image) with compiled joystream-node
+
 name: Create AWS AMI
 
 on:

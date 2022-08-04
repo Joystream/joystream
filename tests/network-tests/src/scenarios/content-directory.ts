@@ -9,8 +9,10 @@ import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Content directory', async ({ job }) => {
-  const leadSetupJob = job('Set content working group leads', leadOpening(true, ['contentWorkingGroup']))
-
+  const leadSetupJob = job(
+    'Set content working group leads',
+    leadOpening(true, ['contentWorkingGroup', 'storageWorkingGroup'])
+  )
   // following jobs must be run sequentially due to some QN queries that could interfere
   const channelJob = job('Create and Update Channel with assets', createAndUpdateChannel).requires(leadSetupJob)
   const videoCategoriesJob = job('video categories', videoCategories).after(channelJob)

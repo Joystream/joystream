@@ -39,7 +39,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   const videoCategoryCount = 1
   const channelCount = 1
   const curatorCount = 1
-  const sufficientTopupAmount = new BN(1_000_000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // prepare content
 
