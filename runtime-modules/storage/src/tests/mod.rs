@@ -3679,6 +3679,10 @@ fn create_dynamic_bag_fails_with_invalid_data_object_state_bloat_bond() {
         let invalid_data_object_state_bloat_bond_value = 55;
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id)
+            .with_objects(vec![DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            }])
             .with_expected_data_object_state_bloat_bond(invalid_data_object_state_bloat_bond_value)
             .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DataObjectStateBloatBondChanged.into()));
