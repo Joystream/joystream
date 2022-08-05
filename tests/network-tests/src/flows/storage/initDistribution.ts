@@ -5,7 +5,7 @@ import {
   IDistributionBucketOperatorMetadata,
 } from '@joystream/metadata-protobuf'
 import { CreateInterface, createType } from '@joystream/types'
-import { DistributionBucketFamilyId, WorkerId } from '@joystream/types/primitives'
+import { DistributionBucketFamilyId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import {
   PalletStorageDynamicBagIdType as DynamicBagId,
@@ -15,11 +15,12 @@ import _ from 'lodash'
 import { extendDebug } from '../../Debugger'
 import { FlowProps } from '../../Flow'
 import { Utils } from '../../utils'
+import { FixtureRunner } from '../../Fixture'
+import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
 
 type DistributionBucketConfig = {
   metadata: IDistributionBucketOperatorMetadata
   staticBags?: CreateInterface<StaticBagId>[]
-  operatorId: number
 }
 
 type DistributionFamilyConfig = {
@@ -57,7 +58,6 @@ export const singleBucketConfig: InitDistributionConfig = {
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
           staticBags: allStaticBags,
-          operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
     },
@@ -76,7 +76,6 @@ export const doubleBucketConfig: InitDistributionConfig = {
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
           staticBags: allStaticBags,
-          operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
     },
@@ -90,7 +89,6 @@ export const doubleBucketConfig: InitDistributionConfig = {
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_2_URL || 'http://localhost:3336' },
           staticBags: allStaticBags,
-          operatorId: parseInt(process.env.DISTRIBUTOR_2_WORKER_ID || '1'),
         },
       ],
     },
@@ -98,7 +96,7 @@ export const doubleBucketConfig: InitDistributionConfig = {
 }
 
 export default function createFlow({ families }: InitDistributionConfig) {
-  return async function initDistribution({ api }: FlowProps): Promise<void> {
+  return async function initDistribution({ api, query }: FlowProps): Promise<void> {
     const debug = extendDebug('flow:initDistribution')
     api.enableDebugTxLogs()
     debug('Started')
@@ -109,15 +107,10 @@ export default function createFlow({ families }: InitDistributionConfig) {
     const distributionLeaderKey = distributionLeader.roleAccountId.toString()
     const totalBucketsNum = families.reduce((a, b) => a + b.buckets.length, 0)
 
-    // Hire operators
-    // const hireWorkersFixture = new HireWorkesFixture(api, totalBucketsNum, WorkingGroups.Distribution)
-    // await new FixtureRunner(hireWorkersFixture).run()
-    // const operatorIds = hireWorkersFixture.getHiredWorkers()
+    const hireWorkersFixture = new HireWorkersFixture(api, query, 'distributionWorkingGroup', totalBucketsNum)
+    await new FixtureRunner(hireWorkersFixture).run()
+    const operatorIds = hireWorkersFixture.getCreatedWorkerIds()
 
-    const operatorIds = families.reduce(
-      (ids, { buckets }) => ids.concat(buckets.map((b) => api.createType('u64', b.operatorId))),
-      [] as WorkerId[]
-    )
     const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, 'distributionWorkingGroup')
 
     // Create families, set buckets per bag limit
