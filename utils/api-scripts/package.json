@@ -11,6 +11,7 @@
     "initialize-lead": "ts-node src/initialize-lead",
     "initialize-worker": "ts-node src/initialize-worker",
     "buy-membership": "ts-node src/buy-membership",
+    "sudo-set-multisig": "ts-node src/sudo-set-multisig",
     "storage-dev-init": "./dev-init-storage.sh"
   },
   "dependencies": {
