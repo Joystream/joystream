@@ -11,16 +11,15 @@ use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use sp_arithmetic::traits::{One, Saturating};
+use sp_arithmetic::traits::{One};
 use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use storage::Pallet as Storage;
 use sp_std::{
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     vec,
-    convert::TryInto;
+    convert::TryInto,
 };
-
 
 use super::*;
 
@@ -550,7 +549,7 @@ benchmarks! {
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     withdraw_from_channel_balance {
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin= RawOrigin::Signed(lead_account_id.clone());
         Pallet::<T>::set_channel_paused_features_as_moderator(
             origin.clone().into(),
@@ -592,7 +591,7 @@ benchmarks! {
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
         Pallet::<T>::set_channel_paused_features_as_moderator(
@@ -637,7 +636,7 @@ benchmarks! {
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
         Pallet::<T>::set_channel_paused_features_as_moderator(

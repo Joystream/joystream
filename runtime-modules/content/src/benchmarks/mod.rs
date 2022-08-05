@@ -4,7 +4,7 @@ mod benchmarking;
 
 use crate::{
     permissions::*,
-    types::*;
+    types::*,
     Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
     Module as Pallet,
 };
@@ -20,7 +20,7 @@ use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
 use sp_arithmetic::traits::One;
 use sp_runtime::traits::Hash;
-use sp_runtime::{DispatchError, SaturatedConversion};
+use sp_runtime::SaturatedConversion;
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
     Module as Storage,
@@ -29,6 +29,16 @@ use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
+
+use sp_std::{
+    cmp::min,
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
+    iter::FromIterator,
+    vec,
+    vec::Vec,
+};
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -62,15 +72,8 @@ pub const MAX_COLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
     gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
-pub const CURATOR_IDS_INIT: u128 = 800;
-pub const MAX_CURATOR_IDS: usize = 100;
-
-pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
-    gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
-
 pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
-const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[1];
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
@@ -936,7 +939,6 @@ where
     Ok(new_group_id)
 }
 
-<<<<<<< HEAD
 pub fn all_channel_pausable_features_except(
     except: BTreeSet<crate::PausableChannelFeature>,
 ) -> BTreeSet<crate::PausableChannelFeature> {
@@ -1058,11 +1060,13 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     }
     path
 }
+
 #[derive(Debug)]
 struct IndexItem {
     index: usize,
     side: Side,
-=======
+}
+
 fn channel_bag_witness<T: Config>(
     channel_id: T::ChannelId,
 ) -> Result<ChannelBagWitness, DispatchError> {
@@ -1085,5 +1089,4 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
         <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
         T::MaxNumberOfCuratorsPerGroup::get(),
     )
->>>>>>> carthage-content-benchmarking
 }
