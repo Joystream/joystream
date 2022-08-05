@@ -538,6 +538,9 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    /// Required if assets_to_upload or assets_to_remove are provided.
+    pub storage_buckets_num_witness: Option<u32>,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -574,6 +577,15 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub expected_video_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub struct ChannelBagWitness {
+    /// Number of storage buckets assigned to channel's storage bag
+    pub storage_buckets_num: u32,
+    /// Number of distribution buckets assigned to channel's storage bag
+    pub distribution_buckets_num: u32,
 }
 
 pub type VideoCreationParameters<T> =

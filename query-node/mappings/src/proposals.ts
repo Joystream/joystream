@@ -122,8 +122,6 @@ async function parseProposalDetails(
       specificDetails.map(({ account, amount }) =>
         store.save(
           new FundingRequestDestination({
-            createdAt: eventTime,
-            updatedAt: eventTime,
             account: account.toString(),
             amount: new BN(amount.toString()),
             list: destinationsList,
@@ -291,7 +289,6 @@ async function setProposalStatus(
   status: typeof ProposalStatus
 ): Promise<void> {
   proposal.status = status
-  proposal.updatedAt = new Date(event.blockTimestamp)
   proposal.statusSetAtBlock = event.blockNumber
   proposal.statusSetAtTime = new Date(event.blockTimestamp)
   if (
@@ -312,19 +309,13 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
 }
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [
-    proposalId,
-    generalProposalParameters,
-    runtimeProposalDetails,
-    proposalThreadId,
-  ] = new ProposalsCodex.ProposalCreatedEvent(event).params
+  const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
+    new ProposalsCodex.ProposalCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
   const proposal = new Proposal({
     id: proposalId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     details: proposalDetails,
     councilApprovals: 0,
     creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
@@ -344,8 +335,6 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
   // Thread is always created along with the proposal
   const proposalThread = new ProposalDiscussionThread({
     id: proposalThreadId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     mode: new ProposalDiscussionThreadModeOpen(),
     proposal,
   })
@@ -437,12 +426,14 @@ export async function proposalsEngine_ProposalDecisionMade({
       'ProposalStatusVetoed',
     ].includes(decisionStatus.isTypeOf)
   ) {
-    ;(decisionStatus as
-      | ProposalStatusCanceledByRuntime
-      | ProposalStatusExpired
-      | ProposalStatusRejected
-      | ProposalStatusSlashed
-      | ProposalStatusVetoed).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
+    ;(
+      decisionStatus as
+        | ProposalStatusCanceledByRuntime
+        | ProposalStatusExpired
+        | ProposalStatusRejected
+        | ProposalStatusSlashed
+        | ProposalStatusVetoed
+    ).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
     await setProposalStatus(event, store, proposal, decisionStatus)
   }
 }

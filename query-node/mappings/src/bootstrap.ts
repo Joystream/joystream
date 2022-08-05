@@ -5,10 +5,9 @@ import {
   MembershipSystemSnapshot,
   WorkingGroup,
   ElectedCouncil,
-  ElectionRound,
   MembershipEntryGenesis,
   CouncilStageUpdate,
-  CouncilStageAnnouncing,
+  CouncilStageIdle,
 } from 'query-node/dist/model'
 import { storageSystemData, membershipSystemData, workingGroupsData, membersData } from './bootstrap-data'
 import { createNewMember } from './membership'
@@ -21,14 +20,12 @@ export async function bootstrapData({ store }: StoreContext): Promise<void> {
   await initMembers(store)
   await initStorageSystem(store)
   await initWorkingGroups(store)
-  await initFirstElectionRound(store)
+  await initCouncil(store)
 }
 
 async function initMembershipSystem(store: DatabaseManager): Promise<void> {
   await store.save<MembershipSystemSnapshot>(
     new MembershipSystemSnapshot({
-      createdAt: new Date(0),
-      updatedAt: new Date(0),
       snapshotBlock: 0,
       ...membershipSystemData,
       membershipPrice: new BN(membershipSystemData.membershipPrice),
@@ -54,8 +51,6 @@ async function initWorkingGroups(store: DatabaseManager): Promise<void> {
     workingGroupsData.map(async (group) =>
       store.save<WorkingGroup>(
         new WorkingGroup({
-          createdAt: new Date(0),
-          updatedAt: new Date(0),
           id: group.name,
           name: group.name,
           budget: new BN(group.budget),
@@ -65,7 +60,7 @@ async function initWorkingGroups(store: DatabaseManager): Promise<void> {
   )
 }
 
-async function initFirstElectionRound(store: DatabaseManager): Promise<void> {
+async function initCouncil(store: DatabaseManager): Promise<void> {
   const electedCouncil = new ElectedCouncil({
     councilMembers: [],
     updates: [],
@@ -78,17 +73,8 @@ async function initFirstElectionRound(store: DatabaseManager): Promise<void> {
   })
   await store.save<ElectedCouncil>(electedCouncil)
 
-  const initialElectionRound = new ElectionRound({
-    cycleId: 0,
-    isFinished: false,
-    castVotes: [],
-    electedCouncil,
-    candidates: [],
-  })
-  await store.save<ElectionRound>(initialElectionRound)
-
-  const stage = new CouncilStageAnnouncing()
-  stage.candidatesCount = new BN(0)
+  const stage = new CouncilStageIdle()
+  stage.endsAt = 1
   const initialStageUpdate = new CouncilStageUpdate({
     stage,
     electedCouncil,

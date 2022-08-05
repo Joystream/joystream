@@ -23,7 +23,7 @@
   become: yes
 
 - name: Build required packages
-  shell: yarn build:packages
+  shell: . ~/.bash_profile && yarn build:packages
   args:
     chdir: '{{ remote_code_path }}'
   # Run in async fashion for max duration of 1 hr
@@ -46,7 +46,7 @@
   become: yes
 
 - name: Run service containers
-  command: yarn start
+  shell: . ~/.bash_profile && yarn start
   environment:
     PERSIST: 'true'
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
@@ -109,7 +109,7 @@
 - name: Create config.json to serve as Caddy endpoint
   copy:
     content: '{{ all_services | from_yaml | to_json }}'
-    dest: '/home/ubuntu/config.json'
+    dest: '/home/ubuntu/network-config.json'
 
 - name: Save output as file on local
   copy:

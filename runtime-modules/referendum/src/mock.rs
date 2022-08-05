@@ -570,6 +570,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         let winning_target_count = extra_winning_target_count + 1;
         let block_number = frame_system::Pallet::<Runtime>::block_number();
+        let voting_ends_at = block_number + <Runtime as Config>::VoteStageDuration::get();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -577,6 +578,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 started: block_number,
                 winning_target_count,
                 current_cycle_id: cycle_id,
+                ends_at: voting_ends_at
             }),
         );
 
@@ -587,12 +589,16 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::from(RawEvent::ReferendumStarted(winning_target_count))
+            Event::from(RawEvent::ReferendumStarted(
+                winning_target_count,
+                voting_ends_at
+            ))
         );
     }
 
     pub fn check_voting_finished(winning_target_count: u64, cycle_id: u64) {
         let block_number = frame_system::Pallet::<Runtime>::block_number();
+        let revealing_ends_at = block_number + <Runtime as Config>::RevealStageDuration::get();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -601,6 +607,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 winning_target_count,
                 intermediate_winners: vec![],
                 current_cycle_id: cycle_id,
+                ends_at: revealing_ends_at
             }),
         );
 
@@ -610,7 +617,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::RevealingStageStarted())
+            Event::Referendum(RawEvent::RevealingStageStarted(revealing_ends_at))
         );
     }
 
