@@ -21,20 +21,24 @@ use frame_support::{
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
-use project_token::types::{
-    PaymentWithVestingOf, SingleDataObjectUploadParams, TokenAllocationOf, TokenBalanceOf,
-    TokenIssuanceParametersOf, TokenSaleParamsOf, TransferPolicyParamsOf, Transfers,
-    TransfersWithVestingOf, VestingSchedule, VestingScheduleParamsOf, VestingSource,
-    WhitelistParamsOf, YearlyRate,
+use project_token::{
+    types::{
+        PaymentWithVestingOf, SingleDataObjectUploadParams, TokenAllocationOf, TokenBalanceOf,
+        TokenIssuanceParametersOf, TokenSaleParamsOf, TransferPolicyParamsOf, Transfers,
+        TransfersWithVestingOf, VestingSchedule, VestingScheduleParamsOf, VestingSource,
+        WhitelistParamsOf, YearlyRate,
+    },
+    AccountInfoByTokenAndMember,
 };
-use project_token::AccountInfoByTokenAndMember;
 use sp_arithmetic::traits::One;
-use sp_runtime::traits::Hash;
-use sp_runtime::Permill;
-use sp_runtime::SaturatedConversion;
-use sp_std::collections::btree_set::BTreeSet;
+use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use sp_std::{
-    cmp::min, collections::btree_map::BTreeMap, convert::TryInto, iter::FromIterator, vec, vec::Vec,
+    cmp::min,
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
+    iter::FromIterator,
+    vec,
+    vec::Vec,
 };
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
@@ -44,7 +48,6 @@ use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
-
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -1025,7 +1028,7 @@ fn default_vesting_schedule_params<T: Config>() -> VestingScheduleParamsOf<T> {
     }
 }
 
-fn worst_case_scenario_initial_allocation<T: Config>(
+fn worst_case_scenario_initial_allocation<T: RuntimeConfig>(
     members_num: u32,
 ) -> BTreeMap<T::MemberId, TokenAllocationOf<T>>
 where
@@ -1049,7 +1052,7 @@ fn setup_account_with_max_number_of_locks<T: Config>(
     member_id: &T::MemberId,
 ) {
     AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
-        (0u32..T::MaxVestingBalancesPerAccountPerToken::get().into()).for_each(|i| {
+        (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
             a.add_or_update_vesting_schedule(
                 VestingSource::Sale(i),
                 VestingSchedule::from_params(
@@ -1121,7 +1124,9 @@ fn worst_case_scenario_token_sale_params<T: Config>(
     }
 }
 
-fn worst_case_scenario_issuer_transfer_outputs<T: Config>(num: u32) -> TransfersWithVestingOf<T>
+fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
+    num: u32,
+) -> TransfersWithVestingOf<T>
 where
     T::AccountId: CreateAccountId,
 {

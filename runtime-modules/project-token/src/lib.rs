@@ -190,12 +190,13 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (T)` where:
+        /// `O (T + M)` where:
         /// - `T` is the length of `outputs`
+        /// - `M` is the length of `metadata`
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32)]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, metadata.len() as u32)]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,

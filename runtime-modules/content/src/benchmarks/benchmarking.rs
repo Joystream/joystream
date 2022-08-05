@@ -24,36 +24,37 @@ use project_token::types::{
 use project_token::BloatBond as TokenAccountBloatBond;
 use project_token::{AccountInfoByTokenAndMember, TokenInfoById};
 use sp_arithmetic::traits::{One, Zero};
+use sp_runtime::traits::SaturatedConversion;
 use sp_std::{
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
     vec,
-    convert::TryInto
 };
 use storage::Module as Storage;
 
 use super::{
-    assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
-    create_token_issuance_params, curator_member_id, default_vesting_schedule_params,
-    fastforward_by_blocks, generate_channel_creation_params, insert_content_leader,
-    insert_distribution_leader, insert_storage_leader,
-    worst_case_channel_agent_permissions, worst_case_scenario_initial_allocation,
-    worst_case_scenario_issuer_transfer_outputs, worst_case_scenario_token_sale_params,
-    ContentWorkingGroupInstance, CreateAccountId, DistributionWorkingGroupInstance,
-    StorageWorkingGroupInstance, DEFAULT_CRT_OWNER_ISSUANCE, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
+    assert_last_event, channel_bag_witness, clone_curator_group,
+    create_data_object_candidates_helper, create_token_issuance_params, curator_member_id,
+    default_vesting_schedule_params, fastforward_by_blocks, generate_channel_creation_params,
+    insert_content_leader, insert_curator, insert_distribution_leader, insert_storage_leader,
+    issue_creator_token_with_worst_case_scenario_owner, max_curators_per_group,
+    member_funded_account, setup_worst_case_curator_group_with_curators,
+    setup_worst_case_scenario_curator_channel, setup_worst_case_scenario_curator_channel_all_max,
+    storage_buckets_num_witness, worst_case_channel_agent_permissions,
+    worst_case_content_moderation_actions_set, worst_case_scenario_collaborators,
+    worst_case_scenario_initial_allocation, worst_case_scenario_issuer_transfer_outputs,
+    worst_case_scenario_token_sale_params, ContentWorkingGroupInstance, CreateAccountId,
+    RuntimeConfig, CURATOR_IDS, DEFAULT_CRT_OWNER_ISSUANCE, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
     DEFAULT_CRT_SALE_DURATION, DEFAULT_CRT_SALE_PRICE, DEFAULT_CRT_SALE_UPPER_BOUND,
     MAX_BYTES_METADATA, MAX_CRT_INITIAL_ALLOCATION_MEMBERS, MAX_CRT_ISSUER_TRANSFER_OUTPUTS,
-    assert_last_event, channel_bag_witness, clone_curator_group,
-    create_data_object_candidates_helper, generate_channel_creation_params, insert_content_leader,
-    insert_curator, insert_distribution_leader, insert_storage_leader, max_curators_per_group,
-    member_funded_account, setup_worst_case_curator_group_with_curators,
-    storage_buckets_num_witness, worst_case_channel_agent_permissions,
-    ContentWorkingGroupInstance, CreateAccountId, RuntimeConfig, CURATOR_IDS, MAX_BYTES_METADATA,
 };
 
 benchmarks! {
     where_clause {
+        where
             T: RuntimeConfig,
             T::AccountId: CreateAccountId
+    }
 
     /*
     ============================================================================
@@ -340,7 +341,11 @@ benchmarks! {
     verify {
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert!(group == CuratorGroup::create(true, &permissions_by_level));
-        assert_last_event::<T>(Event::<T>::CuratorGroupCreated(group_id).into());
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::CuratorGroupCreated(group_id)
+            ).into()
+        );
     }
 
     update_curator_group_permissions {
@@ -361,10 +366,14 @@ benchmarks! {
     verify {
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert_eq!(group.get_permissions_by_level(), &permissions_by_level);
-        assert_last_event::<T>(Event::<T>::CuratorGroupPermissionsUpdated(
-            group_id,
-            permissions_by_level
-        ).into());
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::CuratorGroupPermissionsUpdated(
+                    group_id,
+                    permissions_by_level
+                )
+            ).into()
+        );
     }
 
     set_curator_group_status {
@@ -382,7 +391,11 @@ benchmarks! {
     verify {
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert!(!group.is_active());
-        assert_last_event::<T>(Event::<T>::CuratorGroupStatusSet(group_id, false).into());
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::CuratorGroupStatusSet(group_id, false)
+            ).into()
+        );
     }
 
     add_curator_to_group {
@@ -405,7 +418,11 @@ benchmarks! {
     verify {
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert_eq!(group.get_curators().get(&curator_id), Some(&permissions));
-        assert_last_event::<T>(Event::<T>::CuratorAdded(group_id, curator_id, permissions).into());
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::CuratorAdded(group_id, curator_id, permissions)
+            ).into()
+        );
     }
 
     remove_curator_from_group {
@@ -423,7 +440,11 @@ benchmarks! {
     verify {
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert!(group.get_curators().get(&curator_id).is_none());
-        assert_last_event::<T>(Event::<T>::CuratorRemoved(group_id, curator_id).into());
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::CuratorRemoved(group_id, curator_id)
+            ).into()
+        );
     }
 
     /*
@@ -470,10 +491,12 @@ benchmarks! {
             ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
         );
         assert_last_event::<T>(
-            Event::<T>::InitializedChannelTransfer(
-                channel_id,
-                actor,
-                pending_transfer
+            <T as Config>::Event::from(
+                Event::<T>::InitializedChannelTransfer(
+                    channel_id,
+                    actor,
+                    pending_transfer
+                )
             ).into()
         );
     }
@@ -490,9 +513,11 @@ benchmarks! {
         let channel = Pallet::<T>::channel_by_id(channel_id);
         assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
         assert_last_event::<T>(
-            Event::<T>::CancelChannelTransfer(
-                channel_id,
-                actor,
+            <T as Config>::Event::from(
+                Event::<T>::CancelChannelTransfer(
+                    channel_id,
+                    actor,
+                )
             ).into()
         );
     }
@@ -539,9 +564,11 @@ benchmarks! {
         assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
         assert_eq!(channel.owner, new_owner);
         assert_last_event::<T>(
-            Event::<T>::ChannelTransferAccepted(
-                channel_id,
-                witness
+            <T as Config>::Event::from(
+                Event::<T>::ChannelTransferAccepted(
+                    channel_id,
+                    witness
+                )
             ).into()
         );
     }
@@ -556,11 +583,7 @@ benchmarks! {
         let a in 1 .. MAX_CRT_INITIAL_ALLOCATION_MEMBERS;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-            )?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let params = create_token_issuance_params::<T>(worst_case_scenario_initial_allocation::<T>(a));
         let actor = ContentActor::Curator(group_id, curator_id);
     }: _ (
@@ -608,11 +631,7 @@ benchmarks! {
         let b in 1 .. MAX_BYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-            )?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let curator_member_id = curator_member_id::<T>(curator_id);
         let origin = RawOrigin::Signed(curator_acc_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -644,7 +663,7 @@ benchmarks! {
                 );
                 assert_eq!(
                     acc_data.vesting_schedules.len(),
-                    T::MaxVestingBalancesPerAccountPerToken::get() as usize
+                    T::MaxVestingSchedulesPerAccountPerToken::get() as usize
                 );
                 assert!(acc_data.split_staking_status.is_some());
             } else {
@@ -672,11 +691,7 @@ benchmarks! {
 
     make_creator_token_permissionless {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-            )?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let curator_member_id = curator_member_id::<T>(curator_id);
         let origin = RawOrigin::Signed(curator_acc_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -706,11 +721,7 @@ benchmarks! {
 
     deissue_creator_token {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-            )?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let curator_member_id = curator_member_id::<T>(curator_id);
         let origin = RawOrigin::Signed(curator_acc_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -736,11 +747,7 @@ benchmarks! {
         let a in 1 .. MAX_BYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-            )?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let curator_member_id = curator_member_id::<T>(curator_id);
         let origin = RawOrigin::Signed(curator_acc_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -775,7 +782,7 @@ benchmarks! {
         let owner_acc_data = project_token::Module::<T>::account_info_by_token_and_member(token_id, curator_member_id);
         assert_eq!(
             owner_acc_data.vesting_schedules.len(),
-            T::MaxVestingBalancesPerAccountPerToken::get() as usize
+            T::MaxVestingSchedulesPerAccountPerToken::get() as usize
         );
         assert!(owner_acc_data.split_staking_status.is_some());
         // Check event emitted
@@ -793,11 +800,7 @@ benchmarks! {
 
     update_upcoming_creator_token_sale {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-            )?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let curator_member_id = curator_member_id::<T>(curator_id);
         let origin = RawOrigin::Signed(curator_acc_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -840,11 +843,7 @@ benchmarks! {
 
     finalize_creator_token_sale {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
-        setup_worst_case_scenario_curator_channel::<T>(
-            T::MaxNumberOfAssetsPerChannel::get(),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
-        )?;
+        setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let curator_member_id = curator_member_id::<T>(curator_id);
         let origin = RawOrigin::Signed(curator_acc_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -983,7 +982,7 @@ pub mod tests {
     fn initialize_channel_transfer() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_initialize_channel_transfer());
-        })
+        });
     }
 
     #[test]
