@@ -439,27 +439,22 @@ impl Config for Test {
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
-pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
+pub const COUNCIL_INITIAL_BUDGET: u64 = 0;
+
+thread_local! {
+    pub static COUNCIL_BUDGET: RefCell<u64> = RefCell::new(COUNCIL_INITIAL_BUDGET);
+}
+
 pub struct CouncilBudgetManager;
 impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
-        balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+        COUNCIL_BUDGET.with(|val| *val.borrow())
     }
 
     fn set_budget(budget: u64) {
-        let old_budget = Self::get_budget();
-
-        if budget > old_budget {
-            let _ = balances::Pallet::<Test>::deposit_creating(
-                &COUNCIL_BUDGET_ACCOUNT_ID,
-                budget - old_budget,
-            );
-        }
-
-        if budget < old_budget {
-            let _ =
-                balances::Pallet::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
-        }
+        COUNCIL_BUDGET.with(|val| {
+            *val.borrow_mut() = budget;
+        });
     }
 
     fn try_withdraw(account_id: &u128, amount: u64) -> DispatchResult {

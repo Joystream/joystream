@@ -5,8 +5,13 @@ use crate::{
     Call, ChannelById, ChannelUpdateParameters, Config, ContentActor, Event, Module as Pallet,
     StorageAssets,
 };
+use common::BudgetManager;
 use frame_benchmarking::benchmarks;
-use frame_support::{storage::StorageMap, traits::Get, IterableStorageDoubleMap, StorageValue};
+use frame_support::{
+    storage::StorageMap,
+    traits::{Currency, Get},
+    IterableStorageDoubleMap, StorageValue,
+};
 use frame_system::RawOrigin;
 use project_token::types::{
     BlockRate, JoyBalanceOf, PatronageData, RevenueSplitStateOf, TokenBalanceOf, TokenDataOf,
@@ -25,8 +30,9 @@ use storage::{DataObjectStorage, Module as Storage};
 use super::{
     assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
     create_token_issuance_params, curator_member_id, default_vesting_schedule_params,
-    generate_channel_creation_params, insert_content_leader, insert_distribution_leader,
-    insert_storage_leader, issue_creator_token_with_worst_case_scenario_owner,
+    fastforward_by_blocks, generate_channel_creation_params, insert_content_leader,
+    insert_distribution_leader, insert_storage_leader,
+    issue_creator_token_with_worst_case_scenario_owner,
     setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
     worst_case_channel_agent_permissions, worst_case_scenario_initial_allocation,
     worst_case_scenario_issuer_transfer_outputs, worst_case_scenario_token_sale_params,
@@ -518,7 +524,7 @@ benchmarks! {
                 channel_id,
                 curator_member_id
             )?;
-        let params = worst_case_scenario_token_sale_params::<T>(a);
+        let params = worst_case_scenario_token_sale_params::<T>(a, None);
     }: _ (
         origin, actor, channel_id, params
     )
@@ -553,6 +559,111 @@ benchmarks! {
                     token.next_sale_id - 1,
                     token.sale.unwrap(),
                     Some(vec![0xf].repeat(a as usize))
+                )
+            ).into()
+        );
+    }
+
+    update_upcoming_creator_token_sale {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            )?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id,
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let sale_params =
+            worst_case_scenario_token_sale_params::<T>(MAX_BYTES_METADATA, Some(100u32.into()));
+        Pallet::<T>::init_creator_token_sale(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            sale_params
+        )?;
+        let new_start_block: Option<T::BlockNumber> = Some(200u32.into());
+        let new_duration: Option<T::BlockNumber> = Some(200u32.into());
+    }: _(origin, actor, channel_id, new_start_block, new_duration)
+    verify {
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        let sale_id = token.next_sale_id - 1;
+        assert_eq!(token.sale.as_ref().unwrap().start_block, new_start_block.unwrap());
+        assert_eq!(token.sale.as_ref().unwrap().duration, new_duration.unwrap());
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::UpcomingTokenSaleUpdated(
+                    token_id,
+                    sale_id,
+                    new_start_block,
+                    new_duration
+                )
+            ).into()
+        );
+    }
+
+    finalize_creator_token_sale {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+        )?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let sale_params =
+            worst_case_scenario_token_sale_params::<T>(MAX_BYTES_METADATA, None);
+        Pallet::<T>::init_creator_token_sale(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            sale_params
+        )?;
+        let tokens_sold: TokenBalanceOf<T> = 1u32.into();
+        let funds_collected = JoyBalanceOf::<T>::from(DEFAULT_CRT_SALE_PRICE) * tokens_sold.into();
+        let _ = balances::Pallet::<T>::deposit_creating(&curator_acc_id, funds_collected);
+        project_token::Pallet::<T>::purchase_tokens_on_sale(
+            origin.clone().into(),
+            token_id,
+            curator_member_id,
+            tokens_sold
+        )?;
+        let council_budget_pre = T::CouncilBudgetManager::get_budget();
+        fastforward_by_blocks::<T>(DEFAULT_CRT_SALE_DURATION.into());
+    }: _(origin, actor, channel_id)
+    verify {
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        assert!(token.sale.is_none());
+        let sale_id = token.next_sale_id - 1;
+        // Make sure council budget was increased
+        let council_budget_post = T::CouncilBudgetManager::get_budget();
+        assert_eq!(council_budget_post, council_budget_pre + funds_collected);
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::TokenSaleFinalized(
+                    token_id,
+                    sale_id,
+                    TokenBalanceOf::<T>::from(DEFAULT_CRT_SALE_UPPER_BOUND) - tokens_sold,
+                    funds_collected
                 )
             ).into()
         );
@@ -624,6 +735,20 @@ pub mod tests {
     fn init_creator_token_sale() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_init_creator_token_sale());
+        });
+    }
+
+    #[test]
+    fn update_upcoming_creator_token_sale() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_upcoming_creator_token_sale());
+        });
+    }
+
+    #[test]
+    fn finalize_creator_token_sale() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_finalize_creator_token_sale());
         });
     }
 }

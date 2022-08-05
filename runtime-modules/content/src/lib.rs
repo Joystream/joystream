@@ -2799,7 +2799,15 @@ decl_module! {
         }
 
         /// Update upcoming creator token sale
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_upcoming_creator_token_sale()]
         pub fn update_upcoming_creator_token_sale(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2842,7 +2850,20 @@ decl_module! {
         }
 
         /// Perform transfer of tokens as creator token issuer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B)` where:
+        /// - `A` is the number of entries in `outputs`
+        /// - `B` is the length of the `metadata`
+        /// - DB:
+        ///    - `O(A)` - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::creator_token_issuer_transfer(
+            outputs.0.len() as u32,
+            metadata.len() as u32
+        )]
         pub fn creator_token_issuer_transfer(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2879,7 +2900,15 @@ decl_module! {
 
 
         /// Make channel's creator token permissionless
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::make_creator_token_permissionless()]
         pub fn make_creator_token_permissionless(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3041,7 +3070,15 @@ decl_module! {
         }
 
         /// Finalize an ended creator token sale
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::finalize_creator_token_sale()]
         pub fn finalize_creator_token_sale(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3087,7 +3124,15 @@ decl_module! {
         }
 
         /// Deissue channel's creator token
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::deissue_creator_token()]
         pub fn deissue_creator_token(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

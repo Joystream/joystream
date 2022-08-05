@@ -14,7 +14,7 @@ use frame_benchmarking::account;
 use frame_support::{
     dispatch::DispatchError,
     storage::{StorageDoubleMap, StorageMap, StorageValue},
-    traits::{Currency, Get, Instance},
+    traits::{Currency, Get, Instance, OnFinalize, OnInitialize},
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
@@ -176,9 +176,16 @@ where
 }
 
 fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
+    assert_past_event::<T>(expected_event, 0);
+}
+
+fn assert_past_event<T: Config>(
+    expected_event: <T as frame_system::Config>::Event,
+    index_from_last: u32,
+) {
     let events = System::<T>::events();
     // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
+    let EventRecord { event, .. } = &events[events.len() - 1 - index_from_last as usize];
     assert_eq!(event, &expected_event);
 }
 
@@ -1011,11 +1018,14 @@ where
     Ok(token_id)
 }
 
-fn worst_case_scenario_token_sale_params<T: Config>(metatada_len: u32) -> TokenSaleParamsOf<T> {
+fn worst_case_scenario_token_sale_params<T: Config>(
+    metatada_len: u32,
+    starts_at: Option<T::BlockNumber>,
+) -> TokenSaleParamsOf<T> {
     TokenSaleParamsOf::<T> {
         cap_per_member: Some(1_000_000u32.into()),
         duration: DEFAULT_CRT_SALE_DURATION.into(),
-        starts_at: None,
+        starts_at,
         unit_price: DEFAULT_CRT_SALE_PRICE.into(),
         upper_bound_quantity: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
         vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
@@ -1040,4 +1050,23 @@ where
             })
             .collect(),
     )
+}
+
+pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
+    let mut current_block = System::<T>::block_number();
+    while current_block < target_block {
+        // Other on_finalize calls if needed...
+        System::<T>::on_finalize(current_block);
+
+        current_block += One::one();
+        System::<T>::set_block_number(current_block);
+
+        System::<T>::on_initialize(current_block);
+        // Other on_initialize calls if needed...
+    }
+}
+
+pub fn fastforward_by_blocks<T: Config>(blocks: T::BlockNumber) {
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(current_block + blocks);
 }
