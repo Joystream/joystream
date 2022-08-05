@@ -174,7 +174,7 @@ export class NetworkingService {
       autostart: true,
     })
 
-    storageEndpoints.forEach(async (endpoint) => {
+    storageEndpoints.forEach((endpoint) => {
       availabilityQueue.push(async () => {
         await this.checkObjectAvailability(objectId, endpoint)
         return endpoint

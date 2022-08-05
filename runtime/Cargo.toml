@@ -208,7 +208,8 @@ runtime-benchmarks = [
     "referendum/runtime-benchmarks",
     # "bounty/runtime-benchmarks",
     'storage/runtime-benchmarks',
-    'content/runtime-benchmarks'
+    'content/runtime-benchmarks',
+    "project-token/runtime-benchmarks",
 ]
 
 # Staging and testing configurations

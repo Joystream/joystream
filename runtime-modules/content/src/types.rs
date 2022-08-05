@@ -527,13 +527,7 @@ pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct ChannelUpdateParametersRecord<
-    StorageAssets,
-    DataObjectId: Ord,
-    MemberId: Ord,
-    Balance,
-    ChannelBagWitness,
-> {
+pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, MemberId: Ord, Balance> {
     /// Asset collection for the channel, referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
@@ -544,8 +538,9 @@ pub struct ChannelUpdateParametersRecord<
     pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
-    /// Witness/commitment data related to channel bag (for weight calculation purposes)
-    pub channel_bag_witness: Option<ChannelBagWitness>,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    /// Required if assets_to_upload or assets_to_remove are provided.
+    pub storage_buckets_num_witness: Option<u32>,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -553,7 +548,6 @@ pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
     DataObjectId<T>,
     <T as common::MembershipTypes>::MemberId,
     BalanceOf<T>,
-    ChannelBagWitness,
 >;
 
 /// Information regarding the content being uploaded

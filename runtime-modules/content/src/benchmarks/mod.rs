@@ -3,8 +3,8 @@ mod benchmarking;
 use crate::{
     permissions::PausableChannelFeature,
     types::{
-        ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness,
-        ChannelCreationParameters, ChannelOwner, StorageAssets, VideoCreationParameters,
+        ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
+        StorageAssets, VideoCreationParameters,
     },
     Config, ContentActor, ContentModerationAction, InitTransactionalStatus,
     ModerationPermissionsByLevel, Module as Pallet, NextVideoId, NftIssuanceParameters,
@@ -73,7 +73,7 @@ pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES_METADATA: u32 = 5000;
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024;
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
     ChannelActionPermission::AddVideo,
@@ -924,15 +924,10 @@ where
     video_id
 }
 
-fn channel_bag_witness<T: Config>(
-    channel_id: T::ChannelId,
-) -> Result<ChannelBagWitness, DispatchError> {
+fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u32, DispatchError> {
     let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
     let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
-    Ok(ChannelBagWitness {
-        storage_buckets_num: channel_bag.stored_by.len() as u32,
-        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
-    })
+    Ok(channel_bag.stored_by.len() as u32)
 }
 
 // fn worst_case_scenario_assets<T: Config>(num: u32) -> StorageAssets<T> {

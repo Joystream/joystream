@@ -25,14 +25,12 @@ use strum::IntoEnumIterator;
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
-fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
+fn storage_buckets_num_witness(channel_id: ChannelId) -> u32 {
     let bag_id = Content::bag_id_for_channel(&channel_id);
     let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
-    ChannelBagWitness {
-        storage_buckets_num: channel_bag.stored_by.len() as u32,
-        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
-    }
+    channel_bag.stored_by.len() as u32
 }
+
 // fixtures
 
 pub struct CreateCuratorGroupFixture {
@@ -233,6 +231,8 @@ impl CreateChannelFixture {
             // dynamic bag for channel is created
             assert_ok!(Storage::<Test>::ensure_bag_exists(&channel_bag_id));
 
+            let channel_account = ContentTreasury::<Test>::account_for_channel(channel_id);
+
             // event correctly deposited
             assert_eq!(
                 System::events().last().unwrap().event,
@@ -257,6 +257,7 @@ impl CreateChannelFixture {
                         channel_state_bloat_bond: self.params.expected_channel_state_bloat_bond
                     },
                     self.params.clone(),
+                    channel_account
                 ))
             );
 
@@ -493,7 +494,7 @@ impl UpdateChannelFixture {
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-                channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             },
         }
     }
@@ -521,10 +522,13 @@ impl UpdateChannelFixture {
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
-                channel_bag_witness,
+                storage_buckets_num_witness,
                 ..self.params.clone()
             },
             ..self
@@ -913,7 +917,7 @@ pub struct DeleteChannelAssetsAsModeratorFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
-    channel_bag_witness: Option<ChannelBagWitness>,
+    storage_buckets_num_witness: Option<u32>,
     rationale: Vec<u8>,
 }
 
@@ -924,7 +928,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
             assets_to_remove: BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER),
-            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             rationale: b"rationale".to_vec(),
         }
     }
@@ -948,9 +952,12 @@ impl DeleteChannelAssetsAsModeratorFixture {
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
         Self {
-            channel_bag_witness,
+            storage_buckets_num_witness,
             ..self
         }
     }
@@ -977,7 +984,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             self.actor,
             self.channel_id,
             self.assets_to_remove.clone(),
-            self.channel_bag_witness.clone(),
+            self.storage_buckets_num_witness.clone(),
             self.rationale.clone(),
         );
 
@@ -1099,7 +1106,7 @@ pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    channel_bag_witness: ChannelBagWitness,
+    storage_buckets_num_witness: u32,
     num_objects_to_delete: u64,
 }
 
@@ -1109,7 +1116,7 @@ impl DeleteChannelFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
-            channel_bag_witness: channel_bag_witness(ChannelId::one()),
+            storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
         }
     }
@@ -1133,9 +1140,9 @@ impl DeleteChannelFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
         Self {
-            channel_bag_witness,
+            storage_buckets_num_witness,
             ..self
         }
     }
@@ -1160,7 +1167,7 @@ impl ChannelDeletion for DeleteChannelFixture {
             Origin::signed(self.sender),
             self.actor,
             self.channel_id,
-            self.channel_bag_witness.clone(),
+            self.storage_buckets_num_witness.clone(),
             self.num_objects_to_delete,
         )
     }
@@ -1174,7 +1181,7 @@ pub struct DeleteChannelAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    channel_bag_witness: ChannelBagWitness,
+    storage_buckets_num_witness: u32,
     num_objects_to_delete: u64,
     rationale: Vec<u8>,
 }
@@ -1185,7 +1192,7 @@ impl DeleteChannelAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
-            channel_bag_witness: channel_bag_witness(ChannelId::one()),
+            storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
             rationale: b"rationale".to_vec(),
         }
@@ -1206,9 +1213,9 @@ impl DeleteChannelAsModeratorFixture {
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
         Self {
-            channel_bag_witness,
+            storage_buckets_num_witness,
             ..self
         }
     }
@@ -1233,7 +1240,7 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.channel_id,
-            self.channel_bag_witness.clone(),
+            self.storage_buckets_num_witness.clone(),
             self.num_objects_to_delete,
             self.rationale.clone(),
         )
@@ -1437,7 +1444,7 @@ pub struct DeleteVideoAssetsAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
-    channel_bag_witness: Option<ChannelBagWitness>,
+    storage_buckets_num_witness: Option<u32>,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
     rationale: Vec<u8>,
 }
@@ -1448,7 +1455,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
-            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             assets_to_remove: BTreeSet::from_iter(DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)),
             rationale: b"rationale".to_vec(),
         }
@@ -1473,9 +1480,12 @@ impl DeleteVideoAssetsAsModeratorFixture {
         }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
         Self {
-            channel_bag_witness,
+            storage_buckets_num_witness,
             ..self
         }
     }
@@ -1501,7 +1511,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             origin,
             self.actor,
             self.video_id,
-            self.channel_bag_witness.clone(),
+            self.storage_buckets_num_witness.clone(),
             self.assets_to_remove.clone(),
             self.rationale.clone(),
         );
@@ -1695,7 +1705,7 @@ pub struct DeleteVideoAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
-    channel_bag_witness: Option<ChannelBagWitness>,
+    storage_buckets_num_witness: Option<u32>,
     num_objects_to_delete: u64,
     rationale: Vec<u8>,
 }
@@ -1706,7 +1716,7 @@ impl DeleteVideoAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
-            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             num_objects_to_delete: DATA_OBJECTS_NUMBER,
             rationale: b"rationale".to_vec(),
         }
@@ -1720,9 +1730,12 @@ impl DeleteVideoAsModeratorFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
         Self {
-            channel_bag_witness,
+            storage_buckets_num_witness,
             ..self
         }
     }
@@ -1744,7 +1757,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.video_id,
-            self.channel_bag_witness.clone(),
+            self.storage_buckets_num_witness.clone(),
             self.num_objects_to_delete,
             self.rationale.clone(),
         )

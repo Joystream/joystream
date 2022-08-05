@@ -27,18 +27,24 @@ use sp_std::vec::Vec;
 use storage::UploadParameters;
 
 // crate modules
+mod benchmarking;
 mod errors;
 mod events;
+mod tests;
 pub mod traits;
 pub mod types;
-
-mod tests;
+mod utils;
 
 // crate imports
 pub use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;
+
+pub mod weights;
+pub use weights::WeightInfo;
+
+type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
 /// Pallet Configuration
 pub trait Config:
@@ -76,7 +82,10 @@ pub trait Config:
     type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
 
     /// Maximum number of vesting balances per account per token
-    type MaxVestingBalancesPerAccountPerToken: Get<u8>;
+    type MaxVestingSchedulesPerAccountPerToken: Get<u8>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
     /// Number of blocks produced in a year
     type BlocksPerYear: Get<u32>;
@@ -177,7 +186,16 @@ decl_module! {
         /// - total bloat bond transferred from sender's JOY balance into the treasury account
         ///   in case destination(s) have been added to storage
         /// - `outputs.beneficiary` tokens amount increased by `amount`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T)` where:
+        /// - `T` is the length of `outputs`
+        /// - DB:
+        ///   - `O(T)` - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32)]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
@@ -227,7 +245,15 @@ decl_module! {
         ///   is reduced by `min(amount, split_staking_status.amount)`
         /// - `account.amount` is reduced by `amount`
         /// - token supply is reduced by `amount`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::burn()]
         pub fn burn(origin, token_id: T::TokenId, member_id: T::MemberId, amount: TokenBalanceOf<T>) -> DispatchResult {
             // Ensure burn amount is non-zero
             ensure!(
@@ -269,6 +295,8 @@ decl_module! {
                 token.decrease_supply_by(amount);
             });
 
+            Self::deposit_event(RawEvent::TokensBurned(token_id, member_id, amount));
+
             Ok(())
         }
 
@@ -284,7 +312,14 @@ decl_module! {
         /// Postconditions:
         /// - Account information for `token_id` x `member_id` removed from storage
         /// - bloat bond refunded to `member_id` controller account
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::dust_account()]
         pub fn dust_account(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
@@ -327,7 +362,18 @@ decl_module! {
         /// Postconditions:
         /// - account for `member_id` created and added to pallet storage
         /// - `bloat_bond` transferred from sender to treasury account
-        #[weight = 10_000_000] // TODO: adjust weights
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the length of `proof.0`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::join_whitelist(
+            proof.0.len() as u32
+        )]
         pub fn join_whitelist(origin, member_id: T::MemberId, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -420,8 +466,15 @@ decl_module! {
         ///   `token_data.sale` is set to None, otherwise `token_data.sale.quantity_left` is
         ///   decreased by `amount` and `token_data.sale.funds_collected` in increased by
         ///   `amount * sale.unit_price`
-
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::purchase_tokens_on_sale()]
         pub fn purchase_tokens_on_sale(
             origin,
             token_id: T::TokenId,
@@ -575,7 +628,15 @@ decl_module! {
         /// - `dividend` amount of JOYs transferred from `treasury_account` to `sender`
         /// - `token` revenue split dividends payed tracking variable increased by `dividend`
         /// - `account.staking_status` set to Some(..) with `amount` and `token.latest_split`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::participate_in_split()]
         fn participate_in_split(
             origin,
             token_id: T::TokenId,
@@ -656,7 +717,15 @@ decl_module! {
         ///
         /// Postconditions
         /// - `account.staking_status` set to None
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::exit_revenue_split()]
         fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,

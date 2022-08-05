@@ -1601,7 +1601,8 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_lead() {
 }
 
 #[test]
-fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_channel_bag_witness() {
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_storage_buckets_num_witness(
+) {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1617,21 +1618,19 @@ fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_channel
             )]),
         );
 
-        let invalid_witness = ChannelBagWitness {
-            storage_buckets_num: 0,
-            distribution_buckets_num: 0,
-        };
-
         DeleteVideoAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_channel_bag_witness(Some(invalid_witness))
-            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
     })
 }
 
 #[test]
-fn unsuccessful_moderation_action_video_deletion_by_curator_with_missing_channel_bag_witness() {
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_missing_storage_buckets_num_witness(
+) {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -1650,8 +1649,8 @@ fn unsuccessful_moderation_action_video_deletion_by_curator_with_missing_channel
         DeleteVideoAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_channel_bag_witness(None)
-            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
     })
 }
 
@@ -1997,7 +1996,7 @@ fn unsuccessful_moderation_action_non_existing_video_assets_deletion() {
 }
 
 #[test]
-fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_invalid_channel_bag_witness(
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_invalid_storage_buckets_num_witness(
 ) {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -2014,21 +2013,18 @@ fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_inva
             )]),
         );
 
-        let invalid_witness = ChannelBagWitness {
-            storage_buckets_num: 0,
-            distribution_buckets_num: 0,
-        };
-
         DeleteVideoAssetsAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_channel_bag_witness(Some(invalid_witness))
-            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
     })
 }
 
 #[test]
-fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_missing_channel_bag_witness(
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_missing_storage_buckets_num_witness(
 ) {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -2048,8 +2044,8 @@ fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_miss
         DeleteVideoAssetsAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_channel_bag_witness(None)
-            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
     })
 }
 
