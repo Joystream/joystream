@@ -1,5 +1,4 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
 import { u64 } from '@polkadot/types'
 import BN from 'bn.js'
@@ -31,7 +30,6 @@ async function main() {
 
   const Group = process.env.GROUP || 'contentWorkingGroup'
   const LeadKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
-  const SudoKeyPair = process.env.SUDO_URI ? getKeyFromSuri(process.env.SUDO_URI) : getAlicePair()
   const StakeKeyPair = LeadKeyPair.derive(`//stake${Date.now()}`)
 
   if (!workingGroupModules.includes(Group as WorkingGroupModuleName)) {
@@ -40,8 +38,6 @@ async function main() {
   const groupModule = Group as WorkingGroupModuleName
 
   const txHelper = new ExtrinsicsHelper(api)
-
-  const sudo = (tx: SubmittableExtrinsic<'promise'>) => api.tx.sudo.sudo(tx)
 
   // Create membership if not already created
   const memberEntries = await api.query.members.membershipById.entries()
@@ -78,21 +74,16 @@ async function main() {
     console.log(`Making member id: ${memberId} the ${groupModule} lead.`)
     // Create lead opening
     console.log(`Creating ${groupModule} lead opening...`)
-    const [openingRes] = await txHelper.sendAndCheck(
-      SudoKeyPair,
-      [
-        sudo(
-          api.tx[groupModule].addOpening(
-            '',
-            'Leader',
-            {
-              stakeAmount: MIN_APPLICATION_STAKE,
-              leavingUnstakingPeriod: 99999,
-            },
-            null
-          )
-        ),
-      ],
+    const openingRes = await txHelper.sendAndCheckSudo(
+      api.tx[groupModule].addOpening(
+        '',
+        'Leader',
+        {
+          stakeAmount: MIN_APPLICATION_STAKE,
+          leavingUnstakingPeriod: 99999,
+        },
+        null
+      ),
       `Failed to create ${groupModule} lead opening!`
     )
     const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as OpeningId
@@ -138,9 +129,8 @@ async function main() {
 
     // Fill opening
     console.log('Filling the opening...')
-    await txHelper.sendAndCheck(
-      SudoKeyPair,
-      [sudo(api.tx[groupModule].fillOpening(openingId, createType('BTreeSet<u64>', [applicationId])))],
+    await txHelper.sendAndCheckSudo(
+      api.tx[groupModule].fillOpening(openingId, createType('BTreeSet<u64>', [applicationId])),
       'Failed to fill the opening'
     )
   }
