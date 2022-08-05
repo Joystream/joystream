@@ -1,9 +1,12 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::{
-    types::{ChannelAgentPermissions, ChannelOwner, ModuleAccount},
-    Call, ChannelById, ChannelUpdateParameters, Config, ContentActor, ContentTreasury, Event,
-    Module as Pallet, StorageAssets,
+    permissions::*,
+    types::{
+        ChannelAgentPermissions, ChannelOwner, ChannelUpdateParameters, ContentTreasury,
+        ModuleAccount, StorageAssets,
+    },
+    Call, ChannelById, Config, ContentActor, Event, Module as Pallet,
 };
 use frame_benchmarking::benchmarks;
 use frame_support::{storage::StorageMap, traits::Get};
@@ -11,7 +14,6 @@ use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
 use sp_runtime::SaturatedConversion;
 use sp_std::{
-    cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     vec,
 };
@@ -19,24 +21,19 @@ use storage::Module as Storage;
 
 use super::{
     assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
-    generate_channel_creation_params, insert_content_leader, insert_distribution_leader,
-    insert_storage_leader, setup_worst_case_curator_group_with_curators,
-    setup_worst_case_scenario_curator_channel, storage_buckets_num_witness,
-    worst_case_channel_agent_permissions, ContentWorkingGroupInstance, CreateAccountId,
-    DistributionWorkingGroupInstance, StorageWorkingGroupInstance, MAX_BYTES_METADATA,
+    generate_channel_creation_params, insert_content_leader, insert_curator,
+    insert_distribution_leader, insert_storage_leader, max_curators_per_group,
+    setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
+    storage_buckets_num_witness, worst_case_channel_agent_permissions,
+    worst_case_content_moderation_actions_set, CreateAccountId, RuntimeConfig, CURATOR_IDS,
+    MAX_BYTES_METADATA,
 };
 
 benchmarks! {
     where_clause {
         where
-              T: balances::Config,
-              T: membership::Config,
-              T: storage::Config,
-              T: working_group::Config<StorageWorkingGroupInstance>,
-              T: working_group::Config<DistributionWorkingGroupInstance>,
-              T: working_group::Config<ContentWorkingGroupInstance>,
-              T::AccountId: CreateAccountId,
-              T: Config ,
+            T: RuntimeConfig,
+            T::AccountId: CreateAccountId
     }
 
     /*
@@ -72,9 +69,7 @@ benchmarks! {
         let sender = RawOrigin::Signed(lead_account_id);
 
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            min(<T as working_group::Config<ContentWorkingGroupInstance>>::
-                MaxWorkerNumberLimit::get(),
-            T::MaxNumberOfCuratorsPerGroup::get())
+            max_curators_per_group::<T>()
         )?;
 
         let channel_owner = ChannelOwner::CuratorGroup(group_id);
@@ -290,6 +285,114 @@ benchmarks! {
             ).into()
         );
     }
+
+    /*
+    ===============================================================================================
+    ======================================== CURATOR GROUPS =======================================
+    ===============================================================================================
+    */
+
+    create_curator_group {
+        let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
+
+        let (_, lead_account) = insert_content_leader::<T>();
+        let group_id = Pallet::<T>::next_curator_group_id();
+        let permissions_by_level: ModerationPermissionsByLevel::<T> = (0..a).map(
+            |i| (i.saturated_into(), worst_case_content_moderation_actions_set())
+        ).collect();
+    }: _ (
+        RawOrigin::Signed(lead_account),
+        true,
+        permissions_by_level.clone()
+    )
+    verify {
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        assert!(group == CuratorGroup::create(true, &permissions_by_level));
+        assert_last_event::<T>(Event::<T>::CuratorGroupCreated(group_id).into());
+    }
+
+    update_curator_group_permissions {
+        let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
+
+        let (_, lead_account) = insert_content_leader::<T>();
+        let group_id = setup_worst_case_curator_group_with_curators::<T>(
+            max_curators_per_group::<T>()
+        )?;
+        let permissions_by_level: ModerationPermissionsByLevel::<T> = (0..a).map(
+            |i| (i.saturated_into(), worst_case_content_moderation_actions_set())
+        ).collect();
+    }: _ (
+        RawOrigin::Signed(lead_account),
+        group_id,
+        permissions_by_level.clone()
+    )
+    verify {
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        assert_eq!(group.get_permissions_by_level(), &permissions_by_level);
+        assert_last_event::<T>(Event::<T>::CuratorGroupPermissionsUpdated(
+            group_id,
+            permissions_by_level
+        ).into());
+    }
+
+    set_curator_group_status {
+        let (_, lead_account) = insert_content_leader::<T>();
+        let group_id = setup_worst_case_curator_group_with_curators::<T>(
+            max_curators_per_group::<T>()
+        )?;
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        assert!(group.is_active());
+    }: _ (
+        RawOrigin::Signed(lead_account),
+        group_id,
+        false
+    )
+    verify {
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        assert!(!group.is_active());
+        assert_last_event::<T>(Event::<T>::CuratorGroupStatusSet(group_id, false).into());
+    }
+
+    add_curator_to_group {
+        let (_, lead_account) = insert_content_leader::<T>();
+        let permissions = worst_case_channel_agent_permissions();
+        let group_id = setup_worst_case_curator_group_with_curators::<T>(
+            max_curators_per_group::<T>() - 1
+        )?;
+        let (curator_id, _) = insert_curator::<T>(
+            CURATOR_IDS[max_curators_per_group::<T>() as usize - 1]
+        );
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        assert_eq!(group.get_curators().get(&curator_id), None);
+    }: _ (
+        RawOrigin::Signed(lead_account),
+        group_id,
+        curator_id,
+        permissions.clone()
+    )
+    verify {
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        assert_eq!(group.get_curators().get(&curator_id), Some(&permissions));
+        assert_last_event::<T>(Event::<T>::CuratorAdded(group_id, curator_id, permissions).into());
+    }
+
+    remove_curator_from_group {
+        let (_, lead_account) = insert_content_leader::<T>();
+        let group_id = setup_worst_case_curator_group_with_curators::<T>(
+            max_curators_per_group::<T>()
+        )?;
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        let curator_id = *group.get_curators().keys().next().unwrap();
+    }: _ (
+        RawOrigin::Signed(lead_account),
+        group_id,
+        curator_id
+    )
+    verify {
+        let group = Pallet::<T>::curator_group_by_id(group_id);
+        assert!(group.get_curators().get(&curator_id).is_none());
+        assert_last_event::<T>(Event::<T>::CuratorRemoved(group_id, curator_id).into());
+    }
 }
 
 #[cfg(test)]
@@ -323,5 +426,40 @@ pub mod tests {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_delete_channel());
         });
+    }
+
+    #[test]
+    fn create_curator_group() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_create_curator_group());
+        });
+    }
+
+    #[test]
+    fn update_curator_group_permissions() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_curator_group_permissions());
+        });
+    }
+
+    #[test]
+    fn set_curator_group_status() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_set_curator_group_status());
+        })
+    }
+
+    #[test]
+    fn add_curator_to_group() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_add_curator_to_group());
+        })
+    }
+
+    #[test]
+    fn remove_curator_from_group() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_remove_curator_from_group());
+        })
     }
 }
