@@ -1,5 +1,5 @@
 import path from 'path'
-import { execFile, ChildProcess, PromiseWithChild, ExecFileException, ExecException } from 'child_process'
+import { execFile, ExecFileException } from 'child_process'
 import { promisify } from 'util'
 import { Sender } from '../sender'
 import { debuggingCli } from '../consts'

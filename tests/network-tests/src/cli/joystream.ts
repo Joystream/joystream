@@ -2,7 +2,6 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import path from 'path'
 import { CLI, CommandResult } from './base'
 import { TmpFileManager } from './utils'
-import { Utils } from '../utils'
 import {
   VideoInputParameters,
   ChannelCreationInputParameters,
