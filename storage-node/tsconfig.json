@@ -11,14 +11,10 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "esModuleInterop": true,
-    "types" : [ "node", "mocha" ],
+    "types": ["node", "mocha"],
     "noUnusedLocals": true,
     "resolveJsonModule": true,
     "useUnknownInCatchVariables": false
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }
-
-

@@ -227,7 +227,7 @@ impl<
         self,
         vesting_schedule: VestingSchedule<BlockNumber, Balance>,
     ) -> Self {
-        let max_vesting_schedules = <Test as Config>::MaxVestingBalancesPerAccountPerToken::get();
+        let max_vesting_schedules = <Test as Config>::MaxVestingSchedulesPerAccountPerToken::get();
         let mut acc_data = self.clone();
         for _ in 0..max_vesting_schedules - 1 {
             acc_data = acc_data.with_vesting_schedule(vesting_schedule.clone())

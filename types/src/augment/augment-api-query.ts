@@ -551,10 +551,6 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       nextThreadId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
-       * Unique thread poll voters. This private double map prevents double voting.
-       **/
-      pollVotes: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<bool>, [u64, u64]>;
-      /**
        * Map post identifier to corresponding post.
        **/
       postById: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<PalletForumPost>, [u64, u64]>;

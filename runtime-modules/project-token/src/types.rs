@@ -954,8 +954,8 @@ where
         source: VestingSource,
     ) -> Result<Option<VestingSource>, DispatchError> {
         let new_entry_required = !self.vesting_schedules.contains_key(&source);
-        let cleanup_required =
-            self.vesting_schedules.len() == T::MaxVestingBalancesPerAccountPerToken::get() as usize;
+        let cleanup_required = self.vesting_schedules.len()
+            == T::MaxVestingSchedulesPerAccountPerToken::get() as usize;
         let cleanup_candidate = self
             .vesting_schedules
             .iter()

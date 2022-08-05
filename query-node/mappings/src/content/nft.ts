@@ -369,7 +369,6 @@ async function createBid(
     nft,
     bidder: member,
     amount: amount,
-    createdAt: new Date(event.blockTimestamp),
     createdInBlock: event.blockNumber,
     indexInBlock: event.indexInBlock,
     isCanceled: false,
@@ -735,7 +734,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     auction.auctionType.plannedEndAtBlock - auction.auctionType.extensionPeriod < event.blockNumber
   ) {
     auction.auctionType.plannedEndAtBlock = auction.auctionType.extensionPeriod
-    store.save<Auction>(auction)
+    await store.save<Auction>(auction)
   }
 
   // common event processing - second
@@ -1307,11 +1306,10 @@ export async function contentNft_NftSlingedBackToTheOriginalArtist({
   nft.ownerMember = video.channel?.ownerMember
   nft.ownerCuratorGroup = video.channel?.ownerCuratorGroup
   nft.isOwnedByChannel = true
-  nft.updatedAt = new Date(event.blockTimestamp)
 
   await getAllManagers(store).videoNfts.onMainEntityUpdate(nft)
 
-  store.save<OwnedNft>(nft)
+  await store.save<OwnedNft>(nft)
 
   // common event processing - second
 

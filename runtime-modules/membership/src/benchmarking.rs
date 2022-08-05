@@ -13,7 +13,7 @@ use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
 use sp_arithmetic::Perbill;
-use sp_runtime::traits::{Bounded, Saturating};
+use sp_runtime::traits::{Bounded, SaturatedConversion, Saturating};
 use sp_std::prelude::*;
 use sp_std::vec;
 
@@ -499,6 +499,73 @@ benchmarks! {
 
     }
 
+    gift_membership {
+        let i in 1 .. MAX_BYTES;
+        let j in 0 .. MAX_BYTES;
+
+        let account_id = account::<T::AccountId>("gifter", 1, SEED);
+        let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+        let root_account = account::<T::AccountId>("member", 2, SEED);
+        let controller_account = account::<T::AccountId>("member", 4, SEED);
+
+        let handle = handle_from_id::<T>(i);
+
+        let metadata = vec![0u8].repeat(j as usize);
+
+        let gift_params = GiftMembershipParameters {
+            root_account: root_account.clone(),
+            controller_account: controller_account.clone(),
+            handle: Some(handle.clone()),
+            metadata,
+            credit_controller_account: (1000 as u32).saturated_into::<BalanceOf<T>>(),
+            apply_controller_account_invitation_lock: Some((500 as u32).saturated_into()),
+            credit_root_account: (2000 as u32).saturated_into::<BalanceOf<T>>(),
+            apply_root_account_invitation_lock: Some((1000 as u32).saturated_into()),
+        };
+
+        let member_id = <NextMemberId<T>>::get();
+
+    }: _(RawOrigin::Signed(account_id.clone()), gift_params.clone())
+
+    verify {
+        // Ensure member is successfully invited
+        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+
+        let gifted_membership: Membership<T> = MembershipObject {
+            handle_hash: handle_hash.clone(),
+            root_account: root_account.clone(),
+            controller_account: controller_account.clone(),
+            verified: false,
+            invites: 0,
+        };
+
+        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+
+        assert_eq!(MembershipById::<T>::get(member_id), Some(gifted_membership));
+
+        assert_last_event::<T>(RawEvent::MembershipGifted(member_id, gift_params).into());
+
+        assert_eq!(
+            balances::Pallet::<T>::free_balance(controller_account.clone()),
+            (1000 as u32).saturated_into::<BalanceOf<T>>(),
+        );
+
+        assert_eq!(
+            balances::Pallet::<T>::free_balance(root_account.clone()),
+            (2000 as u32).saturated_into::<BalanceOf<T>>(),
+        );
+
+        assert_eq!(
+            balances::Pallet::<T>::usable_balance(controller_account),
+            (500 as u32).saturated_into::<BalanceOf<T>>(),
+        );
+
+        assert_eq!(
+            balances::Pallet::<T>::usable_balance(root_account),
+            (1000 as u32).saturated_into::<BalanceOf<T>>(),
+        );
+    }
+
     set_membership_price {
         let membership_price: BalanceOf<T> = 1000u32.into();
 
@@ -683,9 +750,54 @@ benchmarks! {
         let member_id = 0;
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, msg.clone())
-        verify {
-            assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
-        }
+
+    verify {
+        assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
+    }
+
+    create_founding_member{
+
+        let i in 1 .. MAX_BYTES;
+
+        let j in 0 .. MAX_BYTES;
+
+        let member_id = Module::<T>::members_created();
+
+        let account_id = account::<T::AccountId>("member", member_id.saturated_into(), SEED);
+
+        let handle = vec![0u8].repeat(i as usize);
+
+        let metadata = vec![0u8].repeat(j as usize);
+
+        let params = CreateFoundingMemberParameters {
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            handle: handle.clone(),
+            metadata,
+        };
+
+    }: _(RawOrigin::Root, params.clone())
+    verify {
+
+        // Ensure membership for given member_id is successfully bought
+        assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one());
+
+        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+
+        let membership: Membership<T> = MembershipObject {
+            handle_hash: handle_hash.clone(),
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            verified: true,
+            invites: Module::<T>::initial_invitation_count(),
+        };
+
+        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+
+        assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
+
+        assert_last_event::<T>(RawEvent::FoundingMemberCreated(member_id, params).into());
+    }
 
     // impl_benchmark_test_suite!(Module, tests::mock::build_test_externalities(), tests::mock::Test)
     impl_benchmark_test_suite!(
