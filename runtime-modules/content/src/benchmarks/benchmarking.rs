@@ -3,8 +3,9 @@
 use crate::{
     permissions::*,
     types::{
-        ChannelAgentPermissions, ChannelOwner, ChannelUpdateParameters, ContentTreasury,
-        ModuleAccount, StorageAssets,
+        ChannelAgentPermissions, ChannelOwner, ChannelTransferStatus, ChannelUpdateParameters,
+        ContentTreasury, InitTransferParametersOf, ModuleAccount, PendingTransfer, StorageAssets,
+        TransferCommitmentParameters, TransferCommitmentWitnessOf,
     },
     Call, ChannelById, Config, ContentActor, Event, Module as Pallet,
 };
@@ -13,6 +14,7 @@ use frame_support::{storage::StorageMap, traits::Get};
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
 use sp_runtime::SaturatedConversion;
+use sp_std::convert::TryInto;
 use sp_std::{
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     vec,
@@ -20,13 +22,14 @@ use sp_std::{
 use storage::Module as Storage;
 
 use super::{
-    assert_last_event, channel_bag_witness, create_data_object_candidates_helper,
-    generate_channel_creation_params, insert_content_leader, insert_curator,
-    insert_distribution_leader, insert_storage_leader, max_curators_per_group,
-    setup_worst_case_curator_group_with_curators, setup_worst_case_scenario_curator_channel,
+    assert_last_event, channel_bag_witness, clone_curator_group,
+    create_data_object_candidates_helper, generate_channel_creation_params, insert_content_leader,
+    insert_curator, insert_distribution_leader, insert_storage_leader, max_curators_per_group,
+    member_funded_account, setup_worst_case_curator_group_with_curators,
+    setup_worst_case_scenario_curator_channel, setup_worst_case_scenario_curator_channel_all_max,
     storage_buckets_num_witness, worst_case_channel_agent_permissions,
-    worst_case_content_moderation_actions_set, CreateAccountId, RuntimeConfig, CURATOR_IDS,
-    MAX_BYTES_METADATA,
+    worst_case_content_moderation_actions_set, worst_case_scenario_collaborators,
+    ContentWorkingGroupInstance, CreateAccountId, RuntimeConfig, CURATOR_IDS, MAX_BYTES_METADATA,
 };
 
 benchmarks! {
@@ -44,7 +47,7 @@ benchmarks! {
 
     create_channel {
 
-        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get();//max colaborators
+        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
 
         let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
             (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
@@ -125,7 +128,8 @@ benchmarks! {
         setup_worst_case_scenario_curator_channel::<T>(
             c,
             e,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
         ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
@@ -200,7 +204,8 @@ benchmarks! {
         setup_worst_case_scenario_curator_channel::<T>(
             T::MaxNumberOfAssetsPerChannel::get(),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
         ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
@@ -270,7 +275,7 @@ benchmarks! {
             curator_id,
             curator_account_id
         ) =
-        setup_worst_case_scenario_curator_channel::<T>(a, b, c,).unwrap();
+        setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
 
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
@@ -393,6 +398,126 @@ benchmarks! {
         assert!(group.get_curators().get(&curator_id).is_none());
         assert_last_event::<T>(Event::<T>::CuratorRemoved(group_id, curator_id).into());
     }
+
+    /*
+    ===============================================================================================
+    ====================================== CHANNEL TRANSFERS ======================================
+    ===============================================================================================
+    */
+
+    initialize_channel_transfer {
+        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let (_, new_owner_id) = member_funded_account::<T>(0);
+        let new_owner = ChannelOwner::Member(new_owner_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
+            a // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        let (channel_id, group_id, _, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner: new_owner.clone(),
+            new_collaborators: new_collaborators.clone(),
+            price
+        };
+        let transfer_id = Pallet::<T>::next_transfer_id();
+        let actor = ContentActor::Curator(group_id, curator_id);
+    }: initialize_channel_transfer (
+        RawOrigin::Signed(curator_account_id),
+        channel_id,
+        actor,
+        transfer_params
+    ) verify {
+        let channel = Pallet::<T>::channel_by_id(channel_id);
+        let pending_transfer = PendingTransfer {
+            new_owner,
+            transfer_params: TransferCommitmentParameters {
+                price,
+                new_collaborators: new_collaborators.try_into().unwrap(),
+                transfer_id
+            }
+        };
+        assert!(
+            channel.transfer_status ==
+            ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
+        );
+        assert_last_event::<T>(
+            Event::<T>::InitializedChannelTransfer(
+                channel_id,
+                actor,
+                pending_transfer
+            ).into()
+        );
+    }
+
+    cancel_channel_transfer {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(true)?;
+        let actor = ContentActor::Curator(group_id, curator_id);
+    }: _ (
+        RawOrigin::Signed(curator_account_id),
+        channel_id,
+        actor
+    ) verify {
+        let channel = Pallet::<T>::channel_by_id(channel_id);
+        assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
+        assert_last_event::<T>(
+            Event::<T>::CancelChannelTransfer(
+                channel_id,
+                actor,
+            ).into()
+        );
+    }
+
+    accept_channel_transfer {
+        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+
+        let (channel_id, group_id, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let new_owner_group_id = clone_curator_group::<T>(group_id)?;
+        let new_owner = ChannelOwner::CuratorGroup(new_owner_group_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
+            a // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        working_group::Pallet::<T, ContentWorkingGroupInstance>::set_budget(
+            RawOrigin::Root.into(),
+            price
+        )?;
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner: new_owner.clone(),
+            new_collaborators: new_collaborators.clone(),
+            price
+        };
+        let transfer_id = Pallet::<T>::next_transfer_id();
+        Pallet::<T>::initialize_channel_transfer(
+            RawOrigin::Signed(lead_account_id.clone()).into(),
+            channel_id,
+            ContentActor::Lead,
+            transfer_params
+        )?;
+        let witness = TransferCommitmentWitnessOf::<T> {
+            transfer_id,
+            price,
+            new_collaborators
+        };
+    }: _ (
+        RawOrigin::Signed(lead_account_id),
+        channel_id,
+        witness.clone()
+    ) verify {
+        let channel = Pallet::<T>::channel_by_id(channel_id);
+        assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
+        assert_eq!(channel.owner, new_owner);
+        assert_last_event::<T>(
+            Event::<T>::ChannelTransferAccepted(
+                channel_id,
+                witness
+            ).into()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -460,6 +585,27 @@ pub mod tests {
     fn remove_curator_from_group() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_remove_curator_from_group());
+        })
+    }
+
+    #[test]
+    fn initialize_channel_transfer() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_initialize_channel_transfer());
+        });
+    }
+
+    #[test]
+    fn cancel_channel_transfer() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_channel_transfer());
+        })
+    }
+
+    #[test]
+    fn accept_channel_transfer() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_accept_channel_transfer());
         })
     }
 }

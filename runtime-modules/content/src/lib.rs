@@ -2613,7 +2613,18 @@ decl_module! {
         }
 
         /// Start a channel transfer with specified characteristics
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `transfer_params.new_collaborators` map
+        /// - DB:
+        ///    - O(A) - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::initialize_channel_transfer(
+            transfer_params.new_collaborators.len() as u32
+        )]
         pub fn initialize_channel_transfer(
             origin,
             channel_id: T::ChannelId,
@@ -2657,7 +2668,15 @@ decl_module! {
         }
 
         /// cancel channel transfer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_channel_transfer()]
         pub fn cancel_channel_transfer(
             origin,
             channel_id: T::ChannelId,
@@ -2687,7 +2706,18 @@ decl_module! {
 
         /// Accepts channel transfer.
         /// `commitment_params` is required to prevent changing the transfer conditions.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `commitment_params.new_collaborators` map
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::accept_channel_transfer(
+            commitment_params.new_collaborators.len() as u32
+        )]
         pub fn accept_channel_transfer(
             origin,
             channel_id: T::ChannelId,
