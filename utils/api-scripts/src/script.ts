@@ -50,7 +50,7 @@ async function main() {
     console.error(err)
   }
 
-  api.disconnect()
+  await api.disconnect()
 }
 
-main()
+main().catch(console.error)

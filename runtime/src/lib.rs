@@ -1483,6 +1483,25 @@ impl pallet_vesting::Config for Runtime {
     const MAX_VESTING_SCHEDULES: u32 = 28;
 }
 
+parameter_types! {
+    // Deposit for storing one new item with key size = 32 bytes and value size = 56 bytes
+    pub const DepositBase: Balance = 15 * currency::CENTS + 88 * 6 * currency::CENTS;
+    // Deposit for adding 32 bytes to an already stored item
+    pub const DepositFactor: Balance = 32 * 6 * currency::CENTS;
+    // Max number of multisig signatories
+    pub const MaxSignatories: u16 = 100;
+}
+
+impl pallet_multisig::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type Currency = Balances;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
+    type MaxSignatories = MaxSignatories;
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+}
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -1528,6 +1547,7 @@ construct_runtime!(
         Sudo: pallet_sudo,
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
+        Multisig: pallet_multisig,
         // Joystream
         Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
