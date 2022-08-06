@@ -6,13 +6,6 @@
     msg: 'Remote Data path: {{ remote_data_path }}, Local Data path: {{ data_path }}, Chain Spec path: {{ chain_spec_path }}'
   run_once: true
 
-- name: Copying initial members file to the server
-  copy:
-    src: '{{ initial_members_file }}'
-    dest: '{{ remote_code_path }}/query-node/mappings/src/bootstrap-data/data/members.json'
-  when: initial_members_file is defined and initial_members_file|length > 0
-  run_once: true
-
 - name: Copying initial balances file to the server
   copy:
     src: '{{ initial_balances_file }}'
