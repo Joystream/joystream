@@ -353,7 +353,7 @@ decl_error! {
 decl_storage! {
     trait Store for Module<T: Config> as Forum_1_1 {
         /// Map category identifier to corresponding category.
-        pub CategoryById get(fn category_by_id) config(): map hasher(blake2_128_concat) T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
+        pub CategoryById get(fn category_by_id): map hasher(blake2_128_concat) T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
 
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(fn next_category_id) config(): T::CategoryId;
@@ -362,7 +362,7 @@ decl_storage! {
         pub CategoryCounter get(fn category_counter) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(fn thread_by_id) config(): double_map hasher(blake2_128_concat)
+        pub ThreadById get(fn thread_by_id): double_map hasher(blake2_128_concat)
             T::CategoryId, hasher(blake2_128_concat) T::ThreadId => ThreadOf<T>;
 
         /// Thread identifier value to be used for next Thread in threadById.
@@ -372,11 +372,11 @@ decl_storage! {
         pub NextPostId get(fn next_post_id) config(): T::PostId;
 
         /// Moderator set for each Category
-        pub CategoryByModerator get(fn category_by_moderator) config(): double_map
+        pub CategoryByModerator get(fn category_by_moderator): double_map
             hasher(blake2_128_concat) T::CategoryId, hasher(blake2_128_concat) ModeratorId<T> => ();
 
         /// Map post identifier to corresponding post.
-        pub PostById get(fn post_by_id) config(): double_map hasher(blake2_128_concat) T::ThreadId,
+        pub PostById get(fn post_by_id): double_map hasher(blake2_128_concat) T::ThreadId,
             hasher(blake2_128_concat) T::PostId =>
                                                 Post<
                                                     ForumUserId<T>,
