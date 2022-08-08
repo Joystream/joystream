@@ -21,6 +21,10 @@ export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment
 
 export type StorageNodeInfoFragment = {
   id: string
+  dataObjectsSize: any
+  dataObjectsSizeLimit: any
+  dataObjectsCount: any
+  dataObjectCountLimit: any
   operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>
 }
 
@@ -30,9 +34,15 @@ export type GetStorageNodesInfoByBagIdQueryVariables = Types.Exact<{
 
 export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
 
-export type GetStorageBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+export type GetStorageBucketsQueryVariables = Types.Exact<{
+  count?: Types.Maybe<Types.Scalars['Int']>
+}>
 
 export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
+
+export type StorageBucketsCountQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type StorageBucketsCountQuery = { storageBucketsConnection: { totalCount: number } }
 
 export type DistributionBucketFamilyFieldsFragment = { id: string; buckets: Array<{ id: string; bucketIndex: number }> }
 
@@ -165,6 +175,10 @@ export const MembershipFields = gql`
 export const StorageNodeInfo = gql`
   fragment StorageNodeInfo on StorageBucket {
     id
+    dataObjectsSize
+    dataObjectsSizeLimit
+    dataObjectsCount
+    dataObjectCountLimit
     operatorMetadata {
       nodeEndpoint
     }
@@ -284,12 +298,19 @@ export const GetStorageNodesInfoByBagId = gql`
   ${StorageNodeInfo}
 `
 export const GetStorageBuckets = gql`
-  query getStorageBuckets {
-    storageBuckets(where: { acceptingNewBags_eq: true }, orderBy: [dataObjectsSize_ASC]) {
+  query getStorageBuckets($count: Int) {
+    storageBuckets(where: { acceptingNewBags_eq: true }, limit: $count) {
       ...StorageNodeInfo
     }
   }
   ${StorageNodeInfo}
+`
+export const StorageBucketsCount = gql`
+  query storageBucketsCount {
+    storageBucketsConnection(where: { acceptingNewBags_eq: true }) {
+      totalCount
+    }
+  }
 `
 export const GetDistributionFamiliesAndBuckets = gql`
   query getDistributionFamiliesAndBuckets {

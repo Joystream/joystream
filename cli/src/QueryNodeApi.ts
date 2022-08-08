@@ -58,6 +58,9 @@ import {
   GetChannelByIdQueryVariables,
   GetChannelById,
   ChannelFieldsFragment,
+  StorageBucketsCountQuery,
+  StorageBucketsCountQueryVariables,
+  StorageBucketsCount,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -168,10 +171,27 @@ export default class QueryNodeApi {
   }
 
   async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
-    return this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
-      GetStorageBuckets,
+    const countQueryResult = await this.uniqueEntityQuery<StorageBucketsCountQuery, StorageBucketsCountQueryVariables>(
+      StorageBucketsCount,
       {},
+      'storageBucketsConnection'
+    )
+    if (!countQueryResult) {
+      throw Error('Invalid query. Could not fetch storage buckets count information')
+    }
+
+    const buckets = await this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      { count: countQueryResult.totalCount },
       'storageBuckets'
+    )
+
+    // sorting buckets based on available size, if two buckets have same
+    // available size then sort the two based on available dataObjects count
+    return buckets.sort(
+      (x, y) =>
+        y.dataObjectsSizeLimit - y.dataObjectsSize - (x.dataObjectsSizeLimit - x.dataObjectsSize) ||
+        y.dataObjectCountLimit - y.dataObjectsCount - (x.dataObjectCountLimit - x.dataObjectsCount)
     )
   }
 

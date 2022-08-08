@@ -495,7 +495,7 @@ export default class Api {
       throw new CLIError(`Storage buckets policy constraint unsatisfied. Not enough storage buckets exist`)
     }
 
-    return _.sampleSize(storageBuckets, storageBucketsPolicy.toNumber()).map((b) => Number(b.id))
+    return storageBuckets.map((b) => Number(b.id)).slice(0, storageBucketsPolicy.toNumber())
   }
 
   async selectDistributionBucketsForNewChannel(): Promise<
@@ -509,9 +509,9 @@ export default class Api {
     const distributionBucketIds = []
 
     for (const { id, buckets } of families || []) {
-      const bucketsCountPolicy = distributionBucketFamiliesPolicy
-        .get(id as unknown as DistributionBucketFamilyId)
-        ?.toNumber()
+      const bucketsCountPolicy = [...distributionBucketFamiliesPolicy]
+        .find(([familyId]) => familyId.toString() === id)?.[1]
+        .toNumber()
       if (bucketsCountPolicy && bucketsCountPolicy < buckets.length) {
         throw new CLIError(
           `Distribution buckets policy constraint unsatisfied. Not enough buckets exist in Bucket Family ${id}`
