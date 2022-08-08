@@ -253,8 +253,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   }
 
   async uploadAsset(
-    account: KeyringPair,
-    memberId: number,
     objectId: BN,
     bagId: string,
     filePath: string,
@@ -308,8 +306,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   }
 
   async uploadAssets(
-    account: KeyringPair,
-    memberId: number,
     bagId: string,
     assets: AssetToUpload[],
     inputFilePath: string,
@@ -333,7 +329,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     const results = await Promise.all(
       assets.map(async (a) => {
         try {
-          await this.uploadAsset(account, memberId, a.dataObjectId, bagId, a.path, storageNodeInfo, multiBar)
+          await this.uploadAsset(a.dataObjectId, bagId, a.path, storageNodeInfo, multiBar)
           return true
         } catch (e) {
           errors.push([a.dataObjectId.toString(), e instanceof Error ? e.message : 'Unknown error'])

@@ -73,7 +73,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     // Context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelUpdateInputParameters>(input, ChannelUpdateInputSchema)
@@ -155,8 +154,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     if (channelUpdatedEvent) {
       const objectIds = channelUpdatedEvent.data[3]
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         [...objectIds].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

@@ -49,7 +49,6 @@ export default class CreateVideoCommand extends UploadCommandBase {
     // Get context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     // Ensure actor is authorized to create video
@@ -111,8 +110,6 @@ export default class CreateVideoCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         [...objectIds.values()].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
