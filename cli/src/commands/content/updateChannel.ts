@@ -117,12 +117,9 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       requiredPermissions.push('UpdateChannelMetadata')
     }
     if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
-      this.error(
-        `Only channelOwner or collaborator with ${requiredPermissions} permission can perform this update!`,
-        {
-          exit: ExitCodes.AccessDenied,
-        }
-      )
+      this.error(`Only channelOwner or collaborator with ${requiredPermissions} permission can perform this update!`, {
+        exit: ExitCodes.AccessDenied,
+      })
     }
 
     const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
