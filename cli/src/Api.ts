@@ -4,12 +4,10 @@ import {
   ChannelId,
   CuratorGroupId,
   DataObjectId,
-  DistributionBucketFamilyId,
   ForumCategoryId as CategoryId,
   ForumPostId as PostId,
   ForumThreadId as ThreadId,
   MemberId,
-  OpeningId,
   VideoId,
   WorkerId,
 } from '@joystream/types/primitives'
@@ -314,7 +312,7 @@ export default class Api {
   }
 
   async openingsByGroup(group: WorkingGroups): Promise<OpeningDetails[]> {
-    const openings = await this.entriesByIds<OpeningId, Opening>(this.workingGroupApiQuery(group).openingById)
+    const openings = await this.entriesByIds(this.workingGroupApiQuery(group).openingById)
 
     return Promise.all(openings.map(([id, opening]) => this.fetchOpeningDetails(group, opening, id.toNumber())))
   }
@@ -359,14 +357,12 @@ export default class Api {
   }
 
   protected async groupOpeningApplications(group: WorkingGroups, openingId: number): Promise<ApplicationDetails[]> {
-    const applicationEntries = await this.entriesByIds<ApplicationId, Application>(
-      this.workingGroupApiQuery(group).applicationById
-    )
+    const applicationEntries = await this.entriesByIds(this.workingGroupApiQuery(group).applicationById)
 
     return Promise.all(
       applicationEntries
-        .filter(([, application]) => application.openingId.eqn(openingId))
-        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application))
+        .filter(([, application]) => application.unwrap().openingId.eqn(openingId))
+        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application.unwrap()))
     )
   }
 
@@ -412,7 +408,7 @@ export default class Api {
   }
 
   async allMembers(): Promise<[MemberId, Membership][]> {
-    return this.entriesByIds<MemberId, Membership>(this._api.query.members.membershipById)
+    return (await this.entriesByIds(this._api.query.members.membershipById)).map(([id, m]) => [id, m.unwrap()])
   }
 
   // Content directory

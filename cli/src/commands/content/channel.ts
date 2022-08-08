@@ -3,6 +3,7 @@ import { displayCollapsedRow, displayHeader, displayTable } from '../../helpers/
 import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
 import { BTreeSet } from '@polkadot/types'
 import BN from 'bn.js'
+import { formatBalance } from '@polkadot/util'
 
 export default class ChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Show Channel details by id.'
@@ -39,7 +40,7 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': channelId.toString(),
         'Owner': JSON.stringify(channel.owner.toJSON()),
-        'ChannelStateBloatBond': channel.channelStateBloatBond.toString(),
+        'ChannelStateBloatBond': formatBalance(channel.channelStateBloatBond),
         'DataObjects': channel.dataObjects.toString(),
         'PrivilegeLevel': channel.privilegeLevel.toString(),
       })

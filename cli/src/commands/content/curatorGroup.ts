@@ -1,7 +1,7 @@
 import { WorkingGroups } from '../../Types'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import chalk from 'chalk'
-import { displayCollapsedRow, displayHeader, memberHandle } from '../../helpers/display'
+import { displayCollapsedRow, displayHeader, displayTable, memberHandle } from '../../helpers/display'
 
 export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
   static description = 'Show Curator Group details by ID.'
@@ -40,7 +40,15 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
     this.log(
       [...permissionsByLevel]
         .map(([level, permissions]) => chalk.magentaBright(`Privilege Level: ${level}; (Permissions: ${permissions})`))
-        .join(', ')
+        .join('\n\n')
+    )
+    displayHeader(`Curator by Permissions (${[...permissionsByLevel].length})`)
+    displayTable(
+      [...curators].map(([id, permissions]) => ({
+        'ID': id.toString(),
+        'Permissions': permissions.toString(),
+      })),
+      5
     )
   }
 }

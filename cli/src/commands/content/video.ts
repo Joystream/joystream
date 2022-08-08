@@ -1,3 +1,4 @@
+import { formatBalance } from '@polkadot/util'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayCollapsedRow } from '../../helpers/display'
 
@@ -22,7 +23,7 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': videoId.toString(),
         'InChannel': aVideo.inChannel.toString(),
-        'VideoStateBloatBond': aVideo.videoStateBloatBond.toString(),
+        'VideoStateBloatBond': formatBalance(aVideo.videoStateBloatBond),
         'DataObjects': aVideo.dataObjects.toString(),
       })
     } else {
