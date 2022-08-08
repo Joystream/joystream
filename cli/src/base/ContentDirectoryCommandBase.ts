@@ -21,7 +21,7 @@ import BN from 'bn.js'
 const CHANNEL_CREATION_CONTEXTS = ['Member', 'CuratorGroup'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
 const MODERATION_ACTION_CONTEXTS = ['Lead', 'Curator'] as const
-const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Collaborator'] as const
+const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Curator', 'Collaborator'] as const
 
 type ChannelManagementContext = typeof CHANNEL_MANAGEMENT_CONTEXTS[number]
 type ChannelCreationContext = typeof CHANNEL_CREATION_CONTEXTS[number]
@@ -96,18 +96,10 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
 
   async getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
     if (channel.owner.isCuratorGroup) {
-      try {
-        return this.getContentActor('Lead')
-      } catch (e) {
-        return this.getCuratorContext(channel.owner.asCuratorGroup)
-      }
-    } else {
-      const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asMember])
-      return [
-        createType('PalletContentPermissionsContentActor', { Member: id }),
-        membership.controllerAccount.toString(),
-      ]
+      return this.getContentActor('Lead')
     }
+    const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asMember])
+    return [createType('PalletContentPermissionsContentActor', { Member: id }), membership.controllerAccount.toString()]
   }
 
   async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
@@ -156,8 +148,8 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     // CASE: Member owned channel
     if (channel.owner.isMember) {
       // Owner context
-      if (actor.isMember) {
-        return actor.asMember.eq(channel.owner.asMember)
+      if (actor.isMember && actor.asMember.eq(channel.owner.asMember)) {
+        return true
       }
       // Collaborator context
       const collaboratorChannelAgentPermissions = [...channel.collaborators].find(([k]) => k.eq(actor.asMember))?.[1]
@@ -197,6 +189,9 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     if (context && context === 'Owner') {
       return this.getChannelOwnerActor(channel)
     }
+    if (context && context === 'Curator' && channel.owner.isCuratorGroup) {
+      return this.getCuratorContext(channel.owner.asCuratorGroup)
+    }
     if (context && context === 'Collaborator') {
       return this.getChannelCollaboratorActor(channel)
     }
@@ -207,6 +202,16 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       const owner = await this.getChannelOwnerActor(channel)
       this.log('Derived context: Channel owner')
       return owner
+    } catch (e) {
+      // continue
+    }
+
+    try {
+      if (channel.owner.isCuratorGroup) {
+        const owner = await this.getCuratorContext(channel.owner.asCuratorGroup)
+        this.log('Derived context: Channel curator')
+        return owner
+      }
     } catch (e) {
       // continue
     }

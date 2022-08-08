@@ -60,7 +60,7 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
       !(await this.isModeratorWithRequiredPermission(actor, privilegeLevel, { DeleteVideoAssets: nftStatus.isSome }))
     ) {
       this.error(
-        `Only content lead or curator with "DeleteVideoAssets" permission can delete video ${videoId} assets!`,
+        `Only content lead or curator with DeleteVideoAssets(${nftStatus.isSome}) permission can delete video ${videoId} assets!`,
         {
           exit: ExitCodes.AccessDenied,
         }

@@ -66,6 +66,7 @@ import { URL } from 'url'
 import fetch from 'cross-fetch'
 import { MemberId, ApplicationId, OpeningId } from '@joystream/types/primitives'
 import { apiModuleByGroup } from './Api'
+import BN from 'bn.js'
 
 export default class QueryNodeApi {
   private _qnClient: ApolloClient<NormalizedCacheObject>
