@@ -4,6 +4,7 @@ import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the channel and optionally all associated data objects.'
@@ -29,12 +30,17 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
 
-    if (
-      !this.isChannelOwner(channel, actor) &&
-      !this.isCollaboratorWithRequiredPermission(channel, actor, 'DeleteChannel')
-    ) {
+    const dataObjectsInfo = this.isQueryNodeUriSet()
+      ? await this.getDataObjectsInfoFromQueryNode(channelId)
+      : await this.getDataObjectsInfoFromChain(channelId)
+
+    // Ensure actor is authorized to perform channel deletion
+    const requiredPermissions: ChannelActionPermission['type'][] = dataObjectsInfo.length
+      ? ['DeleteChannel', 'ManageNonVideoChannelAssets']
+      : ['DeleteChannel']
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
       this.error(
-        `Only channelOwner or collaborator with "DeleteChannel" permission is allowed to delete channel! ${channelId}`,
+        `Only channelOwner or collaborator with ${requiredPermissions} permission can delete channel ${channelId}!`,
         {
           exit: ExitCodes.AccessDenied,
         }
@@ -49,22 +55,16 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       )
     }
 
-    const videosInfo = await this.getVideosInfoFromQueryNode(channelId)
-    const dataObjectsInfo = this.isQueryNodeUriSet()
-      ? await this.getDataObjectsInfoFromQueryNode(channelId)
-      : await this.getDataObjectsInfoFromChain(channelId)
-
     if (dataObjectsInfo.length) {
       if (!force) {
         this.error(`Cannot remove associated data objects unless ${chalk.magentaBright('--force')} flag is used`, {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const videosStateBloatBond = videosInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Videos state bloat bond of ${chalk.cyanBright(
-          formatBalance(videosStateBloatBond)
+        `Channel state bloat bond of ${chalk.cyanBright(
+          formatBalance(channel.channelStateBloatBond)
         )} will be transferred to ${chalk.magentaBright(address)}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
             formatBalance(dataObjectsStateBloatBond)

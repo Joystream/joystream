@@ -27,6 +27,7 @@ export default class DeleteVideoAsModeratorCommand extends ContentDirectoryComma
       required: true,
       description: 'reason of deleting the video by moderator',
     }),
+    context: ContentDirectoryCommandBase.moderationActionContextFlag,
     ...ContentDirectoryCommandBase.flags,
   }
 
@@ -45,10 +46,20 @@ export default class DeleteVideoAsModeratorCommand extends ContentDirectoryComma
 
   async run(): Promise<void> {
     const {
-      flags: { videoId, force, rationale },
+      flags: { videoId, force, rationale, context },
     } = this.parse(DeleteVideoAsModeratorCommand)
     // Context
-    const [actor, address] = await this.getCuratorContext()
+    const [actor, address] = await this.getModerationActionActor(context)
+    // ensure video exists
+    const { inChannel, videoStateBloatBond } = await this.getApi().videoById(videoId)
+    const { privilegeLevel } = await this.getApi().channelById(inChannel)
+
+    // Ensure moderator has required permission
+    if (!(await this.isModeratorWithRequiredPermission(actor, privilegeLevel, 'DeleteVideo'))) {
+      this.error(`Only content lead or curator with "DeleteVideo" permission can delete video ${videoId}!`, {
+        exit: ExitCodes.AccessDenied,
+      })
+    }
 
     const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
     if (dataObjectsInfo.length) {
@@ -57,7 +68,6 @@ export default class DeleteVideoAsModeratorCommand extends ContentDirectoryComma
           exit: ExitCodes.InvalidInput,
         })
       }
-      const { videoStateBloatBond } = await this.getApi().videoById(videoId)
       const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
         `Video state bloat bond of ${chalk.cyanBright(

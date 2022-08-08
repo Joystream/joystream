@@ -12,6 +12,7 @@ import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import ExitCodes from '../../ExitCodes'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
@@ -79,20 +80,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
     const { collaborators, coverPhotoPath, avatarPhotoPath } = channelInput
 
-    if (
-      collaborators !== undefined &&
-      !this.isChannelOwner(channel, actor) &&
-      !this.isCollaboratorWithRequiredPermission(channel, actor, 'ManageChannelCollaborators')
-    ) {
-      this.error(
-        `Only channel owner or collaborator with "ManageChannelCollaborators" 
-        permission is allowed to update channel's collaborators!`,
-        {
-          exit: ExitCodes.AccessDenied,
-        }
-      )
-    }
-
     if (collaborators) {
       await this.validateMemberIdsSet(
         collaborators.map(({ memberId }) => memberId),
@@ -110,6 +97,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     meta.avatarPhoto = assetIndices.avatarPhotoPath
 
     // Prepare and send the extrinsic
+    const serializedMeta = metadataToBytes(ChannelMetadata, meta)
     const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(
@@ -118,11 +106,31 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
+    // Ensure actor is authorized to perform channel update
+    const requiredPermissions: ChannelActionPermission['type'][] = []
+    if (collaborators) {
+      requiredPermissions.push('ManageChannelCollaborators')
+    }
+    if (assetsToUpload) {
+      requiredPermissions.push('ManageNonVideoChannelAssets')
+    }
+    if (serializedMeta.length) {
+      requiredPermissions.push('UpdateChannelMetadata')
+    }
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channelOwner or collaborator with ${requiredPermissions} permission can update channel ${channelId}!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
+
     const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
       expectedDataObjectStateBloatBond,
       assetsToUpload,
       assetsToRemove,
-      newMeta: metadataToBytes(ChannelMetadata, meta),
+      newMeta: serializedMeta,
       collaborators: new Map(
         collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions])
       ),

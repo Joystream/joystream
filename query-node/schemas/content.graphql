@@ -149,7 +149,7 @@ type Video @entity {
   "Video media asset"
   media: StorageDataObject
 
-  "Video media asset"
+  "Video state bloat bond"
   videoStateBloatBond: BigInt!
 
   ##########################

@@ -8,10 +8,12 @@ import { VideoId } from '@joystream/types/primitives'
 import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
+import ExitCodes from '../../ExitCodes'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class CreateVideoCommand extends UploadCommandBase {
-  static description = 'Create video under specific channel inside content directory.'
+  static description = 'Create video (non nft) under specific channel inside content directory.'
   static flags = {
     input: flags.string({
       char: 'i',
@@ -49,6 +51,17 @@ export default class CreateVideoCommand extends UploadCommandBase {
     const [actor, address] = await this.getChannelManagementActor(channel, context)
     const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
+
+    // Ensure actor is authorized to create video
+    const requiredPermissions: ChannelActionPermission['type'][] = ['AddVideo']
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channel owner or collaborator with ${requiredPermissions} permissions can add video to channel ${channelId}!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
 
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)

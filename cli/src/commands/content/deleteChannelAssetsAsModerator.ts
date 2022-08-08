@@ -17,7 +17,7 @@ export default class DeleteChannelAssetsAsModeratorCommand extends ContentDirect
       required: true,
       description: 'ID of the Channel',
     }),
-    assetIds: flags.string({
+    assetIds: flags.integer({
       char: 'a',
       description: `List of data object IDs to delete`,
       required: true,
@@ -28,14 +28,15 @@ export default class DeleteChannelAssetsAsModeratorCommand extends ContentDirect
       required: true,
       description: 'Reason for removing the channel assets by moderator',
     }),
+    context: ContentDirectoryCommandBase.moderationActionContextFlag,
     ...ContentDirectoryCommandBase.flags,
   }
 
-  async getDataObjectsInfo(channelId: number, assetIds: string[]): Promise<[string, BN][]> {
+  async getDataObjectsInfo(channelId: number, assetIds: number[]): Promise<[string, BN][]> {
     const dataObjects = await this.getQNApi().dataObjectsByChannelId(channelId.toString())
 
     return assetIds.map((id) => {
-      const dataObject = dataObjects.find((o) => o.id === id)
+      const dataObject = dataObjects.find((o) => o.id === id.toString())
       if (dataObject) {
         return [dataObject.id, new BN(dataObject.stateBloatBond)]
       }
@@ -47,11 +48,21 @@ export default class DeleteChannelAssetsAsModeratorCommand extends ContentDirect
   }
 
   async run(): Promise<void> {
-    const {
-      flags: { channelId, assetIds, rationale },
-    } = this.parse(DeleteChannelAssetsAsModeratorCommand)
+    const { channelId, assetIds, rationale, context } = this.parse(DeleteChannelAssetsAsModeratorCommand).flags
     // Context
-    const [actor, address] = await this.getCuratorContext()
+    const [actor, address] = await this.getModerationActionActor(context)
+    // ensure channel exists
+    const { privilegeLevel } = await this.getApi().channelById(channelId)
+
+    // Ensure moderator has required permission
+    if (!(await this.isModeratorWithRequiredPermission(actor, privilegeLevel, 'DeleteNonVideoChannelAssets'))) {
+      this.error(
+        `Only content lead or curator with "DeleteNonVideoChannelAssets" permission can delete channel ${channelId} assets!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
 
     const dataObjectsInfo = await this.getDataObjectsInfo(channelId, assetIds)
     const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))

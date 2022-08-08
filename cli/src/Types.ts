@@ -233,7 +233,7 @@ export type ModerationPermissionsByLevelInputParameters = {
   )[]
 }[]
 
-export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>
+export type ChannelUpdateInputParameters = ChannelCreationInputParameters
 
 export type ChannelCategoryInputParameters = IChannelCategoryMetadata
 

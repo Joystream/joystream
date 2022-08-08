@@ -2,6 +2,7 @@ import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
 import {
   PalletContentChannelActionPermission as ChannelActionPermission,
+  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
   PalletContentPermissionsCuratorGroup as CuratorGroup,
   PalletWorkingGroupGroupWorker as Worker,
   PalletContentPermissionsContentActor as ContentActor,
@@ -12,18 +13,20 @@ import {
 import { CLIError } from '@oclif/errors'
 import { flags } from '@oclif/command'
 import { memberHandle } from '../helpers/display'
-import { MemberId, CuratorGroupId } from '@joystream/types/primitives'
-import { createType } from '@joystream/types'
+import { MemberId, CuratorGroupId, ChannelPrivilegeLevel } from '@joystream/types/primitives'
+import { CreateInterface, createType } from '@joystream/types'
 import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 import BN from 'bn.js'
 
 const CHANNEL_CREATION_CONTEXTS = ['Member', 'CuratorGroup'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
+const MODERATION_ACTION_CONTEXTS = ['Lead', 'Curator'] as const
 const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Collaborator'] as const
 
 type ChannelManagementContext = typeof CHANNEL_MANAGEMENT_CONTEXTS[number]
 type ChannelCreationContext = typeof CHANNEL_CREATION_CONTEXTS[number]
 type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
+type ModerationActionContext = typeof MODERATION_ACTION_CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
@@ -43,6 +46,12 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     required: false,
     description: `Actor context to execute the command in (${CHANNEL_MANAGEMENT_CONTEXTS.join('/')})`,
     options: [...CHANNEL_MANAGEMENT_CONTEXTS],
+  })
+
+  static moderationActionContextFlag = flags.enum({
+    required: false,
+    description: `Actor context to execute the command in (${MODERATION_ACTION_CONTEXTS.join('/')})`,
+    options: [...MODERATION_ACTION_CONTEXTS],
   })
 
   static categoriesContextFlag = flags.enum({
@@ -112,13 +121,73 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       : actor.isMember && actor.asMember.eq(channel.owner.asMember)
   }
 
-  isCollaboratorWithRequiredPermission(
-    channel: Channel,
+  async hasRequiredChannelAgentPermissions(
     actor: ContentActor,
-    permission: ChannelActionPermission['type']
-  ): boolean {
-    const collaborator = channel.collaborators.get(actor.asMember)
-    return !!(collaborator && [...collaborator].find((p) => p[`is${permission}`]))
+    channel: Channel,
+    requiredPermissions: ChannelActionPermission['type'][]
+  ): Promise<boolean> {
+    // CASE: CuratorGroup owned channel
+    if (channel.owner.isCuratorGroup) {
+      // Lead context
+      if (actor.isLead) {
+        return true
+      }
+      // Curator context
+      if (actor.isCurator && actor.asCurator[0].eq(channel.owner.asCuratorGroup)) {
+        const { curators } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
+        const curatorChannelAgentPermissions = curators.get(actor.asCurator[1])
+        return !!(
+          curatorChannelAgentPermissions &&
+          requiredPermissions.every((requiredPermission) =>
+            [...curatorChannelAgentPermissions].find((p) => p[`is${requiredPermission}`])
+          )
+        )
+      }
+      // Collaborator context
+      const collaboratorChannelAgentPermissions = channel.collaborators.get(actor.asMember)
+      return !!(
+        collaboratorChannelAgentPermissions &&
+        requiredPermissions.every((requiredPermission) =>
+          [...collaboratorChannelAgentPermissions].find((p) => p[`is${requiredPermission}`])
+        )
+      )
+    }
+
+    // CASE: Member owned channel
+    if (channel.owner.isMember) {
+      // Owner context
+      if (actor.isMember) {
+        return actor.asMember.eq(channel.owner.asMember)
+      }
+      // Collaborator context
+      const collaboratorChannelAgentPermissions = channel.collaborators.get(actor.asMember)
+      return !!(
+        collaboratorChannelAgentPermissions &&
+        requiredPermissions.every((requiredPermission) =>
+          [...collaboratorChannelAgentPermissions].find((p) => p[`is${requiredPermission}`])
+        )
+      )
+    }
+
+    return false
+  }
+
+  async isModeratorWithRequiredPermission(
+    actor: ContentActor,
+    channelPrivilegeLevel: ChannelPrivilegeLevel,
+    permission: CreateInterface<ContentModerationAction>
+  ): Promise<boolean> {
+    if (actor.isLead) {
+      return true
+    }
+
+    const permissionRequired = createType('PalletContentPermissionsCuratorGroupContentModerationAction', permission)
+    const { permissionsByLevel } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
+    const permissionsForLevel = permissionsByLevel.get(channelPrivilegeLevel)
+    return !!(
+      permissionsForLevel &&
+      [...permissionsForLevel].find((p) => p.type === permissionRequired.type && p.value.eq(permissionRequired.value))
+    )
   }
 
   async getChannelManagementActor(
@@ -151,6 +220,36 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     }
 
     this.error('No account found with access to manage the provided channel', { exit: ExitCodes.AccessDenied })
+  }
+
+  async getModerationActionActor(context: ModerationActionContext): Promise<[ContentActor, string]> {
+    if (context && context === 'Lead') {
+      const lead = await this.getRequiredLeadContext()
+      return [createType('PalletContentPermissionsContentActor', { Lead: null }), lead.roleAccount.toString()]
+    }
+    if (context && context === 'Curator') {
+      return this.getCuratorContext()
+    }
+
+    // Context not set - derive
+
+    try {
+      const lead = await this.getRequiredLeadContext()
+      this.log('Derived context: Lead')
+      return [createType('PalletContentPermissionsContentActor', { Lead: null }), lead.roleAccount.toString()]
+    } catch (e) {
+      // continue
+    }
+
+    try {
+      const curator = await this.getCuratorContext()
+      this.log('Derived context: Curator')
+      return curator
+    } catch (e) {
+      // continue
+    }
+
+    this.error('No account found with access to perform given moderation action', { exit: ExitCodes.AccessDenied })
   }
 
   async getCategoryManagementActor(): Promise<[ContentActor, string]> {

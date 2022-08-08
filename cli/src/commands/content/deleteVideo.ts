@@ -1,5 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import chalk from 'chalk'
 import { formatBalance } from '@polkadot/util'
@@ -41,24 +42,27 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
 
   async run(): Promise<void> {
     const { videoId, force, context } = this.parse(DeleteVideoCommand).flags
-    // Context
+    // Ensure video exists
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.inChannel.toNumber())
+    // Context
     const [actor, address] = await this.getChannelManagementActor(channel, context)
 
-    if (
-      !this.isChannelOwner(channel, actor) &&
-      !this.isCollaboratorWithRequiredPermission(channel, actor, 'DeleteVideo')
-    ) {
+    const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
+
+    // Ensure actor is authorized to perform video deletion
+    const requiredPermissions: ChannelActionPermission['type'][] = dataObjectsInfo.length
+      ? ['DeleteVideo', 'ManageVideoAssets']
+      : ['DeleteVideo']
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
       this.error(
-        `Only channel owner or collaborator with "DeleteVideo" permission is allowed to delete video ${videoId}!`,
+        `Only channel owner or collaborator with ${requiredPermissions} permissions can delete video ${videoId}!`,
         {
           exit: ExitCodes.AccessDenied,
         }
       )
     }
 
-    const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
     if (dataObjectsInfo.length) {
       if (!force) {
         this.error(`Cannot remove associated data objects unless ${chalk.magentaBright('--force')} flag is used`, {

@@ -28,6 +28,7 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
       required: true,
       description: 'Reason for removing the video assets by moderator',
     }),
+    context: ContentDirectoryCommandBase.moderationActionContextFlag,
     ...ContentDirectoryCommandBase.flags,
   }
 
@@ -47,11 +48,24 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
   }
 
   async run(): Promise<void> {
-    const {
-      flags: { videoId, assetIds, rationale },
-    } = this.parse(DeleteVideoAssetsAsModeratorCommand)
+    const { videoId, assetIds, rationale, context } = this.parse(DeleteVideoAssetsAsModeratorCommand).flags
     // Context
-    const [actor, address] = await this.getCuratorContext()
+    const [actor, address] = await this.getModerationActionActor(context)
+    // ensure video exists
+    const { inChannel, nftStatus } = await this.getApi().videoById(videoId)
+    const { privilegeLevel } = await this.getApi().channelById(inChannel)
+
+    // Ensure moderator has required permission
+    if (
+      !(await this.isModeratorWithRequiredPermission(actor, privilegeLevel, { DeleteVideoAssets: nftStatus.isSome }))
+    ) {
+      this.error(
+        `Only content lead or curator with "DeleteVideoAssets" permission can delete video ${videoId} assets!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
 
     const dataObjectsInfo = await this.getDataObjectsInfo(videoId, assetIds)
     const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))

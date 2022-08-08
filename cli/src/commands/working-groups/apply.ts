@@ -112,7 +112,7 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
           openingId: openingId,
           roleAccountId: roleAccount,
           rewardAccountId: rewardAccount,
-          stakeParameters: stakeParams!,
+          stakeParameters: stakeParams,
           description: metadataToBytes(ApplicationMetadata, { answers }),
         }),
       ]

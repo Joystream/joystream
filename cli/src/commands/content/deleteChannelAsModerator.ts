@@ -24,16 +24,22 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
       required: true,
       description: 'Reason of deleting the channel by moderator',
     }),
+    context: ContentDirectoryCommandBase.moderationActionContextFlag,
     ...ContentDirectoryCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const {
-      flags: { channelId, force, rationale },
-    } = this.parse(DeleteChannelAsModeratorCommand)
+    const { channelId, force, rationale, context } = this.parse(DeleteChannelAsModeratorCommand).flags
     // Context
     const channel = await this.getApi().channelById(channelId)
-    const [actor, address] = await this.getCuratorContext()
+    const [actor, address] = await this.getModerationActionActor(context)
+
+    // Ensure moderator has required permission
+    if (!(await this.isModeratorWithRequiredPermission(actor, channel.privilegeLevel, 'DeleteChannel'))) {
+      this.error(`Only content lead or curator with "DeleteChannel" permission can delete channel ${channelId}!`, {
+        exit: ExitCodes.AccessDenied,
+      })
+    }
 
     if (channel.numVideos.toNumber()) {
       this.error(
@@ -42,7 +48,6 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
       )
     }
 
-    const videosInfo = await this.getVideosInfoFromQueryNode(channelId)
     const dataObjectsInfo = this.isQueryNodeUriSet()
       ? await this.getDataObjectsInfoFromQueryNode(channelId)
       : await this.getDataObjectsInfoFromChain(channelId)
@@ -53,11 +58,10 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
           exit: ExitCodes.InvalidInput,
         })
       }
-      const videosStateBloatBond = videosInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Videos state bloat bond of ${chalk.cyanBright(
-          formatBalance(videosStateBloatBond)
+        `Channel state bloat bond of ${chalk.cyanBright(
+          formatBalance(channel.channelStateBloatBond)
         )} will be transferred to ${chalk.magentaBright(address)}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
             formatBalance(stateBloatBond)

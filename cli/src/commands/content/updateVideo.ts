@@ -4,7 +4,10 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
-import { PalletContentVideoUpdateParametersRecord as VideoUpdateParameters } from '@polkadot/types/lookup'
+import {
+  PalletContentVideoUpdateParametersRecord as VideoUpdateParameters,
+  PalletContentChannelActionPermission as ChannelActionPermission,
+} from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
@@ -12,6 +15,7 @@ import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+import ExitCodes from '../../ExitCodes'
 
 export default class UpdateVideoCommand extends UploadCommandBase {
   static description = 'Update video under specific id.'
@@ -87,7 +91,8 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     meta.video = assetIndices.videoPath
     meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
-    // Preare and send the extrinsic
+    // Prepare and send the extrinsic
+    const serializedMeta = metadataToBytes(VideoMetadata, meta)
     const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(
@@ -95,6 +100,24 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assetIndices.videoPath,
       assetIndices.thumbnailPhotoPath
     )
+
+    // Ensure actor is authorized to perform video update
+    const requiredPermissions: ChannelActionPermission['type'][] = []
+    if (assetsToUpload) {
+      requiredPermissions.push('ManageVideoAssets')
+    }
+    if (serializedMeta.length) {
+      requiredPermissions.push('UpdateVideoMetadata')
+    }
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channelOwner or collaborator with ${requiredPermissions} permissions can update video ${videoId}!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
+
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
       expectedDataObjectStateBloatBond,
       autoIssueNft: null,
