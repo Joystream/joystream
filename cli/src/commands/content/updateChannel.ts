@@ -111,7 +111,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     if (collaborators) {
       requiredPermissions.push('ManageChannelCollaborators')
     }
-    if (assetsToUpload) {
+    if (assetsToUpload || assetsToRemove.length) {
       requiredPermissions.push('ManageNonVideoChannelAssets')
     }
     if (serializedMeta.length) {
@@ -119,7 +119,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     }
     if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
       this.error(
-        `Only channelOwner or collaborator with ${requiredPermissions} permission can update channel ${channelId}!`,
+        `Only channelOwner or collaborator with ${requiredPermissions} permission can perform this update!`,
         {
           exit: ExitCodes.AccessDenied,
         }
@@ -130,10 +130,10 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       expectedDataObjectStateBloatBond,
       assetsToUpload,
       assetsToRemove,
-      newMeta: serializedMeta,
-      collaborators: new Map(
-        collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions])
-      ),
+      newMeta: serializedMeta.length ? serializedMeta : null,
+      collaborators: collaborators?.length
+        ? new Map(collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions]))
+        : null,
     })
     this.jsonPrettyPrint(
       JSON.stringify({

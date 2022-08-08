@@ -190,8 +190,12 @@ export default class QueryNodeApi {
     // available size then sort the two based on available dataObjects count
     return buckets.sort(
       (x, y) =>
-        y.dataObjectsSizeLimit - y.dataObjectsSize - (x.dataObjectsSizeLimit - x.dataObjectsSize) ||
-        y.dataObjectCountLimit - y.dataObjectsCount - (x.dataObjectCountLimit - x.dataObjectsCount)
+        new BN(y.dataObjectsSizeLimit)
+          .sub(new BN(y.dataObjectsSize))
+          .cmp(new BN(x.dataObjectsSizeLimit).sub(new BN(x.dataObjectsSize))) ||
+        new BN(y.dataObjectCountLimit)
+          .sub(y.dataObjectsCount)
+          .cmp(new BN(x.dataObjectCountLimit).sub(new BN(x.dataObjectsCount)))
     )
   }
 

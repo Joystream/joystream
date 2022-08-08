@@ -103,7 +103,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     // Ensure actor is authorized to perform video update
     const requiredPermissions: ChannelActionPermission['type'][] = []
-    if (assetsToUpload) {
+    if (assetsToUpload || assetsToRemove.length) {
       requiredPermissions.push('ManageVideoAssets')
     }
     if (serializedMeta.length) {

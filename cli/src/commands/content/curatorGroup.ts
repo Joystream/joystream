@@ -42,7 +42,7 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
         .map(([level, permissions]) => chalk.magentaBright(`Privilege Level: ${level}; (Permissions: ${permissions})`))
         .join('\n\n')
     )
-    displayHeader(`Curator by Permissions (${[...permissionsByLevel].length})`)
+    displayHeader(`Permissions by Curator`)
     displayTable(
       [...curators].map(([id, permissions]) => ({
         'ID': id.toString(),

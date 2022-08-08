@@ -135,7 +135,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       // Curator context
       if (actor.isCurator && actor.asCurator[0].eq(channel.owner.asCuratorGroup)) {
         const { curators } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
-        const curatorChannelAgentPermissions = curators.get(actor.asCurator[1])
+        const curatorChannelAgentPermissions = [...curators].find(([k]) => k.eq(actor.asCurator[1]))?.[1]
         return !!(
           curatorChannelAgentPermissions &&
           requiredPermissions.every((requiredPermission) =>
@@ -144,7 +144,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
         )
       }
       // Collaborator context
-      const collaboratorChannelAgentPermissions = channel.collaborators.get(actor.asMember)
+      const collaboratorChannelAgentPermissions = [...channel.collaborators].find(([k]) => k.eq(actor.asMember))?.[1]
       return !!(
         collaboratorChannelAgentPermissions &&
         requiredPermissions.every((requiredPermission) =>
@@ -160,7 +160,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
         return actor.asMember.eq(channel.owner.asMember)
       }
       // Collaborator context
-      const collaboratorChannelAgentPermissions = channel.collaborators.get(actor.asMember)
+      const collaboratorChannelAgentPermissions = [...channel.collaborators].find(([k]) => k.eq(actor.asMember))?.[1]
       return !!(
         collaboratorChannelAgentPermissions &&
         requiredPermissions.every((requiredPermission) =>
@@ -183,7 +183,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
 
     const permissionRequired = createType('PalletContentPermissionsCuratorGroupContentModerationAction', permission)
     const { permissionsByLevel } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
-    const permissionsForLevel = permissionsByLevel.get(channelPrivilegeLevel)
+    const permissionsForLevel = [...permissionsByLevel].find(([k]) => k.eq(channelPrivilegeLevel))?.[1]
     return !!(
       permissionsForLevel &&
       [...permissionsForLevel].find((p) => p.type === permissionRequired.type && p.value.eq(permissionRequired.value))

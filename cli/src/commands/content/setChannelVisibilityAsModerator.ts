@@ -18,7 +18,7 @@ export default class SetChannelVisibilityAsModeratorCommand extends ContentDirec
       char: 's',
       options: [...CHANNEL_VISIBILITY_CONTEXTS],
       description: 'The visibility status of the channel',
-      required: false,
+      required: true,
     }),
     rationale: flags.string({
       char: 'r',

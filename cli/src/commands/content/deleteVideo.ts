@@ -56,7 +56,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       : ['DeleteVideo']
     if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
       this.error(
-        `Only channel owner or collaborator with ${requiredPermissions} permissions can delete video ${videoId}!`,
+        `Only channel owner or collaborator with ${requiredPermissions} permissions can perform this deletion!`,
         {
           exit: ExitCodes.AccessDenied,
         }

@@ -40,7 +40,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       : ['DeleteChannel']
     if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
       this.error(
-        `Only channelOwner or collaborator with ${requiredPermissions} permission can delete channel ${channelId}!`,
+        `Only channelOwner or collaborator with ${requiredPermissions} permissions can perform this deletion!`,
         {
           exit: ExitCodes.AccessDenied,
         }
