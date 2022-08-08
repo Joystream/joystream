@@ -319,7 +319,16 @@ decl_module! {
         // ======
 
         /// Add new curator group to runtime storage
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `permissions_by_level` map
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::create_curator_group(permissions_by_level.len() as u32)]
         pub fn create_curator_group(
             origin,
             is_active: bool,
@@ -349,7 +358,16 @@ decl_module! {
         }
 
         /// Update existing curator group's permissions
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `permissions_by_level` map
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_curator_group_permissions(permissions_by_level.len() as u32)]
         pub fn update_curator_group_permissions(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -377,7 +395,15 @@ decl_module! {
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::set_curator_group_status()]
         pub fn set_curator_group_status(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -406,7 +432,15 @@ decl_module! {
         }
 
         /// Add curator to curator group under given `curator_group_id`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::add_curator_to_group()]
         pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -446,7 +480,15 @@ decl_module! {
         }
 
         /// Remove curator from a given curator group
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::remove_curator_from_group()]
         pub fn remove_curator_from_group(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -478,6 +520,18 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D + E)` where:
+        /// - `A` is the number of entries in `params.collaborators`
+        /// - `B` is the number of items in `params.storage_buckets`
+        /// - `C` is the number of items in `params.distribution_buckets`
+        /// - `D` is the number of items in `params.assets.object_creation_list`
+        /// - `E` is the length of  `params.meta`
+        /// - DB:
+        ///    - `O(A + B + C + D)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::create_channel_weight(params)]
         pub fn create_channel(
             origin,
@@ -580,6 +634,18 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params, channel_account));
         }
 
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D + E)` where:
+        /// - `A` is the number of entries in `params.collaborators`
+        /// - `B` is the number of items in `params.assets_to_upload.object_creation_list` (if provided)
+        /// - `C` is the number of items in `params.assets_to_remove`
+        /// - `D` is the length `params.new_meta`
+        /// - `E` is `params.storage_buckets_num_witness` (if provided)
+        /// - DB:
+        ///    - `O(A + B + C + E)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::update_channel_weight(params)]
         pub fn update_channel(
             origin,
@@ -733,6 +799,16 @@ decl_module! {
         }
 
         // extrinsics for channel deletion
+
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is `num_objects_to_delete`
+        /// - `B` is `channel_bag_witness.storage_buckets_num`
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::delete_channel_weight(storage_buckets_num_witness, num_objects_to_delete)]
         pub fn delete_channel(
             origin,
@@ -2557,7 +2633,18 @@ decl_module! {
         }
 
         /// Start a channel transfer with specified characteristics
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `transfer_params.new_collaborators` map
+        /// - DB:
+        ///    - O(A) - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::initialize_channel_transfer(
+            transfer_params.new_collaborators.len() as u32
+        )]
         pub fn initialize_channel_transfer(
             origin,
             channel_id: T::ChannelId,
@@ -2601,7 +2688,15 @@ decl_module! {
         }
 
         /// cancel channel transfer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_channel_transfer()]
         pub fn cancel_channel_transfer(
             origin,
             channel_id: T::ChannelId,
@@ -2631,7 +2726,18 @@ decl_module! {
 
         /// Accepts channel transfer.
         /// `commitment_params` is required to prevent changing the transfer conditions.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `commitment_params.new_collaborators` map
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::accept_channel_transfer(
+            commitment_params.new_collaborators.len() as u32
+        )]
         pub fn accept_channel_transfer(
             origin,
             channel_id: T::ChannelId,

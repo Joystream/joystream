@@ -1,6 +1,7 @@
 #![cfg(test)]
 use crate::*;
 use common::membership::MemberOriginValidator;
+use common::working_group::WorkingGroupAuthenticator;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
     ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize,
@@ -247,36 +248,33 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
-        *account_id == ensure_signed(Origin::signed(LEAD_ACCOUNT_ID)).unwrap()
+        working_group::Module::<Test, ContentWorkingGroupInstance>::is_leader_account_id(account_id)
+            || *account_id == LEAD_ACCOUNT_ID
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
-        if CURATOR_IDS.contains(curator_id) {
-            *account_id == ensure_signed(Origin::signed((*curator_id).into())).unwrap()
-        } else {
-            false
-        }
+        working_group::Module::<Test, ContentWorkingGroupInstance>::is_worker_account_id(
+            account_id, curator_id,
+        ) || (CURATOR_IDS.contains(curator_id) && *account_id == (*curator_id as u128))
     }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let controller_account_id = (*member_id) as u128;
         if MEMBER_IDS.contains(member_id) {
-            *account_id == ensure_signed(Origin::signed(controller_account_id)).unwrap()
+            *account_id == controller_account_id
         } else if COLABORATOR_IDS.contains(member_id) {
-            *account_id == ensure_signed(Origin::signed(controller_account_id)).unwrap()
+            *account_id == controller_account_id
         } else if CURATOR_IDS.contains(member_id) {
-            *account_id == ensure_signed(Origin::signed(controller_account_id)).unwrap()
+            *account_id == controller_account_id
         } else {
             false
         }
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
-        if CURATOR_IDS.contains(curator_id) {
-            true
-        } else {
-            false
-        }
+        working_group::Module::<Test, ContentWorkingGroupInstance>::ensure_worker_exists(curator_id)
+            .is_ok()
+            || CURATOR_IDS.contains(curator_id)
     }
 }
 
@@ -516,7 +514,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId3>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -835,9 +833,10 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 9;
+    pub const MaxWorkerNumberLimit: u32 = 30;
     pub const LockId: LockIdentifier = [9; 8];
     pub const LockId2: LockIdentifier = [10; 8];
+    pub const LockId3: LockIdentifier = [11; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MinimumStakeForOpening: u32 = 50;
