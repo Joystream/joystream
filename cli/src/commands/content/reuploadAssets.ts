@@ -20,9 +20,6 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
   async run(): Promise<void> {
     const { input } = this.parse(ReuploadVideoAssetsCommand).flags
 
-    // Get context
-    const { id: memberId, membership } = await this.getRequiredMemberContext()
-
     // Get input from file
     const inputData = await getInputJson<AssetsInput>(input, AssetsSchema)
     const { bagId } = inputData
@@ -32,13 +29,6 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
     }))
 
     // Upload assets
-    await this.uploadAssets(
-      await this.getDecodedPair(membership.controllerAccount),
-      memberId.toNumber(),
-      bagId,
-      inputAssets,
-      input,
-      ''
-    )
+    await this.uploadAssets(bagId, inputAssets, input, '')
   }
 }

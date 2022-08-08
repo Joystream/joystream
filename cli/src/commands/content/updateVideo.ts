@@ -77,7 +77,6 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const video = await this.getApi().videoById(videoId)
     const channel = await this.getApi().channelById(video.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
@@ -141,8 +140,6 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [, objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${video.inChannel.toString()}`,
         [...objectIds.values()].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

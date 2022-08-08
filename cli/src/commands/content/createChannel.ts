@@ -30,7 +30,6 @@ export default class CreateChannelCommand extends UploadCommandBase {
       context = await this.promptForChannelCreationContext()
     }
     const [channelOwner, address] = await this.getChannelOwner(context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelCreationInputParameters>(input, ChannelCreationInputSchema)
@@ -88,8 +87,6 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     if (dataObjects.size) {
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         [...dataObjects].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
