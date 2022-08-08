@@ -562,7 +562,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
         );
 
-        let exceeded_budget = MAX_SPENDING_PROPOSAL_VALUE + 1;
+        let exceeded_budget = <Test as crate::Config>::FundingRequestProposalMaxAmount::get() + 1;
 
         let funding_request_proposal_exceeded_balance =
             ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
@@ -606,7 +606,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts(
         let mut funding_request_proposal_exceeded_number_of_account =
             Vec::<common::FundingRequestParameters<_, _>>::new();
 
-        for i in 0..=MAX_FUNDING_REQUEST_ACCOUNTS {
+        for i in 0..=<Test as crate::Config>::FundingRequestProposalMaxAccounts::get() {
             funding_request_proposal_exceeded_number_of_account.push(
                 common::FundingRequestParameters {
                     amount: 100,
@@ -861,7 +861,9 @@ fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count()
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters,
-                ProposalDetails::SetMaxValidatorCount(MAX_VALIDATOR_COUNT + 1),
+                ProposalDetails::SetMaxValidatorCount(
+                    <Test as crate::Config>::SetMaxValidatorCountProposalMaxValidators::get() + 1
+                ),
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
         );
