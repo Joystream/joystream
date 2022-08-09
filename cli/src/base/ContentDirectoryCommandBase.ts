@@ -208,9 +208,9 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
 
     try {
       if (channel.owner.isCuratorGroup) {
-        const owner = await this.getCuratorContext(channel.owner.asCuratorGroup)
-        this.log('Derived context: Channel curator')
-        return owner
+        const curator = await this.getCuratorContext(channel.owner.asCuratorGroup)
+        this.log('Derived context: Curator')
+        return curator
       }
     } catch (e) {
       // continue
