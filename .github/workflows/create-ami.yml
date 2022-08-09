@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       runtimeProfile:
-        description: 'STAGING | TESTING - leave blank for production build'
+        description: 'STAGING | PLAYGROUND | TESTING - leave blank for production build'
         required: false
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
 
       - name: Set AMI Name environment variable
         shell: bash
-        run: echo "ami_name=joystream-node-${{ steps.extract_branch.outputs.branch }}-${{ github.run_number }}" >> $GITHUB_ENV
+        run: echo "ami_name=joystream-node-${{ github.event.inputs.runtimeProfile }}-${{ steps.extract_branch.outputs.branch }}-${{ github.run_number }}" >> $GITHUB_ENV
         id: ami_name
 
       - name: Checkout
