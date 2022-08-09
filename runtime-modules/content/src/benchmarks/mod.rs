@@ -95,6 +95,7 @@ const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
 const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
 const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
 const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
+const DEFAULT_CRT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
     ChannelActionPermission::UpdateChannelMetadata,
@@ -141,6 +142,13 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::DeleteNonVideoChannelAssets,
     ContentModerationAction::UpdateChannelNftLimits,
 ];
+
+#[macro_export]
+macro_rules! assert_lt {
+    ($a:expr, $b:expr) => {
+        assert!($a < $b, "Expected {:?} to be lower than {:?}", $a, $b);
+    };
+}
 
 fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
     (T::MaxNumberOfAssetsPerChannel::get() as u64) * 100
@@ -1004,7 +1012,6 @@ fn create_token_issuance_params<T: Config>(
 ) -> TokenIssuanceParametersOf<T> {
     let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
     let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
-    let patronage_rate = YearlyRate(Permill::from_percent(10));
     TokenIssuanceParametersOf::<T> {
         initial_allocation,
         symbol: token_symbol.clone(),
@@ -1020,7 +1027,7 @@ fn create_token_issuance_params<T: Config>(
                 expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
             }),
         }),
-        patronage_rate,
+        patronage_rate: DEFAULT_CRT_PATRONAGE_RATE,
         revenue_split_rate: DEFAULT_CRT_REVENUE_SPLIT_RATE,
     }
 }
@@ -1167,4 +1174,12 @@ pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
 pub fn fastforward_by_blocks<T: Config>(blocks: T::BlockNumber) {
     let current_block = System::<T>::block_number();
     run_to_block::<T>(current_block + blocks);
+}
+
+pub fn transferrable_crt_balance<T: Config>(
+    token_id: T::TokenId,
+    member_id: T::MemberId,
+) -> TokenBalanceOf<T> {
+    project_token::Pallet::<T>::account_info_by_token_and_member(token_id, member_id)
+        .transferrable::<T>(System::<T>::block_number())
 }

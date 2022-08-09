@@ -1,6 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::{
+    assert_lt,
     permissions::*,
     types::{
         ChannelAgentPermissions, ChannelOwner, ChannelTransferStatus, ChannelUpdateParameters,
@@ -32,23 +33,7 @@ use sp_std::{
 };
 use storage::Module as Storage;
 
-use super::{
-    assert_last_event, assert_past_event, channel_bag_witness, clone_curator_group,
-    create_data_object_candidates_helper, create_token_issuance_params, curator_member_id,
-    default_vesting_schedule_params, fastforward_by_blocks, generate_channel_creation_params,
-    insert_content_leader, insert_curator, insert_distribution_leader, insert_storage_leader,
-    issue_creator_token_with_worst_case_scenario_owner, max_curators_per_group,
-    member_funded_account, setup_worst_case_curator_group_with_curators,
-    setup_worst_case_scenario_channel, setup_worst_case_scenario_curator_channel,
-    setup_worst_case_scenario_curator_channel_all_max, storage_buckets_num_witness,
-    worst_case_channel_agent_permissions, worst_case_content_moderation_actions_set,
-    worst_case_scenario_collaborators, worst_case_scenario_initial_allocation,
-    worst_case_scenario_issuer_transfer_outputs, worst_case_scenario_token_sale_params,
-    ContentWorkingGroupInstance, CreateAccountId, RuntimeConfig, COLABORATOR_IDS, CURATOR_IDS,
-    DEFAULT_CRT_OWNER_ISSUANCE, DEFAULT_CRT_REVENUE_SPLIT_RATE, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
-    DEFAULT_CRT_SALE_DURATION, DEFAULT_CRT_SALE_PRICE, DEFAULT_CRT_SALE_UPPER_BOUND,
-    MAX_BYTES_METADATA, MAX_CRT_INITIAL_ALLOCATION_MEMBERS, MAX_CRT_ISSUER_TRANSFER_OUTPUTS,
-};
+use super::*;
 
 benchmarks! {
     where_clause {
@@ -961,18 +946,17 @@ benchmarks! {
             T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
             false
         )?;
-        let token_id =
-            issue_creator_token_with_worst_case_scenario_owner::<T>(
-                owner_acc.clone(),
-                ContentActor::Member(owner_member_id),
-                channel_id,
-                owner_member_id
-            )?;
-
         let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
         let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
-        let origin = RawOrigin::Signed(collaborator_account_id);
-        let actor = ContentActor::Member(collaborator_member_id);
+        let origin = RawOrigin::Signed(collaborator_account_id.clone());
+        let actor = ContentActor::Member(collaborator_member_id.clone());
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                collaborator_account_id.clone(),
+                actor,
+                channel_id,
+                collaborator_member_id
+            )?;
         let start: T::BlockNumber = frame_system::Pallet::<T>::block_number()
             + project_token::Pallet::<T>::min_revenue_split_time_to_start();
         let duration: T::BlockNumber = project_token::Pallet::<T>::min_revenue_split_duration();
@@ -995,8 +979,7 @@ benchmarks! {
             timeline: TimelineOf::<T> { start, duration },
             dividends_claimed: JoyBalanceOf::<T>::zero()
         }));
-        let split_id = token.next_revenue_split_id - 1;
-        // Make sure council budget was increased
+        // Make sure channel owner's balances was increased
         let owner_acc_balance_post = balances::Pallet::<T>::usable_balance(owner_acc);
         assert_eq!(owner_acc_balance_post, owner_acc_balance_pre + withdrawn);
         // Check event emitted
@@ -1089,6 +1072,100 @@ benchmarks! {
                     channel_acc,
                     leftovers
                 ),
+            ).into(),
+        );
+    }
+
+    reduce_creator_token_patronage_rate_to {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let target_rate = YearlyRate(DEFAULT_CRT_PATRONAGE_RATE.0 / 2);
+        fastforward_by_blocks::<T>(T::BlocksPerYear::get().into());
+        let expected_unclaimed_tally: TokenBalanceOf<T> =
+            (DEFAULT_CRT_PATRONAGE_RATE.0.mul_floor(DEFAULT_CRT_OWNER_ISSUANCE)).into();
+    }: _(origin, actor, channel_id, target_rate)
+    verify {
+        let current_block = frame_system::Pallet::<T>::block_number();
+        let new_block_rate = BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        assert_eq!(token.patronage_info.rate, new_block_rate);
+        assert_eq!(token.patronage_info.last_unclaimed_patronage_tally_block, current_block);
+        assert_lt!(
+            expected_unclaimed_tally - token.patronage_info.unclaimed_patronage_tally_amount,
+            // We use 0,0001% deficiency margin because of possible conversion errors
+            TokenBalanceOf::<T>::from(DEFAULT_CRT_OWNER_ISSUANCE / 1_000_000)
+        );
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::PatronageRateDecreasedTo(
+                    token_id,
+                    new_block_rate.to_yearly_rate_representation(T::BlocksPerYear::get())
+                ),
+            ).into(),
+        );
+    }
+
+    claim_creator_token_patronage_credit {
+        let (owner_acc, owner_member_id) = member_funded_account::<T>(1);
+        // Only member channels can claim patronage
+        let channel_owner = ChannelOwner::<T::MemberId, T::CuratorGroupId>::Member(owner_member_id);
+        let channel_id = setup_worst_case_scenario_channel::<T>(
+            owner_acc.clone(),
+            channel_owner,
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
+        )?;
+        let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
+        let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
+        let origin = RawOrigin::Signed(collaborator_account_id.clone());
+        let actor = ContentActor::Member(collaborator_member_id.clone());
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                collaborator_account_id.clone(),
+                actor,
+                channel_id,
+                collaborator_member_id
+            )?;
+        fastforward_by_blocks::<T>(T::BlocksPerYear::get().into());
+        let collab_crt_balance_pre =
+            transferrable_crt_balance::<T>(token_id, collaborator_member_id);
+        let expected_claim: TokenBalanceOf<T> =
+            (DEFAULT_CRT_PATRONAGE_RATE.0.mul_floor(DEFAULT_CRT_OWNER_ISSUANCE)).into();
+    }: _(origin, actor, channel_id)
+    verify {
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        // Deficiency margin of 0.0001%, because of possible conversion/rounding errors
+        let deficiency_margin: TokenBalanceOf<T> = (DEFAULT_CRT_OWNER_ISSUANCE / 1_000_000).into();
+        assert_lt!(expected_claim + DEFAULT_CRT_OWNER_ISSUANCE.into() - token.tokens_issued, deficiency_margin);
+        assert_eq!(token.tokens_issued, token.total_supply);
+        // Make sure collaborator's CRT balance was increased
+        let collab_crt_balance_post =
+            transferrable_crt_balance::<T>(token_id, collaborator_member_id);
+        let actually_claimed = collab_crt_balance_post - collab_crt_balance_pre;
+        assert_lt!(expected_claim - actually_claimed, deficiency_margin);
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::PatronageCreditClaimed(
+                    token_id,
+                    actually_claimed,
+                    collaborator_member_id
+                )
             ).into(),
         );
     }
@@ -1250,6 +1327,20 @@ pub mod tests {
     fn finalize_revenue_split() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_finalize_revenue_split());
+        });
+    }
+
+    #[test]
+    fn reduce_creator_token_patronage_rate_to() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_reduce_creator_token_patronage_rate_to());
+        });
+    }
+
+    #[test]
+    fn claim_creator_token_patronage_credit() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_claim_creator_token_patronage_credit());
         });
     }
 }

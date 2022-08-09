@@ -3057,7 +3057,15 @@ decl_module! {
         }
 
         /// Reduce channel's creator token patronage rate to given value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::reduce_creator_token_patronage_rate_to()]
         pub fn reduce_creator_token_patronage_rate_to(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3083,7 +3091,15 @@ decl_module! {
         }
 
         /// Claim channel's creator token patronage credit
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::claim_creator_token_patronage_credit()]
         pub fn claim_creator_token_patronage_credit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
