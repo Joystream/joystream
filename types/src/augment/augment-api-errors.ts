@@ -984,10 +984,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CategoryNotEmptyThreads: AugmentedError<ApiType>;
       /**
-       * data migration not done yet.
-       **/
-      DataMigrationNotDone: AugmentedError<ApiType>;
-      /**
        * Forum user id not match its account.
        **/
       ForumUserIdNotMatchAccount: AugmentedError<ApiType>;
