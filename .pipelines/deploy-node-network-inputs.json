@@ -23,21 +23,17 @@
     "description": "AWS EC2 instance type for RPC (t2.micro, t2.large)",
     "value": "t2.micro"
   },
-  "ec2AMI": {
-    "description": "Pre-built AMI ID",
-    "value": "ami-0ce5f13e91397239a"
+  "joystreamAmi": {
+    "description": "Pre-built AMI ID - leave blank to build from source",
+    "value": ""
   },
   "volumeSize": {
     "description": "Validator and Build instance volume size in GB",
-    "value": "120"
+    "value": "250"
   },
-  "rpcVolumeSize": {
-    "description": "RPC Instance volume size in GB",
-    "value": "120"
-  },
-  "networkSuffix": {
-    "description": "Network suffix that will be added to the network name",
-    "value": "8129"
+  "networkName": {
+    "description": "Network name used for chain-id, protocol-id, and display in telemetry",
+    "value": "joystream_test_staging_100"
   },
   "initialBalancesFile": {
     "description": "HTTP Link to the Initial Balances file",
@@ -54,9 +50,5 @@
   "runtimeProfile": {
     "description": "STAGING | PLAYGROUND| TESTING - leave empty for production",
     "value": ""
-  },
-  "skipChainSetup": {
-    "description": "Set to true to skip running setup new chain scenario",
-    "value": true
   }
 }

@@ -52,8 +52,8 @@
     TREASURY_ACCOUNT_URI: '{{ endowed_key }}'
     SUDO_ACCOUNT_URI: '{{ sudo_key }}'
     INVITER_KEY: "//Faucet"
-    BALANCE_CREDIT: "500000000"
-    BALANCE_LOCKED: "500000000"
+    BALANCE_CREDIT: "300000000000"
+    BALANCE_LOCKED: "300000000000"
   args:
     chdir: '{{ remote_code_path }}'
   async: 3600
