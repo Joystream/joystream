@@ -3202,18 +3202,20 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
     fn create_dynamic_bag(
         params: DynBagCreationParameters<T>,
     ) -> Result<(Bag<T>, BTreeSet<T::DataObjectId>), DispatchError> {
-        // ensure data object state bloat bond
-        ensure!(
-            params.expected_data_object_state_bloat_bond
-                == Self::data_object_state_bloat_bond_value(),
-            Error::<T>::DataObjectStateBloatBondChanged,
-        );
+        if !params.object_creation_list.is_empty() {
+            // ensure data object state bloat bond
+            ensure!(
+                params.expected_data_object_state_bloat_bond
+                    == Self::data_object_state_bloat_bond_value(),
+                Error::<T>::DataObjectStateBloatBondChanged,
+            );
 
-        // ensure specified data fee == storage data fee
-        ensure!(
-            params.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
-            Error::<T>::DataSizeFeeChanged,
-        );
+            // ensure specified data fee == storage data fee
+            ensure!(
+                params.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
+                Error::<T>::DataSizeFeeChanged,
+            );
+        }
 
         Self::validate_storage_buckets_for_dynamic_bag_type(
             params.bag_id.clone().into(),

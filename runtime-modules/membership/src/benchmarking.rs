@@ -802,7 +802,7 @@ benchmarks! {
     // impl_benchmark_test_suite!(Module, tests::mock::build_test_externalities(), tests::mock::Test)
     impl_benchmark_test_suite!(
         Module,
-        tests::mock::TestExternalitiesBuilder::<tests::mock::Test>::default().with_lead().build(),
+        tests::mock::TestExternalitiesBuilder::default().with_lead().build(),
         tests::mock::Test
     )
 }
