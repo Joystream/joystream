@@ -11,7 +11,7 @@ cd $SCRIPT_PATH
 # Only output from this script should be the container id of the node at the very end
 
 # Location that will be mounted as the /data volume in containers
-# This is where the initial members and balances files and generated chainspec files will be located.
+# This is where the initial balances files and generated chainspec files will be located.
 export DATA_PATH=${DATA_PATH:=$(pwd)/data}
 mkdir -p ${DATA_PATH}
 

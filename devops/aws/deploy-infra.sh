@@ -49,10 +49,6 @@ aws cloudformation deploy \
     TotalNumberOfInstancesInGroups=$TotalNumberOfInstancesInGroups \
     VolumeSize=$VOLUME_SIZE
 
-# if [ $? -ne 0 ]; then
-#   exit 1
-# fi
-
 # Install additional Ansible roles from requirements
 ansible-galaxy install -r requirements.yml
 

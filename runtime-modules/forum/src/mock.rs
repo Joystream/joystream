@@ -1075,14 +1075,10 @@ pub fn react_post_mock(
 /// Create default genesis config
 pub fn default_genesis_config() -> forum::GenesisConfig<Runtime> {
     forum::GenesisConfig::<Runtime> {
-        category_by_id: vec![],
         next_category_id: 1,
         category_counter: 0,
-        thread_by_id: vec![],
-        post_by_id: vec![],
         next_thread_id: 1,
         next_post_id: 1,
-        category_by_moderator: vec![],
     }
 }
 
