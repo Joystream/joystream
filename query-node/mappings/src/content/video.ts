@@ -114,6 +114,7 @@ export async function processCreateVideoMessage(
     createdInBlock: event.blockNumber,
     isCommentSectionEnabled: true,
     isReactionFeatureEnabled: true,
+    videoStateBloatBond: contentCreationParameters.expectedVideoStateBloatBond,
     commentsCount: 0,
     reactionsCount: 0,
   })

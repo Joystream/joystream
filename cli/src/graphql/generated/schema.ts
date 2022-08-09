@@ -8412,6 +8412,8 @@ export type CouncilStage = CouncilStageAnnouncing | CouncilStageElection | Counc
 export type CouncilStageAnnouncing = {
   /** Number of candidates aspiring to be elected as council members. */
   candidatesCount: Scalars['Float']
+  /** Block number at which the stage ends */
+  endsAt: Scalars['Int']
 }
 
 export type CouncilStageElection = {
@@ -8420,7 +8422,8 @@ export type CouncilStageElection = {
 }
 
 export type CouncilStageIdle = {
-  dummy?: Maybe<Scalars['Int']>
+  /** Block number at which the stage ends */
+  endsAt: Scalars['Int']
 }
 
 export type CouncilStageUpdate = BaseGraphQlObject & {
@@ -10287,6 +10290,7 @@ export enum EventTypeOptions {
   MemberProfileUpdatedEvent = 'MemberProfileUpdatedEvent',
   MemberVerificationStatusUpdatedEvent = 'MemberVerificationStatusUpdatedEvent',
   MembershipBoughtEvent = 'MembershipBoughtEvent',
+  MembershipGiftedEvent = 'MembershipGiftedEvent',
   MembershipPriceUpdatedEvent = 'MembershipPriceUpdatedEvent',
   MetaprotocolTransactionStatusEvent = 'MetaprotocolTransactionStatusEvent',
   NewCandidateEvent = 'NewCandidateEvent',
@@ -12915,6 +12919,7 @@ export type MemberMetadata = BaseGraphQlObject & {
   memberprofileupdatedeventnewMetadata?: Maybe<Array<MemberProfileUpdatedEvent>>
   membershipmetadata?: Maybe<Array<Membership>>
   membershipboughteventmetadata?: Maybe<Array<MembershipBoughtEvent>>
+  membershipgiftedeventmetadata?: Maybe<Array<MembershipGiftedEvent>>
 }
 
 export type MemberMetadataConnection = {
@@ -13001,6 +13006,9 @@ export type MemberMetadataWhereInput = {
   membershipboughteventmetadata_none?: Maybe<MembershipBoughtEventWhereInput>
   membershipboughteventmetadata_some?: Maybe<MembershipBoughtEventWhereInput>
   membershipboughteventmetadata_every?: Maybe<MembershipBoughtEventWhereInput>
+  membershipgiftedeventmetadata_none?: Maybe<MembershipGiftedEventWhereInput>
+  membershipgiftedeventmetadata_some?: Maybe<MembershipGiftedEventWhereInput>
+  membershipgiftedeventmetadata_every?: Maybe<MembershipGiftedEventWhereInput>
   AND?: Maybe<Array<MemberMetadataWhereInput>>
   OR?: Maybe<Array<MemberMetadataWhereInput>>
   NOT?: Maybe<Array<MemberMetadataWhereInput>>
@@ -13388,6 +13396,7 @@ export type Membership = BaseGraphQlObject & {
   memberverificationstatusupdatedeventmember?: Maybe<Array<MemberVerificationStatusUpdatedEvent>>
   membershipboughteventnewMember?: Maybe<Array<MembershipBoughtEvent>>
   membershipboughteventreferrer?: Maybe<Array<MembershipBoughtEvent>>
+  membershipgiftedeventnewMember?: Maybe<Array<MembershipGiftedEvent>>
   nftboughteventmember?: Maybe<Array<NftBoughtEvent>>
   nftboughteventownerMember?: Maybe<Array<NftBoughtEvent>>
   nftissuedeventownerMember?: Maybe<Array<NftIssuedEvent>>
@@ -13616,6 +13625,11 @@ export type MembershipEntryGenesis = {
   phantom?: Maybe<Scalars['Int']>
 }
 
+export type MembershipEntryGifted = {
+  /** The event the member was gifted in */
+  membershipGiftedEvent?: Maybe<MembershipGiftedEvent>
+}
+
 export type MembershipEntryInvited = {
   /** The event the member was invited in */
   memberInvitedEvent?: Maybe<MemberInvitedEvent>
@@ -13626,6 +13640,170 @@ export type MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited
 export type MembershipEntryPaid = {
   /** The event the membership was bought in */
   membershipBoughtEvent?: Maybe<MembershipBoughtEvent>
+}
+
+export type MembershipGiftedEvent = Event &
+  BaseGraphQlObject & {
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['ID']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['ID']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['ID']>
+    version: Scalars['Int']
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    newMember: Membership
+    newMemberId: Scalars['String']
+    /** New member root account in SS58 encoding. */
+    rootAccount: Scalars['String']
+    /** New member controller in SS58 encoding. */
+    controllerAccount: Scalars['String']
+    /** New member handle. */
+    handle: Scalars['String']
+    metadata: MemberMetadata
+    metadataId: Scalars['String']
+  }
+
+export type MembershipGiftedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<MembershipGiftedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type MembershipGiftedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  newMember: Scalars['ID']
+  rootAccount: Scalars['String']
+  controllerAccount: Scalars['String']
+  handle: Scalars['String']
+  metadata: Scalars['ID']
+}
+
+export type MembershipGiftedEventEdge = {
+  node: MembershipGiftedEvent
+  cursor: Scalars['String']
+}
+
+export enum MembershipGiftedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  NewMemberAsc = 'newMember_ASC',
+  NewMemberDesc = 'newMember_DESC',
+  RootAccountAsc = 'rootAccount_ASC',
+  RootAccountDesc = 'rootAccount_DESC',
+  ControllerAccountAsc = 'controllerAccount_ASC',
+  ControllerAccountDesc = 'controllerAccount_DESC',
+  HandleAsc = 'handle_ASC',
+  HandleDesc = 'handle_DESC',
+  MetadataAsc = 'metadata_ASC',
+  MetadataDesc = 'metadata_DESC',
+}
+
+export type MembershipGiftedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  newMember?: Maybe<Scalars['ID']>
+  rootAccount?: Maybe<Scalars['String']>
+  controllerAccount?: Maybe<Scalars['String']>
+  handle?: Maybe<Scalars['String']>
+  metadata?: Maybe<Scalars['ID']>
+}
+
+export type MembershipGiftedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rootAccount_eq?: Maybe<Scalars['String']>
+  rootAccount_contains?: Maybe<Scalars['String']>
+  rootAccount_startsWith?: Maybe<Scalars['String']>
+  rootAccount_endsWith?: Maybe<Scalars['String']>
+  rootAccount_in?: Maybe<Array<Scalars['String']>>
+  controllerAccount_eq?: Maybe<Scalars['String']>
+  controllerAccount_contains?: Maybe<Scalars['String']>
+  controllerAccount_startsWith?: Maybe<Scalars['String']>
+  controllerAccount_endsWith?: Maybe<Scalars['String']>
+  controllerAccount_in?: Maybe<Array<Scalars['String']>>
+  handle_eq?: Maybe<Scalars['String']>
+  handle_contains?: Maybe<Scalars['String']>
+  handle_startsWith?: Maybe<Scalars['String']>
+  handle_endsWith?: Maybe<Scalars['String']>
+  handle_in?: Maybe<Array<Scalars['String']>>
+  newMember?: Maybe<MembershipWhereInput>
+  metadata?: Maybe<MemberMetadataWhereInput>
+  AND?: Maybe<Array<MembershipGiftedEventWhereInput>>
+  OR?: Maybe<Array<MembershipGiftedEventWhereInput>>
+  NOT?: Maybe<Array<MembershipGiftedEventWhereInput>>
+}
+
+export type MembershipGiftedEventWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export enum MembershipOrderByInput {
@@ -14153,6 +14331,9 @@ export type MembershipWhereInput = {
   membershipboughteventreferrer_none?: Maybe<MembershipBoughtEventWhereInput>
   membershipboughteventreferrer_some?: Maybe<MembershipBoughtEventWhereInput>
   membershipboughteventreferrer_every?: Maybe<MembershipBoughtEventWhereInput>
+  membershipgiftedeventnewMember_none?: Maybe<MembershipGiftedEventWhereInput>
+  membershipgiftedeventnewMember_some?: Maybe<MembershipGiftedEventWhereInput>
+  membershipgiftedeventnewMember_every?: Maybe<MembershipGiftedEventWhereInput>
   nftboughteventmember_none?: Maybe<NftBoughtEventWhereInput>
   nftboughteventmember_some?: Maybe<NftBoughtEventWhereInput>
   nftboughteventmember_every?: Maybe<NftBoughtEventWhereInput>
@@ -20367,6 +20548,9 @@ export type Query = {
   membershipBoughtEvents: Array<MembershipBoughtEvent>
   membershipBoughtEventByUniqueInput?: Maybe<MembershipBoughtEvent>
   membershipBoughtEventsConnection: MembershipBoughtEventConnection
+  membershipGiftedEvents: Array<MembershipGiftedEvent>
+  membershipGiftedEventByUniqueInput?: Maybe<MembershipGiftedEvent>
+  membershipGiftedEventsConnection: MembershipGiftedEventConnection
   membershipPriceUpdatedEvents: Array<MembershipPriceUpdatedEvent>
   membershipPriceUpdatedEventByUniqueInput?: Maybe<MembershipPriceUpdatedEvent>
   membershipPriceUpdatedEventsConnection: MembershipPriceUpdatedEventConnection
@@ -20718,7 +20902,7 @@ export type QueryAnnouncingPeriodStartedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<AnnouncingPeriodStartedEventWhereInput>
-  orderBy?: Maybe<AnnouncingPeriodStartedEventOrderByInput>
+  orderBy?: Maybe<Array<AnnouncingPeriodStartedEventOrderByInput>>
 }
 
 export type QueryApplicationFormQuestionAnswersArgs = {
@@ -20738,7 +20922,7 @@ export type QueryApplicationFormQuestionAnswersConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ApplicationFormQuestionAnswerWhereInput>
-  orderBy?: Maybe<ApplicationFormQuestionAnswerOrderByInput>
+  orderBy?: Maybe<Array<ApplicationFormQuestionAnswerOrderByInput>>
 }
 
 export type QueryApplicationFormQuestionsArgs = {
@@ -20758,7 +20942,7 @@ export type QueryApplicationFormQuestionsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ApplicationFormQuestionWhereInput>
-  orderBy?: Maybe<ApplicationFormQuestionOrderByInput>
+  orderBy?: Maybe<Array<ApplicationFormQuestionOrderByInput>>
 }
 
 export type QueryApplicationWithdrawnEventsArgs = {
@@ -20778,7 +20962,7 @@ export type QueryApplicationWithdrawnEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ApplicationWithdrawnEventWhereInput>
-  orderBy?: Maybe<ApplicationWithdrawnEventOrderByInput>
+  orderBy?: Maybe<Array<ApplicationWithdrawnEventOrderByInput>>
 }
 
 export type QueryAppliedOnOpeningEventsArgs = {
@@ -20798,7 +20982,7 @@ export type QueryAppliedOnOpeningEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<AppliedOnOpeningEventWhereInput>
-  orderBy?: Maybe<AppliedOnOpeningEventOrderByInput>
+  orderBy?: Maybe<Array<AppliedOnOpeningEventOrderByInput>>
 }
 
 export type QueryAuctionBidCanceledEventsArgs = {
@@ -20818,7 +21002,7 @@ export type QueryAuctionBidCanceledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<AuctionBidCanceledEventWhereInput>
-  orderBy?: Maybe<AuctionBidCanceledEventOrderByInput>
+  orderBy?: Maybe<Array<AuctionBidCanceledEventOrderByInput>>
 }
 
 export type QueryAuctionBidMadeEventsArgs = {
@@ -20838,7 +21022,7 @@ export type QueryAuctionBidMadeEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<AuctionBidMadeEventWhereInput>
-  orderBy?: Maybe<AuctionBidMadeEventOrderByInput>
+  orderBy?: Maybe<Array<AuctionBidMadeEventOrderByInput>>
 }
 
 export type QueryAuctionCanceledEventsArgs = {
@@ -20858,7 +21042,7 @@ export type QueryAuctionCanceledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<AuctionCanceledEventWhereInput>
-  orderBy?: Maybe<AuctionCanceledEventOrderByInput>
+  orderBy?: Maybe<Array<AuctionCanceledEventOrderByInput>>
 }
 
 export type QueryAuctionsArgs = {
@@ -20878,7 +21062,7 @@ export type QueryAuctionsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<AuctionWhereInput>
-  orderBy?: Maybe<AuctionOrderByInput>
+  orderBy?: Maybe<Array<AuctionOrderByInput>>
 }
 
 export type QueryBidMadeCompletingAuctionEventsArgs = {
@@ -20898,7 +21082,7 @@ export type QueryBidMadeCompletingAuctionEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BidMadeCompletingAuctionEventWhereInput>
-  orderBy?: Maybe<BidMadeCompletingAuctionEventOrderByInput>
+  orderBy?: Maybe<Array<BidMadeCompletingAuctionEventOrderByInput>>
 }
 
 export type QueryBidsArgs = {
@@ -20918,7 +21102,7 @@ export type QueryBidsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BidWhereInput>
-  orderBy?: Maybe<BidOrderByInput>
+  orderBy?: Maybe<Array<BidOrderByInput>>
 }
 
 export type QueryBountyCanceledEventsArgs = {
@@ -20938,7 +21122,7 @@ export type QueryBountyCanceledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyCanceledEventWhereInput>
-  orderBy?: Maybe<BountyCanceledEventOrderByInput>
+  orderBy?: Maybe<Array<BountyCanceledEventOrderByInput>>
 }
 
 export type QueryBountyContributionsArgs = {
@@ -20958,7 +21142,7 @@ export type QueryBountyContributionsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyContributionWhereInput>
-  orderBy?: Maybe<BountyContributionOrderByInput>
+  orderBy?: Maybe<Array<BountyContributionOrderByInput>>
 }
 
 export type QueryBountyCreatedEventsArgs = {
@@ -20978,7 +21162,7 @@ export type QueryBountyCreatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyCreatedEventWhereInput>
-  orderBy?: Maybe<BountyCreatedEventOrderByInput>
+  orderBy?: Maybe<Array<BountyCreatedEventOrderByInput>>
 }
 
 export type QueryBountyCreatorCherryWithdrawalEventsArgs = {
@@ -20998,7 +21182,7 @@ export type QueryBountyCreatorCherryWithdrawalEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyCreatorCherryWithdrawalEventWhereInput>
-  orderBy?: Maybe<BountyCreatorCherryWithdrawalEventOrderByInput>
+  orderBy?: Maybe<Array<BountyCreatorCherryWithdrawalEventOrderByInput>>
 }
 
 export type QueryBountyEntrantWhitelistsArgs = {
@@ -21018,7 +21202,7 @@ export type QueryBountyEntrantWhitelistsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyEntrantWhitelistWhereInput>
-  orderBy?: Maybe<BountyEntrantWhitelistOrderByInput>
+  orderBy?: Maybe<Array<BountyEntrantWhitelistOrderByInput>>
 }
 
 export type QueryBountyEntriesArgs = {
@@ -21038,7 +21222,7 @@ export type QueryBountyEntriesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyEntryWhereInput>
-  orderBy?: Maybe<BountyEntryOrderByInput>
+  orderBy?: Maybe<Array<BountyEntryOrderByInput>>
 }
 
 export type QueryBountyFundedEventsArgs = {
@@ -21058,7 +21242,7 @@ export type QueryBountyFundedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyFundedEventWhereInput>
-  orderBy?: Maybe<BountyFundedEventOrderByInput>
+  orderBy?: Maybe<Array<BountyFundedEventOrderByInput>>
 }
 
 export type QueryBountyFundingWithdrawalEventsArgs = {
@@ -21078,7 +21262,7 @@ export type QueryBountyFundingWithdrawalEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyFundingWithdrawalEventWhereInput>
-  orderBy?: Maybe<BountyFundingWithdrawalEventOrderByInput>
+  orderBy?: Maybe<Array<BountyFundingWithdrawalEventOrderByInput>>
 }
 
 export type QueryBountyMaxFundingReachedEventsArgs = {
@@ -21098,7 +21282,7 @@ export type QueryBountyMaxFundingReachedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyMaxFundingReachedEventWhereInput>
-  orderBy?: Maybe<BountyMaxFundingReachedEventOrderByInput>
+  orderBy?: Maybe<Array<BountyMaxFundingReachedEventOrderByInput>>
 }
 
 export type QueryBountyRemovedEventsArgs = {
@@ -21118,7 +21302,7 @@ export type QueryBountyRemovedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyRemovedEventWhereInput>
-  orderBy?: Maybe<BountyRemovedEventOrderByInput>
+  orderBy?: Maybe<Array<BountyRemovedEventOrderByInput>>
 }
 
 export type QueryBountyVetoedEventsArgs = {
@@ -21138,7 +21322,7 @@ export type QueryBountyVetoedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyVetoedEventWhereInput>
-  orderBy?: Maybe<BountyVetoedEventOrderByInput>
+  orderBy?: Maybe<Array<BountyVetoedEventOrderByInput>>
 }
 
 export type QueryBountiesArgs = {
@@ -21158,7 +21342,7 @@ export type QueryBountiesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BountyWhereInput>
-  orderBy?: Maybe<BountyOrderByInput>
+  orderBy?: Maybe<Array<BountyOrderByInput>>
 }
 
 export type QueryBudgetBalanceSetEventsArgs = {
@@ -21178,7 +21362,7 @@ export type QueryBudgetBalanceSetEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetBalanceSetEventWhereInput>
-  orderBy?: Maybe<BudgetBalanceSetEventOrderByInput>
+  orderBy?: Maybe<Array<BudgetBalanceSetEventOrderByInput>>
 }
 
 export type QueryBudgetIncrementUpdatedEventsArgs = {
@@ -21198,7 +21382,7 @@ export type QueryBudgetIncrementUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetIncrementUpdatedEventWhereInput>
-  orderBy?: Maybe<BudgetIncrementUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<BudgetIncrementUpdatedEventOrderByInput>>
 }
 
 export type QueryBudgetRefillEventsArgs = {
@@ -21218,7 +21402,7 @@ export type QueryBudgetRefillEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetRefillEventWhereInput>
-  orderBy?: Maybe<BudgetRefillEventOrderByInput>
+  orderBy?: Maybe<Array<BudgetRefillEventOrderByInput>>
 }
 
 export type QueryBudgetRefillPlannedEventsArgs = {
@@ -21238,7 +21422,7 @@ export type QueryBudgetRefillPlannedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetRefillPlannedEventWhereInput>
-  orderBy?: Maybe<BudgetRefillPlannedEventOrderByInput>
+  orderBy?: Maybe<Array<BudgetRefillPlannedEventOrderByInput>>
 }
 
 export type QueryBudgetSetEventsArgs = {
@@ -21258,7 +21442,7 @@ export type QueryBudgetSetEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetSetEventWhereInput>
-  orderBy?: Maybe<BudgetSetEventOrderByInput>
+  orderBy?: Maybe<Array<BudgetSetEventOrderByInput>>
 }
 
 export type QueryBudgetSpendingEventsArgs = {
@@ -21278,7 +21462,7 @@ export type QueryBudgetSpendingEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetSpendingEventWhereInput>
-  orderBy?: Maybe<BudgetSpendingEventOrderByInput>
+  orderBy?: Maybe<Array<BudgetSpendingEventOrderByInput>>
 }
 
 export type QueryBudgetUpdatedEventsArgs = {
@@ -21298,7 +21482,7 @@ export type QueryBudgetUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetUpdatedEventWhereInput>
-  orderBy?: Maybe<BudgetUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<BudgetUpdatedEventOrderByInput>>
 }
 
 export type QueryBuyNowCanceledEventsArgs = {
@@ -21318,7 +21502,7 @@ export type QueryBuyNowCanceledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BuyNowCanceledEventWhereInput>
-  orderBy?: Maybe<BuyNowCanceledEventOrderByInput>
+  orderBy?: Maybe<Array<BuyNowCanceledEventOrderByInput>>
 }
 
 export type QueryBuyNowPriceUpdatedEventsArgs = {
@@ -21338,7 +21522,7 @@ export type QueryBuyNowPriceUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<BuyNowPriceUpdatedEventWhereInput>
-  orderBy?: Maybe<BuyNowPriceUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<BuyNowPriceUpdatedEventOrderByInput>>
 }
 
 export type QueryCandidacyNoteMetadataArgs = {
@@ -21358,7 +21542,7 @@ export type QueryCandidacyNoteMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CandidacyNoteMetadataWhereInput>
-  orderBy?: Maybe<CandidacyNoteMetadataOrderByInput>
+  orderBy?: Maybe<Array<CandidacyNoteMetadataOrderByInput>>
 }
 
 export type QueryCandidacyNoteSetEventsArgs = {
@@ -21378,7 +21562,7 @@ export type QueryCandidacyNoteSetEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CandidacyNoteSetEventWhereInput>
-  orderBy?: Maybe<CandidacyNoteSetEventOrderByInput>
+  orderBy?: Maybe<Array<CandidacyNoteSetEventOrderByInput>>
 }
 
 export type QueryCandidacyStakeReleaseEventsArgs = {
@@ -21398,7 +21582,7 @@ export type QueryCandidacyStakeReleaseEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CandidacyStakeReleaseEventWhereInput>
-  orderBy?: Maybe<CandidacyStakeReleaseEventOrderByInput>
+  orderBy?: Maybe<Array<CandidacyStakeReleaseEventOrderByInput>>
 }
 
 export type QueryCandidacyWithdrawEventsArgs = {
@@ -21418,7 +21602,7 @@ export type QueryCandidacyWithdrawEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CandidacyWithdrawEventWhereInput>
-  orderBy?: Maybe<CandidacyWithdrawEventOrderByInput>
+  orderBy?: Maybe<Array<CandidacyWithdrawEventOrderByInput>>
 }
 
 export type QueryCandidatesArgs = {
@@ -21438,7 +21622,7 @@ export type QueryCandidatesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CandidateWhereInput>
-  orderBy?: Maybe<CandidateOrderByInput>
+  orderBy?: Maybe<Array<CandidateOrderByInput>>
 }
 
 export type QueryCastVotesArgs = {
@@ -21458,7 +21642,7 @@ export type QueryCastVotesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CastVoteWhereInput>
-  orderBy?: Maybe<CastVoteOrderByInput>
+  orderBy?: Maybe<Array<CastVoteOrderByInput>>
 }
 
 export type QueryCategoryArchivalStatusUpdatedEventsArgs = {
@@ -21478,7 +21662,7 @@ export type QueryCategoryArchivalStatusUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CategoryArchivalStatusUpdatedEventWhereInput>
-  orderBy?: Maybe<CategoryArchivalStatusUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<CategoryArchivalStatusUpdatedEventOrderByInput>>
 }
 
 export type QueryCategoryCreatedEventsArgs = {
@@ -21498,7 +21682,7 @@ export type QueryCategoryCreatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CategoryCreatedEventWhereInput>
-  orderBy?: Maybe<CategoryCreatedEventOrderByInput>
+  orderBy?: Maybe<Array<CategoryCreatedEventOrderByInput>>
 }
 
 export type QueryCategoryDeletedEventsArgs = {
@@ -21518,7 +21702,7 @@ export type QueryCategoryDeletedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CategoryDeletedEventWhereInput>
-  orderBy?: Maybe<CategoryDeletedEventOrderByInput>
+  orderBy?: Maybe<Array<CategoryDeletedEventOrderByInput>>
 }
 
 export type QueryCategoryMembershipOfModeratorUpdatedEventsArgs = {
@@ -21538,7 +21722,7 @@ export type QueryCategoryMembershipOfModeratorUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CategoryMembershipOfModeratorUpdatedEventWhereInput>
-  orderBy?: Maybe<CategoryMembershipOfModeratorUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<CategoryMembershipOfModeratorUpdatedEventOrderByInput>>
 }
 
 export type QueryCategoryStickyThreadUpdateEventsArgs = {
@@ -21558,7 +21742,7 @@ export type QueryCategoryStickyThreadUpdateEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CategoryStickyThreadUpdateEventWhereInput>
-  orderBy?: Maybe<CategoryStickyThreadUpdateEventOrderByInput>
+  orderBy?: Maybe<Array<CategoryStickyThreadUpdateEventOrderByInput>>
 }
 
 export type QueryChannelAssetsDeletedByModeratorEventsArgs = {
@@ -21578,7 +21762,7 @@ export type QueryChannelAssetsDeletedByModeratorEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ChannelAssetsDeletedByModeratorEventWhereInput>
-  orderBy?: Maybe<ChannelAssetsDeletedByModeratorEventOrderByInput>
+  orderBy?: Maybe<Array<ChannelAssetsDeletedByModeratorEventOrderByInput>>
 }
 
 export type QueryChannelCategoriesArgs = {
@@ -21598,7 +21782,7 @@ export type QueryChannelCategoriesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ChannelCategoryWhereInput>
-  orderBy?: Maybe<ChannelCategoryOrderByInput>
+  orderBy?: Maybe<Array<ChannelCategoryOrderByInput>>
 }
 
 export type QueryChannelDeletedByModeratorEventsArgs = {
@@ -21618,7 +21802,7 @@ export type QueryChannelDeletedByModeratorEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ChannelDeletedByModeratorEventWhereInput>
-  orderBy?: Maybe<ChannelDeletedByModeratorEventOrderByInput>
+  orderBy?: Maybe<Array<ChannelDeletedByModeratorEventOrderByInput>>
 }
 
 export type QueryChannelNftCollectorsArgs = {
@@ -21638,7 +21822,7 @@ export type QueryChannelNftCollectorsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ChannelNftCollectorsWhereInput>
-  orderBy?: Maybe<ChannelNftCollectorsOrderByInput>
+  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
 }
 
 export type QueryChannelsArgs = {
@@ -21658,7 +21842,7 @@ export type QueryChannelsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ChannelWhereInput>
-  orderBy?: Maybe<ChannelOrderByInput>
+  orderBy?: Maybe<Array<ChannelOrderByInput>>
 }
 
 export type QueryCommentCreatedEventsArgs = {
@@ -21678,7 +21862,7 @@ export type QueryCommentCreatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentCreatedEventWhereInput>
-  orderBy?: Maybe<CommentCreatedEventOrderByInput>
+  orderBy?: Maybe<Array<CommentCreatedEventOrderByInput>>
 }
 
 export type QueryCommentDeletedEventsArgs = {
@@ -21698,7 +21882,7 @@ export type QueryCommentDeletedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentDeletedEventWhereInput>
-  orderBy?: Maybe<CommentDeletedEventOrderByInput>
+  orderBy?: Maybe<Array<CommentDeletedEventOrderByInput>>
 }
 
 export type QueryCommentModeratedEventsArgs = {
@@ -21718,7 +21902,7 @@ export type QueryCommentModeratedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentModeratedEventWhereInput>
-  orderBy?: Maybe<CommentModeratedEventOrderByInput>
+  orderBy?: Maybe<Array<CommentModeratedEventOrderByInput>>
 }
 
 export type QueryCommentPinnedEventsArgs = {
@@ -21738,7 +21922,7 @@ export type QueryCommentPinnedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentPinnedEventWhereInput>
-  orderBy?: Maybe<CommentPinnedEventOrderByInput>
+  orderBy?: Maybe<Array<CommentPinnedEventOrderByInput>>
 }
 
 export type QueryCommentReactedEventsArgs = {
@@ -21758,7 +21942,7 @@ export type QueryCommentReactedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentReactedEventWhereInput>
-  orderBy?: Maybe<CommentReactedEventOrderByInput>
+  orderBy?: Maybe<Array<CommentReactedEventOrderByInput>>
 }
 
 export type QueryCommentReactionsArgs = {
@@ -21778,7 +21962,7 @@ export type QueryCommentReactionsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentReactionWhereInput>
-  orderBy?: Maybe<CommentReactionOrderByInput>
+  orderBy?: Maybe<Array<CommentReactionOrderByInput>>
 }
 
 export type QueryCommentReactionsCountByReactionIdsArgs = {
@@ -21798,7 +21982,7 @@ export type QueryCommentReactionsCountByReactionIdsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentReactionsCountByReactionIdWhereInput>
-  orderBy?: Maybe<CommentReactionsCountByReactionIdOrderByInput>
+  orderBy?: Maybe<Array<CommentReactionsCountByReactionIdOrderByInput>>
 }
 
 export type QueryCommentTextUpdatedEventsArgs = {
@@ -21818,7 +22002,7 @@ export type QueryCommentTextUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentTextUpdatedEventWhereInput>
-  orderBy?: Maybe<CommentTextUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<CommentTextUpdatedEventOrderByInput>>
 }
 
 export type QueryCommentsArgs = {
@@ -21838,7 +22022,7 @@ export type QueryCommentsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentWhereInput>
-  orderBy?: Maybe<CommentOrderByInput>
+  orderBy?: Maybe<Array<CommentOrderByInput>>
 }
 
 export type QueryCouncilMembersArgs = {
@@ -21858,7 +22042,7 @@ export type QueryCouncilMembersConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CouncilMemberWhereInput>
-  orderBy?: Maybe<CouncilMemberOrderByInput>
+  orderBy?: Maybe<Array<CouncilMemberOrderByInput>>
 }
 
 export type QueryCouncilStageUpdatesArgs = {
@@ -21878,7 +22062,7 @@ export type QueryCouncilStageUpdatesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CouncilStageUpdateWhereInput>
-  orderBy?: Maybe<CouncilStageUpdateOrderByInput>
+  orderBy?: Maybe<Array<CouncilStageUpdateOrderByInput>>
 }
 
 export type QueryCouncilorRewardUpdatedEventsArgs = {
@@ -21898,7 +22082,7 @@ export type QueryCouncilorRewardUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CouncilorRewardUpdatedEventWhereInput>
-  orderBy?: Maybe<CouncilorRewardUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<CouncilorRewardUpdatedEventOrderByInput>>
 }
 
 export type QueryCuratorGroupsArgs = {
@@ -21918,7 +22102,7 @@ export type QueryCuratorGroupsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CuratorGroupWhereInput>
-  orderBy?: Maybe<CuratorGroupOrderByInput>
+  orderBy?: Maybe<Array<CuratorGroupOrderByInput>>
 }
 
 export type QueryCuratorsArgs = {
@@ -21938,7 +22122,7 @@ export type QueryCuratorsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<CuratorWhereInput>
-  orderBy?: Maybe<CuratorOrderByInput>
+  orderBy?: Maybe<Array<CuratorOrderByInput>>
 }
 
 export type QueryDistributionBucketFamilyGeographicAreasArgs = {
@@ -21958,7 +22142,7 @@ export type QueryDistributionBucketFamilyGeographicAreasConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<DistributionBucketFamilyGeographicAreaWhereInput>
-  orderBy?: Maybe<DistributionBucketFamilyGeographicAreaOrderByInput>
+  orderBy?: Maybe<Array<DistributionBucketFamilyGeographicAreaOrderByInput>>
 }
 
 export type QueryDistributionBucketFamilyMetadataArgs = {
@@ -21978,7 +22162,7 @@ export type QueryDistributionBucketFamilyMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<DistributionBucketFamilyMetadataWhereInput>
-  orderBy?: Maybe<DistributionBucketFamilyMetadataOrderByInput>
+  orderBy?: Maybe<Array<DistributionBucketFamilyMetadataOrderByInput>>
 }
 
 export type QueryDistributionBucketFamiliesArgs = {
@@ -21998,7 +22182,7 @@ export type QueryDistributionBucketFamiliesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<DistributionBucketFamilyWhereInput>
-  orderBy?: Maybe<DistributionBucketFamilyOrderByInput>
+  orderBy?: Maybe<Array<DistributionBucketFamilyOrderByInput>>
 }
 
 export type QueryDistributionBucketOperatorMetadataArgs = {
@@ -22018,7 +22202,7 @@ export type QueryDistributionBucketOperatorMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<DistributionBucketOperatorMetadataWhereInput>
-  orderBy?: Maybe<DistributionBucketOperatorMetadataOrderByInput>
+  orderBy?: Maybe<Array<DistributionBucketOperatorMetadataOrderByInput>>
 }
 
 export type QueryDistributionBucketOperatorsArgs = {
@@ -22038,7 +22222,7 @@ export type QueryDistributionBucketOperatorsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<DistributionBucketOperatorWhereInput>
-  orderBy?: Maybe<DistributionBucketOperatorOrderByInput>
+  orderBy?: Maybe<Array<DistributionBucketOperatorOrderByInput>>
 }
 
 export type QueryDistributionBucketsArgs = {
@@ -22058,7 +22242,7 @@ export type QueryDistributionBucketsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<DistributionBucketWhereInput>
-  orderBy?: Maybe<DistributionBucketOrderByInput>
+  orderBy?: Maybe<Array<DistributionBucketOrderByInput>>
 }
 
 export type QueryElectedCouncilsArgs = {
@@ -22078,7 +22262,7 @@ export type QueryElectedCouncilsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ElectedCouncilWhereInput>
-  orderBy?: Maybe<ElectedCouncilOrderByInput>
+  orderBy?: Maybe<Array<ElectedCouncilOrderByInput>>
 }
 
 export type QueryElectionRoundsArgs = {
@@ -22098,7 +22282,7 @@ export type QueryElectionRoundsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ElectionRoundWhereInput>
-  orderBy?: Maybe<ElectionRoundOrderByInput>
+  orderBy?: Maybe<Array<ElectionRoundOrderByInput>>
 }
 
 export type QueryEnglishAuctionSettledEventsArgs = {
@@ -22118,7 +22302,7 @@ export type QueryEnglishAuctionSettledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<EnglishAuctionSettledEventWhereInput>
-  orderBy?: Maybe<EnglishAuctionSettledEventOrderByInput>
+  orderBy?: Maybe<Array<EnglishAuctionSettledEventOrderByInput>>
 }
 
 export type QueryEnglishAuctionStartedEventsArgs = {
@@ -22138,7 +22322,7 @@ export type QueryEnglishAuctionStartedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<EnglishAuctionStartedEventWhereInput>
-  orderBy?: Maybe<EnglishAuctionStartedEventOrderByInput>
+  orderBy?: Maybe<Array<EnglishAuctionStartedEventOrderByInput>>
 }
 
 export type QueryEventsArgs = {
@@ -22165,7 +22349,7 @@ export type QueryForumCategoriesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ForumCategoryWhereInput>
-  orderBy?: Maybe<ForumCategoryOrderByInput>
+  orderBy?: Maybe<Array<ForumCategoryOrderByInput>>
 }
 
 export type QueryForumPostReactionsArgs = {
@@ -22185,7 +22369,7 @@ export type QueryForumPostReactionsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ForumPostReactionWhereInput>
-  orderBy?: Maybe<ForumPostReactionOrderByInput>
+  orderBy?: Maybe<Array<ForumPostReactionOrderByInput>>
 }
 
 export type QueryForumPostsArgs = {
@@ -22205,7 +22389,7 @@ export type QueryForumPostsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ForumPostWhereInput>
-  orderBy?: Maybe<ForumPostOrderByInput>
+  orderBy?: Maybe<Array<ForumPostOrderByInput>>
 }
 
 export type QueryForumThreadTagsArgs = {
@@ -22225,7 +22409,7 @@ export type QueryForumThreadTagsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ForumThreadTagWhereInput>
-  orderBy?: Maybe<ForumThreadTagOrderByInput>
+  orderBy?: Maybe<Array<ForumThreadTagOrderByInput>>
 }
 
 export type QueryForumThreadsArgs = {
@@ -22245,7 +22429,7 @@ export type QueryForumThreadsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ForumThreadWhereInput>
-  orderBy?: Maybe<ForumThreadOrderByInput>
+  orderBy?: Maybe<Array<ForumThreadOrderByInput>>
 }
 
 export type QueryFundingRequestDestinationsArgs = {
@@ -22265,7 +22449,7 @@ export type QueryFundingRequestDestinationsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<FundingRequestDestinationWhereInput>
-  orderBy?: Maybe<FundingRequestDestinationOrderByInput>
+  orderBy?: Maybe<Array<FundingRequestDestinationOrderByInput>>
 }
 
 export type QueryFundingRequestDestinationsListsArgs = {
@@ -22285,7 +22469,7 @@ export type QueryFundingRequestDestinationsListsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<FundingRequestDestinationsListWhereInput>
-  orderBy?: Maybe<FundingRequestDestinationsListOrderByInput>
+  orderBy?: Maybe<Array<FundingRequestDestinationsListOrderByInput>>
 }
 
 export type QueryGeoCoordinatesArgs = {
@@ -22305,7 +22489,7 @@ export type QueryGeoCoordinatesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<GeoCoordinatesWhereInput>
-  orderBy?: Maybe<GeoCoordinatesOrderByInput>
+  orderBy?: Maybe<Array<GeoCoordinatesOrderByInput>>
 }
 
 export type QueryInitialInvitationBalanceUpdatedEventsArgs = {
@@ -22325,7 +22509,7 @@ export type QueryInitialInvitationBalanceUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<InitialInvitationBalanceUpdatedEventWhereInput>
-  orderBy?: Maybe<InitialInvitationBalanceUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<InitialInvitationBalanceUpdatedEventOrderByInput>>
 }
 
 export type QueryInitialInvitationCountUpdatedEventsArgs = {
@@ -22345,7 +22529,7 @@ export type QueryInitialInvitationCountUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<InitialInvitationCountUpdatedEventWhereInput>
-  orderBy?: Maybe<InitialInvitationCountUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<InitialInvitationCountUpdatedEventOrderByInput>>
 }
 
 export type QueryInvitesTransferredEventsArgs = {
@@ -22365,7 +22549,7 @@ export type QueryInvitesTransferredEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<InvitesTransferredEventWhereInput>
-  orderBy?: Maybe<InvitesTransferredEventOrderByInput>
+  orderBy?: Maybe<Array<InvitesTransferredEventOrderByInput>>
 }
 
 export type QueryLanguagesArgs = {
@@ -22385,7 +22569,7 @@ export type QueryLanguagesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<LanguageWhereInput>
-  orderBy?: Maybe<LanguageOrderByInput>
+  orderBy?: Maybe<Array<LanguageOrderByInput>>
 }
 
 export type QueryLeaderInvitationQuotaUpdatedEventsArgs = {
@@ -22405,7 +22589,7 @@ export type QueryLeaderInvitationQuotaUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<LeaderInvitationQuotaUpdatedEventWhereInput>
-  orderBy?: Maybe<LeaderInvitationQuotaUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<LeaderInvitationQuotaUpdatedEventOrderByInput>>
 }
 
 export type QueryLeaderSetEventsArgs = {
@@ -22425,7 +22609,7 @@ export type QueryLeaderSetEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<LeaderSetEventWhereInput>
-  orderBy?: Maybe<LeaderSetEventOrderByInput>
+  orderBy?: Maybe<Array<LeaderSetEventOrderByInput>>
 }
 
 export type QueryLeaderUnsetEventsArgs = {
@@ -22445,7 +22629,7 @@ export type QueryLeaderUnsetEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<LeaderUnsetEventWhereInput>
-  orderBy?: Maybe<LeaderUnsetEventOrderByInput>
+  orderBy?: Maybe<Array<LeaderUnsetEventOrderByInput>>
 }
 
 export type QueryLicensesArgs = {
@@ -22465,7 +22649,7 @@ export type QueryLicensesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<LicenseWhereInput>
-  orderBy?: Maybe<LicenseOrderByInput>
+  orderBy?: Maybe<Array<LicenseOrderByInput>>
 }
 
 export type QueryMemberAccountsUpdatedEventsArgs = {
@@ -22485,7 +22669,7 @@ export type QueryMemberAccountsUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MemberAccountsUpdatedEventWhereInput>
-  orderBy?: Maybe<MemberAccountsUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<MemberAccountsUpdatedEventOrderByInput>>
 }
 
 export type QueryMemberBannedFromChannelEventsArgs = {
@@ -22505,7 +22689,7 @@ export type QueryMemberBannedFromChannelEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MemberBannedFromChannelEventWhereInput>
-  orderBy?: Maybe<MemberBannedFromChannelEventOrderByInput>
+  orderBy?: Maybe<Array<MemberBannedFromChannelEventOrderByInput>>
 }
 
 export type QueryMemberInvitedEventsArgs = {
@@ -22525,7 +22709,7 @@ export type QueryMemberInvitedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MemberInvitedEventWhereInput>
-  orderBy?: Maybe<MemberInvitedEventOrderByInput>
+  orderBy?: Maybe<Array<MemberInvitedEventOrderByInput>>
 }
 
 export type QueryMemberMetadataArgs = {
@@ -22545,7 +22729,7 @@ export type QueryMemberMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MemberMetadataWhereInput>
-  orderBy?: Maybe<MemberMetadataOrderByInput>
+  orderBy?: Maybe<Array<MemberMetadataOrderByInput>>
 }
 
 export type QueryMemberProfileUpdatedEventsArgs = {
@@ -22565,7 +22749,7 @@ export type QueryMemberProfileUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MemberProfileUpdatedEventWhereInput>
-  orderBy?: Maybe<MemberProfileUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<MemberProfileUpdatedEventOrderByInput>>
 }
 
 export type QueryMemberVerificationStatusUpdatedEventsArgs = {
@@ -22585,7 +22769,7 @@ export type QueryMemberVerificationStatusUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MemberVerificationStatusUpdatedEventWhereInput>
-  orderBy?: Maybe<MemberVerificationStatusUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<MemberVerificationStatusUpdatedEventOrderByInput>>
 }
 
 export type QueryMembershipBoughtEventsArgs = {
@@ -22605,7 +22789,27 @@ export type QueryMembershipBoughtEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MembershipBoughtEventWhereInput>
-  orderBy?: Maybe<MembershipBoughtEventOrderByInput>
+  orderBy?: Maybe<Array<MembershipBoughtEventOrderByInput>>
+}
+
+export type QueryMembershipGiftedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<MembershipGiftedEventWhereInput>
+  orderBy?: Maybe<Array<MembershipGiftedEventOrderByInput>>
+}
+
+export type QueryMembershipGiftedEventByUniqueInputArgs = {
+  where: MembershipGiftedEventWhereUniqueInput
+}
+
+export type QueryMembershipGiftedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<MembershipGiftedEventWhereInput>
+  orderBy?: Maybe<Array<MembershipGiftedEventOrderByInput>>
 }
 
 export type QueryMembershipPriceUpdatedEventsArgs = {
@@ -22625,7 +22829,7 @@ export type QueryMembershipPriceUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MembershipPriceUpdatedEventWhereInput>
-  orderBy?: Maybe<MembershipPriceUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<MembershipPriceUpdatedEventOrderByInput>>
 }
 
 export type QueryMembershipSystemSnapshotsArgs = {
@@ -22645,7 +22849,7 @@ export type QueryMembershipSystemSnapshotsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MembershipSystemSnapshotWhereInput>
-  orderBy?: Maybe<MembershipSystemSnapshotOrderByInput>
+  orderBy?: Maybe<Array<MembershipSystemSnapshotOrderByInput>>
 }
 
 export type QueryMembershipsArgs = {
@@ -22665,7 +22869,7 @@ export type QueryMembershipsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MembershipWhereInput>
-  orderBy?: Maybe<MembershipOrderByInput>
+  orderBy?: Maybe<Array<MembershipOrderByInput>>
 }
 
 export type QueryMetaprotocolTransactionStatusEventsArgs = {
@@ -22685,7 +22889,7 @@ export type QueryMetaprotocolTransactionStatusEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<MetaprotocolTransactionStatusEventWhereInput>
-  orderBy?: Maybe<MetaprotocolTransactionStatusEventOrderByInput>
+  orderBy?: Maybe<Array<MetaprotocolTransactionStatusEventOrderByInput>>
 }
 
 export type QueryNewCandidateEventsArgs = {
@@ -22705,7 +22909,7 @@ export type QueryNewCandidateEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NewCandidateEventWhereInput>
-  orderBy?: Maybe<NewCandidateEventOrderByInput>
+  orderBy?: Maybe<Array<NewCandidateEventOrderByInput>>
 }
 
 export type QueryNewCouncilElectedEventsArgs = {
@@ -22725,7 +22929,7 @@ export type QueryNewCouncilElectedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NewCouncilElectedEventWhereInput>
-  orderBy?: Maybe<NewCouncilElectedEventOrderByInput>
+  orderBy?: Maybe<Array<NewCouncilElectedEventOrderByInput>>
 }
 
 export type QueryNewCouncilNotElectedEventsArgs = {
@@ -22745,7 +22949,7 @@ export type QueryNewCouncilNotElectedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NewCouncilNotElectedEventWhereInput>
-  orderBy?: Maybe<NewCouncilNotElectedEventOrderByInput>
+  orderBy?: Maybe<Array<NewCouncilNotElectedEventOrderByInput>>
 }
 
 export type QueryNewMissedRewardLevelReachedEventsArgs = {
@@ -22765,7 +22969,7 @@ export type QueryNewMissedRewardLevelReachedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NewMissedRewardLevelReachedEventWhereInput>
-  orderBy?: Maybe<NewMissedRewardLevelReachedEventOrderByInput>
+  orderBy?: Maybe<Array<NewMissedRewardLevelReachedEventOrderByInput>>
 }
 
 export type QueryNftBoughtEventsArgs = {
@@ -22785,7 +22989,7 @@ export type QueryNftBoughtEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NftBoughtEventWhereInput>
-  orderBy?: Maybe<NftBoughtEventOrderByInput>
+  orderBy?: Maybe<Array<NftBoughtEventOrderByInput>>
 }
 
 export type QueryNftIssuedEventsArgs = {
@@ -22805,7 +23009,7 @@ export type QueryNftIssuedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NftIssuedEventWhereInput>
-  orderBy?: Maybe<NftIssuedEventOrderByInput>
+  orderBy?: Maybe<Array<NftIssuedEventOrderByInput>>
 }
 
 export type QueryNftSellOrderMadeEventsArgs = {
@@ -22825,7 +23029,7 @@ export type QueryNftSellOrderMadeEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NftSellOrderMadeEventWhereInput>
-  orderBy?: Maybe<NftSellOrderMadeEventOrderByInput>
+  orderBy?: Maybe<Array<NftSellOrderMadeEventOrderByInput>>
 }
 
 export type QueryNftSlingedBackToTheOriginalArtistEventsArgs = {
@@ -22845,7 +23049,7 @@ export type QueryNftSlingedBackToTheOriginalArtistEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NftSlingedBackToTheOriginalArtistEventWhereInput>
-  orderBy?: Maybe<NftSlingedBackToTheOriginalArtistEventOrderByInput>
+  orderBy?: Maybe<Array<NftSlingedBackToTheOriginalArtistEventOrderByInput>>
 }
 
 export type QueryNodeLocationMetadataArgs = {
@@ -22865,7 +23069,7 @@ export type QueryNodeLocationMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NodeLocationMetadataWhereInput>
-  orderBy?: Maybe<NodeLocationMetadataOrderByInput>
+  orderBy?: Maybe<Array<NodeLocationMetadataOrderByInput>>
 }
 
 export type QueryNotEnoughCandidatesEventsArgs = {
@@ -22885,7 +23089,7 @@ export type QueryNotEnoughCandidatesEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<NotEnoughCandidatesEventWhereInput>
-  orderBy?: Maybe<NotEnoughCandidatesEventOrderByInput>
+  orderBy?: Maybe<Array<NotEnoughCandidatesEventOrderByInput>>
 }
 
 export type QueryOfferAcceptedEventsArgs = {
@@ -22905,7 +23109,7 @@ export type QueryOfferAcceptedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OfferAcceptedEventWhereInput>
-  orderBy?: Maybe<OfferAcceptedEventOrderByInput>
+  orderBy?: Maybe<Array<OfferAcceptedEventOrderByInput>>
 }
 
 export type QueryOfferCanceledEventsArgs = {
@@ -22925,7 +23129,7 @@ export type QueryOfferCanceledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OfferCanceledEventWhereInput>
-  orderBy?: Maybe<OfferCanceledEventOrderByInput>
+  orderBy?: Maybe<Array<OfferCanceledEventOrderByInput>>
 }
 
 export type QueryOfferStartedEventsArgs = {
@@ -22945,7 +23149,7 @@ export type QueryOfferStartedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OfferStartedEventWhereInput>
-  orderBy?: Maybe<OfferStartedEventOrderByInput>
+  orderBy?: Maybe<Array<OfferStartedEventOrderByInput>>
 }
 
 export type QueryOpenAuctionBidAcceptedEventsArgs = {
@@ -22965,7 +23169,7 @@ export type QueryOpenAuctionBidAcceptedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
-  orderBy?: Maybe<OpenAuctionBidAcceptedEventOrderByInput>
+  orderBy?: Maybe<Array<OpenAuctionBidAcceptedEventOrderByInput>>
 }
 
 export type QueryOpenAuctionStartedEventsArgs = {
@@ -22985,7 +23189,7 @@ export type QueryOpenAuctionStartedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OpenAuctionStartedEventWhereInput>
-  orderBy?: Maybe<OpenAuctionStartedEventOrderByInput>
+  orderBy?: Maybe<Array<OpenAuctionStartedEventOrderByInput>>
 }
 
 export type QueryOpeningAddedEventsArgs = {
@@ -23005,7 +23209,7 @@ export type QueryOpeningAddedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OpeningAddedEventWhereInput>
-  orderBy?: Maybe<OpeningAddedEventOrderByInput>
+  orderBy?: Maybe<Array<OpeningAddedEventOrderByInput>>
 }
 
 export type QueryOpeningCanceledEventsArgs = {
@@ -23025,7 +23229,7 @@ export type QueryOpeningCanceledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OpeningCanceledEventWhereInput>
-  orderBy?: Maybe<OpeningCanceledEventOrderByInput>
+  orderBy?: Maybe<Array<OpeningCanceledEventOrderByInput>>
 }
 
 export type QueryOpeningFilledEventsArgs = {
@@ -23045,7 +23249,7 @@ export type QueryOpeningFilledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OpeningFilledEventWhereInput>
-  orderBy?: Maybe<OpeningFilledEventOrderByInput>
+  orderBy?: Maybe<Array<OpeningFilledEventOrderByInput>>
 }
 
 export type QueryOracleJudgmentSubmittedEventsArgs = {
@@ -23065,7 +23269,7 @@ export type QueryOracleJudgmentSubmittedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OracleJudgmentSubmittedEventWhereInput>
-  orderBy?: Maybe<OracleJudgmentSubmittedEventOrderByInput>
+  orderBy?: Maybe<Array<OracleJudgmentSubmittedEventOrderByInput>>
 }
 
 export type QueryOwnedNftsArgs = {
@@ -23085,7 +23289,7 @@ export type QueryOwnedNftsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<OwnedNftWhereInput>
-  orderBy?: Maybe<OwnedNftOrderByInput>
+  orderBy?: Maybe<Array<OwnedNftOrderByInput>>
 }
 
 export type QueryPostAddedEventsArgs = {
@@ -23105,7 +23309,7 @@ export type QueryPostAddedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<PostAddedEventWhereInput>
-  orderBy?: Maybe<PostAddedEventOrderByInput>
+  orderBy?: Maybe<Array<PostAddedEventOrderByInput>>
 }
 
 export type QueryPostDeletedEventsArgs = {
@@ -23125,7 +23329,7 @@ export type QueryPostDeletedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<PostDeletedEventWhereInput>
-  orderBy?: Maybe<PostDeletedEventOrderByInput>
+  orderBy?: Maybe<Array<PostDeletedEventOrderByInput>>
 }
 
 export type QueryPostModeratedEventsArgs = {
@@ -23145,7 +23349,7 @@ export type QueryPostModeratedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<PostModeratedEventWhereInput>
-  orderBy?: Maybe<PostModeratedEventOrderByInput>
+  orderBy?: Maybe<Array<PostModeratedEventOrderByInput>>
 }
 
 export type QueryPostReactedEventsArgs = {
@@ -23165,7 +23369,7 @@ export type QueryPostReactedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<PostReactedEventWhereInput>
-  orderBy?: Maybe<PostReactedEventOrderByInput>
+  orderBy?: Maybe<Array<PostReactedEventOrderByInput>>
 }
 
 export type QueryPostTextUpdatedEventsArgs = {
@@ -23185,7 +23389,7 @@ export type QueryPostTextUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<PostTextUpdatedEventWhereInput>
-  orderBy?: Maybe<PostTextUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<PostTextUpdatedEventOrderByInput>>
 }
 
 export type QueryProposalCancelledEventsArgs = {
@@ -23205,7 +23409,7 @@ export type QueryProposalCancelledEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalCancelledEventWhereInput>
-  orderBy?: Maybe<ProposalCancelledEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalCancelledEventOrderByInput>>
 }
 
 export type QueryProposalCreatedEventsArgs = {
@@ -23225,7 +23429,7 @@ export type QueryProposalCreatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalCreatedEventWhereInput>
-  orderBy?: Maybe<ProposalCreatedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalCreatedEventOrderByInput>>
 }
 
 export type QueryProposalDecisionMadeEventsArgs = {
@@ -23245,7 +23449,7 @@ export type QueryProposalDecisionMadeEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDecisionMadeEventWhereInput>
-  orderBy?: Maybe<ProposalDecisionMadeEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalDecisionMadeEventOrderByInput>>
 }
 
 export type QueryProposalDiscussionPostCreatedEventsArgs = {
@@ -23265,7 +23469,7 @@ export type QueryProposalDiscussionPostCreatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionPostCreatedEventWhereInput>
-  orderBy?: Maybe<ProposalDiscussionPostCreatedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalDiscussionPostCreatedEventOrderByInput>>
 }
 
 export type QueryProposalDiscussionPostDeletedEventsArgs = {
@@ -23285,7 +23489,7 @@ export type QueryProposalDiscussionPostDeletedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionPostDeletedEventWhereInput>
-  orderBy?: Maybe<ProposalDiscussionPostDeletedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalDiscussionPostDeletedEventOrderByInput>>
 }
 
 export type QueryProposalDiscussionPostUpdatedEventsArgs = {
@@ -23305,7 +23509,7 @@ export type QueryProposalDiscussionPostUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionPostUpdatedEventWhereInput>
-  orderBy?: Maybe<ProposalDiscussionPostUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalDiscussionPostUpdatedEventOrderByInput>>
 }
 
 export type QueryProposalDiscussionPostsArgs = {
@@ -23325,7 +23529,7 @@ export type QueryProposalDiscussionPostsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionPostWhereInput>
-  orderBy?: Maybe<ProposalDiscussionPostOrderByInput>
+  orderBy?: Maybe<Array<ProposalDiscussionPostOrderByInput>>
 }
 
 export type QueryProposalDiscussionThreadModeChangedEventsArgs = {
@@ -23345,7 +23549,7 @@ export type QueryProposalDiscussionThreadModeChangedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionThreadModeChangedEventWhereInput>
-  orderBy?: Maybe<ProposalDiscussionThreadModeChangedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalDiscussionThreadModeChangedEventOrderByInput>>
 }
 
 export type QueryProposalDiscussionThreadsArgs = {
@@ -23365,7 +23569,7 @@ export type QueryProposalDiscussionThreadsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionThreadWhereInput>
-  orderBy?: Maybe<ProposalDiscussionThreadOrderByInput>
+  orderBy?: Maybe<Array<ProposalDiscussionThreadOrderByInput>>
 }
 
 export type QueryProposalDiscussionWhitelistsArgs = {
@@ -23385,7 +23589,7 @@ export type QueryProposalDiscussionWhitelistsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalDiscussionWhitelistWhereInput>
-  orderBy?: Maybe<ProposalDiscussionWhitelistOrderByInput>
+  orderBy?: Maybe<Array<ProposalDiscussionWhitelistOrderByInput>>
 }
 
 export type QueryProposalExecutedEventsArgs = {
@@ -23405,7 +23609,7 @@ export type QueryProposalExecutedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalExecutedEventWhereInput>
-  orderBy?: Maybe<ProposalExecutedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalExecutedEventOrderByInput>>
 }
 
 export type QueryProposalStatusUpdatedEventsArgs = {
@@ -23425,7 +23629,7 @@ export type QueryProposalStatusUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalStatusUpdatedEventWhereInput>
-  orderBy?: Maybe<ProposalStatusUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalStatusUpdatedEventOrderByInput>>
 }
 
 export type QueryProposalVotedEventsArgs = {
@@ -23445,7 +23649,7 @@ export type QueryProposalVotedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalVotedEventWhereInput>
-  orderBy?: Maybe<ProposalVotedEventOrderByInput>
+  orderBy?: Maybe<Array<ProposalVotedEventOrderByInput>>
 }
 
 export type QueryProposalsArgs = {
@@ -23465,7 +23669,7 @@ export type QueryProposalsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalWhereInput>
-  orderBy?: Maybe<ProposalOrderByInput>
+  orderBy?: Maybe<Array<ProposalOrderByInput>>
 }
 
 export type QueryChannelCategoriesByNameArgs = {
@@ -23542,7 +23746,7 @@ export type QueryReferendumFinishedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ReferendumFinishedEventWhereInput>
-  orderBy?: Maybe<ReferendumFinishedEventOrderByInput>
+  orderBy?: Maybe<Array<ReferendumFinishedEventOrderByInput>>
 }
 
 export type QueryReferendumStageRevealingsArgs = {
@@ -23562,7 +23766,7 @@ export type QueryReferendumStageRevealingsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ReferendumStageRevealingWhereInput>
-  orderBy?: Maybe<ReferendumStageRevealingOrderByInput>
+  orderBy?: Maybe<Array<ReferendumStageRevealingOrderByInput>>
 }
 
 export type QueryReferendumStageVotingsArgs = {
@@ -23582,7 +23786,7 @@ export type QueryReferendumStageVotingsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ReferendumStageVotingWhereInput>
-  orderBy?: Maybe<ReferendumStageVotingOrderByInput>
+  orderBy?: Maybe<Array<ReferendumStageVotingOrderByInput>>
 }
 
 export type QueryReferendumStartedEventsArgs = {
@@ -23602,7 +23806,7 @@ export type QueryReferendumStartedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ReferendumStartedEventWhereInput>
-  orderBy?: Maybe<ReferendumStartedEventOrderByInput>
+  orderBy?: Maybe<Array<ReferendumStartedEventOrderByInput>>
 }
 
 export type QueryReferendumStartedForcefullyEventsArgs = {
@@ -23622,7 +23826,7 @@ export type QueryReferendumStartedForcefullyEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ReferendumStartedForcefullyEventWhereInput>
-  orderBy?: Maybe<ReferendumStartedForcefullyEventOrderByInput>
+  orderBy?: Maybe<Array<ReferendumStartedForcefullyEventOrderByInput>>
 }
 
 export type QueryReferralCutUpdatedEventsArgs = {
@@ -23642,7 +23846,7 @@ export type QueryReferralCutUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ReferralCutUpdatedEventWhereInput>
-  orderBy?: Maybe<ReferralCutUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<ReferralCutUpdatedEventOrderByInput>>
 }
 
 export type QueryRequestFundedEventsArgs = {
@@ -23662,7 +23866,7 @@ export type QueryRequestFundedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<RequestFundedEventWhereInput>
-  orderBy?: Maybe<RequestFundedEventOrderByInput>
+  orderBy?: Maybe<Array<RequestFundedEventOrderByInput>>
 }
 
 export type QueryRevealingStageStartedEventsArgs = {
@@ -23682,7 +23886,7 @@ export type QueryRevealingStageStartedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<RevealingStageStartedEventWhereInput>
-  orderBy?: Maybe<RevealingStageStartedEventOrderByInput>
+  orderBy?: Maybe<Array<RevealingStageStartedEventOrderByInput>>
 }
 
 export type QueryRewardPaidEventsArgs = {
@@ -23702,7 +23906,7 @@ export type QueryRewardPaidEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<RewardPaidEventWhereInput>
-  orderBy?: Maybe<RewardPaidEventOrderByInput>
+  orderBy?: Maybe<Array<RewardPaidEventOrderByInput>>
 }
 
 export type QueryRewardPaymentEventsArgs = {
@@ -23722,7 +23926,7 @@ export type QueryRewardPaymentEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<RewardPaymentEventWhereInput>
-  orderBy?: Maybe<RewardPaymentEventOrderByInput>
+  orderBy?: Maybe<Array<RewardPaymentEventOrderByInput>>
 }
 
 export type QueryRuntimeWasmBytecodesArgs = {
@@ -23742,7 +23946,7 @@ export type QueryRuntimeWasmBytecodesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<RuntimeWasmBytecodeWhereInput>
-  orderBy?: Maybe<RuntimeWasmBytecodeOrderByInput>
+  orderBy?: Maybe<Array<RuntimeWasmBytecodeOrderByInput>>
 }
 
 export type QueryStakeDecreasedEventsArgs = {
@@ -23762,7 +23966,7 @@ export type QueryStakeDecreasedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StakeDecreasedEventWhereInput>
-  orderBy?: Maybe<StakeDecreasedEventOrderByInput>
+  orderBy?: Maybe<Array<StakeDecreasedEventOrderByInput>>
 }
 
 export type QueryStakeIncreasedEventsArgs = {
@@ -23782,7 +23986,7 @@ export type QueryStakeIncreasedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StakeIncreasedEventWhereInput>
-  orderBy?: Maybe<StakeIncreasedEventOrderByInput>
+  orderBy?: Maybe<Array<StakeIncreasedEventOrderByInput>>
 }
 
 export type QueryStakeReleasedEventsArgs = {
@@ -23802,7 +24006,7 @@ export type QueryStakeReleasedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StakeReleasedEventWhereInput>
-  orderBy?: Maybe<StakeReleasedEventOrderByInput>
+  orderBy?: Maybe<Array<StakeReleasedEventOrderByInput>>
 }
 
 export type QueryStakeSlashedEventsArgs = {
@@ -23822,7 +24026,7 @@ export type QueryStakeSlashedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StakeSlashedEventWhereInput>
-  orderBy?: Maybe<StakeSlashedEventOrderByInput>
+  orderBy?: Maybe<Array<StakeSlashedEventOrderByInput>>
 }
 
 export type QueryStakingAccountAddedEventsArgs = {
@@ -23842,7 +24046,7 @@ export type QueryStakingAccountAddedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StakingAccountAddedEventWhereInput>
-  orderBy?: Maybe<StakingAccountAddedEventOrderByInput>
+  orderBy?: Maybe<Array<StakingAccountAddedEventOrderByInput>>
 }
 
 export type QueryStakingAccountConfirmedEventsArgs = {
@@ -23862,7 +24066,7 @@ export type QueryStakingAccountConfirmedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StakingAccountConfirmedEventWhereInput>
-  orderBy?: Maybe<StakingAccountConfirmedEventOrderByInput>
+  orderBy?: Maybe<Array<StakingAccountConfirmedEventOrderByInput>>
 }
 
 export type QueryStakingAccountRemovedEventsArgs = {
@@ -23882,7 +24086,7 @@ export type QueryStakingAccountRemovedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StakingAccountRemovedEventWhereInput>
-  orderBy?: Maybe<StakingAccountRemovedEventOrderByInput>
+  orderBy?: Maybe<Array<StakingAccountRemovedEventOrderByInput>>
 }
 
 export type QueryStatusTextChangedEventsArgs = {
@@ -23902,7 +24106,7 @@ export type QueryStatusTextChangedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StatusTextChangedEventWhereInput>
-  orderBy?: Maybe<StatusTextChangedEventOrderByInput>
+  orderBy?: Maybe<Array<StatusTextChangedEventOrderByInput>>
 }
 
 export type QueryStorageBagsArgs = {
@@ -23922,7 +24126,7 @@ export type QueryStorageBagsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StorageBagWhereInput>
-  orderBy?: Maybe<StorageBagOrderByInput>
+  orderBy?: Maybe<Array<StorageBagOrderByInput>>
 }
 
 export type QueryStorageBucketOperatorMetadataArgs = {
@@ -23942,7 +24146,7 @@ export type QueryStorageBucketOperatorMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StorageBucketOperatorMetadataWhereInput>
-  orderBy?: Maybe<StorageBucketOperatorMetadataOrderByInput>
+  orderBy?: Maybe<Array<StorageBucketOperatorMetadataOrderByInput>>
 }
 
 export type QueryStorageBucketsArgs = {
@@ -23962,7 +24166,7 @@ export type QueryStorageBucketsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StorageBucketWhereInput>
-  orderBy?: Maybe<StorageBucketOrderByInput>
+  orderBy?: Maybe<Array<StorageBucketOrderByInput>>
 }
 
 export type QueryStorageDataObjectsArgs = {
@@ -23982,7 +24186,7 @@ export type QueryStorageDataObjectsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StorageDataObjectWhereInput>
-  orderBy?: Maybe<StorageDataObjectOrderByInput>
+  orderBy?: Maybe<Array<StorageDataObjectOrderByInput>>
 }
 
 export type QueryStorageSystemParametersArgs = {
@@ -24002,7 +24206,7 @@ export type QueryStorageSystemParametersConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<StorageSystemParametersWhereInput>
-  orderBy?: Maybe<StorageSystemParametersOrderByInput>
+  orderBy?: Maybe<Array<StorageSystemParametersOrderByInput>>
 }
 
 export type QueryTerminatedLeaderEventsArgs = {
@@ -24022,7 +24226,7 @@ export type QueryTerminatedLeaderEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<TerminatedLeaderEventWhereInput>
-  orderBy?: Maybe<TerminatedLeaderEventOrderByInput>
+  orderBy?: Maybe<Array<TerminatedLeaderEventOrderByInput>>
 }
 
 export type QueryTerminatedWorkerEventsArgs = {
@@ -24042,7 +24246,7 @@ export type QueryTerminatedWorkerEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<TerminatedWorkerEventWhereInput>
-  orderBy?: Maybe<TerminatedWorkerEventOrderByInput>
+  orderBy?: Maybe<Array<TerminatedWorkerEventOrderByInput>>
 }
 
 export type QueryThreadCreatedEventsArgs = {
@@ -24062,7 +24266,7 @@ export type QueryThreadCreatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ThreadCreatedEventWhereInput>
-  orderBy?: Maybe<ThreadCreatedEventOrderByInput>
+  orderBy?: Maybe<Array<ThreadCreatedEventOrderByInput>>
 }
 
 export type QueryThreadDeletedEventsArgs = {
@@ -24082,7 +24286,7 @@ export type QueryThreadDeletedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ThreadDeletedEventWhereInput>
-  orderBy?: Maybe<ThreadDeletedEventOrderByInput>
+  orderBy?: Maybe<Array<ThreadDeletedEventOrderByInput>>
 }
 
 export type QueryThreadMetadataUpdatedEventsArgs = {
@@ -24102,7 +24306,7 @@ export type QueryThreadMetadataUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ThreadMetadataUpdatedEventWhereInput>
-  orderBy?: Maybe<ThreadMetadataUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<ThreadMetadataUpdatedEventOrderByInput>>
 }
 
 export type QueryThreadModeratedEventsArgs = {
@@ -24122,7 +24326,7 @@ export type QueryThreadModeratedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ThreadModeratedEventWhereInput>
-  orderBy?: Maybe<ThreadModeratedEventOrderByInput>
+  orderBy?: Maybe<Array<ThreadModeratedEventOrderByInput>>
 }
 
 export type QueryThreadMovedEventsArgs = {
@@ -24142,7 +24346,7 @@ export type QueryThreadMovedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<ThreadMovedEventWhereInput>
-  orderBy?: Maybe<ThreadMovedEventOrderByInput>
+  orderBy?: Maybe<Array<ThreadMovedEventOrderByInput>>
 }
 
 export type QueryTransactionalStatusUpdatesArgs = {
@@ -24162,7 +24366,7 @@ export type QueryTransactionalStatusUpdatesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<TransactionalStatusUpdateWhereInput>
-  orderBy?: Maybe<TransactionalStatusUpdateOrderByInput>
+  orderBy?: Maybe<Array<TransactionalStatusUpdateOrderByInput>>
 }
 
 export type QueryUpcomingWorkingGroupOpeningsArgs = {
@@ -24182,7 +24386,7 @@ export type QueryUpcomingWorkingGroupOpeningsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<UpcomingWorkingGroupOpeningWhereInput>
-  orderBy?: Maybe<UpcomingWorkingGroupOpeningOrderByInput>
+  orderBy?: Maybe<Array<UpcomingWorkingGroupOpeningOrderByInput>>
 }
 
 export type QueryVideoAssetsDeletedByModeratorEventsArgs = {
@@ -24202,7 +24406,7 @@ export type QueryVideoAssetsDeletedByModeratorEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoAssetsDeletedByModeratorEventWhereInput>
-  orderBy?: Maybe<VideoAssetsDeletedByModeratorEventOrderByInput>
+  orderBy?: Maybe<Array<VideoAssetsDeletedByModeratorEventOrderByInput>>
 }
 
 export type QueryVideoCategoriesArgs = {
@@ -24222,7 +24426,7 @@ export type QueryVideoCategoriesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoCategoryWhereInput>
-  orderBy?: Maybe<VideoCategoryOrderByInput>
+  orderBy?: Maybe<Array<VideoCategoryOrderByInput>>
 }
 
 export type QueryVideoDeletedByModeratorEventsArgs = {
@@ -24242,7 +24446,7 @@ export type QueryVideoDeletedByModeratorEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoDeletedByModeratorEventWhereInput>
-  orderBy?: Maybe<VideoDeletedByModeratorEventOrderByInput>
+  orderBy?: Maybe<Array<VideoDeletedByModeratorEventOrderByInput>>
 }
 
 export type QueryVideoDeletedEventsArgs = {
@@ -24262,7 +24466,7 @@ export type QueryVideoDeletedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoDeletedEventWhereInput>
-  orderBy?: Maybe<VideoDeletedEventOrderByInput>
+  orderBy?: Maybe<Array<VideoDeletedEventOrderByInput>>
 }
 
 export type QueryVideoMediaEncodingsArgs = {
@@ -24282,7 +24486,7 @@ export type QueryVideoMediaEncodingsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoMediaEncodingWhereInput>
-  orderBy?: Maybe<VideoMediaEncodingOrderByInput>
+  orderBy?: Maybe<Array<VideoMediaEncodingOrderByInput>>
 }
 
 export type QueryVideoMediaMetadataArgs = {
@@ -24302,7 +24506,7 @@ export type QueryVideoMediaMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoMediaMetadataWhereInput>
-  orderBy?: Maybe<VideoMediaMetadataOrderByInput>
+  orderBy?: Maybe<Array<VideoMediaMetadataOrderByInput>>
 }
 
 export type QueryVideoReactedEventsArgs = {
@@ -24322,7 +24526,7 @@ export type QueryVideoReactedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoReactedEventWhereInput>
-  orderBy?: Maybe<VideoReactedEventOrderByInput>
+  orderBy?: Maybe<Array<VideoReactedEventOrderByInput>>
 }
 
 export type QueryVideoReactionsArgs = {
@@ -24342,7 +24546,7 @@ export type QueryVideoReactionsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoReactionWhereInput>
-  orderBy?: Maybe<VideoReactionOrderByInput>
+  orderBy?: Maybe<Array<VideoReactionOrderByInput>>
 }
 
 export type QueryVideoReactionsCountByReactionTypesArgs = {
@@ -24362,7 +24566,7 @@ export type QueryVideoReactionsCountByReactionTypesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoReactionsCountByReactionTypeWhereInput>
-  orderBy?: Maybe<VideoReactionsCountByReactionTypeOrderByInput>
+  orderBy?: Maybe<Array<VideoReactionsCountByReactionTypeOrderByInput>>
 }
 
 export type QueryVideoReactionsPreferenceEventsArgs = {
@@ -24382,7 +24586,7 @@ export type QueryVideoReactionsPreferenceEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoReactionsPreferenceEventWhereInput>
-  orderBy?: Maybe<VideoReactionsPreferenceEventOrderByInput>
+  orderBy?: Maybe<Array<VideoReactionsPreferenceEventOrderByInput>>
 }
 
 export type QueryVideoSubtitlesArgs = {
@@ -24402,7 +24606,7 @@ export type QueryVideoSubtitlesConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoSubtitleWhereInput>
-  orderBy?: Maybe<VideoSubtitleOrderByInput>
+  orderBy?: Maybe<Array<VideoSubtitleOrderByInput>>
 }
 
 export type QueryVideoVisibilitySetByModeratorEventsArgs = {
@@ -24422,7 +24626,7 @@ export type QueryVideoVisibilitySetByModeratorEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoVisibilitySetByModeratorEventWhereInput>
-  orderBy?: Maybe<VideoVisibilitySetByModeratorEventOrderByInput>
+  orderBy?: Maybe<Array<VideoVisibilitySetByModeratorEventOrderByInput>>
 }
 
 export type QueryVideosArgs = {
@@ -24442,7 +24646,7 @@ export type QueryVideosConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoWhereInput>
-  orderBy?: Maybe<VideoOrderByInput>
+  orderBy?: Maybe<Array<VideoOrderByInput>>
 }
 
 export type QueryVoteCastEventsArgs = {
@@ -24462,7 +24666,7 @@ export type QueryVoteCastEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VoteCastEventWhereInput>
-  orderBy?: Maybe<VoteCastEventOrderByInput>
+  orderBy?: Maybe<Array<VoteCastEventOrderByInput>>
 }
 
 export type QueryVoteRevealedEventsArgs = {
@@ -24482,7 +24686,7 @@ export type QueryVoteRevealedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VoteRevealedEventWhereInput>
-  orderBy?: Maybe<VoteRevealedEventOrderByInput>
+  orderBy?: Maybe<Array<VoteRevealedEventOrderByInput>>
 }
 
 export type QueryVotingPeriodStartedEventsArgs = {
@@ -24502,7 +24706,7 @@ export type QueryVotingPeriodStartedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<VotingPeriodStartedEventWhereInput>
-  orderBy?: Maybe<VotingPeriodStartedEventOrderByInput>
+  orderBy?: Maybe<Array<VotingPeriodStartedEventOrderByInput>>
 }
 
 export type QueryWorkEntrantFundsWithdrawnEventsArgs = {
@@ -24522,7 +24726,7 @@ export type QueryWorkEntrantFundsWithdrawnEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkEntrantFundsWithdrawnEventWhereInput>
-  orderBy?: Maybe<WorkEntrantFundsWithdrawnEventOrderByInput>
+  orderBy?: Maybe<Array<WorkEntrantFundsWithdrawnEventOrderByInput>>
 }
 
 export type QueryWorkEntryAnnouncedEventsArgs = {
@@ -24542,7 +24746,7 @@ export type QueryWorkEntryAnnouncedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkEntryAnnouncedEventWhereInput>
-  orderBy?: Maybe<WorkEntryAnnouncedEventOrderByInput>
+  orderBy?: Maybe<Array<WorkEntryAnnouncedEventOrderByInput>>
 }
 
 export type QueryWorkEntrySlashedEventsArgs = {
@@ -24562,7 +24766,7 @@ export type QueryWorkEntrySlashedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkEntrySlashedEventWhereInput>
-  orderBy?: Maybe<WorkEntrySlashedEventOrderByInput>
+  orderBy?: Maybe<Array<WorkEntrySlashedEventOrderByInput>>
 }
 
 export type QueryWorkEntryWithdrawnEventsArgs = {
@@ -24582,7 +24786,7 @@ export type QueryWorkEntryWithdrawnEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkEntryWithdrawnEventWhereInput>
-  orderBy?: Maybe<WorkEntryWithdrawnEventOrderByInput>
+  orderBy?: Maybe<Array<WorkEntryWithdrawnEventOrderByInput>>
 }
 
 export type QueryWorkSubmittedEventsArgs = {
@@ -24602,7 +24806,7 @@ export type QueryWorkSubmittedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkSubmittedEventWhereInput>
-  orderBy?: Maybe<WorkSubmittedEventOrderByInput>
+  orderBy?: Maybe<Array<WorkSubmittedEventOrderByInput>>
 }
 
 export type QueryWorkerExitedEventsArgs = {
@@ -24622,7 +24826,7 @@ export type QueryWorkerExitedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkerExitedEventWhereInput>
-  orderBy?: Maybe<WorkerExitedEventOrderByInput>
+  orderBy?: Maybe<Array<WorkerExitedEventOrderByInput>>
 }
 
 export type QueryWorkerRewardAccountUpdatedEventsArgs = {
@@ -24642,7 +24846,7 @@ export type QueryWorkerRewardAccountUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkerRewardAccountUpdatedEventWhereInput>
-  orderBy?: Maybe<WorkerRewardAccountUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<WorkerRewardAccountUpdatedEventOrderByInput>>
 }
 
 export type QueryWorkerRewardAmountUpdatedEventsArgs = {
@@ -24662,7 +24866,7 @@ export type QueryWorkerRewardAmountUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkerRewardAmountUpdatedEventWhereInput>
-  orderBy?: Maybe<WorkerRewardAmountUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<WorkerRewardAmountUpdatedEventOrderByInput>>
 }
 
 export type QueryWorkerRoleAccountUpdatedEventsArgs = {
@@ -24682,7 +24886,7 @@ export type QueryWorkerRoleAccountUpdatedEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkerRoleAccountUpdatedEventWhereInput>
-  orderBy?: Maybe<WorkerRoleAccountUpdatedEventOrderByInput>
+  orderBy?: Maybe<Array<WorkerRoleAccountUpdatedEventOrderByInput>>
 }
 
 export type QueryWorkerStartedLeavingEventsArgs = {
@@ -24702,7 +24906,7 @@ export type QueryWorkerStartedLeavingEventsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkerStartedLeavingEventWhereInput>
-  orderBy?: Maybe<WorkerStartedLeavingEventOrderByInput>
+  orderBy?: Maybe<Array<WorkerStartedLeavingEventOrderByInput>>
 }
 
 export type QueryWorkersArgs = {
@@ -24722,7 +24926,7 @@ export type QueryWorkersConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkerWhereInput>
-  orderBy?: Maybe<WorkerOrderByInput>
+  orderBy?: Maybe<Array<WorkerOrderByInput>>
 }
 
 export type QueryWorkingGroupApplicationsArgs = {
@@ -24742,7 +24946,7 @@ export type QueryWorkingGroupApplicationsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkingGroupApplicationWhereInput>
-  orderBy?: Maybe<WorkingGroupApplicationOrderByInput>
+  orderBy?: Maybe<Array<WorkingGroupApplicationOrderByInput>>
 }
 
 export type QueryWorkingGroupMetadataArgs = {
@@ -24762,7 +24966,7 @@ export type QueryWorkingGroupMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkingGroupMetadataWhereInput>
-  orderBy?: Maybe<WorkingGroupMetadataOrderByInput>
+  orderBy?: Maybe<Array<WorkingGroupMetadataOrderByInput>>
 }
 
 export type QueryWorkingGroupOpeningMetadataArgs = {
@@ -24782,7 +24986,7 @@ export type QueryWorkingGroupOpeningMetadataConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkingGroupOpeningMetadataWhereInput>
-  orderBy?: Maybe<WorkingGroupOpeningMetadataOrderByInput>
+  orderBy?: Maybe<Array<WorkingGroupOpeningMetadataOrderByInput>>
 }
 
 export type QueryWorkingGroupOpeningsArgs = {
@@ -24802,7 +25006,7 @@ export type QueryWorkingGroupOpeningsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkingGroupOpeningWhereInput>
-  orderBy?: Maybe<WorkingGroupOpeningOrderByInput>
+  orderBy?: Maybe<Array<WorkingGroupOpeningOrderByInput>>
 }
 
 export type QueryWorkingGroupsArgs = {
@@ -24822,7 +25026,7 @@ export type QueryWorkingGroupsConnectionArgs = {
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
   where?: Maybe<WorkingGroupWhereInput>
-  orderBy?: Maybe<WorkingGroupOrderByInput>
+  orderBy?: Maybe<Array<WorkingGroupOrderByInput>>
 }
 
 export type ReferendumFinishedEvent = Event &
@@ -24957,6 +25161,8 @@ export type ReferendumStageRevealing = BaseGraphQlObject & {
   winningTargetCount: Scalars['BigInt']
   electionRound: ElectionRound
   electionRoundId: Scalars['String']
+  /** Block number at which the stage ends */
+  endsAt: Scalars['Int']
 }
 
 export type ReferendumStageRevealingConnection = {
@@ -24969,6 +25175,7 @@ export type ReferendumStageRevealingCreateInput = {
   startedAtBlock: Scalars['String']
   winningTargetCount: Scalars['String']
   electionRound: Scalars['ID']
+  endsAt: Scalars['Float']
 }
 
 export type ReferendumStageRevealingEdge = {
@@ -24989,12 +25196,15 @@ export enum ReferendumStageRevealingOrderByInput {
   WinningTargetCountDesc = 'winningTargetCount_DESC',
   ElectionRoundAsc = 'electionRound_ASC',
   ElectionRoundDesc = 'electionRound_DESC',
+  EndsAtAsc = 'endsAt_ASC',
+  EndsAtDesc = 'endsAt_DESC',
 }
 
 export type ReferendumStageRevealingUpdateInput = {
   startedAtBlock?: Maybe<Scalars['String']>
   winningTargetCount?: Maybe<Scalars['String']>
   electionRound?: Maybe<Scalars['ID']>
+  endsAt?: Maybe<Scalars['Float']>
 }
 
 export type ReferendumStageRevealingWhereInput = {
@@ -25034,6 +25244,12 @@ export type ReferendumStageRevealingWhereInput = {
   winningTargetCount_lt?: Maybe<Scalars['BigInt']>
   winningTargetCount_lte?: Maybe<Scalars['BigInt']>
   winningTargetCount_in?: Maybe<Array<Scalars['BigInt']>>
+  endsAt_eq?: Maybe<Scalars['Int']>
+  endsAt_gt?: Maybe<Scalars['Int']>
+  endsAt_gte?: Maybe<Scalars['Int']>
+  endsAt_lt?: Maybe<Scalars['Int']>
+  endsAt_lte?: Maybe<Scalars['Int']>
+  endsAt_in?: Maybe<Array<Scalars['Int']>>
   electionRound?: Maybe<ElectionRoundWhereInput>
   AND?: Maybe<Array<ReferendumStageRevealingWhereInput>>
   OR?: Maybe<Array<ReferendumStageRevealingWhereInput>>
@@ -25059,6 +25275,8 @@ export type ReferendumStageVoting = BaseGraphQlObject & {
   winningTargetCount: Scalars['BigInt']
   electionRound: ElectionRound
   electionRoundId: Scalars['String']
+  /** Block number at which the stage ends */
+  endsAt: Scalars['Int']
 }
 
 export type ReferendumStageVotingConnection = {
@@ -25071,6 +25289,7 @@ export type ReferendumStageVotingCreateInput = {
   startedAtBlock: Scalars['String']
   winningTargetCount: Scalars['String']
   electionRound: Scalars['ID']
+  endsAt: Scalars['Float']
 }
 
 export type ReferendumStageVotingEdge = {
@@ -25091,12 +25310,15 @@ export enum ReferendumStageVotingOrderByInput {
   WinningTargetCountDesc = 'winningTargetCount_DESC',
   ElectionRoundAsc = 'electionRound_ASC',
   ElectionRoundDesc = 'electionRound_DESC',
+  EndsAtAsc = 'endsAt_ASC',
+  EndsAtDesc = 'endsAt_DESC',
 }
 
 export type ReferendumStageVotingUpdateInput = {
   startedAtBlock?: Maybe<Scalars['String']>
   winningTargetCount?: Maybe<Scalars['String']>
   electionRound?: Maybe<Scalars['ID']>
+  endsAt?: Maybe<Scalars['Float']>
 }
 
 export type ReferendumStageVotingWhereInput = {
@@ -25136,6 +25358,12 @@ export type ReferendumStageVotingWhereInput = {
   winningTargetCount_lt?: Maybe<Scalars['BigInt']>
   winningTargetCount_lte?: Maybe<Scalars['BigInt']>
   winningTargetCount_in?: Maybe<Array<Scalars['BigInt']>>
+  endsAt_eq?: Maybe<Scalars['Int']>
+  endsAt_gt?: Maybe<Scalars['Int']>
+  endsAt_gte?: Maybe<Scalars['Int']>
+  endsAt_lt?: Maybe<Scalars['Int']>
+  endsAt_lte?: Maybe<Scalars['Int']>
+  endsAt_in?: Maybe<Array<Scalars['Int']>>
   electionRound?: Maybe<ElectionRoundWhereInput>
   AND?: Maybe<Array<ReferendumStageVotingWhereInput>>
   OR?: Maybe<Array<ReferendumStageVotingWhereInput>>
@@ -27963,7 +28191,7 @@ export type StorageSystemParameters = BaseGraphQlObject & {
   /** ID of the next data object when created */
   nextDataObjectId: Scalars['BigInt']
   /** Data Object state bloat bond value */
-  dataObjectStateBloatBondValue: Scalars['Int']
+  dataObjectStateBloatBondValue: Scalars['BigInt']
 }
 
 export type StorageSystemParametersConnection = {
@@ -27981,7 +28209,7 @@ export type StorageSystemParametersCreateInput = {
   storageBucketMaxObjectsCountLimit: Scalars['String']
   storageBucketMaxObjectsSizeLimit: Scalars['String']
   nextDataObjectId: Scalars['String']
-  dataObjectStateBloatBondValue: Scalars['Float']
+  dataObjectStateBloatBondValue: Scalars['String']
 }
 
 export type StorageSystemParametersEdge = {
@@ -28023,7 +28251,7 @@ export type StorageSystemParametersUpdateInput = {
   storageBucketMaxObjectsCountLimit?: Maybe<Scalars['String']>
   storageBucketMaxObjectsSizeLimit?: Maybe<Scalars['String']>
   nextDataObjectId?: Maybe<Scalars['String']>
-  dataObjectStateBloatBondValue?: Maybe<Scalars['Float']>
+  dataObjectStateBloatBondValue?: Maybe<Scalars['String']>
 }
 
 export type StorageSystemParametersWhereInput = {
@@ -28092,12 +28320,12 @@ export type StorageSystemParametersWhereInput = {
   nextDataObjectId_lt?: Maybe<Scalars['BigInt']>
   nextDataObjectId_lte?: Maybe<Scalars['BigInt']>
   nextDataObjectId_in?: Maybe<Array<Scalars['BigInt']>>
-  dataObjectStateBloatBondValue_eq?: Maybe<Scalars['Int']>
-  dataObjectStateBloatBondValue_gt?: Maybe<Scalars['Int']>
-  dataObjectStateBloatBondValue_gte?: Maybe<Scalars['Int']>
-  dataObjectStateBloatBondValue_lt?: Maybe<Scalars['Int']>
-  dataObjectStateBloatBondValue_lte?: Maybe<Scalars['Int']>
-  dataObjectStateBloatBondValue_in?: Maybe<Array<Scalars['Int']>>
+  dataObjectStateBloatBondValue_eq?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_gt?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_gte?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_lt?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_lte?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_in?: Maybe<Array<Scalars['BigInt']>>
   AND?: Maybe<Array<StorageSystemParametersWhereInput>>
   OR?: Maybe<Array<StorageSystemParametersWhereInput>>
   NOT?: Maybe<Array<StorageSystemParametersWhereInput>>
@@ -29461,6 +29689,8 @@ export type Video = BaseGraphQlObject & {
   licenseId?: Maybe<Scalars['String']>
   media?: Maybe<StorageDataObject>
   mediaId?: Maybe<Scalars['String']>
+  /** Video state bloat bond */
+  videoStateBloatBond: Scalars['BigInt']
   mediaMetadata?: Maybe<VideoMediaMetadata>
   mediaMetadataId?: Maybe<Scalars['String']>
   createdInBlock: Scalars['Int']
@@ -29805,6 +30035,7 @@ export type VideoCreateInput = {
   isExplicit?: Maybe<Scalars['Boolean']>
   license?: Maybe<Scalars['ID']>
   media?: Maybe<Scalars['ID']>
+  videoStateBloatBond: Scalars['String']
   mediaMetadata?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
   isFeatured: Scalars['Boolean']
@@ -30364,6 +30595,8 @@ export enum VideoOrderByInput {
   LicenseDesc = 'license_DESC',
   MediaAsc = 'media_ASC',
   MediaDesc = 'media_DESC',
+  VideoStateBloatBondAsc = 'videoStateBloatBond_ASC',
+  VideoStateBloatBondDesc = 'videoStateBloatBond_DESC',
   MediaMetadataAsc = 'mediaMetadata_ASC',
   MediaMetadataDesc = 'mediaMetadata_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
@@ -30994,6 +31227,7 @@ export type VideoUpdateInput = {
   isExplicit?: Maybe<Scalars['Boolean']>
   license?: Maybe<Scalars['ID']>
   media?: Maybe<Scalars['ID']>
+  videoStateBloatBond?: Maybe<Scalars['String']>
   mediaMetadata?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
   isFeatured?: Maybe<Scalars['Boolean']>
@@ -31207,6 +31441,12 @@ export type VideoWhereInput = {
   isCensored_in?: Maybe<Array<Scalars['Boolean']>>
   isExplicit_eq?: Maybe<Scalars['Boolean']>
   isExplicit_in?: Maybe<Array<Scalars['Boolean']>>
+  videoStateBloatBond_eq?: Maybe<Scalars['BigInt']>
+  videoStateBloatBond_gt?: Maybe<Scalars['BigInt']>
+  videoStateBloatBond_gte?: Maybe<Scalars['BigInt']>
+  videoStateBloatBond_lt?: Maybe<Scalars['BigInt']>
+  videoStateBloatBond_lte?: Maybe<Scalars['BigInt']>
+  videoStateBloatBond_in?: Maybe<Array<Scalars['BigInt']>>
   createdInBlock_eq?: Maybe<Scalars['Int']>
   createdInBlock_gt?: Maybe<Scalars['Int']>
   createdInBlock_gte?: Maybe<Scalars['Int']>

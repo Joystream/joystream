@@ -1,13 +1,12 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import chalk from 'chalk'
 import { formatBalance } from '@polkadot/util'
 import { createType } from '@joystream/types'
 import ExitCodes from '../../ExitCodes'
 
-export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
+export default class DeleteVideoAsModeratorCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the video and optionally all associated data objects.'
 
   protected requiresQueryNode = true
@@ -23,7 +22,12 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       default: false,
       description: 'Force-remove all associated video data objects',
     }),
-    context: ContentDirectoryCommandBase.channelManagementContextFlag,
+    rationale: flags.string({
+      char: 'r',
+      required: true,
+      description: 'reason of deleting the video by moderator',
+    }),
+    context: ContentDirectoryCommandBase.moderationActionContextFlag,
     ...ContentDirectoryCommandBase.flags,
   }
 
@@ -41,41 +45,36 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
   }
 
   async run(): Promise<void> {
-    const { videoId, force, context } = this.parse(DeleteVideoCommand).flags
-    // Ensure video exists
-    const video = await this.getApi().videoById(videoId)
-    const channel = await this.getApi().channelById(video.inChannel.toNumber())
+    const {
+      flags: { videoId, force, rationale, context },
+    } = this.parse(DeleteVideoAsModeratorCommand)
     // Context
-    const [actor, address] = await this.getChannelManagementActor(channel, context)
+    const [actor, address] = await this.getModerationActionActor(context)
+    // ensure video exists
+    const { inChannel, videoStateBloatBond } = await this.getApi().videoById(videoId)
+    const { privilegeLevel } = await this.getApi().channelById(inChannel)
 
-    const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
-
-    // Ensure actor is authorized to perform video deletion
-    const requiredPermissions: ChannelActionPermission['type'][] = dataObjectsInfo.length
-      ? ['DeleteVideo', 'ManageVideoAssets']
-      : ['DeleteVideo']
-    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
-      this.error(
-        `Only channel owner or collaborator with ${requiredPermissions} permissions can perform this deletion!`,
-        {
-          exit: ExitCodes.AccessDenied,
-        }
-      )
+    // Ensure moderator has required permission
+    if (!(await this.isModeratorWithRequiredPermission(actor, privilegeLevel, 'DeleteVideo'))) {
+      this.error(`Only content lead or curator with "DeleteVideo" permission can delete video ${videoId}!`, {
+        exit: ExitCodes.AccessDenied,
+      })
     }
 
+    const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
     if (dataObjectsInfo.length) {
       if (!force) {
         this.error(`Cannot remove associated data objects unless ${chalk.magentaBright('--force')} flag is used`, {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
+      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
         `Video state bloat bond of ${chalk.cyanBright(
-          formatBalance(video.videoStateBloatBond)
+          formatBalance(videoStateBloatBond)
         )} will be transferred to ${chalk.magentaBright(address)}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
-            formatBalance(dataObjectsStateBloatBond)
+            formatBalance(stateBloatBond)
           )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
@@ -86,10 +85,11 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       }?`
     )
 
-    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideo', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideoAsModerator', [
       actor,
       videoId,
       createType('u64', dataObjectsInfo.length),
+      rationale,
     ])
   }
 }
