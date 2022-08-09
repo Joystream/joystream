@@ -1,26 +1,32 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
 import {
+  PalletContentChannelActionPermission as ChannelActionPermission,
+  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
   PalletContentPermissionsCuratorGroup as CuratorGroup,
   PalletWorkingGroupGroupWorker as Worker,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentChannelRecord as Channel,
   PalletContentChannelOwner as ChannelOwner,
 } from '@polkadot/types/lookup'
+
 import { CLIError } from '@oclif/errors'
 import { flags } from '@oclif/command'
 import { memberHandle } from '../helpers/display'
-import { MemberId, CuratorGroupId } from '@joystream/types/primitives'
-import { createType } from '@joystream/types'
+import { MemberId, CuratorGroupId, ChannelPrivilegeLevel } from '@joystream/types/primitives'
+import { CreateInterface, createType } from '@joystream/types'
 import WorkingGroupCommandBase from './WorkingGroupCommandBase'
+import BN from 'bn.js'
 
 const CHANNEL_CREATION_CONTEXTS = ['Member', 'CuratorGroup'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
-const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Collaborator'] as const
+const MODERATION_ACTION_CONTEXTS = ['Lead', 'Curator'] as const
+const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Curator', 'Collaborator'] as const
 
 type ChannelManagementContext = typeof CHANNEL_MANAGEMENT_CONTEXTS[number]
 type ChannelCreationContext = typeof CHANNEL_CREATION_CONTEXTS[number]
 type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
+type ModerationActionContext = typeof MODERATION_ACTION_CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
@@ -40,6 +46,12 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     required: false,
     description: `Actor context to execute the command in (${CHANNEL_MANAGEMENT_CONTEXTS.join('/')})`,
     options: [...CHANNEL_MANAGEMENT_CONTEXTS],
+  })
+
+  static moderationActionContextFlag = flags.enum({
+    required: false,
+    description: `Actor context to execute the command in (${MODERATION_ACTION_CONTEXTS.join('/')})`,
+    options: [...MODERATION_ACTION_CONTEXTS],
   })
 
   static categoriesContextFlag = flags.enum({
@@ -84,18 +96,10 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
 
   async getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
     if (channel.owner.isCuratorGroup) {
-      try {
-        return this.getContentActor('Lead')
-      } catch (e) {
-        return this.getCuratorContext(channel.owner.asCuratorGroup)
-      }
-    } else {
-      const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asMember])
-      return [
-        createType('PalletContentPermissionsContentActor', { Member: id }),
-        membership.controllerAccount.toString(),
-      ]
+      return this.getContentActor('Lead')
     }
+    const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asMember])
+    return [createType('PalletContentPermissionsContentActor', { Member: id }), membership.controllerAccount.toString()]
   }
 
   async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
@@ -109,12 +113,84 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       : actor.isMember && actor.asMember.eq(channel.owner.asMember)
   }
 
+  async hasRequiredChannelAgentPermissions(
+    actor: ContentActor,
+    channel: Channel,
+    requiredPermissions: ChannelActionPermission['type'][]
+  ): Promise<boolean> {
+    // CASE: CuratorGroup owned channel
+    if (channel.owner.isCuratorGroup) {
+      // Lead context
+      if (actor.isLead) {
+        return true
+      }
+      // Curator context
+      if (actor.isCurator && actor.asCurator[0].eq(channel.owner.asCuratorGroup)) {
+        const { curators } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
+        const curatorChannelAgentPermissions = [...curators].find(([k]) => k.eq(actor.asCurator[1]))?.[1]
+        return !!(
+          curatorChannelAgentPermissions &&
+          requiredPermissions.every((requiredPermission) =>
+            [...curatorChannelAgentPermissions].find((p) => p[`is${requiredPermission}`])
+          )
+        )
+      }
+      // Collaborator context
+      const collaboratorChannelAgentPermissions = [...channel.collaborators].find(([k]) => k.eq(actor.asMember))?.[1]
+      return !!(
+        collaboratorChannelAgentPermissions &&
+        requiredPermissions.every((requiredPermission) =>
+          [...collaboratorChannelAgentPermissions].find((p) => p[`is${requiredPermission}`])
+        )
+      )
+    }
+
+    // CASE: Member owned channel
+    if (channel.owner.isMember) {
+      // Owner context
+      if (actor.isMember && actor.asMember.eq(channel.owner.asMember)) {
+        return true
+      }
+      // Collaborator context
+      const collaboratorChannelAgentPermissions = [...channel.collaborators].find(([k]) => k.eq(actor.asMember))?.[1]
+      return !!(
+        collaboratorChannelAgentPermissions &&
+        requiredPermissions.every((requiredPermission) =>
+          [...collaboratorChannelAgentPermissions].find((p) => p[`is${requiredPermission}`])
+        )
+      )
+    }
+
+    return false
+  }
+
+  async isModeratorWithRequiredPermission(
+    actor: ContentActor,
+    channelPrivilegeLevel: ChannelPrivilegeLevel,
+    permission: CreateInterface<ContentModerationAction>
+  ): Promise<boolean> {
+    if (actor.isLead) {
+      return true
+    }
+
+    const permissionRequired = createType('PalletContentPermissionsCuratorGroupContentModerationAction', permission)
+    const { permissionsByLevel } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
+    const permissionsForLevel = [...permissionsByLevel].find(([k]) => k.eq(channelPrivilegeLevel))?.[1]
+    return !!(
+      permissionsForLevel &&
+      [...permissionsForLevel].find((p) => p.type === permissionRequired.type && p.value.eq(permissionRequired.value))
+    )
+  }
+
   async getChannelManagementActor(
     channel: Channel,
     context: ChannelManagementContext
   ): Promise<[ContentActor, string]> {
     if (context && context === 'Owner') {
       return this.getChannelOwnerActor(channel)
+    }
+    if (context && context === 'Curator' && channel.owner.isCuratorGroup) {
+      return this.getCuratorContext(channel.owner.asCuratorGroup)
     }
     if (context && context === 'Collaborator') {
       return this.getChannelCollaboratorActor(channel)
@@ -131,6 +207,16 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     }
 
     try {
+      if (channel.owner.isCuratorGroup) {
+        const curator = await this.getCuratorContext(channel.owner.asCuratorGroup)
+        this.log('Derived context: Curator')
+        return curator
+      }
+    } catch (e) {
+      // continue
+    }
+
+    try {
       const collaborator = await this.getChannelCollaboratorActor(channel)
       this.log('Derived context: Channel collaborator')
       return collaborator
@@ -139,6 +225,36 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     }
 
     this.error('No account found with access to manage the provided channel', { exit: ExitCodes.AccessDenied })
+  }
+
+  async getModerationActionActor(context: ModerationActionContext): Promise<[ContentActor, string]> {
+    if (context && context === 'Lead') {
+      const lead = await this.getRequiredLeadContext()
+      return [createType('PalletContentPermissionsContentActor', { Lead: null }), lead.roleAccount.toString()]
+    }
+    if (context && context === 'Curator') {
+      return this.getCuratorContext()
+    }
+
+    // Context not set - derive
+
+    try {
+      const lead = await this.getRequiredLeadContext()
+      this.log('Derived context: Lead')
+      return [createType('PalletContentPermissionsContentActor', { Lead: null }), lead.roleAccount.toString()]
+    } catch (e) {
+      // continue
+    }
+
+    try {
+      const curator = await this.getCuratorContext()
+      this.log('Derived context: Curator')
+      return curator
+    } catch (e) {
+      // continue
+    }
+
+    this.error('No account found with access to perform given moderation action', { exit: ExitCodes.AccessDenied })
   }
 
   async getCategoryManagementActor(): Promise<[ContentActor, string]> {
@@ -333,5 +449,44 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
         exit: ExitCodes.InvalidInput,
       })
     }
+  }
+
+  async getDataObjectsInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {
+    const dataObjects = await this.getQNApi().dataObjectsByBagId(`dynamic:channel:${channelId}`)
+
+    if (dataObjects.length) {
+      this.log('Following data objects are still associated with the channel:')
+      dataObjects.forEach((o) => {
+        let parentStr = ''
+        if ('video' in o.type && o.type.video) {
+          parentStr = ` (video: ${o.type.video.id})`
+        }
+        this.log(`- ${o.id} - ${o.type.__typename}${parentStr}`)
+      })
+    }
+
+    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
+  }
+
+  async getDataObjectsInfoFromChain(channelId: number): Promise<[string, BN][]> {
+    const dataObjects = await this.getApi().dataObjectsInBag(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+
+    if (dataObjects.length) {
+      const dataObjectIds = dataObjects.map(([id]) => id.toString())
+      this.log(`Following data objects are still associated with the channel: ${dataObjectIds.join(', ')}`)
+    }
+
+    return dataObjects.map(([id, o]) => [id.toString(), o.stateBloatBond])
+  }
+
+  async getVideosInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {
+    const channel = await this.getQNApi().getChannelById(channelId.toString())
+    if (!channel) {
+      this.error('Could not fetch the channel info from the query node', { exit: ExitCodes.QueryNodeError })
+    }
+
+    return channel.videos.map(({ id, videoStateBloatBond }) => [id, videoStateBloatBond])
   }
 }
