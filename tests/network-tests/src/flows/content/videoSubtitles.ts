@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { Utils } from '../../utils'
 import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
-import { cliExamplesFolderPath, CreateContentStructureFixture, CreateMembersFixture } from '../../fixtures/content'
+import { cliExamplesFolderPath, CreateMembersFixture } from '../../fixtures/content'
 import { getChannelDefaults, getVideoDefaults } from '../../fixtures/content/contentTemplates'
 
 export default async function addAndUpdateVideoSubtitles({ api, query }: FlowProps): Promise<void> {
@@ -23,7 +23,7 @@ export default async function addAndUpdateVideoSubtitles({ api, query }: FlowPro
   // settings
   const channelCount = 1
   const curatorCount = 0
-  const sufficientTopupAmount = new BN(1_000_000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(100_000_000_000) // some very big number to cover fees of all transactions
 
   // create author of channels and videos as well as auction participants
   const createMembersFixture = new CreateMembersFixture(api, query, channelCount, curatorCount, sufficientTopupAmount)
