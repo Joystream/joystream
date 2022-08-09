@@ -640,7 +640,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::participate_in_split()]
-        fn participate_in_split(
+        pub fn participate_in_split(
             origin,
             token_id: T::TokenId,
             member_id: T::MemberId,
@@ -729,7 +729,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::exit_revenue_split()]
-        fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        pub fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id

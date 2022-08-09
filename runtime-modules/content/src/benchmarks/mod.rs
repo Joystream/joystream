@@ -16,7 +16,7 @@ use common::MembershipTypes;
 use frame_benchmarking::account;
 use frame_support::{
     dispatch::DispatchError,
-    storage::{StorageDoubleMap, StorageMap, StorageValue},
+    storage::{IterableStorageMap, StorageDoubleMap, StorageMap, StorageValue},
     traits::{Currency, Get, Instance, OnFinalize, OnInitialize},
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
@@ -94,6 +94,7 @@ const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
 const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
 const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
 const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
+const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
     ChannelActionPermission::UpdateChannelMetadata,
@@ -611,9 +612,13 @@ type BloatBonds<T> = (
 
 fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
 where
-    T: Config,
+    T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
+    // Setup lead if not already setup
+    if working_group::Pallet::<T, ContentWorkingGroupInstance>::current_lead().is_none() {
+        insert_content_leader::<T>();
+    }
     let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
     let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
     // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
@@ -840,14 +845,15 @@ where
         permissions_by_level,
     )?;
 
-    // We substract 1 from `next_worker_id`, because we're not counting the lead
+    // We substract 1 from the number of curators because we're not counting the lead
     let already_existing_curators_num =
-        working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
+        working_group::WorkerById::<T, ContentWorkingGroupInstance>::iter()
+            .count()
             .saturated_into::<u32>()
             .saturating_sub(1);
 
     assert!(
-        already_existing_curators_num + curators_len <= MAX_COLABORATOR_IDS as u32,
+        already_existing_curators_num + curators_len <= MAX_CURATOR_IDS as u32,
         "Too many curators created"
     );
 
@@ -999,7 +1005,6 @@ fn create_token_issuance_params<T: Config>(
     let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
     let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
     let patronage_rate = YearlyRate(Permill::from_percent(10));
-    let revenue_split_rate = Permill::from_percent(50);
     TokenIssuanceParametersOf::<T> {
         initial_allocation,
         symbol: token_symbol.clone(),
@@ -1016,7 +1021,7 @@ fn create_token_issuance_params<T: Config>(
             }),
         }),
         patronage_rate,
-        revenue_split_rate,
+        revenue_split_rate: DEFAULT_CRT_REVENUE_SPLIT_RATE,
     }
 }
 

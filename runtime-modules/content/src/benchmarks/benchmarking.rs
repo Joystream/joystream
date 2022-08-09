@@ -14,12 +14,12 @@ use frame_benchmarking::benchmarks;
 use frame_support::{
     storage::StorageMap,
     traits::{Currency, Get},
-    IterableStorageDoubleMap, StorageValue,
+    IterableStorageDoubleMap, StorageDoubleMap, StorageValue,
 };
 use frame_system::RawOrigin;
 use project_token::types::{
-    BlockRate, JoyBalanceOf, PatronageData, RevenueSplitStateOf, TokenBalanceOf, TokenDataOf,
-    TokenSale, TransferPolicy, Transfers, Validated,
+    BlockRate, JoyBalanceOf, PatronageData, RevenueSplitInfo, RevenueSplitStateOf, TimelineOf,
+    TokenBalanceOf, TokenDataOf, TokenSale, TransferPolicy, Transfers, Validated,
 };
 use project_token::BloatBond as TokenAccountBloatBond;
 use project_token::{AccountInfoByTokenAndMember, TokenInfoById};
@@ -33,18 +33,19 @@ use sp_std::{
 use storage::Module as Storage;
 
 use super::{
-    assert_last_event, channel_bag_witness, clone_curator_group,
+    assert_last_event, assert_past_event, channel_bag_witness, clone_curator_group,
     create_data_object_candidates_helper, create_token_issuance_params, curator_member_id,
     default_vesting_schedule_params, fastforward_by_blocks, generate_channel_creation_params,
     insert_content_leader, insert_curator, insert_distribution_leader, insert_storage_leader,
     issue_creator_token_with_worst_case_scenario_owner, max_curators_per_group,
     member_funded_account, setup_worst_case_curator_group_with_curators,
-    setup_worst_case_scenario_curator_channel, setup_worst_case_scenario_curator_channel_all_max,
-    storage_buckets_num_witness, worst_case_channel_agent_permissions,
-    worst_case_content_moderation_actions_set, worst_case_scenario_collaborators,
-    worst_case_scenario_initial_allocation, worst_case_scenario_issuer_transfer_outputs,
-    worst_case_scenario_token_sale_params, ContentWorkingGroupInstance, CreateAccountId,
-    RuntimeConfig, CURATOR_IDS, DEFAULT_CRT_OWNER_ISSUANCE, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
+    setup_worst_case_scenario_channel, setup_worst_case_scenario_curator_channel,
+    setup_worst_case_scenario_curator_channel_all_max, storage_buckets_num_witness,
+    worst_case_channel_agent_permissions, worst_case_content_moderation_actions_set,
+    worst_case_scenario_collaborators, worst_case_scenario_initial_allocation,
+    worst_case_scenario_issuer_transfer_outputs, worst_case_scenario_token_sale_params,
+    ContentWorkingGroupInstance, CreateAccountId, RuntimeConfig, COLABORATOR_IDS, CURATOR_IDS,
+    DEFAULT_CRT_OWNER_ISSUANCE, DEFAULT_CRT_REVENUE_SPLIT_RATE, DEFAULT_CRT_SALE_CAP_PER_MEMBER,
     DEFAULT_CRT_SALE_DURATION, DEFAULT_CRT_SALE_PRICE, DEFAULT_CRT_SALE_UPPER_BOUND,
     MAX_BYTES_METADATA, MAX_CRT_INITIAL_ALLOCATION_MEMBERS, MAX_CRT_ISSUER_TRANSFER_OUTPUTS,
 };
@@ -894,6 +895,203 @@ benchmarks! {
             ).into()
         );
     }
+
+    issue_revenue_split {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let start: T::BlockNumber = frame_system::Pallet::<T>::block_number()
+            + project_token::Pallet::<T>::min_revenue_split_time_to_start();
+        let duration: T::BlockNumber = project_token::Pallet::<T>::min_revenue_split_duration();
+        let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
+        let reward_amount = 1_000_000u32.into();
+        let _ = balances::Pallet::<T>::deposit_creating(
+            &channel_acc,
+            // TODO: Existential deposit should not be needed after https://github.com/Joystream/joystream/issues/4033
+            T::JoyExistentialDeposit::get() + reward_amount
+        );
+        let council_budget_pre = T::CouncilBudgetManager::get_budget();
+    }: _(origin, actor, channel_id, Some(start), duration)
+    verify {
+        let allocation = DEFAULT_CRT_REVENUE_SPLIT_RATE * reward_amount;
+        let withdrawn = reward_amount - allocation;
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        assert_eq!(token.revenue_split, RevenueSplitStateOf::<T>::Active(RevenueSplitInfo {
+            allocation,
+            timeline: TimelineOf::<T> { start, duration },
+            dividends_claimed: JoyBalanceOf::<T>::zero()
+        }));
+        // Make sure council budget was increased
+        let council_budget_post = T::CouncilBudgetManager::get_budget();
+        assert_eq!(council_budget_post, council_budget_pre + withdrawn);
+        // Check event emitted
+        assert_past_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::RevenueSplitIssued(
+                    token_id,
+                    start,
+                    duration,
+                    allocation
+                ),
+            ).into(),
+            1 // expected events:
+            // project_token::RevenueSplitIssued
+            // balances::Slashed
+        );
+    }
+
+    issue_revenue_split_as_collaborator {
+        let (owner_acc, owner_member_id) = member_funded_account::<T>(1);
+        let channel_owner = ChannelOwner::<T::MemberId, T::CuratorGroupId>::Member(owner_member_id);
+        let channel_id = setup_worst_case_scenario_channel::<T>(
+            owner_acc.clone(),
+            channel_owner,
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
+        )?;
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                owner_acc.clone(),
+                ContentActor::Member(owner_member_id),
+                channel_id,
+                owner_member_id
+            )?;
+
+        let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
+        let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
+        let origin = RawOrigin::Signed(collaborator_account_id);
+        let actor = ContentActor::Member(collaborator_member_id);
+        let start: T::BlockNumber = frame_system::Pallet::<T>::block_number()
+            + project_token::Pallet::<T>::min_revenue_split_time_to_start();
+        let duration: T::BlockNumber = project_token::Pallet::<T>::min_revenue_split_duration();
+        let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
+        let reward_amount = 1_000_000u32.into();
+        let _ = balances::Pallet::<T>::deposit_creating(
+            &channel_acc,
+            // TODO: Existential deposit should not be needed after https://github.com/Joystream/joystream/issues/4033
+            T::JoyExistentialDeposit::get() + reward_amount
+        );
+        let owner_acc_balance_pre = balances::Pallet::<T>::usable_balance(owner_acc.clone());
+    }: issue_revenue_split(origin, actor, channel_id, Some(start), duration)
+    verify {
+        let allocation = DEFAULT_CRT_REVENUE_SPLIT_RATE * reward_amount;
+        let withdrawn = reward_amount - allocation;
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        assert_eq!(token.revenue_split, RevenueSplitStateOf::<T>::Active(RevenueSplitInfo {
+            allocation,
+            timeline: TimelineOf::<T> { start, duration },
+            dividends_claimed: JoyBalanceOf::<T>::zero()
+        }));
+        let split_id = token.next_revenue_split_id - 1;
+        // Make sure council budget was increased
+        let owner_acc_balance_post = balances::Pallet::<T>::usable_balance(owner_acc);
+        assert_eq!(owner_acc_balance_post, owner_acc_balance_pre + withdrawn);
+        // Check event emitted
+        assert_past_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::RevenueSplitIssued(
+                    token_id,
+                    start,
+                    duration,
+                    allocation
+                )
+            ).into(),
+            1 // expected events:
+            // project_token::RevenueSplitIssued
+            // balances::Transfer
+        );
+    }
+
+    finalize_revenue_split {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
+        let reward_amount = 1_000_000u32.into();
+        let _ = balances::Pallet::<T>::deposit_creating(
+            &channel_acc,
+            // TODO: Existential deposit should not be needed after https://github.com/Joystream/joystream/issues/4033
+            T::JoyExistentialDeposit::get() + reward_amount
+        );
+        let duration: T::BlockNumber = 100u32.into();
+        Pallet::<T>::issue_revenue_split(
+            origin.clone().into(),
+            actor,
+            channel_id,
+            None,
+            duration
+        )?;
+        fastforward_by_blocks::<T>(project_token::Pallet::<T>::min_revenue_split_duration());
+        // Remove the default token owner stake
+        project_token::AccountInfoByTokenAndMember::<T>::mutate(token_id, curator_member_id, |acc| {
+            acc.unstake();
+        });
+        // Participate in split
+        let curator_balance_pre = balances::Pallet::<T>::usable_balance(curator_acc_id.clone());
+        project_token::Pallet::<T>::participate_in_split(
+            origin.clone().into(),
+            token_id,
+            curator_member_id,
+            (DEFAULT_CRT_OWNER_ISSUANCE / 2).into()
+        )?;
+        let curator_balance_post = balances::Pallet::<T>::usable_balance(curator_acc_id.clone());
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        let allocation = DEFAULT_CRT_REVENUE_SPLIT_RATE * reward_amount;
+        let dividends_paid = allocation / 2u32.into();
+        let leftovers = allocation - dividends_paid;
+        // Make sure dividend paid to curator and split data equals to expected values
+        assert_eq!(curator_balance_post, curator_balance_pre + dividends_paid);
+        match token.revenue_split {
+            RevenueSplitStateOf::<T>::Active(info) => {
+                assert_eq!(info.allocation, allocation);
+                assert_eq!(info.leftovers(), leftovers);
+                assert_eq!(info.dividends_claimed, dividends_paid);
+            },
+            _ => panic!("Invalid split status!")
+        };
+        fastforward_by_blocks::<T>(duration);
+        let channel_balance_pre = balances::Pallet::<T>::usable_balance(channel_acc.clone());
+    }: _(origin, actor, channel_id)
+    verify {
+        assert!(TokenInfoById::<T>::contains_key(token_id));
+        let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+        assert_eq!(token.revenue_split, RevenueSplitStateOf::<T>::Inactive);
+        // Make sure leftovers sent to channel acc
+        let channel_balance_post = balances::Pallet::<T>::usable_balance(channel_acc.clone());
+        assert_eq!(channel_balance_post, channel_balance_pre + leftovers);
+        // Check event emitted
+        assert_last_event::<T>(
+            <T as project_token::Config>::Event::from(
+                project_token::Event::<T>::RevenueSplitFinalized(
+                    token_id,
+                    channel_acc,
+                    leftovers
+                ),
+            ).into(),
+        );
+    }
 }
 
 #[cfg(test)]
@@ -1031,6 +1229,27 @@ pub mod tests {
     fn finalize_creator_token_sale() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_finalize_creator_token_sale());
+        });
+    }
+
+    #[test]
+    fn issue_revenue_split() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_issue_revenue_split());
+        });
+    }
+
+    #[test]
+    fn issue_revenue_split_as_collaborator() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_issue_revenue_split_as_collaborator());
+        });
+    }
+
+    #[test]
+    fn finalize_revenue_split() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_finalize_revenue_split());
         });
     }
 }

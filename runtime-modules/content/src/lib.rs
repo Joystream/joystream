@@ -3120,7 +3120,15 @@ decl_module! {
         }
 
         /// Issue revenue split for a channel
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::issue_revenue_split()]
         pub fn issue_revenue_split(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3163,7 +3171,15 @@ decl_module! {
         }
 
         /// Finalize an ended revenue split
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::finalize_revenue_split()]
         pub fn finalize_revenue_split(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

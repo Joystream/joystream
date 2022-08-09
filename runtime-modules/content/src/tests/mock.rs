@@ -260,7 +260,9 @@ impl ContentActorAuthenticator for Test {
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let controller_account_id = (*member_id) as u128;
-        if MEMBER_IDS.contains(member_id) {
+        if Membership::is_member_controller_account(member_id, account_id) {
+            true
+        } else if MEMBER_IDS.contains(member_id) {
             *account_id == controller_account_id
         } else if COLABORATOR_IDS.contains(member_id) {
             *account_id == controller_account_id
@@ -740,6 +742,10 @@ impl ExtBuilder {
             .unwrap();
 
         balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
+        project_token::GenesisConfig::<Test>::default()
             .assimilate_storage(&mut t)
             .unwrap();
 

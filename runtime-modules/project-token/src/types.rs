@@ -179,20 +179,20 @@ impl<JoyBalance, BlockNumber> Default for RevenueSplitState<JoyBalance, BlockNum
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct RevenueSplitInfo<JoyBalance, BlockNumber> {
     /// Original Allocation
-    pub(crate) allocation: JoyBalance,
+    pub allocation: JoyBalance,
 
     /// Split timeline [start, start + duration)
-    pub(crate) timeline: Timeline<BlockNumber>,
+    pub timeline: Timeline<BlockNumber>,
 
     /// Dividends payed out after staking period is over
-    pub(crate) dividends_claimed: JoyBalance,
+    pub dividends_claimed: JoyBalance,
 }
 
 impl<JoyBalance: Saturating + Zero + Copy, BlockNumber: Copy>
     RevenueSplitInfo<JoyBalance, BlockNumber>
 {
     /// Leftovers allocation not claimed so far
-    pub(crate) fn leftovers(&self) -> JoyBalance {
+    pub fn leftovers(&self) -> JoyBalance {
         self.allocation.saturating_sub(self.dividends_claimed)
     }
 }
