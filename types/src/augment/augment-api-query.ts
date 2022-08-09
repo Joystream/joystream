@@ -535,10 +535,6 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       categoryCounter: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
-       * If data migration is done, set as configible for unit test purpose
-       **/
-      dataMigrationDone: AugmentedQuery<ApiType, () => Observable<bool>, []>;
-      /**
        * Category identifier value to be used for the next Category created.
        **/
       nextCategoryId: AugmentedQuery<ApiType, () => Observable<u64>, []>;

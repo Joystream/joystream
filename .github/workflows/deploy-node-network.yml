@@ -43,7 +43,6 @@ jobs:
           echo ::set-output name=skipChainSetup::$(echo $jsonInput | jq -r '.skipChainSetup.value')
           echo ::set-output name=runtimeProfile::$(echo $jsonInput | jq -r '.runtimeProfile.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
-          initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
 
           if [ -z "$initialBalancesFile" ]
           then
@@ -51,14 +50,6 @@ jobs:
           else
             wget $initialBalancesFile -O initial-balances.json
             echo ::set-output name=initialBalancesFilePath::'initial-balances.json'
-          fi
-
-          if [ -z "$initialMembersFile" ]
-          then
-            echo ::set-output name=initialMembersFilePath::''
-          else
-            wget $initialMembersFile -O initial-members.json
-            echo ::set-output name=initialMembersFilePath::'initial-members.json'
           fi
 
       - name: Install Ansible dependencies
@@ -148,7 +139,6 @@ jobs:
                           git_repo=${{ steps.myoutputs.outputs.gitRepo }} \
                           deployment_type=${{ steps.myoutputs.outputs.deploymentType }} \
                           branch_name=${{ steps.myoutputs.outputs.branchName }} \
-                          initial_members_file=${{ steps.myoutputs.outputs.initialMembersFilePath }} \
                           initial_balances_file=${{ steps.myoutputs.outputs.initialBalancesFilePath }} \
                           skip_chain_setup=${{ steps.myoutputs.outputs.skipChainSetup }}"
             --verbose

@@ -340,11 +340,6 @@ decl_error! {
         /// Duplicates for the stickied thread id collection.
         StickiedThreadIdsDuplicates,
 
-        // Error data migration
-
-        /// data migration not done yet.
-        DataMigrationNotDone,
-
         // Error for limited size
 
         /// Maximum size of storage map exceeded
@@ -358,7 +353,7 @@ decl_error! {
 decl_storage! {
     trait Store for Module<T: Config> as Forum_1_1 {
         /// Map category identifier to corresponding category.
-        pub CategoryById get(fn category_by_id) config(): map hasher(blake2_128_concat) T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
+        pub CategoryById get(fn category_by_id): map hasher(blake2_128_concat) T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
 
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(fn next_category_id) config(): T::CategoryId;
@@ -367,7 +362,7 @@ decl_storage! {
         pub CategoryCounter get(fn category_counter) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(fn thread_by_id) config(): double_map hasher(blake2_128_concat)
+        pub ThreadById get(fn thread_by_id): double_map hasher(blake2_128_concat)
             T::CategoryId, hasher(blake2_128_concat) T::ThreadId => ThreadOf<T>;
 
         /// Thread identifier value to be used for next Thread in threadById.
@@ -377,14 +372,11 @@ decl_storage! {
         pub NextPostId get(fn next_post_id) config(): T::PostId;
 
         /// Moderator set for each Category
-        pub CategoryByModerator get(fn category_by_moderator) config(): double_map
+        pub CategoryByModerator get(fn category_by_moderator): double_map
             hasher(blake2_128_concat) T::CategoryId, hasher(blake2_128_concat) ModeratorId<T> => ();
 
-        /// If data migration is done, set as configible for unit test purpose
-        pub DataMigrationDone get(fn data_migration_done) config(): bool;
-
         /// Map post identifier to corresponding post.
-        pub PostById get(fn post_by_id) config(): double_map hasher(blake2_128_concat) T::ThreadId,
+        pub PostById get(fn post_by_id): double_map hasher(blake2_128_concat) T::ThreadId,
             hasher(blake2_128_concat) T::PostId =>
                                                 Post<
                                                     ForumUserId<T>,
@@ -505,8 +497,6 @@ decl_module! {
         #[weight = WeightInfoForum::<T>::update_category_membership_of_moderator_new()
             .max(WeightInfoForum::<T>::update_category_membership_of_moderator_old())]
         fn update_category_membership_of_moderator(origin, moderator_id: ModeratorId<T>, category_id: T::CategoryId, new_value: bool) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
             clear_prefix(b"Forum ForumUserById", None);
 
             let account_id = ensure_signed(origin)?;
@@ -552,9 +542,6 @@ decl_module! {
             description.len().saturated_into()
         )]
         fn create_category(origin, parent_category_id: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             Self::ensure_can_create_category(account_id, &parent_category_id)?;
@@ -621,9 +608,6 @@ decl_module! {
             T::MaxCategoryDepth::get() as u32,
         ))]
         fn update_category_archival_status(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, new_archival_status: bool) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Ensure actor can update category
@@ -668,9 +652,6 @@ decl_module! {
             title.len().saturated_into(),
         ))]
         fn update_category_title(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, title: Vec<u8>) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Ensure actor can update category
@@ -717,9 +698,6 @@ decl_module! {
             description.len().saturated_into(),
         ))]
         fn update_category_description(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, description: Vec<u8>) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Ensure actor can update category
@@ -763,9 +741,6 @@ decl_module! {
             T::MaxCategoryDepth::get() as u32,
         ))]
         fn delete_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             let category = Self::ensure_can_delete_category(account_id, &actor, &category_id)?;
@@ -813,9 +788,6 @@ decl_module! {
             metadata: Vec<u8>,
             text: Vec<u8>,
         ) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             Self::ensure_can_create_thread(&account_id, &forum_user_id, &category_id)?;
@@ -900,9 +872,6 @@ decl_module! {
             thread_id: T::ThreadId,
             new_metadata: Vec<u8>
         ) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             Self::ensure_can_edit_thread_metadata(account_id, &category_id, &thread_id, &forum_user_id)?;
@@ -942,9 +911,6 @@ decl_module! {
             thread_id: T::ThreadId,
             hide: bool,
         ) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             let thread = Self::ensure_can_delete_thread(
@@ -997,9 +963,6 @@ decl_module! {
             thread_id: T::ThreadId,
             new_category_id: T::CategoryId
         ) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Make sure moderator move between selected categories
@@ -1049,9 +1012,6 @@ decl_module! {
             )
         )]
         fn moderate_thread(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Ensure actor is allowed to moderate thread
@@ -1097,9 +1057,6 @@ decl_module! {
             text: Vec<u8>,
             editable: bool,
         ) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Make sure thread exists and is mutable
@@ -1157,9 +1114,6 @@ decl_module! {
             T::MaxCategoryDepth::get() as u32,
         )]
         fn react_post(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, react: T::PostReactionId) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Check that account is forum member
@@ -1202,9 +1156,6 @@ decl_module! {
             post_id: T::PostId,
             new_text: Vec<u8>
         ) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Check that account is forum member
@@ -1258,9 +1209,6 @@ decl_module! {
             rationale.len().saturated_into(),
         ))]
         fn moderate_post(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, rationale: Vec<u8>) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             // Ensure actor is allowed to moderate post and post is editable
@@ -1312,9 +1260,6 @@ decl_module! {
             posts: BTreeMap<ExtendedPostId<T>, bool>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
-
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
 
             let account_id = ensure_signed(origin)?;
 
@@ -1373,9 +1318,6 @@ decl_module! {
             )
         )]
         fn set_stickied_threads(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> DispatchResult {
-            // Ensure data migration is done
-            Self::ensure_data_migration_done()?;
-
             let account_id = ensure_signed(origin)?;
 
             Self::ensure_can_set_stickied_threads(account_id, &actor, &category_id, &stickied_ids)?;
@@ -2067,15 +2009,6 @@ impl<T: Config> Module<T> {
         }
 
         check_limit(current_amount, U::get())
-    }
-
-    /// Ensure data migration is done
-    fn ensure_data_migration_done() -> Result<(), Error<T>> {
-        if DataMigrationDone::get() {
-            Ok(())
-        } else {
-            Err(Error::<T>::DataMigrationNotDone)
-        }
     }
 
     fn ensure_empty_thread(thread: &ThreadOf<T>) -> DispatchResult {
