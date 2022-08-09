@@ -1074,48 +1074,26 @@ pub fn react_post_mock(
 
 /// Create default genesis config
 pub fn default_genesis_config() -> forum::GenesisConfig<Runtime> {
-    create_genesis_config(true)
-}
-
-/// Create config without data migration
-pub fn migration_not_done_config() -> forum::GenesisConfig<Runtime> {
-    create_genesis_config(false)
-}
-
-/// Create genesis config
-pub fn create_genesis_config(data_migration_done: bool) -> forum::GenesisConfig<Runtime> {
     forum::GenesisConfig::<Runtime> {
-        category_by_id: vec![],
         next_category_id: 1,
         category_counter: 0,
-        thread_by_id: vec![],
-        post_by_id: vec![],
         next_thread_id: 1,
         next_post_id: 1,
-
-        category_by_moderator: vec![],
-
-        // data migration part
-        data_migration_done,
     }
 }
 
-// NB!:
-// Wanted to have payload: a: &GenesisConfig<Test>
-// but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: forum::GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+pub fn build_test_externalities() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 
-    config.assimilate_storage(&mut t).unwrap();
+    default_genesis_config().assimilate_storage(&mut t).unwrap();
 
     t.into()
 }
 
 /// Generate enviroment with test externalities
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
-    let default_genesis_config = default_genesis_config();
     /*
         Events are not emitted on block 0.
         So any dispatchable calls made during genesis block formation will have no events emitted.
@@ -1126,7 +1104,7 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
         f()
     };
 
-    build_test_externalities(default_genesis_config).execute_with(func)
+    build_test_externalities().execute_with(func)
 }
 
 // Recommendation from Parity on testing on_finalize

@@ -18,6 +18,16 @@
     reverse_proxy localhost:3334
 }
 
+{{ nip_domain }}/colossus-2* {
+    uri strip_prefix /colossus-2
+    reverse_proxy localhost:3335
+}
+
+{{ nip_domain }}/distributor-2* {
+    uri strip_prefix /distributor-2
+    reverse_proxy localhost:3336
+}
+
 # newer versions of graphql-server seems to expect this url also
 {{ nip_domain }}/@apollographql/* {
     reverse_proxy localhost:8081

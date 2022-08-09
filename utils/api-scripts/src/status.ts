@@ -59,7 +59,7 @@ async function main() {
     console.log('Total Validator Locked Balances:', totalValidatorBalances.toString())
   }
 
-  api.disconnect()
+  await api.disconnect()
 }
 
-main()
+main().catch(console.error)
