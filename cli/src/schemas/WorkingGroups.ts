@@ -1,6 +1,9 @@
+import { ApiPromise } from '@polkadot/api'
 import { WorkingGroupOpeningInputParameters, WorkingGroupUpdateStatusInputParameters, JsonSchema } from '../Types'
 
-export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInputParameters> = {
+export const WorkingGroupOpeningInputSchema: (api: ApiPromise) => JsonSchema<WorkingGroupOpeningInputParameters> = (
+  api
+) => ({
   type: 'object',
   additionalProperties: false,
   required: ['stakingPolicy'],
@@ -48,8 +51,8 @@ export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInput
       additionalProperties: false,
       required: ['amount', 'unstakingPeriod'],
       properties: {
-        amount: { type: 'integer', minimum: 2000 },
-        unstakingPeriod: { type: 'integer', minimum: 43200 },
+        amount: { type: 'integer', minimum: api.consts.forumWorkingGroup.minimumApplicationStake.toNumber() },
+        unstakingPeriod: { type: 'integer', minimum: api.consts.forumWorkingGroup.minUnstakingPeriodLimit.toNumber() },
       },
     },
     rewardPerBlock: {
@@ -57,7 +60,7 @@ export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInput
       minimum: 1,
     },
   },
-}
+})
 
 export const WorkingGroupUpdateStatusInputSchema: JsonSchema<WorkingGroupUpdateStatusInputParameters> = {
   type: 'object',

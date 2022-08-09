@@ -23,17 +23,15 @@ pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
-pub mod initial_members;
 pub mod storage_config;
 
 use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
     constants::currency::{ENDOWMENT, STASH},
-    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block,
-    ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SudoConfig,
-    SystemConfig, TransactionPaymentConfig,
+    wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
+    GrandpaConfig, ImOnlineConfig, MaxNominations, SessionConfig, SessionKeys, StakerStatus,
+    StakingConfig, StorageConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -172,8 +170,6 @@ pub fn testnet_genesis(
     initial_nominators: Vec<AccountId>,
     root_key: AccountId,
     mut endowed_accounts: Vec<AccountId>,
-    members: Vec<membership::genesis::Member<u64, AccountId>>,
-    forum_cfg: ForumConfig,
     genesis_balances: Vec<(AccountId, Balance)>,
     content_cfg: ContentConfig,
     storage_cfg: StorageConfig,
@@ -264,8 +260,7 @@ pub fn testnet_genesis(
         transaction_payment: TransactionPaymentConfig {},
         vesting: Default::default(),
         council: council_config::create_council_config(),
-        members: MembersConfig { members },
-        forum: forum_cfg,
+        forum: forum_config::empty(),
         content: content_cfg,
         storage: storage_cfg,
         referendum: council_config::create_referendum_config(),
@@ -282,8 +277,6 @@ fn development_config_genesis() -> GenesisConfig {
         ],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
-        initial_members::none(),
-        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
@@ -315,8 +308,6 @@ fn local_testnet_genesis() -> GenesisConfig {
         vec![],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
-        initial_members::none(),
-        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
@@ -352,8 +343,6 @@ pub(crate) mod tests {
             vec![],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             development_endowed_accounts(),
-            vec![],
-            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
             content_config::testing_config(),
             storage_config::testing_config(),

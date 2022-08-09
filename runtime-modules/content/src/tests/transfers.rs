@@ -1,4 +1,5 @@
 #![cfg(test)]
+use super::curators::create_curator_group;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
@@ -264,6 +265,30 @@ fn initialize_channel_transfer_fails_with_invalid_collaborators() {
 }
 
 #[test]
+fn initialize_channel_transfer_fails_with_invalid_new_member_owner() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_member_id = 111;
+        InitializeChannelTransferFixture::default()
+            .with_new_channel_owner(ChannelOwner::Member(invalid_member_id))
+            .call_and_assert(Err(Error::<Test>::ChannelOwnerMemberDoesNotExist.into()))
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_with_invalid_new_curator_group_owner() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_curator_group_id = 111;
+        InitializeChannelTransferFixture::default()
+            .with_new_channel_owner(ChannelOwner::CuratorGroup(invalid_curator_group_id))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelOwnerCuratorGroupDoesNotExist.into()
+            ))
+    })
+}
+
+#[test]
 fn accept_transfer_status_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
@@ -462,6 +487,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
 fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
+        create_curator_group(BTreeMap::new());
         InitializeChannelTransferFixture::default()
             .with_new_channel_owner(ChannelOwner::CuratorGroup(CuratorGroupId::one()))
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)

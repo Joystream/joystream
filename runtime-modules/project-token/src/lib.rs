@@ -1529,6 +1529,13 @@ impl<T: Config> Module<T> {
             Error::<T>::TokenSymbolAlreadyInUse,
         );
 
+        for (member_id, _) in params.initial_allocation.iter() {
+            ensure!(
+                T::MembershipInfoProvider::controller_account_id(*member_id).is_ok(),
+                Error::<T>::InitialAllocationToNonExistingMember
+            )
+        }
+
         Ok(())
     }
 

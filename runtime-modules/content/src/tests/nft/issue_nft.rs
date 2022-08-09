@@ -557,3 +557,13 @@ fn issue_nft_fails_with_pending_channel_transfer() {
         );
     })
 }
+
+#[test]
+fn issue_nft_fails_with_non_existing_non_channel_owner() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default()
+            .with_non_channel_owner(9999)
+            .call_and_assert(Err(Error::<Test>::NftNonChannelOwnerDoesNotExist.into()));
+    })
+}

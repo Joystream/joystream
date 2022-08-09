@@ -115,7 +115,7 @@ async function main() {
   process.exit()
 }
 
-main()
+main().catch(console.error)
 
 interface Storage {
   'jsonrpc': string

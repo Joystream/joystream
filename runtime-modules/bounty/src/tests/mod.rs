@@ -345,6 +345,12 @@ fn create_bounty_fails_with_invalid_closed_contract() {
         CreateBountyFixture::default()
             .with_closed_contract(large_member_id_list)
             .call_and_assert(Err(Error::<Test>::ClosedContractMemberListIsTooLarge.into()));
+
+        let invalid_member_id_list: Vec<u64> = vec![1, 2, 3, 9999];
+
+        CreateBountyFixture::default()
+            .with_closed_contract(invalid_member_id_list)
+            .call_and_assert(Err(Error::<Test>::ClosedContractMemberNotFound.into()));
     });
 }
 
@@ -483,6 +489,17 @@ fn create_bounty_fails_with_invalid_periods() {
         CreateBountyFixture::default()
             .with_judging_period(0)
             .call_and_assert(Err(Error::<Test>::JudgingPeriodCannotBeZero.into()));
+    });
+}
+
+#[test]
+fn create_bounty_fails_with_invalid_oracle_member_id() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        CreateBountyFixture::default()
+            .with_oracle_member_id(9999)
+            .call_and_assert(Err(Error::<Test>::InvalidOracleMemberId.into()));
     });
 }
 

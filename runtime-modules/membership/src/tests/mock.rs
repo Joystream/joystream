@@ -265,41 +265,25 @@ impl
     }
 }
 
-pub struct TestExternalitiesBuilder<T: Config> {
+pub struct TestExternalitiesBuilder {
     system_config: Option<frame_system::GenesisConfig>,
-    membership_config: Option<membership::GenesisConfig<T>>,
 }
 
-impl<T: Config> Default for TestExternalitiesBuilder<T> {
+impl Default for TestExternalitiesBuilder {
     fn default() -> Self {
         Self {
             system_config: None,
-            membership_config: None,
         }
     }
 }
 
-impl<T: Config> TestExternalitiesBuilder<T> {
-    pub fn set_membership_config(
-        mut self,
-        membership_config: membership::GenesisConfig<T>,
-    ) -> Self {
-        self.membership_config = Some(membership_config);
-        self
-    }
-
+impl TestExternalitiesBuilder {
     pub fn build(self) -> sp_io::TestExternalities {
         // Add system
-        let mut t = self
+        let t = self
             .system_config
             .unwrap_or_default()
-            .build_storage::<T>()
-            .unwrap();
-
-        // Add membership
-        self.membership_config
-            .unwrap_or_default()
-            .assimilate_storage(&mut t)
+            .build_storage::<Test>()
             .unwrap();
 
         t.into()
@@ -315,18 +299,9 @@ impl<T: Config> TestExternalitiesBuilder<T> {
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    TestExternalitiesBuilder::<Test>::default().build()
+    TestExternalitiesBuilder::default().build()
 }
 
-pub fn build_test_externalities_with_initial_members(
-    initial_members: Vec<(u64, u64)>,
-) -> sp_io::TestExternalities {
-    TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            crate::genesis::GenesisConfigBuilder::default()
-                .members(initial_members)
-                .build(),
-        )
-        .with_lead()
-        .build()
+pub fn build_test_externalities_with_lead_set() -> sp_io::TestExternalities {
+    TestExternalitiesBuilder::default().with_lead().build()
 }

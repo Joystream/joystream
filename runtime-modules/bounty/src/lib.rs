@@ -700,6 +700,12 @@ decl_error! {
         /// than allowed max work entry limit.
         ClosedContractMemberListIsTooLarge,
 
+        /// 'closed assurance contract' bounty member list can only include existing members
+        ClosedContractMemberNotFound,
+
+        /// Provided oracle member id does not belong to an existing member
+        InvalidOracleMemberId,
+
         /// Staking account doesn't belong to a member.
         InvalidStakingAccountForMember,
 
@@ -1512,6 +1518,20 @@ impl<T: Config> Module<T> {
             ensure!(
                 member_ids.len() <= T::ClosedContractSizeLimit::get().saturated_into(),
                 Error::<T>::ClosedContractMemberListIsTooLarge
+            );
+
+            for member_id in member_ids {
+                ensure!(
+                    T::Membership::controller_account_id(*member_id).is_ok(),
+                    Error::<T>::ClosedContractMemberNotFound
+                );
+            }
+        }
+
+        if let BountyActor::Member(member_id) = params.oracle {
+            ensure!(
+                T::Membership::controller_account_id(member_id).is_ok(),
+                Error::<T>::InvalidOracleMemberId
             );
         }
 
