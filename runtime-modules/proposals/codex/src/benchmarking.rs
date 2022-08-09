@@ -331,7 +331,7 @@ benchmarks! {
     }
 
     create_proposal_funding_request {
-        let i in 1 .. MAX_FUNDING_REQUEST_ACCOUNTS.try_into().unwrap();
+        let i in 1 .. T::FundingRequestProposalMaxAccounts::get();
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
 
@@ -375,7 +375,7 @@ benchmarks! {
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::SetMaxValidatorCount(MAX_VALIDATOR_COUNT);
+        let proposal_details = ProposalDetails::SetMaxValidatorCount(T::SetMaxValidatorCountProposalMaxValidators::get());
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
