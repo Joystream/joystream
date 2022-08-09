@@ -124,6 +124,7 @@ ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.ym
                 number_of_validators=$NUMBER_OF_VALIDATORS
                 number_of_storage_nodes=$NUMBER_OF_STORAGE_NODES
                 number_of_distributor_nodes=$NUMBER_OF_DISTRIBUTOR_NODES
+                endow_accounts=$ENDOW_ACCOUNTS
                 "
 
 echo -e "\n\n=========== Delete Build instance ==========="

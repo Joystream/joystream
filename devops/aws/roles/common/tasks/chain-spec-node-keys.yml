@@ -17,7 +17,8 @@
   shell: >
     {{ remote_code_path }}/target/release/chain-spec-builder generate -a {{ number_of_validators }}
     --chain-spec-path {{ chain_spec_path }}
-    --endowed 1 --keystore-path {{ remote_data_path }}
+    {% if endow_accounts is defined and endow_accounts|int > 0%}--endowed {{ endow_accounts }}{% endif %}
+    --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_code_path }}/initial-balances.json{% endif %}
   register: chain_secrets_output
@@ -52,12 +53,18 @@
     chain_secrets_output_formatted: '{{ chain_secrets_output.stdout | regex_replace("=", ": ") | from_yaml }}'
   run_once: true
 
-- name: Extract keys from chain spec output
+- name: Extract sudo key from chain spec output
   set_fact:
     sudo_key: '{{ chain_secrets_output_formatted.sudo }}'
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Extract first endowed key from chain spec output
+  set_fact:
     endowed_key: '{{ chain_secrets_output_formatted.endowed_0 }}'
   delegate_to: '{{ build_instance }}'
   run_once: true
+  when: endow_accounts is defined and endow_accounts|int > 0
 
 - name: Set chain name, id, protocolId, and bootNodes
   update_chainspec_name_id_boot_nodes:

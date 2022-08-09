@@ -40,6 +40,7 @@ jobs:
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
           echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
           echo ::set-output name=runtimeProfile::$(echo $jsonInput | jq -r '.runtimeProfile.value')
+          echo ::set-output name=endowAccounts::$(echo $jsonInput | jq -r '.endowAccounts.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
 
           if [ -z "$initialBalancesFile" ]
@@ -85,8 +86,8 @@ jobs:
             JoystreamAmi=${{ steps.network_config.outputs.joystreamAmi }},
             NumberOfValidators=${{ steps.network_config.outputs.numberOfValidators }},
             VolumeSize=${{ steps.network_config.outputs.volumeSize }},
-            NumberOfStorageNodes="0",
-            NumberOfDistributorNodes="0",
+            NumberOfStorageNodes=0,
+            NumberOfDistributorNodes=0,
             TotalNumberOfInstancesInGroups=${{ steps.network_config.outputs.numberOfValidators }}
 
       - name: Prepare inventory for Ansible
@@ -136,12 +137,13 @@ jobs:
             --inventory inventory
             --extra-vars "network_name=${{ steps.network_config.outputs.networkName }} data_path=deploy_artifacts \
                           number_of_validators=${{ steps.network_config.outputs.numberOfValidators }} \
-                          number_of_storage_nodes='0' \
-                          number_of_distributor_nodes='0' \
+                          number_of_storage_nodes=0 \
+                          number_of_distributor_nodes=0 \
                           git_repo=${{ steps.network_config.outputs.gitRepo }} \
                           deployment_type=${{ steps.network_config.outputs.deploymentType }} \
                           branch_name=${{ steps.network_config.outputs.branchName }} \
-                          initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }}
+                          initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
+                          endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
             --verbose
 
       - name: Terminate Build instance

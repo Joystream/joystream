@@ -1,5 +1,5 @@
 ---
-# Configure and start joystream-node RPC service on the servers
+# Configure and start joystream-node RPC, QueryNode, Orion and Faucet services on the servers
 
 - name: Print bootNodes
   debug:
@@ -49,7 +49,7 @@
   shell: . ~/.bash_profile && ./start-qn-orion-faucet.sh
   environment:
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
-    TREASURY_ACCOUNT_URI: '{{ endowed_key }}'
+    TREASURY_ACCOUNT_URI: '{% if endowed_key is defined %}{{ endowed_key }}{% else %}{{ sudo_key }}{% endif %}'
     SUDO_ACCOUNT_URI: '{{ sudo_key }}'
     INVITER_KEY: "//Faucet"
     BALANCE_CREDIT: "300000000000"

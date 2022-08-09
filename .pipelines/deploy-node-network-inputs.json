@@ -50,5 +50,9 @@
   "runtimeProfile": {
     "description": "STAGING | PLAYGROUND| TESTING - leave empty for production",
     "value": ""
+  },
+  "endowAccounts": {
+    "description": "Number of accounts to endow",
+    "value": "1"
   }
 }
