@@ -372,6 +372,9 @@ async function updateChannelAgentsPermissions(
 
   // create new records for privledged members
   for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
+    /* TODO: use this instead of a code below when this feature is available
+    https://github.com/Joystream/hydra/issues/507
+
     const channelAgentPermissions = new ChannelAgentPermissions({
       channel: new Channel({ id: channel.id.toString() }),
       member: new Membership({ id: memberId.toString() }),
@@ -379,5 +382,17 @@ async function updateChannelAgentsPermissions(
     })
 
     await store.save(channelAgentPermissions)
+    */
+
+    const newPermissions = Array.from(permissions).map(mapAgentPermission)
+    for (const permission of newPermissions) {
+      const channelAgentPermissions = new ChannelAgentPermissions({
+        channel: new Channel({ id: channel.id.toString() }),
+        member: new Membership({ id: memberId.toString() }),
+        permission,
+      })
+
+      await store.save(channelAgentPermissions)
+    }
   }
 }

@@ -149,16 +149,18 @@ async function updateCuratorAgentPermissions(
   // safest way to update permission is to delete existing and creating new ones
 
   // delete existing agent permissions
-  const existingAgentPermissions = await store.get(CuratorAgentPermissions, {
+  const existingAgentPermissions = await store.getMany(CuratorAgentPermissions, {
     where: {
       curatorGroup: { id: curatorGroup.id.toString() },
       curator: { id: curator.id.toString() },
     },
   })
-
-  if (existingAgentPermissions) {
-    await store.remove(existingAgentPermissions)
+  for (const agentPermissions of existingAgentPermissions) {
+    await store.remove(agentPermissions)
   }
+
+  /* TODO: use this instead of a code below when this feature is available
+    https://github.com/Joystream/hydra/issues/507
 
   // create new records for privledged members
   const curatorAgentPermissions = new CuratorAgentPermissions({
@@ -168,4 +170,17 @@ async function updateCuratorAgentPermissions(
   })
 
   await store.save(curatorAgentPermissions)
+  */
+
+  // create new records for privledged members
+  const newPermissions = Array.from(permissions).map(mapAgentPermission)
+  for (const permission of newPermissions) {
+    const curatorAgentPermissions = new CuratorAgentPermissions({
+      curatorGroup: new CuratorGroup({ id: curatorGroup.id.toString() }),
+      curator: new Curator({ id: curator.id.toString() }),
+      permission,
+    })
+
+    await store.save(curatorAgentPermissions)
+  }
 }
