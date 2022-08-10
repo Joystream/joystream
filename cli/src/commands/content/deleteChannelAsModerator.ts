@@ -4,13 +4,11 @@ import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
-export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
+export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the channel and optionally all associated data objects.'
 
   static flags = {
-    context: ContentDirectoryCommandBase.channelManagementContextFlag,
     channelId: flags.integer({
       char: 'c',
       required: true,
@@ -21,39 +19,38 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       default: false,
       description: 'Force-remove all associated channel data objects',
     }),
+    rationale: flags.string({
+      char: 'r',
+      required: true,
+      description: 'Reason of deleting the channel by moderator',
+    }),
+    context: ContentDirectoryCommandBase.moderationActionContextFlag,
     ...ContentDirectoryCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { context, channelId, force } = this.parse(DeleteChannelCommand).flags
+    const { channelId, force, rationale, context } = this.parse(DeleteChannelAsModeratorCommand).flags
     // Context
     const channel = await this.getApi().channelById(channelId)
-    const [actor, address] = await this.getChannelManagementActor(channel, context)
+    const [actor, address] = await this.getModerationActionActor(context)
 
-    const dataObjectsInfo = this.isQueryNodeUriSet()
-      ? await this.getDataObjectsInfoFromQueryNode(channelId)
-      : await this.getDataObjectsInfoFromChain(channelId)
-
-    // Ensure actor is authorized to perform channel deletion
-    const requiredPermissions: ChannelActionPermission['type'][] = dataObjectsInfo.length
-      ? ['DeleteChannel', 'ManageNonVideoChannelAssets']
-      : ['DeleteChannel']
-    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
-      this.error(
-        `Only channelOwner or collaborator with ${requiredPermissions} permissions can perform this deletion!`,
-        {
-          exit: ExitCodes.AccessDenied,
-        }
-      )
+    // Ensure moderator has required permission
+    if (!(await this.isModeratorWithRequiredPermission(actor, channel.privilegeLevel, 'DeleteChannel'))) {
+      this.error(`Only content lead or curator with "DeleteChannel" permission can delete channel ${channelId}!`, {
+        exit: ExitCodes.AccessDenied,
+      })
     }
 
     if (channel.numVideos.toNumber()) {
       this.error(
-        `This channel still has 
-        ${channel.numVideos.toNumber()} associated video(s)!\n` +
+        `This channel still has ${channel.numVideos.toNumber()} associated video(s)!\n` +
           `Delete the videos first using ${chalk.magentaBright('content:deleteVideo')} command`
       )
     }
+
+    const dataObjectsInfo = this.isQueryNodeUriSet()
+      ? await this.getDataObjectsInfoFromQueryNode(channelId)
+      : await this.getDataObjectsInfoFromChain(channelId)
 
     if (dataObjectsInfo.length) {
       if (!force) {
@@ -61,13 +58,13 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
+      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
         `Channel state bloat bond of ${chalk.cyanBright(
           formatBalance(channel.channelStateBloatBond)
         )} will be transferred to ${chalk.magentaBright(address)}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
-            formatBalance(dataObjectsStateBloatBond)
+            formatBalance(stateBloatBond)
           )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
@@ -78,10 +75,11 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       }?`
     )
 
-    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannel', [
+    await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannelAsModerator', [
       actor,
       channelId,
       force ? dataObjectsInfo.length : 0,
+      rationale,
     ])
   }
 }

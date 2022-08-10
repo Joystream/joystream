@@ -259,20 +259,20 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:carthage-1.0
+    image: joystream/faucet:carthage-2.0
     restart: unless-stopped
     container_name: faucet
     env_file:
       - .env
     environment:
-      - SCREENING_AUTHORITY_SEED=${SCREENING_AUTHORITY_SEED}
+      - INVITER_KEY=${INVITER_KEY}
       - PORT=3002
-      - INVITING_MEMBER_ID=${INVITING_MEMBER_ID}
       - PROVIDER=${JOYSTREAM_NODE_WS}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
       - ALERT_TO_EMAIL=${ALERT_TO_EMAIL}
       - ALERT_FROM_EMAIL=${ALERT_FROM_EMAIL}
-      - BALANCE_TOP_UP_AMOUNT=${BALANCE_TOP_UP_AMOUNT}
+      - BALANCE_CREDIT=${BALANCE_CREDIT}
+      - BALANCE_LOCKED=${BALANCE_LOCKED}
     ports:
       - "3002:3002"
 
