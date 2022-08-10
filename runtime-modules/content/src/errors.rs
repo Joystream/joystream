@@ -1,11 +1,27 @@
 use crate::*;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Content directory errors
-    pub enum Error for Module<T: Trait> {
-        /// Feature Not Implemented
-        FeatureNotImplemented,
+    pub enum Error for Module<T: Config> {
+        /// Invalid extrinsic call: Channel state bloat bond changed.
+        ChannelStateBloatBondChanged,
+
+        /// Invalid extrinsic call: video state bloat bond changed.
+        VideoStateBloatBondChanged,
+
+        /// Attempt to set minimum cashout allowed below the limit
+        MinCashoutValueTooLow,
+
+        /// Attempt to set minimum cashout allowed above the limit
+        MaxCashoutValueTooHigh,
+
+        /// Provided channel owner (member) does not exist
+        ChannelOwnerMemberDoesNotExist,
+
+        /// Provided channel owner (curator group) does not exist
+        ChannelOwnerCuratorGroupDoesNotExist,
 
         // Curator Management Errors
         // -------------------------
@@ -58,17 +74,8 @@ decl_error! {
         /// Vfdeo in season can`t be removed (because order is important)
         VideoInSeason,
 
-        /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels,
-
         /// Actor cannot authorize as lead for given extrinsic
         ActorCannotBeLead,
-
-        /// Channel censorship status did not change
-        ChannelCensorshipStatusDidNotChange,
-
-        /// Video censorship status did not change
-        VideoCensorshipStatusDidNotChange,
 
         /// Actor cannot Own channel
         ActorCannotOwnChannel,
@@ -181,8 +188,8 @@ decl_error! {
         /// Given video nft is not in buy now state
         NftNotInBuyNowState,
 
-        /// Invalid Buy Now price commit provided
-        InvalidBuyNowPriceProvided,
+        /// `witness_price` provided to `buy_now` extrinsic does not match the current sell price
+        InvalidBuyNowWitnessPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -199,11 +206,23 @@ decl_error! {
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
 
+        /// Nft offer target member does not exist
+        TargetMemberDoesNotExist,
+
+        /// Current nft offer price does not match the provided `witness_price`
+        InvalidNftOfferWitnessPriceProvided,
+
         /// Max auction whitelist length upper bound exceeded
         MaxAuctionWhiteListLengthUpperBoundExceeded,
 
         /// Auction whitelist has only one member
         WhitelistHasOnlyOneMember,
+
+        /// At least one of the whitelisted members does not exist
+        WhitelistedMemberDoesNotExist,
+
+        /// Non-channel owner specified during nft issuance does not exist
+        NftNonChannelOwnerDoesNotExist,
 
         /// Extension period is greater then auction duration
         ExtensionPeriodIsGreaterThenAuctionDuration,
@@ -223,32 +242,11 @@ decl_error! {
         /// Bag Size specified is not valid
         InvalidBagSizeSpecified,
 
-        /// VideoPost does not exists
-        VideoPostDoesNotExist,
-
         /// Migration not done yet
         MigrationNotFinished,
 
         /// Partecipant is not a member
         ReplyDoesNotExist,
-
-        /// comments disabled
-        CommentsDisabled,
-
-        /// moderators limit reached
-        ModeratorsLimitReached,
-
-        /// cannot edit video post
-        CannotEditDescription,
-
-        /// failed witness verification
-        WitnessVerificationFailed,
-
-        /// witness not provided
-        WitnessNotProvided,
-
-        /// rationale not provided
-        RationaleNotProvidedByModerator,
 
         /// Insufficient balance
         UnsufficientBalance,
@@ -265,14 +263,112 @@ decl_error! {
         /// Payment Proof verification failed
         PaymentProofVerificationFailed,
 
-        /// Total reward too high
-        TotalRewardLimitExceeded,
+        /// Channel cashout amount is too high to be claimed
+        CashoutAmountExceedsMaximumAmount,
 
-        /// Cashout amount too small
-        UnsufficientCashoutAmount,
+        /// Channel cashout amount is too low to be claimed
+        CashoutAmountBelowMinimumAmount,
 
-        /// Reward account is none
-        RewardAccountNotFoundInChannel,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// exceeds the account's balance minus ExistantialDeposit
+        WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// is zero
+        WithdrawFromChannelAmountIsZero,
 
+        /// Channel cashouts are currently disabled
+        ChannelCashoutsDisabled,
+
+        /// New values for min_cashout_allowed/max_cashout_allowed are invalid
+        /// min_cashout_allowed cannot exceed max_cashout_allowed
+        MinCashoutAllowedExceedsMaxCashoutAllowed,
+
+        /// Curator does not have permissions to perform given moderation action
+        CuratorModerationActionNotAllowed,
+
+        /// Curator group's permissions by level map exceeded the maximum allowed size
+        CuratorGroupMaxPermissionsByLevelMapSizeExceeded,
+
+        /// Operation cannot be executed, because this channel feature has been paused by a curator
+        ChannelFeaturePaused,
+
+        /// Unexpected runtime state: missing channel bag during delete_channel attempt
+        ChannelBagMissing,
+
+        /// List of assets to remove provided for update_channel / update_video contains assets that don't belong to the specified entity
+        AssetsToRemoveBeyondEntityAssetsSet,
+
+        /// Invalid number of objects to delete provided for delete_video
+        InvalidVideoDataObjectsCountProvided,
+
+        /// Invalid channel transfer status for operations.
+        InvalidChannelTransferStatus,
+
+        /// Incorrect actor tries to accept the channel transfer.
+        InvalidChannelTransferAcceptor,
+
+        /// Cannot accept the channel transfer: provided commitment parameters doesn't match with
+        /// channel pending transfer parameters.
+        InvalidChannelTransferCommitmentParams,
+
+        // Insufficient permissions to perform given action as a channel agent
+        ChannelAgentInsufficientPermissions,
+
+        /// Incorrect channel owner for an operation.
+        InvalidChannelOwner,
+
+        /// Cannot claim zero reward.
+        ZeroReward,
+
+        /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
+        InsufficientBalanceForTransfer,
+
+        /// Cannot create the channel: channel creator has insufficient balance
+        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
+        InsufficientBalanceForChannelCreation,
+
+        /// Cannot create the video: video creator has insufficient balance
+        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+        InsufficientBalanceForVideoCreation,
+
+        // Insufficient council budget to cover channel reward claim
+        InsufficientCouncilBudget,
+
+        // Can't issue more NFTs: global daily limit exceeded.
+        GlobalNftDailyLimitExceeded,
+
+        // Can't issue more NFTs: global weekly limit exceeded.
+        GlobalNftWeeklyLimitExceeded,
+
+        // Can't issue more NFTs: channel daily limit exceeded.
+        ChannelNftDailyLimitExceeded,
+
+        // Can't issue more NFTs: channel weekly limit exceeded.
+        ChannelNftWeeklyLimitExceeded,
+
+        // Creator Tokens
+        // ---------------------
+
+        /// Creator token was already issued for this channel
+        CreatorTokenAlreadyIssued,
+
+        /// Creator token wasn't issued for this channel
+        CreatorTokenNotIssued,
+
+        /// Member id could not be derived from the provided ContentActor context
+        MemberIdCouldNotBeDerivedFromActor,
+
+        /// Cannot directly withdraw funds from a channel account when the channel has
+        /// a creator token issued
+        CannotWithdrawFromChannelWithCreatorTokenIssued,
+
+        /// Patronage can only be claimed if channel is owned by a member
+        PatronageCanOnlyBeClaimedForMemberOwnedChannels,
+
+        /// Channel Transfers are blocked during revenue splits
+        ChannelTransfersBlockedDuringRevenueSplits,
+
+        /// Channel Transfers are blocked during token sales
+        ChannelTransfersBlockedDuringTokenSales,
     }
 }

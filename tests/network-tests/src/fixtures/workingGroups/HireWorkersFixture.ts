@@ -1,13 +1,12 @@
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId } from '@joystream/types/primitives'
 import { Api } from '../../Api'
-import { LEADER_OPENING_STAKE } from '../../consts'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { WorkingGroupModuleName } from '../../types'
 import { Utils } from '../../utils'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../membership'
 import { ApplicantDetails, ApplyOnOpeningsHappyCaseFixture } from './ApplyOnOpeningsHappyCaseFixture'
-import { CreateOpeningsFixture, DEFAULT_OPENING_PARAMS } from './CreateOpeningsFixture'
+import { CreateOpeningsFixture, createDefaultOpeningParams } from './CreateOpeningsFixture'
 import { FillOpeningsFixture } from './FillOpeningsFixture'
 
 export class HireWorkersFixture extends BaseQueryNodeFixture {
@@ -31,14 +30,14 @@ export class HireWorkersFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
     // Transfer funds to leader staking account to cover opening stake
     const leaderStakingAcc = await this.api.getLeaderStakingKey(this.group)
-    await this.api.treasuryTransferBalance(leaderStakingAcc, LEADER_OPENING_STAKE)
+    await this.api.treasuryTransferBalance(leaderStakingAcc, this.api.consts.contentWorkingGroup.leaderOpeningStake)
 
     // Create an opening
     const createOpeningFixture = new CreateOpeningsFixture(this.api, this.query, this.group)
     const openingRunner = new FixtureRunner(createOpeningFixture)
     await openingRunner.run()
     const [openingId] = createOpeningFixture.getCreatedOpeningIds()
-    const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
+    const { stake: openingStake, metadata: openingMetadata } = createDefaultOpeningParams(this.api)
 
     // Create the applications
     const roleAccounts = (await this.api.createKeyPairs(this.workersN)).map(({ key }) => key.address)

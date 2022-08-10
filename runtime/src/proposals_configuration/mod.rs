@@ -1,6 +1,8 @@
 //! This module defines a set of the parameters for each proposal in the runtime like
 //! _SetValidatorCountProposalParameters_.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use crate::{Balance, BlockNumber, ProposalParameters};
 use frame_support::parameter_types;
 
@@ -83,18 +85,12 @@ parameter_types! {
     pub SetInvitationCountProposalParameters: ProposalParameters<BlockNumber, Balance> =
         set_invitation_count_proposal();
 
-    pub CreateBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        create_blog_post_proposal();
-
-    pub EditBlogPostProoposalParamters: ProposalParameters<BlockNumber, Balance> =
-        edit_blog_post_proposal();
-
-    pub LockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        lock_blog_post_proposal();
-
-    pub UnlockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        unlock_blog_post_proposal();
-
     pub VetoProposalProposalParameters: ProposalParameters<BlockNumber, Balance> =
         veto_proposal_proposal();
+
+    pub UpdateGlobalNftLimitProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        update_global_nft_limit_proposal();
+
+    pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        update_channel_payouts_proposal();
 }

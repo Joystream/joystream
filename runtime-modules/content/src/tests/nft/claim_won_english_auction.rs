@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 const AUCTION_DURATION: u64 = 10;
 const AUCTION_START_BLOCK: u64 = 1;
@@ -16,6 +13,10 @@ fn settle_english_auction() {
         run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
+        let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();
+
+        // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
+        make_content_module_account_existential_deposit();
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
@@ -44,16 +45,19 @@ fn settle_english_auction() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         let module_account_id = ContentTreasury::<Test>::module_account_id();
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&module_account_id),
+            existential_deposit
+        );
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -64,12 +68,10 @@ fn settle_english_auction() {
         ));
 
         // Module account contains a bid.
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
-
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
+        assert_eq!(
+            ContentTreasury::<Test>::usable_balance(),
+            bid + existential_deposit
+        );
 
         // Run to the block where auction expires
         run_to_block(Content::max_auction_duration() + 1);
@@ -80,10 +82,13 @@ fn settle_english_auction() {
             video_id,
         ));
 
-        // Module account is empty.
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
-
         // Runtime tested state after call
+
+        assert_eq!(
+            ContentTreasury::<Test>::usable_balance(),
+            existential_deposit
+        );
+        assert_eq!(channel_reward_account_balance(ChannelId::one()), bid);
 
         // Ensure english auction successfully completed
         assert!(matches!(
@@ -95,14 +100,11 @@ fn settle_english_auction() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::EnglishAuctionSettled(
-                SECOND_MEMBER_ID,
-                SECOND_MEMBER_ACCOUNT_ID,
-                video_id,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::EnglishAuctionSettled(
+            SECOND_MEMBER_ID,
+            SECOND_MEMBER_ACCOUNT_ID,
+            video_id,
+        ));
     })
 }
 
@@ -141,13 +143,13 @@ fn settle_english_auction_cannot_be_completed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -280,13 +282,13 @@ fn settle_english_auction_is_not_english_auction_type() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -343,7 +345,7 @@ fn settle_english_auction_last_bid_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Run to the block where auction expires
@@ -391,7 +393,7 @@ fn setup_english_auction_scenario() {
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
-        auction_params.clone(),
+        auction_params,
     ));
 }
 
@@ -515,6 +517,7 @@ fn settle_english_auction_ok_with_balances_check() {
 
         // Balances check
         assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(channel_reward_account_balance(1u64), next_bid);
         assert_eq!(
             Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
             INITIAL_BALANCE
@@ -574,6 +577,35 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner_and_winner_free_bala
         assert_eq!(
             Balances::<Test>::total_balance(&COLLABORATOR_MEMBER_ACCOUNT_ID),
             INITIAL_BALANCE - new_bid,
+        );
+    })
+}
+
+#[test]
+fn settle_english_auction_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
+            .setup();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            VideoId::one(),
+            Content::min_starting_price(),
+        ));
+        // Run to the block where auction expires
+        run_to_block(Content::max_auction_duration() + 1);
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::settle_english_auction(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                VideoId::one()
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

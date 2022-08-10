@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use std::iter::FromIterator;
 
 const NEXT_BID_OFFSET: u64 = 10;
@@ -41,7 +38,7 @@ fn setup_open_auction_scenario() {
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
-        auction_params.clone(),
+        auction_params,
     ));
 }
 
@@ -75,7 +72,7 @@ fn setup_english_auction_scenario() {
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
-        auction_params.clone(),
+        auction_params,
     ));
 }
 
@@ -93,7 +90,7 @@ fn setup_open_auction_scenario_with_bid(amount: u64) {
 
     assert_eq!(
         System::events().last().unwrap().event,
-        MetaEvent::content(RawEvent::AuctionBidMade(
+        MetaEvent::Content(RawEvent::AuctionBidMade(
             SECOND_MEMBER_ID,
             video_id,
             amount,
@@ -129,7 +126,7 @@ fn make_bid() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Runtime tested state before call
@@ -137,7 +134,7 @@ fn make_bid() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         let module_account_id = ContentTreasury::<Test>::module_account_id();
         assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
@@ -163,7 +160,7 @@ fn make_bid() {
         // Last event checked
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
+            MetaEvent::Content(RawEvent::AuctionBidMade(
                 SECOND_MEMBER_ID,
                 video_id,
                 bid,
@@ -200,13 +197,13 @@ fn make_bid_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make an attempt to make auction bid providing wrong credentials
         let make_bid_result = Content::make_open_auction_bid(
@@ -248,7 +245,7 @@ fn make_bid_insufficient_balance() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         let bid = Content::min_starting_price();
@@ -277,7 +274,7 @@ fn make_bid_video_does_not_exist() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make an attempt to make auction bid if corresponding video does not exist
         let make_bid_result = Content::make_open_auction_bid(
@@ -307,7 +304,7 @@ fn make_bid_nft_is_not_issued() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make an attempt to make auction bid if corresponding nft is not issued yet
         let make_bid_result = Content::make_open_auction_bid(
@@ -345,7 +342,7 @@ fn make_bid_nft_is_not_in_auction_state() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make an attempt to make auction bid if corresponding nft is not in auction state
         let make_bid_result = Content::make_open_auction_bid(
@@ -395,7 +392,7 @@ fn make_bid_nft_auction_expired() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Run to the block when auction expires
@@ -404,7 +401,7 @@ fn make_bid_nft_auction_expired() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, 2 * bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, 2 * bid);
 
         // Make an attempt to make auction bid if corresponding english nft auction is already expired
         let make_bid_result = Content::make_english_auction_bid(
@@ -445,7 +442,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
             starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::from_iter(
-                vec![COLLABORATOR_MEMBER_ID, DEFAULT_MODERATOR_ID].into_iter(),
+                vec![COLLABORATOR_MEMBER_ID, DEFAULT_CURATOR_MEMBER_ID].into_iter(),
             ),
         };
 
@@ -454,7 +451,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Run to the block when auction expires
@@ -463,7 +460,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, 2 * bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, 2 * bid);
 
         // Make an attempt to make auction bid on auction with whitelist if member is not whitelisted
         let make_bid_result = Content::make_open_auction_bid(
@@ -514,12 +511,12 @@ fn make_bid_starting_price_constraint_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make an attempt to make auction bid if bid amount provided is less then auction starting price
         let make_bid_result = Content::make_open_auction_bid(
@@ -705,7 +702,7 @@ fn make_bid_succeeds_with_auction_completion_and_outstanding_bids() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
+            MetaEvent::Content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
                 None,
@@ -733,7 +730,7 @@ fn make_bid_succeeds_with_auction_completion_and_no_outstanding_bids() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
+            MetaEvent::Content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
                 None,
@@ -823,7 +820,7 @@ fn make_bid_ok_with_open_auction_owner_account_increased_balance_by_correct_amou
         let video_id = Content::next_video_id();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
         setup_open_auction_scenario();
-        let balance_pre = Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID);
+        let balance_pre = channel_reward_account_balance(1u64);
         let auction_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_BUY_NOW_PRICE);
 
         assert_ok!(Content::make_open_auction_bid(
@@ -834,7 +831,7 @@ fn make_bid_ok_with_open_auction_owner_account_increased_balance_by_correct_amou
         ));
 
         assert_eq!(
-            Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_reward_account_balance(1u64),
             DEFAULT_BUY_NOW_PRICE + balance_pre - auction_fee
         );
     })
@@ -849,7 +846,7 @@ fn make_bid_ok_with_english_auction_owner_account_increased_balance_by_correct_a
         let video_id = Content::next_video_id();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
         setup_english_auction_scenario();
-        let balance_pre = Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID);
+        let balance_pre = channel_reward_account_balance(1u64);
         let auction_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_BUY_NOW_PRICE);
 
         assert_ok!(Content::make_english_auction_bid(
@@ -860,7 +857,7 @@ fn make_bid_ok_with_english_auction_owner_account_increased_balance_by_correct_a
         ));
 
         assert_eq!(
-            Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_reward_account_balance(1u64),
             DEFAULT_BUY_NOW_PRICE + balance_pre - auction_fee,
         );
     })
@@ -890,7 +887,7 @@ fn english_auction_bid_made_event_includes_prev_top_bidder() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
+            MetaEvent::Content(RawEvent::AuctionBidMade(
                 DEFAULT_MEMBER_ID,
                 video_id,
                 first_bid_amount,
@@ -907,7 +904,7 @@ fn english_auction_bid_made_event_includes_prev_top_bidder() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
+            MetaEvent::Content(RawEvent::AuctionBidMade(
                 SECOND_MEMBER_ID,
                 video_id,
                 second_bid_amount,
@@ -924,7 +921,7 @@ fn english_auction_bid_made_event_includes_prev_top_bidder() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
+            MetaEvent::Content(RawEvent::AuctionBidMade(
                 DEFAULT_MEMBER_ID,
                 video_id,
                 third_bid_amount,
@@ -953,7 +950,7 @@ fn english_auction_bid_made_completing_auction_event_with_no_previous_bidder() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
+            MetaEvent::Content(RawEvent::BidMadeCompletingAuction(
                 DEFAULT_MEMBER_ID,
                 video_id,
                 None,
@@ -982,7 +979,7 @@ fn english_auction_bid_made_completing_auction_event_with_previous_bidder() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
+            MetaEvent::Content(RawEvent::AuctionBidMade(
                 SECOND_MEMBER_ID,
                 video_id,
                 Content::min_bid_step(),
@@ -999,7 +996,7 @@ fn english_auction_bid_made_completing_auction_event_with_previous_bidder() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
+            MetaEvent::Content(RawEvent::BidMadeCompletingAuction(
                 DEFAULT_MEMBER_ID,
                 video_id,
                 Some(SECOND_MEMBER_ID)
@@ -1040,7 +1037,7 @@ fn make_bid_with_open_auction_is_not_started() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Make an attempt to make auction bid if auction is not started
@@ -1092,7 +1089,7 @@ fn make_bid_with_english_auction_is_not_started() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Make an attempt to make auction bid if auction is not started
@@ -1222,6 +1219,52 @@ fn open_auction_decreased_bid_works_correctly() {
         assert_eq!(
             Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
             initial_balance - bid2
+        );
+    })
+}
+
+#[test]
+fn make_open_auction_bid_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
+            .setup();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::make_open_auction_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                SECOND_MEMBER_ID,
+                VideoId::one(),
+                Content::min_starting_price(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn make_english_auction_bid_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
+            .setup();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::make_english_auction_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                SECOND_MEMBER_ID,
+                VideoId::one(),
+                Content::min_starting_price(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

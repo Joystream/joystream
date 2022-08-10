@@ -1,6 +1,5 @@
 import { JoystreamCLI } from '../cli/joystream'
 import { TmpFileManager } from '../cli/utils'
-import { v4 as uuid } from 'uuid'
 
 export async function createJoystreamCli(): Promise<JoystreamCLI> {
   const tmpFileManager = new TmpFileManager()

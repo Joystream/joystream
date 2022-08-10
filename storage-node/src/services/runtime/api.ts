@@ -1,7 +1,6 @@
 import { ApiPromise, WsProvider, SubmittableResult } from '@polkadot/api'
 import type { Index } from '@polkadot/types/interfaces/runtime'
 import { ISubmittableResult, IEvent } from '@polkadot/types/types'
-import { types } from '@joystream/types/'
 import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
@@ -28,7 +27,7 @@ export async function createApi(apiUrl: string): Promise<ApiPromise> {
   const provider = new WsProvider(apiUrl)
   provider.on('error', (err) => logger.error(`Api provider error: ${err.target?._url}`, { err }))
 
-  const api = new ApiPromise({ provider, types })
+  const api = new ApiPromise({ provider })
   await api.isReadyOrError
   await untilChainIsSynced(api)
 

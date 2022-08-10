@@ -1,53 +1,55 @@
 #![cfg(test)]
 
-pub use crate::{GenesisConfig, Trait, Weight, WeightInfo};
+pub use crate::{Config, Weight, WeightInfo};
 
-pub use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-use sp_std::cell::RefCell;
-use staking_handler::LockComparator;
-
+use crate as membership;
 use crate::tests::fixtures::ALICE_MEMBER_ID;
+pub use balances;
+pub use frame_support::traits::{Currency, LockIdentifier};
+use frame_support::{
+    dispatch::{DispatchError, DispatchResult},
+    ensure, parameter_types,
+    traits::{ConstU16, ConstU32, ConstU64},
+};
 pub use frame_system;
 use frame_system::RawOrigin;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchError, DispatchResult, Perbill,
 };
+use sp_std::cell::RefCell;
+use sp_std::convert::{TryFrom, TryInto};
+use staking_handler::LockComparator;
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-mod membership_mod {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        membership_mod<T>,
-        frame_system<T>,
-        balances<T>,
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
     }
-}
+);
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
-    type BaseCallFilter = ();
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -55,24 +57,20 @@ impl frame_system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
-    type PalletInfo = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -87,14 +85,16 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -137,11 +137,11 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl Trait for Test {
-    type Event = TestEvent;
+impl Config for Test {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
@@ -157,7 +157,8 @@ thread_local! {
     pub static LEAD_SET: RefCell<bool> = RefCell::new(bool::default());
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -167,14 +168,31 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
             *val.borrow_mut() = new_value;
         });
     }
+
+    fn try_withdraw(account_id: &u64, amount: u64) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            DispatchError::Other("Invalid balance")
+        );
+
+        let _ = Balances::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::working_group::WorkingGroupBudgetHandler<u64, u64>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Trait>::Origin,
+        origin: <Test as frame_system::Config>::Origin,
         worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
-        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Trait>::Origin> =
+        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Config>::Origin> =
             origin.into();
 
         if let RawOrigin::Signed(_) = raw_origin.unwrap() {
@@ -188,7 +206,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         }
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
@@ -202,12 +220,18 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         })
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -227,52 +251,39 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 #[cfg(feature = "runtime-benchmarks")]
 impl
     crate::MembershipWorkingGroupHelper<
-        <Test as frame_system::Trait>::AccountId,
+        <Test as frame_system::Config>::AccountId,
         <Test as common::membership::MembershipTypes>::MemberId,
         <Test as common::membership::MembershipTypes>::ActorId,
     > for Test
 {
     fn insert_a_lead(
         _opening_id: u32,
-        _caller_id: &<Test as frame_system::Trait>::AccountId,
+        _caller_id: &<Test as frame_system::Config>::AccountId,
         _member_id: <Test as common::membership::MembershipTypes>::MemberId,
     ) -> <Test as common::membership::MembershipTypes>::ActorId {
         ALICE_MEMBER_ID
     }
 }
 
-pub struct TestExternalitiesBuilder<T: Trait> {
+pub struct TestExternalitiesBuilder {
     system_config: Option<frame_system::GenesisConfig>,
-    membership_config: Option<GenesisConfig<T>>,
 }
 
-impl<T: Trait> Default for TestExternalitiesBuilder<T> {
+impl Default for TestExternalitiesBuilder {
     fn default() -> Self {
         Self {
             system_config: None,
-            membership_config: None,
         }
     }
 }
 
-impl<T: Trait> TestExternalitiesBuilder<T> {
-    pub fn set_membership_config(mut self, membership_config: GenesisConfig<T>) -> Self {
-        self.membership_config = Some(membership_config);
-        self
-    }
-
+impl TestExternalitiesBuilder {
     pub fn build(self) -> sp_io::TestExternalities {
         // Add system
-        let mut t = self
+        let t = self
             .system_config
-            .unwrap_or(frame_system::GenesisConfig::default())
-            .build_storage::<T>()
-            .unwrap();
-
-        // Add membership
-        self.membership_config
-            .unwrap_or(GenesisConfig::default())
-            .assimilate_storage(&mut t)
+            .unwrap_or_default()
+            .build_storage::<Test>()
             .unwrap();
 
         t.into()
@@ -288,22 +299,9 @@ impl<T: Trait> TestExternalitiesBuilder<T> {
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    TestExternalitiesBuilder::<Test>::default().build()
+    TestExternalitiesBuilder::default().build()
 }
 
-pub fn build_test_externalities_with_initial_members(
-    initial_members: Vec<(u64, u64)>,
-) -> sp_io::TestExternalities {
-    TestExternalitiesBuilder::<Test>::default()
-        .set_membership_config(
-            crate::genesis::GenesisConfigBuilder::default()
-                .members(initial_members)
-                .build(),
-        )
-        .with_lead()
-        .build()
+pub fn build_test_externalities_with_lead_set() -> sp_io::TestExternalities {
+    TestExternalitiesBuilder::default().with_lead().build()
 }
-
-pub type Balances = balances::Module<Test>;
-pub type Membership = crate::Module<Test>;
-pub type System = frame_system::Module<Test>;

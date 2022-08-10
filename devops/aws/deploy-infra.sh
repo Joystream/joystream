@@ -71,7 +71,7 @@ if [ $? -eq 0 ]; then
 
   echo -e "[build]\n$BUILD_SERVER\n\n[validators]\n$VALIDATORS\n[rpc]\n$RPC_NODES" > $INVENTORY_PATH
 
-  # Build binaries if AMI not specified or a custom proposals parameter is passed
+  # Build binaries if AMI not specified
   if [ -z "$EC2_AMI_ID" ]
   then
     echo -e "\n\n=========== Compile joystream-node on build server ==========="
@@ -80,19 +80,12 @@ if [ $? -eq 0 ]; then
                     data_path=$DATA_PATH runtime_profile=$RUNTIME_PROFILE"
   fi
 
-  if [ -z "$EC2_AMI_ID" ]
-  then
-    echo -e "\n\n=========== Install additional utils on build server ==========="
-    ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH setup-build-server.yml
-  fi
-
   echo -e "\n\n=========== Configure and start new validators and rpc node ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.yml \
     --extra-vars "local_dir=$LOCAL_CODE_PATH network_suffix=$NETWORK_SUFFIX
                   data_path=$DATA_PATH number_of_validators=$NUMBER_OF_VALIDATORS
                   deployment_type=$DEPLOYMENT_TYPE
                   initial_balances_file=$INITIAL_BALANCES_PATH
-                  initial_members_file=$INITIAL_MEMBERS_PATH
                   skip_chain_setup=$SKIP_CHAIN_SETUP"
 
   echo -e "\n\n=========== Delete Build instance ==========="

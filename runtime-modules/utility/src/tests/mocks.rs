@@ -1,26 +1,30 @@
 #![cfg(test)]
 
+use crate as utility;
 pub(crate) use crate::Module as Utilities;
 use crate::*;
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
-use frame_support::dispatch::DispatchError;
-use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, EventRecord, RawOrigin};
+use frame_support::{
+    dispatch::DispatchError,
+    parameter_types,
+    traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf, LockIdentifier, OnFinalize, OnInitialize},
+};
+use frame_system::{EnsureRoot, EnsureSigned, EventRecord, RawOrigin};
 use sp_core::H256;
-use sp_runtime::DispatchResult;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchResult, Perbill,
 };
+use sp_std::convert::{TryFrom, TryInto};
+
 use staking_handler::{LockComparator, StakingManager};
 
-pub(crate) fn assert_last_event(generic_event: <Test as Trait>::Event) {
+pub(crate) fn assert_last_event(generic_event: <Test as Config>::Event) {
     let events = System::events();
-    let system_event: <Test as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <Test as frame_system::Config>::Event = generic_event;
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
 
@@ -28,113 +32,32 @@ pub(crate) fn assert_last_event(generic_event: <Test as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-mod utilities {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        utilities<T>,
-        frame_system<T>,
-        balances<T>,
-        council<T>,
-        membership<T>,
-        referendum Instance0 <T>,
-        working_group Instance0 <T>,
-        working_group Instance1 <T>,
-        working_group Instance2 <T>,
-        working_group Instance3 <T>,
-        working_group Instance4 <T>,
-        working_group Instance5 <T>,
-        working_group Instance6 <T>,
-        working_group Instance7 <T>,
-        working_group Instance8 <T>,
-        working_group Instance9 <T>,
-    }
-}
-
-pub struct ReferendumWeightInfo;
-impl referendum::WeightInfo for ReferendumWeightInfo {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
-    }
-}
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
-
-parameter_types! {
-    pub const ExistentialDeposit: u32 = 10;
-}
-
-impl balances::Trait for Test {
-    type Balance = u64;
-    type DustRemoval = ();
-    type Event = TestEvent;
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = System;
-    type WeightInfo = ();
-    type MaxLocks = ();
-}
-
-parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
-}
-
 macro_rules! call_wg {
     ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
         match $working_group {
             WorkingGroup::Content =>
-                <working_group::Module::<$T, ContentWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, ContentWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Storage =>
-                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Forum =>
-                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Membership =>
-                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Gateway =>
-                <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Distribution =>
-                <working_group::Module::<$T, DistributionWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, DistributionWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
             WorkingGroup::OperationsAlpha =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
             WorkingGroup::OperationsBeta =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
             WorkingGroup::OperationsGamma =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
         }
     }};
 }
@@ -166,10 +89,51 @@ pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
-impl frame_system::Trait for Test {
-    type BaseCallFilter = ();
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system,
+        Balances: balances,
+        Timestamp: pallet_timestamp,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Utility: utility::{Pallet, Call, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T, I>, Config<T>},
+
+        ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T, I>},
+        StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
+        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
+        Wg4: working_group::<Instance4>::{Pallet, Call, Storage, Event<T, I>},
+        Wg5: working_group::<Instance5>::{Pallet, Call, Storage, Event<T, I>},
+        MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T, I>},
+        Wg7: working_group::<Instance7>::{Pallet, Call, Storage, Event<T, I>},
+        Wg8: working_group::<Instance8>::{Pallet, Call, Storage, Event<T, I>},
+        Wg9: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
+    }
+);
+
+parameter_types! {
+    pub const ExistentialDeposit: u32 = 1;
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+}
+
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -177,25 +141,40 @@ impl frame_system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = ();
     type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl Trait for Test {
-    type Event = TestEvent;
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+impl balances::Config for Test {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = Event;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
+}
+
+impl Config for Test {
+    type Event = Event;
 
     type WeightInfo = ();
 
@@ -208,32 +187,6 @@ impl Trait for Test {
     }
 }
 
-impl WeightInfo for () {
-    fn execute_signal_proposal(_: u32) -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative() -> Weight {
-        0
-    }
-    fn burn_account_tokens() -> Weight {
-        0
-    }
-}
-
-parameter_types! {
-    pub const MinimumPeriod: u64 = 5;
-}
-
-impl pallet_timestamp::Trait for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
-}
-
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
@@ -242,11 +195,11 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl membership::Config for Test {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
-    type WeightInfo = Weights;
+    type WorkingGroup = Wg;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -255,7 +208,8 @@ impl membership::Trait for Test {
     type CandidateStake = CandidateStake;
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -263,30 +217,40 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
+        _origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
-        unimplemented!();
+        unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -303,67 +267,6 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 }
 
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const LockId1: [u8; 8] = [1; 8];
@@ -372,195 +275,119 @@ parameter_types! {
     pub const LeaderOpeningStake: u32 = 20;
 }
 
-pub struct WorkingGroupWeightInfo;
-impl working_group::Trait<ContentWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+impl working_group::Config<ContentWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::WeightInfo for WorkingGroupWeightInfo {
-    fn on_initialize_leaving(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
-        0
-    }
-    fn apply_on_opening(_: u32) -> Weight {
-        0
-    }
-    fn fill_opening_lead() -> Weight {
-        0
-    }
-    fn fill_opening_worker(_: u32) -> Weight {
-        0
-    }
-    fn update_role_account() -> Weight {
-        0
-    }
-    fn cancel_opening() -> Weight {
-        0
-    }
-    fn withdraw_application() -> Weight {
-        0
-    }
-    fn slash_stake(_: u32) -> Weight {
-        0
-    }
-    fn terminate_role_worker(_: u32) -> Weight {
-        0
-    }
-    fn terminate_role_lead(_: u32) -> Weight {
-        0
-    }
-    fn increase_stake() -> Weight {
-        0
-    }
-    fn decrease_stake() -> Weight {
-        0
-    }
-    fn spend_from_budget() -> Weight {
-        0
-    }
-    fn update_reward_amount() -> Weight {
-        0
-    }
-    fn set_status_text(_: u32) -> Weight {
-        0
-    }
-    fn update_reward_account() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn add_opening(_: u32) -> Weight {
-        0
-    }
-    fn leave_role(_: u32) -> Weight {
-        0
-    }
-    fn lead_remark() -> Weight {
-        0
-    }
-    fn worker_remark() -> Weight {
-        0
-    }
-}
-
-impl working_group::Trait<StorageWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+impl working_group::Config<StorageWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<ForumWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+impl working_group::Config<ForumWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<MembershipWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+impl working_group::Config<MembershipWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<GatewayWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+impl working_group::Config<GatewayWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<DistributionWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+impl working_group::Config<DistributionWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstanceAlpha> for Test {
-    type Event = TestEvent;
+impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstanceBeta> for Test {
-    type Event = TestEvent;
+impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Trait<OperationsWorkingGroupInstanceGamma> for Test {
-    type Event = TestEvent;
+impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = membership::Module<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -579,56 +406,7 @@ parameter_types! {
     pub const BudgetRefillPeriod: u64 = 1000;
 }
 
-pub struct CouncilWeightInfo;
-impl council::WeightInfo for CouncilWeightInfo {
-    fn try_process_budget() -> Weight {
-        0
-    }
-    fn try_progress_stage_idle() -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_restart() -> Weight {
-        0
-    }
-    fn announce_candidacy() -> Weight {
-        0
-    }
-    fn release_candidacy_stake() -> Weight {
-        0
-    }
-    fn set_candidacy_note(_: u32) -> Weight {
-        0
-    }
-    fn withdraw_candidacy() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn plan_budget_refill() -> Weight {
-        0
-    }
-    fn set_budget_increment() -> Weight {
-        0
-    }
-    fn set_councilor_reward() -> Weight {
-        0
-    }
-    fn funding_request(_: u32) -> Weight {
-        0
-    }
-    fn councilor_remark() -> Weight {
-        0
-    }
-    fn candidate_remark() -> Weight {
-        0
-    }
-}
-
-pub type ReferendumInstance = referendum::Instance0;
+pub type ReferendumInstance = referendum::Instance1;
 
 parameter_types! {
     pub const VoteStageDuration: u64 = 19;
@@ -639,21 +417,20 @@ parameter_types! {
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
-impl referendum::Trait<ReferendumInstance> for Test {
-    type Event = TestEvent;
+impl referendum::Config<ReferendumInstance> for Test {
+    type Event = Event;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = u64;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
     type MinimumStake = MinimumVotingStake;
-    type WeightInfo = ReferendumWeightInfo;
+    type WeightInfo = ();
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        _: &<Self as frame_system::Trait>::AccountId,
+        _: &<Self as frame_system::Config>::AccountId,
         _: &Self::Balance,
     ) -> Self::VotePower {
         1
@@ -670,7 +447,7 @@ impl referendum::Trait<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
@@ -723,15 +500,15 @@ impl BurnTokensFixture {
     }
 
     pub fn execute_and_assert(&self, result: DispatchResult) {
-        let initial_balance: u64 = Balances::<Test>::total_issuance();
+        let initial_balance: u64 = Balances::total_issuance();
 
-        let _ = Balances::<Test>::deposit_creating(&self.account_id, self.account_initial_balance);
+        let _ = Balances::deposit_creating(&self.account_id, self.account_initial_balance);
         assert_eq!(
-            Balances::<Test>::total_issuance(),
+            Balances::total_issuance(),
             initial_balance + self.account_initial_balance
         );
         assert_eq!(
-            Balances::<Test>::usable_balance(&self.account_id),
+            Balances::usable_balance(&self.account_id),
             self.account_initial_balance
         );
         assert_eq!(
@@ -743,29 +520,29 @@ impl BurnTokensFixture {
         );
         if result.is_ok() {
             assert_eq!(
-                Balances::<Test>::usable_balance(&self.account_id),
+                Balances::usable_balance(&self.account_id),
                 self.account_initial_balance - self.burn_balance
             );
             assert_eq!(
-                Balances::<Test>::total_issuance(),
+                Balances::total_issuance(),
                 initial_balance + self.account_initial_balance - self.burn_balance
             );
             assert_last_event(RawEvent::TokensBurned(self.account_id, self.burn_balance).into());
         } else {
             assert_eq!(
-                Balances::<Test>::usable_balance(&self.account_id),
+                Balances::usable_balance(&self.account_id),
                 self.account_initial_balance
             );
             assert_eq!(
-                Balances::<Test>::total_issuance(),
+                Balances::total_issuance(),
                 initial_balance + self.account_initial_balance
             );
         }
     }
 }
 
-impl council::Trait for Test {
-    type Event = TestEvent;
+impl council::Config for Test {
+    type Event = Event;
     type Referendum = referendum::Module<Test, ReferendumInstance>;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -777,7 +554,7 @@ impl council::Trait for Test {
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
     type BudgetRefillPeriod = BudgetRefillPeriod;
     type StakingAccountValidator = ();
-    type WeightInfo = CouncilWeightInfo;
+    type WeightInfo = ();
     type MemberOriginValidator = ();
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
@@ -817,7 +594,7 @@ impl common::membership::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
@@ -831,19 +608,17 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+    let mut result = Into::<sp_io::TestExternalities>::into(t);
 
     // Make sure we are not in block 1 where no events are emitted
     // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
-        let mut block_number = frame_system::Module::<Test>::block_number();
+        let mut block_number = frame_system::Pallet::<Test>::block_number();
         <System as OnFinalize<u64>>::on_finalize(block_number);
-        block_number = block_number + 1;
+        block_number += 1;
         System::set_block_number(block_number);
         <System as OnInitialize<u64>>::on_initialize(block_number);
     });
 
     result
 }
-
-pub type System = frame_system::Module<Test>;

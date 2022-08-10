@@ -46,7 +46,7 @@
 //! to create a proposal: they should be members of the Joystream.
 //! - StakingHandler - defines an interface for the staking.
 //!
-//! A full list of the abstractions can be found [here](./trait.Trait.html).
+//! A full list of the abstractions can be found [here](./trait.Config.html).
 //!
 //! ### Supported extrinsics
 //! - [vote](./struct.Module.html#method.vote) - registers a vote for the proposal
@@ -69,15 +69,16 @@
 //! ## Usage
 //!
 //! ```
+//! #![feature(more_qualified_paths)]
 //! use frame_support::{decl_module, print};
 //! use frame_system::ensure_signed;
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
-//! pub trait Trait: engine::Trait + common::membership::MembershipTypes {}
+//! pub trait Config: engine::Config + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         fn executable_proposal(origin) {
 //!             print("executed!");
@@ -93,7 +94,7 @@
 //!             let title = b"Spending proposal".to_vec();
 //!             let description = b"We need to spend some tokens to support the working group lead."
 //!                 .to_vec();
-//!             let encoded_proposal_code = <Call<T>>::executable_proposal().encode();
+//!             let encoded_proposal_code = <Call<T>>::executable_proposal {}.encode();
 //!
 //!             <engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
 //!                 &parameters,
@@ -124,6 +125,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 use types::ProposalOf;
 
@@ -139,6 +141,8 @@ mod benchmarking;
 
 #[cfg(test)]
 mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
@@ -150,6 +154,7 @@ use frame_support::{
 };
 use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
+use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
@@ -157,32 +162,17 @@ use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
 
-/// Proposals engine WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn vote(i: u32) -> Weight;
-    fn cancel_proposal() -> Weight;
-    fn veto_proposal() -> Weight;
-    fn on_initialize_immediate_execution_decode_fails(i: u32) -> Weight;
-    fn on_initialize_pending_execution_decode_fails(i: u32) -> Weight;
-    fn on_initialize_approved_pending_constitutionality(i: u32) -> Weight;
-    fn on_initialize_rejected(i: u32) -> Weight;
-    fn on_initialize_slashed(i: u32) -> Weight;
-    fn cancel_active_and_pending_proposals(i: u32) -> Weight;
-    fn proposer_remark() -> Weight;
-}
-
-type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
+type WeightInfoEngine<T> = <T as Config>::WeightInfo;
 
 /// Proposals engine trait.
-pub trait Trait:
-    frame_system::Trait
-    + pallet_timestamp::Trait
+pub trait Config:
+    frame_system::Config
+    + pallet_timestamp::Config
     + common::membership::MembershipTypes
-    + balances::Trait
+    + balances::Config
 {
     /// Engine event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: MemberOriginValidator<
@@ -244,14 +234,14 @@ pub trait Trait:
 }
 
 /// Proposal state change observer.
-pub trait ProposalObserver<T: Trait> {
+pub trait ProposalObserver<T: Config> {
     /// Should be called on proposal removing.
     fn proposal_removed(proposal_id: &T::ProposalId);
 }
 
 /// Nesting implementation.
-impl<T: Trait, X: ProposalObserver<T>, Y: ProposalObserver<T>> ProposalObserver<T> for (X, Y) {
-    fn proposal_removed(proposal_id: &<T as Trait>::ProposalId) {
+impl<T: Config, X: ProposalObserver<T>, Y: ProposalObserver<T>> ProposalObserver<T> for (X, Y) {
+    fn proposal_removed(proposal_id: &<T as Config>::ProposalId) {
         X::proposal_removed(proposal_id);
         Y::proposal_removed(proposal_id);
     }
@@ -261,9 +251,9 @@ decl_event!(
     /// Proposals engine events
     pub enum Event<T>
     where
-        <T as Trait>::ProposalId,
+        <T as Config>::ProposalId,
         MemberId = MemberId<T>,
-        <T as frame_system::Trait>::BlockNumber,
+        <T as frame_system::Config>::BlockNumber,
     {
 
         /// Emits on proposal creation.
@@ -308,7 +298,7 @@ decl_event!(
 
 decl_error! {
     /// Engine module predefined errors
-    pub enum Error for Module<T: Trait>{
+    pub enum Error for Module<T: Config>{
         /// Proposal cannot have an empty title"
         EmptyTitleProvided,
 
@@ -376,7 +366,7 @@ decl_error! {
 
 // Storage for the proposals engine module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalEngine{
+    pub trait Store for Module<T: Config> as ProposalEngine{
         /// Map proposal by its id.
         pub Proposals get(fn proposals): map hasher(blake2_128_concat)
             T::ProposalId => ProposalOf<T>;
@@ -399,7 +389,7 @@ decl_storage! {
 
 decl_module! {
     /// 'Proposal engine' substrate module
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -591,7 +581,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Create proposal. Requires 'proposal origin' membership.
     pub fn create_proposal(
         creation_params: ProposalCreationParameters<
@@ -797,7 +787,7 @@ impl<T: Trait> Module<T> {
                 None
             })
             .for_each(|(proposal_id, proposal)| {
-                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
                 <Proposals<T>>::insert(proposal_id, proposal.clone());
 
                 // fire the proposal status update event
@@ -809,7 +799,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Helper to calculate the weight of the worst `on_initialize` branch
     fn weight_of_worst_on_initialize_branch() -> Weight {
         let max_active_proposals = T::MaxActiveProposalLimit::get();
@@ -849,7 +839,7 @@ impl<T: Trait> Module<T> {
 
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Executes proposal code.
@@ -971,7 +961,6 @@ impl<T: Trait> Module<T> {
             ProposalDecision::Canceled => T::CancellationFee::get(),
             ProposalDecision::Slashed => proposal_parameters
                 .required_stake
-                .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
         }
     }
@@ -995,14 +984,9 @@ impl<T: Trait> Module<T> {
     // Parse dispatchable execution result.
     fn parse_dispatch_error(error: DispatchError) -> &'static str {
         match error {
-            DispatchError::BadOrigin => error.into(),
             DispatchError::Other(msg) => msg,
-            DispatchError::CannotLookup => error.into(),
-            DispatchError::Module {
-                index: _,
-                error: _,
-                message: msg,
-            } => msg.unwrap_or("Dispatch error."),
+            DispatchError::Module(module) => module.message.unwrap_or("Dispatch error."),
+            _ => error.into(),
         }
     }
 
@@ -1010,7 +994,7 @@ impl<T: Trait> Module<T> {
     fn remove_proposal_data(proposal_id: &T::ProposalId) {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
-        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
         Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);

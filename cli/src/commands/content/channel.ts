@@ -1,7 +1,9 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { displayCollapsedRow, displayHeader, memberHandle } from '../../helpers/display'
+import { displayCollapsedRow, displayHeader, displayTable } from '../../helpers/display'
+import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
 import { BTreeSet } from '@polkadot/types'
-import { MemberId } from '@joystream/types/common'
+import BN from 'bn.js'
+import { formatBalance } from '@polkadot/util'
 
 export default class ChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Show Channel details by id.'
@@ -17,10 +19,18 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
     ...ContentDirectoryCommandBase.flags,
   }
 
-  async displayMembersSet(set: BTreeSet<MemberId>): Promise<void> {
-    const ids = Array.from(set)
-    const members = await this.getApi().membersDetailsByIds(ids)
-    this.log(members.length ? members.map((m) => `${m.id} (${memberHandle(m)})`).join(', ') : 'NONE')
+  async displayCollaboratorsSet(set: [BN, BTreeSet<PalletContentChannelActionPermission>][]): Promise<void> {
+    if (set.length > 0) {
+      displayTable(
+        set.map(([id, p]) => ({
+          'MemberId': id.toString(),
+          'Permissions': p.toString(),
+        })),
+        3
+      )
+    } else {
+      this.log('NONE')
+    }
   }
 
   async run(): Promise<void> {
@@ -30,20 +40,18 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': channelId.toString(),
         'Owner': JSON.stringify(channel.owner.toJSON()),
-        'IsCensored': channel.is_censored.toString(),
-        'RewardAccount': channel.reward_account.unwrapOr('NONE').toString(),
+        'ChannelStateBloatBond': formatBalance(channel.channelStateBloatBond),
+        'DataObjects': channel.dataObjects.toString(),
+        'PrivilegeLevel': channel.privilegeLevel.toString(),
       })
 
       displayHeader(`Media`)
       displayCollapsedRow({
-        'NumberOfVideos': channel.num_videos.toNumber(),
+        'NumberOfVideos': channel.numVideos.toNumber(),
       })
 
       displayHeader(`Collaborators`)
-      await this.displayMembersSet(channel.collaborators)
-
-      displayHeader('Moderators')
-      await this.displayMembersSet(channel.moderators)
+      await this.displayCollaboratorsSet([...channel.collaborators])
     } else {
       this.error(`Channel not found by channel id: "${channelId}"!`)
     }

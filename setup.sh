@@ -6,8 +6,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # Prevent interactive prompts that would interrup the installation
     export DEBIAN_FRONTEND=noninteractive
     # code build tools
-    sudo apt-get update
-    sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
+    sudo apt-get update -y
+    sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python3
     # docker
     sudo apt-get install -y docker.io containerd runc
     # docker-compose
@@ -33,15 +33,15 @@ curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
 
-rustup install nightly-2021-02-20
-rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
+rustup install nightly-2022-05-11
+rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
 
-rustup component add --toolchain nightly-2021-02-20 clippy
+rustup component add --toolchain nightly-2022-05-11 clippy
 rustup component add rustfmt
 
-# Install substrate keychain tool - install doesn't seem to work lately.
-# cargo install --force subkey --git https://github.com/paritytech/substrate --version 2.0.1 --locked
+# Install substrate keychain tool
 # You can use docker instead https://github.com/paritytech/substrate/tree/master/bin/utils/subkey#run-in-a-container
+# cargo install --force subkey --git https://github.com/paritytech/substrate --version ^2.0.2 --locked
 
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash

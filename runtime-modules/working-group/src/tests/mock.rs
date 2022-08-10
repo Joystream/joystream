@@ -1,41 +1,21 @@
-use frame_support::traits::LockIdentifier;
+use frame_support::parameter_types;
+use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier};
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::weights::Weight;
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-use frame_system;
+
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use staking_handler::LockComparator;
+use std::convert::{TryFrom, TryInto};
 
-use crate::{DefaultInstance, Module, Trait};
+use crate as working_group;
+use crate::{Config, Module};
 use frame_support::dispatch::DispatchError;
-
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-mod working_group {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        balances<T>,
-        crate DefaultInstance <T>,
-        frame_system<T>,
-        membership<T>,
-    }
-}
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 0;
@@ -46,14 +26,30 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-impl frame_system::Trait for Test {
-    type BaseCallFilter = ();
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system,
+        Balances: balances,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp,
+        TestWorkingGroup: working_group::{Pallet, Call, Storage, Event<T>},
+    }
+);
+
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -61,38 +57,36 @@ impl frame_system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
-    type PalletInfo = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -100,73 +94,11 @@ impl common::membership::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl membership::Config for Test {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -175,14 +107,11 @@ impl membership::Trait for Test {
     type CandidateStake = CandidateStake;
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         existing_locks.to_vec().contains(new_lock)
     }
 }
-
-pub type Balances = balances::Module<Test>;
-pub type System = frame_system::Module<Test>;
 
 parameter_types! {
     pub const RewardPeriod: u32 = 2;
@@ -193,8 +122,8 @@ parameter_types! {
     pub const LeaderOpeningStake: u64 = 20;
 }
 
-impl Trait for Test {
-    type Event = TestEvent;
+impl Config for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = ();
@@ -212,82 +141,7 @@ impl common::StakingAccountValidator<Test> for () {
     }
 }
 
-impl crate::WeightInfo for () {
-    fn on_initialize_leaving(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
-        0
-    }
-    fn apply_on_opening(_: u32) -> Weight {
-        0
-    }
-    fn fill_opening_lead() -> Weight {
-        0
-    }
-    fn fill_opening_worker(_: u32) -> Weight {
-        0
-    }
-    fn update_role_account() -> Weight {
-        0
-    }
-    fn cancel_opening() -> Weight {
-        0
-    }
-    fn withdraw_application() -> Weight {
-        0
-    }
-    fn slash_stake(_: u32) -> Weight {
-        0
-    }
-    fn terminate_role_worker(_: u32) -> Weight {
-        0
-    }
-    fn terminate_role_lead(_: u32) -> Weight {
-        0
-    }
-    fn increase_stake() -> Weight {
-        0
-    }
-    fn decrease_stake() -> Weight {
-        0
-    }
-    fn spend_from_budget() -> Weight {
-        0
-    }
-    fn update_reward_amount() -> Weight {
-        0
-    }
-    fn set_status_text(_: u32) -> Weight {
-        0
-    }
-    fn update_reward_account() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn add_opening(_: u32) -> Weight {
-        0
-    }
-    fn leave_role(_: u32) -> Weight {
-        0
-    }
-    fn lead_remark() -> Weight {
-        0
-    }
-    fn worker_remark() -> Weight {
-        0
-    }
-}
-
-pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
+pub const ACTOR_ORIGIN_ERROR: &str = "Invalid membership";
 
 impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
@@ -307,8 +161,6 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
         unimplemented!()
     }
 }
-
-pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
 pub const DEFAULT_WORKER_ACCOUNT_ID: u64 = 2;
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;

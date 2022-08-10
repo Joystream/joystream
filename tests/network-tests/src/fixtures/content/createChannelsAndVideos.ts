@@ -4,7 +4,7 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 import * as path from 'path'
 import { getVideoDefaults, getChannelDefaults } from './contentTemplates'
-import { IMember } from './createMembers'
+import { IMember } from './createMembersAndCurators'
 
 const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'
 
@@ -73,7 +73,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannel(
         {
-          ...getChannelDefaults(index, this.author.account),
+          ...getChannelDefaults(index, cliExamplesFolderPath),
           category: channelCategoryId,
         },
         ['--context', 'Member', '--useMemberId', this.author.memberId.toString()]

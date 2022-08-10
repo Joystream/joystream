@@ -93,9 +93,6 @@ export default class ApiInspect extends ApiCommandBase {
   getQueryMethodParamsTypes(apiModule: string, apiMethod: string): string[] {
     const method = this.getUnaugmentedApi().query[apiModule][apiMethod]
     const { type } = method.creator.meta
-    if (type.isDoubleMap) {
-      return [type.asDoubleMap.key1.toString(), type.asDoubleMap.key2.toString()]
-    }
     if (type.isMap) {
       return [type.asMap.key.toString()]
     }
@@ -109,9 +106,6 @@ export default class ApiInspect extends ApiCommandBase {
         meta: { type, modifier },
       } = method.creator
       let typeName = type.toString()
-      if (type.isDoubleMap) {
-        typeName = type.asDoubleMap.value.toString()
-      }
       if (type.isMap) {
         typeName = type.asMap.value.toString()
       }

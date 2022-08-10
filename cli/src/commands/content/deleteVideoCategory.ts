@@ -1,3 +1,5 @@
+// TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
+
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
 export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandBase {
@@ -20,13 +22,12 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
 
     const { videoCategoryId } = this.parse(DeleteVideoCategoryCommand).args
 
-    const videoCategoryIds = await this.getApi().videoCategoryIds()
+    const videoCategoryIds: number[] = []
 
     if (videoCategoryIds.some((id) => id.toString() === videoCategoryId)) {
-      const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
+      const [, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
-      await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideoCategory', [
-        actor,
+      await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'contentWorkingGroup', 'leadRemark', [
         videoCategoryId,
       ])
     } else {

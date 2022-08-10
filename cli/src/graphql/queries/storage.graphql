@@ -1,5 +1,9 @@
 fragment StorageNodeInfo on StorageBucket {
   id
+  dataObjectsSize
+  dataObjectsSizeLimit
+  dataObjectsCount
+  dataObjectCountLimit
   operatorMetadata {
     nodeEndpoint
   }
@@ -17,10 +21,36 @@ query getStorageNodesInfoByBagId($bagId: ID) {
   }
 }
 
+query getStorageBuckets($count: Int) {
+  storageBuckets(where: { acceptingNewBags_eq: true }, limit: $count) {
+    ...StorageNodeInfo
+  }
+}
+
+query storageBucketsCount {
+  storageBucketsConnection(where: { acceptingNewBags_eq: true }) {
+    totalCount
+  }
+}
+
+fragment DistributionBucketFamilyFields on DistributionBucketFamily {
+  id
+  buckets {
+    id
+    bucketIndex
+  }
+}
+
+query getDistributionFamiliesAndBuckets {
+  distributionBucketFamilies {
+    ...DistributionBucketFamilyFields
+  }
+}
+
 fragment DataObjectInfo on StorageDataObject {
   id
   size
-  deletionPrize
+  stateBloatBond
   type {
     __typename
     ... on DataObjectTypeVideoMedia {

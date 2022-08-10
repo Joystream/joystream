@@ -56,6 +56,12 @@ type MembershipEntryInvited @variant {
   memberInvitedEvent: MemberInvitedEvent
 }
 
+type MembershipEntryGifted @variant {
+  "The event the member was gifted in"
+  # Must be optional because of member.entry <=> memberInvitedEvent.newMember cross relationship
+  membershipGiftedEvent: MembershipGiftedEvent
+}
+
 type MembershipEntryGenesis @variant {
   phantom: Int
 }

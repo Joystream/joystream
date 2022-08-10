@@ -7,26 +7,17 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithInitialPostFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId, PollInput } from '@joystream/types/forum'
-import { MemberId, ThreadId } from '@joystream/types/common'
-import { CreateInterface } from '@joystream/types'
-import { POST_DEPOSIT, THREAD_DEPOSIT } from '../../consts'
+import { MemberId, ForumThreadId, ForumCategoryId, ForumPostId } from '@joystream/types/primitives'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { EventDetails } from '@joystream/cli/src/Types'
-
-export type PollParams = {
-  description: string
-  endTime: Date
-  alternatives: string[]
-}
+import { createType } from '@joystream/types'
 
 export type ThreadParams = {
   metadata: MetadataInput<IForumThreadMetadata>
   text: string
-  categoryId: CategoryId
+  categoryId: ForumCategoryId
   asMember: MemberId
-  poll?: PollParams
 }
 
 type ThreadCreatedEventDetails = EventDetails<EventType<'forum', 'ThreadCreated'>>
@@ -41,17 +32,24 @@ export class CreateThreadsFixture extends StandardizedFixture {
     this.threadsParams = threadsParams
   }
 
-  public getCreatedThreadsIds(): ThreadId[] {
+  public getCreatedThreadsIds(): ForumThreadId[] {
     if (!this.events.length) {
       throw new Error('Trying to get created threads ids before they were created!')
     }
     return this.events.map((e) => e.event.data[1])
   }
 
+  public getCreatedInitialPostByThreadsIds(): Map<number, ForumPostId> {
+    if (!this.events.length) {
+      throw new Error('Trying to get created threads and initial posts Ids before they were created!')
+    }
+    return new Map(this.events.map((e) => [e.event.data[1].toNumber(), e.event.data[2]]))
+  }
+
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.threadsParams.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }
@@ -59,20 +57,9 @@ export class CreateThreadsFixture extends StandardizedFixture {
   public async execute(): Promise<void> {
     const accounts = await this.getSignerAccountOrAccounts()
     // Send required funds to accounts (ThreadDeposit + PostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, THREAD_DEPOSIT.add(POST_DEPOSIT))))
+    const funds = this.api.consts.forum.postDeposit.add(this.api.consts.forum.threadDeposit)
+    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, funds)))
     await super.execute()
-  }
-
-  protected parsePollParams(pollParams?: PollParams): CreateInterface<PollInput> | null {
-    if (!pollParams) {
-      return null
-    }
-
-    return {
-      description: pollParams.description,
-      end_time: pollParams.endTime.getTime(),
-      poll_alternatives: pollParams.alternatives,
-    }
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
@@ -81,8 +68,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
         params.asMember,
         params.categoryId,
         Utils.getMetadataBytesFromInput(ForumThreadMetadata, params.metadata),
-        params.text,
-        this.parsePollParams(params.poll)
+        params.text
       )
     )
   }
@@ -125,15 +111,7 @@ export class CreateThreadsFixture extends StandardizedFixture {
       // assert.equal(initialPost.origin.threadCreatedEvent.id, qEvent.id)
       assert.equal(initialPost.author.id, threadParams.asMember.toString())
       assert.equal(initialPost.status.__typename, 'PostStatusActive')
-      if (threadParams.poll) {
-        Utils.assert(qThread.poll, 'Query node: Thread poll is missing')
-        assert.equal(qThread.poll.description, threadParams.poll.description)
-        assert.sameDeepMembers(
-          qThread.poll.pollAlternatives.map((a) => [a.text, a.index]),
-          threadParams.poll.alternatives.map((text, index) => [text, index])
-        )
-        assert.equal(new Date(qThread.poll.endTime).getTime(), threadParams.poll.endTime.getTime())
-      }
+
       if (metadata && isSet(metadata?.tags)) {
         assert.sameDeepMembers(
           qThread.tags.map((t) => t.id),

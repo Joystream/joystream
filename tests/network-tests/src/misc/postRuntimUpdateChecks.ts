@@ -8,7 +8,7 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
 
   debug('Check runtime spec version')
   const version = await api.rpc.state.getRuntimeVersion()
-  assert.equal(version.specVersion.toNumber(), 7)
+  assert.equal(version.specVersion.toNumber(), 8)
 
   debug('Done')
 }

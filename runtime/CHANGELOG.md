@@ -1,3 +1,21 @@
+### Version 11.0.0 - Carthage - new chain
+  - Update to substrate v0.9.23
+  - Introduce project-token pallet into runtime
+  - Dropped blog pallet
+  - Updated existing pallets, various enhancements and security fixes
+  - Computed weights and enabled fees
+
+### Version 10.8.0 - upgrade
+Collection of runtime fixes for council elections:
+  - Referendum bug fix 1 - fix referendum intermediate winners - [3797](https://github.com/Joystream/joystream/pull/3797)
+  - Referendum bug fix 2 - prevent multiple vote reveals - [3801](https://github.com/Joystream/joystream/pull/3801)
+  - Referendum bug fix 3 - fix inability to unlock vote stake - [3783](https://github.com/Joystream/joystream/pull/3783)
+- Change some council parameters community-[768](https://github.com/Joystream/community-repo/issues/768)
+  - Reduce council size to 3
+  - Increase the IdlePeriod "Council Term" duration of the council
+
+No types or query-node mappings are changed, and no application requires any updates.
+
 ### Version 10.7.0 - upgrade
 - NFT channel proceeds bug fix [#3763](https://github.com/Joystream/joystream/pull/3763)
   - Fix logic in dispatch calls: `content::claim_channel_reward()`, `content::pick_open_auction_winner()`

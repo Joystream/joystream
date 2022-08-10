@@ -1,5 +1,4 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions } from 'typeorm'
 import {
   IVideoMetadata,
   IPublishedBeforeJoystream,
@@ -8,7 +7,7 @@ import {
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
+import { invalidMetadata, inconsistentState, logger, deterministicEntityId, EntityType } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -35,10 +34,14 @@ import {
   Curator,
 } from 'query-node/dist/model'
 // Joystream types
-import { ContentActor, StorageAssets } from '@joystream/types/augment'
+import {
+  PalletContentChannelOwner as ChannelOwner,
+  PalletContentPermissionsContentActor as ContentActor,
+  PalletContentStorageAssetsRecord as StorageAssets,
+} from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
-import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
+import { createDataObjects, getMostRecentlyCreatedDataObjects, StorageDataObjectParams } from '../storage/utils'
 
 const ASSET_TYPES = {
   channel: [
@@ -130,9 +133,9 @@ export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   meta: DecodedMetadataObject<IChannelMetadata>,
-  assetsParams?: StorageAssets
+  dataObjectParams: StorageDataObjectParams
 ): Promise<Channel> {
-  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+  const assets = await createDataObjects(ctx.store, dataObjectParams)
 
   integrateMeta(channel, meta, ['title', 'description', 'isPublic'])
 
@@ -222,11 +225,9 @@ async function processVideoMediaEncoding(
     existingVideoMediaEncoding ||
     new VideoMediaEncoding({
       id: deterministicEntityId(event),
-      createdAt: new Date(event.blockTimestamp),
     })
   // integrate media encoding-related data
   integrateMeta(encoding, metadata, ['codecName', 'container', 'mimeMediaType'])
-  encoding.updatedAt = new Date(event.blockTimestamp)
   await store.save<VideoMediaEncoding>(encoding)
 
   return encoding
@@ -244,7 +245,6 @@ async function processVideoMediaMetadata(
     new VideoMediaMetadata({
       id: deterministicEntityId(event),
       createdInBlock: event.blockNumber,
-      createdAt: new Date(event.blockTimestamp),
     })
 
   // integrate media-related data
@@ -254,11 +254,48 @@ async function processVideoMediaMetadata(
     pixelHeight: metadata.mediaPixelHeight,
   }
   integrateMeta(videoMedia, mediaMetadata, ['pixelWidth', 'pixelHeight', 'size'])
-  videoMedia.updatedAt = new Date(event.blockTimestamp)
   videoMedia.encoding = await processVideoMediaEncoding(ctx, videoMedia.encoding, metadata.mediaType || {})
   await store.save<VideoMediaMetadata>(videoMedia)
 
   return videoMedia
+}
+
+export async function convertChannelOwnerToMemberOrCuratorGroup(
+  store: DatabaseManager,
+  channelOwner: ChannelOwner
+): Promise<{
+  ownerMember?: Membership
+  ownerCuratorGroup?: CuratorGroup
+}> {
+  if (channelOwner.isMember) {
+    const member = await store.get(Membership, {
+      where: { id: channelOwner.asMember.toString() },
+    })
+
+    // ensure member exists
+    if (!member) {
+      return inconsistentState(`Channel owner is non-existing member`, channelOwner.asMember)
+    }
+
+    return {
+      ownerMember: member,
+      ownerCuratorGroup: undefined,
+    }
+  }
+
+  const curatorGroup = await store.get(CuratorGroup, {
+    where: { id: channelOwner.asCuratorGroup.toString() },
+  })
+
+  // ensure curator group exists
+  if (!curatorGroup) {
+    return inconsistentState('Channel owner is non-existing curator group', channelOwner.asCuratorGroup)
+  }
+
+  return {
+    ownerMember: undefined,
+    ownerCuratorGroup: curatorGroup,
+  }
 }
 
 export async function convertContentActorToChannelOrNftOwner(
@@ -270,7 +307,7 @@ export async function convertContentActorToChannelOrNftOwner(
 }> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -286,7 +323,7 @@ export async function convertContentActorToChannelOrNftOwner(
   if (contentActor.isCurator) {
     const curatorGroupId = contentActor.asCurator[0].toNumber()
     const curatorGroup = await store.get(CuratorGroup, {
-      where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+      where: { id: curatorGroupId.toString() },
     })
 
     // ensure curator group exists
@@ -312,7 +349,7 @@ export async function convertContentActor(
 ): Promise<typeof ContentActorVariant> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -328,7 +365,7 @@ export async function convertContentActor(
   if (contentActor.isCurator) {
     const curatorId = contentActor.asCurator[1].toNumber()
     const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() } as FindConditions<Curator>,
+      where: { id: curatorId.toString() },
     })
 
     // ensure curator group exists
@@ -380,7 +417,7 @@ function processPublishedBeforeJoystream(
 }
 
 async function processNewAssets(ctx: EventContext & StoreContext, assets: StorageAssets): Promise<StorageDataObject[]> {
-  const assetsUploaded = assets.object_creation_list.length
+  const assetsUploaded = assets.objectCreationList.length
   // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
   const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
   return objects
@@ -421,8 +458,6 @@ async function processLanguage(
     id: deterministicEntityId(event),
     iso: languageIso,
     createdInBlock: event.blockNumber,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
   })
 
   await store.save<Language>(newLanguage)
@@ -450,9 +485,7 @@ async function updateVideoLicense(
       previousLicense ||
       new License({
         id: deterministicEntityId(event),
-        createdAt: new Date(event.blockTimestamp),
       })
-    license.updatedAt = new Date(event.blockTimestamp)
     integrateMeta(license, licenseMetadata, ['attribution', 'code', 'customText'])
     await store.save<License>(license)
   }
@@ -461,7 +494,6 @@ async function updateVideoLicense(
   // FIXME: Note that we MUST to provide "null" here in order to unset a relation,
   // See: https://github.com/Joystream/hydra/issues/435
   video.license = license as License | undefined
-  video.updatedAt = new Date(ctx.event.blockTimestamp)
   await store.save<Video>(video)
 
   // Safely remove previous license if needed
@@ -527,53 +559,57 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
   const videoAssets = ['thumbnailPhoto', 'media'] as const
 
-  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
-  // is allowed to be associated only with one channel/video in runtime
-  const channel = await store.get(Channel, {
-    where: channelAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
+  async function unconnectAsset<T extends EntityType<Channel | Video>>(
+    entity: T,
+    targetAsset: string,
+    relations: typeof channelAssets | typeof videoAssets
+  ) {
+    // load video/channel
+    const result = await store.get(entity, {
+      where: {
+        [targetAsset]: {
+          id: dataObject.id,
+        },
       },
-    })),
-    relations: [...channelAssets],
-  })
-  const video = await store.get(Video, {
-    where: videoAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
-      },
-    })),
-    relations: [...videoRelationsForCounters],
-  })
+      relations: [...relations],
+    })
 
-  if (channel) {
-    channelAssets.forEach((assetName) => {
-      if (channel[assetName] && channel[assetName]?.id === dataObject.id) {
-        channel[assetName] = null as any
+    if (!result) {
+      return
+    }
+
+    // unset relation
+    relations.forEach((assetName) => {
+      if (result[assetName] && result[assetName]?.id === dataObject.id) {
+        result[assetName] = null as any
       }
     })
-    await store.save<Channel>(channel)
 
-    // emit log event
-    logger.info('Content has been disconnected from Channel', {
-      channelId: channel.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+    await store.save(result)
+
+    // log event
+    if (result instanceof Video) {
+      logger.info('Content has been disconnected from Video', {
+        videoId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    } else {
+      logger.info('Content has been disconnected from Channel', {
+        channelId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    }
   }
 
-  if (video) {
-    videoAssets.forEach((assetName) => {
-      if (video[assetName] && video[assetName]?.id === dataObject.id) {
-        video[assetName] = null as any
-      }
-    })
-    await store.save<Video>(video)
+  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
+  // is allowed to be associated only with one channel/video in runtime
 
-    // emit log event
-    logger.info('Content has been disconnected from Video', {
-      videoId: video.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+  for (const channelAsset of channelAssets) {
+    await unconnectAsset(Channel, channelAsset, channelAssets)
+  }
+
+  for (const videoAsset of videoAssets) {
+    await unconnectAsset(Video, videoAsset, videoAssets)
   }
 
   // remove data object

@@ -22,9 +22,11 @@
 //! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the regular worker/lead.
 //! - [set_status_text](./struct.Module.html#method.set_status_text) - Sets the working group status.
 //! - [spend_from_budget](./struct.Module.html#method.spend_from_budget) - Spend tokens from the group budget.
+//! - [fund_working_group_budget](./struct.Module.html#method.fund_working_group_budget) - Fund the group budget by a member.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
@@ -41,6 +43,8 @@ mod errors;
 #[cfg(test)]
 mod tests;
 mod types;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
@@ -49,6 +53,7 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue}
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
+use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 
@@ -63,44 +68,16 @@ use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
+type Balances<T> = balances::Pallet<T>;
 
-type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
+type WeightInfoWorkingGroup<T, I> = <T as Config<I>>::WeightInfo;
 
-/// Working group WeightInfo
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn on_initialize_leaving(i: u32) -> Weight;
-    fn on_initialize_rewarding_with_missing_reward(i: u32) -> Weight;
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(i: u32) -> Weight;
-    fn on_initialize_rewarding_without_missing_reward(i: u32) -> Weight;
-    fn apply_on_opening(i: u32) -> Weight;
-    fn fill_opening_lead() -> Weight;
-    fn fill_opening_worker(i: u32) -> Weight;
-    fn update_role_account() -> Weight;
-    fn cancel_opening() -> Weight;
-    fn withdraw_application() -> Weight;
-    fn slash_stake(i: u32) -> Weight;
-    fn terminate_role_worker(i: u32) -> Weight;
-    fn terminate_role_lead(i: u32) -> Weight;
-    fn increase_stake() -> Weight;
-    fn decrease_stake() -> Weight;
-    fn spend_from_budget() -> Weight;
-    fn update_reward_amount() -> Weight;
-    fn set_status_text(i: u32) -> Weight;
-    fn update_reward_account() -> Weight;
-    fn set_budget() -> Weight;
-    fn add_opening(i: u32) -> Weight;
-    fn leave_role(i: u32) -> Weight;
-    fn lead_remark() -> Weight;
-    fn worker_remark() -> Weight;
-}
-
-/// The _Group_ main _Trait_
-pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
+/// The _Group_ main _Config_
+pub trait Config<I: Instance = DefaultInstance>:
+    frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// _Administration_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Defines max workers number in the group.
     type MaxWorkerNumberLimit: Get<u32>;
@@ -143,11 +120,12 @@ decl_event!(
        ApplicationId = ApplicationId,
        ApplicationIdToWorkerIdMap = BTreeMap<ApplicationId, WorkerId<T>>,
        WorkerId = WorkerId<T>,
-       <T as frame_system::Trait>::AccountId,
+       <T as frame_system::Config>::AccountId,
        Balance = BalanceOf<T>,
        OpeningType = OpeningType,
-       StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
+       StakePolicy = StakePolicy<<T as frame_system::Config>::BlockNumber, BalanceOf<T>>,
        ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
+       MemberId = MemberId<T>
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -291,6 +269,13 @@ decl_event!(
         /// - Raw storage field.
         WorkerStorageUpdated(WorkerId, Vec<u8>),
 
+        /// Fund the working group budget.
+        /// Params:
+        /// - Member ID
+        /// - Amount of balance
+        /// - Rationale
+        WorkingGroupBudgetFunded(MemberId, Balance, Vec<u8>),
+
         /// Emits on Lead making a remark message
         /// Params:
         /// - message
@@ -305,7 +290,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance=DefaultInstance> as WorkingGroup {
+    trait Store for Module<T: Config<I>, I: Instance=DefaultInstance> as WorkingGroup {
         /// Next identifier value for new job opening.
         pub NextOpeningId get(fn next_opening_id): OpeningId;
 
@@ -318,7 +303,7 @@ decl_storage! {
 
         /// Maps identifier to worker application on opening.
         pub ApplicationById get(fn application_by_id) : map hasher(blake2_128_concat)
-            ApplicationId => Application<T>;
+            ApplicationId => Option<Application<T>>;
 
         /// Next identifier value for new worker application.
         pub NextApplicationId get(fn next_application_id) : ApplicationId;
@@ -328,7 +313,7 @@ decl_storage! {
 
         /// Maps identifier to corresponding worker.
         pub WorkerById get(fn worker_by_id) : map hasher(blake2_128_concat)
-            WorkerId<T> => Worker<T>;
+            WorkerId<T> => Option<Worker<T>>;
 
         /// Current group lead.
         pub CurrentLead get(fn current_lead) : Option<WorkerId<T>>;
@@ -350,7 +335,7 @@ decl_storage! {
 
 decl_module! {
     /// _Working group_ substrate module.
-    pub struct Module<T: Trait<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -447,7 +432,7 @@ decl_module! {
             if opening_type == OpeningType::Regular {
                 // Lead must be set for ensure_origin_for_openig_type in the
                 // case of regular.
-                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let lead = crate::Module::<T, I>::worker_by_id(checks::ensure_lead_is_set::<T, I>()?).ok_or(Error::<T, I>::WorkerDoesNotExist)?;
                 let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
                 creation_stake = T::LeaderOpeningStake::get();
                 T::StakingHandler::set_stake(
@@ -629,7 +614,7 @@ decl_module! {
             if opening.opening_type == OpeningType::Regular {
                 // Lead must be set for ensure_origin_for_openig_type in the
                 // case of regular.
-                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let lead = crate::Module::<T, I>::worker_by_id(checks::ensure_lead_is_set::<T, I>()?).ok_or(Error::<T, I>::WorkerDoesNotExist)?;
                 let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
                 T::StakingHandler::set_stake(
                     &lead.staking_account_id,
@@ -683,8 +668,9 @@ decl_module! {
             //
 
             // Update role account
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.role_account_id = new_role_account_id.clone()
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                role_account_id: new_role_account_id.clone(),
+                ..worker
             });
 
             // Trigger event
@@ -699,7 +685,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::leave_role_weight(&rationale)]
+        #[weight = Module::<T, I>::leave_role_weight(rationale)]
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
@@ -715,8 +701,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.started_leaving_at = Some(Self::current_block())
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                started_leaving_at: Some(Self::current_block()),
+                ..worker
             });
 
             // Trigger event
@@ -733,7 +720,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::terminate_role_weight(&rationale)]
+        #[weight = Module::<T, I>::terminate_role_weight(rationale)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
@@ -775,7 +762,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::slash_stake_weight(&rationale)]
+        #[weight = Module::<T, I>::slash_stake_weight(rationale)]
         pub fn slash_stake(
             origin,
             worker_id: WorkerId<T>,
@@ -963,7 +950,7 @@ decl_module! {
             if opening.opening_type == OpeningType::Regular {
                 // Lead must be set for ensure_origin_for_openig_type in the
                 // case of regular.
-                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let lead = crate::Module::<T, I>::worker_by_id(checks::ensure_lead_is_set::<T, I>()?).ok_or(Error::<T, I>::WorkerDoesNotExist)?;
                 let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
                 T::StakingHandler::set_stake(
                     &lead.staking_account_id,
@@ -1032,8 +1019,9 @@ decl_module! {
             //
 
             // Update worker reward account.
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.reward_account_id = new_reward_account_id.clone();
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                reward_account_id: new_reward_account_id.clone(),
+                ..worker
             });
 
             // Trigger event
@@ -1060,15 +1048,16 @@ decl_module! {
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
             // Ensuring worker actually exists
-            checks::ensure_worker_exists::<T,I>(&worker_id)?;
+            let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Update worker reward amount.
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.reward_per_block = reward_per_block;
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                reward_per_block,
+                ..worker
             });
 
             // Trigger event
@@ -1104,7 +1093,7 @@ decl_module! {
             let status_text_hash = status_text
                 .as_ref()
                 .map(|status_text| {
-                        let hashed = T::Hashing::hash(&status_text);
+                        let hashed = T::Hashing::hash(status_text);
 
                         hashed.as_ref().to_vec()
                     })
@@ -1181,6 +1170,49 @@ decl_module! {
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
 
+        /// Fund working group budget by a member.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` Doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::fund_working_group_budget()]
+        pub fn fund_working_group_budget(
+            origin,
+            member_id: MemberId<T>,
+            amount: BalanceOf<T>,
+            rationale: Vec<u8>,
+        ) {
+            let account_id =
+                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let wg_budget = Self::budget();
+
+            ensure!(amount > Zero::zero(), Error::<T, I>::ZeroTokensFunding);
+            ensure!(
+                Balances::<T>::can_slash(&account_id, amount),
+                Error::<T, I>::InsufficientTokensForFunding
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::set_working_group_budget(wg_budget.saturating_add(amount));
+
+            let _ = Balances::<T>::slash(&account_id, amount);
+
+            Self::deposit_event(
+                RawEvent::WorkingGroupBudgetFunded(
+                    member_id,
+                    amount,
+                    rationale
+                )
+            );
+        }
+
         /// Lead remark message
         ///
         /// # <weight>
@@ -1224,7 +1256,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait<I>, I: Instance> Module<T, I> {
+impl<T: Config<I>, I: Instance> Module<T, I> {
     // Calculate weight for on_initialize
     // We assume worst case scenario in a safe manner
     // We take the most number of workers that will be processed and use it as input of the most costly function
@@ -1285,7 +1317,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Increases active worker counter (saturating).
@@ -1310,7 +1342,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         successful_applications_info
             .iter()
             .for_each(|application_info| {
-                let new_worker_id = Self::create_worker_by_application(&opening, &application_info);
+                let new_worker_id = Self::create_worker_by_application(opening, application_info);
 
                 application_id_to_worker_id.insert(application_info.application_id, new_worker_id);
 
@@ -1459,7 +1491,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let new_budget = budget.saturating_sub(amount);
         <Budget<T, I>>::put(new_budget);
 
-        let _ = <balances::Module<T>>::deposit_creating(account_id, amount);
+        let _ = <balances::Pallet<T>>::deposit_creating(account_id, amount);
     }
 
     // Helper-function joining the reward payment with the event.
@@ -1499,7 +1531,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     None
                 };
 
-                Self::update_worker_missed_reward(worker_id, new_missed_reward);
+                Self::update_worker_missed_reward(worker_id, worker.to_owned(), new_missed_reward);
             }
         }
     }
@@ -1507,11 +1539,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Update worker missed reward.
     fn update_worker_missed_reward(
         worker_id: &WorkerId<T>,
+        worker: Worker<T>,
         new_missed_reward: Option<BalanceOf<T>>,
     ) {
-        WorkerById::<T, I>::mutate(worker_id, |worker| {
-            worker.missed_reward = new_missed_reward;
-        });
+        WorkerById::<T, I>::insert(
+            worker_id,
+            Worker::<T> {
+                missed_reward: new_missed_reward,
+                ..worker
+            },
+        );
 
         Self::deposit_event(RawEvent::NewMissedRewardLevelReached(
             *worker_id,
@@ -1526,7 +1563,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let new_missed_reward = missed_reward_so_far + reward;
 
-        Self::update_worker_missed_reward(worker_id, Some(new_missed_reward));
+        Self::update_worker_missed_reward(worker_id, worker.to_owned(), Some(new_missed_reward));
     }
 
     // Returns allowed payment by the group budget and possible missed payment
@@ -1588,7 +1625,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
+impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
     for Module<T, I>
 {
     fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
@@ -1602,6 +1639,12 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
     fn get_leader_member_id() -> Option<T::MemberId> {
         checks::ensure_lead_is_set::<T, I>()
             .map(Self::worker_by_id)
+            .unwrap_or(None)
+            .map(|worker| worker.member_id)
+    }
+
+    fn get_worker_member_id(worker_id: &WorkerId<T>) -> Option<T::MemberId> {
+        checks::ensure_worker_exists::<T, I>(worker_id)
             .map(|worker| worker.member_id)
             .ok()
     }
@@ -1627,8 +1670,8 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
-    for Module<T, I>
+impl<T: Config<I>, I: Instance>
+    common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>> for Module<T, I>
 {
     fn get_budget() -> BalanceOf<T> {
         Self::budget()
@@ -1636,6 +1679,23 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<
 
     fn set_budget(new_value: BalanceOf<T>) {
         Self::set_working_group_budget(new_value);
+    }
+
+    fn try_withdraw(account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            Error::<T, I>::InsufficientBalanceForTransfer
+        );
+
+        let _ = Balances::<T>::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
     }
 }
 

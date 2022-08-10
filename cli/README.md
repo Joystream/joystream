@@ -1,5 +1,4 @@
-@joystream/cli
-=============
+# @joystream/cli
 
 Command Line Interface for Joystream community and governance activities
 
@@ -9,30 +8,37 @@ Command Line Interface for Joystream community and governance activities
 [![License](https://img.shields.io/npm/l/@joystream/cli.svg)](https://github.com/Joystream/joystream/blob/master/cli/package.json)
 
 <!-- toc -->
-* [Usage](#usage)
-* [Development](#development)
-* [First steps](#first-steps)
-* [Useful environment settings](#useful-environment-settings)
-* [Commands](#commands)
+
+- [@joystream/cli](#joystreamcli)
+- [Usage](#usage)
+- [Development](#development)
+- [First steps](#first-steps)
+- [Useful environment settings](#useful-environment-settings)
+- [Commands](#commands)
 <!-- tocstop -->
 
 # Usage
+
 <!-- usage -->
+
 ```sh-session
 $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.7.0 darwin-x64 node-v14.16.1
+@joystream/cli/0.8.0 darwin-x64 node-v14.16.1
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
 ...
 ```
+
 <!-- usagestop -->
 
 # Development
+
 <!-- development -->
+
 To run a command in developemnt environment (from the root of [Joystream monorepo](https://github.com/Joystream/joystream), without installing the package):
 
 ```shell
@@ -47,111 +53,117 @@ Alternatively:
   $ yarn workspace @joystream/cli link
   $ joystream-cli COMMAND
 ```
+
 <!-- developmentstop -->
 
-
 # First steps
+
 <!-- first-steps -->
+
 When using the CLI for the first time there are a few common steps you might want to take in order to configure the CLI:
 
 1. Set the correct Joystream node websocket endpoint. You can do this by executing [`api:setUri`](#joystream-cli-apiseturi-uri) and choosing one of the suggested endpoints of providing your own url. To verify the currently used Joystream node websocket endpoint you can execute [`api:getUri`](#joystream-cli-apigeturi).
 2. Set the Joystream query node endpoint. This is optional, but some commands (for example: [`content:createChannel`](#joystream-cli-contentcreatechannel)) will require a connection to the query node in order to fetch the data they need complete the requested operations (ie. [`content:createChannel`](#joystream-cli-contentcreatechannel) will need to fetch the available storage node endnpoints in order to upload the channel assets). In order to do that, execute [`api:setQueryNodeEndpoint`](#joystream-cli-apisetquerynodeendpoint-endpoint) and choose one of the suggested endpoints or provide your own url. You can use [`api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint) any time to verify the currently set endpoint.
 3. In order to use your existing keys within the CLI, you can import them using [`account:import`](#joystream-cli-accountimport) command. You can provide json backup files exported from Pioneer or Polkadot{.js} extension as an input. You can also use raw mnemonic or seed phrases. See the [`account:import` command documentation](#joystream-cli-accountimport) for the full list of supported inputs.
-  The key to sign the transaction(s) with will be determined based on the required permissions, depending on the command you execute. For example, if you execute [`working-groups:updateRewardAccount --group storageProviders`](#joystream-cli-working-groupsupdaterewardaccount-address), the CLI will look for a storage provider role key among your available keys. If multiple execution contexts are available, the CLI will prompt you to choose the desired one.
+   The key to sign the transaction(s) with will be determined based on the required permissions, depending on the command you execute. For example, if you execute [`working-groups:updateRewardAccount --group storageProviders`](#joystream-cli-working-groupsupdaterewardaccount-address), the CLI will look for a storage provider role key among your available keys. If multiple execution contexts are available, the CLI will prompt you to choose the desired one.
 4. **Optionally:** You may also find it useful to get the first part of the command (before the colon) autocompleted when you press `[Tab]` while typing the command name in the console. Executing [`autocomplete`](#joystream-cli-autocomplete-shell) command will provide you the instructions on how to set this up.
 5. That's it! The CLI is now be fully set up! Feel free to use the `--help` flag to investigate the available commands or take a look at the commands documentation below.
 <!-- first-steps -->
 
 # Useful environment settings
+
 <!-- env -->
+
 - `FORCE_COLOR=0` - disables output coloring. This will make the output easier to parse in case it's redirected to a file or used within a script.
 - `AUTO_CONFIRM=true` - this will make the CLI skip asking for any confirmations (can be useful when creating bash scripts).
 <!-- envstop -->
 
 # Commands
+
 <!-- commands -->
-* [`joystream-cli account:create`](#joystream-cli-accountcreate)
-* [`joystream-cli account:export DESTPATH`](#joystream-cli-accountexport-destpath)
-* [`joystream-cli account:forget`](#joystream-cli-accountforget)
-* [`joystream-cli account:import`](#joystream-cli-accountimport)
-* [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
-* [`joystream-cli account:list`](#joystream-cli-accountlist)
-* [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
-* [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
-* [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
-* [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
-* [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
-* [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
-* [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
-* [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
-* [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
-* [`joystream-cli content:channels`](#joystream-cli-contentchannels)
-* [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
-* [`joystream-cli content:createChannelCategory`](#joystream-cli-contentcreatechannelcategory)
-* [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
-* [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
-* [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
-* [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
-* [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
-* [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
-* [`joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentdeletechannelcategory-channelcategoryid)
-* [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
-* [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
-* [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
-* [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
-* [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
-* [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
-* [`joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`](#joystream-cli-contentsetfeaturedvideos-featuredvideoids)
-* [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
-* [`joystream-cli content:updateChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentupdatechannelcategory-channelcategoryid)
-* [`joystream-cli content:updateChannelCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatechannelcensorshipstatus-id-status)
-* [`joystream-cli content:updateChannelModerators`](#joystream-cli-contentupdatechannelmoderators)
-* [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
-* [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
-* [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
-* [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
-* [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
-* [`joystream-cli forum:addPost`](#joystream-cli-forumaddpost)
-* [`joystream-cli forum:categories`](#joystream-cli-forumcategories)
-* [`joystream-cli forum:category`](#joystream-cli-forumcategory)
-* [`joystream-cli forum:createCategory`](#joystream-cli-forumcreatecategory)
-* [`joystream-cli forum:createThread`](#joystream-cli-forumcreatethread)
-* [`joystream-cli forum:deleteCategory`](#joystream-cli-forumdeletecategory)
-* [`joystream-cli forum:moderatePost`](#joystream-cli-forummoderatepost)
-* [`joystream-cli forum:moderateThread`](#joystream-cli-forummoderatethread)
-* [`joystream-cli forum:moveThread`](#joystream-cli-forummovethread)
-* [`joystream-cli forum:posts`](#joystream-cli-forumposts)
-* [`joystream-cli forum:setStickiedThreads`](#joystream-cli-forumsetstickiedthreads)
-* [`joystream-cli forum:threads`](#joystream-cli-forumthreads)
-* [`joystream-cli forum:updateCategoryArchivalStatus`](#joystream-cli-forumupdatecategoryarchivalstatus)
-* [`joystream-cli forum:updateCategoryModeratorStatus`](#joystream-cli-forumupdatecategorymoderatorstatus)
-* [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
-* [`joystream-cli membership:addStakingAccount`](#joystream-cli-membershipaddstakingaccount)
-* [`joystream-cli membership:buy`](#joystream-cli-membershipbuy)
-* [`joystream-cli membership:details`](#joystream-cli-membershipdetails)
-* [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
-* [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
-* [`joystream-cli staking:validate`](#joystream-cli-stakingvalidate)
-* [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
-* [`joystream-cli working-groups:apply`](#joystream-cli-working-groupsapply)
-* [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
-* [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
-* [`joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT`](#joystream-cli-working-groupsdecreaseworkerstake-workerid-amount)
-* [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
-* [`joystream-cli working-groups:fillOpening`](#joystream-cli-working-groupsfillopening)
-* [`joystream-cli working-groups:increaseStake AMOUNT`](#joystream-cli-working-groupsincreasestake-amount)
-* [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
-* [`joystream-cli working-groups:opening`](#joystream-cli-working-groupsopening)
-* [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
-* [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
-* [`joystream-cli working-groups:removeUpcomingOpening`](#joystream-cli-working-groupsremoveupcomingopening)
-* [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
-* [`joystream-cli working-groups:slashWorker WORKERID AMOUNT`](#joystream-cli-working-groupsslashworker-workerid-amount)
-* [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
-* [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
-* [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
-* [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
-* [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
+
+- [`joystream-cli account:create`](#joystream-cli-accountcreate)
+- [`joystream-cli account:export DESTPATH`](#joystream-cli-accountexport-destpath)
+- [`joystream-cli account:forget`](#joystream-cli-accountforget)
+- [`joystream-cli account:import`](#joystream-cli-accountimport)
+- [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
+- [`joystream-cli account:list`](#joystream-cli-accountlist)
+- [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
+- [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
+- [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
+- [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
+- [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
+- [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
+- [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
+- [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
+- [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
+- [`joystream-cli content:channels`](#joystream-cli-contentchannels)
+- [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
+- [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
+- [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
+- [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
+- [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
+- [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
+- [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
+- [`joystream-cli content:deleteChannelAsModerator`](#joystream-cli-contentdeletechannelasmoderator)
+- [`joystream-cli content:deleteChannelAssetsAsModerator`](#joystream-cli-contentdeletechannelassetsasmoderator)
+- [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
+- [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
+- [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
+- [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
+- [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
+- [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
+- [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
+- [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
+- [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
+- [`joystream-cli content:updateChannelStateBloatBond VALUE`](#joystream-cli-contentupdatechannelstatebloatbond-value)
+- [`joystream-cli content:updateCuratorGroupPermissions [ID]`](#joystream-cli-contentupdatecuratorgrouppermissions-id)
+- [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
+- [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
+- [`joystream-cli content:updateVideoStateBloatBond VALUE`](#joystream-cli-contentupdatevideostatebloatbond-value)
+- [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
+- [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+- [`joystream-cli forum:addPost`](#joystream-cli-forumaddpost)
+- [`joystream-cli forum:categories`](#joystream-cli-forumcategories)
+- [`joystream-cli forum:category`](#joystream-cli-forumcategory)
+- [`joystream-cli forum:createCategory`](#joystream-cli-forumcreatecategory)
+- [`joystream-cli forum:createThread`](#joystream-cli-forumcreatethread)
+- [`joystream-cli forum:deleteCategory`](#joystream-cli-forumdeletecategory)
+- [`joystream-cli forum:moderatePost`](#joystream-cli-forummoderatepost)
+- [`joystream-cli forum:moderateThread`](#joystream-cli-forummoderatethread)
+- [`joystream-cli forum:moveThread`](#joystream-cli-forummovethread)
+- [`joystream-cli forum:posts`](#joystream-cli-forumposts)
+- [`joystream-cli forum:setStickiedThreads`](#joystream-cli-forumsetstickiedthreads)
+- [`joystream-cli forum:threads`](#joystream-cli-forumthreads)
+- [`joystream-cli forum:updateCategoryArchivalStatus`](#joystream-cli-forumupdatecategoryarchivalstatus)
+- [`joystream-cli forum:updateCategoryModeratorStatus`](#joystream-cli-forumupdatecategorymoderatorstatus)
+- [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
+- [`joystream-cli membership:addStakingAccount`](#joystream-cli-membershipaddstakingaccount)
+- [`joystream-cli membership:buy`](#joystream-cli-membershipbuy)
+- [`joystream-cli membership:details`](#joystream-cli-membershipdetails)
+- [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
+- [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
+- [`joystream-cli staking:validate`](#joystream-cli-stakingvalidate)
+- [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
+- [`joystream-cli working-groups:apply`](#joystream-cli-working-groupsapply)
+- [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
+- [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
+- [`joystream-cli working-groups:decreaseWorkerStake WORKERID AMOUNT`](#joystream-cli-working-groupsdecreaseworkerstake-workerid-amount)
+- [`joystream-cli working-groups:evictWorker WORKERID`](#joystream-cli-working-groupsevictworker-workerid)
+- [`joystream-cli working-groups:fillOpening`](#joystream-cli-working-groupsfillopening)
+- [`joystream-cli working-groups:increaseStake AMOUNT`](#joystream-cli-working-groupsincreasestake-amount)
+- [`joystream-cli working-groups:leaveRole`](#joystream-cli-working-groupsleaverole)
+- [`joystream-cli working-groups:opening`](#joystream-cli-working-groupsopening)
+- [`joystream-cli working-groups:openings`](#joystream-cli-working-groupsopenings)
+- [`joystream-cli working-groups:overview`](#joystream-cli-working-groupsoverview)
+- [`joystream-cli working-groups:removeUpcomingOpening`](#joystream-cli-working-groupsremoveupcomingopening)
+- [`joystream-cli working-groups:setDefaultGroup`](#joystream-cli-working-groupssetdefaultgroup)
+- [`joystream-cli working-groups:slashWorker WORKERID AMOUNT`](#joystream-cli-working-groupsslashworker-workerid-amount)
+- [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
+- [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
+- [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
+- [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
+- [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
 
 ## `joystream-cli account:create`
 
@@ -301,15 +313,15 @@ OPTIONS
       If no "--method" flag is provided then all methods in that module will be listed along with the descriptions.
 
   -a, --callArgs=callArgs
-      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie. 
+      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie.
       "-a=arg1,arg2".
       You can omit this flag even if the method requires some aguments.
       In that case you will be promted to provide value for each required argument.
-      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as 
+      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as
       just simple comma-separated strings)
 
   -e, --exec
-      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is 
+      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is
       default)
 
   -m, --method=method
@@ -395,8 +407,17 @@ ARGUMENTS
   CURATORID  ID of the curator
 
 OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=UpdateChannelMetadata|ManageNonVideoChannelAssets|ManageChannelCollaborators|UpdateVideoMetadata|Add
+  Video|ManageVideoAssets|DeleteChannel|DeleteVideo|ManageVideoNfts|AgentRemark|TransferChannel|ClaimChannelReward|Withd
+  rawFromChannelBalance|IssueCreatorToken|ClaimCreatorTokenPatronage|InitAndManageCreatorTokenSale|CreatorTokenIssuerTra
+  nsfer|MakeCreatorTokenPermissionless|ReduceCreatorTokenPatronageRate|ManageRevenueSplits|DeissueCreatorToken
+      List of permissions to associate with the curator, e.g. -p ManageChannelCollaborators UpdateVideoMetadata
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/addCuratorToGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/addCuratorToGroup.ts)_
@@ -443,30 +464,13 @@ USAGE
   $ joystream-cli content:createChannel
 
 OPTIONS
-  -i, --input=input           (required) Path to JSON file to use as input
-  --context=(Member|Curator)  Actor context to execute the command in (Member/Curator)
-  --useMemberId=useMemberId   Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId   Try using the specified worker id as context whenever possible
+  -i, --input=input                (required) Path to JSON file to use as input
+  --context=(Member|CuratorGroup)  Actor context to execute the command in (Member/CuratorGroup)
+  --useMemberId=useMemberId        Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId        Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createChannel.ts)_
-
-## `joystream-cli content:createChannelCategory`
-
-Create channel category inside content directory.
-
-```
-USAGE
-  $ joystream-cli content:createChannelCategory
-
-OPTIONS
-  -i, --input=input          (required) Path to JSON file to use as input
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/content/createChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createChannelCategory.ts)_
 
 ## `joystream-cli content:createCuratorGroup`
 
@@ -477,11 +481,14 @@ USAGE
   $ joystream-cli content:createCuratorGroup
 
 OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=permissions  Path to JSON file containing moderation permissions by channel privilege level to use
+                                 as input
 
-ALIASES
-  $ joystream-cli createCuratorGroup
+  --status=(ACTIVE|INACTIVE)     (required) Status of newly created Curator Group: (ACTIVE/INACTIVE)
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createCuratorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createCuratorGroup.ts)_
@@ -571,24 +578,41 @@ OPTIONS
 
 _See code: [src/commands/content/deleteChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannel.ts)_
 
-## `joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`
+## `joystream-cli content:deleteChannelAsModerator`
 
-Delete channel category.
+Delete the channel and optionally all associated data objects.
 
 ```
 USAGE
-  $ joystream-cli content:deleteChannelCategory CHANNELCATEGORYID
-
-ARGUMENTS
-  CHANNELCATEGORYID  ID of the Channel Category
+  $ joystream-cli content:deleteChannelAsModerator
 
 OPTIONS
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  -c, --channelId=channelId  (required) ID of the Channel
+  -f, --force                Force-remove all associated channel data objects
+  -r, --rationale=rationale  (required) Reason of deleting the channel by moderator
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/deleteChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelCategory.ts)_
+_See code: [src/commands/content/deleteChannelAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelAsModerator.ts)_
+
+## `joystream-cli content:deleteChannelAssetsAsModerator`
+
+Delete the channel assets.
+
+```
+USAGE
+  $ joystream-cli content:deleteChannelAssetsAsModerator
+
+OPTIONS
+  -a, --assetIds=assetIds    (required) List of data object IDs to delete
+  -c, --channelId=channelId  (required) ID of the Channel
+  -r, --rationale=rationale  (required) Reason for removing the channel assets by moderator
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/deleteChannelAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelAssetsAsModerator.ts)_
 
 ## `joystream-cli content:deleteVideo`
 
@@ -607,6 +631,42 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/deleteVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideo.ts)_
+
+## `joystream-cli content:deleteVideoAsModerator`
+
+Delete the video and optionally all associated data objects.
+
+```
+USAGE
+  $ joystream-cli content:deleteVideoAsModerator
+
+OPTIONS
+  -f, --force                Force-remove all associated video data objects
+  -r, --rationale=rationale  (required) reason of deleting the video by moderator
+  -v, --videoId=videoId      (required) ID of the Video
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/deleteVideoAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAsModerator.ts)_
+
+## `joystream-cli content:deleteVideoAssetsAsModerator`
+
+Delete the video assets.
+
+```
+USAGE
+  $ joystream-cli content:deleteVideoAssetsAsModerator
+
+OPTIONS
+  -a, --assetIds=assetIds    (required) List of data object IDs to delete
+  -r, --rationale=rationale  (required) Reason for removing the video assets by moderator
+  -v, --videoId=videoId      (required) ID of the Video
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/deleteVideoAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAssetsAsModerator.ts)_
 
 ## `joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`
 
@@ -699,24 +759,6 @@ OPTIONS
 
 _See code: [src/commands/content/setCuratorGroupStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setCuratorGroupStatus.ts)_
 
-## `joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`
-
-Set featured videos. Requires lead access.
-
-```
-USAGE
-  $ joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS
-
-ARGUMENTS
-  FEATUREDVIDEOIDS  Comma-separated video IDs (ie. 1,2,3)
-
-OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/content/setFeaturedVideos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setFeaturedVideos.ts)_
-
 ## `joystream-cli content:updateChannel CHANNELID`
 
 Update existing content directory channel.
@@ -737,65 +779,45 @@ OPTIONS
 
 _See code: [src/commands/content/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannel.ts)_
 
-## `joystream-cli content:updateChannelCategory CHANNELCATEGORYID`
+## `joystream-cli content:updateChannelStateBloatBond VALUE`
 
-Update channel category inside content directory.
+Update channel state bloat bond.
 
 ```
 USAGE
-  $ joystream-cli content:updateChannelCategory CHANNELCATEGORYID
+  $ joystream-cli content:updateChannelStateBloatBond VALUE
 
 ARGUMENTS
-  CHANNELCATEGORYID  ID of the Channel Category
+  VALUE  New state bloat bond value
 
 OPTIONS
-  -i, --input=input          (required) Path to JSON file to use as input
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/updateChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelCategory.ts)_
+_See code: [src/commands/content/updateChannelStateBloatBond.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelStateBloatBond.ts)_
 
-## `joystream-cli content:updateChannelCensorshipStatus ID [STATUS]`
+## `joystream-cli content:updateCuratorGroupPermissions [ID]`
 
-Update Channel censorship status (Censored / Not censored).
+Update existing Curator Group.
 
 ```
 USAGE
-  $ joystream-cli content:updateChannelCensorshipStatus ID [STATUS]
+  $ joystream-cli content:updateCuratorGroupPermissions [ID]
 
 ARGUMENTS
-  ID      ID of the Channel
-  STATUS  New censorship status of the channel (1 - censored, 0 - not censored)
+  ID  ID of the Curator Group
 
 OPTIONS
-  --rationale=rationale      rationale
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=permissions  (required) Path to JSON file containing moderation permissions by channel privilege
+                                 level to use as input
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/updateChannelCensorshipStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelCensorshipStatus.ts)_
-
-## `joystream-cli content:updateChannelModerators`
-
-Update Channel's moderator set.
-
-```
-USAGE
-  $ joystream-cli content:updateChannelModerators
-
-OPTIONS
-  -c, --channelId=channelId    (required) Channel id
-  -m, --moderators=moderators  New set of moderators
-  --useMemberId=useMemberId    Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId    Try using the specified worker id as context whenever possible
-
-EXAMPLE
-  $ content:updateChannelModerators -c 1 -m 1 2 3
-```
-
-_See code: [src/commands/content/updateChannelModerators.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelModerators.ts)_
+_See code: [src/commands/content/updateCuratorGroupPermissions.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateCuratorGroupPermissions.ts)_
 
 ## `joystream-cli content:updateVideo VIDEOID`
 
@@ -837,25 +859,23 @@ OPTIONS
 
 _See code: [src/commands/content/updateVideoCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoCategory.ts)_
 
-## `joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`
+## `joystream-cli content:updateVideoStateBloatBond VALUE`
 
-Update Video censorship status (Censored / Not censored).
+Update video state bloat bond.
 
 ```
 USAGE
-  $ joystream-cli content:updateVideoCensorshipStatus ID [STATUS]
+  $ joystream-cli content:updateVideoStateBloatBond VALUE
 
 ARGUMENTS
-  ID      ID of the Video
-  STATUS  New video censorship status (1 - censored, 0 - not censored)
+  VALUE  New state bloat bond value
 
 OPTIONS
-  --rationale=rationale      rationale
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/updateVideoCensorshipStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoCensorshipStatus.ts)_
+_See code: [src/commands/content/updateVideoStateBloatBond.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoStateBloatBond.ts)_
 
 ## `joystream-cli content:video VIDEOID`
 
@@ -1158,7 +1178,7 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.3.1/src/commands/help.ts)_
 
 ## `joystream-cli membership:addStakingAccount`
 
@@ -1289,7 +1309,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1312,7 +1332,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --answers=answers
@@ -1353,7 +1373,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1379,7 +1399,7 @@ OPTIONS
 
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   -i, --input=input
@@ -1389,7 +1409,7 @@ OPTIONS
       Path to the file where the output JSON should be saved (this output can be then reused as input)
 
   --dryRun
-      If provided along with --output - skips sending the actual extrinsic(can be used to generate a "draft" which can be 
+      If provided along with --output - skips sending the actual extrinsic(can be used to generate a "draft" which can be
       provided as input later)
 
   --stakeTopUpSource=stakeTopUpSource
@@ -1425,7 +1445,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1451,7 +1471,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --penalty=penalty
@@ -1480,7 +1500,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --applicationIds=applicationIds
@@ -1512,7 +1532,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1535,7 +1555,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --rationale=rationale
@@ -1560,7 +1580,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --id=id
@@ -1589,7 +1609,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --upcoming
@@ -1615,7 +1635,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1638,7 +1658,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   -i, --id=id
@@ -1664,7 +1684,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1691,7 +1711,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --rationale=rationale
@@ -1716,7 +1736,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   -i, --input=input
@@ -1745,7 +1765,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1771,7 +1791,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1797,7 +1817,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1824,7 +1844,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing, 
+      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1835,4 +1855,5 @@ OPTIONS
 ```
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
+
 <!-- commandsstop -->
