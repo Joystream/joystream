@@ -1,37 +1,28 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::Module as Bounty;
 use crate::{
     AssuranceContractType, BalanceOf, Bounties, BountyActor, BountyCreationParameters,
-    BountyMilestone, Call, Entries, Event, FundingType, Module, OracleWorkEntryJudgment, Trait,
+    BountyMilestone, Call, Config, Entries, Event, FundingType, Module as Bounty,
+    OracleWorkEntryJudgment, Pallet,
 };
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use common::council::CouncilBudgetManager;
 use core::convert::TryFrom;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use membership::Module as Membership;
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::{Perbill, SaturatedConversion};
-use sp_std::boxed::Box;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
-pub fn get_funder_state_bloat_bond_amount<T: Trait>() -> T::Balance {
-    T::FunderStateBloatBondAmount::get()
-}
-
-pub fn get_creator_state_bloat_bond_amount<T: Trait>() -> T::Balance {
-    T::CreatorStateBloatBondAmount::get()
-}
-
-pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
+pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
     let mut current_block = System::<T>::block_number();
     while current_block < target_block {
         System::<T>::on_finalize(current_block);
@@ -45,17 +36,17 @@ pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
     }
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn assert_was_fired<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_was_fired<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(events.iter().any(|ev| ev.event == system_event));
 }
@@ -68,7 +59,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: Config + membership::Config>(id: u32) -> Vec<u8> {
     let mut handle = vec![];
 
     for i in 0..4 {
@@ -79,11 +70,16 @@ fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
 }
 
 //defines initial balance
-fn initial_balance<T: Trait>() -> T::Balance {
-    1000000u32.into()
+fn initial_balance<T: Config + membership::Config>() -> T::Balance {
+    T::DefaultMembershipPrice::get()
+        + T::CandidateStake::get()
+        + T::FunderStateBloatBondAmount::get()
+        + T::CreatorStateBloatBondAmount::get()
+        + T::MinWorkEntrantStake::get()
+        + 1000000u32.into()
 }
 
-fn member_funded_account<T: Trait + membership::Trait>(
+fn member_funded_account<T: Config + membership::Config>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -105,8 +101,6 @@ fn member_funded_account<T: Trait + membership::Trait>(
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
-
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
         new_member_id,
@@ -123,7 +117,7 @@ fn member_funded_account<T: Trait + membership::Trait>(
     (account_id, new_member_id)
 }
 
-fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
+fn announce_entry_and_submit_work<T: Config + membership::Config>(
     bounty_id: &T::BountyId,
     index: u32,
 ) -> T::EntryId {
@@ -155,7 +149,7 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
     entry_id
 }
 
-fn create_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
+fn create_funded_bounty<T: Config>(params: BountyCreationParameters<T>) -> T::BountyId {
     let funding_amount = match params.funding_type {
         FundingType::Perpetual { target } => target,
         FundingType::Limited { target, .. } => target,
@@ -165,8 +159,8 @@ fn create_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::Bou
         params.cherry
             + params.oracle_reward
             + funding_amount
-            + get_funder_state_bloat_bond_amount::<T>()
-            + get_creator_state_bloat_bond_amount::<T>(),
+            + T::FunderStateBloatBondAmount::get()
+            + T::CreatorStateBloatBondAmount::get(),
     );
 
     Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -192,12 +186,11 @@ const MAX_WORK_ENTRIES: u32 = 100;
 
 benchmarks! {
     where_clause {
-        where T: council::Trait,
-              T: balances::Trait,
-              T: membership::Trait,
-              T: Trait,
+        where T: council::Config,
+              T: balances::Config,
+              T: membership::Config,
+              T: Config,
     }
-    _{ }
 
     create_bounty_by_council {
         let i in 1 .. MAX_BYTES;
@@ -212,7 +205,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let members = (1..=j)
             .map(|id| id.saturated_into())
@@ -252,7 +245,7 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(
             cherry
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let members = (1..=j)
             .map(|id| id.saturated_into())
@@ -291,7 +284,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -338,7 +331,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -382,7 +375,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -428,7 +421,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -471,7 +464,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -526,7 +519,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -581,7 +574,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Perpetual{
@@ -630,7 +623,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Perpetual{ target: max_amount },
@@ -642,27 +635,31 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
-
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
+
+        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+
     }: fund_bounty (
         RawOrigin::Signed(account_id.clone()),
         BountyActor::Member(member_id),
         bounty_id, amount)
 
     verify {
+        // println!("4 {:?}", Balances::<T>::usable_balance(&account_id));
+
         assert_eq!(
             Balances::<T>::usable_balance(&account_id),
             // included staking account deposit
             initial_balance::<T>()
-             - amount
-             - T::CandidateStake::get()
-             - get_funder_state_bloat_bond_amount::<T>()
+            - T::DefaultMembershipPrice::get()
+            - T::CandidateStake::get()
+            - T::FunderStateBloatBondAmount::get()
+            - amount
         );
         assert_last_event::<T>(
             Event::<T>::BountyMaxFundingReached(bounty_id).into());
@@ -678,8 +675,8 @@ benchmarks! {
             cherry
             + oracle_reward
             + max_amount
-            + get_funder_state_bloat_bond_amount::<T>()
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::FunderStateBloatBondAmount::get()
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Perpetual{ target: max_amount },
@@ -714,7 +711,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -756,7 +753,10 @@ benchmarks! {
         assert_eq!(
             Balances::<T>::usable_balance(&account_id),
             // included staking account deposit
-            initial_balance::<T>() - T::CandidateStake::get() + cherry
+            initial_balance::<T>()
+            - T::DefaultMembershipPrice::get()
+            - T::CandidateStake::get()
+            + cherry
         );
 
     }
@@ -773,8 +773,8 @@ benchmarks! {
             cherry
             + oracle_reward
             + funding_amount
-            + get_funder_state_bloat_bond_amount::<T>()
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::FunderStateBloatBondAmount::get()
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -812,7 +812,7 @@ benchmarks! {
             T::CouncilBudgetManager::get_budget(),
             cherry
             + funding_amount
-            + get_funder_state_bloat_bond_amount::<T>());
+            + T::FunderStateBloatBondAmount::get());
     }
 
     announce_work_entry {
@@ -824,7 +824,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
-        let stake: BalanceOf<T> = 100u32.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         let member_ids = (0..j)
             .into_iter()
@@ -838,7 +838,7 @@ benchmarks! {
             cherry,
             oracle_reward,
             contract_type,
-            entrant_stake: stake,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -918,7 +918,7 @@ benchmarks! {
         entry_id,
         work_data.clone())
     verify {
-        let entry = Bounty::<T>::entries(bounty_id, entry_id);
+        let entry = Bounty::<T>::entries(bounty_id, entry_id).unwrap();
 
         assert!(entry.work_submitted);
         assert_last_event::<T>(
@@ -1139,7 +1139,7 @@ benchmarks! {
         let (oracle_account_id, oracle_member_id) =
             member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
-        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let entrant_stake = T::MinWorkEntrantStake::get();
 
         let params = BountyCreationParameters::<T> {
             creator: BountyActor::Council,
@@ -1201,7 +1201,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             creator,
@@ -1209,7 +1209,7 @@ benchmarks! {
             oracle_reward,
             oracle: oracle.clone(),
             funding_type: FundingType::Perpetual{ target: 100u32.into() },
-            entrant_stake: 100u32.into(),
+            entrant_stake: T::MinWorkEntrantStake::get(),
             ..Default::default()
         };
 
@@ -1250,7 +1250,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             creator,
@@ -1258,7 +1258,7 @@ benchmarks! {
             oracle_reward,
             oracle: oracle.clone(),
             funding_type: FundingType::Perpetual{ target: 100u32.into() },
-            entrant_stake: 100u32.into(),
+            entrant_stake: T::MinWorkEntrantStake::get(),
             ..Default::default()
         };
 
@@ -1300,7 +1300,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             creator,
@@ -1308,7 +1308,7 @@ benchmarks! {
             oracle_reward,
             oracle: oracle.clone(),
             funding_type: FundingType::Perpetual{ target: 100u32.into() },
-            entrant_stake: 100u32.into(),
+            entrant_stake: T::MinWorkEntrantStake::get(),
             ..Default::default()
         };
 
@@ -1349,7 +1349,7 @@ benchmarks! {
 
         T::CouncilBudgetManager::set_budget(
             cherry + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             creator,
@@ -1357,7 +1357,7 @@ benchmarks! {
             oracle_reward,
             oracle: oracle.clone(),
             funding_type: FundingType::Perpetual{ target: 100u32.into() },
-            entrant_stake: 100u32.into(),
+            entrant_stake: T::MinWorkEntrantStake::get(),
             ..Default::default()
         };
 
@@ -1400,7 +1400,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             creator,
@@ -1408,7 +1408,7 @@ benchmarks! {
             oracle_reward,
             oracle: oracle.clone(),
             funding_type: FundingType::Perpetual{ target: 100u32.into() },
-            entrant_stake: 100u32.into(),
+            entrant_stake: T::MinWorkEntrantStake::get(),
             ..Default::default()
         };
 
@@ -1440,7 +1440,7 @@ benchmarks! {
         let (oracle_account_id, oracle_member_id) =
             member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
-        let stake: BalanceOf<T> = 100u32.into();
+        let stake = T::MinWorkEntrantStake::get();
         let creator = BountyActor::Council;
 
         let params = BountyCreationParameters::<T> {
@@ -1498,7 +1498,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 200u32.into();
         let funding_amount: BalanceOf<T> = 500u32.into();
         let oracle = BountyActor::Council;
-        let stake: BalanceOf<T> = 200u32.into();
+        let entrant_stake = T::MinWorkEntrantStake::get();
         let creator = BountyActor::Council;
         let (account_id, member_id) =
             member_funded_account::<T>("work entrant", 0);
@@ -1508,7 +1508,7 @@ benchmarks! {
             oracle_reward,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle,
-            entrant_stake: stake,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -1560,16 +1560,17 @@ benchmarks! {
             member_funded_account::<T>("oracle", 1);
 
         let oracle = BountyActor::Member(oracle_member_id);
-        let stake: BalanceOf<T> = 100u32.into();
+        let entrant_stake = T::MinWorkEntrantStake::get();
         let creator = BountyActor::Council;
         let funder = BountyActor::Council;
+
         let params = BountyCreationParameters::<T> {
             creator,
             cherry,
             oracle_reward,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle,
-            entrant_stake: stake,
+            entrant_stake,
             ..Default::default()
         };
 
@@ -1626,7 +1627,7 @@ benchmarks! {
             Event::<T>::FunderStateBloatBondWithdrawn(
                 bounty_id,
                 funder,
-                get_funder_state_bloat_bond_amount::<T>()).into());
+                T::FunderStateBloatBondAmount::get()).into());
     }
 
     withdraw_funding_state_bloat_bond_by_member{
@@ -1636,7 +1637,7 @@ benchmarks! {
         let (oracle_account_id, oracle_member_id) =
         member_funded_account::<T>("oracle", 0);
         let oracle = BountyActor::Member(oracle_member_id);
-        let stake: BalanceOf<T> = 100u32.into();
+        let entrant_stake = T::MinWorkEntrantStake::get();
         let creator = BountyActor::Council;
 
         let params = BountyCreationParameters::<T> {
@@ -1645,14 +1646,14 @@ benchmarks! {
             oracle_reward,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle,
-            entrant_stake: stake,
+            entrant_stake,
             ..Default::default()
         };
 
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
@@ -1722,7 +1723,7 @@ benchmarks! {
             Event::<T>::FunderStateBloatBondWithdrawn(
                 bounty_id,
                 funder,
-                get_funder_state_bloat_bond_amount::<T>()).into());
+                T::FunderStateBloatBondAmount::get()).into());
 
         assert!(Bounties::<T>::contains_key(bounty_id));
     }
@@ -1731,13 +1732,13 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let max_amount: BalanceOf<T> = 1000u32.into();
-        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let entrant_stake = T::MinWorkEntrantStake::get();
         let oracle = BountyActor::Council;
 
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let creator = BountyActor::Council;
         let params = BountyCreationParameters::<T>{
@@ -1784,7 +1785,7 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(
             cherry
             + oracle_reward
-            + get_creator_state_bloat_bond_amount::<T>());
+            + T::CreatorStateBloatBondAmount::get());
 
         let creator = BountyActor::Council;
         let params = BountyCreationParameters::<T>{
@@ -1825,7 +1826,7 @@ benchmarks! {
         let msg = vec![0u8].repeat(i as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
-        let entrant_stake: BalanceOf<T> = 100u32.into();
+        let entrant_stake = T::MinWorkEntrantStake::get();
 
         let params = BountyCreationParameters::<T>{
             cherry,
@@ -1871,7 +1872,7 @@ benchmarks! {
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
         T::CouncilBudgetManager::set_budget(
-            cherry + get_creator_state_bloat_bond_amount::<T>());
+            cherry + T::CreatorStateBloatBondAmount::get());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -1974,251 +1975,242 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::tests::mocks::{build_test_externalities, Test};
+    use crate::tests::mocks::{build_test_externalities, Bounty};
     use frame_support::assert_ok;
 
     #[test]
     fn create_bounty_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_create_bounty_by_council::<Test>());
+            assert_ok!(Bounty::test_benchmark_create_bounty_by_council());
         });
     }
 
     #[test]
     fn create_bounty_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_create_bounty_by_member::<Test>());
+            assert_ok!(Bounty::test_benchmark_create_bounty_by_member());
         });
     }
 
     #[test]
     fn terminate_bounty_w_oracle_reward_funding_expired() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_bounty_w_oracle_reward_funding_expired::<Test>());
+            assert_ok!(Bounty::test_benchmark_terminate_bounty_w_oracle_reward_funding_expired());
         });
     }
     #[test]
     fn terminate_bounty_wo_oracle_reward_funding_expired() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_bounty_wo_oracle_reward_funding_expired::<Test>());
+            assert_ok!(Bounty::test_benchmark_terminate_bounty_wo_oracle_reward_funding_expired());
         });
     }
     #[test]
     fn terminate_bounty_w_oracle_reward_wo_funds_funding() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_bounty_w_oracle_reward_wo_funds_funding::<Test>());
+            assert_ok!(Bounty::test_benchmark_terminate_bounty_w_oracle_reward_wo_funds_funding());
         });
     }
 
     #[test]
     fn terminate_bounty_wo_oracle_reward_wo_funds_funding() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_bounty_wo_oracle_reward_wo_funds_funding::<Test>());
+            assert_ok!(Bounty::test_benchmark_terminate_bounty_wo_oracle_reward_wo_funds_funding());
         });
     }
 
     #[test]
     fn terminate_bounty_w_oracle_reward_w_funds_funding() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_bounty_w_oracle_reward_w_funds_funding::<Test>());
+            assert_ok!(Bounty::test_benchmark_terminate_bounty_w_oracle_reward_w_funds_funding());
         });
     }
 
     #[test]
     fn terminate_bounty_wo_oracle_reward_w_funds_funding() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_bounty_wo_oracle_reward_w_funds_funding::<Test>());
+            assert_ok!(Bounty::test_benchmark_terminate_bounty_wo_oracle_reward_w_funds_funding());
         });
     }
 
     #[test]
     fn terminate_bounty_work_or_judging_period() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_bounty_work_or_judging_period::<Test>());
+            assert_ok!(Bounty::test_benchmark_terminate_bounty_work_or_judging_period());
         });
     }
 
     #[test]
     fn fund_bounty_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fund_bounty_by_member::<Test>());
+            assert_ok!(Bounty::test_benchmark_fund_bounty_by_member());
         });
     }
 
     #[test]
     fn fund_bounty_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fund_bounty_by_council::<Test>());
+            assert_ok!(Bounty::test_benchmark_fund_bounty_by_council());
         });
     }
 
     #[test]
     fn withdraw_funding_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_funding_by_member::<Test>());
+            assert_ok!(Bounty::test_benchmark_withdraw_funding_by_member());
         });
     }
 
     #[test]
     fn withdraw_funding_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_funding_by_council::<Test>());
+            assert_ok!(Bounty::test_benchmark_withdraw_funding_by_council());
         });
     }
 
     #[test]
     fn announce_work_entry() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_announce_work_entry::<Test>());
+            assert_ok!(Bounty::test_benchmark_announce_work_entry());
         });
     }
 
     #[test]
     fn submit_work() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_submit_work::<Test>());
+            assert_ok!(Bounty::test_benchmark_submit_work());
         });
     }
 
     #[test]
     fn submit_oracle_judgment_by_council_all_winners() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_submit_oracle_judgment_by_council_all_winners::<Test>());
+            assert_ok!(Bounty::test_benchmark_submit_oracle_judgment_by_council_all_winners());
         });
     }
 
     #[test]
     fn submit_oracle_judgment_by_council_all_rejected() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_submit_oracle_judgment_by_council_all_rejected::<Test>());
+            assert_ok!(Bounty::test_benchmark_submit_oracle_judgment_by_council_all_rejected());
         });
     }
 
     #[test]
     fn submit_oracle_judgment_by_member_all_winners() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_submit_oracle_judgment_by_member_all_winners::<Test>());
+            assert_ok!(Bounty::test_benchmark_submit_oracle_judgment_by_member_all_winners());
         });
     }
 
     #[test]
     fn submit_oracle_judgment_by_member_all_rejected() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_submit_oracle_judgment_by_member_all_rejected::<Test>());
+            assert_ok!(Bounty::test_benchmark_submit_oracle_judgment_by_member_all_rejected());
         });
     }
 
     #[test]
     fn switch_oracle_to_council_by_council_successful() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_switch_oracle_to_council_by_council_successful::<Test>());
+            assert_ok!(Bounty::test_benchmark_switch_oracle_to_council_by_council_successful());
         });
     }
 
     #[test]
     fn switch_oracle_to_member_by_oracle_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_switch_oracle_to_member_by_oracle_council::<
-                Test,
-            >());
+            assert_ok!(Bounty::test_benchmark_switch_oracle_to_member_by_oracle_council());
         });
     }
 
     #[test]
     fn switch_oracle_to_member_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_switch_oracle_to_member_by_council::<Test>());
+            assert_ok!(Bounty::test_benchmark_switch_oracle_to_member_by_council());
         });
     }
 
     #[test]
     fn switch_oracle_to_member_by_oracle_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_switch_oracle_to_member_by_oracle_member::<
-                Test,
-            >());
+            assert_ok!(Bounty::test_benchmark_switch_oracle_to_member_by_oracle_member());
         });
     }
 
     #[test]
     fn switch_oracle_to_council_by_oracle_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_switch_oracle_to_council_by_oracle_member::<
-                Test,
-            >());
+            assert_ok!(Bounty::test_benchmark_switch_oracle_to_council_by_oracle_member());
         });
     }
 
     #[test]
     fn end_working_period() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_end_working_period::<Test>());
+            assert_ok!(Bounty::test_benchmark_end_working_period());
         });
     }
 
     #[test]
     fn withdraw_entrant_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_entrant_stake::<Test>());
+            assert_ok!(Bounty::test_benchmark_withdraw_entrant_stake());
         });
     }
 
     #[test]
     fn withdraw_funding_state_bloat_bond_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_funding_state_bloat_bond_by_council::<Test>());
+            assert_ok!(Bounty::test_benchmark_withdraw_funding_state_bloat_bond_by_council());
         });
     }
 
     #[test]
     fn withdraw_funding_state_bloat_bond_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_funding_state_bloat_bond_by_member::<Test>());
+            assert_ok!(Bounty::test_benchmark_withdraw_funding_state_bloat_bond_by_member());
         });
     }
 
     #[test]
     fn withdraw_oracle_reward_by_oracle_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_oracle_reward_by_oracle_member::<Test>());
+            assert_ok!(Bounty::test_benchmark_withdraw_oracle_reward_by_oracle_member());
         });
     }
 
     #[test]
     fn withdraw_oracle_reward_by_oracle_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_oracle_reward_by_oracle_council::<
-                Test,
-            >());
+            assert_ok!(Bounty::test_benchmark_withdraw_oracle_reward_by_oracle_council());
         });
     }
 
     #[test]
     fn bounty_contributor_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_contributor_remark::<Test>());
+            assert_ok!(Bounty::test_benchmark_contributor_remark());
         });
     }
 
     #[test]
     fn bounty_oracle_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_oracle_remark::<Test>());
+            assert_ok!(Bounty::test_benchmark_oracle_remark());
         });
     }
 
     #[test]
     fn bounty_entrant_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_entrant_remark::<Test>());
+            assert_ok!(Bounty::test_benchmark_entrant_remark());
         });
     }
 
     #[test]
     fn bounty_creator_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_creator_remark::<Test>());
+            assert_ok!(Bounty::test_benchmark_creator_remark());
         });
     }
 }

@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 #[test]
 fn cancel_buy_now() {
@@ -37,11 +34,6 @@ fn cancel_buy_now() {
             DEFAULT_NFT_PRICE,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Cancel buy now
         assert_ok!(Content::cancel_buy_now(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -61,13 +53,10 @@ fn cancel_buy_now() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::BuyNowCanceled(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::BuyNowCanceled(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+        ));
     })
 }
 
@@ -224,5 +213,27 @@ fn cancel_buy_now_not_in_auction_state() {
 
         // Failure checked
         assert_err!(cancel_buy_now_result, Error::<Test>::NftNotInBuyNowState);
+    })
+}
+
+#[test]
+fn cancel_buy_now_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .setup();
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::cancel_buy_now(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }

@@ -22,10 +22,22 @@ export type GetStorageNodesInfoByBagIdQueryVariables = Types.Exact<{
 
 export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
 
+export type GetStorageBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
+
+export type DistributionBucketFamilyFieldsFragment = { id: string; buckets: Array<{ id: string; bucketIndex: number }> }
+
+export type GetDistributionFamiliesAdndBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetDistributionFamiliesAdndBucketsQuery = {
+  distributionBucketFamilies: Array<DistributionBucketFamilyFieldsFragment>
+}
+
 export type DataObjectInfoFragment = {
   id: string
   size: any
-  deletionPrize: any
+  stateBloatBond: any
   type:
     | { __typename: 'DataObjectTypeChannelAvatar'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
@@ -141,11 +153,20 @@ export const StorageNodeInfo = gql`
     }
   }
 `
+export const DistributionBucketFamilyFields = gql`
+  fragment DistributionBucketFamilyFields on DistributionBucketFamily {
+    id
+    buckets {
+      id
+      bucketIndex
+    }
+  }
+`
 export const DataObjectInfo = gql`
   fragment DataObjectInfo on StorageDataObject {
     id
     size
-    deletionPrize
+    stateBloatBond
     type {
       __typename
       ... on DataObjectTypeVideoMedia {
@@ -236,6 +257,22 @@ export const GetStorageNodesInfoByBagId = gql`
     }
   }
   ${StorageNodeInfo}
+`
+export const GetStorageBuckets = gql`
+  query getStorageBuckets {
+    storageBuckets(where: { acceptingNewBags_eq: true }) {
+      ...StorageNodeInfo
+    }
+  }
+  ${StorageNodeInfo}
+`
+export const GetDistributionFamiliesAdndBuckets = gql`
+  query getDistributionFamiliesAdndBuckets {
+    distributionBucketFamilies {
+      ...DistributionBucketFamilyFields
+    }
+  }
+  ${DistributionBucketFamilyFields}
 `
 export const GetDataObjectsByBagId = gql`
   query getDataObjectsByBagId($bagId: ID) {

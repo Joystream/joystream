@@ -1,13 +1,10 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
-const AUCTION_ENDING_BLOCK: u64 = 10;
+const AUCTION_DURATION: u64 = 10;
 #[test]
 fn cancel_nft_auction() {
     with_default_mock_builder(|| {
@@ -36,11 +33,6 @@ fn cancel_nft_auction() {
             get_open_auction_params()
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Cancel nft auction
         assert_ok!(Content::cancel_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -60,13 +52,10 @@ fn cancel_nft_auction() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::AuctionCanceled(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::AuctionCanceled(
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+        ));
     })
 }
 
@@ -253,9 +242,9 @@ fn cancel_nft_auction_english_auction_with_bids() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::max_auction_duration(),
             min_bid_step: Content::max_bid_step(),
-            end: AUCTION_ENDING_BLOCK,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 
@@ -270,7 +259,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make an english auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -291,6 +280,50 @@ fn cancel_nft_auction_english_auction_with_bids() {
         assert_err!(
             cancel_nft_auction_result,
             Error::<Test>::ActionHasBidsAlready
+        );
+    })
+}
+
+#[test]
+fn cancel_open_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
+            .setup();
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::cancel_open_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn cancel_english_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
+            .setup();
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::cancel_english_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

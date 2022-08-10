@@ -7,10 +7,6 @@
     "description": "Branch to deploy",
     "value": "master"
   },
-  "keyName": {
-    "description": "SSH key pair on AWS",
-    "value": "joystream-github-action-key-new"
-  },
   "numberOfValidators": {
     "description": "Number of validators to deploy",
     "value": "2"
@@ -47,10 +43,6 @@
     "description": "HTTP Link to the Initial Balances file",
     "value": ""
   },
-  "initialMembersFile": {
-    "description": "HTTP Link to the Initial Members file",
-    "value": ""
-  },
   "deploymentType": {
     "description": "Chain deployment type (live, dev etc.)",
     "value": "live"
@@ -59,9 +51,9 @@
     "description": "Password to encrypt the artifacts",
     "value": "password"
   },
-  "proposalParameters": {
-    "description": "Proposal Parameters",
-    "value": {}
+  "runtimeProfile": {
+    "description": "STAGING | PLAYGROUND| TESTING - leave empty for production",
+    "value": ""
   },
   "skipChainSetup": {
     "description": "Set to true to skip running setup new chain scenario",

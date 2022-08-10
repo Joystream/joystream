@@ -6,7 +6,7 @@ import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { OpeningId } from '@joystream/types/working-group'
+import { OpeningId } from '@joystream/types/primitives'
 import {
   ApplicationBasicFieldsFragment,
   OpeningCanceledEventFieldsFragment,

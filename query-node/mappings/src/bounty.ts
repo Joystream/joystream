@@ -1,7 +1,14 @@
-import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 import { BountyMetadata, BountyWorkData } from '@joystream/metadata-protobuf'
-import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
-import { MemberId } from '@joystream/types/common'
+import {
+  AssuranceContractType,
+  BountyActor,
+  BountyId,
+  EntryId,
+  FundingType,
+  OracleWorkEntryJudgment,
+} from '@joystream/types/augment'
+import { MemberId } from '@joystream/types/primitives'
 import { BN } from '@polkadot/util'
 import {
   Bounty,
@@ -11,7 +18,6 @@ import {
   BountyCreatorCherryWithdrawalEvent,
   BountyEntrantWhitelist,
   BountyEntry,
-  BountyEntryStatusCashedOut,
   BountyEntryStatusPassed,
   BountyEntryStatusRejected,
   BountyEntryStatusWinner,
@@ -43,7 +49,7 @@ import { scheduleAtBlock } from './scheduler'
  */
 
 async function getBounty(store: DatabaseManager, bountyId: BountyId | string, relations?: string[]): Promise<Bounty> {
-  const bounty = await store.get(Bounty, { where: { id: bountyId }, relations })
+  const bounty = await store.get(Bounty, { where: { id: bountyId }, relations } as FindOneOptions<Bounty>)
   if (!bounty) {
     throw new Error(`Bounty not found by id: ${bountyId}`)
   }
@@ -56,12 +62,13 @@ function getContribution(
   contributorId: string | undefined
 ): Promise<BountyContribution | undefined> {
   return store.get(BountyContribution, {
-    where: { bounty: { id: bountyId }, contributor: { id: contributorId ?? null } },
+    // where: { bounty: { id: bountyId.toString() }, contributor: { id: contributorId ?? null } },
+    where: { bounty: { id: bountyId.toString() }, contributor: { id: contributorId } }, // TODO: check this is ok
   })
 }
 
 async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<BountyEntry> {
-  const entry = await store.get(BountyEntry, { where: { id: entryId } })
+  const entry = await store.get(BountyEntry, { where: { id: entryId.toString() } })
   if (!entry) {
     throw new Error(`Entry not found by id: ${entryId}`)
   }
@@ -76,7 +83,6 @@ async function updateBounty(
   changes: (bounty: Bounty) => Partial<Bounty>
 ) {
   const bounty = await getBounty(store, bountyId, relations)
-  bounty.updatedAt = new Date(event.blockTimestamp)
   Object.assign(bounty, changes(bounty))
 
   await store.save<Bounty>(bounty)
@@ -88,10 +94,9 @@ async function updateEntry(
   store: DatabaseManager,
   event: SubstrateEvent,
   entryId: EntryId,
-  changes: (entry: BountyEntry) => Partial<BountyEntry>
+  changes: (entry: BountyEntry) => Partial<BountyEntry> = () => ({})
 ) {
   const entry = await getEntry(store, entryId)
-  entry.updatedAt = new Date(event.blockTimestamp)
   Object.assign(entry, changes(entry))
 
   await store.save<BountyEntry>(entry)
@@ -153,38 +158,77 @@ export const bountyScheduleWorkSubmissionEnd = scheduleBountyStageEnd(BountyStag
   'entries',
 ])
 
-export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(BountyStage.Judgment, async (store, bounty) => {
-  bounty.updatedAt = new Date()
-  bounty.stage = BountyStage.Failed
-  await store.save<Bounty>(bounty)
-})
+export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(
+  BountyStage.Judgment,
+  // Go to Withdrawal Period
+  (store, bounty) => goToWithdrawalPeriod(store, bounty, []),
+  ['entries']
+)
 
 function endFundingPeriod(
   store: DatabaseManager,
   bounty: Bounty,
   blockNumber: number,
-  isFunded: boolean,
-  updatedAt = new Date()
+  isFunded: boolean
 ): Promise<void> {
-  bounty.updatedAt = updatedAt
   if (isFunded) {
+    // Go to Working period
     bounty.stage = BountyStage.WorkSubmission
     bountyScheduleWorkSubmissionEnd(bounty, blockNumber + bounty.workPeriod)
+    return store.save<Bounty>(bounty)
+  } else if (bounty.totalFunding.eqn(0)) {
+    // Go to Expired Funding Period
+    bounty.stage = BountyStage.Expired
+    return store.save<Bounty>(bounty)
   } else {
-    bounty.stage = BountyStage[bounty.totalFunding.gtn(0) ? 'Failed' : 'Expired']
+    // Go to Withdrawal Period
+    return goToWithdrawalPeriod(store, bounty)
   }
-  return store.save<Bounty>(bounty)
 }
 
 function endWorkingPeriod(store: DatabaseManager, bounty: Bounty, blockNumber: number): Promise<void> {
-  bounty.updatedAt = new Date()
   if (bounty.entries?.some((entry) => entry.workSubmitted)) {
+    // Go to Judgement Period
     bounty.stage = BountyStage.Judgment
     bountyScheduleJudgmentEnd(bounty, blockNumber + bounty.judgingPeriod)
+    return store.save<Bounty>(bounty)
   } else {
-    bounty.stage = BountyStage.Failed
+    // Go to Withdrawal Period
+    return goToWithdrawalPeriod(store, bounty)
   }
-  return store.save<Bounty>(bounty)
+}
+
+type JudgmentEntries = [EntryId, OracleWorkEntryJudgment][]
+async function goToWithdrawalPeriod(
+  store: DatabaseManager,
+  bounty: Bounty,
+  judgementEntries: JudgmentEntries = []
+): Promise<void> {
+  // Update the bounty status
+  const hasWinners = judgementEntries.some(([, judgment]) => judgment.isWinner)
+  bounty.stage = BountyStage[hasWinners ? 'Successful' : 'Failed']
+  await store.save<Bounty>(bounty)
+
+  // Update entries statuses
+  await Promise.all(
+    bounty.entries?.flatMap((entry) => {
+      if (entry.status.isTypeOf !== 'BountyEntryStatusWorking') return []
+
+      const judgment = judgementEntries.find(([entryId]) => String(entryId) === entry.id)?.[1]
+
+      if (judgment?.isWinner) {
+        const status = new BountyEntryStatusWinner()
+        status.reward = asBN(judgment.asWinner.reward)
+        entry.status = status
+      } else if (judgment?.isRejected) {
+        entry.status = new BountyEntryStatusRejected()
+      } else {
+        entry.status = new BountyEntryStatusPassed()
+      }
+
+      return store.save<BountyEntry>(entry)
+    }) ?? []
+  )
 }
 
 /**
@@ -203,14 +247,12 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   // Create the EntrantWhitelist
   const entrantWhitelist = asEntrantWhitelist(bountyParams.contract_type)
   if (entrantWhitelist) {
-    store.save<BountyEntrantWhitelist>(entrantWhitelist)
+    await store.save<BountyEntrantWhitelist>(entrantWhitelist)
   }
 
   // Create the bounty
   const bounty = new Bounty({
     id: String(bountyId),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     title: whenDef(metadata?.title, perpareString),
     description: whenDef(metadata?.description, perpareString),
     bannerImageUri: whenDef(metadata?.bannerImageUri, perpareString),
@@ -302,7 +344,6 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
   } else {
     contribution = new BountyContribution({ createdAt: eventTime, bounty, contributor, amount })
   }
-  contribution.updatedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
   // Record the event
@@ -314,18 +355,17 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
 export async function bounty_BountyMaxFundingReached({ event, store }: EventContext & StoreContext): Promise<void> {
   const maxFundingReachedEvent = new BountyEvents.BountyMaxFundingReachedEvent(event)
   const [bountyId] = maxFundingReachedEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
   // Update the bounty stage
   const bounty = await getBounty(store, bountyId)
-  await endFundingPeriod(store, bounty, event.blockNumber, true, eventTime)
+  await endFundingPeriod(store, bounty, event.blockNumber, true)
 
   // Record the event
   const maxFundingReachedInEvent = new BountyMaxFundingReachedEvent({ ...genericEventFields(event), bounty })
   await store.save<BountyMaxFundingReachedEvent>(maxFundingReachedInEvent)
 }
 
-// Store BountyFundingWithdrawal events (also update the contribution deleteAt time)
+// Store BountyFundingWithdrawal events
 export async function bounty_BountyFundingWithdrawal({ event, store }: EventContext & StoreContext): Promise<void> {
   const fundingWithdrawalEvent = new BountyEvents.BountyFundingWithdrawalEvent(event)
   const [bountyId, contributorActor] = fundingWithdrawalEvent.params
@@ -338,8 +378,6 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
     const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
     throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
   }
-  contribution.updatedAt = eventTime
-  contribution.deletedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
   // Record the event
@@ -366,10 +404,7 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
 
   // Terminate the bounty
-  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], (bounty) => ({
-    deletedAt: bounty.updatedAt,
-    isTerminated: true,
-  }))
+  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], () => ({ isTerminated: true }))
 
   // Record the event
   const removedInEvent = new BountyRemovedEvent({ ...genericEventFields(event), bounty })
@@ -380,13 +415,10 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
 export async function bounty_WorkEntryAnnounced({ event, store }: EventContext & StoreContext): Promise<void> {
   const entryAnnouncedEvent = new BountyEvents.WorkEntryAnnouncedEvent(event)
   const [bountyId, entryId, memberId, accountId] = entryAnnouncedEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
   // Create the entry
   const entry = new BountyEntry({
     id: String(entryId),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     bounty: new Bounty({ id: String(bountyId) }),
     worker: new Membership({ id: String(memberId) }),
     stakingAccount: String(accountId),
@@ -428,7 +460,7 @@ export async function bounty_WorkEntrySlashed({ event, store }: EventContext & S
 // Store WorkSubmitted events
 export async function bounty_WorkSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
   const workSubmittedEvent = new BountyEvents.WorkSubmittedEvent(event)
-  const [, entryId, , metadataBytes] = workSubmittedEvent.params
+  const [bountyId, entryId, , metadataBytes] = workSubmittedEvent.params
 
   // Update the entry
   const entry = await updateEntry(store, event, entryId, () => ({
@@ -439,6 +471,7 @@ export async function bounty_WorkSubmitted({ event, store }: EventContext & Stor
   const metadata = deserializeMetadata(BountyWorkData, metadataBytes)
   const submittedInEvent = new WorkSubmittedEvent({
     ...genericEventFields(event),
+    bounty: new Bounty({ id: String(bountyId) }),
     entry,
     title: whenDef(metadata?.title, perpareString),
     description: whenDef(metadata?.description, perpareString),
@@ -452,32 +485,11 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   const judgmentSubmittedEvent = new BountyEvents.OracleJudgmentSubmittedEvent(event)
   const [bountyId, , bountyJudgment, rationale] = judgmentSubmittedEvent.params
 
+  const bounty = await getBounty(store, bountyId, ['entries'])
   const entryJudgments = Array.from(bountyJudgment.entries())
 
-  // Update the bounty status
-  const hasWinners = entryJudgments.some(([, judgment]) => judgment.isWinner)
-  const bounty = await updateBounty(store, event, bountyId, ['entries'], () => ({
-    stage: BountyStage[hasWinners ? 'Successful' : 'Failed'],
-  }))
-
-  // Update winner entries status
-  await Promise.all(
-    bounty.entries?.map((entry) => {
-      const judgment = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
-
-      if (!judgment) {
-        entry.status = new BountyEntryStatusPassed()
-      } else if (judgment?.isWinner) {
-        const status = new BountyEntryStatusWinner()
-        status.reward = asBN(judgment.asWinner.reward)
-        entry.status = status
-      } else {
-        entry.status = new BountyEntryStatusRejected()
-      }
-
-      return store.save<BountyEntry>(entry)
-    }) ?? []
-  )
+  // Go to Withdrawal Period (and update entries statuses)
+  await goToWithdrawalPeriod(store, bounty, entryJudgments)
 
   // Record the event
   const judgmentEvent = new OracleJudgmentSubmittedEvent({
@@ -489,20 +501,13 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   await store.save<OracleJudgmentSubmittedEvent>(judgmentEvent)
 }
 
-// Change cashed out entries status to CashedOut
+// Store entrant funds Withdrawn events
 export async function bounty_WorkEntrantFundsWithdrawn({ event, store }: EventContext & StoreContext): Promise<void> {
   const entrantFundsWithdrawnEvent = new BountyEvents.WorkEntrantFundsWithdrawnEvent(event)
+  const [, entryId] = entrantFundsWithdrawnEvent.params
 
-  // Update the entry status
-  const entry = await updateEntry(store, event, entrantFundsWithdrawnEvent.params[1], (entry) => {
-    const status = new BountyEntryStatusCashedOut()
-    if ('reward' in entry.status) {
-      status.reward = entry.status.reward
-    }
-    return { status }
-  })
-
-  await store.save<BountyEntry>(entry)
+  // Update the entry updated at field
+  const entry = await updateEntry(store, event, entryId)
 
   // Record the event
   const cashOutEvent = new WorkEntrantFundsWithdrawnEvent({ ...genericEventFields(event), entry })

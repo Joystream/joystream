@@ -1,4 +1,5 @@
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::UniqueSaturatedInto;
@@ -9,7 +10,7 @@ pub type InputValidationLengthConstraint = BoundedValueConstraint<u16>;
 
 /// Value constraint within boundaries.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy, TypeInfo)]
 pub struct BoundedValueConstraint<Val> {
     /// Minimum value
     pub min: Val,

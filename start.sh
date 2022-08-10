@@ -36,10 +36,6 @@ docker-compose up -d orion
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
-  set -a
-  . ./.env
-  set +a
-
   export SKIP_MOCK_CONTENT=true
   export SKIP_QUERY_NODE_CHECKS=true
   HOST_IP=$(tests/network-tests/get-host-ip.sh)

@@ -15,6 +15,11 @@ export default class DevUpload extends ApiCommandBase {
   static description = 'Upload data object (development mode only).'
 
   static flags = {
+    bagId: ApiCommandBase.extraFlags.bagId({
+      char: 'i',
+      required: true,
+      description: 'BagId for uploading the Data object.',
+    }),
     size: flags.integer({
       char: 's',
       required: true,
@@ -33,6 +38,7 @@ export default class DevUpload extends ApiCommandBase {
 
     await this.ensureDevelopmentChain()
 
+    const bagId = flags.bagId
     const objectSize = flags.size
     const objectCid = flags.cid
 
@@ -41,9 +47,10 @@ export default class DevUpload extends ApiCommandBase {
     const api = await this.getApi()
 
     const dataFee = await api.query.storage.dataObjectPerMegabyteFee()
+    const stateBloatBond = await api.query.storage.dataObjectStateBloatBondValue()
 
-    logger.info(`Current data fee: ${dataFee}`)
+    logger.info(`Current data fee: ${dataFee}; Current state bloat bond: ${stateBloatBond}`)
 
-    await uploadDataObjects(api, objectSize, objectCid, dataFee.toNumber())
+    await uploadDataObjects(api, bagId, objectSize, objectCid, dataFee.toNumber(), stateBloatBond.toNumber())
   }
 }

@@ -1,16 +1,19 @@
 use super::*;
+use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum PausableChannelFeature {
-    // TODO: Will affect `withdraw_from_channel_balance` and `claim_and_withdraw_channel_reward` after https://github.com/Joystream/joystream/pull/3444
+    // Affects:
+    // -`withdraw_from_channel_balance`
+    // -`claim_and_withdraw_channel_reward`
     ChannelFundsTransfer,
     // Affects:
     // - `claim_channel_reward`
-    // TODO: Will affect `claim_and_withdraw_channel_reward`
+    // - `claim_and_withdraw_channel_reward`
     CreatorCashout,
     // Affects:
     // - `issue_nft`
@@ -26,7 +29,8 @@ pub enum PausableChannelFeature {
     // Affects:
     // - `update_channel`
     ChannelUpdate,
-    // TODO: Will affect extrinsics depending on creator tokens implementation (https://github.com/Joystream/joystream/issues/2362)
+    // Affects:
+    // - `issue_creator_token`
     CreatorTokenIssuance,
 }
 
@@ -37,7 +41,7 @@ impl Default for PausableChannelFeature {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum ContentModerationAction {
     // Related extrinsics:
     // - `set_video_visibility_as_moderator`
@@ -64,21 +68,25 @@ pub enum ContentModerationAction {
     // Related extrinsics:
     // - `delete_channel_assets_as_moderator`
     DeleteNonVideoChannelAssets,
+    // Related extrinsics:
+    // - `update_channel_nft_limit`
+    UpdateChannelNftLimits,
 }
 
 pub type ModerationPermissionsByLevel<T> =
-    BTreeMap<<T as Trait>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
+    BTreeMap<<T as Config>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
 
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct CuratorGroup<T: Trait>
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+pub struct CuratorGroup<T: Config>
 where
     T: common::membership::MembershipTypes,
     T::ActorId: Ord,
 {
-    /// Curators set, associated with a iven curator group
-    curators: BTreeSet<T::CuratorId>,
+    /// Map from CuratorId to curator's ChannelAgentPermissions
+    curators: BTreeMap<T::CuratorId, ChannelAgentPermissions>,
 
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
@@ -87,10 +95,10 @@ where
     permissions_by_level: ModerationPermissionsByLevel<T>,
 }
 
-impl<T: Trait> Default for CuratorGroup<T> {
+impl<T: Config> Default for CuratorGroup<T> {
     fn default() -> Self {
         Self {
-            curators: BTreeSet::new(),
+            curators: BTreeMap::new(),
             // default curator group status right after creation
             active: false,
             permissions_by_level: BTreeMap::new(),
@@ -98,10 +106,10 @@ impl<T: Trait> Default for CuratorGroup<T> {
     }
 }
 
-impl<T: Trait> CuratorGroup<T> {
+impl<T: Config> CuratorGroup<T> {
     pub fn create(active: bool, permissions_by_level: &ModerationPermissionsByLevel<T>) -> Self {
         Self {
-            curators: BTreeSet::new(),
+            curators: BTreeMap::new(),
             active,
             permissions_by_level: permissions_by_level.clone(),
         }
@@ -109,7 +117,7 @@ impl<T: Trait> CuratorGroup<T> {
 
     /// Check if `CuratorGroup` contains curator under given `curator_id`
     pub fn has_curator(&self, curator_id: &T::CuratorId) -> bool {
-        self.curators.contains(curator_id)
+        self.curators.contains_key(curator_id)
     }
 
     /// Check if `CuratorGroup` is active
@@ -136,12 +144,12 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by reference
-    pub fn get_curators(&self) -> &BTreeSet<T::CuratorId> {
+    pub fn get_curators(&self) -> &BTreeMap<T::CuratorId, ChannelAgentPermissions> {
         &self.curators
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by mutable  reference
-    pub fn get_curators_mut(&mut self) -> &mut BTreeSet<T::CuratorId> {
+    pub fn get_curators_mut(&mut self) -> &mut BTreeMap<T::CuratorId, ChannelAgentPermissions> {
         &mut self.curators
     }
 
@@ -198,7 +206,7 @@ impl<T: Trait> CuratorGroup<T> {
         Ok(())
     }
 
-    pub fn can_perform_actions(
+    pub fn can_group_member_perform_moderation_actions(
         &self,
         actions: &[ContentModerationAction],
         privilege_level: T::ChannelPrivilegeLevel,
@@ -206,7 +214,7 @@ impl<T: Trait> CuratorGroup<T> {
         let permissions_for_level = self.permissions_by_level.get(&privilege_level);
         if let Some(permissions_for_level) = permissions_for_level {
             for action in actions {
-                if !permissions_for_level.contains(&action) {
+                if !permissions_for_level.contains(action) {
                     return false;
                 }
             }
@@ -216,35 +224,24 @@ impl<T: Trait> CuratorGroup<T> {
         }
     }
 
-    pub fn can_perform_action(
-        &self,
-        action: ContentModerationAction,
-        privilege_level: T::ChannelPrivilegeLevel,
-    ) -> bool {
-        self.can_perform_actions(&[action], privilege_level)
-    }
-
-    pub fn ensure_can_perform_action(
-        &self,
-        action: ContentModerationAction,
-        privilege_level: T::ChannelPrivilegeLevel,
-    ) -> DispatchResult {
-        ensure!(
-            self.can_perform_action(action, privilege_level),
-            Error::<T>::CuratorModerationActionNotAllowed
-        );
-        Ok(())
-    }
-
-    pub fn ensure_can_perform_actions(
+    pub fn ensure_group_member_can_perform_moderation_actions(
         &self,
         actions: &[ContentModerationAction],
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> DispatchResult {
         ensure!(
-            self.can_perform_actions(actions, privilege_level),
+            self.can_group_member_perform_moderation_actions(actions, privilege_level),
             Error::<T>::CuratorModerationActionNotAllowed
         );
         Ok(())
+    }
+
+    pub fn get_existing_group_member_channel_agent_permissions(
+        &self,
+        curator_id: &T::CuratorId,
+    ) -> Result<&ChannelAgentPermissions, DispatchError> {
+        self.curators
+            .get(curator_id)
+            .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
     }
 }

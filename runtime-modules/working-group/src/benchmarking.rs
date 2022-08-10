@@ -4,32 +4,33 @@ use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::OnInitialize;
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
+use sp_std::vec;
 
 use crate::types::StakeParameters;
 use crate::Module as WorkingGroup;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use membership::Module as Membership;
 
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
-fn add_opening_helper<T: Trait<I>, I: Instance>(
+fn add_opening_helper<T: Config<I>, I: Instance>(
     id: u32,
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
@@ -58,7 +59,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
     opening_id
 }
 
-fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
+fn apply_on_opening_helper<T: Config<I>, I: Instance>(
     id: u32,
     applicant_id: &T::AccountId,
     member_id: &T::MemberId,
@@ -93,8 +94,8 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
     application_id
 }
 
-fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: Instance>(
-    ids: &Vec<u32>,
+fn add_opening_and_apply_with_multiple_ids<T: Config<I> + membership::Config, I: Instance>(
+    ids: &[u32],
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
 ) -> (OpeningId, BTreeSet<ApplicationId>, Vec<T::AccountId>) {
@@ -120,7 +121,7 @@ fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: I
     (opening_id, successful_application_ids, account_ids)
 }
 
-fn add_and_apply_opening<T: Trait<I>, I: Instance>(
+fn add_and_apply_opening<T: Config<I>, I: Instance>(
     id: u32,
     add_opening_origin: &T::Origin,
     applicant_id: &T::AccountId,
@@ -136,7 +137,7 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -152,7 +153,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
+fn member_funded_account<T: Config<I> + membership::Config, I: Instance>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -176,12 +177,12 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
     )
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
         account_id.clone(),
     )
     .unwrap();
@@ -189,7 +190,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     (account_id, member_id)
 }
 
-fn force_missed_reward<T: Trait<I>, I: Instance>() {
+fn force_missed_reward<T: Config<I>, I: Instance>() {
     let curr_block_number =
         System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
     System::<T>::set_block_number(curr_block_number);
@@ -197,7 +198,7 @@ fn force_missed_reward<T: Trait<I>, I: Instance>() {
     WorkingGroup::<T, _>::on_initialize(curr_block_number);
 }
 
-pub fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
+pub fn insert_a_worker<T: Config<I> + membership::Config, I: Instance>(
     job_opening_type: OpeningType,
     id: u32,
     lead_id: Option<T::AccountId>,
@@ -212,7 +213,7 @@ where
     (caller_id, worker_id)
 }
 
-pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
+pub fn complete_opening<T: Config<I> + membership::Config, I: Instance>(
     job_opening_type: OpeningType,
     id: u32,
     lead_id: Option<T::AccountId>,
@@ -221,7 +222,7 @@ pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
 ) -> WorkerId<T> {
     let add_worker_origin = match job_opening_type {
         OpeningType::Leader => RawOrigin::Root,
-        OpeningType::Regular => RawOrigin::Signed(lead_id.clone().unwrap()),
+        OpeningType::Regular => RawOrigin::Signed(lead_id.unwrap()),
     };
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
@@ -235,7 +236,7 @@ pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
     let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
     successful_application_ids.insert(application_id);
     WorkingGroup::<T, _>::fill_opening(
-        add_worker_origin.clone().into(),
+        add_worker_origin.into(),
         opening_id,
         successful_application_ids,
     )
@@ -254,10 +255,8 @@ pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
 
 benchmarks_instance! {
     where_clause {
-        where T: membership::Trait
+        where T: membership::Config
     }
-
-    _ { }
 
     on_initialize_leaving {
         let i in 2 .. T::MaxWorkerNumberLimit::get();
@@ -270,7 +269,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, application_account_id) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
@@ -304,10 +303,10 @@ benchmarks_instance! {
         ).unwrap();
 
         for i in 1..successful_application_ids.len() {
-            let worker = WorkerId::<T>::from(i.try_into().unwrap());
-            assert!(WorkerById::<T, I>::contains_key(worker), "Not all workers added");
+            let worker_id = WorkerId::<T>::from(i.try_into().unwrap());
+            let worker = WorkingGroup::<T, _>::worker_by_id(worker_id).expect("Not all workers added");
             assert_eq!(
-                WorkingGroup::<T, _>::worker_by_id(worker).started_leaving_at,
+                worker.started_leaving_at,
                 Some(System::<T>::block_number()),
                 "Worker hasn't started leaving"
             );
@@ -318,7 +317,7 @@ benchmarks_instance! {
 
         // Force unstaking period to have passed
         let curr_block_number =
-            System::<T>::block_number().saturating_add(leaving_unstaking_period.into());
+            System::<T>::block_number().saturating_add(leaving_unstaking_period);
         System::<T>::set_block_number(curr_block_number);
         WorkingGroup::<T, _>::set_budget(
             RawOrigin::Root.into(),
@@ -355,12 +354,12 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
-        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id).into(), opening_id,
         successful_application_ids.clone()).unwrap();
 
         for i in 1..successful_application_ids.len() {
@@ -415,12 +414,12 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
-        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id).into(), opening_id,
         successful_application_ids.clone()).unwrap();
 
         for i in 1..successful_application_ids.len() {
@@ -464,12 +463,12 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
-        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id).into(), opening_id,
         successful_application_ids.clone()).unwrap();
 
         for i in 1..successful_application_ids.len() {
@@ -518,7 +517,7 @@ benchmarks_instance! {
 
         let apply_on_opening_params = ApplyOnOpeningParameters::<T> {
             member_id: lead_member_id,
-            opening_id: opening_id.clone(),
+            opening_id,
             role_account_id: lead_account_id.clone(),
             reward_account_id: lead_account_id.clone(),
             description: vec![0u8; i.try_into().unwrap()],
@@ -577,7 +576,7 @@ benchmarks_instance! {
     }
 
     fill_opening_worker {
-        let i in 1 .. T::MaxWorkerNumberLimit::get() - 1;
+        let i in 2 .. T::MaxWorkerNumberLimit::get();
         let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(
             OpeningType::Leader,
             0,
@@ -586,7 +585,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i+1).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
@@ -623,7 +622,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(lead_id), lead_worker_id, new_account_id.clone())
     verify {
         assert_eq!(
-            WorkingGroup::<T, I>::worker_by_id(lead_worker_id).role_account_id,
+            WorkingGroup::<T, I>::worker_by_id(lead_worker_id).expect("Worker Must Exist").role_account_id,
             new_account_id,
             "Role account notupdated"
         );
@@ -756,9 +755,9 @@ benchmarks_instance! {
 
         let old_stake = One::one();
         WorkingGroup::<T, _>::decrease_stake(
-            RawOrigin::Signed(lead_id.clone()).into(), worker_id.clone(), old_stake).unwrap();
+            RawOrigin::Signed(lead_id).into(), worker_id, old_stake).unwrap();
         let new_stake = old_stake + One::one();
-    }: _ (RawOrigin::Signed(caller_id.clone()), worker_id.clone(), new_stake)
+    }: _ (RawOrigin::Signed(caller_id.clone()), worker_id, new_stake)
     verify {
         assert_last_event::<T, I>(RawEvent::StakeIncreased(worker_id, new_stake).into());
     }
@@ -801,7 +800,7 @@ benchmarks_instance! {
 
         let (account_id, member_id) = member_funded_account::<T, I>("member", 0);
 
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id.clone(), amount, Vec::new())
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, amount, Vec::new())
     verify {
         assert_eq!(WorkingGroup::<T, I>::budget(), amount, "Budget not updated");
         assert_last_event::<T, I>(
@@ -824,7 +823,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(lead_id.clone()), worker_id, new_reward)
     verify {
         assert_eq!(
-            WorkingGroup::<T, I>::worker_by_id(worker_id).reward_per_block,
+            WorkingGroup::<T, I>::worker_by_id(worker_id).expect("Worker Must Exist").reward_per_block,
             new_reward,
             "Reward not updated"
         );
@@ -864,7 +863,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(caller_id), worker_id, new_id.clone())
     verify {
         assert_eq!(
-            WorkingGroup::<T, I>::worker_by_id(worker_id).reward_account_id,
+            WorkingGroup::<T, I>::worker_by_id(worker_id).expect("Worker Must Exist").reward_account_id,
             new_id,
             "Reward account not updated"
         );
@@ -930,7 +929,7 @@ benchmarks_instance! {
         )
     verify {
         assert_eq!(
-            WorkingGroup::<T, _>::worker_by_id(caller_worker_id).started_leaving_at,
+            WorkingGroup::<T, _>::worker_by_id(caller_worker_id).expect("Worker Must Exist").started_leaving_at,
             Some(System::<T>::block_number()),
             "Worker hasn't started leaving"
         );
@@ -954,7 +953,7 @@ benchmarks_instance! {
         let (caller_id, worker_id) = insert_a_worker::<T, I>(
             OpeningType::Regular,
             1,
-            Some(lead_id.clone()));
+            Some(lead_id));
         let msg = b"test".to_vec();
     }: _ (RawOrigin::Signed(caller_id), worker_id, msg.clone())
         verify {
@@ -964,140 +963,143 @@ benchmarks_instance! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::{build_test_externalities, Test};
+    use crate::Module as WorkingGroup;
     use frame_support::assert_ok;
 
     #[test]
     fn test_leave_role() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_leave_role::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_leave_role());
         });
     }
 
     #[test]
     fn test_add_opening() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_add_opening::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_add_opening());
         });
     }
 
     #[test]
     fn test_set_budget() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_budget::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_set_budget());
         });
     }
 
     #[test]
     fn test_update_reward_account() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_reward_account::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_update_reward_account());
         });
     }
 
     #[test]
     fn test_set_status_text() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_status_text::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_set_status_text());
         });
     }
 
     #[test]
     fn test_update_reward_amount() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_reward_amount::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_update_reward_amount());
         });
     }
 
     #[test]
     fn test_spend_from_budget() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_spend_from_budget::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_spend_from_budget());
         });
     }
 
     #[test]
     fn test_decrease_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_decrease_stake::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_decrease_stake());
         });
     }
 
     #[test]
     fn test_increase_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_increase_stake::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_increase_stake());
         });
     }
 
     #[test]
     fn test_terminate_role_lead() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_role_lead::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_terminate_role_lead());
         });
     }
 
     #[test]
     fn test_terminate_role_worker() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_role_worker::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_terminate_role_worker());
         });
     }
 
     #[test]
     fn test_slash_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_slash_stake::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_slash_stake());
         });
     }
 
     #[test]
     fn test_withdraw_application() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_application::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_withdraw_application());
         });
     }
 
     #[test]
     fn test_cancel_opening() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_cancel_opening::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_cancel_opening());
         });
     }
 
     #[test]
     fn test_update_role_account() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_role_account::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_update_role_account());
         });
     }
 
     #[test]
     fn test_fill_opening_worker() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fill_opening_worker::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_fill_opening_worker());
         });
     }
 
     #[test]
     fn test_fill_opening_lead() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fill_opening_lead::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_fill_opening_lead());
         });
     }
 
     #[test]
     fn test_apply_on_opening() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_apply_on_opening::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_apply_on_opening());
         });
     }
 
     #[test]
     fn test_on_inintialize_rewarding_without_missing_reward() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_rewarding_without_missing_reward::<Test>());
+            assert_ok!(
+                WorkingGroup::<Test>::test_benchmark_on_initialize_rewarding_without_missing_reward(
+                )
+            );
         });
     }
 
@@ -1105,7 +1107,7 @@ mod tests {
     fn test_on_inintialize_rewarding_with_missing_reward_cant_pay() {
         build_test_externalities().execute_with(|| {
             assert_ok!(
-                test_benchmark_on_initialize_rewarding_with_missing_reward_cant_pay::<Test>()
+                WorkingGroup::<Test>::test_benchmark_on_initialize_rewarding_with_missing_reward_cant_pay()
             );
         });
     }
@@ -1113,35 +1115,37 @@ mod tests {
     #[test]
     fn test_on_inintialize_rewarding_with_missing_reward() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_rewarding_with_missing_reward::<Test>());
+            assert_ok!(
+                WorkingGroup::<Test>::test_benchmark_on_initialize_rewarding_with_missing_reward()
+            );
         });
     }
 
     #[test]
     fn test_on_inintialize_leaving() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_leaving::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_on_initialize_leaving());
         });
     }
 
     #[test]
     fn test_fund_working_group_budget() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fund_working_group_budget::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_fund_working_group_budget());
         });
     }
 
     #[test]
     fn test_lead_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_lead_remark::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_lead_remark());
         });
     }
 
     #[test]
     fn test_worker_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_worker_remark::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_worker_remark());
         });
     }
 }

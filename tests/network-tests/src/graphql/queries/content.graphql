@@ -30,7 +30,7 @@ fragment StorageDataObjectFields on StorageDataObject {
   type {
     ...DataObjectTypeFields
   }
-  deletionPrize
+  stateBloatBond
   unsetAt
   storageBagId
 }
@@ -44,7 +44,6 @@ fragment ChannelFields on Channel {
   language {
     iso
   }
-  rewardAccount
   isCensored
   ownerMember {
     id
@@ -61,6 +60,11 @@ fragment ChannelFields on Channel {
   coverPhoto {
     ...StorageDataObjectFields
   }
+
+  bannedMembers {
+    id
+  }
+  rewardAccount
 }
 
 fragment ChannelCategoryFields on ChannelCategory {
@@ -71,6 +75,89 @@ fragment ChannelCategoryFields on ChannelCategory {
 fragment VideoCategoryFields on VideoCategory {
   id
   activeVideosCounter
+}
+
+fragment VideoReactionFields on VideoReaction {
+  id
+  reaction
+  member {
+    id
+  }
+  video {
+    id
+  }
+}
+
+fragment CommentReactionFields on CommentReaction {
+  id
+  reactionId
+  member {
+    id
+  }
+  comment {
+    id
+  }
+}
+
+fragment CommentFields on Comment {
+  id
+  author {
+    id
+  }
+
+  video {
+    id
+  }
+
+  text
+  status
+  isEdited
+
+  reactions {
+    ...CommentReactionFields
+  }
+}
+
+fragment VideoFields on Video {
+  id
+  commentsCount
+  reactionsCount
+  comments {
+    ...CommentFields
+  }
+  reactions {
+    ...VideoReactionFields
+  }
+  isCommentSectionEnabled
+  pinnedComment {
+    id
+  }
+}
+
+fragment BidFields on Bid {
+  id
+  bidder {
+    id
+    handle
+  }
+  auction {
+    auctionType {
+      __typename
+      ... on AuctionTypeOpen {
+        bidLockDuration
+      }
+
+      ... on AuctionTypeEnglish {
+        extensionPeriod
+      }
+    }
+  }
+  nft {
+    id
+  }
+  isCanceled
+  amount
+  createdInBlock
 }
 
 fragment OwnedNftFields on OwnedNft {
@@ -84,12 +171,72 @@ fragment OwnedNftFields on OwnedNft {
   metadata
   transactionalStatus {
     __typename
+    ... on TransactionalStatusIdle {
+      dummy
+    }
+    ... on TransactionalStatusBuyNow {
+      price
+    }
+  }
+  transactionalStatusAuction {
+    startsAtBlock
+    isCompleted
+    endedAtBlock
+    startingPrice
+    auctionType {
+      __typename
+      ... on AuctionTypeOpen {
+        bidLockDuration
+      }
+      ... on AuctionTypeEnglish {
+        extensionPeriod
+        duration
+        plannedEndAtBlock
+        minimalBidStep
+      }
+    }
+    bids {
+      ...BidFields
+    }
+    topBid {
+      id
+      amount
+      bidder {
+        id
+      }
+    }
   }
   creatorRoyalty
+  creatorChannel {
+    id
+  }
+  lastSalePrice
+  lastSaleDate
+}
+
+fragment ChannelNftCollectorFields on ChannelNftCollectors {
+  id
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  curatorGroup {
+    id
+  }
+  amount
+  lastIncreaseAt
 }
 
 query getChannelById($id: ID!) {
   channelByUniqueInput(where: { id: $id }) {
+    ...ChannelFields
+  }
+}
+
+query getChannelsByIds($ids: [ID!]) {
+  channels(where: { id_in: $ids }) {
     ...ChannelFields
   }
 }
@@ -109,5 +256,35 @@ query getVideoCategoryById($id: ID!) {
 query getOwnedNftByVideoId($videoId: ID!) {
   ownedNfts(where: { video: { id_eq: $videoId } }) {
     ...OwnedNftFields
+  }
+}
+
+query getCommentsByIds($ids: [ID!]) {
+  comments(where: { id_in: $ids }) {
+    ...CommentFields
+  }
+}
+
+query getVideosByIds($ids: [ID!]) {
+  videos(where: { id_in: $ids }) {
+    ...VideoFields
+  }
+}
+
+query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
+  bids(where: { nft: { id_eq: $videoId }, bidder: { id_eq: $memberId } }) {
+    ...BidFields
+  }
+}
+
+query getChannelNftCollectors {
+  channelNftCollectors {
+    ...ChannelNftCollectorFields
+  }
+}
+
+query getDataObjectsByVideoId($videoId: ID) {
+  storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...StorageDataObjectFields
   }
 }

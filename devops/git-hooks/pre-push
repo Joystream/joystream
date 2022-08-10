@@ -1,13 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -e
 
-export WASM_BUILD_TOOLCHAIN=nightly-2021-02-20
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
 
-echo 'running clippy (rust linter)'
-# When custom build.rs triggers wasm-build-runner-impl to build we get error:
-# "Rust WASM toolchain not installed, please install it!"
-# So we skip building the WASM binary by setting BUILD_DUMMY_WASM_BINARY=1
-BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2021-02-20 clippy --release --all -- -D warnings
+../../scripts/cargo-checks.sh
 
-echo 'running cargo unit tests'
-cargo +nightly-2021-02-20 test --release --all
+../../scripts/lint-typescript.sh

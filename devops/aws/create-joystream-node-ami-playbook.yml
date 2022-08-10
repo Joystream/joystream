@@ -10,15 +10,10 @@
         name: common
         tasks_from: get-code-git
 
-    - name: Run setup and build
+    - name: Run build
       include_role:
         name: common
-        tasks_from: run-setup-build
-
-    - name: Install subkey
-      include_role:
-        name: build-server
-        tasks_from: main
+        tasks_from: run-build
 
     - name: Basic AMI Creation
       amazon.aws.ec2_ami:

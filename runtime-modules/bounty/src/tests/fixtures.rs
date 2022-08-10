@@ -1,14 +1,13 @@
-use super::mocks::{Balances, Bounty, System, Test, TestEvent};
+use super::mocks::{Balances, Bounty, Event, System, Test};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Entry, FundingType, OracleJudgmentOf, RawEvent, Trait,
+    Config, Entry, FundingType, OracleJudgmentOf, RawEvent,
 };
 use common::council::CouncilBudgetManager;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
-use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::FromIterator;
 
@@ -25,11 +24,11 @@ pub fn run_to_block(n: u64) {
 }
 
 pub fn set_council_budget(new_budget: u64) {
-    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(new_budget);
+    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u128, u64>>::set_budget(new_budget);
 }
 
 pub fn get_council_budget() -> u64 {
-    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::get_budget()
+    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u128, u64>>::get_budget()
 }
 
 pub fn increase_total_balance_issuance_using_account_id(account_id: u128, balance: u64) {
@@ -45,11 +44,11 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
 }
 
 pub fn get_funder_state_bloat_bond_amount() -> u64 {
-    <Test as Trait>::FunderStateBloatBondAmount::get()
+    <Test as Config>::FunderStateBloatBondAmount::get()
 }
 
 pub fn get_creator_state_bloat_bond_amount() -> u64 {
-    <Test as Trait>::CreatorStateBloatBondAmount::get()
+    <Test as Config>::CreatorStateBloatBondAmount::get()
 }
 
 pub struct EventFixture;
@@ -65,7 +64,7 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = TestEvent::bounty(expected_raw_event);
+        let converted_event = Event::Bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -81,12 +80,12 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = TestEvent::bounty(expected_raw_event);
+        let converted_event = Event::Bounty(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -96,7 +95,7 @@ impl EventFixture {
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
 
-    fn contains_global_event(expected_event: TestEvent) {
+    fn contains_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -488,11 +487,13 @@ impl AnnounceWorkEntryFixture {
             let expected_entry = Entry::<Test> {
                 member_id: self.member_id,
                 staking_account_id: self.staking_account_id,
-                submitted_at: System::current_block_number(),
+                submitted_at: System::block_number(),
                 work_submitted: false,
             };
-
-            assert_eq!(expected_entry, Bounty::entries(self.bounty_id, entry_id));
+            assert_eq!(
+                expected_entry,
+                Bounty::entries(self.bounty_id, entry_id).unwrap()
+            );
 
             assert_eq!(
                 new_bounty.active_work_entry_count,
@@ -554,6 +555,7 @@ impl SubmitWorkFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_entry = Bounty::entries(self.bounty_id, self.entry_id);
+
         let actual_result = Bounty::submit_work(
             self.origin.clone().into(),
             self.member_id,
@@ -566,8 +568,8 @@ impl SubmitWorkFixture {
 
         let new_entry = Bounty::entries(self.bounty_id, self.entry_id);
 
-        if actual_result.is_ok() {
-            assert!(new_entry.work_submitted);
+        if actual_result.is_ok() && new_entry.is_some() {
+            assert!(new_entry.unwrap().work_submitted);
         } else {
             assert_eq!(new_entry, old_entry);
         }

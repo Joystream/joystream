@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { Storage } from '../../generated/types/storage'
 import {
   DistributionBucket,
@@ -18,16 +18,10 @@ import {
   StorageDataObject,
   StorageSystemParameters,
   GeoCoordinates,
-  Video,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
 import { getById, inconsistentState, INT32MAX, toNumber } from '../common'
-import {
-  getVideoActiveStatus,
-  updateVideoActiveCounters,
-  videoRelationsForCounters,
-  unsetAssetRelations,
-} from '../content/utils'
+import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
 import {
   processDistributionBucketFamilyMetadata,
   processDistributionOperatorMetadata,
@@ -47,19 +41,15 @@ import {
   distributionBucketId,
   distributionOperatorId,
   distributionBucketIdByFamilyAndIndex,
+  deleteDataObjects,
 } from './utils'
-import { In } from 'typeorm'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 // STORAGE BUCKETS
 
 export async function storage_StorageBucketCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [
-    bucketId,
-    invitedWorkerId,
-    acceptingNewBags,
-    dataObjectSizeLimit,
-    dataObjectCountLimit,
-  ] = new Storage.StorageBucketCreatedEvent(event).params
+  const [bucketId, invitedWorkerId, acceptingNewBags, dataObjectSizeLimit, dataObjectCountLimit] =
+    new Storage.StorageBucketCreatedEvent(event).params
 
   const storageBucket = new StorageBucket({
     id: bucketId.toString(),
@@ -207,7 +197,7 @@ export async function storage_StorageBucketDeleted({ event, store }: EventContex
 
 // DYNAMIC BAGS
 export async function storage_DynamicBagCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bagId, , storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
+  const [bagId, storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
@@ -221,6 +211,16 @@ export async function storage_DynamicBagCreated({ event, store }: EventContext &
 
 export async function storage_DynamicBagDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bagId] = new Storage.DynamicBagDeletedEvent(event).params
+
+  // first remove all the data objects in storage bucket
+  const bagDataObjects = await store.getMany(StorageDataObject, {
+    where: { storageBag: { id: getDynamicBagId(bagId) } },
+  })
+
+  for (const dataObject of bagDataObjects) {
+    await unsetAssetRelations(store, dataObject)
+  }
+
   const storageBag = await getDynamicBag(store, bagId, ['objects'])
   await store.remove<StorageBag>(storageBag)
 }
@@ -229,60 +229,96 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [dataObjectIds, uploadParams, deletionPrize] = new Storage.DataObjectsUploadedEvent(event).params
-  await createDataObjects(store, uploadParams, deletionPrize, dataObjectIds)
+  const [objectIds, { bagId, objectCreationList }, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
+  await createDataObjects(store, {
+    storageBagOrId: bagId,
+    objectCreationList,
+    stateBloatBond,
+    objectIds: [...objectIds.values()],
+  })
+}
+
+export async function storage_DataObjectsUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [
+    { bagId, objectCreationList, expectedDataObjectStateBloatBond: stateBloatBond },
+    uploadedObjectIds,
+    objectsToRemove,
+  ] = new Storage.DataObjectsUpdatedEvent(event).params
+
+  // create new objects
+  await createDataObjects(store, {
+    storageBagOrId: bagId,
+    objectCreationList,
+    stateBloatBond,
+    objectIds: [...uploadedObjectIds.values()],
+  })
+
+  // remove objects
+  await deleteDataObjects(store, bagId, objectsToRemove)
 }
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, , bagId, dataObjectIds] = new Storage.PendingDataObjectsAcceptedEvent(event).params
-  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, ['videoThumbnail', 'videoMedia'])
+  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
+    'videoThumbnail',
+    ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
+    'videoMedia',
+    ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
+  ])
 
-  // get ids of videos that are in relation with accepted data objects
-  const notUniqueVideoIds = dataObjects
-    .map((item) => [item.videoMedia?.id.toString(), item.videoThumbnail?.id.toString()])
-    .flat()
-    .filter((item) => item)
-  const videoIds = [...new Set(notUniqueVideoIds)]
+  /*
+    This function helps to workaround `store.get*` functions not return objects
+    shared by mutliple entities (at least now). Because of that when updating for example
+    `dataObject.videoThumnail.channel.activeVideoCounter` on dataObject A, this change is not
+    reflected on `dataObject.videoMedia.channel.activeVideoCounter` on dataObject B.
+  */
+  function applyUpdate<Entity extends { id: { toString(): string } }>(
+    entities: Entity[],
+    updateEntity: (entity: Entity) => void,
+    relations: string[][]
+  ): void {
+    const ids = entities.map((entity) => entity.id.toString())
 
-  // load videos
-  const videosPre = await store.getMany(Video, {
-    where: { id: In(videoIds) },
-    relations: videoRelationsForCounters,
-  })
+    for (const entity of entities) {
+      updateEntity(entity)
 
-  // remember if videos are fully active before data objects update
-  const initialActiveStates = videosPre.map((video) => getVideoActiveStatus(video)).filter((item) => item)
+      for (const relation of relations) {
+        const target = relation.reduce((acc, relationPart) => {
+          if (!acc) {
+            return acc
+          }
+
+          return acc[relationPart]
+        }, entity)
+
+        if (!target || target === entity || !ids.includes(target.id.toString())) {
+          continue
+        }
+
+        updateEntity(target)
+      }
+    }
+  }
+
+  // ensure update is reflected in all objects
+  applyUpdate(dataObjects, (dataObject) => (dataObject.isAccepted = true), [
+    ['videoThumbnail', 'thumbnailPhoto'],
+    ['videoThumbnail', 'media'],
+    ['videoMedia', 'thumbnailPhoto'],
+    ['videoMedia', 'media'],
+  ])
 
   // accept storage data objects
   await Promise.all(
     dataObjects.map(async (dataObject) => {
       dataObject.isAccepted = true
+
+      // update video active counters
+      await getAllManagers(store).storageDataObjects.onMainEntityUpdate(dataObject)
+
       await store.save<StorageDataObject>(dataObject)
     })
   )
-
-  /*
-    This approach of reloading videos one by one is not optimal, but it is straightforward algorithm.
-
-    This reduces otherwise complex situation caused by `store.get*` functions not return objects
-    shared by mutliple entities (at least now). Because of that when updating for example
-    `dataObject.videoThumnail.channel.activeVideoCounter` on dataObject A, this change is not
-    reflected on `dataObject.videoMedia.channel.activeVideoCounter` on dataObject B.
-
-    We can upgrade this algorithm in the future if this event mapping proves to have serious
-    performance issues. In that case, a unit test for this mapping will be required.
-  */
-  // load relevant videos one by one and update related active-video-counters
-  for (const initialActiveState of initialActiveStates) {
-    // load refreshed version of videos and related entities (channel, channel category, category)
-
-    const video = (await store.get(Video, {
-      where: { id: initialActiveState.video.id.toString() },
-      relations: videoRelationsForCounters,
-    })) as Video
-
-    await updateVideoActiveCounters(store, initialActiveState, getVideoActiveStatus(video))
-  }
 }
 
 export async function storage_DataObjectsMoved({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -299,29 +335,8 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bagId, dataObjectIds] = new Storage.DataObjectsDeletedEvent(event).params
-  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
-    'videoThumbnail',
-    ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
-    'videoMedia',
-    ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
-  ])
 
-  await Promise.all(
-    dataObjects.map(async (dataObject) => {
-      // remember if video is fully active before update
-      const initialVideoActiveStatus =
-        (dataObject.videoThumbnail && getVideoActiveStatus(dataObject.videoThumbnail)) ||
-        (dataObject.videoMedia && getVideoActiveStatus(dataObject.videoMedia)) ||
-        null
-
-      await unsetAssetRelations(store, dataObject)
-
-      // update video active counters
-      if (initialVideoActiveStatus) {
-        await updateVideoActiveCounters(store, initialVideoActiveStatus, undefined)
-      }
-    })
-  )
+  await deleteDataObjects(store, bagId, dataObjectIds)
 }
 
 // DISTRIBUTION FAMILY
@@ -370,7 +385,7 @@ export async function storage_DistributionBucketCreated({ event, store }: EventC
   const family = await getById(store, DistributionBucketFamily, familyId.toString())
   const bucket = new DistributionBucket({
     id: distributionBucketId(bucketId),
-    bucketIndex: bucketId.distribution_bucket_index.toNumber(),
+    bucketIndex: bucketId.distributionBucketIndex.toNumber(),
     acceptingNewBags: acceptingNewBags.valueOf(),
     distributing: true, // Runtime default
     family,
@@ -410,6 +425,15 @@ export async function storage_DistributionBucketDeleted({ event, store }: EventC
       return store.save<StorageBag>(bag)
     })
   )
+
+  // Remove invited bucket operators
+  const invitedOperators = await store.getMany(DistributionBucketOperator, {
+    where: {
+      status: DistributionBucketOperatorStatus.INVITED,
+      distributionBucket: { id: distributionBucket.id },
+    },
+  })
+  await Promise.all(invitedOperators.map((operator) => removeDistributionBucketOperator(store, operator)))
   await store.remove<DistributionBucket>(distributionBucket)
 }
 
@@ -417,12 +441,8 @@ export async function storage_DistributionBucketsUpdatedForBag({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [
-    bagId,
-    familyId,
-    addedBucketsIndices,
-    removedBucketsIndices,
-  ] = new Storage.DistributionBucketsUpdatedForBagEvent(event).params
+  const [bagId, familyId, addedBucketsIndices, removedBucketsIndices] =
+    new Storage.DistributionBucketsUpdatedForBagEvent(event).params
   // Get or create bag
   const storageBag = await getBag(store, bagId, ['distributionBuckets'])
   const removedBucketsIds = Array.from(removedBucketsIndices).map((bucketIndex) =>
@@ -508,8 +528,11 @@ export async function storage_DistributionBucketOperatorRemoved({
   const [bucketId, workerId] = new Storage.DistributionBucketOperatorRemovedEvent(event).params
 
   // TODO: Cascade remove on db level (would require changes in Hydra / comitting autogenerated files)
-
   const operator = await getDistributionBucketOperatorWithMetadata(store, distributionOperatorId(bucketId, workerId))
+  await removeDistributionBucketOperator(store, operator)
+}
+
+async function removeDistributionBucketOperator(store: DatabaseManager, operator: DistributionBucketOperator) {
   await store.remove<DistributionBucketOperator>(operator)
   if (operator.metadata) {
     await store.remove<DistributionBucketOperatorMetadata>(operator.metadata)
@@ -591,6 +614,17 @@ export async function storage_DataObjectPerMegabyteFeeUpdated({
   const storageSystem = await getStorageSystem(store)
 
   storageSystem.dataObjectFeePerMb = newFee
+
+  await store.save<StorageSystemParameters>(storageSystem)
+}
+
+export async function storage_DataObjectStateBloatBondValueUpdated({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const [newStateBloatBondValue] = new Storage.DataObjectStateBloatBondValueUpdatedEvent(event).params
+  const storageSystem = await getStorageSystem(store)
+  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue
 
   await store.save<StorageSystemParameters>(storageSystem)
 }

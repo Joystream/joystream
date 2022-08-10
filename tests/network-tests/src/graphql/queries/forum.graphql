@@ -105,19 +105,6 @@ fragment ForumThreadWithInitialPost on ForumThread {
   initialPost {
     ...ForumPostFields
   }
-  poll {
-    description
-    endTime
-    pollAlternatives {
-      index
-      text
-      votes {
-        votingMember {
-          id
-        }
-      }
-    }
-  }
   isSticky
   createdInEvent {
     id

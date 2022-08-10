@@ -1,4 +1,4 @@
-import { WorkingGroup } from '@joystream/types/common'
+import { PalletCommonWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
 import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
 import { ProposalType, WorkingGroupModuleName } from './types'
@@ -12,15 +12,8 @@ export const validateType = <T>(obj: T) => obj
 export const BLOCKTIME = 1000
 
 // Known worker role account default balance (JOY)
-export const KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE = new BN(100000)
+export const KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE = new BN(1000000000000)
 
-export const MINIMUM_STAKING_ACCOUNT_BALANCE = 200
-export const MIN_APPLICATION_STAKE = new BN(2000)
-export const MIN_UNSTANKING_PERIOD = 43201
-export const LEADER_OPENING_STAKE = new BN(2000)
-export const THREAD_DEPOSIT = new BN(30)
-export const POST_DEPOSIT = new BN(10)
-export const PROPOSALS_POST_DEPOSIT = new BN(2000)
 export const ALL_BYTES = '0x' + Array.from({ length: 256 }, (v, i) => Buffer.from([i]).toString('hex')).join('')
 
 export const workingGroups: WorkingGroupModuleName[] = [
@@ -49,23 +42,23 @@ export const workingGroupNameByModuleName = {
 validateType<{ [k in WorkingGroupModuleName]: string }>(workingGroupNameByModuleName)
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
-  if (group.isOfType('Content')) {
+  if (group.isContent) {
     return 'contentWorkingGroup'
-  } else if (group.isOfType('Membership')) {
+  } else if (group.isMembership) {
     return 'membershipWorkingGroup'
-  } else if (group.isOfType('Forum')) {
+  } else if (group.isForum) {
     return 'forumWorkingGroup'
-  } else if (group.isOfType('Storage')) {
+  } else if (group.isStorage) {
     return 'storageWorkingGroup'
-  } else if (group.isOfType('OperationsAlpha')) {
+  } else if (group.isOperationsAlpha) {
     return 'operationsWorkingGroupAlpha'
-  } else if (group.isOfType('Gateway')) {
+  } else if (group.isGateway) {
     return 'gatewayWorkingGroup'
-  } else if (group.isOfType('Distribution')) {
+  } else if (group.isDistribution) {
     return 'distributionWorkingGroup'
-  } else if (group.isOfType('OperationsBeta')) {
+  } else if (group.isOperationsBeta) {
     return 'operationsWorkingGroupBeta'
-  } else if (group.isOfType('OperationsGamma')) {
+  } else if (group.isOperationsGamma) {
     return 'operationsWorkingGroupGamma'
   }
 
@@ -77,13 +70,10 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
 export const proposalTypeToProposalParamsKey = {
   'AmendConstitution': 'amendConstitutionProposalParameters',
   'CancelWorkingGroupLeadOpening': 'cancelWorkingGroupLeadOpeningProposalParameters',
-  'CreateBlogPost': 'createBlogPostProposalParameters',
   'CreateWorkingGroupLeadOpening': 'createWorkingGroupLeadOpeningProposalParameters',
   'DecreaseWorkingGroupLeadStake': 'decreaseWorkingGroupLeadStakeProposalParameters',
-  'EditBlogPost': 'editBlogPostProoposalParamters',
   'FillWorkingGroupLeadOpening': 'fillWorkingGroupOpeningProposalParameters',
   'FundingRequest': 'fundingRequestProposalParameters',
-  'LockBlogPost': 'lockBlogPostProposalParameters',
   'RuntimeUpgrade': 'runtimeUpgradeProposalParameters',
   'SetCouncilBudgetIncrement': 'setCouncilBudgetIncrementProposalParameters',
   'SetCouncilorReward': 'setCouncilorRewardProposalParameters',
@@ -97,9 +87,10 @@ export const proposalTypeToProposalParamsKey = {
   'Signal': 'signalProposalParameters',
   'SlashWorkingGroupLead': 'slashWorkingGroupLeadProposalParameters',
   'TerminateWorkingGroupLead': 'terminateWorkingGroupLeadProposalParameters',
-  'UnlockBlogPost': 'unlockBlogPostProposalParameters',
   'UpdateWorkingGroupBudget': 'updateWorkingGroupBudgetProposalParameters',
   'VetoProposal': 'vetoProposalProposalParameters',
+  'UpdateGlobalNftLimit': 'updateGlobalNftLimitProposalParameters',
+  'UpdateChannelPayouts': 'updateChannelPayoutsProposalParameters',
 } as const
 
 type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }

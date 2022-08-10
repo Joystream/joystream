@@ -339,14 +339,14 @@ fn create_bounty_transfers_member_balance_correctly() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - cherry - oracle_reward - get_creator_state_bloat_bond_amount()
         );
 
         let bounty_id = 1;
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             cherry + oracle_reward + get_creator_state_bloat_bond_amount()
         );
     });
@@ -375,7 +375,7 @@ fn create_bounty_transfers_the_council_balance_correctly() {
         let bounty_id = 1;
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             cherry + oracle_reward + get_creator_state_bloat_bond_amount()
         );
     });
@@ -482,7 +482,7 @@ fn terminate_bounty_by_creator_succeeds() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance
         );
 
@@ -1213,12 +1213,12 @@ fn fund_bounty_succeeds_by_member() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - amount - get_funder_state_bloat_bond_amount()
         );
 
         assert_eq!(
-            crate::Module::<Test>::contribution_by_bounty_by_actor(
+            crate::Pallet::<Test>::contribution_by_bounty_by_actor(
                 bounty_id,
                 BountyActor::Member(member_id)
             )
@@ -1227,7 +1227,7 @@ fn fund_bounty_succeeds_by_member() {
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             amount
                 + cherry
                 + oracle_reward
@@ -1273,7 +1273,7 @@ fn fund_bounty_succeeds_by_council() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance
                 - amount
                 - cherry
@@ -1283,13 +1283,13 @@ fn fund_bounty_succeeds_by_council() {
         );
 
         assert_eq!(
-            crate::Module::<Test>::contribution_by_bounty_by_actor(bounty_id, BountyActor::Council)
+            crate::Pallet::<Test>::contribution_by_bounty_by_actor(bounty_id, BountyActor::Council)
                 .amount,
             amount
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             amount
                 + cherry
                 + oracle_reward
@@ -1335,7 +1335,7 @@ fn fund_bounty_succeeds_with_reaching_target_funding_amount() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - target_funding - get_funder_state_bloat_bond_amount()
         );
 
@@ -1384,12 +1384,12 @@ fn fund_bounty_multiple_contibutors_succeeds() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - 2 * amount - get_funder_state_bloat_bond_amount()
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             2 * amount
                 + cherry
                 + oracle_reward
@@ -2072,17 +2072,17 @@ fn withdraw_funding_member_with_failed_bounty_with_no_removal() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&funding_account_id),
+            balances::Pallet::<Test>::usable_balance(&funding_account_id),
             initial_balance + cherry
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - oracle_reward - cherry - get_creator_state_bloat_bond_amount()
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             oracle_reward + get_creator_state_bloat_bond_amount()
         );
 
@@ -2139,12 +2139,12 @@ fn withdraw_funding_council_with_failed_bounty_with_no_removal() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - oracle_reward - get_creator_state_bloat_bond_amount()
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             oracle_reward + get_creator_state_bloat_bond_amount()
         );
 
@@ -2271,7 +2271,7 @@ fn withdraw_funding_member_with_half_cherry_failed_bounty_no_removal() {
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             get_funder_state_bloat_bond_amount() * 2
                 + get_creator_state_bloat_bond_amount()
                 + amount * 2
@@ -2287,13 +2287,13 @@ fn withdraw_funding_member_with_half_cherry_failed_bounty_no_removal() {
 
         // A half of the cherry
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id1),
+            balances::Pallet::<Test>::usable_balance(&account_id1),
             initial_balance + cherry / 2
         );
 
         // On funding amount + creation funding + half of the cherry left.
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             amount
                 + get_funder_state_bloat_bond_amount()
                 + get_creator_state_bloat_bond_amount()
@@ -2320,13 +2320,13 @@ fn withdraw_funding_member_with_half_cherry_failed_bounty_no_removal() {
 
         // A half of the cherry
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id2),
+            balances::Pallet::<Test>::usable_balance(&account_id2),
             initial_balance + cherry / 2
         );
 
         // On funding amount + creation funding + half of the cherry left.
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             get_creator_state_bloat_bond_amount() + oracle_reward
         );
 
@@ -4167,31 +4167,31 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
 
         //oracle receives an oracle reward
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&oracle_account_id),
+            balances::Pallet::<Test>::usable_balance(&oracle_account_id),
             0
         );
 
         //council doesn't receive back the oracle reward nor the cherry
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - oracle_reward - cherry - get_creator_state_bloat_bond_amount()
         );
 
         //funder account receives back the reward and a cherry fraction on withdrwal not now
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&funding_account_id),
+            balances::Pallet::<Test>::usable_balance(&funding_account_id),
             initial_balance - reward - get_funder_state_bloat_bond_amount()
         );
 
         //worker account receives his stake now (if not slashed)
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&worker_account_id),
+            balances::Pallet::<Test>::usable_balance(&worker_account_id),
             entrant_stake
         );
 
         //bounty account still has reward and the cherry.
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             oracle_reward
                 + reward
                 + cherry

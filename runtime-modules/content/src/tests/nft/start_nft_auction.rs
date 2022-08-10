@@ -1,14 +1,11 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use std::iter::FromIterator;
 
-const DEFAULT_AUCTION_END: u64 = 10;
+const AUCTION_DURATION: u64 = 10;
 
 #[test]
 fn start_open_auction() {
@@ -54,7 +51,7 @@ fn start_open_auction() {
         // Last event checked
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::OpenAuctionStarted(
+            MetaEvent::Content(RawEvent::OpenAuctionStarted(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 auction_params,
@@ -79,7 +76,7 @@ fn start_nft_auction_video_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -106,7 +103,7 @@ fn start_nft_auction_not_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -141,7 +138,7 @@ fn start_nft_auction_auth_failed() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -176,7 +173,7 @@ fn start_nft_auction_not_authorized() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -220,7 +217,7 @@ fn start_nft_auction_transactional_status_is_not_idle() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -252,6 +249,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
@@ -260,7 +258,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -273,6 +271,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price() + 1,
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
@@ -281,7 +280,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -295,6 +294,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration() - 1,
             whitelist: BTreeSet::new(),
         };
@@ -303,7 +303,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -317,6 +317,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::max_bid_lock_duration() + 1,
             whitelist: BTreeSet::new(),
         };
@@ -325,7 +326,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -335,39 +336,14 @@ fn start_nft_auction_invalid_params() {
         );
 
         // Make an attempt to start english nft auction if extension period
-        // of auction provided is less then min allowed extension period
-        let auction_params = EnglishAuctionParams::<Test> {
-            starting_price: Content::max_starting_price(),
-            buy_now_price: None,
-            extension_period: Content::min_auction_extension_period() - 1,
-            auction_duration: Content::max_auction_duration(),
-            min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
-            whitelist: BTreeSet::new(),
-        };
-
-        let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params.clone(),
-        );
-
-        // Failure checked
-        assert_err!(
-            start_nft_auction_result,
-            Error::<Test>::ExtensionPeriodLowerBoundExceeded
-        );
-
-        // Make an attempt to start english nft auction if extension period
         // of auction provided is greater then max allowed extension period
         let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
             extension_period: Content::max_auction_extension_period() + 1,
-            auction_duration: Content::max_auction_duration(),
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            duration: AUCTION_DURATION,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -375,7 +351,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -390,9 +366,9 @@ fn start_nft_auction_invalid_params() {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::min_auction_duration() - 1,
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            duration: Content::min_auction_duration() - 1,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -400,7 +376,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -414,10 +390,10 @@ fn start_nft_auction_invalid_params() {
         let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             extension_period: Content::max_auction_extension_period(),
-            auction_duration: Content::max_auction_duration() + 1,
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            duration: Content::max_auction_duration() + 1,
             whitelist: BTreeSet::new(),
         };
 
@@ -425,7 +401,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -440,9 +416,9 @@ fn start_nft_auction_invalid_params() {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
             extension_period: Content::max_auction_extension_period(),
-            auction_duration: Content::min_auction_duration(),
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            duration: AUCTION_DURATION,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -465,6 +441,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: buy_now_price + 1,
             buy_now_price: Some(buy_now_price),
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
@@ -473,7 +450,7 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
@@ -486,6 +463,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID].into_iter()),
         };
@@ -512,6 +490,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist,
         };
@@ -520,13 +499,177 @@ fn start_nft_auction_invalid_params() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         );
 
         // Failure checked
         assert_err!(
             start_nft_auction_result,
             Error::<Test>::MaxAuctionWhiteListLengthUpperBoundExceeded
+        );
+    })
+}
+
+#[test]
+fn start_eng_auction_fails_with_invalid_forward_starting() {
+    // Make an attempt to start english nft auction if extension period
+    // of auction provided is less then min allowed extension period
+    with_default_mock_builder(|| {
+        let starting_block = 2;
+        run_to_block(starting_block);
+
+        let video_id = Content::next_video_id();
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let auction_params = EnglishAuctionParams::<Test> {
+            starting_price: Content::max_starting_price(),
+            buy_now_price: None,
+            extension_period: Content::min_auction_extension_period(),
+            min_bid_step: Content::min_bid_step(),
+            duration: AUCTION_DURATION,
+            starts_at: Some(starting_block + 1 + Content::auction_starts_at_max_delta()),
+            whitelist: BTreeSet::new(),
+        };
+
+        let start_nft_auction_result = Content::start_english_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params,
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::StartsAtUpperBoundExceeded,
+        );
+
+        let auction_params = EnglishAuctionParams::<Test> {
+            starting_price: Content::max_starting_price(),
+            buy_now_price: None,
+            extension_period: Content::min_auction_extension_period(),
+            min_bid_step: Content::min_bid_step(),
+            duration: AUCTION_DURATION,
+            starts_at: Some(starting_block - 1),
+            whitelist: BTreeSet::new(),
+        };
+
+        let start_nft_auction_result = Content::start_english_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params,
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::StartsAtLowerBoundExceeded,
+        );
+    })
+}
+
+#[test]
+fn start_open_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::start_open_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                OpenAuctionParams::<Test>::default(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn start_english_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::start_english_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                EnglishAuctionParams::<Test>::default(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn start_open_auction_fails_with_non_existing_member_in_whitelist() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+        assert_noop!(
+            Content::start_open_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                OpenAuctionParams::<Test> {
+                    bid_lock_duration: Content::min_bid_lock_duration(),
+                    buy_now_price: None,
+                    starting_price: Content::min_starting_price(),
+                    starts_at: None,
+                    whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID, 9999]),
+                }
+            ),
+            Error::<Test>::WhitelistedMemberDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn start_english_auction_fails_with_non_existing_member_in_whitelist() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::start_english_auction(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                EnglishAuctionParams::<Test> {
+                    buy_now_price: None,
+                    duration: Content::min_auction_duration(),
+                    extension_period: Content::min_auction_extension_period(),
+                    min_bid_step: Content::min_bid_step(),
+                    starting_price: Content::min_starting_price(),
+                    starts_at: None,
+                    whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID, 9999]),
+                }
+            ),
+            Error::<Test>::WhitelistedMemberDoesNotExist,
         );
     })
 }

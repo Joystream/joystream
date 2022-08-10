@@ -17,7 +17,7 @@ import {
   ProposalDiscussionPostDeletedEvent,
   ProposalDiscussionPostStatusRemoved,
 } from 'query-node/dist/model'
-import { bytesToString, deserializeMetadata, genericEventFields, MemoryCache } from './common'
+import { bytesToString, deserializeMetadata, genericEventFields } from './common'
 import { ProposalsDiscussion } from '../generated/types'
 import { ProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
 import { In } from 'typeorm'
@@ -40,40 +40,8 @@ async function getThread(store: DatabaseManager, id: string) {
   return thread
 }
 
-export async function proposalsDiscussion_ThreadCreated({ event }: EventContext & StoreContext): Promise<void> {
-  const [threadId] = new ProposalsDiscussion.ThreadCreatedEvent(event).params
-  MemoryCache.lastCreatedProposalThreadId = threadId
-}
-
 export async function proposalsDiscussion_PostCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  // FIXME: extremely ugly and insecure workaround for `batch` and `sudo` calls support.
-  // Ideally this data would be part of the event data
-  let editable: boolean
-
-  if (!event.extrinsic) {
-    throw new Error('Missing extrinsic for proposalsDiscussion.PostCreated event!')
-  } else if (event.extrinsic.section === 'utility' && event.extrinsic.method === 'batch') {
-    // We cannot use new Utility.BatchCall(event).args, because createTypeUnsafe fails on Call
-    // First (and only) argument of utility.batch is "calls"
-    const calls = event.extrinsic.args[0].value as any[]
-    // proposalsDiscussion.addPost call index is currently 0x1f00
-    const call = calls.find((c) => c.callIndex === '0x1f00')
-    if (!call) {
-      throw new Error('Could not find proposalsDiscussion.addPostCall in a batch!')
-    }
-    editable = call.args.editable
-  } else if (
-    event.extrinsic.section === 'sudo' &&
-    (event.extrinsic.method === 'sudo' || event.extrinsic.method === 'sudoAs')
-  ) {
-    // Extract call arg
-    editable = (event.extrinsic.args[0].value as any).args.editable
-  } else {
-    editable = new ProposalsDiscussion.AddPostCall(event).args.editable.valueOf()
-  }
-
-  const [postId, memberId, threadId, metadataBytes] = new ProposalsDiscussion.PostCreatedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
+  const [postId, memberId, threadId, metadataBytes, editable] = new ProposalsDiscussion.PostCreatedEvent(event).params
 
   const metadata = deserializeMetadata(ProposalsDiscussionPostMetadata, metadataBytes)
 
@@ -86,10 +54,8 @@ export async function proposalsDiscussion_PostCreated({ event, store }: EventCon
 
   const post = new ProposalDiscussionPost({
     id: postId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     author: new Membership({ id: memberId.toString() }),
-    status: editable ? new ProposalDiscussionPostStatusActive() : new ProposalDiscussionPostStatusLocked(),
+    status: editable.isTrue ? new ProposalDiscussionPostStatusActive() : new ProposalDiscussionPostStatusLocked(),
     isVisible: true,
     text,
     repliesTo,
@@ -112,7 +78,6 @@ export async function proposalsDiscussion_PostUpdated({ event, store }: EventCon
   const newText = bytesToString(newTextBytes)
 
   post.text = newText
-  post.updatedAt = new Date(event.blockTimestamp)
   await store.save<ProposalDiscussionPost>(post)
 
   const postUpdatedEvent = new ProposalDiscussionPostUpdatedEvent({
@@ -128,7 +93,6 @@ export async function proposalsDiscussion_ThreadModeChanged({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [threadId, threadMode, memberId] = new ProposalsDiscussion.ThreadModeChangedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
 
   const thread = await getThread(store, threadId.toString())
 
@@ -139,8 +103,6 @@ export async function proposalsDiscussion_ThreadModeChanged({
       where: { id: In(whitelistMemberIds.map((id) => id.toString())) },
     })
     const whitelist = new ProposalDiscussionWhitelist({
-      createdAt: eventTime,
-      updatedAt: eventTime,
       members,
     })
     await store.save<ProposalDiscussionWhitelist>(whitelist)
@@ -153,7 +115,6 @@ export async function proposalsDiscussion_ThreadModeChanged({
     throw new Error(`Unrecognized proposal thread mode: ${threadMode.type}`)
   }
 
-  thread.updatedAt = eventTime
   await store.save<ProposalDiscussionThread>(thread)
 
   const threadModeChangedEvent = new ProposalDiscussionThreadModeChangedEvent({
@@ -167,7 +128,6 @@ export async function proposalsDiscussion_ThreadModeChanged({
 
 export async function proposalsDiscussion_PostDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [memberId, , postId, hide] = new ProposalsDiscussion.PostDeletedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
   const post = await getPost(store, postId.toString())
 
   const postDeletedEvent = new ProposalDiscussionPostDeletedEvent({
@@ -181,6 +141,5 @@ export async function proposalsDiscussion_PostDeleted({ event, store }: EventCon
   newStatus.deletedInEventId = postDeletedEvent.id
   post.isVisible = hide.isFalse
   post.status = newStatus
-  post.updatedAt = eventTime
   await store.save<ProposalDiscussionPost>(post)
 }

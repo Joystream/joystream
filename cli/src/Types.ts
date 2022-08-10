@@ -3,9 +3,13 @@ import { Codec, IEvent } from '@polkadot/types/types'
 import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Membership } from '@joystream/types/members'
-import { MemberId } from '@joystream/types/common'
+import {
+  PalletMembershipMembershipObject as Membership,
+  PalletWorkingGroupOpeningType as OpeningType,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+  PalletContentChannelActionPermission as ChannelActionPermission,
+} from '@polkadot/types/lookup'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import {
@@ -23,7 +27,6 @@ import {
   IOpeningMetadata,
   IWorkingGroupMetadata,
 } from '@joystream/metadata-protobuf'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
 import {
   MembershipFieldsFragment,
   WorkingGroupApplicationDetailsFragment,
@@ -55,9 +58,9 @@ export enum WorkingGroups {
   Curators = 'curators',
   Forum = 'forum',
   Membership = 'membership',
-  OperationsAlpha = 'operationsAlpha',
-  OperationsBeta = 'operationsBeta',
-  OperationsGamma = 'operationsGamma',
+  Builders = 'builders',
+  HumanResources = 'humanResources',
+  Marketing = 'marketing',
   Gateway = 'gateway',
   Distribution = 'distributors',
 }
@@ -68,9 +71,9 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.Forum,
   WorkingGroups.Membership,
   WorkingGroups.Gateway,
-  WorkingGroups.OperationsAlpha,
-  WorkingGroups.OperationsBeta,
-  WorkingGroups.OperationsGamma,
+  WorkingGroups.Builders,
+  WorkingGroups.HumanResources,
+  WorkingGroups.Marketing,
   WorkingGroups.Distribution,
 ] as const
 
@@ -203,9 +206,8 @@ export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhot
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
-  rewardAccount?: string
-  collaborators?: number[]
-  moderators?: number[]
+  collaborators?: { memberId: number; channelAgentPermissions: ChannelActionPermission['type'][] }[]
+  privilegeLevel?: number
 }
 
 export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>

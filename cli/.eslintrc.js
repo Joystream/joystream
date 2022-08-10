@@ -3,7 +3,7 @@ module.exports = {
     mocha: true,
   },
   parserOptions: {
-    project: './tsconfig.json'
+    project: './tsconfig.json',
   },
   extends: [
     // The oclif rules have some code-style/formatting rules which may conflict with

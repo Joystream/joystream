@@ -4,7 +4,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { VideoInputParameters, VideoFileMetadata } from '../../Types'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
-import { VideoCreationParameters, VideoId } from '@joystream/types/content'
+import { VideoId } from '@joystream/types/primitives'
 import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
@@ -53,7 +53,6 @@ export default class CreateVideoCommand extends UploadCommandBase {
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
-    const { enableComments } = videoCreationParametersInput
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
@@ -71,16 +70,18 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     // Preare and send the extrinsic
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const videoCreationParameters = createType<VideoCreationParameters, 'VideoCreationParameters'>(
-      'VideoCreationParameters',
-      {
-        assets,
-        meta: metadataToBytes(VideoMetadata, meta),
-        enable_comments: enableComments,
-      }
-    )
+    const expectedVideoStateBloatBond = await this.getApi().videoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
 
-    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, enableComments }))
+    const videoCreationParameters = createType('PalletContentVideoCreationParametersRecord', {
+      assets,
+      meta: metadataToBytes(VideoMetadata, meta),
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: null,
+    })
+
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
@@ -100,7 +101,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
         keypair,
         memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...objectIds.values()].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )
     }

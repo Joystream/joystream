@@ -3,8 +3,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { ChannelUpdateInputParameters } from '../../Types'
 import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import { CreateInterface, createType } from '@joystream/types'
-import { ChannelUpdateParameters } from '@joystream/types/content'
+import { createType } from '@joystream/types'
 import { ChannelUpdateInputSchema } from '../../schemas/ContentDirectory'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
@@ -51,7 +50,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     channelId: number,
     coverPhotoIndex: number | undefined,
     avatarPhotoIndex: number | undefined
-  ): Promise<string[]> {
+  ): Promise<number[]> {
     let assetsToRemove: DataObjectInfoFragment[] = []
     if (coverPhotoIndex !== undefined || avatarPhotoIndex !== undefined) {
       const currentAssets = await this.getQNApi().dataObjectsByChannelId(channelId.toString())
@@ -66,12 +65,15 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       if (assetsToRemove.length) {
         this.log(`\nData objects to be removed due to replacement:`)
         assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
-        const totalPrize = assetsToRemove.reduce((sum, { deletionPrize }) => sum.add(new BN(deletionPrize)), new BN(0))
-        this.log(`Total deletion prize: ${chalk.cyanBright(formatBalance(totalPrize))}\n`)
+        const totalStateBloatBond = assetsToRemove.reduce(
+          (sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)),
+          new BN(0)
+        )
+        this.log(`Total state bloat bond: ${chalk.cyanBright(formatBalance(totalStateBloatBond))}\n`)
       }
     }
 
-    return assetsToRemove.map((a) => a.id)
+    return assetsToRemove.map((a) => Number(a.id))
   }
 
   async run(): Promise<void> {
@@ -88,18 +90,17 @@ export default class UpdateChannelCommand extends UploadCommandBase {
 
     const channelInput = await getInputJson<ChannelUpdateInputParameters>(input, ChannelUpdateInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
-    const { collaborators, rewardAccount, coverPhotoPath, avatarPhotoPath } = channelInput
-
-    if (rewardAccount !== undefined && !this.isChannelOwner(channel, actor)) {
-      this.error("Only channel owner is allowed to update channel's reward account!", { exit: ExitCodes.AccessDenied })
-    }
+    const { collaborators, coverPhotoPath, avatarPhotoPath } = channelInput
 
     if (collaborators !== undefined && !this.isChannelOwner(channel, actor)) {
       this.error("Only channel owner is allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
     }
 
     if (collaborators) {
-      await this.validateMemberIdsSet(collaborators, 'collaborator')
+      await this.validateMemberIdsSet(
+        collaborators.map(({ memberId }) => memberId),
+        'collaborator'
+      )
     }
 
     const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets(
@@ -119,20 +120,19 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
-    const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
-      assets_to_upload: assetsToUpload,
-      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
-      new_meta: metadataToBytes(ChannelMetadata, meta),
-      reward_account: this.parseRewardAccountInput(rewardAccount),
-      collaborators: createType('Option<BTreeSet<MemberId>>', collaborators),
-    }
-
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
+    const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
+      assetsToUpload: assetsToUpload,
+      expectedDataObjectStateBloatBond,
+      collaborators: [],
+      assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
+      newMeta: metadataToBytes(ChannelMetadata, meta),
+    })
     this.jsonPrettyPrint(
       JSON.stringify({
         assetsToUpload: assetsToUpload?.toJSON(),
         assetsToRemove,
         metadata: meta,
-        rewardAccount,
         collaborators,
       })
     )
@@ -144,14 +144,14 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       channelId,
       channelUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
-    if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+    const channelUpdatedEvent = this.findEvent(result, 'content', 'ChannelUpdated')
+    if (channelUpdatedEvent) {
+      const objectIds = channelUpdatedEvent.data[3]
       await this.uploadAssets(
         keypair,
         memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...objectIds].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )
     }

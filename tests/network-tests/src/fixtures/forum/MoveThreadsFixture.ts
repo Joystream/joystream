@@ -6,16 +6,14 @@ import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithInitialPostFragment, ThreadMovedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { CategoryId } from '@joystream/types/forum'
-import { ThreadId } from '@joystream/types/common'
 import _ from 'lodash'
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId, ForumCategoryId, ForumThreadId } from '@joystream/types/primitives'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
 
 export type MoveThreadParams = {
-  categoryId: CategoryId
-  threadId: ThreadId
-  newCategoryId: CategoryId
+  categoryId: ForumCategoryId
+  threadId: ForumThreadId
+  newCategoryId: ForumCategoryId
   asWorker?: WorkerId
 }
 

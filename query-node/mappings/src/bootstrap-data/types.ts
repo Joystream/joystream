@@ -1,12 +1,3 @@
-export type MemberJson = {
-  member_id: number
-  root_account: string
-  controller_account: string
-  handle: string
-  about: string
-  avatar_uri: string
-}
-
 export type StorageSystemJson = {
   id: string
   blacklist: string[]

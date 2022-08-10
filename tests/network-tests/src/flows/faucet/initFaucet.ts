@@ -11,7 +11,7 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   const debug = extendDebug('flow:initFaucet')
   debug('Started')
 
-  const invitesToTransfer = 100
+  const invitesToTransfer = 500
   // Get membership working group leader
   const membershipWorkingGroup = 'membershipWorkingGroup'
   const [, membershipLeader] = await api.getLeader(membershipWorkingGroup)
@@ -26,7 +26,7 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   await new FixtureRunner(setLeaderInvitationQuotaFixture).runWithQueryNodeChecks()
 
   // The membership working group should have a budget allocated
-  const budgets: BN[] = [new BN(1000000)]
+  const budgets: BN[] = [new BN(1000000000000000)]
   const setGroupBudgetFixture = new SetBudgetFixture(api, query, membershipWorkingGroup, budgets)
   await new FixtureRunner(setGroupBudgetFixture).runWithQueryNodeChecks()
 
@@ -38,14 +38,14 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   const [faucetMemberId] = happyCaseFixture.getCreatedMembers()
 
   // Give the faucet member accounts some funds (they need some funds for extrinsics)
-  await api.treasuryTransferBalanceToAccounts([faucetAccount], new BN(200))
+  await api.treasuryTransferBalanceToAccounts([faucetAccount], new BN(100000000000000))
 
   // Send lead invites to faucet member account
-  const [leadMemberControllerAccount] = await api.getMemberSigners([{ asMember: membershipLeader.member_id }])
+  const [leadMemberControllerAccount] = await api.getMemberSigners([{ asMember: membershipLeader.memberId }])
   const transferInvitesHappyCaseFixture = new TransferInvitesHappyCaseFixture(
     api,
     query,
-    { memberId: membershipLeader.member_id, account: leadMemberControllerAccount },
+    { memberId: membershipLeader.memberId, account: leadMemberControllerAccount },
     { memberId: faucetMemberId, account: faucetAccount },
     invitesToTransfer
   )

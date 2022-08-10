@@ -1,8 +1,17 @@
-import { DatabaseManager, SubstrateEvent, SubstrateExtrinsic, ExtrinsicArg } from '@joystream/hydra-common'
+import { DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { WorkingGroup as WGType, WorkerId, ThreadId } from '@joystream/types/augment/all'
-import { Worker, Event, Network, WorkingGroup as WGEntity } from 'query-node/dist/model'
+import { WorkerId } from '@joystream/types/primitives'
+import { PalletCommonWorkingGroup as WGType } from '@polkadot/types/lookup'
+import {
+  Worker,
+  Event,
+  Network,
+  WorkingGroup as WGEntity,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionStatus,
+  MetaprotocolTransactionErrored,
+} from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
@@ -10,12 +19,21 @@ import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
+// used to create Ids for metaprotocol entities (entities that don't
+// have any runtime existence; and solely exist on the Query node).
+export const METAPROTOCOL = 'METAPROTOCOL'
+
 // Max value the database can store in Int column field
 export const INT32MAX = 2147483647
 
 // Max value we can use as argument for JavaScript `Date` constructor to create a valid Date object
 // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
 export const TIMESTAMPMAX = 8640000000000000
+
+// definition of generic type for Hydra DatabaseManager's methods
+export type EntityType<T> = {
+  new (...args: any[]): T
+}
 
 /*
   Simple logger enabling error and informational reporting.
@@ -41,12 +59,17 @@ class Logger {
 
 export const logger = new Logger()
 
+/*
+  Get Id of new metaprotocol entity in Query node DB
+ */
+export function newMetaprotocolEntityId(substrateEvent: SubstrateEvent): string {
+  const { blockNumber, indexInBlock } = substrateEvent
+  return `${METAPROTOCOL}-${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`
+}
+
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
-  const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
-  const eventTime = new Date(blockTimestamp)
+  const { blockNumber, indexInBlock, extrinsic } = substrateEvent
   return {
-    createdAt: eventTime,
-    updatedAt: eventTime,
     id: `${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`,
     inBlock: blockNumber,
     network: CURRENT_NETWORK,
@@ -88,110 +111,6 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
   // log error
   logger.info(errorMessage, data)
 }
-
-/// //////////////// Sudo extrinsic calls ///////////////////////////////////////
-
-// soft-peg interface for typegen-generated `*Call` types
-export interface IGenericExtrinsicObject<T> {
-  readonly extrinsic: SubstrateExtrinsic
-  readonly expectedArgTypes: string[]
-  args: T
-}
-
-// arguments for calling extrinsic as sudo
-export interface ISudoCallArgs<T> extends ExtrinsicArg {
-  args: T
-  callIndex: string
-}
-
-/*
-  Extracts extrinsic arguments from the Substrate event. Supports both direct extrinsic calls and sudo calls.
-*/
-export function extractExtrinsicArgs<DataParams, EventObject extends IGenericExtrinsicObject<DataParams>>(
-  rawEvent: SubstrateEvent,
-  callFactoryConstructor: new (event: SubstrateEvent) => EventObject,
-
-  // in ideal world this parameter would not be needed, but there is no way to associate parameters
-  // used in sudo to extrinsic parameters without it
-  argsIndeces: Record<keyof DataParams, number>
-): EventObject['args'] {
-  const CallFactory = callFactoryConstructor
-  // this is equal to DataParams but only this notation works properly
-  // escape when extrinsic info is not available
-  if (!rawEvent.extrinsic) {
-    throw new Error('Invalid event - no extrinsic set') // this should never happen
-  }
-
-  // regural extrinsic call?
-  if (rawEvent.extrinsic.section !== 'sudo') {
-    return new CallFactory(rawEvent).args
-  }
-
-  // sudo extrinsic call
-
-  const callArgs = extractSudoCallParameters<DataParams>(rawEvent)
-
-  // convert naming convention (underscore_names to camelCase)
-  const clearArgs = Object.keys(callArgs.args).reduce((acc, key) => {
-    const formattedName = key.replace(/_([a-z])/g, (tmp) => tmp[1].toUpperCase())
-
-    acc[formattedName] = callArgs.args[key]
-
-    return acc
-  }, {} as DataParams)
-
-  // prepare partial event object
-  const partialEvent = {
-    extrinsic: ({
-      args: Object.keys(argsIndeces).reduce((acc, key) => {
-        acc[argsIndeces[key]] = {
-          value: clearArgs[key],
-        }
-
-        return acc
-      }, [] as unknown[]),
-    } as unknown) as SubstrateExtrinsic,
-  } as SubstrateEvent
-
-  // create event object and extract processed args
-  const finalArgs = new CallFactory(partialEvent).args
-
-  return finalArgs
-}
-
-/*
-  Extracts extrinsic call parameters used inside of sudo call.
-*/
-export function extractSudoCallParameters<DataParams>(rawEvent: SubstrateEvent): ISudoCallArgs<DataParams> {
-  if (!rawEvent.extrinsic) {
-    throw new Error('Invalid event - no extrinsic set') // this should never happen
-  }
-
-  // see Substrate's sudo frame for more info about sudo extrinsics and `call` argument index
-  const argIndex =
-    false ||
-    (rawEvent.extrinsic.method === 'sudoAs' && 1) || // who, *call*
-    (rawEvent.extrinsic.method === 'sudo' && 0) || // *call*
-    (rawEvent.extrinsic.method === 'sudoUncheckedWeight' && 0) // *call*, _weight
-
-  // ensure `call` argument was found
-  if (argIndex === false) {
-    // this could possibly happen in sometime in future if new sudo options are introduced in Substrate
-    throw new Error('Not implemented situation with sudo')
-  }
-
-  // typecast call arguments
-  const callArgs = (rawEvent.extrinsic.args[argIndex].value as unknown) as ISudoCallArgs<DataParams>
-
-  return callArgs
-}
-
-// FIXME:
-type MappingsMemoryCache = {
-  lastCreatedProposalThreadId?: ThreadId
-}
-
-export const MemoryCache: MappingsMemoryCache = {}
 
 export function deserializeMetadata<T>(
   metadataType: AnyMetadataClass<T>,
@@ -324,7 +243,7 @@ export async function getById<T extends BaseModel>(
   id: string,
   relations?: RelationsArr<T>
 ): Promise<T> {
-  const result = await store.get(entityClass, { where: { id }, relations })
+  const result = await store.get(entityClass, { where: { id }, relations } as FindOneOptions<T>)
   if (!result) {
     throw new Error(`Expected ${entityClass.name} not found by ID: ${id}`)
   }
@@ -357,4 +276,21 @@ export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number 
     )
     return maxValue
   }
+}
+
+export async function updateMetaprotocolTransactionStatus(
+  store: DatabaseManager,
+  txStatusEventId: string,
+  newStatus: typeof MetaprotocolTransactionStatus,
+  errorMessage?: unknown
+): Promise<void> {
+  if (errorMessage && newStatus instanceof MetaprotocolTransactionErrored) {
+    newStatus.message = errorMessage instanceof Error ? errorMessage.message : (errorMessage as string)
+  }
+
+  const metaprotocolTxStatusEvent = await getById(store, MetaprotocolTransactionStatusEvent, txStatusEventId)
+  metaprotocolTxStatusEvent.status = newStatus
+
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
 }

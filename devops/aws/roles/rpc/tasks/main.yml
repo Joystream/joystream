@@ -23,7 +23,7 @@
   become: yes
 
 - name: Build required packages
-  shell: yarn build:packages
+  shell: . ~/.bash_profile && yarn build:packages
   args:
     chdir: '{{ remote_code_path }}'
   # Run in async fashion for max duration of 1 hr
@@ -41,8 +41,12 @@
   # Check for the status every 100s
   delay: 100
 
+- name: Make sure docker is running
+  command: systemctl start docker
+  become: yes
+
 - name: Run service containers
-  command: yarn start
+  shell: . ~/.bash_profile && yarn start
   environment:
     PERSIST: 'true'
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
@@ -50,9 +54,11 @@
     DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
     SKIP_NODE: 'true'
     SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
+    TREASURY_ACCOUNT_URI: '{{ endowed_key }}'
+    SUDO_ACCOUNT_URI: '{{ sudo_key }}'
   args:
     chdir: '{{ remote_code_path }}'
-  async: 1800
+  async: 3600
   poll: 0
   register: compose_result
 
@@ -62,7 +68,7 @@
   register: job_result
   until: job_result.finished
   # Max number of times to check for status
-  retries: 18
+  retries: 36
   # Check for the status every 100s
   delay: 100
 
@@ -103,7 +109,7 @@
 - name: Create config.json to serve as Caddy endpoint
   copy:
     content: '{{ all_services | from_yaml | to_json }}'
-    dest: '/home/ubuntu/config.json'
+    dest: '/home/ubuntu/network-config.json'
 
 - name: Save output as file on local
   copy:

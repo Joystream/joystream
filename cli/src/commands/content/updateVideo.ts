@@ -3,8 +3,8 @@ import { VideoInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
-import { CreateInterface, createType } from '@joystream/types'
-import { VideoUpdateParameters } from '@joystream/types/content'
+import { CreateInterface } from '@joystream/types'
+import { PalletContentVideoUpdateParametersRecord as VideoUpdateParameters } from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
@@ -37,7 +37,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     videoId: number,
     videoIndex: number | undefined,
     thumbnailIndex: number | undefined
-  ): Promise<string[]> {
+  ): Promise<number[]> {
     let assetsToRemove: DataObjectInfoFragment[] = []
     if (videoIndex !== undefined || thumbnailIndex !== undefined) {
       const currentAssets = await this.getQNApi().dataObjectsByVideoId(videoId.toString())
@@ -52,12 +52,15 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       if (assetsToRemove.length) {
         this.log(`\nData objects to be removed due to replacement:`)
         assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
-        const totalPrize = assetsToRemove.reduce((sum, { deletionPrize }) => sum.add(new BN(deletionPrize)), new BN(0))
-        this.log(`Total deletion prize: ${chalk.cyanBright(formatBalance(totalPrize))}\n`)
+        const totalStateBloatBond = assetsToRemove.reduce(
+          (sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)),
+          new BN(0)
+        )
+        this.log(`Total state bloat bond: ${chalk.cyanBright(formatBalance(totalStateBloatBond))}\n`)
       }
     }
 
-    return assetsToRemove.map((a) => a.id)
+    return assetsToRemove.map((a) => Number(a.id))
   }
 
   async run(): Promise<void> {
@@ -68,7 +71,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     // Context
     const video = await this.getApi().videoById(videoId)
-    const channel = await this.getApi().channelById(video.in_channel.toNumber())
+    const channel = await this.getApi().channelById(video.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
     const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
@@ -85,6 +88,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
     // Preare and send the extrinsic
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(
       videoId,
@@ -92,10 +96,11 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assetIndices.thumbnailPhotoPath
     )
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
-      assets_to_upload: assetsToUpload,
-      new_meta: metadataToBytes(VideoMetadata, meta),
-      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
-      enable_comments: enableComments,
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: null,
+      assetsToUpload,
+      newMeta: metadataToBytes(VideoMetadata, meta),
+      assetsToRemove,
     }
 
     this.jsonPrettyPrint(
@@ -109,14 +114,14 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       videoId,
       videoUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
+    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUpdated')
     if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+      const [, objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
         keypair,
         memberId.toNumber(),
-        `dynamic:channel:${video.in_channel.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        `dynamic:channel:${video.inChannel.toString()}`,
+        [...objectIds.values()].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )
     }

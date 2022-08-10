@@ -6,42 +6,35 @@
   gather_facts: yes
 
   tasks:
+    - name: Add authorized key
+      when: (ssh_pub_key is defined) and (ssh_pub_key|length > 0)
+      ansible.posix.authorized_key:
+        user: ubuntu
+        state: present
+        key: "{{ ssh_pub_key }}"
+
     - name: Get code from git repo
       include_role:
         name: common
         tasks_from: get-code-git
-
-    - name: Create bash profile file
-      command: 'touch /home/ubuntu/.bash_profile'
-
-    - name: Run setup script
-      command: ./setup.sh
-      args:
-        chdir: '{{ remote_code_path }}'
-
-    - name: Copy bash_profile content
-      shell: cat ~/.bash_profile
-      register: bash_data
-
-    - name: Copy bash_profile content to bashrc for non-interactive sessions
-      blockinfile:
-        block: '{{ bash_data.stdout }}'
-        path: ~/.bashrc
-        insertbefore: BOF
 
     - name: Make sure docker is running
       command: systemctl start docker
       become: yes
 
     - name: Build packages
-      command: yarn build:packages
+      shell:
+        cmd: |
+          source ~/.bash_profile
+          yarn build:packages
       args:
         chdir: '{{ remote_code_path }}'
+        executable: /usr/bin/bash
       async: 3600
       poll: 0
       register: build_result
 
-    - name: Check on build async task
+    - name: Check on build packages async task
       async_status:
         jid: '{{ build_result.ansible_job_id }}'
       register: job_result
@@ -51,12 +44,12 @@
       # Check for the status every 100s
       delay: 100
 
-    - name: Build Node image
-      command: yarn build:node:docker
+    - name: Build joystream/node docker image
+      shell: . ~/.bash_profile && ./build-node-docker.sh
       args:
         chdir: '{{ remote_code_path }}'
       environment:
-        ALL_PROPOSALS_PARAMETERS_JSON: '{{ proposal_parameters }}'
+        RUNTIME_PROFILE: '{{ runtime_profile }}'
       async: 3600
       poll: 0
       register: node_build_result
@@ -71,11 +64,12 @@
       # Check for the status every 100s
       delay: 100
 
-    - name: Run docker-compose
-      command: yarn start
+    - name: Start Playground Services
+      shell: . ~/.bash_profile && yarn start
       args:
         chdir: '{{ remote_code_path }}'
       environment:
+        RUNTIME_PROFILE: '{{ runtime_profile }}'
         PERSIST: 'true'
         COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
         DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
@@ -133,7 +127,7 @@
     - name: Create config.json to serve as Caddy endpoint
       copy:
         content: '{{ all_services | from_yaml | to_json }}'
-        dest: '/home/ubuntu/config.json'
+        dest: '/home/ubuntu/network-config.json'
 
     - name: Save output as file on local
       copy:

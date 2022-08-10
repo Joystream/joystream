@@ -73,5 +73,5 @@ export function shortAddress(address: AccountId | string): string {
 }
 
 export function memberHandle(member: MemberDetails): string {
-  return member.handle ? member.handle : member.membership.handle_hash.toHex().substr(0, 10) + '... (hash)'
+  return member.handle ? member.handle : member.membership.handleHash.toHex().substr(0, 10) + '... (hash)'
 }

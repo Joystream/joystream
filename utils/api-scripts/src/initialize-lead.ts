@@ -1,11 +1,9 @@
-import { registry, types } from '@joystream/types'
-import { MemberId } from '@joystream/types/common'
-import { ApplicationId, OpeningId } from '@joystream/types/working-group'
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
+import { u64 } from '@polkadot/types'
 import BN from 'bn.js'
-import { BTreeSet } from '@polkadot/types'
+import { createType } from '@joystream/types'
+import { ApplicationId, OpeningId } from '@joystream/types/primitives'
 
 const workingGroupModules = [
   'storageWorkingGroup',
@@ -28,11 +26,10 @@ async function main() {
   const WS_URI = process.env.WS_URI || 'ws://127.0.0.1:9944'
   console.log(`Initializing the api (${WS_URI})...`)
   const provider = new WsProvider(WS_URI)
-  const api = await ApiPromise.create({ provider, types })
+  const api = await ApiPromise.create({ provider })
 
   const Group = process.env.GROUP || 'contentWorkingGroup'
   const LeadKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
-  const SudoKeyPair = process.env.SUDO_URI ? getKeyFromSuri(process.env.SUDO_URI) : getAlicePair()
   const StakeKeyPair = LeadKeyPair.derive(`//stake${Date.now()}`)
 
   if (!workingGroupModules.includes(Group as WorkingGroupModuleName)) {
@@ -42,14 +39,12 @@ async function main() {
 
   const txHelper = new ExtrinsicsHelper(api)
 
-  const sudo = (tx: SubmittableExtrinsic<'promise'>) => api.tx.sudo.sudo(tx)
-
   // Create membership if not already created
   const memberEntries = await api.query.members.membershipById.entries()
   const matchingEntry = memberEntries.find(
-    ([storageKey, member]) => member.controller_account.toString() === LeadKeyPair.address
+    ([storageKey, member]) => member.unwrap().controllerAccount.toString() === LeadKeyPair.address
   )
-  let memberId: MemberId | undefined = matchingEntry?.[0].args[0] as MemberId | undefined
+  let memberId = matchingEntry?.[0].args[0]
 
   // Only buy membership if LEAD_URI is not provided - ie for Alice
   if (!memberId && process.env.LEAD_URI) {
@@ -62,14 +57,14 @@ async function main() {
       LeadKeyPair,
       [
         api.tx.members.buyMembership({
-          root_account: LeadKeyPair.address,
-          controller_account: LeadKeyPair.address,
+          rootAccount: LeadKeyPair.address,
+          controllerAccount: LeadKeyPair.address,
           handle: 'alice',
         }),
       ],
       'Failed to setup member account'
     )
-    memberId = memberRes.findRecord('members', 'MembershipBought')!.event.data[0] as MemberId
+    memberId = memberRes.findRecord('members', 'MembershipBought')!.event.data[0] as u64
   }
 
   // Create a new lead opening
@@ -79,21 +74,16 @@ async function main() {
     console.log(`Making member id: ${memberId} the ${groupModule} lead.`)
     // Create lead opening
     console.log(`Creating ${groupModule} lead opening...`)
-    const [openingRes] = await txHelper.sendAndCheck(
-      SudoKeyPair,
-      [
-        sudo(
-          api.tx[groupModule].addOpening(
-            '',
-            'Leader',
-            {
-              stake_amount: MIN_APPLICATION_STAKE,
-              leaving_unstaking_period: 99999,
-            },
-            null
-          )
-        ),
-      ],
+    const openingRes = await txHelper.sendAndCheckSudo(
+      api.tx[groupModule].addOpening(
+        '',
+        'Leader',
+        {
+          stakeAmount: MIN_APPLICATION_STAKE,
+          leavingUnstakingPeriod: 99999,
+        },
+        null
+      ),
       `Failed to create ${groupModule} lead opening!`
     )
     const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as OpeningId
@@ -123,10 +113,10 @@ async function main() {
       LeadKeyPair,
       [
         api.tx[groupModule].applyOnOpening({
-          member_id: memberId,
-          role_account_id: LeadKeyPair.address,
-          opening_id: openingId,
-          stake_parameters: {
+          memberId: memberId,
+          roleAccountId: LeadKeyPair.address,
+          openingId: openingId,
+          stakeParameters: {
             stake: MIN_APPLICATION_STAKE,
             staking_account_id: StakeKeyPair.address,
           },
@@ -139,9 +129,8 @@ async function main() {
 
     // Fill opening
     console.log('Filling the opening...')
-    await txHelper.sendAndCheck(
-      LeadKeyPair,
-      [sudo(api.tx[groupModule].fillOpening(openingId, new (BTreeSet.with(ApplicationId))(registry, [applicationId])))],
+    await txHelper.sendAndCheckSudo(
+      api.tx[groupModule].fillOpening(openingId, createType('BTreeSet<u64>', [applicationId])),
       'Failed to fill the opening'
     )
   }

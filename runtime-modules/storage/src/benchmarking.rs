@@ -7,7 +7,6 @@ use frame_support::traits::{Currency, Get};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Bounded;
-use sp_std::boxed::Box;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
@@ -15,7 +14,7 @@ use sp_std::iter::FromIterator;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use membership::Module as Membership;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
@@ -23,10 +22,10 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Blacklist, Call, Cid, DataObjectCreationParameters,
+    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters,
     DistributionBucketByFamilyIdById, DistributionBucketFamilyById, DistributionBucketId,
-    DynamicBagType, Module, RawEvent, StaticBagId, StorageBucketById, StorageBucketOperatorStatus,
-    Trait, UploadParameters, WorkerId,
+    DynamicBagType, Module, Module as Pallet, RawEvent, StaticBagId, StorageBucketById,
+    StorageBucketOperatorStatus, UploadParameters, WorkerId,
 };
 use frame_support::sp_runtime::SaturatedConversion;
 
@@ -36,7 +35,7 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
@@ -44,9 +43,9 @@ pub const DEFAULT_STORAGE_WORKER_ACCOUNT_ID: u64 = 100002;
 pub const DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID: u64 = 100003;
 pub const SECOND_WORKER_ACCOUNT_ID: u64 = 1;
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
@@ -87,7 +86,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
-fn member_funded_account<T: Trait + membership::Trait + balances::Trait>(
+fn member_funded_account<T: Config + membership::Config + balances::Config>(
     id: u32,
 ) -> (T::AccountId, T::MemberId)
 where
@@ -128,7 +127,7 @@ where
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -147,10 +146,10 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
 fn insert_storage_leader<T>(id: u64) -> T::AccountId
 where
     T::AccountId: CreateAccountId,
-    T: Trait
-        + membership::Trait
-        + working_group::Trait<StorageWorkingGroupInstance>
-        + balances::Trait,
+    T: Config
+        + membership::Config
+        + working_group::Config<StorageWorkingGroupInstance>
+        + balances::Config,
 {
     insert_leader::<T, StorageWorkingGroupInstance>(id)
 }
@@ -158,10 +157,10 @@ where
 fn insert_distribution_leader<T>(id: u64) -> T::AccountId
 where
     T::AccountId: CreateAccountId,
-    T: Trait
-        + membership::Trait
-        + working_group::Trait<DistributionWorkingGroupInstance>
-        + balances::Trait,
+    T: Config
+        + membership::Config
+        + working_group::Config<DistributionWorkingGroupInstance>
+        + balances::Config,
 {
     insert_leader::<T, DistributionWorkingGroupInstance>(id)
 }
@@ -169,7 +168,7 @@ where
 fn insert_leader<T, I>(id: u64) -> T::AccountId
 where
     T::AccountId: CreateAccountId,
-    T: Trait + membership::Trait + working_group::Trait<I> + balances::Trait,
+    T: Config + membership::Config + working_group::Config<I> + balances::Config,
     I: Instance,
 {
     let (caller_id, member_id) = member_funded_account::<T>(id.saturated_into());
@@ -197,7 +196,7 @@ where
 }
 
 fn insert_worker<
-    T: Trait + membership::Trait + working_group::Trait<I> + balances::Trait,
+    T: Config + membership::Config + working_group::Config<I> + balances::Config,
     I: Instance,
 >(
     leader_account_id: T::AccountId,
@@ -232,7 +231,10 @@ where
 }
 
 fn insert_storage_worker<
-    T: Trait + membership::Trait + working_group::Trait<StorageWorkingGroupInstance> + balances::Trait,
+    T: Config
+        + membership::Config
+        + working_group::Config<StorageWorkingGroupInstance>
+        + balances::Config,
 >(
     leader_account_id: T::AccountId,
     id: u64,
@@ -244,10 +246,10 @@ where
 }
 
 fn insert_distribution_worker<
-    T: Trait
-        + membership::Trait
-        + working_group::Trait<DistributionWorkingGroupInstance>
-        + balances::Trait,
+    T: Config
+        + membership::Config
+        + working_group::Config<DistributionWorkingGroupInstance>
+        + balances::Config,
 >(
     leader_account_id: T::AccountId,
     id: u64,
@@ -258,7 +260,7 @@ where
     insert_worker::<T, DistributionWorkingGroupInstance>(leader_account_id, id)
 }
 
-fn add_and_apply_opening<T: Trait + working_group::Trait<I>, I: Instance>(
+fn add_and_apply_opening<T: Config + working_group::Config<I>, I: Instance>(
     add_opening_origin: &T::Origin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
@@ -272,7 +274,7 @@ fn add_and_apply_opening<T: Trait + working_group::Trait<I>, I: Instance>(
     (opening_id, application_id)
 }
 
-fn add_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
+fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
@@ -281,8 +283,8 @@ fn add_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
         vec![],
         *job_opening_type,
         StakePolicy {
-            stake_amount: <T as working_group::Trait<I>>::MinimumApplicationStake::get(),
-            leaving_unstaking_period: <T as working_group::Trait<I>>::MinUnstakingPeriodLimit::get(
+            stake_amount: <T as working_group::Config<I>>::MinimumApplicationStake::get(),
+            leaving_unstaking_period: <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get(
             ) + One::one(),
         },
         Some(One::one()),
@@ -299,7 +301,7 @@ fn add_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
     opening_id
 }
 
-fn apply_on_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
+fn apply_on_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     opening_id: &OpeningId,
@@ -313,7 +315,7 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
             reward_account_id: applicant_account_id.clone(),
             description: vec![],
             stake_parameters: StakeParameters {
-                stake: <T as working_group::Trait<I>>::MinimumApplicationStake::get(),
+                stake: <T as working_group::Config<I>>::MinimumApplicationStake::get(),
                 staking_account_id: applicant_account_id.clone(),
             },
         },
@@ -330,7 +332,7 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<I>, I: Instance>(
     application_id
 }
 
-fn create_storage_bucket_helper<T: Trait>(account_id: T::AccountId) -> T::StorageBucketId {
+fn create_storage_bucket_helper<T: Config>(account_id: T::AccountId) -> T::StorageBucketId {
     let storage_bucket_id = Module::<T>::next_storage_bucket_id();
 
     Module::<T>::create_storage_bucket(RawOrigin::Signed(account_id).into(), None, true, 0, 0)
@@ -341,7 +343,7 @@ fn create_storage_bucket_helper<T: Trait>(account_id: T::AccountId) -> T::Storag
     storage_bucket_id
 }
 
-fn create_storage_buckets<T: Trait>(
+fn create_storage_buckets<T: Config>(
     account_id: T::AccountId,
     i: u32,
 ) -> BTreeSet<T::StorageBucketId> {
@@ -375,7 +377,7 @@ fn create_cids(i: u32, prefix: u8) -> BTreeSet<Cid> {
         .collect::<_>()
 }
 
-fn set_storage_operator<T: Trait>(
+fn set_storage_operator<T: Config>(
     lead_account_id: T::AccountId,
     bucket_id: T::StorageBucketId,
     worker_id: WorkerId<T>,
@@ -397,13 +399,13 @@ fn set_storage_operator<T: Trait>(
     .unwrap();
 }
 
-fn create_distribution_bucket_helper<T: Trait>(
+fn create_distribution_bucket_helper<T: Config>(
     lead_account_id: T::AccountId,
 ) -> DistributionBucketId<T> {
     create_distribution_bucket_with_family::<T>(lead_account_id, None)
 }
 
-fn create_distribution_bucket_families<T: Trait>(
+fn create_distribution_bucket_families<T: Config>(
     lead_account_id: T::AccountId,
     i: u32,
 ) -> Vec<T::DistributionBucketFamilyId> {
@@ -413,7 +415,7 @@ fn create_distribution_bucket_families<T: Trait>(
         .collect::<Vec<_>>()
 }
 
-fn create_distribution_family<T: Trait>(
+fn create_distribution_family<T: Config>(
     lead_account_id: T::AccountId,
 ) -> T::DistributionBucketFamilyId {
     let fam_id = Module::<T>::next_distribution_bucket_family_id();
@@ -424,7 +426,7 @@ fn create_distribution_family<T: Trait>(
     fam_id
 }
 
-fn create_distribution_bucket_with_family<T: Trait>(
+fn create_distribution_bucket_with_family<T: Config>(
     lead_account_id: T::AccountId,
     existing_family_id: Option<T::DistributionBucketFamilyId>,
 ) -> DistributionBucketId<T> {
@@ -448,7 +450,7 @@ fn create_distribution_bucket_with_family<T: Trait>(
     Module::<T>::create_distribution_bucket_id(family_id, bucket_idx)
 }
 
-fn create_distribution_buckets<T: Trait>(
+fn create_distribution_buckets<T: Config>(
     account_id: T::AccountId,
     family_id: T::DistributionBucketFamilyId,
     i: u32,
@@ -465,14 +467,13 @@ const OBJECT_COUNT: u32 = 400;
 
 benchmarks! {
     where_clause {
-        where T: balances::Trait,
-              T: Trait,
-              T: working_group::Trait<StorageWorkingGroupInstance>,
-              T: working_group::Trait<DistributionWorkingGroupInstance>,
-              T: membership::Trait,
-              T::AccountId: CreateAccountId,
+        where T: balances::Config,
+        T: Config,
+        T: working_group::Config<StorageWorkingGroupInstance>,
+        T: working_group::Config<DistributionWorkingGroupInstance>,
+        T: membership::Config,
+        T::AccountId: CreateAccountId,
     }
-    _{ }
 
     delete_storage_bucket {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
@@ -538,6 +539,19 @@ benchmarks! {
         assert_eq!(Module::<T>::voucher_max_objects_number_limit(), new_object_number);
         assert_last_event::<T>(
             RawEvent::StorageBucketsVoucherMaxLimitsUpdated(new_size, new_object_number).into()
+        );
+    }
+
+    update_data_object_state_bloat_bond {
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+
+    }: _ (RawOrigin::Signed(lead_account_id), new_bloat_bond)
+    verify {
+
+        assert_eq!(Module::<T>::data_object_state_bloat_bond_value(), new_bloat_bond);
+        assert_last_event::<T>(
+            RawEvent::DataObjectStateBloatBondValueUpdated(new_bloat_bond).into()
         );
     }
 
@@ -658,7 +672,7 @@ benchmarks! {
         )
         .unwrap();
 
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
         assert_eq!(
             bucket.operator_status,
             StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::InvitedStorageWorker(
@@ -668,7 +682,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(lead_account_id), bucket_id)
     verify {
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
 
         assert_eq!(
             bucket.operator_status,
@@ -686,7 +700,7 @@ benchmarks! {
             insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ACCOUNT_ID);
         let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
 
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
         assert_eq!(
             bucket.operator_status,
             StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::Missing
@@ -694,7 +708,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(lead_account_id), bucket_id, worker_id)
     verify {
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
 
         assert_eq!(
             bucket.operator_status,
@@ -721,7 +735,7 @@ benchmarks! {
             worker_account_id.clone()
         );
 
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
         assert_eq!(
             bucket.operator_status,
             StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::StorageWorker(
@@ -732,7 +746,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(lead_account_id), bucket_id)
     verify {
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
 
         assert_eq!(
             bucket.operator_status,
@@ -749,12 +763,12 @@ benchmarks! {
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
         let new_status = false;
 
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
         assert!(bucket.accepting_new_bags);
 
     }: _ (RawOrigin::Signed(lead_account_id), bucket_id, new_status)
     verify {
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
 
         assert!(!bucket.accepting_new_bags);
         assert_last_event::<T>(
@@ -783,7 +797,7 @@ benchmarks! {
         new_objects_number_limit
     )
     verify {
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
 
         assert_eq!(bucket.voucher.size_limit, new_objects_size_limit);
         assert_eq!(bucket.voucher.objects_limit, new_objects_number_limit);
@@ -810,7 +824,7 @@ benchmarks! {
         )
         .unwrap();
 
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
         assert_eq!(
             bucket.operator_status,
             StorageBucketOperatorStatus::<WorkerId<T>, T::AccountId>::InvitedStorageWorker(worker_id)
@@ -823,7 +837,7 @@ benchmarks! {
             worker_account_id.clone()
     )
     verify {
-        let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
+        let bucket = Module::<T>::storage_bucket_by_id(bucket_id).expect("Bucket Must Exist");
 
         assert_eq!(
             bucket.operator_status,
@@ -932,12 +946,9 @@ benchmarks! {
 
         let upload_parameters = UploadParameters::<T>{
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: worker_account_id.clone(),
-            expected_data_size_fee: Default::default(),
-            expected_data_object_deletion_prize: Default::default(),
-            expected_dynamic_bag_deletion_prize: Default::default(),
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
+            state_bloat_bond_source_account_id: worker_account_id.clone(),
+            expected_data_size_fee: Module::<T>::data_object_per_mega_byte_fee(),
+            expected_data_object_state_bloat_bond: Module::<T>::data_object_state_bloat_bond_value(),
             object_creation_list: object_parameters
         };
 
@@ -1043,7 +1054,7 @@ benchmarks! {
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
         let family_id = create_distribution_family::<T>(lead_account_id.clone());
 
-        let new_limit: u64 = T::DistributionBucketsPerBagValueConstraint::get().max().into();
+        let new_limit: u64 = T::DistributionBucketsPerBagValueConstraint::get().max();
         Module::<T>::update_distribution_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
             new_limit
@@ -1390,44 +1401,49 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::mocks::{build_test_externalities, Test};
     use frame_support::assert_ok;
+    type Storage = crate::Module<Test>;
 
     #[test]
     fn delete_storage_bucket() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_delete_storage_bucket::<Test>());
+            assert_ok!(Storage::test_benchmark_delete_storage_bucket());
         });
     }
 
     #[test]
     fn update_uploading_blocked_status() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_uploading_blocked_status::<Test>());
+            assert_ok!(Storage::test_benchmark_update_uploading_blocked_status());
         });
     }
 
     #[test]
     fn update_data_size_fee() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_data_size_fee::<Test>());
+            assert_ok!(Storage::test_benchmark_update_data_size_fee());
         });
     }
 
     #[test]
     fn update_storage_buckets_per_bag_limit() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_storage_buckets_per_bag_limit::<Test>());
+            assert_ok!(Storage::test_benchmark_update_storage_buckets_per_bag_limit());
         });
     }
 
     #[test]
     fn update_storage_buckets_voucher_max_limits() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_storage_buckets_voucher_max_limits::<
-                Test,
-            >());
+            assert_ok!(Storage::test_benchmark_update_storage_buckets_voucher_max_limits());
+        });
+    }
+
+    #[test]
+    fn update_data_object_state_bloat_bond() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(Storage::test_benchmark_update_data_object_state_bloat_bond());
         });
     }
 
@@ -1435,210 +1451,203 @@ mod tests {
     fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() {
         build_test_externalities().execute_with(|| {
             assert_ok!(
-                test_benchmark_update_number_of_storage_buckets_in_dynamic_bag_creation_policy::<
-                    Test,
-                >()
-            );
+                Storage::test_benchmark_update_number_of_storage_buckets_in_dynamic_bag_creation_policy());
         });
     }
 
     #[test]
     fn update_blacklist() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_blacklist::<Test>());
+            assert_ok!(Storage::test_benchmark_update_blacklist());
         });
     }
 
     #[test]
     fn create_storage_bucket() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_create_storage_bucket::<Test>());
+            assert_ok!(Storage::test_benchmark_create_storage_bucket());
         });
     }
 
     #[test]
     fn update_storage_buckets_for_bag() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_storage_buckets_for_bag::<Test>());
+            assert_ok!(Storage::test_benchmark_update_storage_buckets_for_bag());
         });
     }
 
     #[test]
     fn cancel_storage_bucket_operator_invite() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_cancel_storage_bucket_operator_invite::<Test>());
+            assert_ok!(Storage::test_benchmark_cancel_storage_bucket_operator_invite());
         });
     }
 
     #[test]
     fn invite_storage_bucket_operator() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_invite_storage_bucket_operator::<Test>());
+            assert_ok!(Storage::test_benchmark_invite_storage_bucket_operator());
         });
     }
 
     #[test]
     fn remove_storage_bucket_operator() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_remove_storage_bucket_operator::<Test>());
+            assert_ok!(Storage::test_benchmark_remove_storage_bucket_operator());
         });
     }
 
     #[test]
     fn update_storage_bucket_status() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_storage_bucket_status::<Test>());
+            assert_ok!(Storage::test_benchmark_update_storage_bucket_status());
         });
     }
 
     #[test]
     fn set_storage_bucket_voucher_limits() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_storage_bucket_voucher_limits::<Test>());
+            assert_ok!(Storage::test_benchmark_set_storage_bucket_voucher_limits());
         });
     }
 
     #[test]
     fn accept_storage_bucket_invitation() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_accept_storage_bucket_invitation::<Test>());
+            assert_ok!(Storage::test_benchmark_accept_storage_bucket_invitation());
         });
     }
 
     #[test]
     fn set_storage_operator_metadata() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_storage_operator_metadata::<Test>());
+            assert_ok!(Storage::test_benchmark_set_storage_operator_metadata());
         });
     }
 
     #[test]
     fn accept_pending_data_objects() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_accept_pending_data_objects::<Test>());
+            assert_ok!(Storage::test_benchmark_accept_pending_data_objects());
         });
     }
 
     #[test]
     fn create_distribution_bucket_family() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_create_distribution_bucket_family::<Test>());
+            assert_ok!(Storage::test_benchmark_create_distribution_bucket_family());
         });
     }
 
     #[test]
     fn delete_distribution_bucket_family() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_delete_distribution_bucket_family::<Test>());
+            assert_ok!(Storage::test_benchmark_delete_distribution_bucket_family());
         });
     }
 
     #[test]
     fn create_distribution_bucket() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_create_distribution_bucket::<Test>());
+            assert_ok!(Storage::test_benchmark_create_distribution_bucket());
         });
     }
 
     #[test]
     fn update_distribution_bucket_status() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_distribution_bucket_status::<Test>());
+            assert_ok!(Storage::test_benchmark_update_distribution_bucket_status());
         });
     }
 
     #[test]
     fn delete_distribution_bucket() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_delete_distribution_bucket::<Test>());
+            assert_ok!(Storage::test_benchmark_delete_distribution_bucket());
         });
     }
 
     #[test]
     fn update_distribution_buckets_for_bag() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_distribution_buckets_for_bag::<Test>());
+            assert_ok!(Storage::test_benchmark_update_distribution_buckets_for_bag());
         });
     }
 
     #[test]
     fn update_distribution_buckets_per_bag_limit() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_distribution_buckets_per_bag_limit::<
-                Test,
-            >());
+            assert_ok!(Storage::test_benchmark_update_distribution_buckets_per_bag_limit());
         });
     }
 
     #[test]
     fn update_distribution_bucket_mode() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_distribution_bucket_mode::<Test>());
+            assert_ok!(Storage::test_benchmark_update_distribution_bucket_mode());
         });
     }
 
     #[test]
     fn update_families_in_dynamic_bag_creation_policy() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_families_in_dynamic_bag_creation_policy::<Test>());
+            assert_ok!(Storage::test_benchmark_update_families_in_dynamic_bag_creation_policy());
         });
     }
 
     #[test]
     fn invite_distribution_bucket_operator() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_invite_distribution_bucket_operator::<Test>());
+            assert_ok!(Storage::test_benchmark_invite_distribution_bucket_operator());
         });
     }
 
     #[test]
     fn cancel_distribution_bucket_operator_invite() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_cancel_distribution_bucket_operator_invite::<
-                Test,
-            >());
+            assert_ok!(Storage::test_benchmark_cancel_distribution_bucket_operator_invite());
         });
     }
 
     #[test]
     fn remove_distribution_bucket_operator() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_remove_distribution_bucket_operator::<Test>());
+            assert_ok!(Storage::test_benchmark_remove_distribution_bucket_operator());
         });
     }
 
     #[test]
     fn set_distribution_bucket_family_metadata() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_distribution_bucket_family_metadata::<Test>());
+            assert_ok!(Storage::test_benchmark_set_distribution_bucket_family_metadata());
         });
     }
 
     #[test]
     fn accept_distribution_bucket_invitation() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_accept_distribution_bucket_invitation::<Test>());
+            assert_ok!(Storage::test_benchmark_accept_distribution_bucket_invitation());
         });
     }
 
     #[test]
     fn set_distribution_operator_metadata() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_distribution_operator_metadata::<Test>());
+            assert_ok!(Storage::test_benchmark_set_distribution_operator_metadata());
         });
     }
 
     #[test]
     fn storage_operator_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_storage_operator_remark::<Test>());
+            assert_ok!(Storage::test_benchmark_storage_operator_remark());
         });
     }
 
     #[test]
     fn distribution_operator_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_distribution_operator_remark::<Test>());
+            assert_ok!(Storage::test_benchmark_distribution_operator_remark());
         });
     }
 }

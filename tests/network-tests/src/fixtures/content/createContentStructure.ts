@@ -2,7 +2,7 @@ import { BaseQueryNodeFixture } from '../../Fixture'
 import { JoystreamCLI } from '../../cli/joystream'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
-import { Worker } from '@joystream/types/working-group'
+import { PalletWorkingGroupGroupWorker as Worker } from '@polkadot/types/lookup'
 import { getVideoCategoryDefaults, getChannelCategoryDefaults } from './contentTemplates'
 import { WorkingGroupModuleName } from '../../types'
 
@@ -49,14 +49,8 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     // switch to lead and create category structure as lead
 
     this.debug(`Choosing content working group lead's account`)
-    const contentLeaderKeyPair = this.api.getKeypair(contentLeader.role_account_id.toString())
+    const contentLeaderKeyPair = this.api.getKeypair(contentLeader.roleAccountId.toString())
     await this.cli.importAccount(contentLeaderKeyPair)
-
-    this.debug('Creating channel categories')
-    this.createdItems.channelCategoryIds = await this.createChannelCategories(this.channelCategoryCount)
-
-    this.debug('Creating video categories')
-    this.createdItems.videoCategoryIds = await this.createVideoCategories(this.videoCategoryCount)
   }
 
   /**
