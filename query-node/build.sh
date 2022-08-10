@@ -32,6 +32,13 @@ yarn
 ln -s ../../../../../node_modules/typeorm/cli.js ./generated/graphql-server/node_modules/.bin/typeorm
 
 yarn workspace query-node codegen
+
+# TODO: find proper solution and move it to Warthog/Hydra
+#       this approach is compilable but throws TypeORM error when initializing db
+# fix enum array not being supported yet
+sed -i -rz 's#\}\)\n  permissions\!\: ChannelActionPermission;#  isArray: true,\n  })\n  permissions\!: ChannelActionPermission[];#' generated/graphql-server/src/modules/channel-agent-permissions/channel-agent-permissions.model.ts
+sed -i -rz 's#\}\)\n  permissions\!\: ChannelActionPermission;#  isArray: true,\n  })\n  permissions\!: ChannelActionPermission[];#' generated/graphql-server/src/modules/curator-agent-permissions/curator-agent-permissions.model.ts
+
 yarn workspace query-node build
 
 yarn workspace query-node-mappings build

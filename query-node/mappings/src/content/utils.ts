@@ -32,12 +32,14 @@ import {
   ContentActorMember,
   ContentActor as ContentActorVariant,
   Curator,
+  ChannelActionPermission,
 } from 'query-node/dist/model'
 // Joystream types
 import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentStorageAssetsRecord as StorageAssets,
+  PalletContentChannelActionPermission,
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
@@ -614,4 +616,37 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
+}
+
+const agentPermissionConversionTable = {
+  UpdateChannelMetadata: ChannelActionPermission.UpdateChannelMetadata,
+  ManageNonVideoChannelAssets: ChannelActionPermission.ManageNonVideoChannelAssets,
+  ManageChannelCollaborators: ChannelActionPermission.ManageChannelCollaborators,
+  UpdateVideoMetadata: ChannelActionPermission.UpdateVideoMetadata,
+  AddVideo: ChannelActionPermission.AddVideo,
+  ManageVideoAssets: ChannelActionPermission.ManageVideoAssets,
+  DeleteChannel: ChannelActionPermission.DeleteChannel,
+  DeleteVideo: ChannelActionPermission.DeleteVideo,
+  ManageVideoNfts: ChannelActionPermission.ManageVideoNfts,
+  AgentRemark: ChannelActionPermission.AgentRemark,
+  TransferChannel: ChannelActionPermission.TransferChannel,
+  ClaimChannelReward: ChannelActionPermission.ClaimChannelReward,
+  WithdrawFromChannelBalance: ChannelActionPermission.WithdrawFromChannelBalance,
+  IssueCreatorToken: ChannelActionPermission.IssueCreatorToken,
+  ClaimCreatorTokenPatronage: ChannelActionPermission.ClaimCreatorTokenPatronage,
+  InitAndManageCreatorTokenSale: ChannelActionPermission.InitAndManageCreatorTokenSale,
+  CreatorTokenIssuerTransfer: ChannelActionPermission.CreatorTokenIssuerTransfer,
+  MakeCreatorTokenPermissionless: ChannelActionPermission.MakeCreatorTokenPermissionless,
+  ReduceCreatorTokenPatronageRate: ChannelActionPermission.ReduceCreatorTokenPatronageRate,
+  ManageRevenueSplits: ChannelActionPermission.ManageRevenueSplits,
+  DeissueCreatorToken: ChannelActionPermission.DeissueCreatorToken,
+}
+
+export function mapAgentPermission(permission: PalletContentChannelActionPermission): ChannelActionPermission {
+  const key = permission.toString()
+  if (!agentPermissionConversionTable[key]) {
+    return inconsistentState(`Unkown permission '${key}'`)
+  }
+
+  return agentPermissionConversionTable[key]
 }

@@ -18,6 +18,7 @@ import {
   StorageDataObject,
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
+  ChannelAgentPermissions,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -41,8 +42,12 @@ import {
   convertContentActor,
   processChannelMetadata,
   unsetAssetRelations,
+  mapAgentPermission,
 } from './utils'
 import { DataObjectId } from '@joystream/types/primitives'
+import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
+// Joystream types
+import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -90,6 +95,9 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 
   // save entity
   await store.save<Channel>(channel)
+
+  // update channel permissions
+  await updateChannelAgentsPermissions(store, channel, channelCreationParameters.collaborators)
 
   // emit log event
   logger.info('Channel has been created', { id: channel.id })
@@ -143,6 +151,11 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 
   // save channel
   await store.save<Channel>(channel)
+
+  // update channel permissions
+  if (channelUpdateParameters.collaborators.isSome) {
+    await updateChannelAgentsPermissions(store, channel, channelUpdateParameters.collaborators.unwrap())
+  }
 
   // emit log event
   logger.info('Channel has been updated', { id: channel.id })
@@ -330,5 +343,41 @@ export async function content_ChannelAgentRemarked(ctx: EventContext & StoreCont
     // update MetaprotocolTransactionStatusEvent
     const statusErrored = new MetaprotocolTransactionErrored()
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
+  }
+}
+
+export async function ChannelTransferAccepted({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [channelId, commitmentParams] = new Content.ChannelTransferAcceptedEvent(event).params
+
+  const channel = new Channel({ id: channelId.toString() })
+
+  // update channel permissions
+  await updateChannelAgentsPermissions(store, channel, commitmentParams.newCollaborators)
+}
+
+async function updateChannelAgentsPermissions(
+  store: DatabaseManager,
+  channel: Channel,
+  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>
+) {
+  // safest way to update permission is to delete existing and creating new ones
+
+  // delete existing agent permissions
+  const existingAgentPermissions = await store.getMany(ChannelAgentPermissions, {
+    where: { channel: { id: channel.id.toString() } },
+  })
+  for (const agentPermissions of existingAgentPermissions) {
+    await store.remove(agentPermissions)
+  }
+
+  // create new records for privledged members
+  for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
+    const channelAgentPermissions = new ChannelAgentPermissions({
+      channel: new Channel({ id: channel.id.toString() }),
+      member: new Membership({ id: memberId.toString() }),
+      permissions: Array.from(permissions).map(mapAgentPermission),
+    })
+
+    await store.save(channelAgentPermissions)
   }
 }
