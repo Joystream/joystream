@@ -1,7 +1,7 @@
 import { Api } from '../../Api'
 import { assert } from 'chai'
 import { asMembershipExternalResource, generateParamsFromAccountId } from './utils'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
