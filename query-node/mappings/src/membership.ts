@@ -44,6 +44,8 @@ import {
   MembershipEntryGifted,
   AvatarUri,
   WorkingGroup,
+  MembershipExternalResource,
+  MembershipExternalResourceType,
   MetaprotocolTransactionStatusEvent,
   MetaprotocolTransactionPending,
   MetaprotocolTransactionErrored,
@@ -57,9 +59,11 @@ import {
   processDeleteCommentMessage,
 } from './content'
 import { BaseModel } from '@joystream/warthog'
+import { Bytes } from '@polkadot/types'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 
-async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
-  const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
+async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
+  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
   if (!member) {
     throw new Error(`Member(${id}) not found`)
   }
@@ -87,6 +91,59 @@ async function getOrCreateMembershipSnapshot({ store, event }: EventContext & St
         id: undefined,
         snapshotBlock: event.blockNumber,
       })
+}
+
+async function saveMembershipExternalResources(
+  store: DatabaseManager,
+  from: MembershipExternalResource[] | undefined,
+  metadata: MembershipMetadata.IExternalResource[] | undefined | null,
+  memberMetadata: MemberMetadata
+): Promise<void> {
+  const externalResource = from ?? metadata?.map(asMembershipExternalResource) ?? []
+  for (const { type, value } of externalResource) {
+    if (type && value) {
+      await store.save<MembershipExternalResource>(new MembershipExternalResource({ type, value, memberMetadata }))
+    }
+  }
+
+  function asMembershipExternalResource(
+    metadata: MembershipMetadata.IExternalResource
+  ): Pick<MembershipExternalResource, 'type' | 'value'> {
+    const type = isSet(metadata.type) && MembershipMetadata.ExternalResource.ResourceType[metadata.type]
+
+    if (!type || !(type in MembershipExternalResourceType)) {
+      throw new Error(`Invalid ResourceType: ${type}`)
+    }
+
+    return { type: MembershipExternalResourceType[type], value: metadata.value ?? '' }
+  }
+}
+
+async function saveMembershipMetadata(
+  store: DatabaseManager,
+  from: Partial<MemberMetadata>,
+  metadataBytes?: Bytes
+): Promise<MemberMetadata> {
+  const metadata = metadataBytes && deserializeMetadata(MembershipMetadata, metadataBytes)
+
+  const avatar = from.avatar || metadata?.avatarUri ? new AvatarUri() : undefined
+  if (avatar) {
+    avatar.avatarUri = from.avatar && 'avatarUri' in from.avatar ? from.avatar.avatarUri : metadata?.avatarUri || ''
+  }
+
+  const metadataEntity = new MemberMetadata({
+    id: undefined,
+    name: metadata?.name || undefined,
+    about: metadata?.about || undefined,
+    ...from,
+    avatar,
+  })
+
+  await store.save<MemberMetadata>(metadataEntity)
+
+  await saveMembershipExternalResources(store, from.externalResources, metadata?.externalResources, metadataEntity)
+
+  return metadataEntity
 }
 
 async function createNewMemberFromParams(
@@ -136,7 +193,6 @@ async function createNewMemberFromParams(
     councilMembers: [],
   })
 
-  await store.save<MemberMetadata>(member.metadata)
   await store.save<Membership>(member)
 
   return member
@@ -200,10 +256,7 @@ export async function members_MembershipBought({ store, event }: EventContext & 
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: new MemberMetadata({
-      ...member.metadata,
-      id: undefined,
-    }),
+    metadata: await saveMembershipMetadata(store, member.metadata),
     referrer: member.referredBy,
   })
 
@@ -244,7 +297,7 @@ export async function members_MembershipGifted({ store, event }: EventContext & 
 export async function members_MemberProfileUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, newHandle, newMetadata] = new Members.MemberProfileUpdatedEvent(event).params
   const metadata = newMetadata.isSome ? deserializeMetadata(MembershipMetadata, newMetadata.unwrap()) : undefined
-  const member = await getMemberById(store, memberId)
+  const member = await getMemberById(store, memberId, ['metadata'])
 
   // FIXME: https://github.com/Joystream/hydra/issues/435
   if (typeof metadata?.name === 'string') {
@@ -255,8 +308,10 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   }
 
   if (typeof metadata?.avatarUri === 'string') {
-    member.metadata.avatar = new AvatarUri()
-    member.metadata.avatar.avatarUri = metadata.avatarUri
+    member.metadata.avatar = (metadata.avatarUri ? new AvatarUri() : null) as AvatarUri | undefined
+    if (member.metadata.avatar) {
+      member.metadata.avatar.avatarUri = metadata.avatarUri
+    }
   }
 
   if (newHandle.isSome) {
@@ -266,14 +321,15 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   await store.save<MemberMetadata>(member.metadata)
   await store.save<Membership>(member)
 
+  if (metadata?.externalResources) {
+    await saveMembershipExternalResources(store, undefined, metadata.externalResources, member.metadata)
+  }
+
   const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
     ...genericEventFields(event),
     member: member,
     newHandle: member.handle,
-    newMetadata: new MemberMetadata({
-      ...member.metadata,
-      id: undefined,
-    }),
+    newMetadata: await saveMembershipMetadata(store, member.metadata),
   })
 
   await store.save<MemberMetadata>(memberProfileUpdatedEvent.newMetadata)
@@ -363,10 +419,7 @@ export async function members_MemberInvited({ store, event }: EventContext & Sto
     handle: invitedMember.handle,
     rootAccount: invitedMember.rootAccount,
     controllerAccount: invitedMember.controllerAccount,
-    metadata: new MemberMetadata({
-      ...invitedMember.metadata,
-      id: undefined,
-    }),
+    metadata: await saveMembershipMetadata(store, invitedMember.metadata),
   })
 
   await store.save<MemberMetadata>(memberInvitedEvent.metadata)

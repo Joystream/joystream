@@ -12899,6 +12899,7 @@ export type MemberMetadata = BaseGraphQlObject & {
   avatar?: Maybe<Avatar>
   /** Short text chosen by member to share information about themselves */
   about?: Maybe<Scalars['String']>
+  externalResources?: Maybe<Array<MembershipExternalResource>>
   memberinvitedeventmetadata?: Maybe<Array<MemberInvitedEvent>>
   memberprofileupdatedeventnewMetadata?: Maybe<Array<MemberProfileUpdatedEvent>>
   membershipmetadata?: Maybe<Array<Membership>>
@@ -12977,6 +12978,9 @@ export type MemberMetadataWhereInput = {
   about_startsWith?: Maybe<Scalars['String']>
   about_endsWith?: Maybe<Scalars['String']>
   about_in?: Maybe<Array<Scalars['String']>>
+  externalResources_none?: Maybe<MembershipExternalResourceWhereInput>
+  externalResources_some?: Maybe<MembershipExternalResourceWhereInput>
+  externalResources_every?: Maybe<MembershipExternalResourceWhereInput>
   memberinvitedeventmetadata_none?: Maybe<MemberInvitedEventWhereInput>
   memberinvitedeventmetadata_some?: Maybe<MemberInvitedEventWhereInput>
   memberinvitedeventmetadata_every?: Maybe<MemberInvitedEventWhereInput>
@@ -13475,6 +13479,114 @@ export type MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited
 export type MembershipEntryPaid = {
   /** The event the membership was bought in */
   membershipBoughtEvent?: Maybe<MembershipBoughtEvent>
+}
+
+export type MembershipExternalResource = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  type: MembershipExternalResourceType
+  value: Scalars['String']
+  memberMetadata: MemberMetadata
+  memberMetadataId: Scalars['String']
+}
+
+export type MembershipExternalResourceConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<MembershipExternalResourceEdge>
+  pageInfo: PageInfo
+}
+
+export type MembershipExternalResourceCreateInput = {
+  type: MembershipExternalResourceType
+  value: Scalars['String']
+  memberMetadata: Scalars['ID']
+}
+
+export type MembershipExternalResourceEdge = {
+  node: MembershipExternalResource
+  cursor: Scalars['String']
+}
+
+export enum MembershipExternalResourceOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  TypeAsc = 'type_ASC',
+  TypeDesc = 'type_DESC',
+  ValueAsc = 'value_ASC',
+  ValueDesc = 'value_DESC',
+  MemberMetadataAsc = 'memberMetadata_ASC',
+  MemberMetadataDesc = 'memberMetadata_DESC',
+}
+
+export enum MembershipExternalResourceType {
+  Email = 'EMAIL',
+  Hyperlink = 'HYPERLINK',
+  Twitter = 'TWITTER',
+  Telegram = 'TELEGRAM',
+  Discord = 'DISCORD',
+  Facebook = 'FACEBOOK',
+  Youtube = 'YOUTUBE',
+  Matrix = 'MATRIX',
+  Irc = 'IRC',
+  Wechat = 'WECHAT',
+  Whatsapp = 'WHATSAPP',
+}
+
+export type MembershipExternalResourceUpdateInput = {
+  type?: Maybe<MembershipExternalResourceType>
+  value?: Maybe<Scalars['String']>
+  memberMetadata?: Maybe<Scalars['ID']>
+}
+
+export type MembershipExternalResourceWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  type_eq?: Maybe<MembershipExternalResourceType>
+  type_in?: Maybe<Array<MembershipExternalResourceType>>
+  value_eq?: Maybe<Scalars['String']>
+  value_contains?: Maybe<Scalars['String']>
+  value_startsWith?: Maybe<Scalars['String']>
+  value_endsWith?: Maybe<Scalars['String']>
+  value_in?: Maybe<Array<Scalars['String']>>
+  memberMetadata?: Maybe<MemberMetadataWhereInput>
+  AND?: Maybe<Array<MembershipExternalResourceWhereInput>>
+  OR?: Maybe<Array<MembershipExternalResourceWhereInput>>
+}
+
+export type MembershipExternalResourceWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export enum MembershipOrderByInput {
@@ -20362,6 +20474,9 @@ export type Query = {
   membershipBoughtEvents: Array<MembershipBoughtEvent>
   membershipBoughtEventByUniqueInput?: Maybe<MembershipBoughtEvent>
   membershipBoughtEventsConnection: MembershipBoughtEventConnection
+  membershipExternalResources: Array<MembershipExternalResource>
+  membershipExternalResourceByUniqueInput?: Maybe<MembershipExternalResource>
+  membershipExternalResourcesConnection: MembershipExternalResourceConnection
   membershipPriceUpdatedEvents: Array<MembershipPriceUpdatedEvent>
   membershipPriceUpdatedEventByUniqueInput?: Maybe<MembershipPriceUpdatedEvent>
   membershipPriceUpdatedEventsConnection: MembershipPriceUpdatedEventConnection
@@ -22598,6 +22713,26 @@ export type QueryMembershipBoughtEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<MembershipBoughtEventWhereInput>
   orderBy?: Maybe<Array<MembershipBoughtEventOrderByInput>>
+}
+
+export type QueryMembershipExternalResourcesArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<MembershipExternalResourceWhereInput>
+  orderBy?: Maybe<Array<MembershipExternalResourceOrderByInput>>
+}
+
+export type QueryMembershipExternalResourceByUniqueInputArgs = {
+  where: MembershipExternalResourceWhereUniqueInput
+}
+
+export type QueryMembershipExternalResourcesConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<MembershipExternalResourceWhereInput>
+  orderBy?: Maybe<Array<MembershipExternalResourceOrderByInput>>
 }
 
 export type QueryMembershipPriceUpdatedEventsArgs = {

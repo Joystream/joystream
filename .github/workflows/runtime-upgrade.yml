@@ -12,8 +12,8 @@ jobs:
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
 
@@ -27,7 +27,7 @@ jobs:
         run: mkdir ~/docker-images
 
       - name: Cache docker images
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: joystream-node-docker
         with:
@@ -65,7 +65,7 @@ jobs:
           fi
 
       - name: Save joystream/node image to Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
@@ -77,12 +77,12 @@ jobs:
     needs: build_images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - name: Get artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build_images.outputs.use_artifact }}
       - name: Install artifacts
