@@ -206,6 +206,14 @@ decl_storage! {
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u64;
     }
+    add_extra_genesis {
+        build(|_| {
+            // Initialize module account with ExistentialDeposit
+            let module_account_id = crate::Module::<T>::module_account_id();
+            let deposit: BalanceOf<T> = T::ExistentialDeposit::get();
+            let _ = Balances::<T>::deposit_creating(&module_account_id, deposit);
+        });
+    }
 }
 
 decl_module! {
@@ -268,7 +276,6 @@ decl_module! {
             if editable {
                 Self::transfer_to_state_cleanup_treasury_account(
                     T::PostDeposit::get(),
-                    thread_id,
                     &account_id,
                 )?;
             }
@@ -335,7 +342,6 @@ decl_module! {
             // mutation
 
             Self::pay_off(
-                thread_id,
                 T::PostDeposit::get(),
                 &account_id,
             )?;
@@ -501,28 +507,21 @@ impl<T: Config> Module<T> {
                 >= T::PostLifeTime::get()
     }
 
-    fn pay_off(
-        thread_id: T::ThreadId,
-        amount: BalanceOf<T>,
-        account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::ModuleId::get().into_sub_account_truncating(thread_id);
+    fn pay_off(amount: BalanceOf<T>, account_id: &T::AccountId) -> DispatchResult {
+        let state_cleanup_treasury_account = Self::module_account_id();
         <Balances<T> as Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
             account_id,
             amount,
-            ExistenceRequirement::AllowDeath,
+            ExistenceRequirement::KeepAlive,
         )
     }
 
     fn transfer_to_state_cleanup_treasury_account(
         amount: BalanceOf<T>,
-        thread_id: T::ThreadId,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::ModuleId::get().into_sub_account_truncating(thread_id);
+        let state_cleanup_treasury_account = Self::module_account_id();
         <Balances<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
@@ -556,5 +555,9 @@ impl<T: Config> Module<T> {
                 }
             }
         }
+    }
+
+    fn module_account_id() -> T::AccountId {
+        T::ModuleId::get().into_sub_account_truncating("TREASURY")
     }
 }

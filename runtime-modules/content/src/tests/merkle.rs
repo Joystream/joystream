@@ -8,9 +8,10 @@ use sp_runtime::DispatchError;
 #[test]
 fn successful_channel_state_bloat_bond_update_by_lead_account() {
     with_default_mock_builder(|| {
+        let new_bloat_bond = DEFAULT_CHANNEL_STATE_BLOAT_BOND * 2;
         run_to_block(1);
         UpdateChannelStateBloatBondFixture::default()
-            .with_channel_state_bloat_bond(20)
+            .with_channel_state_bloat_bond(new_bloat_bond)
             .call_and_assert(Ok(()))
     })
 }
@@ -22,6 +23,20 @@ fn unsuccessful_channel_state_bloat_bond_update_by_non_lead_account() {
         UpdateChannelStateBloatBondFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
+    })
+}
+
+#[test]
+fn unsuccessful_channel_state_bloat_bond_update_to_value_below_ed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        let new_bloat_bond = ed() - 1;
+        UpdateChannelStateBloatBondFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_channel_state_bloat_bond(new_bloat_bond)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelStateBloatBondBelowExistentialDeposit.into(),
+            ))
     })
 }
 

@@ -1301,6 +1301,11 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure_authorized_to_update_channel_state_bloat_bond::<T>(&sender)?;
 
+            ensure!(
+                new_channel_state_bloat_bond >= T::ExistentialDeposit::get(),
+                Error::<T>::ChannelStateBloatBondBelowExistentialDeposit
+            );
+
             //
             // == MUTATION_SAFE ==
             //

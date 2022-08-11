@@ -21,7 +21,7 @@ fn successful_channel_creation_with_member_context() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = ed();
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
@@ -116,7 +116,7 @@ fn successful_curator_group_channel_creation_with_storage_upload_and_lead_contex
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = ed();
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
@@ -840,7 +840,7 @@ fn successful_moderation_action_channel_deletion_by_curator() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = ed();
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));

@@ -383,6 +383,10 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
+    crate::GenesisConfig::default()
+        .assimilate_storage::<Test>(&mut t)
+        .unwrap();
+
     council::GenesisConfig::<Test>::default()
         .assimilate_storage(&mut t)
         .unwrap();

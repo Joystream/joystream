@@ -23,6 +23,10 @@ decl_error! {
         /// Provided channel owner (curator group) does not exist
         ChannelOwnerCuratorGroupDoesNotExist,
 
+        /// Channel state bloat bond cannot be lower than existential deposit,
+        /// because it must secure the channel module account against dusting
+        ChannelStateBloatBondBelowExistentialDeposit,
+
         // Curator Management Errors
         // -------------------------
 
