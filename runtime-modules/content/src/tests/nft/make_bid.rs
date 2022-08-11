@@ -137,7 +137,7 @@ fn make_bid() {
         let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         let module_account_id = ContentTreasury::<Test>::module_account_id();
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), ed());
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -148,7 +148,10 @@ fn make_bid() {
         ));
 
         // Module account contains a bid.
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&module_account_id),
+            ed() + bid
+        );
 
         // Ensure nft status changed to given Auction
         let nft = Content::ensure_nft_exists(video_id).unwrap();

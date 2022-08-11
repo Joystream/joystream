@@ -324,11 +324,11 @@ decl_error! {
         InsufficientBalanceForTransfer,
 
         /// Cannot create the channel: channel creator has insufficient balance
-        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
+        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees + existential deposit)
         InsufficientBalanceForChannelCreation,
 
         /// Cannot create the video: video creator has insufficient balance
-        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees + existential deposit)
         InsufficientBalanceForVideoCreation,
 
         // Insufficient council budget to cover channel reward claim

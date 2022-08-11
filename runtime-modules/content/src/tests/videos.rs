@@ -38,17 +38,17 @@ fn successful_video_creation_by_member() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        create_initial_storage_buckets_helper();
-        //0 channel SBB
-        //+ 11 video SBB
-        //+ 0 channel data obj SBB * 10 objs
-        //+ 1 video data obj SBB * 10 objs
-        //= 11 SBB
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, 11);
-        create_default_member_owned_channel();
-
-        let video_state_bloat_bond = 1;
+        let video_state_bloat_bond = ed() + 1;
         let data_state_bloat_bond = 1;
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND
+                + video_state_bloat_bond
+                + data_state_bloat_bond * 10,
+        );
+        create_default_member_owned_channel();
 
         set_data_object_state_bloat_bond(data_state_bloat_bond);
         UpdateVideoStateBloatBondFixture::default()
@@ -139,22 +139,13 @@ fn successful_video_creation_by_lead() {
 #[test]
 fn successful_video_creation_by_curator() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AddVideo])
+            .setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::AddVideo],
-        );
-
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         CreateVideoFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_actor(default_curator_actor())
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -249,22 +240,13 @@ fn unsuccessful_video_creation_with_lead_auth_failure() {
 #[test]
 fn unsuccessful_video_creation_with_curator_auth_failure() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AddVideo])
+            .setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::AddVideo],
-        );
-
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         CreateVideoFixture::default()
             .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_actor(default_curator_actor())
             .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
     })
 }
@@ -305,16 +287,9 @@ fn successful_video_creation_with_unauth_collaborator() {
 #[test]
 fn unsuccessful_video_creation_with_unauth_curator() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::AddVideo],
-        );
-
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AddVideo])
+            .setup();
         let unauthorized_curator_group_id = curators::add_curator_to_new_group(
             UNAUTHORIZED_CURATOR_ID,
             &[ChannelActionPermission::AddVideo],
@@ -460,7 +435,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
             // balance necessary to create channel + video with specified no. of assets
-            DEFAULT_CHANNEL_STATE_BLOAT_BOND
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND
                 + DEFAULT_VIDEO_STATE_BLOAT_BOND
                 + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
                 + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER,
@@ -594,22 +569,14 @@ fn successful_video_update_by_lead_with_assets_upload() {
 #[test]
 fn successful_video_update_by_curator_with_assets_upload() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::ManageVideoAssets])
+            .setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::ManageVideoAssets],
-        );
-
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         UpdateVideoFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_actor(default_curator_actor())
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -701,24 +668,17 @@ fn successful_video_update_by_lead_with_assets_removal() {
 #[test]
 fn successful_video_update_by_curator_with_assets_removal() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::ManageVideoAssets])
+            .setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::ManageVideoAssets],
-        );
         let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
             .collect::<BTreeSet<_>>();
 
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         UpdateVideoFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_actor(default_curator_actor())
             .with_assets_to_remove(video_assets)
             .call_and_assert(Ok(()));
     })
@@ -759,23 +719,16 @@ fn unsuccessful_video_update_with_collaborator_auth_failure() {
 #[test]
 fn unsuccessful_video_update_with_curator_auth_failure() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        let default_curator_group_id = curators::add_curator_to_new_group(
-            DEFAULT_CURATOR_ID,
-            &[ChannelActionPermission::UpdateVideoMetadata],
-        );
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[
+                ChannelActionPermission::DeleteVideo,
+                ChannelActionPermission::ManageVideoAssets,
+            ])
+            .setup();
         UpdateVideoFixture::default()
             .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_actor(default_curator_actor())
             .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
     })
 }
@@ -833,13 +786,10 @@ fn unsuccessful_video_update_with_unauth_collaborator() {
 #[test]
 fn unsuccessful_video_update_with_unauth_curator() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateVideoMetadata])
+            .setup();
         let unauthorized_curator_group_id = curators::add_curator_to_new_group(
             UNAUTHORIZED_CURATOR_ID,
             &[ChannelActionPermission::UpdateVideoMetadata],
@@ -932,7 +882,8 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_number_le
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
             // balance necessary to create channel with video + video with specified no. of assets
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND
+                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
                 + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER * 2,
         );
 
@@ -1025,17 +976,13 @@ fn unsuccessful_video_update_with_nft() {
 #[test]
 fn successful_video_deletion_by_member_with_assets_removal() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_member_channel().setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        let video_state_bloat_bond = 10;
+        let video_state_bloat_bond = ed() + 1;
 
         UpdateVideoStateBloatBondFixture::default()
             .with_video_state_bloat_bond(video_state_bloat_bond)
             .call_and_assert(Ok(()));
-
-        create_default_member_owned_channel();
 
         CreateVideoFixture::default()
             .with_expected_video_state_bloat_bond(video_state_bloat_bond)
@@ -1105,11 +1052,7 @@ fn unsuccessful_video_deletion_by_lead_with_member_owned_channel() {
 #[test]
 fn successful_video_deletion_by_lead_with_curator_owned_channel() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        ContentTest::with_curator_channel().with_video().setup();
 
         DeleteVideoFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -1121,17 +1064,13 @@ fn successful_video_deletion_by_lead_with_curator_owned_channel() {
 #[test]
 fn successful_video_deletion_by_curator_with_assets_removal() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[
                 ChannelActionPermission::DeleteVideo,
                 ChannelActionPermission::ManageVideoAssets,
-            ],
-        );
+            ])
+            .setup();
 
         let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         DeleteVideoFixture::default()
@@ -1163,25 +1102,17 @@ fn unsuccessful_video_deletion_by_member_with_auth_failure() {
 #[test]
 fn unsuccessful_video_deletion_by_curator_with_auth_failure() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[
                 ChannelActionPermission::DeleteVideo,
                 ChannelActionPermission::ManageVideoAssets,
-            ],
-        );
+            ])
+            .setup();
 
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         DeleteVideoFixture::default()
             .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_actor(default_curator_actor())
             .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
     })
 }
@@ -1189,11 +1120,7 @@ fn unsuccessful_video_deletion_by_curator_with_auth_failure() {
 #[test]
 fn unsuccessful_video_deletion_with_lead_auth_failure() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        ContentTest::with_curator_channel().with_video().setup();
 
         DeleteVideoFixture::default()
             .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
@@ -1221,18 +1148,13 @@ fn unsuccessful_video_deletion_by_unauth_member() {
 #[test]
 fn unsuccessful_video_deletion_by_unauth_curator() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[
                 ChannelActionPermission::DeleteVideo,
                 ChannelActionPermission::ManageVideoAssets,
-            ],
-        );
-
+            ])
+            .setup();
         let unauthorized_curator_group_id = curators::add_curator_to_new_group(
             UNAUTHORIZED_CURATOR_ID,
             &[

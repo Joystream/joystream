@@ -338,14 +338,6 @@ parameter_types! {
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let t = frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
-        .unwrap();
-
-    t.into()
-}
-
-pub fn build_test_externalities_with_genesis() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();

@@ -39,8 +39,8 @@ fn successful_channel_creation_with_member_context() {
 fn successful_curator_group_channel_creation_with_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
-
         set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND);
 
         create_initial_storage_buckets_helper();
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
@@ -80,11 +80,13 @@ fn successful_channel_creation_with_storage_upload_and_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
-        //1 channel SBB + 1 data obj SBB * 10 objs = 11 SBB
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, 11);
 
-        let channel_state_bloat_bond = 1;
+        let channel_state_bloat_bond = ed() + 1;
         let data_state_bloat_bond = 1;
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + channel_state_bloat_bond + data_state_bloat_bond * 10,
+        );
 
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
@@ -140,7 +142,7 @@ fn unsuccessful_channel_creation_with_invalid_expected_channel_state_bloat_bond(
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = DEFAULT_CHANNEL_STATE_BLOAT_BOND + 1;
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
@@ -149,6 +151,7 @@ fn unsuccessful_channel_creation_with_invalid_expected_channel_state_bloat_bond(
             .with_default_storage_buckets()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
+            .with_expected_channel_state_bloat_bond(DEFAULT_CHANNEL_STATE_BLOAT_BOND)
             .call_and_assert(Err(Error::<Test>::ChannelStateBloatBondChanged.into()));
     })
 }
@@ -230,7 +233,9 @@ fn unsuccessful_channel_creation_with_bucket_objects_number_limit_reached() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
+            DEFAULT_CHANNEL_STATE_BLOAT_BOND
+                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+                + ed(),
         );
 
         set_dynamic_bag_creation_policy_for_storage_numbers(1);
@@ -284,6 +289,11 @@ fn successful_channel_creation_with_collaborators_set() {
 
         set_dynamic_bag_creation_policy_for_storage_numbers(0);
         create_initial_storage_buckets_helper();
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+        );
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND);
 
         CreateChannelFixture::default()
             .with_default_storage_buckets()
@@ -532,7 +542,8 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
             // balance necessary to create channel + video with specified no. of assets
             DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
                 + DEFAULT_CHANNEL_STATE_BLOAT_BOND
-                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER,
+                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER
+                + ed(),
         );
 
         create_default_member_owned_channel();

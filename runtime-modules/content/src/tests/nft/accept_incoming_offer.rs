@@ -207,7 +207,7 @@ fn accept_incoming_offer_ok_with_nft_member_owner_correctly_credited() {
         // check member owner balance increased by NFT PRICE - ROYALTY - FEE
         assert_eq!(
             Balances::<Test>::usable_balance(THIRD_MEMBER_ACCOUNT_ID),
-            DEFAULT_NFT_PRICE - royalty - platform_fee,
+            ed() + DEFAULT_NFT_PRICE - royalty - platform_fee,
         );
     })
 }
@@ -235,7 +235,7 @@ fn accept_incoming_offer_reward_account_ok_with_owner_channel_account_correctly_
         // check creator owner balance increased by NFT PRICE - FEE
         assert_eq!(
             channel_reward_account_balance(ChannelId::one()),
-            DEFAULT_NFT_PRICE - platform_fee,
+            DEFAULT_CHANNEL_STATE_BLOAT_BOND + DEFAULT_NFT_PRICE - platform_fee,
         );
     })
 }
@@ -341,7 +341,7 @@ fn accept_incoming_offer_fails_when_trying_to_use_locked_balance() {
             .with_price(Some(DEFAULT_NFT_PRICE))
             .call_and_assert(Ok(()));
 
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE - ed());
 
         Balances::<Test>::set_lock(
             LockId::get(),

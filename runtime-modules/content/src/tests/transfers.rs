@@ -89,13 +89,10 @@ fn initialize_channel_transfer_ok_with_transfer_id_updated_correctly() {
 fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default()
@@ -114,13 +111,10 @@ fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
 fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default()
@@ -141,13 +135,10 @@ fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
 fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default()
@@ -442,7 +433,7 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
                 ),
                 (
                     balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE),
-                    BalanceOf::<Test>::zero(),
+                    ed(),
                 )
             );
         })
@@ -477,7 +468,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
                 ),
                 (
                     group_balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE),
-                    BalanceOf::<Test>::zero()
+                    ed()
                 ),
             );
         })

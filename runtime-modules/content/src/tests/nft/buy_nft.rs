@@ -42,9 +42,9 @@ fn buy_nft_ok_with_proper_royalty_accounting_normal_case() {
                 balances::Pallet::<Test>::usable_balance(COLLABORATOR_MEMBER_ACCOUNT_ID)
             ),
             (
-                royalty,
-                BalanceOf::<Test>::zero(),
-                DEFAULT_NFT_PRICE - platform_fee - royalty,
+                DEFAULT_CHANNEL_STATE_BLOAT_BOND + royalty,
+                ed(),
+                ed() + DEFAULT_NFT_PRICE - platform_fee - royalty,
             )
         );
     })
@@ -87,9 +87,9 @@ fn buy_nft_ok_with_proper_royalty_accounting_edge_case() {
                     balances::Pallet::<Test>::usable_balance(COLLABORATOR_MEMBER_ACCOUNT_ID)
                 ),
                 (
-                    DEFAULT_NFT_PRICE - platform_fee,
-                    BalanceOf::<Test>::zero(),
-                    BalanceOf::<Test>::zero(),
+                    DEFAULT_CHANNEL_STATE_BLOAT_BOND + DEFAULT_NFT_PRICE - platform_fee,
+                    ed(),
+                    ed()
                 )
             );
         })
@@ -419,7 +419,7 @@ fn buy_now_ok_with_nft_owner_member_correctly_credited() {
 
         assert_eq!(
             Balances::<Test>::usable_balance(THIRD_MEMBER_ACCOUNT_ID),
-            DEFAULT_NFT_PRICE - royalty - platform_fee,
+            ed() + DEFAULT_NFT_PRICE - royalty - platform_fee,
         )
     })
 }
@@ -447,7 +447,7 @@ fn buy_now_ok_with_nft_owner_channel_correctly_credited() {
         assert_eq!(
             channel_reward_account_balance(1u64),
             // balance_pre - platform fee (since channel owner it retains royalty)
-            DEFAULT_NFT_PRICE - platform_fee,
+            DEFAULT_CHANNEL_STATE_BLOAT_BOND + DEFAULT_NFT_PRICE - platform_fee,
         )
     })
 }
@@ -483,7 +483,7 @@ fn buy_nft_fails_when_trying_to_use_locked_balance() {
             .with_price(DEFAULT_NFT_PRICE)
             .call_and_assert(Ok(()));
 
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE - ed());
 
         Balances::<Test>::set_lock(
             LockId::get(),

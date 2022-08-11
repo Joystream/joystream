@@ -1,3 +1,4 @@
+use crate::BalanceOf;
 use derive_fixture::Fixture;
 use derive_new::new;
 use frame_support::dispatch::DispatchResult;
@@ -129,6 +130,10 @@ pub fn set_default_update_storage_buckets_per_bag_limit() {
     let new_limit = 7;
 
     set_update_storage_buckets_per_bag_limit(new_limit);
+}
+
+pub fn init_module_acc_balance() -> BalanceOf<Test> {
+    <Test as crate::Config>::ModuleAccountInitialBalance::get() as u64
 }
 
 pub struct EventFixture;

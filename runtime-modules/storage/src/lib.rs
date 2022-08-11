@@ -442,7 +442,7 @@ pub trait ModuleAccount<T: balances::Config> {
             &Self::module_account_id(),
             dest_account_id,
             amount,
-            ExistenceRequirement::AllowDeath,
+            ExistenceRequirement::KeepAlive,
         )
     }
 

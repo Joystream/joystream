@@ -744,14 +744,6 @@ pub trait ModuleAccount<T: Config> {
         )
     }
 
-    /// Deposit amount to internal creator account: infallible
-    fn deposit_to_channel_account(channel_id: T::ChannelId, amount: BalanceOf<T>) {
-        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(
-            &Self::account_for_channel(channel_id),
-            amount,
-        );
-    }
-
     /// Displays usable balance for the module account.
     fn usable_balance() -> BalanceOf<T> {
         <Balances<T>>::usable_balance(&Self::module_account_id())

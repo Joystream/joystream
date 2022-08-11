@@ -12,9 +12,6 @@ fn pick_open_auction_winner() {
     with_default_mock_builder(|| {
         let video_id = NextVideoId::<Test>::get();
 
-        // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
-        make_content_module_account_existential_deposit();
-
         ContentTest::default().with_video().setup();
 
         // Issue nft
@@ -555,7 +552,7 @@ fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
         // net revenue for member owner : NFT PRICE - ROYALTY - FEE
         assert_eq!(
             Balances::<Test>::usable_balance(THIRD_MEMBER_ACCOUNT_ID),
-            DEFAULT_NFT_PRICE - royalty - platform_fee
+            ed() + DEFAULT_NFT_PRICE - royalty - platform_fee
         );
     })
 }
@@ -585,7 +582,7 @@ fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
         // net revenue for creator owner : NFT PRICE - FEE
         assert_eq!(
             channel_reward_account_balance(ChannelId::one()),
-            DEFAULT_NFT_PRICE - platform_fee
+            DEFAULT_CHANNEL_STATE_BLOAT_BOND + DEFAULT_NFT_PRICE - platform_fee
         );
     })
 }

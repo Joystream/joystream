@@ -61,9 +61,6 @@ fn cancel_open_auction_bid() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
-        let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();
-        // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
-        make_content_module_account_existential_deposit();
         setup_open_auction_scenario_with_bid();
 
         // Run to the block where bid lock duration expires
@@ -74,7 +71,7 @@ fn cancel_open_auction_bid() {
         let module_account_id = ContentTreasury::<Test>::module_account_id();
         assert_eq!(
             Balances::<Test>::usable_balance(&module_account_id),
-            bid + existential_deposit
+            bid + ed()
         );
 
         // Cancel auction bid
@@ -84,10 +81,7 @@ fn cancel_open_auction_bid() {
             video_id,
         ));
 
-        assert_eq!(
-            Balances::<Test>::usable_balance(&module_account_id),
-            existential_deposit
-        );
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), ed());
 
         // Runtime tested state after call
 

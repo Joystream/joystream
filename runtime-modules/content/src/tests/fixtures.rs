@@ -19,7 +19,6 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
 use storage::DynamicBagType;
-use storage::{ModuleAccount as StorageModuleAccount, StorageTreasury};
 use strum::IntoEnumIterator;
 
 // Index which indentifies the item in the commitment set we want the proof for
@@ -4933,32 +4932,29 @@ pub fn channel_reward_account_balance(channel_id: ChannelId) -> u64 {
     Balances::<Test>::usable_balance(&reward_account)
 }
 
-// TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-pub fn make_channel_account_existential_deposit(channel_id: ChannelId) {
-    increase_account_balance_helper(
-        ContentTreasury::<Test>::account_for_channel(channel_id),
-        <Test as balances::Config>::ExistentialDeposit::get().into(),
-    );
-}
-
-// TODO: Should not be required after https://github.com/Joystream/joystream/issues/3510
-pub fn make_storage_module_account_existential_deposit() {
-    increase_account_balance_helper(
-        StorageTreasury::<Test>::module_account_id(),
-        <Test as balances::Config>::ExistentialDeposit::get().into(),
-    );
-}
-
-// TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
-pub fn make_content_module_account_existential_deposit() {
-    increase_account_balance_helper(
-        ContentTreasury::<Test>::module_account_id(),
-        <Test as balances::Config>::ExistentialDeposit::get().into(),
-    );
-}
-
 pub fn default_curator_actor() -> ContentActor<CuratorGroupId, CuratorId, MemberId> {
     ContentActor::Curator(CuratorGroupId::one(), DEFAULT_CURATOR_ID)
+}
+
+pub fn ed() -> BalanceOf<Test> {
+    <Test as balances::Config>::ExistentialDeposit::get().into()
+}
+
+pub fn init_existential_deposits() {
+    let ed = ed();
+    increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, ed);
+    increase_account_balance_helper(LEAD_ACCOUNT_ID, ed);
+    increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, ed);
+    increase_account_balance_helper(UNAUTHORIZED_LEAD_ACCOUNT_ID, ed);
+    increase_account_balance_helper(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(THIRD_MEMBER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(LEAD_MEMBER_CONTROLLER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID, ed);
+    increase_account_balance_helper(UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID, ed);
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
@@ -5090,6 +5086,7 @@ impl ContentTest {
     pub fn setup(&self) {
         run_to_block(1);
         create_initial_storage_buckets_helper();
+        init_existential_deposits();
         increase_account_balance_helper(self.channel_owner_sender, INITIAL_BALANCE);
 
         // Create channel

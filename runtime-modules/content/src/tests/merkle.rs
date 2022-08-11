@@ -334,9 +334,6 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_exi
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-        make_channel_account_existential_deposit(ChannelId::one());
-
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
             Error::<Test>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit.into(),
         ));
@@ -374,9 +371,6 @@ fn unsuccessful_channel_balance_double_spend_withdrawal() {
             .with_claimable_reward()
             .setup();
 
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-        make_channel_account_existential_deposit(ChannelId::one());
-
         ClaimChannelRewardFixture::default().call_and_assert(Ok(()));
 
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Ok(()));
@@ -405,9 +399,7 @@ fn unsuccessful_channel_balance_withdrawal_when_creator_token_issued() {
 
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
 
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
@@ -422,9 +414,6 @@ fn successful_channel_balance_multiple_withdrawals() {
         ContentTest::with_member_channel()
             .with_claimable_reward()
             .setup();
-
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-        make_channel_account_existential_deposit(ChannelId::one());
 
         ClaimChannelRewardFixture::default().call_and_assert(Ok(()));
 
@@ -463,9 +452,7 @@ fn successful_member_channel_balance_withdrawal_by_collaborator() {
             .setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         WithdrawFromChannelBalanceFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -481,9 +468,7 @@ fn successful_member_channel_balance_withdrawal_by_owner() {
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Ok(()));
     })
@@ -514,9 +499,7 @@ fn successful_curator_channel_balance_withdrawal_by_curator() {
             .setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         WithdrawFromChannelBalanceFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -531,9 +514,7 @@ fn successful_curator_channel_balance_withdrawal_by_lead() {
         ContentTest::with_curator_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         WithdrawFromChannelBalanceFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -545,13 +526,10 @@ fn successful_curator_channel_balance_withdrawal_by_lead() {
 #[test]
 fn unsuccessful_channel_balance_withdrawal_with_fund_transfer_feature_paused() {
     with_default_mock_builder(|| {
-        run_to_block(1);
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         pause_channel_feature(1u64, PausableChannelFeature::ChannelFundsTransfer);
 
@@ -685,9 +663,6 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
         ContentTest::with_member_channel()
             .with_claimable_reward()
             .setup();
-
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-        make_channel_account_existential_deposit(ChannelId::one());
 
         ClaimAndWithdrawChannelRewardFixture::default().call_and_assert(Ok(()));
 
@@ -1052,8 +1027,6 @@ fn successful_channel_payouts_update() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3510
-        make_storage_module_account_existential_deposit();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         let payments = create_some_pull_payments_helper();
