@@ -691,7 +691,7 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender.clone(), channel_id, channel)?;
+            Self::try_to_perform_channel_deletion(sender, channel_id, channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -771,7 +771,7 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender.clone(), channel_id, channel)?;
+            Self::try_to_perform_channel_deletion(sender, channel_id, channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -3209,7 +3209,7 @@ impl<T: Config> Module<T> {
         // Return video state bloat bond
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
         let bloat_bond = video.video_state_bloat_bond;
-        Self::return_bloat_bond(&channel_account, &sender, bloat_bond, false)?;
+        Self::return_bloat_bond(&channel_account, sender, bloat_bond, false)?;
 
         Ok(())
     }
