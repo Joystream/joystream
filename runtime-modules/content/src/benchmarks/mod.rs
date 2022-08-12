@@ -56,6 +56,13 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
     res
 }
 
+pub const MEMBER_IDS_INIT: u128 = 500;
+pub const MAX_MEMBER_IDS: usize = 100;
+
+pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
+
+pub const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[0];
+
 pub const CURATOR_IDS_INIT: u128 = 600;
 pub const MAX_CURATOR_IDS: usize = 100;
 

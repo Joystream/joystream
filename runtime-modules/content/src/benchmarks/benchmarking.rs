@@ -547,12 +547,50 @@ benchmarks! {
     // WORST CASE SCENARIO:
     // - curator channel belonging to a group with max number curator and max curator permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    withdraw_from_channel_balance {
-        let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
-        let origin= RawOrigin::Signed(lead_account_id.clone());
+    // withdraw_from_channel_balance {
+    //     let (channel_id, group_id, lead_account_id, _, _) =
+    //         setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
+    //     let origin= RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+    //     set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+
+    //     let amount = <T as balances::Config>::Balance::from(100u32);
+    //     let _ = Balances::<T>::deposit_creating(
+    //         &ContentTreasury::<T>::account_for_channel(channel_id),
+    //         amount + T::ExistentialDeposit::get(),
+    //     );
+
+    //     let actor = crate::ContentActor::Lead;
+    //     let origin = RawOrigin::Signed(lead_account_id.clone());
+    // }: _ (origin, actor, channel_id, amount)
+    //     verify {
+    //         assert_eq!(
+    //             T::CouncilBudgetManager::get_budget(),
+    //             amount,
+    //         );
+
+    //         assert_eq!(
+    //             Balances::<T>::usable_balance(ContentTreasury::<T>::account_for_channel(channel_id)),
+    //             T::ExistentialDeposit::get(),
+    //         );
+    //     }
+
+    withdraw_from_channel_balance {
+        let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let channel_id =
+            setup_worst_case_scenario_channel::<T>(
+                member_account_id.clone(),
+                ChannelOwner::Member(member_id),
+                0,
+                T::StorageBucketsPerBagValueConstraint::get().min as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().min as u32,
+                false,
+            )?;
+
+        let (_, lead_account_id) = insert_content_leader::<T>();
+        let lead_origin = RawOrigin::Signed(lead_account_id);
+
+        set_all_channel_paused_features_except::<T>(lead_origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -560,13 +598,14 @@ benchmarks! {
             amount + T::ExistentialDeposit::get(),
         );
 
-        let actor = crate::ContentActor::Lead;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
+        let origin = RawOrigin::Signed(member_account_id.clone());
+        let actor = crate::ContentActor::Member(member_id);
+        let owner_balance_pre = Balances::<T>::usable_balance(member_account_id.clone());
     }: _ (origin, actor, channel_id, amount)
         verify {
             assert_eq!(
-                T::CouncilBudgetManager::get_budget(),
-                amount,
+                Balances::<T>::usable_balance(member_account_id),
+                owner_balance_pre + amount,
             );
 
             assert_eq!(
