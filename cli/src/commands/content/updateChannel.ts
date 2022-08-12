@@ -12,6 +12,7 @@ import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import ExitCodes from '../../ExitCodes'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'
@@ -32,19 +33,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       description: 'ID of the Channel',
     },
   ]
-
-  parseRewardAccountInput(rewardAccount?: string | null): string | null | Uint8Array {
-    if (rewardAccount === undefined) {
-      // Reward account remains unchanged
-      return null
-    } else if (rewardAccount === null) {
-      // Reward account changed to empty
-      return new Uint8Array([1, 0])
-    } else {
-      // Reward account set to new account
-      return rewardAccount
-    }
-  }
 
   async getAssetsToRemove(
     channelId: number,
@@ -85,16 +73,11 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     // Context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelUpdateInputParameters>(input, ChannelUpdateInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
     const { collaborators, coverPhotoPath, avatarPhotoPath } = channelInput
-
-    if (collaborators !== undefined && !this.isChannelOwner(channel, actor)) {
-      this.error("Only channel owner is allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
-    }
 
     if (collaborators) {
       await this.validateMemberIdsSet(
@@ -112,7 +95,9 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     meta.coverPhoto = assetIndices.coverPhotoPath
     meta.avatarPhoto = assetIndices.avatarPhotoPath
 
-    // Preare and send the extrinsic
+    // Prepare and send the extrinsic
+    const serializedMeta = metadataToBytes(ChannelMetadata, meta)
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(
       channelId,
@@ -120,13 +105,31 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
-    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
+    // Ensure actor is authorized to perform channel update
+    const requiredPermissions: ChannelActionPermission['type'][] = []
+    if (collaborators) {
+      requiredPermissions.push('ManageChannelCollaborators')
+    }
+    if (assetsToUpload || assetsToRemove.length) {
+      requiredPermissions.push('ManageNonVideoChannelAssets')
+    }
+    if (serializedMeta.length) {
+      requiredPermissions.push('UpdateChannelMetadata')
+    }
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(`Only channelOwner or collaborator with ${requiredPermissions} permission can perform this update!`, {
+        exit: ExitCodes.AccessDenied,
+      })
+    }
+
     const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
-      assetsToUpload: assetsToUpload,
       expectedDataObjectStateBloatBond,
-      collaborators: [],
-      assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
-      newMeta: metadataToBytes(ChannelMetadata, meta),
+      assetsToUpload,
+      assetsToRemove,
+      newMeta: serializedMeta.length ? serializedMeta : null,
+      collaborators: collaborators?.length
+        ? new Map(collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions]))
+        : null,
     })
     this.jsonPrettyPrint(
       JSON.stringify({
@@ -148,8 +151,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     if (channelUpdatedEvent) {
       const objectIds = channelUpdatedEvent.data[3]
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         [...objectIds].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input

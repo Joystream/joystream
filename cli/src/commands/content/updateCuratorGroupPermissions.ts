@@ -1,39 +1,48 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import chalk from 'chalk'
 import { flags } from '@oclif/command'
-import { ModerationPermissionsByLevelInputParameters } from '../../Types'
 import { getInputJson } from '../../helpers/InputOutput'
+import { ModerationPermissionsByLevelInputParameters } from '../../Types'
 import { ModerationPermissionsByLevelInputSchema } from '../../schemas/ContentDirectory'
 import { createType } from '@joystream/types'
 
-const CURATOR_GROUP_CREATION_CONTEXTS = ['ACTIVE', 'INACTIVE'] as const
+export default class UpdateCuratorGroupPermissionsCommand extends ContentDirectoryCommandBase {
+  static description = 'Update existing Curator Group.'
+  static args = [
+    {
+      name: 'id',
+      required: false,
+      description: 'ID of the Curator Group',
+    },
+  ]
 
-export default class CreateCuratorGroupCommand extends ContentDirectoryCommandBase {
-  static description = 'Create new Curator Group.'
   static flags = {
-    status: flags.enum({
-      required: true,
-      description: `Status of newly created Curator Group: (${CURATOR_GROUP_CREATION_CONTEXTS.join('/')})`,
-      options: [...CURATOR_GROUP_CREATION_CONTEXTS],
-    }),
     permissions: flags.string({
       char: 'p',
+      required: true,
       description: `Path to JSON file containing moderation permissions by channel privilege level to use as input`,
     }),
     ...ContentDirectoryCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { status, permissions } = this.parse(CreateCuratorGroupCommand).flags
+    let { id } = this.parse(UpdateCuratorGroupPermissionsCommand).args
+    const { permissions } = this.parse(UpdateCuratorGroupPermissionsCommand).flags
+
+    if (id === undefined) {
+      id = await this.promptForCuratorGroup()
+    } else {
+      await this.getCuratorGroup(id)
+    }
+
     const lead = await this.getRequiredLeadContext()
     const keypair = await this.getDecodedPair(lead.roleAccount)
 
-    const moderationPermissionsByLevelInput = permissions
-      ? await getInputJson<ModerationPermissionsByLevelInputParameters>(
-          permissions,
-          ModerationPermissionsByLevelInputSchema
-        )
-      : []
+    const moderationPermissionsByLevelInput = await getInputJson<ModerationPermissionsByLevelInputParameters>(
+      permissions,
+      ModerationPermissionsByLevelInputSchema
+    )
+    console.log(moderationPermissionsByLevelInput)
 
     const moderationPermissionsByLevel = createType(
       'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
@@ -44,11 +53,12 @@ export default class CreateCuratorGroupCommand extends ContentDirectoryCommandBa
         ])
       )
     )
-    await this.sendAndFollowNamedTx(keypair, 'content', 'createCuratorGroup', [
-      status === 'ACTIVE',
+
+    await this.sendAndFollowNamedTx(keypair, 'content', 'updateCuratorGroupPermissions', [
+      id,
       moderationPermissionsByLevel,
     ])
-    // TODO: Get id from event?
-    console.log(chalk.green(`New group successfully created!`))
+
+    console.log(chalk.green(`Curator Group permissions successfully updated!`))
   }
 }
