@@ -6,7 +6,7 @@ use super::curators;
 pub use super::mock::Event as MetaEvent;
 use super::mock::*;
 use crate::*;
-use common::council::CouncilBudgetManager;
+use common::{council::CouncilBudgetManager, Side};
 use frame_support::traits::Currency;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;

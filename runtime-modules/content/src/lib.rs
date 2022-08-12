@@ -42,7 +42,7 @@ pub use common::{
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
-    MembershipTypes, StorageOwnership, Url,
+    MembershipTypes, Side, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,

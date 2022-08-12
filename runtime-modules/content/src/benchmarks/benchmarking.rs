@@ -6,7 +6,7 @@ use crate::types::*;
 use crate::Module as Pallet;
 use crate::{Call, ChannelById, Config, ContentTreasury, Event, UpdateChannelPayoutsParameters};
 use balances::Pallet as Balances;
-use common::BudgetManager;
+use common::{build_merkle_path_helper, generate_merkle_root_helper, BudgetManager};
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, Get};
@@ -552,7 +552,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin= RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+        set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -589,7 +589,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(vec![crate::PausableChannelFeature::CreatorCashout]);
+        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![crate::PausableChannelFeature::CreatorCashout]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
@@ -625,7 +625,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(vec![
+        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![
                 crate::PausableChannelFeature::CreatorCashout,
                 crate::PausableChannelFeature::ChannelFundsTransfer,
             ]);
