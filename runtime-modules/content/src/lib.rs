@@ -5,7 +5,7 @@
 #![allow(clippy::unused_unit)]
 
 #[cfg(test)]
-pub mod tests;
+mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
@@ -1352,7 +1352,7 @@ decl_module! {
         /// `O (1)` where:
         /// - DB:
         /// - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::update_channel_payouts()]
         pub fn update_channel_payouts(
             origin,
@@ -1422,7 +1422,7 @@ decl_module! {
         /// - `H` is the lenght of the provided merkle `proof`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::claim_channel_reward(proof.len() as u32)]
         pub fn claim_channel_reward(
             origin,
@@ -1454,7 +1454,7 @@ decl_module! {
         /// `O (1)`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::withdraw_from_channel_balance()]
         pub fn withdraw_from_channel_balance(
             origin,
@@ -1555,7 +1555,7 @@ decl_module! {
         /// - `H` is the lenght of the provided merkle `proof`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::claim_and_withdraw_channel_reward(proof.len() as u32)]
         pub fn claim_and_withdraw_channel_reward(
             origin,

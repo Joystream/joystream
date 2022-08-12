@@ -1,12 +1,8 @@
-#![cfg(feature = "runtime-benchmarks")]
-
 mod benchmarking;
 
 use crate::{
-    permissions::*,
-    types::*,
-    Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
-    Module as Pallet,
+    permissions::*, types::*, Config, ContentModerationAction, InitTransferParametersOf,
+    ModerationPermissionsByLevel, Module as Pallet,
 };
 use balances::Pallet as Balances;
 use common::MembershipTypes;
@@ -962,7 +958,7 @@ pub fn create_pull_payments_with_reward<T: Config>(
     cumulative_reward_earned: BalanceOf<T>,
 ) -> Vec<PullPayment<T>> {
     let mut payments = Vec::new();
-    for i in 1..payments_number {
+    for i in 1..=payments_number {
         payments.push(PullPayment::<T> {
             channel_id: (i as u64).into(),
             cumulative_reward_earned,
@@ -1089,4 +1085,17 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
         <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
         T::MaxNumberOfCuratorsPerGroup::get(),
     )
+}
+
+fn set_all_channel_paused_features_except<T: Config>(
+    exceptions: Vec<crate::PausableChannelFeature>,
+) {
+    Pallet::<T>::set_channel_paused_features_as_moderator(
+        origin.clone().into(),
+        crate::ContentActor::Lead,
+        channel_id,
+        super::all_channel_pausable_features_except(BTreeSet::from_iter(exceptions)),
+        b"reason".to_vec(),
+    )
+    .unwrap();
 }

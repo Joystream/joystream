@@ -11,15 +11,15 @@ use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use sp_arithmetic::traits::{One};
+use sp_arithmetic::traits::One;
 use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
-use storage::Pallet as Storage;
 use sp_std::{
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    vec,
     convert::TryInto,
+    vec,
 };
+use storage::Pallet as Storage;
 
 use super::*;
 
@@ -551,13 +551,8 @@ benchmarks! {
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin= RawOrigin::Signed(lead_account_id.clone());
-        Pallet::<T>::set_channel_paused_features_as_moderator(
-            origin.clone().into(),
-            crate::ContentActor::Lead,
-            channel_id,
-            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![crate::PausableChannelFeature::ChannelFundsTransfer])),
-            b"reason".to_vec(),
-        ).unwrap();
+
+        set_all_channel_paused_features_except::<T>(vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -594,15 +589,8 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        Pallet::<T>::set_channel_paused_features_as_moderator(
-            origin.clone().into(),
-            crate::ContentActor::Lead,
-            channel_id,
-            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![
-                crate::PausableChannelFeature::CreatorCashout,
-            ])),
-            b"reason".to_vec(),
-        ).unwrap();
+        set_all_channel_paused_features_except::<T>(vec![crate::PausableChannelFeature::CreatorCashout]);
+
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
             ..Default::default()
@@ -613,8 +601,6 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: _ (origin, actor, proof, item)
         verify {
-            let cashout = item
-                 .cumulative_reward_earned - cumulative_reward_claimed;
             assert_eq!(
                 Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
                 item.cumulative_reward_earned
@@ -639,16 +625,11 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        Pallet::<T>::set_channel_paused_features_as_moderator(
-            origin.clone().into(),
-            crate::ContentActor::Lead,
-            channel_id,
-            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![
+        set_all_channel_paused_features_except::<T>(vec![
                 crate::PausableChannelFeature::CreatorCashout,
                 crate::PausableChannelFeature::ChannelFundsTransfer,
-            ])),
-            b"reason".to_vec(),
-        ).unwrap();
+            ]);
+
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
             ..Default::default()
@@ -659,8 +640,6 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: _ (origin, actor, proof, item)
         verify {
-            let cashout = item
-                 .cumulative_reward_earned - cumulative_reward_claimed;
             assert_eq!(
                 Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
                 item.cumulative_reward_earned
