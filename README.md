@@ -70,7 +70,7 @@ WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
 ./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-4.json
 ```
 
-Learn more about [joystream-node](node/README.md).
+Learn more about [joystream-node](bin/node/README.md).
 
 A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 

@@ -1,0 +1,20 @@
+[package]
+name = "node-inspect"
+version = "0.9.0-dev"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2021"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage = "https://substrate.io"
+repository = "https://github.com/paritytech/substrate/"
+
+[dependencies]
+clap = { version = "3.1.6", features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.1.5" }
+thiserror = "1.0"
+sc-cli = { package = 'sc-cli', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+sc-client-api = { package = 'sc-client-api', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+sc-executor = { package = 'sc-executor', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+sc-service = { package = 'sc-service', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', default-features = false }
+sp-blockchain = { package = 'sp-blockchain', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+sp-core = { package = 'sp-core', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+sp-runtime = { package = 'sp-runtime', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }

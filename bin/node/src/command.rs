@@ -27,6 +27,7 @@ use crate::{
 };
 use frame_benchmarking_cli::*;
 use node_runtime::Block;
+use node_runtime::RuntimeApi;
 
 use sc_cli::{ChainSpec, Result, RuntimeVersion, SubstrateCli};
 use sc_finality_grandpa as grandpa;
@@ -97,11 +98,11 @@ pub fn run() -> Result<()> {
                     .map_err(sc_cli::Error::Service)
             })
         }
-        // Some(Subcommand::Inspect(cmd)) => {
-        //     let runner = cli.create_runner(cmd)?;
+        Some(Subcommand::Inspect(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
 
-        //     runner.sync_run(|config| cmd.run::<Block, RuntimeApi, ExecutorDispatch>(config))
-        // }
+            runner.sync_run(|config| cmd.run::<Block, RuntimeApi, ExecutorDispatch>(config))
+        }
         Some(Subcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
 

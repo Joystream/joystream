@@ -78,13 +78,14 @@ pallet-im-online = { package = 'pallet-im-online', default-features = false, git
 pallet-transaction-storage = { package = 'pallet-transaction-storage', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 
 # node-specific dependencies
-node-runtime = { package = "joystream-node-runtime", path = "../runtime" }
+node-runtime = { package = "joystream-node-runtime", path = "../../runtime" }
 
 # CLI-specific dependencies
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-benchmarking-cli = { package = 'frame-benchmarking-cli', optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-benchmarking = { package = 'frame-benchmarking', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 serde_json = "1.0.79"
+node-inspect = { path = "../inspect", optional = true }
 
 [target.'cfg(any(target_arch="x86_64", target_arch="aarch64"))'.dependencies]
 sc-cli = { package = 'sc-cli', optional = true, features = ["wasmtime"], git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -124,6 +125,7 @@ substrate-build-script-utils = { package = 'substrate-build-script-utils', optio
 substrate-frame-cli = { package = 'substrate-frame-cli', optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-balances = { package = 'pallet-balances', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+node-inspect = { path = "../inspect", optional = true }
 
 [features]
 default = ["cli"]
@@ -135,6 +137,7 @@ cli = [
 	"clap",
 	"clap_complete",
 	"substrate-build-script-utils",
+	"node-inspect",
 ]
 
 runtime-benchmarks = ["node-runtime/runtime-benchmarks", "frame-benchmarking-cli"]
