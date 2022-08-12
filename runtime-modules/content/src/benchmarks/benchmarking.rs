@@ -576,18 +576,14 @@ benchmarks! {
     //     }
 
     withdraw_from_channel_balance {
-        let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
-        let channel_id =
-            setup_worst_case_scenario_channel::<T>(
-                member_account_id.clone(),
-                ChannelOwner::Member(member_id),
+        let (channel_id, member_id, member_account_id, lead_account_id) =
+            setup_worst_case_scenario_member_channel::<T>(
                 0,
                 T::StorageBucketsPerBagValueConstraint::get().min as u32,
                 T::DistributionBucketsPerBagValueConstraint::get().min as u32,
                 false,
-            )?;
+            ).unwrap();
 
-        let (_, lead_account_id) = insert_content_leader::<T>();
         let lead_origin = RawOrigin::Signed(lead_account_id);
 
         set_all_channel_paused_features_except::<T>(lead_origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);

@@ -788,6 +788,84 @@ where
     Ok(channel_id)
 }
 
+fn setup_worst_case_scenario_member_channel<T: Config>(
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+    // benchmarks should always use "true" if possible (ie. the benchmarked tx
+    // is allowed during active transfer, for example - delete_channel)
+    with_transfer: bool,
+) -> Result<(
+    T::ChannelId,
+    T::MemberId,
+    T::AccountId,
+    T::AccountId,
+), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+
+    let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+
+    let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
+
+    let (_, distribution_wg_lead_account_id) =
+        insert_distribution_leader::<T>();
+
+    let (_, lead_account_id) = insert_content_leader::<T>();
+
+    let _ = setup_worst_case_curator_group_with_curators::<T>(
+        max_curators_per_group::<T>()
+    )?;
+
+    let channel_owner = ChannelOwner::Member(member_id);
+    let origin = RawOrigin::Signed(member_account_id.clone());
+
+    let params = generate_channel_creation_params::<T>(
+        storage_wg_lead_account_id,
+        distribution_wg_lead_account_id,
+        T::MaxNumberOfCollaboratorsPerChannel::get(),
+        storage_buckets_num,
+        distribution_buckets_num,
+        objects_num,
+        MAX_BYTES_METADATA,
+        T::MaxDataObjectSize::get(),
+    );
+
+    let channel_id = Pallet::<T>::next_channel_id();
+
+    Pallet::<T>::create_channel(origin.clone().into(), channel_owner.clone(), params)?;
+
+    // initialize worst-case-scenario transfer
+    if with_transfer {
+        let (_, new_owner_id) = member_funded_account::<T>(0);
+        let new_owner = ChannelOwner::Member(new_owner_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        let actor = match channel_owner {
+            ChannelOwner::Member(member_id) => ContentActor::Member(member_id),
+            ChannelOwner::CuratorGroup(_) => ContentActor::Lead,
+        };
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner,
+            new_collaborators,
+            price,
+        };
+        Pallet::<T>::initialize_channel_transfer(
+            origin.into(),
+            channel_id,
+            actor,
+            transfer_params,
+        )?;
+    }
+
+    Ok((channel_id, member_id, member_account_id, lead_account_id))
+}
+
 fn setup_worst_case_curator_group_with_curators<T>(
     curators_len: u32,
 ) -> Result<T::CuratorGroupId, DispatchError>
