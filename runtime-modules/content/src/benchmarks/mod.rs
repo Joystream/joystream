@@ -795,29 +795,20 @@ fn setup_worst_case_scenario_member_channel<T: Config>(
     // benchmarks should always use "true" if possible (ie. the benchmarked tx
     // is allowed during active transfer, for example - delete_channel)
     with_transfer: bool,
-) -> Result<(
-    T::ChannelId,
-    T::MemberId,
-    T::AccountId,
-    T::AccountId,
-), DispatchError>
+) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-
     let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
 
     let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
 
-    let (_, distribution_wg_lead_account_id) =
-        insert_distribution_leader::<T>();
+    let (_, distribution_wg_lead_account_id) = insert_distribution_leader::<T>();
 
     let (_, lead_account_id) = insert_content_leader::<T>();
 
-    let _ = setup_worst_case_curator_group_with_curators::<T>(
-        max_curators_per_group::<T>()
-    )?;
+    let _ = setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
 
     let channel_owner = ChannelOwner::Member(member_id);
     let origin = RawOrigin::Signed(member_account_id.clone());
