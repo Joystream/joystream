@@ -26,7 +26,7 @@ export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
       'Application ID': application.applicationId,
       'Opening ID': application.openingId.toString(),
       'Member handle': memberHandle(application.member),
-      'Role account': application.roleAccout.toString(),
+      'Role account': application.roleAccount.toString(),
       'Reward account': application.rewardAccount.toString(),
       'Staking account': application.stakingAccount.toString(),
     }

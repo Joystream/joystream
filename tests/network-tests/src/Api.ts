@@ -123,7 +123,7 @@ export class ApiFactory {
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
     this.keyId = 0
-    this.faucetInfo = { suri: '', memberId: 0 }
+    this.faucetInfo = { suri: '' }
   }
 
   public getApi(label: string): Api {

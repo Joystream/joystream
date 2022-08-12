@@ -44,8 +44,7 @@ if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
   ./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 
   ## Member faucet
-  export SCREENING_AUTHORITY_SEED=$(cat ./tests/network-tests/output.json | jq -r .faucet.suri)
-  export INVITING_MEMBER_ID=$(cat ./tests/network-tests/output.json | jq -r .faucet.memberId)
+  export INVITER_KEY=$(cat ./tests/network-tests/output.json | jq -r .faucet.suri)
   docker-compose up -d faucet
 
   ## Storage Infrastructure Nodes

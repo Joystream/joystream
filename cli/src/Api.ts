@@ -4,12 +4,10 @@ import {
   ChannelId,
   CuratorGroupId,
   DataObjectId,
-  DistributionBucketFamilyId,
   ForumCategoryId as CategoryId,
   ForumPostId as PostId,
   ForumThreadId as ThreadId,
   MemberId,
-  OpeningId,
   VideoId,
   WorkerId,
 } from '@joystream/types/primitives'
@@ -314,7 +312,7 @@ export default class Api {
   }
 
   async openingsByGroup(group: WorkingGroups): Promise<OpeningDetails[]> {
-    const openings = await this.entriesByIds<OpeningId, Opening>(this.workingGroupApiQuery(group).openingById)
+    const openings = await this.entriesByIds(this.workingGroupApiQuery(group).openingById)
 
     return Promise.all(openings.map(([id, opening]) => this.fetchOpeningDetails(group, opening, id.toNumber())))
   }
@@ -344,7 +342,7 @@ export default class Api {
     return {
       applicationId,
       member: await this.expectedMemberDetailsById(application.memberId),
-      roleAccout: application.roleAccountId,
+      roleAccount: application.roleAccountId,
       rewardAccount: application.rewardAccountId,
       stakingAccount: application.stakingAccountId,
       descriptionHash: application.descriptionHash.toString(),
@@ -359,14 +357,12 @@ export default class Api {
   }
 
   protected async groupOpeningApplications(group: WorkingGroups, openingId: number): Promise<ApplicationDetails[]> {
-    const applicationEntries = await this.entriesByIds<ApplicationId, Application>(
-      this.workingGroupApiQuery(group).applicationById
-    )
+    const applicationEntries = await this.entriesByIds(this.workingGroupApiQuery(group).applicationById)
 
     return Promise.all(
       applicationEntries
-        .filter(([, application]) => application.openingId.eqn(openingId))
-        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application))
+        .filter(([, application]) => application.unwrap().openingId.eqn(openingId))
+        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application.unwrap()))
     )
   }
 
@@ -412,7 +408,7 @@ export default class Api {
   }
 
   async allMembers(): Promise<[MemberId, Membership][]> {
-    return this.entriesByIds<MemberId, Membership>(this._api.query.members.membershipById)
+    return (await this.entriesByIds(this._api.query.members.membershipById)).map(([id, m]) => [id, m.unwrap()])
   }
 
   // Content directory
@@ -469,16 +465,16 @@ export default class Api {
     return video
   }
 
-  async videoStateBloatBond(): Promise<number> {
-    return (await this._api.query.content.videoStateBloatBondValue()).toNumber()
+  async videoStateBloatBond(): Promise<BN> {
+    return await this._api.query.content.videoStateBloatBondValue()
   }
 
-  async channelStateBloatBond(): Promise<number> {
-    return (await this._api.query.content.channelStateBloatBondValue()).toNumber()
+  async channelStateBloatBond(): Promise<BN> {
+    return await this._api.query.content.channelStateBloatBondValue()
   }
 
-  async dataObjectStateBloatBond(): Promise<number> {
-    return (await this._api.query.storage.dataObjectStateBloatBondValue()).toNumber()
+  async dataObjectStateBloatBond(): Promise<BN> {
+    return await this._api.query.storage.dataObjectStateBloatBondValue()
   }
 
   async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {
@@ -492,7 +488,7 @@ export default class Api {
     )
 
     if (!storageBuckets || storageBuckets.length < storageBucketsPolicy.toNumber()) {
-      throw new CLIError(`Storage buckets policy constraint unsatifified. Not enough storage buckets exist`)
+      throw new CLIError(`Storage buckets policy constraint unsatisfied. Not enough storage buckets exist`)
     }
 
     return storageBuckets.map((b) => Number(b.id)).slice(0, storageBucketsPolicy.toNumber())
@@ -509,20 +505,22 @@ export default class Api {
     const distributionBucketIds = []
 
     for (const { id, buckets } of families || []) {
-      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get(id as unknown as DistributionBucketFamilyId)
-      if (bucketsCountPolicy && bucketsCountPolicy.toNumber() < buckets.length) {
-        throw new CLIError(`Distribution buckets policy constraint unsatifified. Not enough distribution buckets exist`)
+      const bucketsCountPolicy = [...distributionBucketFamiliesPolicy]
+        .find(([familyId]) => familyId.toString() === id)?.[1]
+        .toNumber()
+      if (bucketsCountPolicy && bucketsCountPolicy < buckets.length) {
+        throw new CLIError(
+          `Distribution buckets policy constraint unsatisfied. Not enough buckets exist in Bucket Family ${id}`
+        )
       }
 
       distributionBucketIds.push(
-        ...buckets
-          .map(({ bucketIndex }) => {
-            return {
-              distributionBucketFamilyId: Number(id),
-              distributionBucketIndex: bucketIndex,
-            }
-          })
-          .slice(0, bucketsCountPolicy?.toNumber())
+        ..._.sampleSize(buckets, bucketsCountPolicy).map(({ bucketIndex }) => {
+          return {
+            distributionBucketFamilyId: Number(id),
+            distributionBucketIndex: bucketIndex,
+          }
+        })
       )
     }
     return distributionBucketIds
