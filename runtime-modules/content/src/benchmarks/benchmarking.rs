@@ -927,6 +927,35 @@ benchmarks! {
                 ..
             })));
         }
+
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - NFT owner == channel owner
+    // DB OPERATIONS:
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
+    buy_nft {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let price = BalanceOf::<T>::from(100u32);
+        let video_id = setup_video_with_nft_in_buy_now::<T>(curator_account_id, actor, channel_id, price)?;
+
+        let (buyer_account_id, buyer_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let origin = RawOrigin::Signed(buyer_account_id.clone());
+
+        let balance_pre = Balances::<T>::usable_balance(buyer_account_id.clone());
+    }: _ (origin, video_id, buyer_id, price)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+            assert_eq!(Balances::<T>::usable_balance(buyer_account_id), balance_pre - price)
+        }
+
 }
 
 #[cfg(test)]
@@ -1106,6 +1135,13 @@ pub mod tests {
     fn update_buy_now_price() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_update_buy_now_price());
+        })
+    }
+
+    #[test]
+    fn buy_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_buy_nft());
         })
     }
 
