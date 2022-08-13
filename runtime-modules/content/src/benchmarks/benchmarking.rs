@@ -871,7 +871,6 @@ benchmarks! {
         let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
         let origin = RawOrigin::Signed(curator_account_id);
         let price = BalanceOf::<T>::one();
-
     }: _ (origin, video_id, actor, price)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -880,7 +879,29 @@ benchmarks! {
             })));
         }
 
-
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - NFT owner == channel owner
+    // DB OPERATIONS:
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
+    cancel_buy_now {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let price = BalanceOf::<T>::one();
+        let video_id = setup_video_with_nft_in_buy_now::<T>(curator_account_id, actor, channel_id, price)?;
+    }: _ (origin, actor, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+        }
 }
 
 #[cfg(test)]
@@ -1046,6 +1067,13 @@ pub mod tests {
     fn sell_nft() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_sell_nft());
+        })
+    }
+
+    #[test]
+    fn cancel_buy_now() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_buy_now());
         })
     }
 }
