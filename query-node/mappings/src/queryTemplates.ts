@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 // this file will be copied to `/generated` folder; provides GraphQL query examples to GraphQL PLayground
 
 import {

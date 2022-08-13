@@ -89,9 +89,6 @@ type ForumThread @entity {
   "Number of non-deleted posts in the thread"
   visiblePostsCount: Int!
 
-  "Optional poll associated with the thread"
-  poll: ForumPoll @derivedFrom(field: "thread")
-
   "Whether the thread is sticky in the category"
   isSticky: Boolean!
 
@@ -127,34 +124,6 @@ type ForumThreadTag @entity {
 
   "Number of non-removed threads currently assigned to the tag"
   visibleThreadsCount: Int!
-}
-
-type ForumPoll @entity {
-  "The thread the poll belongs to"
-  thread: ForumThread!
-
-  "Poll description"
-  description: String!
-
-  "The time at which the poll ends"
-  endTime: DateTime!
-
-  "List of poll alternatives"
-  pollAlternatives: [ForumPollAlternative!] @derivedFrom(field: "poll")
-}
-
-type ForumPollAlternative @entity {
-  "Index uniquely identifying the alternative in given poll"
-  index: Int!
-
-  "The related poll"
-  poll: ForumPoll!
-
-  "The alternative text"
-  text: String!
-
-  "List of all associated vote events"
-  votes: [VoteOnPollEvent!] @derivedFrom(field: "pollAlternative")
 }
 
 enum PostReaction {

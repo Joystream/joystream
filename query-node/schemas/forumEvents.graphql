@@ -395,33 +395,6 @@ type PostReactedEvent implements Event @entity {
   reactingMember: Membership!
 }
 
-type VoteOnPollEvent implements Event @entity {
-  ### GENERIC DATA ###
-
-  "(network}-{blockNumber}-{indexInBlock}"
-  id: ID!
-
-  "Hash of the extrinsic which caused the event to be emitted"
-  inExtrinsic: String
-
-  "Blocknumber of the block in which the event was emitted."
-  inBlock: Int!
-
-  "Network the block was produced in"
-  network: Network!
-
-  "Index of event in block from which it was emitted."
-  indexInBlock: Int!
-
-  ### SPECIFIC DATA ###
-
-  "Poll alternative beeing voted on"
-  pollAlternative: ForumPollAlternative!
-
-  "The member that casted the vote"
-  votingMember: Membership!
-}
-
 type CategoryStickyThreadUpdateEvent implements Event @entity {
   ### GENERIC DATA ###
 

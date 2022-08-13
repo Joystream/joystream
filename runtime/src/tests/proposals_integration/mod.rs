@@ -247,6 +247,9 @@ impl CancelProposalFixture {
 #[test]
 fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
@@ -293,7 +296,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let expected_proposal = Proposal {
             parameters,
             proposer_id: member_id,
-            activated_at: 0,
+            activated_at: 1,
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: None,
@@ -325,9 +328,12 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 #[test]
 fn proposal_reset_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
-        setup_new_council(0);
+        setup_new_council(1);
         assert_eq!(ProposalsEngine::active_proposal_count(), 0);
 
         // Voting period long enough to ensure it doesn't expire, but rather is forcefully rejected
@@ -363,7 +369,7 @@ fn proposal_reset_succeeds() {
         assert_eq!(ProposalsEngine::active_proposal_count(), 1);
 
         end_idle_period();
-        setup_new_council(1);
+        setup_new_council(2);
 
         // Proposal should have been rejected on new council being elected
         assert_eq!(ProposalsEngine::active_proposal_count(), 0);
@@ -506,7 +512,7 @@ where
         let account_id = account_from_member_id(self.member_id);
 
         if self.setup_environment {
-            setup_new_council(0);
+            setup_new_council(1);
             if self.set_member_lead {
                 let lead_account_id = account_from_member_id(self.lead_id);
 
@@ -541,6 +547,9 @@ where
 #[test]
 fn text_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
@@ -571,6 +580,9 @@ fn text_proposal_execution_succeeds() {
 #[test]
 fn funding_request_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let council_budget = 5_000_000;
@@ -616,6 +628,9 @@ fn funding_request_proposal_execution_succeeds() {
 #[test]
 fn veto_proposal_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let council_budget = 5_000_000;
@@ -680,12 +695,15 @@ fn veto_proposal_proposal_execution_succeeds() {
 #[test]
 fn set_validator_count_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
         let new_validator_count = <pallet_staking::ValidatorCount<Runtime>>::get() + 8;
 
-        setup_new_council(0);
+        setup_new_council(1);
         increase_total_balance_issuance_using_account_id(account_id.clone(), 1_500_000);
 
         let staking_account_id: [u8; 32] = [225u8; 32];
@@ -728,6 +746,9 @@ fn set_validator_count_proposal_execution_succeeds() {
 #[test]
 fn amend_constitution_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
@@ -761,6 +782,9 @@ fn amend_constitution_proposal_execution_succeeds() {
 #[test]
 fn set_membership_price_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let membership_price = Membership::membership_price() + 100;
@@ -795,6 +819,9 @@ fn set_membership_price_proposal_execution_succeeds() {
 #[test]
 fn set_initial_invitation_balance_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let initial_invitation_balance = Membership::initial_invitation_balance() + 100;
@@ -833,6 +860,9 @@ fn set_initial_invitation_balance_proposal_succeeds() {
 #[test]
 fn set_initial_invitation_count_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let new_default_invite_count = Membership::initial_invitation_count() + 50;
@@ -870,6 +900,9 @@ fn set_initial_invitation_count_proposal_succeeds() {
 #[test]
 fn set_membership_leader_invitation_quota_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let lead_id = create_new_members(1)[0];
@@ -907,6 +940,9 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
 #[test]
 fn set_referral_cut_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let referral_cut = Membership::referral_cut() + 1;
@@ -940,6 +976,9 @@ fn set_referral_cut_proposal_succeeds() {
 #[test]
 fn set_budget_increment_proposal_succeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let budget_increment = Council::budget_increment() + 500;
@@ -978,6 +1017,9 @@ fn set_budget_increment_proposal_succeds() {
 #[test]
 fn set_councilor_reward_proposal_succeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let councilor_reward = Council::councilor_reward() + 100;
@@ -1012,10 +1054,13 @@ fn set_councilor_reward_proposal_succeds() {
 #[test]
 fn proposal_reactivation_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
-        setup_new_council(0);
+        setup_new_council(1);
         let council_size = <Runtime as council::Config>::CouncilSize::get() as u32;
 
         let starting_block = System::block_number();
@@ -1052,7 +1097,7 @@ fn proposal_reactivation_succeeds() {
         );
 
         end_idle_period();
-        setup_new_council(1);
+        setup_new_council(2);
 
         run_to_block(System::block_number() + 1);
 
@@ -1074,6 +1119,9 @@ fn proposal_reactivation_succeeds() {
 #[test]
 fn update_global_nft_limit_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 

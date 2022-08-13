@@ -336,6 +336,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Channel bag witness parameters don't match the current runtime state
+       **/
+      InvalidChannelBagWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Incorrect channel owner for an operation.
        **/
       InvalidChannelOwner: AugmentedError<ApiType>;
@@ -361,6 +365,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Storage buckets number witness parameter does not match the current runtime state
+       **/
+      InvalidStorageBucketsNumWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Invalid number of objects to delete provided for delete_video
        **/
       InvalidVideoDataObjectsCountProvided: AugmentedError<ApiType>;
@@ -384,6 +392,18 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to set minimum cashout allowed above the limit
        **/
       MaxCashoutValueTooHigh: AugmentedError<ApiType>;
+      /**
+       * Number of channel assets exceeds MaxNumberOfAssetsPerChannel
+       **/
+      MaxNumberOfChannelAssetsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
+       **/
+      MaxNumberOfChannelCollaboratorsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
+       **/
+      MaxNumberOfVideoAssetsExceeded: AugmentedError<ApiType>;
       /**
        * Member authentication failed
        **/
@@ -413,6 +433,11 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to set minimum cashout allowed below the limit
        **/
       MinCashoutValueTooLow: AugmentedError<ApiType>;
+      /**
+       * Storage buckets number witness parameter must be provided when channel/video assets
+       * are being updated.
+       **/
+      MissingStorageBucketsNumWitness: AugmentedError<ApiType>;
       /**
        * Nft for given video id already exists
        **/
@@ -940,10 +965,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AccountDoesNotMatchThreadAuthor: AugmentedError<ApiType>;
       /**
-       * Forum user has already voted.
-       **/
-      AlreadyVotedOnPoll: AugmentedError<ApiType>;
-      /**
        * Ancestor category immutable, i.e. deleted or archived
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
@@ -1023,26 +1044,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category path len should be greater than zero
        **/
       PathLengthShouldBeGreaterThanZero: AugmentedError<ApiType>;
-      /**
-       * Poll items number too short.
-       **/
-      PollAlternativesTooShort: AugmentedError<ApiType>;
-      /**
-       * Poll data committed after poll expired.
-       **/
-      PollCommitExpired: AugmentedError<ApiType>;
-      /**
-       * Poll data committed is wrong.
-       **/
-      PollData: AugmentedError<ApiType>;
-      /**
-       * Poll not exist.
-       **/
-      PollNotExist: AugmentedError<ApiType>;
-      /**
-       * Poll date setting is wrong.
-       **/
-      PollTimeSetting: AugmentedError<ApiType>;
       /**
        * Post does not exist.
        **/
@@ -1394,6 +1395,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ControllerAccountRequired: AugmentedError<ApiType>;
       /**
+       * Locked amount is greater than credit amount
+       **/
+      GifLockExceedsCredit: AugmentedError<ApiType>;
+      /**
        * Handle already registered.
        **/
       HandleAlreadyRegistered: AugmentedError<ApiType>;
@@ -1405,6 +1410,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient balance to cover stake.
        **/
       InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
+      /**
+       * Gifter doesn't have sufficient balance to credit
+       **/
+      InsufficientBalanceToGift: AugmentedError<ApiType>;
       /**
        * Member profile not found (invalid member id).
        **/
@@ -1438,7 +1447,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       StakingAccountIsAlreadyRegistered: AugmentedError<ApiType>;
       /**
-       * Invalid origin.
+       * Unsigned origin.
        **/
       UnsignedOrigin: AugmentedError<ApiType>;
       /**
@@ -2530,6 +2539,10 @@ declare module '@polkadot/api-base/types/errors' {
       TooManyValidators: AugmentedError<ApiType>;
     };
     storage: {
+      /**
+       * Generic Arithmetic Error due to internal accounting operation
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Blacklist size limit exceeded.
        **/

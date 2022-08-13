@@ -6,15 +6,19 @@ use crate::types::*;
 use crate::Module as Pallet;
 use crate::{Call, ChannelById, Config, ContentTreasury, Event, UpdateChannelPayoutsParameters};
 use balances::Pallet as Balances;
-use common::BudgetManager;
+use common::{build_merkle_path_helper, generate_merkle_root_helper, BudgetManager};
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use sp_arithmetic::traits::{One, Saturating};
+use sp_arithmetic::traits::One;
 use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
-use sp_std::convert::TryInto;
+use sp_std::{
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
+    vec,
+};
 use storage::Pallet as Storage;
 
 use super::*;
@@ -26,6 +30,12 @@ benchmarks! {
     T::AccountId: CreateAccountId
 }
 
+    /*
+    ============================================================================
+    ======================================== CHANNEL CUD GROUP =================
+    ============================================================================
+    */
+
     create_channel {
 
         let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
@@ -33,41 +43,245 @@ benchmarks! {
         let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
             (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
-        let c in (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+        let c in
+        (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+        (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
         let d in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
+        let e in 1 .. MAX_BYTES_METADATA; //max bytes for metadata
+
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
-        let storage_wg_lead_account_id = insert_storage_leader::<T>();
+        let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
 
-        let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
+        let (_, distribution_wg_lead_account_id) =
+            insert_distribution_leader::<T>();
 
-        let (channel_owner_account_id, channel_owner_member_id) =
-            member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let (_, lead_account_id) = insert_content_leader::<T>();
 
-        let sender = RawOrigin::Signed(channel_owner_account_id);
+        let sender = RawOrigin::Signed(lead_account_id);
 
-        let channel_owner = ChannelOwner::Member(channel_owner_member_id);
+        let group_id = setup_worst_case_curator_group_with_curators::<T>(
+            max_curators_per_group::<T>()
+        )?;
+
+        let channel_owner = ChannelOwner::CuratorGroup(group_id);
 
         let params = generate_channel_creation_params::<T>(
             storage_wg_lead_account_id,
             distribution_wg_lead_account_id,
-            a, b, c, d,
+            a, b, c, d, e,
             max_obj_size,
         );
 
-    }: _ (sender, channel_owner, params)
-        verify {
-            let channel_id: T::ChannelId = One::one();
-            assert!(ChannelById::<T>::contains_key(&channel_id));
-            // channel counter increased
-            assert_eq!(
-                Pallet::<T>::next_channel_id(),
-                channel_id.saturating_add(One::one())
-            );
-        }
+    }: _ (sender, channel_owner, params.clone())
+    verify {
+
+        let channel_id: T::ChannelId = One::one();
+        assert!(ChannelById::<T>::contains_key(&channel_id));
+
+        let channel = ChannelById::<T>::get(channel_id);
+        let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelCreated(
+                channel_id,
+                channel,
+                params,
+                channel_acc
+            ).into()
+        );
+    }
+
+    channel_update_with_assets {
+
+        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
+
+        let b in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number to upload
+
+        let c in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number to remove
+
+        let d in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
+
+        let e in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let max_obj_size: u64 = T::MaxDataObjectSize::get();
+
+        let assets_to_remove: BTreeSet<T::DataObjectId> = (0..c).map(|i| i.saturated_into()).collect();
+
+        let (channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            c,
+            e,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
+        ).unwrap();
+
+        let channel = ChannelById::<T>::get(channel_id);
+
+        let permissions: ChannelAgentPermissions =
+            worst_case_channel_agent_permissions()
+            .into_iter()
+            .skip(1)
+            .collect();
+
+        let collaborators = Some(channel.collaborators
+            .into_iter()
+            .take(a as usize)
+            .map(|(member_id, _)|{
+                (member_id, permissions.clone())
+            })
+            .collect::<BTreeMap<_, _>>());
+
+        let assets_to_upload = StorageAssets::<T> {
+                expected_data_size_fee:
+                    Storage::<T>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    b,
+                    max_obj_size
+                ),
+        };
+
+        let new_data_object_ids: BTreeSet<T::DataObjectId> = (c..c+b).map(|i| i.saturated_into()).collect();
+
+        let expected_data_object_state_bloat_bond =
+            Storage::<T>::data_object_state_bloat_bond_value();
+
+        let new_meta = Some(vec![1u8].repeat(d as usize));
+
+        let update_params = ChannelUpdateParameters::<T> {
+            assets_to_upload: Some(assets_to_upload),
+            new_meta,
+            assets_to_remove,
+            collaborators,
+            expected_data_object_state_bloat_bond,
+            storage_buckets_num_witness: Some(storage_buckets_num_witness::<T>(channel_id)?),
+        };
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+    }: update_channel(
+        origin, actor, channel_id, update_params.clone())
+    verify {
+
+        assert!(ChannelById::<T>::contains_key(&channel_id));
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelUpdated(actor,
+                channel_id,
+                update_params,
+                new_data_object_ids).into()
+        );
+    }
+
+    channel_update_without_assets {
+
+        let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
+
+        let b in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
+
+        let (channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false
+        ).unwrap();
+
+        let channel = ChannelById::<T>::get(channel_id);
+
+        let permissions: ChannelAgentPermissions =
+            worst_case_channel_agent_permissions()
+            .into_iter()
+            .skip(1)
+            .collect();
+
+        let collaborators = Some(channel.collaborators
+            .into_iter()
+            .take(a as usize)
+            .map(|(member_id, _)|{
+                (member_id, permissions.clone())
+            })
+            .collect::<BTreeMap<_, _>>());
+
+        let expected_data_object_state_bloat_bond =
+            Storage::<T>::data_object_state_bloat_bond_value();
+
+        let new_meta = Some(vec![1u8].repeat(b as usize));
+
+        let update_params = ChannelUpdateParameters::<T> {
+            assets_to_upload: None,
+            new_meta,
+            assets_to_remove: BTreeSet::new(),
+            collaborators,
+            expected_data_object_state_bloat_bond,
+            storage_buckets_num_witness: None
+        };
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+
+    }: update_channel(
+        origin, actor, channel_id, update_params.clone())
+    verify {
+
+        assert!(ChannelById::<T>::contains_key(&channel_id));
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelUpdated(actor,
+                channel_id,
+                update_params,
+                BTreeSet::new()).into()
+        );
+    }
+
+    delete_channel {
+
+        let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
+
+        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
+         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+
+        let c in
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+
+        let max_obj_size: u64 = T::MaxDataObjectSize::get();
+
+        let (
+            channel_id,
+            group_id,
+            lead_account_id,
+            curator_id,
+            curator_account_id
+        ) =
+        setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
+    }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
+    verify {
+
+        assert_last_event::<T>(
+            Event::<T>::ChannelDeleted(
+                actor,
+                channel_id
+            ).into()
+        );
+    }
+
     /*
     ===============================================================================================
     ======================================== CURATOR GROUPS =======================================
@@ -77,7 +291,7 @@ benchmarks! {
     create_curator_group {
         let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
 
-        let lead_account = insert_content_leader::<T>();
+        let (_, lead_account) = insert_content_leader::<T>();
         let group_id = Pallet::<T>::next_curator_group_id();
         let permissions_by_level: ModerationPermissionsByLevel::<T> = (0..a).map(
             |i| (i.saturated_into(), worst_case_content_moderation_actions_set())
@@ -96,9 +310,9 @@ benchmarks! {
     update_curator_group_permissions {
         let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
 
-        let lead_account = insert_content_leader::<T>();
+        let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get()
+            max_curators_per_group::<T>()
         )?;
         let permissions_by_level: ModerationPermissionsByLevel::<T> = (0..a).map(
             |i| (i.saturated_into(), worst_case_content_moderation_actions_set())
@@ -118,9 +332,9 @@ benchmarks! {
         }
 
     set_curator_group_status {
-        let lead_account = insert_content_leader::<T>();
+        let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get()
+            max_curators_per_group::<T>()
         )?;
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert!(group.is_active());
@@ -136,13 +350,13 @@ benchmarks! {
         }
 
     add_curator_to_group {
-        let lead_account = insert_content_leader::<T>();
+        let (_, lead_account) = insert_content_leader::<T>();
         let permissions = worst_case_channel_agent_permissions();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get() - 1
+            max_curators_per_group::<T>() - 1
         )?;
         let (curator_id, _) = insert_curator::<T>(
-            CURATOR_IDS[T::MaxNumberOfCuratorsPerGroup::get() as usize - 1]
+            CURATOR_IDS[max_curators_per_group::<T>() as usize - 1]
         );
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert_eq!(group.get_curators().get(&curator_id), None);
@@ -159,9 +373,9 @@ benchmarks! {
         }
 
     remove_curator_from_group {
-        let lead_account = insert_content_leader::<T>();
+        let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
-            T::MaxNumberOfCuratorsPerGroup::get()
+            max_curators_per_group::<T>()
         )?;
         let group = Pallet::<T>::curator_group_by_id(group_id);
         let curator_id = *group.get_curators().keys().next().unwrap();
@@ -184,7 +398,7 @@ benchmarks! {
 
     initialize_channel_transfer {
         let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
-        let (_, new_owner_id) = member_funded_account::<T>(MEMBER_IDS[2]);
+        let (_, new_owner_id) = member_funded_account::<T>(0);
         let new_owner = ChannelOwner::Member(new_owner_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
             T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
@@ -192,7 +406,7 @@ benchmarks! {
         );
         let price = <T as balances::Config>::Balance::one();
         let (channel_id, group_id, _, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let transfer_params = InitTransferParametersOf::<T> {
             new_owner: new_owner.clone(),
             new_collaborators: new_collaborators.clone(),
@@ -230,7 +444,7 @@ benchmarks! {
 
     cancel_channel_transfer {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(true)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(true)?;
         let actor = ContentActor::Curator(group_id, curator_id);
     }: _ (
         RawOrigin::Signed(curator_account_id),
@@ -251,7 +465,7 @@ benchmarks! {
         let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
 
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let new_owner_group_id = clone_curator_group::<T>(group_id)?;
         let new_owner = ChannelOwner::CuratorGroup(new_owner_group_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
@@ -333,17 +547,46 @@ benchmarks! {
     // WORST CASE SCENARIO:
     // - curator channel belonging to a group with max number curator and max curator permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
+    // withdraw_from_channel_balance {
+    //     let (channel_id, group_id, lead_account_id, _, _) =
+    //         setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
+    //     let origin= RawOrigin::Signed(lead_account_id.clone());
+
+    //     set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+
+    //     let amount = <T as balances::Config>::Balance::from(100u32);
+    //     let _ = Balances::<T>::deposit_creating(
+    //         &ContentTreasury::<T>::account_for_channel(channel_id),
+    //         amount + T::ExistentialDeposit::get(),
+    //     );
+
+    //     let actor = crate::ContentActor::Lead;
+    //     let origin = RawOrigin::Signed(lead_account_id.clone());
+    // }: _ (origin, actor, channel_id, amount)
+    //     verify {
+    //         assert_eq!(
+    //             T::CouncilBudgetManager::get_budget(),
+    //             amount,
+    //         );
+
+    //         assert_eq!(
+    //             Balances::<T>::usable_balance(ContentTreasury::<T>::account_for_channel(channel_id)),
+    //             T::ExistentialDeposit::get(),
+    //         );
+    //     }
+
     withdraw_from_channel_balance {
-        let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
-        let origin= RawOrigin::Signed(lead_account_id.clone());
-        Pallet::<T>::set_channel_paused_features_as_moderator(
-            origin.clone().into(),
-            crate::ContentActor::Lead,
-            channel_id,
-            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![crate::PausableChannelFeature::ChannelFundsTransfer])),
-            b"reason".to_vec(),
-        ).unwrap();
+        let (channel_id, member_id, member_account_id, lead_account_id) =
+            setup_worst_case_scenario_member_channel::<T>(
+                0,
+                T::StorageBucketsPerBagValueConstraint::get().min as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().min as u32,
+                false,
+            ).unwrap();
+
+        let lead_origin = RawOrigin::Signed(lead_account_id);
+
+        set_all_channel_paused_features_except::<T>(lead_origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -351,13 +594,14 @@ benchmarks! {
             amount + T::ExistentialDeposit::get(),
         );
 
-        let actor = crate::ContentActor::Lead;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
+        let origin = RawOrigin::Signed(member_account_id.clone());
+        let actor = crate::ContentActor::Member(member_id);
+        let owner_balance_pre = Balances::<T>::usable_balance(member_account_id.clone());
     }: _ (origin, actor, channel_id, amount)
         verify {
             assert_eq!(
-                T::CouncilBudgetManager::get_budget(),
-                amount,
+                Balances::<T>::usable_balance(member_account_id),
+                owner_balance_pre + amount,
             );
 
             assert_eq!(
@@ -377,18 +621,11 @@ benchmarks! {
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        Pallet::<T>::set_channel_paused_features_as_moderator(
-            origin.clone().into(),
-            crate::ContentActor::Lead,
-            channel_id,
-            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![
-                crate::PausableChannelFeature::CreatorCashout,
-            ])),
-            b"reason".to_vec(),
-        ).unwrap();
+        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![crate::PausableChannelFeature::CreatorCashout]);
+
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
             ..Default::default()
@@ -399,8 +636,6 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: _ (origin, actor, proof, item)
         verify {
-            let cashout = item
-                 .cumulative_reward_earned - cumulative_reward_claimed;
             assert_eq!(
                 Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
                 item.cumulative_reward_earned
@@ -422,19 +657,14 @@ benchmarks! {
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        Pallet::<T>::set_channel_paused_features_as_moderator(
-            origin.clone().into(),
-            crate::ContentActor::Lead,
-            channel_id,
-            super::all_channel_pausable_features_except(BTreeSet::from_iter(vec![
+        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![
                 crate::PausableChannelFeature::CreatorCashout,
                 crate::PausableChannelFeature::ChannelFundsTransfer,
-            ])),
-            b"reason".to_vec(),
-        ).unwrap();
+            ]);
+
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
             ..Default::default()
@@ -445,8 +675,6 @@ benchmarks! {
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: _ (origin, actor, proof, item)
         verify {
-            let cashout = item
-                 .cumulative_reward_earned - cumulative_reward_claimed;
             assert_eq!(
                 Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
                 item.cumulative_reward_earned
@@ -470,7 +698,7 @@ benchmarks! {
     // - DB Write: channel -> O(1)
     issue_nft {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
         let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
@@ -501,7 +729,7 @@ benchmarks! {
     // - DB Write: Video -> O(1)
     destroy_nft {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
         let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
@@ -522,7 +750,7 @@ benchmarks! {
     // - DB Write: Video -> O(1)
     sling_nft_back {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
         let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
@@ -628,6 +856,27 @@ pub mod tests {
     }
 
     #[test]
+    fn channel_update_with_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_channel_update_with_assets());
+        });
+    }
+
+    #[test]
+    fn channel_update_without_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_channel_update_without_assets());
+        });
+    }
+
+    #[test]
+    fn delete_channel() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_channel());
+        });
+    }
+
+    #[test]
     fn create_curator_group() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_create_curator_group());
@@ -645,21 +894,21 @@ pub mod tests {
     fn set_curator_group_status() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_set_curator_group_status());
-        });
+        })
     }
 
     #[test]
     fn add_curator_to_group() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_add_curator_to_group());
-        });
+        })
     }
 
     #[test]
     fn remove_curator_from_group() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_remove_curator_from_group());
-        });
+        })
     }
 
     #[test]
