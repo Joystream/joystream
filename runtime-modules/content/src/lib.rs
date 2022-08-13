@@ -2601,7 +2601,6 @@ decl_module! {
             participant_id: T::MemberId,
             witness_price: BalanceOf<T>, // in order to avoid front running
         ) {
-
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;

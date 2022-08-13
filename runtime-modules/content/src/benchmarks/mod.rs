@@ -1197,6 +1197,24 @@ where
     )
 }
 
+fn setup_video_with_nft_in_buy_now<T>(
+    account_id: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    price: BalanceOf<T>,
+) -> Result<T::VideoId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    setup_video_with_nft_transactional_status::<T>(
+        account_id,
+        actor,
+        channel_id,
+        InitTransactionalStatus::<T>::BuyNow(price),
+    )
+}
+
 fn setup_video_with_nft_transactional_status<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
