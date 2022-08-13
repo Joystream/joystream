@@ -1294,6 +1294,24 @@ fn burn_ok_with_token_supply_decreased() {
 }
 
 #[test]
+fn burn_ok_with_event_emitted() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_ok!(result);
+        last_event_eq!(RawEvent::TokensBurned(token_id, member_id, burn_amount));
+    })
+}
+
+#[test]
 fn burn_ok_with_staked_tokens_burned() {
     let (token_id, (member_id, account)) = (token!(1), member!(1));
     let token_data = TokenDataBuilder::new_empty().build();
@@ -1325,7 +1343,7 @@ fn burn_ok_with_vesting_and_staked_tokens_burned_first() {
     let vesting_schedule = default_vesting_schedule();
     let init_vesting_amount = vesting_schedule
         .total_amount()
-        .saturating_mul(<Test as Config>::MaxVestingBalancesPerAccountPerToken::get().into());
+        .saturating_mul(<Test as Config>::MaxVestingSchedulesPerAccountPerToken::get().into());
     let init_staked_amount = init_vesting_amount + 300;
     let account_data = AccountData::new_with_amount(1000)
         .with_max_vesting_schedules(vesting_schedule.clone())

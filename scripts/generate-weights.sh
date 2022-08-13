@@ -16,7 +16,7 @@ substrate_pallet_benchmark() {
       --chain=dev \
       --steps=$STEPS \
       --repeat=$REPEAT \
-      --execution=wasm \
+      --execution=native \
       --template=$SCRIPT_DIR/../devops/frame-weight-template.hbs \
       --output=. 2>&1 > /dev/null)
 
@@ -94,3 +94,4 @@ joystream_pallet_benchmark() {
 # joystream_pallet_benchmark joystream_utility utility
 # joystream_pallet_benchmark storage storage
 joystream_pallet_benchmark content content
+joystream_pallet_benchmark project_token project-token

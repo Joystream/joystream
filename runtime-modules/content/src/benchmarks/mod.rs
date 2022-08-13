@@ -1,36 +1,40 @@
-#![cfg(feature = "runtime-benchmarks")]
-
 mod benchmarking;
-
-use crate::permissions::*;
-use crate::types::*;
 
 use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters};
 use crate::{BalanceOf, Config, Module as Pallet};
+use crate::{
+    permissions::*, types::*, Config, ContentModerationAction, InitTransferParametersOf,
+    ModerationPermissionsByLevel, Module as Pallet,
+};
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
-use frame_support::storage::{StorageMap, StorageValue};
-use frame_support::traits::{Currency, Get, Instance};
-use frame_system::EventRecord;
-use frame_system::Pallet as System;
-use frame_system::RawOrigin;
+use frame_support::{
+    dispatch::DispatchError,
+    storage::{StorageMap, StorageValue},
+    traits::{Currency, Get, Instance},
+};
+use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
 use sp_arithmetic::traits::One;
 use sp_runtime::traits::Hash;
-use sp_runtime::{DispatchError, SaturatedConversion};
-use sp_std::collections::btree_map::BTreeMap;
-use sp_std::collections::btree_set::BTreeSet;
-use sp_std::convert::TryInto;
-use sp_std::iter::FromIterator;
-use sp_std::vec;
-use sp_std::vec::Vec;
+use sp_runtime::SaturatedConversion;
 use storage::{
-    DataObjectCreationParameters, DistributionBucketId, DynamicBagType, Module as Storage,
+    DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
+    Module as Storage,
 };
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    StakeParameters, StakePolicy, WorkerById,
+    StakeParameters, StakePolicy, WorkerById, WorkerId,
+};
+
+use sp_std::{
+    cmp::min,
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
+    iter::FromIterator,
+    vec,
+    vec::Vec,
 };
 
 // The storage working group instance alias.
@@ -58,29 +62,30 @@ pub const MEMBER_IDS_INIT: u128 = 500;
 pub const MAX_MEMBER_IDS: usize = 100;
 pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
 
+pub const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[0];
+
+pub const CURATOR_IDS_INIT: u128 = 600;
+pub const MAX_CURATOR_IDS: usize = 100;
+
+pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
+    gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
+
 pub const COLABORATOR_IDS_INIT: u128 = 700;
 pub const MAX_COLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
     gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
-
-pub const CURATOR_IDS_INIT: u128 = 800;
-pub const MAX_CURATOR_IDS: usize = 100;
-pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
-    gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
 
 pub const WHITELISTED_MEMBERS_IDS_INIT: u128 = 900;
 pub const MAX_WHITELISTED_MEMBERS_IDS: usize = 100;
 pub const WHITELISTED_MEMBERS_IDS: [u128; MAX_WHITELISTED_MEMBERS_IDS] =
     gen_array_u128::<MAX_WHITELISTED_MEMBERS_IDS>(WHITELISTED_MEMBERS_IDS_INIT);
 
-
 pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
-const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[1];
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
-const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100002;
+const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES: u32 = 50000;
+const MAX_BYTES_METADATA: u32 = 5000;
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
     ChannelActionPermission::AddVideo,
@@ -120,6 +125,14 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::UpdateChannelNftLimits,
 ];
 
+fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
+    (T::MaxNumberOfAssetsPerChannel::get() as u64) * 100
+}
+
+fn storage_bucket_objs_size_limit<T: Config>() -> u64 {
+    T::MaxDataObjectSize::get() * storage_bucket_objs_number_limit::<T>() * 1000
+}
+
 pub trait CreateAccountId {
     fn create_account_id(id: u128) -> Self;
 }
@@ -127,6 +140,12 @@ pub trait CreateAccountId {
 impl CreateAccountId for u128 {
     fn create_account_id(id: u128) -> Self {
         id
+    }
+}
+
+impl CreateAccountId for u64 {
+    fn create_account_id(id: u128) -> Self {
+        id.try_into().unwrap()
     }
 }
 
@@ -158,6 +177,22 @@ impl<T> RuntimeConfig for T where
         + working_group::Config<DistributionWorkingGroupInstance>
         + working_group::Config<ContentWorkingGroupInstance>
 {
+}
+
+fn get_signed_account_id<T>(account_id: u128) -> T::Origin
+where
+    T::AccountId: CreateAccountId,
+    T: Config,
+{
+    RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
+}
+
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
 }
 
 fn get_byte(num: u128, byte_number: u8) -> u8 {
@@ -254,76 +289,6 @@ fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
     opening_id
 }
 
-fn insert_storage_leader<T>() -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    insert_leader::<T, StorageWorkingGroupInstance>(STORAGE_WG_LEADER_ACCOUNT_ID)
-}
-
-fn insert_distribution_leader<T>() -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    insert_leader::<T, DistributionWorkingGroupInstance>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID)
-}
-
-fn insert_content_leader<T>() -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID)
-}
-
-fn insert_leader<T, I>(id: u128) -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig + working_group::Config<I>,
-    I: Instance,
-{
-    let (caller_id, member_id) = member_funded_account::<T>(id);
-
-    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(RawOrigin::Root),
-        &caller_id,
-        &member_id,
-        &OpeningType::Leader,
-    );
-
-    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
-
-    let worker_id = working_group::NextWorkerId::<T, I>::get();
-    working_group::Module::<T, I>::fill_opening(
-        RawOrigin::Root.into(),
-        opening_id,
-        successful_application_ids,
-    )
-    .unwrap();
-
-    assert!(WorkerById::<T, I>::contains_key(worker_id));
-
-    caller_id
-}
-
-fn insert_curator<T>(id: u128) -> (T::CuratorId, T::AccountId)
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    let (actor_id, account_id) = insert_worker::<T, ContentWorkingGroupInstance>(
-        T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID),
-        id,
-    );
-
-    (
-        actor_id.saturated_into::<u64>().saturated_into(),
-        account_id,
-    )
-}
-
 fn insert_worker<T, I>(
     leader_acc: T::AccountId,
     id: u128,
@@ -333,9 +298,12 @@ where
     T: RuntimeConfig + working_group::Config<I>,
     I: Instance,
 {
-    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    // let worker_id = working_group::NextWorkerId::<T, I>::get();
 
     let (account_id, member_id) = member_funded_account::<T>(id);
+
+    let worker_id: WorkerId<T> = WorkerId::<T>::saturated_from(id);
+    working_group::NextWorkerId::<T, I>::put(worker_id);
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         &T::Origin::from(RawOrigin::Signed(leader_acc.clone())),
@@ -358,6 +326,76 @@ where
     (worker_id, account_id)
 }
 
+fn insert_leader<T, I>(id: u128) -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig + working_group::Config<I>,
+    I: Instance,
+{
+    let (account_id, member_id) = member_funded_account::<T>(id.saturated_into());
+
+    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
+        &T::Origin::from(RawOrigin::Root),
+        &account_id,
+        &member_id,
+        &OpeningType::Leader,
+    );
+
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
+
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    working_group::Module::<T, I>::fill_opening(
+        RawOrigin::Root.into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    assert!(WorkerById::<T, I>::contains_key(worker_id));
+
+    (worker_id, account_id)
+}
+
+fn insert_storage_leader<T>() -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    insert_leader::<T, StorageWorkingGroupInstance>(STORAGE_WG_LEADER_ACCOUNT_ID)
+}
+
+fn insert_distribution_leader<T>() -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    insert_leader::<T, DistributionWorkingGroupInstance>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID)
+}
+
+fn insert_content_leader<T>() -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID)
+}
+
+fn insert_curator<T>(id: u128) -> (T::CuratorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let (actor_id, account_id) = insert_worker::<T, ContentWorkingGroupInstance>(
+        T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID),
+        id,
+    );
+
+    (
+        actor_id.saturated_into::<u64>().saturated_into(),
+        account_id,
+    )
+}
+
 //defines initial balance
 fn initial_balance<T: balances::Config>() -> T::Balance {
     1000000u32.into()
@@ -367,6 +405,10 @@ fn member_funded_account<T: RuntimeConfig>(id: u128) -> (T::AccountId, T::Member
 where
     T::AccountId: CreateAccountId,
 {
+    if membership::MembershipById::<T>::contains_key::<T::MemberId>(id.saturated_into()) {
+        panic!("Member {:?} already exists!", id)
+    }
+
     let account_id = T::AccountId::create_account_id(id);
 
     let handle = handle_from_id::<T>(id);
@@ -456,13 +498,9 @@ fn set_storage_buckets_voucher_max_limits<T>(
     .unwrap();
 }
 
-fn create_storage_bucket<T>(
-    lead_account_id: T::AccountId,
-    accepting_bags: bool,
-    bucket_objs_size_limit: u64,
-    bucket_objs_number_limit: u64,
-) where
-    T: RuntimeConfig,
+fn create_storage_bucket<T>(lead_account_id: T::AccountId, accepting_bags: bool)
+where
+    T: Config + storage::Config,
 {
     // Set storage bucket in the dynamic bag creation policy to zero.
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
@@ -470,8 +508,8 @@ fn create_storage_bucket<T>(
         T::Origin::from(storage_wg_leader_signed),
         None,
         accepting_bags,
-        bucket_objs_size_limit,
-        bucket_objs_number_limit,
+        storage_bucket_objs_size_limit::<T>(),
+        storage_bucket_objs_number_limit::<T>(),
     )
     .unwrap();
 }
@@ -530,11 +568,10 @@ where
 }
 
 pub fn create_data_object_candidates_helper(
-    starting_ipfs_index: u8,
-    number: u64,
+    number: u32,
     size: u64,
 ) -> Vec<DataObjectCreationParameters> {
-    let range = (starting_ipfs_index as u64)..((starting_ipfs_index as u64) + number);
+    let range = 0..number;
 
     range
         .into_iter()
@@ -545,6 +582,57 @@ pub fn create_data_object_candidates_helper(
         .collect()
 }
 
+type BloatBonds<T> = (
+    <T as balances::Config>::Balance, // channel_state_bloat_bond
+    <T as balances::Config>::Balance, // video_state_bloat_bond
+    <T as balances::Config>::Balance, // data_object_state_bloat_bond
+    <T as balances::Config>::Balance, // data_size_fee
+);
+
+fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
+where
+    T: Config,
+    T::AccountId: CreateAccountId,
+{
+    let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
+    let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let channel_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let video_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let data_object_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+    let data_size_fee = <T as balances::Config>::Balance::one();
+    // Set non-zero channel bloat bond
+    Pallet::<T>::update_channel_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc.clone()).into(),
+        channel_state_bloat_bond,
+    )?;
+    // Set non-zero video bloat bond
+    Pallet::<T>::update_video_state_bloat_bond(
+        RawOrigin::Signed(content_lead_acc).into(),
+        video_state_bloat_bond,
+    )?;
+    // Set non-zero data object bloat bond
+    storage::Pallet::<T>::update_data_object_state_bloat_bond(
+        RawOrigin::Signed(storage_lead_acc.clone()).into(),
+        data_object_state_bloat_bond,
+    )?;
+    // Set non-zero fee per mb
+    storage::Pallet::<T>::update_data_size_fee(
+        RawOrigin::Signed(storage_lead_acc).into(),
+        data_size_fee,
+    )?;
+
+    Ok((
+        channel_state_bloat_bond,
+        video_state_bloat_bond,
+        data_object_state_bloat_bond,
+        data_size_fee,
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
 fn generate_channel_creation_params<T>(
     storage_wg_lead_account_id: T::AccountId,
     distribution_wg_lead_account_id: T::AccountId,
@@ -552,46 +640,36 @@ fn generate_channel_creation_params<T>(
     storage_bucket_num: u32,
     distribution_bucket_num: u32,
     objects_num: u32,
+    max_bytes_metadata: u32,
     max_obj_size: u64,
 ) -> ChannelCreationParameters<T>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let total_objs_size: u64 = max_obj_size.saturating_mul(objects_num.into());
-    let metadata = vec![0u8].repeat(MAX_BYTES as usize);
-
     set_dyn_bag_creation_storage_bucket_numbers::<T>(
         storage_wg_lead_account_id.clone(),
         storage_bucket_num.into(),
         DynamicBagType::Channel,
     );
-
     set_storage_buckets_voucher_max_limits::<T>(
         storage_wg_lead_account_id.clone(),
-        total_objs_size,
-        objects_num.into(),
+        storage_bucket_objs_size_limit::<T>(),
+        storage_bucket_objs_number_limit::<T>(),
     );
 
-    let assets = StorageAssets::<T> {
+    setup_bloat_bonds::<T>().unwrap();
+
+    let assets = Some(StorageAssets::<T> {
         expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
-        object_creation_list: create_data_object_candidates_helper(
-            1,
-            objects_num.into(),
-            max_obj_size,
-        ),
-    };
+        object_creation_list: create_data_object_candidates_helper(objects_num, max_obj_size),
+    });
 
     let collaborators = worst_case_scenario_collaborators::<T>(0, colaborator_num);
 
     let storage_buckets = (0..storage_bucket_num)
         .map(|id| {
-            create_storage_bucket::<T>(
-                storage_wg_lead_account_id.clone(),
-                true,
-                total_objs_size,
-                objects_num.into(),
-            );
+            create_storage_bucket::<T>(storage_wg_lead_account_id.clone(), true);
             id.saturated_into()
         })
         .collect::<BTreeSet<_>>();
@@ -614,23 +692,17 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
+    let meta = Some(vec![0u8].repeat(max_bytes_metadata as usize));
+
     ChannelCreationParameters::<T> {
-        assets: Some(assets),
-        meta: Some(metadata),
+        assets,
+        meta,
         collaborators,
         storage_buckets,
         distribution_buckets,
         expected_data_object_state_bloat_bond,
         expected_channel_state_bloat_bond,
     }
-}
-
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
-    let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
-    // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
 }
 
 fn worst_case_content_moderation_actions_set() -> BTreeSet<ContentModerationAction> {
@@ -648,6 +720,10 @@ fn worst_case_scenario_collaborators<T: RuntimeConfig>(
 where
     T::AccountId: CreateAccountId,
 {
+    assert!(
+        start_id + num <= MAX_COLABORATOR_IDS as u32,
+        "Too many collaborators created"
+    );
     (0..num)
         .map(|i| {
             let (_, collaborator_id) =
@@ -657,27 +733,32 @@ where
         .collect()
 }
 
-fn setup_worst_case_scenario_channel<T: RuntimeConfig>(
+fn setup_worst_case_scenario_channel<T: Config>(
     sender: T::AccountId,
     channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
     // benchmarks should always use "true" if possible (ie. the benchmarked tx
     // is allowed during active transfer, for example - delete_channel)
     with_transfer: bool,
 ) -> Result<T::ChannelId, DispatchError>
 where
+    T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let storage_wg_lead_account_id = insert_storage_leader::<T>();
-    let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
+    let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
+    let (_, distribution_wg_lead_account_id) = insert_distribution_leader::<T>();
     let origin = RawOrigin::Signed(sender);
 
     let params = generate_channel_creation_params::<T>(
         storage_wg_lead_account_id,
         distribution_wg_lead_account_id,
         T::MaxNumberOfCollaboratorsPerChannel::get(),
-        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-        T::MaxNumberOfAssetsPerChannel::get(),
+        storage_buckets_num,
+        distribution_buckets_num,
+        objects_num,
+        MAX_BYTES_METADATA,
         T::MaxDataObjectSize::get(),
     );
 
@@ -687,7 +768,7 @@ where
 
     // initialize worst-case-scenario transfer
     if with_transfer {
-        let (_, new_owner_id) = member_funded_account::<T>(MEMBER_IDS[2]);
+        let (_, new_owner_id) = member_funded_account::<T>(0);
         let new_owner = ChannelOwner::Member(new_owner_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
             T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
@@ -714,12 +795,81 @@ where
     Ok(channel_id)
 }
 
+fn setup_worst_case_scenario_member_channel<T: Config>(
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+    // benchmarks should always use "true" if possible (ie. the benchmarked tx
+    // is allowed during active transfer, for example - delete_channel)
+    with_transfer: bool,
+) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+
+    let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
+
+    let (_, distribution_wg_lead_account_id) = insert_distribution_leader::<T>();
+
+    let (_, lead_account_id) = insert_content_leader::<T>();
+
+    let _ = setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
+
+    let channel_owner = ChannelOwner::Member(member_id);
+    let origin = RawOrigin::Signed(member_account_id.clone());
+
+    let params = generate_channel_creation_params::<T>(
+        storage_wg_lead_account_id,
+        distribution_wg_lead_account_id,
+        T::MaxNumberOfCollaboratorsPerChannel::get(),
+        storage_buckets_num,
+        distribution_buckets_num,
+        objects_num,
+        MAX_BYTES_METADATA,
+        T::MaxDataObjectSize::get(),
+    );
+
+    let channel_id = Pallet::<T>::next_channel_id();
+
+    Pallet::<T>::create_channel(origin.clone().into(), channel_owner.clone(), params)?;
+
+    // initialize worst-case-scenario transfer
+    if with_transfer {
+        let (_, new_owner_id) = member_funded_account::<T>(0);
+        let new_owner = ChannelOwner::Member(new_owner_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        let actor = match channel_owner {
+            ChannelOwner::Member(member_id) => ContentActor::Member(member_id),
+            ChannelOwner::CuratorGroup(_) => ContentActor::Lead,
+        };
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner,
+            new_collaborators,
+            price,
+        };
+        Pallet::<T>::initialize_channel_transfer(
+            origin.into(),
+            channel_id,
+            actor,
+            transfer_params,
+        )?;
+    }
+
+    Ok((channel_id, member_id, member_account_id, lead_account_id))
+}
+
 fn setup_worst_case_curator_group_with_curators<T>(
     curators_len: u32,
 ) -> Result<T::CuratorGroupId, DispatchError>
 where
-    T::AccountId: CreateAccountId,
     T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
 {
     let permissions_by_level: ModerationPermissionsByLevel<T> = (0
         ..T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get())
@@ -734,10 +884,7 @@ where
     let group_id = Pallet::<T>::next_curator_group_id();
 
     Pallet::<T>::create_curator_group(
-        RawOrigin::Signed(T::AccountId::create_account_id(
-            CONTENT_WG_LEADER_ACCOUNT_ID,
-        ))
-        .into(),
+        get_signed_account_id::<T>(CONTENT_WG_LEADER_ACCOUNT_ID),
         true,
         permissions_by_level,
     )?;
@@ -746,7 +893,12 @@ where
     let already_existing_curators_num =
         working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
             .saturated_into::<u32>()
-            - 1;
+            .saturating_sub(1);
+
+    assert!(
+        already_existing_curators_num + curators_len <= MAX_COLABORATOR_IDS as u32,
+        "Too many curators created"
+    );
 
     for c in CURATOR_IDS
         .iter()
@@ -754,21 +906,22 @@ where
         .take(curators_len as usize)
     {
         let (curator_id, _) = insert_curator::<T>(*c);
+
         Pallet::<T>::add_curator_to_group(
-            RawOrigin::Signed(T::AccountId::create_account_id(
-                CONTENT_WG_LEADER_ACCOUNT_ID,
-            ))
-            .into(),
+            get_signed_account_id::<T>(CONTENT_WG_LEADER_ACCOUNT_ID),
             group_id,
             curator_id.saturated_into::<u64>().saturated_into(),
             worst_case_channel_agent_permissions(),
         )?;
     }
-
     Ok(group_id)
 }
 
+#[allow(clippy::type_complexity)]
 fn setup_worst_case_scenario_curator_channel<T>(
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
     // benchmarks should always use "true" unless initializing a transfer
     // is part of the benchmarks itself
     with_transfer: bool,
@@ -786,14 +939,20 @@ where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let lead_account_id = insert_content_leader::<T>();
+    let (_, lead_account_id) = insert_content_leader::<T>();
+
     let group_id =
-        setup_worst_case_curator_group_with_curators::<T>(T::MaxNumberOfCuratorsPerGroup::get())?;
+        setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
+
     let channel_id = setup_worst_case_scenario_channel::<T>(
         lead_account_id.clone(),
         ChannelOwner::CuratorGroup(group_id),
+        objects_num,
+        storage_buckets_num,
+        distribution_buckets_num,
         with_transfer,
     )?;
+
     let group = Pallet::<T>::curator_group_by_id(group_id);
     let curator_id: T::CuratorId = *group.get_curators().keys().next().unwrap();
     let curator_account_id = T::AccountId::create_account_id(CURATOR_IDS[0]);
@@ -805,6 +964,31 @@ where
         curator_id,
         curator_account_id,
     ))
+}
+
+#[allow(clippy::type_complexity)]
+fn setup_worst_case_scenario_curator_channel_all_max<T>(
+    with_transfer: bool,
+) -> Result<
+    (
+        T::ChannelId,
+        T::CuratorGroupId,
+        T::AccountId,
+        T::CuratorId,
+        T::AccountId,
+    ),
+    DispatchError,
+>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    setup_worst_case_scenario_curator_channel::<T>(
+        T::MaxNumberOfAssetsPerChannel::get(),
+        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        with_transfer,
+    )
 }
 
 fn clone_curator_group<T>(group_id: T::CuratorGroupId) -> Result<T::CuratorGroupId, DispatchError>
@@ -857,7 +1041,7 @@ pub fn create_pull_payments_with_reward<T: Config>(
     cumulative_reward_earned: BalanceOf<T>,
 ) -> Vec<PullPayment<T>> {
     let mut payments = Vec::new();
-    for i in 1..payments_number {
+    for i in 1..=payments_number {
         payments.push(PullPayment::<T> {
             channel_id: (i as u64).into(),
             cumulative_reward_earned,
@@ -867,98 +1051,43 @@ pub fn create_pull_payments_with_reward<T: Config>(
     payments
 }
 
-pub fn generate_merkle_root_helper<T: Config, E: Encode>(collection: &[E]) -> Vec<T::Hash> {
-    // generates merkle root from the ordered sequence collection.
-    // The resulting vector is structured as follows: elements in range
-    // [0..collection.len()) will be the tree leaves (layer 0), elements in range
-    // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
-    // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
-    assert!(!collection.is_empty());
-    let mut out = Vec::new();
-    for e in collection.iter() {
-        out.push(T::Hashing::hash(&e.encode()));
-    }
-
-    let mut start: usize = 0;
-    let mut last_len = out.len();
-    //let mut new_len = out.len();
-    let mut max_len = last_len >> 1;
-    let mut rem = last_len % 2;
-
-    // range [last..(maxlen >> 1) + (maxlen % 2)]
-    while max_len != 0 {
-        last_len = out.len();
-        for i in 0..max_len {
-            out.push(T::Hashing::hash(
-                &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
-            ));
-        }
-        if rem == 1 {
-            out.push(T::Hashing::hash(
-                &[out[last_len - 1], out[last_len - 1]].encode(),
-            ));
-        }
-        let new_len: usize = out.len() - last_len;
-        rem = new_len % 2;
-        max_len = new_len >> 1;
-        start = last_len;
-    }
-    out
+fn channel_bag_witness<T: Config>(
+    channel_id: T::ChannelId,
+) -> Result<ChannelBagWitness, DispatchError> {
+    let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
+    let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+    Ok(ChannelBagWitness {
+        storage_buckets_num: channel_bag.stored_by.len() as u32,
+        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
+    })
 }
 
-pub(crate) fn build_merkle_path_helper<T: Config, E: Encode + Clone>(
-    collection: &[E],
-    idx: usize,
-) -> Vec<crate::ProofElement<T>> {
-    let merkle_tree = generate_merkle_root_helper::<T, _>(collection);
-    // builds the actual merkle path with the hashes needed for the proof
-    let index_path = index_path_helper(collection.len(), idx + 1);
-    index_path
-        .iter()
-        .map(|idx_item| crate::ProofElement::<T> {
-            hash: merkle_tree[idx_item.index - 1],
-            side: idx_item.side,
-        })
-        .collect()
+fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u32, DispatchError> {
+    let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
+    let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+    Ok(channel_bag.stored_by.len() as u32)
 }
 
-fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
-    // used as a helper function to generate the correct sequence of indexes used to
-    // construct the merkle path necessary for membership proof
-    let mut idx = index;
-    assert!(idx > 0); // index starting at 1
-    let floor_2 = |x: usize| (x >> 1) + (x % 2);
-    let mut path = Vec::new();
-    let mut prev_len: usize = 0;
-    let mut el = len;
-    while el != 1 {
-        if idx % 2 == 1 && idx == el {
-            path.push(IndexItem {
-                index: prev_len + idx,
-                side: Side::Left,
-            });
-        } else {
-            match idx % 2 {
-                1 => path.push(IndexItem {
-                    index: prev_len + idx + 1,
-                    side: Side::Right,
-                }),
-                _ => path.push(IndexItem {
-                    index: prev_len + idx - 1,
-                    side: Side::Left,
-                }),
-            };
-        }
-        prev_len += el;
-        idx = floor_2(idx);
-        el = floor_2(el);
-    }
-    path
+fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
+    min(
+        <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
+        T::MaxNumberOfCuratorsPerGroup::get(),
+    )
 }
-#[derive(Debug)]
-struct IndexItem {
-    index: usize,
-    side: Side,
+
+fn set_all_channel_paused_features_except<T: Config>(
+    origin: RawOrigin<T::AccountId>,
+    channel_id: T::ChannelId,
+    exceptions: Vec<crate::PausableChannelFeature>,
+) {
+    Pallet::<T>::set_channel_paused_features_as_moderator(
+        origin.into(),
+        crate::ContentActor::Lead,
+        channel_id,
+        all_channel_pausable_features_except(BTreeSet::from_iter(exceptions)),
+        b"reason".to_vec(),
+    )
+    .unwrap();
 }
 
 fn set_nft_limits_helper<T: RuntimeConfig>(channel_id: T::ChannelId) {

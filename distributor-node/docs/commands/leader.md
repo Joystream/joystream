@@ -137,7 +137,7 @@ OPTIONS
 
 DESCRIPTION
   The specified bucket must not have any operator currently.
-     Requires distribution working group leader permissions.
+    Requires distribution working group leader permissions.
 ```
 
 _See code: [src/commands/leader/invite-bucket-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/invite-bucket-operator.ts)_
@@ -224,16 +224,16 @@ OPTIONS
 
   -b, --bagId=bagId
       (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
-           - Bag types: 'static', 'dynamic'
-           - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-           - Id:
-             - absent for 'static:council'
-             - working group name for 'static:wg'
-             - integer for 'dynamic:member' and 'dynamic:channel'
-           Examples:
-           - static:council
-           - static:wg:storage
-           - dynamic:member:4
+      - Bag types: 'static', 'dynamic'
+      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+      - Id:
+      - absent for 'static:council'
+      - working group name for 'static:wg'
+      - integer for 'dynamic:member' and 'dynamic:channel'
+      Examples:
+      - static:council
+      - static:wg:storage
+      - dynamic:member:4
 
   -c, --configPath=configPath
       [default: ./config.yml] Path to config JSON/YAML file (relative to current working directory)
