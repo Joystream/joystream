@@ -1130,6 +1130,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 fn setup_worst_case_video_nft<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

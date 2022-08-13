@@ -770,7 +770,7 @@ benchmarks! {
     // - DB Write: Video -> O(1)
      offer_nft {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
         let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
@@ -795,7 +795,7 @@ benchmarks! {
     // - DB Write: Video -> O(1)
     cancel_offer {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
         let (_, to_member) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
@@ -821,7 +821,7 @@ benchmarks! {
     // - DB Write: Video -> O(1)
     accept_incoming_offer {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel::<T>(false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
         let (to_member_account, to_member) = member_funded_account::<T>(DEFAULT_MEMBER_ID);

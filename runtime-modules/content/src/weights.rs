@@ -63,9 +63,12 @@ pub trait WeightInfo {
 	fn issue_nft() -> Weight;
 	fn destroy_nft() -> Weight;
 	fn sling_nft_back() -> Weight;
+	fn offer_nft() -> Weight;
+	fn accept_incoming_offer() -> Weight;
+	fn cancel_offer() -> Weight;
 }
 
-/// Weights for content using the Substrate node and recommended hardware.
+/// Weight for content using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec4573091994c5737d8f16ba1c53919a94bf2] (r:1 w:0)
@@ -357,6 +360,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
+
+	fn offer_nft() -> Weight {
+		0
+	}
+	fn accept_incoming_offer() -> Weight {
+		0
+	}
+	fn cancel_offer() -> Weight {
+		0
+	}
 }
 
 // Default implementation for tests
@@ -416,6 +429,15 @@ impl WeightInfo for () {
 		0
 	}
 	fn sling_nft_back() -> Weight {
+		0
+	}
+	fn offer_nft() -> Weight {
+		0
+	}
+	fn accept_incoming_offer() -> Weight {
+		0
+	}
+	fn cancel_offer() -> Weight {
 		0
 	}
 }

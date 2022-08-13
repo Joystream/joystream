@@ -2391,7 +2391,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>//
-        #[weight = WeighInfoContent::<T>::offer_nft()]
+        #[weight = WeightInfoContent::<T>::offer_nft()]
         pub fn offer_nft(
             origin,
             video_id: T::VideoId,
