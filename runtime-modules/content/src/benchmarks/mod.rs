@@ -1,11 +1,11 @@
 mod benchmarking;
 
 use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters};
-use crate::{BalanceOf, Config, Module as Pallet};
 use crate::{
-    permissions::*, types::*, Config, ContentModerationAction, InitTransferParametersOf,
-    ModerationPermissionsByLevel, Module as Pallet,
+    permissions::*, types::*, ContentModerationAction, InitTransferParametersOf,
+    ModerationPermissionsByLevel,
 };
+use crate::{BalanceOf, Config, Module as Pallet};
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
@@ -582,56 +582,6 @@ pub fn create_data_object_candidates_helper(
         .collect()
 }
 
-type BloatBonds<T> = (
-    <T as balances::Config>::Balance, // channel_state_bloat_bond
-    <T as balances::Config>::Balance, // video_state_bloat_bond
-    <T as balances::Config>::Balance, // data_object_state_bloat_bond
-    <T as balances::Config>::Balance, // data_size_fee
-);
-
-fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
-where
-    T: Config,
-    T::AccountId: CreateAccountId,
-{
-    let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
-    let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
-    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
-    let channel_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
-    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
-    let video_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
-    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
-    let data_object_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
-    let data_size_fee = <T as balances::Config>::Balance::one();
-    // Set non-zero channel bloat bond
-    Pallet::<T>::update_channel_state_bloat_bond(
-        RawOrigin::Signed(content_lead_acc.clone()).into(),
-        channel_state_bloat_bond,
-    )?;
-    // Set non-zero video bloat bond
-    Pallet::<T>::update_video_state_bloat_bond(
-        RawOrigin::Signed(content_lead_acc).into(),
-        video_state_bloat_bond,
-    )?;
-    // Set non-zero data object bloat bond
-    storage::Pallet::<T>::update_data_object_state_bloat_bond(
-        RawOrigin::Signed(storage_lead_acc.clone()).into(),
-        data_object_state_bloat_bond,
-    )?;
-    // Set non-zero fee per mb
-    storage::Pallet::<T>::update_data_size_fee(
-        RawOrigin::Signed(storage_lead_acc).into(),
-        data_size_fee,
-    )?;
-
-    Ok((
-        channel_state_bloat_bond,
-        video_state_bloat_bond,
-        data_object_state_bloat_bond,
-        data_size_fee,
-    ))
-}
-
 #[allow(clippy::too_many_arguments)]
 fn generate_channel_creation_params<T>(
     storage_wg_lead_account_id: T::AccountId,
@@ -1152,8 +1102,7 @@ where
     ))
 }
 
-fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
-) -> NftIssuanceParameters<T>
+fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>() -> NftIssuanceParameters<T>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -1181,7 +1130,6 @@ where
     }
 }
 
-
 #[allow(dead_code)]
 fn setup_worst_case_video_nft<T>(
     account_id: T::AccountId,
@@ -1208,8 +1156,7 @@ where
         },
     )?;
     set_nft_limits_helper::<T>(channel_id);
-    let params =
-        worst_case_nft_issuance_params_helper::<T>(Pallet::<T>::max_auction_whitelist_length());
+    let params = worst_case_nft_issuance_params_helper::<T>();
     Pallet::<T>::issue_nft(origin, actor, video_id, params)?;
     Ok(video_id)
 }
@@ -1235,13 +1182,13 @@ fn setup_video_with_nft_transactional_status<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel_id: T::ChannelId,
-    transactional_status: InitTransactionalStatus<T>
+    transactional_status: InitTransactionalStatus<T>,
 ) -> Result<T::VideoId, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-        let video_id = Pallet::<T>::next_video_id();
+    let video_id = Pallet::<T>::next_video_id();
     let origin: T::Origin = RawOrigin::Signed(account_id).into();
     let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
     Pallet::<T>::create_video(

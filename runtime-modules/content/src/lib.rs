@@ -1599,7 +1599,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>//
-        #[weight = WeighInfoContent::<T>::issue_nft()]
+        #[weight = WeightInfoContent::<T>::issue_nft()]
         pub fn issue_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1660,7 +1660,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>//
-        #[weight = WeighInfoContent::<T>::destroy_nft()]
+        #[weight = WeightInfoContent::<T>::destroy_nft()]
         pub fn destroy_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2437,7 +2437,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>//
-        #[weight = WeighInfoContent::<T>::sling_nft_back()]
+        #[weight = WeightInfoContent::<T>::sling_nft_back()]
         pub fn sling_nft_back(
             origin,
             video_id: T::VideoId,
