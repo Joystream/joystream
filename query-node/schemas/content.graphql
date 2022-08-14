@@ -67,11 +67,8 @@ type Channel @entity {
   "Number of the block the channel was created in"
   createdInBlock: Int!
 
-  "List of channel collaborators (members)"
-  collaborators: [Membership!]
-
   "List of channel collaborators with their permissions"
-  collaboratorsPermissions: [Collaborator!]! @derivedFrom(field: "channel")
+  collaborators: [Collaborator!]! @derivedFrom(field: "channel")
 
   "List of members blocked from from participating on any video of the channel."
   bannedMembers: [Membership!]

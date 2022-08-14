@@ -68,9 +68,6 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
 
-    collaborators: Array.from(channelCreationParameters.collaborators).map(
-      (id) => new Membership({ id: id[0].toString() })
-    ),
     rewardAccount: rewardAccount.toString(),
   })
 
@@ -139,11 +136,6 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
     await processChannelMetadata(ctx, channel, newMetadata, storageDataObjectParams)
-  }
-
-  const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
-  if (newCollaborators) {
-    channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id[0].toString() }))
   }
 
   // transfer video active counter value to new category
@@ -372,6 +364,11 @@ async function updateChannelAgentsPermissions(
 
   // create new records for privledged members
   for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
+    const permissionsArray = Array.from(permissions)
+    if (!permissionsArray.length) {
+      return
+    }
+
     const collaborator = new Collaborator({
       channel: new Channel({ id: channel.id.toString() }),
       member: new Membership({ id: memberId.toString() }),

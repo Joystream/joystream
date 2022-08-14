@@ -95,14 +95,11 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
   // load curator
   const curator = await ensureCurator(store, curatorId.toString())
 
-  // update curator group
-  curatorGroup.curators.push(curator)
+  // save curator group
+  await store.save<CuratorGroup>(curatorGroup)
 
   // update curator permissions
   await updateCuratorAgentPermissions(store, curatorGroup, curator, permissions)
-
-  // save curator group
-  await store.save<CuratorGroup>(curatorGroup)
 
   // emit log event
   logger.info('Curator has been added to curator group', { id: curatorGroupId, curatorId })
@@ -123,18 +120,14 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
     return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
-  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curatorId.toString())
-
-  // ensure curator group exists
-  if (curatorIndex < 0) {
-    return inconsistentState('Non-associated curator removal from curator group requested', curatorId)
-  }
-
-  // update curator group
-  curatorGroup.curators.splice(curatorIndex, 1)
-
   // save curator group
   await store.save<CuratorGroup>(curatorGroup)
+
+  // load curator
+  const curator = await ensureCurator(store, curatorId.toString())
+
+  // update curator permissions
+  await updateCuratorAgentPermissions(store, curatorGroup, curator)
 
   // emit log event
   logger.info('Curator has been removed from curator group', { id: curatorGroupId, curatorId })
@@ -144,7 +137,7 @@ async function updateCuratorAgentPermissions(
   store: DatabaseManager,
   curatorGroup: CuratorGroup,
   curator: Curator,
-  permissions: BTreeSet<PalletContentChannelActionPermission>
+  permissions?: BTreeSet<PalletContentChannelActionPermission>
 ) {
   // safest way to update permission is to delete existing and creating new ones
 
@@ -159,11 +152,16 @@ async function updateCuratorAgentPermissions(
     await store.remove(agentPermissions)
   }
 
+  const permissionsArray = Array.from(permissions || [])
+  if (!permissionsArray.length) {
+    return
+  }
+
   // create new records for privledged members
   const curatorAgentPermissions = new CuratorAgentPermissions({
     curatorGroup: new CuratorGroup({ id: curatorGroup.id.toString() }),
     curator: new Curator({ id: curator.id.toString() }),
-    permissions: Array.from(permissions).map(mapAgentPermission),
+    permissions: permissionsArray.map(mapAgentPermission),
   })
 
   await store.save(curatorAgentPermissions)

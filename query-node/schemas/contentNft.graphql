@@ -30,9 +30,6 @@ type CuratorGroup @entity {
   "Is group active or not"
   isActive: Boolean!
 
-  "Curators belonging to this group"
-  curators: [Curator!]! @derivedFrom(field: "curatorGroups")
-
   "Channels curated by this group"
   channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
 
@@ -41,7 +38,7 @@ type CuratorGroup @entity {
   # permissionsByLevel: ModerationPermissionsByLevel<T>,
 
   "Curator belonging to this group with their permissions"
-  curatorsPermissions: [CuratorAgentPermissions!]! @derivedFrom(field: "curatorGroup")
+  curators: [CuratorAgentPermissions!]! @derivedFrom(field: "curatorGroup")
 }
 
 type Curator @entity {
@@ -51,10 +48,8 @@ type Curator @entity {
   "Type needs to have at least one non-relation entity. This value is not used."
   dummy: Int
 
-  curatorGroups: [CuratorGroup!]!
-
   "Curator belonging to this group with their permissions"
-  curatorPermissions: [CuratorAgentPermissions!]! @derivedFrom(field: "curator")
+  curatorGroups: [CuratorAgentPermissions!]! @derivedFrom(field: "curator")
 }
 
 # NFT in name can't be UPPERCASE because it causes codegen errors
