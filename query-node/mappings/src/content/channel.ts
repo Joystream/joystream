@@ -6,6 +6,7 @@ import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from 
 import { BaseModel } from '@joystream/warthog'
 import {
   Channel,
+  Collaborator,
   ContentActorCurator,
   ContentActorMember,
   CuratorGroup,
@@ -18,7 +19,6 @@ import {
   StorageDataObject,
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
-  ChannelAgentPermissions,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -363,36 +363,21 @@ async function updateChannelAgentsPermissions(
   // safest way to update permission is to delete existing and creating new ones
 
   // delete existing agent permissions
-  const existingAgentPermissions = await store.getMany(ChannelAgentPermissions, {
+  const collaborators = await store.getMany(Collaborator, {
     where: { channel: { id: channel.id.toString() } },
   })
-  for (const agentPermissions of existingAgentPermissions) {
+  for (const agentPermissions of collaborators) {
     await store.remove(agentPermissions)
   }
 
   // create new records for privledged members
   for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
-    /* TODO: use this instead of a code below when this feature is available
-    https://github.com/Joystream/hydra/issues/507
-
-    const channelAgentPermissions = new ChannelAgentPermissions({
+    const collaborator = new Collaborator({
       channel: new Channel({ id: channel.id.toString() }),
       member: new Membership({ id: memberId.toString() }),
       permissions: Array.from(permissions).map(mapAgentPermission),
     })
 
-    await store.save(channelAgentPermissions)
-    */
-
-    const newPermissions = Array.from(permissions).map(mapAgentPermission)
-    for (const permission of newPermissions) {
-      const channelAgentPermissions = new ChannelAgentPermissions({
-        channel: new Channel({ id: channel.id.toString() }),
-        member: new Membership({ id: memberId.toString() }),
-        permission,
-      })
-
-      await store.save(channelAgentPermissions)
-    }
+    await store.save(collaborator)
   }
 }

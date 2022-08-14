@@ -71,7 +71,7 @@ type Channel @entity {
   collaborators: [Membership!]
 
   "List of channel collaborators with their permissions"
-  collaboratorsPermissions: [ChannelAgentPermissions!]! @derivedFrom(field: "channel")
+  collaboratorsPermissions: [Collaborator!]! @derivedFrom(field: "channel")
 
   "List of members blocked from from participating on any video of the channel."
   bannedMembers: [Membership!]
@@ -369,32 +369,7 @@ type Comment @entity {
   moderatedInEvent: CommentModeratedEvent @derivedFrom(field: "comment")
 }
 
-# this enum needs to correspond to runtime enum of same name
-enum ChannelActionPermission {
-  UpdateChannelMetadata
-  ManageNonVideoChannelAssets
-  ManageChannelCollaborators
-  UpdateVideoMetadata
-  AddVideo
-  ManageVideoAssets
-  DeleteChannel
-  DeleteVideo
-  ManageVideoNfts
-  AgentRemark
-  TransferChannel
-  ClaimChannelReward
-  WithdrawFromChannelBalance
-  IssueCreatorToken
-  ClaimCreatorTokenPatronage
-  InitAndManageCreatorTokenSale
-  CreatorTokenIssuerTransfer
-  MakeCreatorTokenPermissionless
-  ReduceCreatorTokenPatronageRate
-  ManageRevenueSplits
-  DeissueCreatorToken
-}
-
-type ChannelAgentPermissions @entity {
+type Collaborator @entity {
   "Relevant channel"
   channel: Channel!
 
@@ -405,5 +380,5 @@ type ChannelAgentPermissions @entity {
   # `permissions: [ChannelActionPermission!]!`
   # rework it after this feature is available https://github.com/Joystream/hydra/issues/507
   "List of member's permissions"
-  permission: ChannelActionPermission!
+  permissions: [String!]!
 }

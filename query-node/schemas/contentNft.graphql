@@ -281,5 +281,5 @@ type CuratorAgentPermissions @entity {
   # `permissions: [ChannelActionPermission!]!`
   # rework it after this feature is available https://github.com/Joystream/hydra/issues/507
   "List of member's permissions"
-  permission: ChannelActionPermission!
+  permissions: [String!]!
 }

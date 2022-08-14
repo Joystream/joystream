@@ -159,9 +159,6 @@ async function updateCuratorAgentPermissions(
     await store.remove(agentPermissions)
   }
 
-  /* TODO: use this instead of a code below when this feature is available
-    https://github.com/Joystream/hydra/issues/507
-
   // create new records for privledged members
   const curatorAgentPermissions = new CuratorAgentPermissions({
     curatorGroup: new CuratorGroup({ id: curatorGroup.id.toString() }),
@@ -170,17 +167,4 @@ async function updateCuratorAgentPermissions(
   })
 
   await store.save(curatorAgentPermissions)
-  */
-
-  // create new records for privledged members
-  const newPermissions = Array.from(permissions).map(mapAgentPermission)
-  for (const permission of newPermissions) {
-    const curatorAgentPermissions = new CuratorAgentPermissions({
-      curatorGroup: new CuratorGroup({ id: curatorGroup.id.toString() }),
-      curator: new Curator({ id: curator.id.toString() }),
-      permission,
-    })
-
-    await store.save(curatorAgentPermissions)
-  }
 }

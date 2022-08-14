@@ -32,7 +32,6 @@ import {
   ContentActorMember,
   ContentActor as ContentActorVariant,
   Curator,
-  ChannelActionPermission,
 } from 'query-node/dist/model'
 // Joystream types
 import {
@@ -618,35 +617,6 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   await store.remove<StorageDataObject>(dataObject)
 }
 
-const agentPermissionConversionTable = {
-  UpdateChannelMetadata: ChannelActionPermission.UpdateChannelMetadata,
-  ManageNonVideoChannelAssets: ChannelActionPermission.ManageNonVideoChannelAssets,
-  ManageChannelCollaborators: ChannelActionPermission.ManageChannelCollaborators,
-  UpdateVideoMetadata: ChannelActionPermission.UpdateVideoMetadata,
-  AddVideo: ChannelActionPermission.AddVideo,
-  ManageVideoAssets: ChannelActionPermission.ManageVideoAssets,
-  DeleteChannel: ChannelActionPermission.DeleteChannel,
-  DeleteVideo: ChannelActionPermission.DeleteVideo,
-  ManageVideoNfts: ChannelActionPermission.ManageVideoNfts,
-  AgentRemark: ChannelActionPermission.AgentRemark,
-  TransferChannel: ChannelActionPermission.TransferChannel,
-  ClaimChannelReward: ChannelActionPermission.ClaimChannelReward,
-  WithdrawFromChannelBalance: ChannelActionPermission.WithdrawFromChannelBalance,
-  IssueCreatorToken: ChannelActionPermission.IssueCreatorToken,
-  ClaimCreatorTokenPatronage: ChannelActionPermission.ClaimCreatorTokenPatronage,
-  InitAndManageCreatorTokenSale: ChannelActionPermission.InitAndManageCreatorTokenSale,
-  CreatorTokenIssuerTransfer: ChannelActionPermission.CreatorTokenIssuerTransfer,
-  MakeCreatorTokenPermissionless: ChannelActionPermission.MakeCreatorTokenPermissionless,
-  ReduceCreatorTokenPatronageRate: ChannelActionPermission.ReduceCreatorTokenPatronageRate,
-  ManageRevenueSplits: ChannelActionPermission.ManageRevenueSplits,
-  DeissueCreatorToken: ChannelActionPermission.DeissueCreatorToken,
-}
-
-export function mapAgentPermission(permission: PalletContentChannelActionPermission): ChannelActionPermission {
-  const key = permission.toString()
-  if (!agentPermissionConversionTable[key]) {
-    return inconsistentState(`Unkown permission '${key}'`)
-  }
-
-  return agentPermissionConversionTable[key]
+export function mapAgentPermission(permission: PalletContentChannelActionPermission): string {
+  return permission.toString()
 }
