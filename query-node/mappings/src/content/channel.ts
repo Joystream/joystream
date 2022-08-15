@@ -338,15 +338,6 @@ export async function content_ChannelAgentRemarked(ctx: EventContext & StoreCont
   }
 }
 
-export async function ChannelTransferAccepted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [channelId, commitmentParams] = new Content.ChannelTransferAcceptedEvent(event).params
-
-  const channel = new Channel({ id: channelId.toString() })
-
-  // update channel permissions
-  await updateChannelAgentsPermissions(store, channel, commitmentParams.newCollaborators)
-}
-
 async function updateChannelAgentsPermissions(
   store: DatabaseManager,
   channel: Channel,

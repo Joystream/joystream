@@ -99,7 +99,6 @@ typegen:
     - content.VideoVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
-    - content.ChannelTransferAccepted
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -429,8 +428,6 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: contentWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
-    - event: contentWorkingGroup.ChannelTransferAccepted
-      handler: ChannelTransferAccepted
     # Operations working group alpha
     - event: operationsWorkingGroupAlpha.OpeningAdded
       handler: workingGroups_OpeningAdded
