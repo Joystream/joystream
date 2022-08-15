@@ -941,6 +941,30 @@ where
     )
 }
 
+#[allow(clippy::type_complexity)]
+fn setup_worst_case_scenario_member_channel_all_max<T>(
+    with_transfer: bool,
+) -> Result<
+    (
+        T::ChannelId,
+        T::MemberId,
+        T::AccountId,
+        T::AccountId,
+    ),
+    DispatchError,
+>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    setup_worst_case_scenario_member_channel::<T>(
+        T::MaxNumberOfAssetsPerChannel::get(),
+        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        with_transfer,
+    )
+}
+
 fn clone_curator_group<T>(group_id: T::CuratorGroupId) -> Result<T::CuratorGroupId, DispatchError>
 where
     T: RuntimeConfig,
