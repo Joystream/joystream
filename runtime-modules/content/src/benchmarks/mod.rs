@@ -1314,8 +1314,9 @@ where
     Ok(video_id)
 }
 
-fn add_english_auction_bid<T: Config>(sender: T::AccountId, participant_id: T::MemberId, video_id: T::VideoId) {
+fn add_english_auction_bid<T: Config>(sender: T::AccountId, participant_id: T::MemberId, video_id: T::VideoId) -> BalanceOf::<T> {
     let bid_amount = Pallet::<T>::min_starting_price();
     let origin: T::Origin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_english_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
+    bid_amount
 }

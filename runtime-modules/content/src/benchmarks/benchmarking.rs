@@ -1065,10 +1065,11 @@ benchmarks! {
             channel_id
         )?;
         System::<T>::set_block_number(System::<T>::block_number() + 2u32.into());
-        add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+        let old_bid_amount = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
 
-        let origin = RawOrigin::Signed(participant_account_id);
+        let origin = RawOrigin::Signed(participant_account_id.clone());
         let bid_amount = Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step();
+        let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
         // let buy_now_amount = Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(11u32.into());
     }: _(origin, participant_id, video_id, bid_amount)
         verify {
@@ -1081,7 +1082,36 @@ benchmarks! {
                     ..
                 }),
                 ..
-            })))
+            })));
+
+            assert_eq!(
+                Balances::<T>::usable_balance(participant_account_id),
+                balance_pre - bid_amount + old_bid_amount,
+            )
+
+
+        }
+
+    settle_english_auction {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
+        let (video_id, participant_id, participant_account_id) = setup_video_with_nft_in_english_auction::<T>(
+            curator_account_id,
+            nft_owner_actor,
+            channel_id
+        )?;
+        System::<T>::set_block_number(System::<T>::block_number() + 2u32.into());
+        let _ = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+
+        let origin = RawOrigin::Signed(participant_account_id);
+        System::<T>::set_block_number(System::<T>::block_number() + Pallet::<T>::min_auction_duration());
+    }: _(origin, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
         }
 }
 
@@ -1308,9 +1338,16 @@ pub mod tests {
     }
 
     #[test]
-    fn make_english_bid() {
+    fn make_english_auction_bid() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_make_english_auction_bid());
+        })
+    }
+
+    #[test]
+    fn settle_english_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_settle_english_auction());
         })
     }
 
