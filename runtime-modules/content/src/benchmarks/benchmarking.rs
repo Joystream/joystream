@@ -1001,6 +1001,41 @@ benchmarks! {
         verify {
             assert_eq!(Pallet::<T>::channel_by_id(channel_id).daily_nft_limit.limit, limit);
         }
+
+    // ================================================================================
+    // ========================== NFT - UPDATE LIMITS =================================1
+    // ================================================================================
+
+    start_english_auction {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
+        let video_id = setup_video_with_idle_nft::<T>(
+            curator_account_id,
+            nft_owner_actor,
+            channel_id
+        )?;
+        let auction_params = EnglishAuctionParams::<T> {
+                buy_now_price: Some(
+                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
+                ),
+                duration: Pallet::<T>::min_auction_duration(),
+                extension_period: Pallet::<T>::min_auction_extension_period(),
+                min_bid_step: Pallet::<T>::min_bid_step(),
+                starting_price: Pallet::<T>::min_starting_price(),
+                starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+                whitelist: (0..(Pallet::<T>::max_auction_whitelist_length() as usize))
+                    .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                    .collect(),
+            };
+     }: _(origin, nft_owner_actor, video_id, auction_params)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::EnglishAuction(..),
+                ..
+            })))
+        }
 }
 
 #[cfg(test)]
@@ -1211,5 +1246,10 @@ pub mod tests {
         })
     }
 
-
+    #[test]
+    fn update_channel_start_english_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_start_english_auction());
+        })
+    }
 }

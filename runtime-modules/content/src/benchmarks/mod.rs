@@ -944,15 +944,7 @@ where
 #[allow(dead_code, clippy::type_complexity)]
 fn setup_worst_case_scenario_member_channel_all_max<T>(
     with_transfer: bool,
-) -> Result<
-    (
-        T::ChannelId,
-        T::MemberId,
-        T::AccountId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -1236,6 +1228,34 @@ where
         actor,
         channel_id,
         InitTransactionalStatus::<T>::BuyNow(price),
+    )
+}
+
+fn setup_video_with_nft_in_english_auction<T>(
+    account_id: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+) -> Result<T::VideoId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
+    setup_video_with_nft_transactional_status::<T>(
+        account_id,
+        actor,
+        channel_id,
+        InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
+            buy_now_price: Some(Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step()),
+            duration: Pallet::<T>::min_auction_duration(),
+            extension_period: Pallet::<T>::min_auction_extension_period(),
+            min_bid_step: Pallet::<T>::min_bid_step(),
+            starting_price: Pallet::<T>::min_starting_price(),
+            starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+            whitelist: (0..(whitelist_size as usize))
+                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                .collect(),
+        }),
     )
 }
 
