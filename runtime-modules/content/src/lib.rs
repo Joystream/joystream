@@ -268,7 +268,7 @@ decl_storage! {
 
         /// Global weekly NFT limit.
         pub GlobalWeeklyNftLimit get(fn global_weekly_nft_limit):
-        LimitPerPeriod<T::BlockNumber>;
+            LimitPerPeriod<T::BlockNumber>;
 
         /// NFT limits enabled or not
         /// Can be updated in flight by the Council
@@ -2131,7 +2131,7 @@ decl_module! {
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Validate parameters & return english auction
-            let eng_auction =  Self::ensure_in_english_auction_state(&nft)?;
+            let eng_auction = Self::ensure_in_english_auction_state(&nft)?;
 
             // Balance check
             let old_bid_value = eng_auction.top_bid.as_ref().map(|bid| {

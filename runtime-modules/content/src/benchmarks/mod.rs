@@ -35,6 +35,7 @@ use sp_std::{
     iter::FromIterator,
     vec,
     vec::Vec,
+    ops::Mul,
 };
 
 // The storage working group instance alias.
@@ -1235,28 +1236,41 @@ fn setup_video_with_nft_in_english_auction<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel_id: T::ChannelId,
-) -> Result<T::VideoId, DispatchError>
+) -> Result<(
+    T::VideoId,
+    T::MemberId,
+    T::AccountId
+),
+            DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    setup_video_with_nft_transactional_status::<T>(
+    let whitelisted_members = (0..(whitelist_size as usize))
+                .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
+                .collect::<Vec<_>>();
+
+    let (participant_account_id, participant_id) = whitelisted_members[0].clone();
+
+    let buy_now_price = Pallet::<T>::min_starting_price()
+        + Pallet::<T>::min_bid_step().mul(10u32.into());
+    let video_id = setup_video_with_nft_transactional_status::<T>(
         account_id,
         actor,
         channel_id,
         InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
-            buy_now_price: Some(Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step()),
+            buy_now_price: Some(buy_now_price),
             duration: Pallet::<T>::min_auction_duration(),
             extension_period: Pallet::<T>::min_auction_extension_period(),
             min_bid_step: Pallet::<T>::min_bid_step(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-            whitelist: (0..(whitelist_size as usize))
-                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
-                .collect(),
+            whitelist: whitelisted_members.into_iter().map(|(_,id)| id).collect()
         }),
-    )
+    )?;
+
+    Ok((video_id, participant_id, participant_account_id))
 }
 
 fn setup_video_with_nft_transactional_status<T>(
@@ -1298,4 +1312,10 @@ where
     )?;
 
     Ok(video_id)
+}
+
+fn add_english_auction_bid<T: Config>(sender: T::AccountId, participant_id: T::MemberId, video_id: T::VideoId) {
+    let bid_amount = Pallet::<T>::min_starting_price();
+    let origin: T::Origin = RawOrigin::Signed(sender).into();
+    Pallet::<T>::make_english_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
 }
