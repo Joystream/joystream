@@ -941,7 +941,7 @@ where
     )
 }
 
-#[allow(clippy::type_complexity)]
+#[allow(dead_code, clippy::type_complexity)]
 fn setup_worst_case_scenario_member_channel_all_max<T>(
     with_transfer: bool,
 ) -> Result<

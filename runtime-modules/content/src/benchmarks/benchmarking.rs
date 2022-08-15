@@ -960,6 +960,10 @@ benchmarks! {
     // ========================== NFT - UPDATE LIMITS =================================1
     // ================================================================================
 
+    // WORST CASE SCENARIO:
+    // DB OPERATIONS:
+    // - DB Read: bool -> O(1)
+    // - DB Write: bool -> O(1)
     toggle_nft_limits {
         let origin = RawOrigin::Root;
         let enabled = false;
@@ -968,6 +972,10 @@ benchmarks! {
             assert!(!Pallet::<T>::nft_limits_enabled());
         }
 
+    // COMPLEXITY
+    // DB OPERATIONS:
+    // - DB Read: LimitPerPeriod -> O(1)
+    // - DB Write: LimitPerPeriod -> O(1)
     update_global_nft_limit {
         let origin = RawOrigin::Root;
         let nft_limit_period = NftLimitPeriod::Daily;
@@ -977,13 +985,18 @@ benchmarks! {
             assert_eq!(Pallet::<T>::global_daily_nft_limit().limit, 10u64);
         }
 
+    // COMPLEXITY
+    // - context = Curator channel with moderation actions number maxed out
+    // DB OPERATIONS:
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Channel -> O(1)
     update_channel_nft_limit {
         let nft_limit_period = NftLimitPeriod::Daily;
         let limit = 10u64;
-        let (channel_id, member_id, member_account_id, _) =
+        let (channel_id, group_id, _, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(member_account_id);
-        let actor = ContentActor::Member(member_id);
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
     }: _(origin, actor, nft_limit_period, channel_id, limit)
         verify {
             assert_eq!(Pallet::<T>::channel_by_id(channel_id).daily_nft_limit.limit, limit);
