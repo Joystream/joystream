@@ -956,6 +956,35 @@ benchmarks! {
             assert_eq!(Balances::<T>::usable_balance(buyer_account_id), balance_pre - price)
         }
 
+    // ================================================================================
+    // ========================== NFT - UPDATE LIMITS =================================1
+    // ================================================================================
+
+    toggle_nft_limits {
+        let origin = RawOrigin::Root;
+        let enabled = false;
+    }: _ (origin, enabled)
+        verify {
+            assert!(!Pallet::<T>::nft_limits_enabled());
+        }
+
+    update_global_nft_limits {
+        let origin = RawOrigin::Root;
+        let nft_limit_period = NftLimitPeriod::Daily;
+        let limit = 10u64;
+    }: _(origin, nft_limit_period, limit)
+        verify {
+            assert_eq!(Pallet::<T>::global_daily_nft_limit(), 10u64);
+        }
+
+    update_channel_nft_limits {
+        let origin = RawOrigin::Root;
+        let nft_limit_period = NftLimitPeriod::Daily;
+        let limit = 10u64;
+    }: _(origin, nft_limit_period, limit)
+        verify {
+            assert_eq!(Pallet::<T>::global_daily_nft_limit(), 10u64);
+        }
 }
 
 #[cfg(test)]
@@ -1144,5 +1173,13 @@ pub mod tests {
             assert_ok!(Content::test_benchmark_buy_nft());
         })
     }
+
+    #[test]
+    fn toggle_nft_limits() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_toggle_nft_limits());
+        })
+    }
+
 
 }
