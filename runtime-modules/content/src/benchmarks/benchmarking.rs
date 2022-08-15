@@ -968,22 +968,25 @@ benchmarks! {
             assert!(!Pallet::<T>::nft_limits_enabled());
         }
 
-    update_global_nft_limits {
+    update_global_nft_limit {
         let origin = RawOrigin::Root;
         let nft_limit_period = NftLimitPeriod::Daily;
         let limit = 10u64;
     }: _(origin, nft_limit_period, limit)
         verify {
-            assert_eq!(Pallet::<T>::global_daily_nft_limit(), 10u64);
+            assert_eq!(Pallet::<T>::global_daily_nft_limit().limit, 10u64);
         }
 
-    update_channel_nft_limits {
-        let origin = RawOrigin::Root;
+    update_channel_nft_limit {
         let nft_limit_period = NftLimitPeriod::Daily;
         let limit = 10u64;
-    }: _(origin, nft_limit_period, limit)
+        let (channel_id, member_id, member_account_id, _) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(member_account_id);
+        let actor = ContentActor::Member(member_id);
+    }: _(origin, actor, nft_limit_period, channel_id, limit)
         verify {
-            assert_eq!(Pallet::<T>::global_daily_nft_limit(), 10u64);
+            assert_eq!(Pallet::<T>::channel_by_id(channel_id).daily_nft_limit.limit, limit);
         }
 }
 
@@ -1178,6 +1181,20 @@ pub mod tests {
     fn toggle_nft_limits() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_toggle_nft_limits());
+        })
+    }
+
+    #[test]
+    fn update_global_nft_limit() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_global_nft_limit());
+        })
+    }
+
+    #[test]
+    fn update_channel_nft_limit() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_channel_nft_limit());
         })
     }
 
