@@ -1137,6 +1137,25 @@ benchmarks! {
                 ..
             })));
         }
+
+    cancel_open_auction {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
+        let (video_id,_,_) = setup_video_with_nft_in_open_auction::<T>(
+            curator_account_id,
+            nft_owner_actor,
+            channel_id
+        )?;
+    }: _(origin, nft_owner_actor, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })))
+        }
+
 }
 
 #[cfg(test)]
@@ -1382,4 +1401,10 @@ pub mod tests {
         })
     }
 
+    #[test]
+    fn cancel_open_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_open_auction());
+        })
+    }
 }
