@@ -1,11 +1,7 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
-import {
-  CreateContentStructureFixture,
-  UpdateVideoCategoryFixture,
-  DeleteVideoCategoryFixture,
-} from '../../fixtures/content'
+import { CreateContentStructureFixture } from '../../fixtures/content'
 import { createJoystreamCli } from '../utils'
 
 export default async function videoCategories({ api, query, env }: FlowProps): Promise<void> {
