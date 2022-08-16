@@ -1273,6 +1273,45 @@ where
     Ok((video_id, participant_id, participant_account_id))
 }
 
+fn setup_video_with_nft_in_open_auction<T>(
+    account_id: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+) -> Result<(
+    T::VideoId,
+    T::MemberId,
+    T::AccountId
+),
+            DispatchError>
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
+    let whitelisted_members = (0..(whitelist_size as usize))
+                .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
+                .collect::<Vec<_>>();
+
+    let (participant_account_id, participant_id) = whitelisted_members[0].clone();
+
+    let buy_now_price = Pallet::<T>::min_starting_price()
+        + Pallet::<T>::min_bid_step().mul(10u32.into());
+    let video_id = setup_video_with_nft_transactional_status::<T>(
+        account_id,
+        actor,
+        channel_id,
+        InitTransactionalStatus::<T>::OpenAuction(OpenAuctionParams::<T> {
+            buy_now_price: Some(buy_now_price),
+            bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
+            starting_price: Pallet::<T>::min_starting_price(),
+            starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+            whitelist: whitelisted_members.into_iter().map(|(_,id)| id).collect()
+        }),
+    )?;
+
+    Ok((video_id, participant_id, participant_account_id))
+}
+
 fn setup_video_with_nft_transactional_status<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

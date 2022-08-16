@@ -2044,7 +2044,7 @@ decl_module! {
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Validate parameters & return english auction
-            let open_auction =  Self::ensure_in_open_auction_state(&nft)?;
+            let open_auction = Self::ensure_in_open_auction_state(&nft)?;
 
             // check whitelisted participant
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
