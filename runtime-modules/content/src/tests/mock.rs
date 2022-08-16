@@ -34,6 +34,7 @@ pub type StorageBucketId = <Test as storage::Config>::StorageBucketId;
 
 /// Account Ids
 pub const DEFAULT_MEMBER_ACCOUNT_ID: u128 = 101;
+pub const DEFAULT_MEMBER_ALT_ACCOUNT_ID: u128 = 1001;
 pub const DEFAULT_CURATOR_ACCOUNT_ID: u128 = 102;
 pub const LEAD_ACCOUNT_ID: u128 = 103;
 pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = 104;
@@ -236,6 +237,7 @@ impl ContentActorAuthenticator for Test {
         match *member_id {
             DEFAULT_MEMBER_ID => {
                 *account_id == ensure_signed(Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID)).unwrap()
+                    || *account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID
             }
 
             SECOND_MEMBER_ID => {
@@ -340,7 +342,9 @@ impl storage::Config for Test {
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type WeightInfo = ();
-    type ModuleAccountInitialBalance = ModuleAccountInitialBalance;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
+    type DataSizeFeeAllowedLocks = BloatBondAllowedLocks;
+    type DataObjectBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 // Anyone can upload and delete without restriction
@@ -350,7 +354,6 @@ parameter_types! {
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
-    pub const ModuleAccountInitialBalance: u64 = 1;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
         block_number_period: 100,
         limit: 10000,
@@ -430,6 +433,12 @@ impl Config for Test {
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
+
+    /// Channel bloat bond: Allowed locks
+    type ChannelStateBloatBondAllowedLocks = BloatBondAllowedLocks;
+
+    /// Video bloat bond: Allowed locks
+    type VideoStateBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -580,6 +589,10 @@ impl ExtBuilder {
             .assimilate_storage(&mut t)
             .unwrap();
 
+        storage::GenesisConfig::<Test>::default()
+            .assimilate_storage(&mut t)
+            .unwrap();
+
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
         crate::GenesisConfig::<Test> {
             next_channel_id: self.next_channel_id,
@@ -674,6 +687,7 @@ parameter_types! {
     pub const MinimumStakeForOpening: u32 = 50;
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
+    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 impl membership::Config for Test {
@@ -815,7 +829,10 @@ impl MemberOriginValidator<Origin, u64, u128> for TestMemberships {
 
     fn is_member_controller_account(member_id: &u64, account_id: &u128) -> bool {
         match *member_id {
-            DEFAULT_MEMBER_ID => *account_id == DEFAULT_MEMBER_ACCOUNT_ID,
+            DEFAULT_MEMBER_ID => {
+                *account_id == DEFAULT_MEMBER_ACCOUNT_ID
+                    || *account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID
+            }
             SECOND_MEMBER_ID => *account_id == SECOND_MEMBER_ACCOUNT_ID,
             UNAUTHORIZED_MEMBER_ID => *account_id == UNAUTHORIZED_MEMBER_ACCOUNT_ID,
             UNAUTHORIZED_COLLABORATOR_MEMBER_ID => {
@@ -1009,6 +1026,7 @@ impl project_token::Config for Test {
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
     type WeightInfo = ();
+    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 pub struct Block2Balance {}

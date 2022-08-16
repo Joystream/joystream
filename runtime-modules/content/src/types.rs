@@ -1,4 +1,5 @@
 use crate::*;
+use common::bloat_bond::RepayableBloatBond;
 use frame_support::PalletId;
 use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
@@ -232,6 +233,7 @@ pub struct ChannelRecord<
     BlockNumber: BaseArithmetic + Copy,
     TokenId,
     TransferId: PartialEq + Copy,
+    RepayableBloatBond,
 > {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
@@ -259,8 +261,8 @@ pub struct ChannelRecord<
     pub weekly_nft_counter: NftCounter<BlockNumber>,
     /// Id of the channel's creator token (if issued)
     pub creator_token_id: Option<TokenId>,
-    /// State bloat bond needed to store a channel
-    pub channel_state_bloat_bond: Balance,
+    /// State bloat bond paid for storing the channel
+    pub channel_state_bloat_bond: RepayableBloatBond,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -361,6 +363,7 @@ impl<
         BlockNumber: BaseArithmetic + Copy,
         TokenId: Clone,
         TransferId: PartialEq + Copy,
+        RepayableBloatBond,
     >
     ChannelRecord<
         MemberId,
@@ -371,6 +374,7 @@ impl<
         BlockNumber,
         TokenId,
         TransferId,
+        RepayableBloatBond,
     >
 {
     pub fn ensure_feature_not_paused<T: Config>(
@@ -441,6 +445,7 @@ pub type Channel<T> = ChannelRecord<
     <T as frame_system::Config>::BlockNumber,
     <T as project_token::Config>::TokenId,
     <T as Config>::TransferId,
+    RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -580,18 +585,22 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord, Balance: PartialEq + Zero> {
+pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord, RepayableBloatBond> {
     pub in_channel: ChannelId,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNft>,
     /// Set of associated data objects
     pub data_objects: BTreeSet<DataObjectId>,
-    /// State bloat bond needed to store a video
-    pub video_state_bloat_bond: Balance,
+    /// State bloat bond paid for storing the video
+    pub video_state_bloat_bond: RepayableBloatBond,
 }
 
-pub type Video<T> =
-    VideoRecord<<T as storage::Config>::ChannelId, Nft<T>, DataObjectId<T>, BalanceOf<T>>;
+pub type Video<T> = VideoRecord<
+    <T as storage::Config>::ChannelId,
+    Nft<T>,
+    DataObjectId<T>,
+    RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
+>;
 
 pub type DataObjectId<T> = <T as storage::Config>::DataObjectId;
 
@@ -637,8 +646,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Config>::Hash,
 >;
 
-impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord, Balance: PartialEq + Zero>
-    VideoRecord<ChannelId, OwnedNft, DataObjectId, Balance>
+impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord, RepayableBloatBond>
+    VideoRecord<ChannelId, OwnedNft, DataObjectId, RepayableBloatBond>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Config>(&self) -> DispatchResult {

@@ -274,8 +274,9 @@ decl_error! {
         CashoutAmountBelowMinimumAmount,
 
         /// An attempt to withdraw funds from channel account failed, because the specified amount
-        /// exceeds the account's balance minus ExistantialDeposit
-        WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit,
+        /// exceeds the withdrawable amount (channel account balance minus channel bloat bond)
+        WithdrawalAmountExceedsChannelAccountWithdrawableBalance,
+
         /// An attempt to withdraw funds from channel account failed, because the specified amount
         /// is zero
         WithdrawFromChannelAmountIsZero,

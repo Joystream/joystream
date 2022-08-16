@@ -8,7 +8,7 @@ use frame_support::{
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use frame_support::{
     ensure,
-    traits::{ConstU16, ConstU32, ConstU64, LockIdentifier},
+    traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons},
     PalletId,
 };
 use frame_system::ensure_signed;
@@ -18,7 +18,7 @@ use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
 use sp_runtime::{DispatchError, DispatchResult, Permill};
 use sp_std::convert::{TryFrom, TryInto};
-use staking_handler::LockComparator;
+use staking_handler::{LockComparator, StakingHandler};
 
 // crate import
 pub(crate) use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
@@ -102,6 +102,8 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const ReferralCutMaximumPercent: u8 = 50;
+    // other
+    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -143,11 +145,12 @@ impl storage::Config for Test {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
-
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type ModuleAccountInitialBalance = ExistentialDeposit;
     type WeightInfo = ();
+    type DataObjectBloatBondAllowedLocks = BloatBondAllowedLocks;
+    type DataSizeFeeAllowedLocks = BloatBondAllowedLocks;
 }
 
 impl common::MembershipTypes for Test {
@@ -168,6 +171,7 @@ impl Config for Test {
     type WeightInfo = ();
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 // Working group integration
@@ -667,4 +671,23 @@ impl Convert<BlockNumber, Balance> for Block2Balance {
 
 pub fn increase_account_balance(account_id: &AccountId, balance: Balance) {
     let _ = Balances::deposit_creating(account_id, balance);
+}
+
+pub fn ed() -> Balance {
+    ExistentialDeposit::get()
+}
+
+pub fn set_invitation_lock(who: &<Test as frame_system::Config>::AccountId, amount: Balance) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: Balance,
+) {
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }

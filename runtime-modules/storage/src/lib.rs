@@ -128,7 +128,7 @@ pub use weights::WeightInfo;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, ExistenceRequirement, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, IterableStorageDoubleMap, PalletId,
@@ -146,16 +146,21 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
+use sp_std::vec;
 use sp_std::vec::Vec;
 
+use common::bloat_bond::RepayableBloatBond;
 use common::constraints::BoundedValueConstraint;
+use common::costs::{ensure_can_cover_costs, pay_cost, Cost};
 use common::working_group::WorkingGroup;
 use common::working_group::WorkingGroupAuthenticator;
 
 type WeightInfoStorage<T> = <T as Config>::WeightInfo;
 
 type DataObjAndStateBloatBondAndObjSize<T> =
-    Result<(Vec<DataObject<BalanceOf<T>>>, BalanceOf<T>, u64), DispatchError>;
+    Result<(Vec<DataObjectOf<T>>, BalanceOf<T>, u64), DispatchError>;
+
+type DataObjectsWithIds<T> = Vec<(<T as Config>::DataObjectId, DataObjectOf<T>)>;
 
 /// Content ID length in bytes (46 bytes multihash).
 pub const CID_LENGTH: usize = 46;
@@ -185,13 +190,13 @@ pub trait DataObjectStorage<T: Config> {
         params: UploadParameters<T>,
     ) -> Result<BTreeSet<T::DataObjectId>, DispatchError>;
 
-    /// Returns the funds needed to upload a num of objects
+    /// Returns costs associated with uploading the data objects, based on number of objects and their total size.
     /// This is dependent on (data_obj_state_bloat_bond * num_of_objs_to_upload) plus a storage fee that depends on the
     /// objs_total_size_in_bytes
-    fn funds_needed_for_upload(
+    fn get_upload_costs(
         num_of_objs_to_upload: usize,
         objs_total_size_in_bytes: u64,
-    ) -> BalanceOf<T>;
+    ) -> Vec<Cost<BalanceOf<T>>>;
 
     /// Validates moving objects parameters.
     /// Validates voucher usage for affected buckets.
@@ -250,11 +255,8 @@ pub trait DataObjectStorage<T: Config> {
     /// - Bag is removed from storage
     /// - bag assignment is unregistered from storage buckets
     /// - bag assignment is unregistered from distribution buckets
-    /// - relevant balance is deposited from storage treasury to caller account
-    fn delete_dynamic_bag(
-        state_bloat_bond_account_id: T::AccountId,
-        bag_id: DynamicBagId<T>,
-    ) -> DispatchResult;
+    /// - relevant balance is deposited from storage treasury to original bloat bond deposit accounts
+    fn delete_dynamic_bag(bag_id: DynamicBagId<T>) -> DispatchResult;
 
     /// Creates dynamic bag. BagId should provide the caller
     /// PRECONDITIONS:
@@ -423,6 +425,12 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
 
     /// Module account initial balance (existential deposit).
     type ModuleAccountInitialBalance: Get<BalanceOf<Self>>;
+
+    /// Locks compatible with data size fee
+    type DataSizeFeeAllowedLocks: Get<Vec<LockIdentifier>>;
+
+    /// Locks compatible with data object bloat bond
+    type DataObjectBloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
 }
 
 /// Operations with local pallet account.
@@ -433,27 +441,6 @@ pub trait ModuleAccount<T: balances::Config> {
     /// The account ID of the module account.
     fn module_account_id() -> T::AccountId {
         Self::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
-    }
-
-    /// Transfer tokens from the module account to the destination account (spends from
-    /// module account).
-    fn withdraw(dest_account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            &Self::module_account_id(),
-            dest_account_id,
-            amount,
-            ExistenceRequirement::KeepAlive,
-        )
-    }
-
-    /// Transfer tokens from the destination account to the module account (fills module account).
-    fn deposit(src_account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            src_account_id,
-            &Self::module_account_id(),
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
     }
 
     /// Displays usable balance for the module account.
@@ -529,12 +516,12 @@ pub type BucketPair<T> = (
 /// object, as it is used by different parts of the Joystream system.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct DataObject<Balance> {
+pub struct DataObject<RepayableBloatBond> {
     /// Defines whether the data object was accepted by a liason.
     pub accepted: bool,
 
-    /// A reward for the data object deletion.
-    pub state_bloat_bond: Balance,
+    /// Bloat bond for storing the data object in the runtime state.
+    pub state_bloat_bond: RepayableBloatBond,
 
     /// Object size in bytes.
     pub size: u64,
@@ -542,6 +529,10 @@ pub struct DataObject<Balance> {
     /// Content identifier presented as IPFS hash.
     pub ipfs_content_id: Vec<u8>,
 }
+
+/// Type alias for DataObject.
+pub type DataObjectOf<T> =
+    DataObject<RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>>;
 
 /// Type alias for the BagRecord.
 pub type Bag<T> = BagRecord<<T as Config>::StorageBucketId, DistributionBucketId<T>>;
@@ -933,7 +924,7 @@ struct DataObjectCandidates<T: Config> {
     next_data_object_id: T::DataObjectId,
 
     // 'ID-data object' map.
-    data_objects_map: BTreeMap<T::DataObjectId, DataObject<BalanceOf<T>>>,
+    data_objects_map: BTreeMap<T::DataObjectId, DataObjectOf<T>>,
 }
 
 // Helper struct for the dynamic bag changing.
@@ -1084,7 +1075,7 @@ decl_storage! {
         /// 'Data objects for bags' storage double map.
         pub DataObjectsById get (fn data_object_by_id): double_map
             hasher(blake2_128_concat) BagId<T>,
-            hasher(blake2_128_concat) T::DataObjectId => DataObject<BalanceOf<T>>;
+            hasher(blake2_128_concat) T::DataObjectId => DataObjectOf<T>;
 
         /// Distribution bucket family id counter. Starts at zero.
         pub NextDistributionBucketFamilyId get(fn next_distribution_bucket_family_id): T::DistributionBucketFamilyId;
@@ -1255,9 +1246,8 @@ decl_event! {
 
         /// Emits on deleting a dynamic bag.
         /// Params
-        /// - account ID for the state bloat bond
         /// - dynamic bag ID
-        DynamicBagDeleted(AccountId, DynamicBagId),
+        DynamicBagDeleted(DynamicBagId),
 
         /// Emits on creating a dynamic bag.
         /// Params
@@ -3197,17 +3187,11 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
         Ok(new_object_ids)
     }
 
-    fn delete_dynamic_bag(
-        state_bloat_bond_account_id: T::AccountId,
-        dynamic_bag_id: DynamicBagId<T>,
-    ) -> DispatchResult {
+    fn delete_dynamic_bag(dynamic_bag_id: DynamicBagId<T>) -> DispatchResult {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-        Self::try_performing_bag_removal(state_bloat_bond_account_id.clone(), bag_id)?;
+        Self::try_performing_bag_removal(bag_id)?;
 
-        Self::deposit_event(RawEvent::DynamicBagDeleted(
-            state_bloat_bond_account_id,
-            dynamic_bag_id,
-        ));
+        Self::deposit_event(RawEvent::DynamicBagDeleted(dynamic_bag_id));
 
         Ok(())
     }
@@ -3266,17 +3250,20 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
             .collect()
     }
 
-    fn funds_needed_for_upload(
+    fn get_upload_costs(
         num_of_objs_to_upload: usize,
         objs_total_size_in_bytes: u64,
-    ) -> BalanceOf<T> {
+    ) -> Vec<Cost<BalanceOf<T>>> {
         let num_of_objs_to_upload = num_of_objs_to_upload.saturated_into();
         let deletion_fee =
             Self::data_object_state_bloat_bond_value().saturating_mul(num_of_objs_to_upload);
 
         let storage_fee = Self::calculate_data_storage_fee(objs_total_size_in_bytes);
 
-        deletion_fee.saturating_add(storage_fee)
+        vec![
+            Cost::new(deletion_fee, &T::DataObjectBloatBondAllowedLocks::get()),
+            Cost::new(storage_fee, &T::DataSizeFeeAllowedLocks::get()),
+        ]
     }
 }
 
@@ -3524,7 +3511,7 @@ impl<T: Config> Module<T> {
         for object_id in object_ids.iter() {
             let data_object = Self::ensure_data_object_exists(src_bag_id, object_id)?;
 
-            bag_change.add_object(data_object.size, data_object.state_bloat_bond);
+            bag_change.add_object(data_object.size, data_object.state_bloat_bond.amount);
         }
 
         Self::check_bag_for_buckets_overflow(&dest_bag, &bag_change.voucher_update)?;
@@ -3783,7 +3770,7 @@ impl<T: Config> Module<T> {
     pub(crate) fn ensure_data_object_exists(
         bag_id: &BagId<T>,
         data_object_id: &T::DataObjectId,
-    ) -> Result<DataObject<BalanceOf<T>>, DispatchError> {
+    ) -> Result<DataObjectOf<T>, DispatchError> {
         ensure!(
             <DataObjectsById<T>>::contains_key(bag_id, data_object_id),
             Error::<T>::DataObjectDoesntExist
@@ -4150,7 +4137,7 @@ impl<T: Config> Module<T> {
         distribution_buckets: BTreeSet<DistributionBucketId<T>>,
     ) -> Result<(Bag<T>, BTreeSet<T::DataObjectId>), DispatchError> {
         let (object_creation_list, state_bloat_bond_request, upload_objs_size) =
-            Self::construct_objects_from_list(&data_objects)?;
+            Self::construct_objects_from_list(&account_id, &data_objects)?;
         let storage_fee = Self::calculate_data_storage_fee(upload_objs_size);
         let upload_objs_num = data_objects.len() as u64;
         let bag = Self::new_dynamic_bag(
@@ -4180,9 +4167,8 @@ impl<T: Config> Module<T> {
 
         // state bloat bond request creating objects: no-op if state bloat bond requested is 0
         if !state_bloat_bond_request.is_zero() {
-            <StorageTreasury<T>>::deposit(&account_id, state_bloat_bond_request)?;
-            //  slash: no-op if storage_fee = 0
-            let _ = Balances::<T>::slash(&account_id, storage_fee);
+            Self::pay_bloat_bond(&account_id, state_bloat_bond_request)?;
+            Self::pay_storage_fee(&account_id, storage_fee)?;
         }
 
         // Execute storage bucket updates
@@ -4229,9 +4215,9 @@ impl<T: Config> Module<T> {
     ) -> Result<BTreeSet<T::DataObjectId>, DispatchError> {
         let bag = Self::ensure_bag_exists(&bag_id)?;
         let (object_creation_list, state_bloat_bond_request, upload_objs_size) =
-            Self::construct_objects_from_list(&objects_to_upload)?;
-        let (_, state_bloat_bond_refund, remove_objs_size) =
-            Self::construct_objects_to_remove(&bag_id, Some(&objects_to_remove))?;
+            Self::construct_objects_from_list(&account_id, &objects_to_upload)?;
+        let (remove_objs, remove_objs_size) =
+            Self::validate_objects_to_remove(&bag_id, Some(&objects_to_remove))?;
         let storage_fee = Self::calculate_data_storage_fee(upload_objs_size);
         let upload_objs_num = objects_to_upload.len() as u64;
         let remove_objs_num = objects_to_remove.len() as u64;
@@ -4254,14 +4240,8 @@ impl<T: Config> Module<T> {
 
         //state bloat bond request creating objects: no-op if state bloat bond requested is 0
         if !state_bloat_bond_request.is_zero() {
-            <StorageTreasury<T>>::deposit(&account_id, state_bloat_bond_request)?;
-            //  slash: no-op if storage_fee = 0
-            let _ = Balances::<T>::slash(&account_id, storage_fee);
-        }
-
-        //state bloat bond refund deleting objects: no-op if state_bloat_bond_refund is 0
-        if !state_bloat_bond_refund.is_zero() {
-            <StorageTreasury<T>>::withdraw(&account_id, state_bloat_bond_refund)?;
+            Self::pay_bloat_bond(&account_id, state_bloat_bond_request)?;
+            Self::pay_storage_fee(&account_id, storage_fee)?;
         }
 
         // Execute storage bucket updates
@@ -4271,8 +4251,11 @@ impl<T: Config> Module<T> {
         }
 
         // Remove data objects
-        for id in objects_to_remove {
+        let module_account_id = StorageTreasury::<T>::module_account_id();
+        for (id, obj) in remove_objs {
             DataObjectsById::<T>::remove(&bag_id, id);
+            // repay the bloat bond
+            obj.state_bloat_bond.repay::<T>(&module_account_id, false)?;
         }
 
         // Add data objects
@@ -4305,10 +4288,9 @@ impl<T: Config> Module<T> {
         Ok(created_objects_ids)
     }
 
-    fn try_performing_bag_removal(account_id: T::AccountId, bag_id: BagId<T>) -> DispatchResult {
+    fn try_performing_bag_removal(bag_id: BagId<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&bag_id)?;
-        let (_, state_bloat_bond_refund, remove_objs_size) =
-            Self::construct_objects_to_remove(&bag_id, None)?;
+        let (remove_objs, remove_objs_size) = Self::validate_objects_to_remove(&bag_id, None)?;
         let remove_objs_num = bag.objects_number as u64;
 
         // Get updated storage buckets: vouchers and bag counters
@@ -4324,11 +4306,6 @@ impl<T: Config> Module<T> {
         //
         // == MUTATION SAFE ==
         //
-
-        //state bloat bond refund deleting objects: no-op if state_bloat_bond_refund is 0
-        if !state_bloat_bond_refund.is_zero() {
-            <StorageTreasury<T>>::withdraw(&account_id, state_bloat_bond_refund)?;
-        }
 
         // Execute storage bucket updates
         for (id, updated_bucket) in updated_storage_buckets {
@@ -4346,7 +4323,12 @@ impl<T: Config> Module<T> {
         }
 
         // Remove data objects
-        DataObjectsById::<T>::remove_prefix(&bag_id, None);
+        let module_account_id = StorageTreasury::<T>::module_account_id();
+        for (id, obj) in remove_objs {
+            DataObjectsById::<T>::remove(&bag_id, id);
+            // Repay the bloat bond
+            obj.state_bloat_bond.repay::<T>(&module_account_id, false)?;
+        }
 
         // Remove bag
         Bags::<T>::remove(&bag_id);
@@ -4356,13 +4338,13 @@ impl<T: Config> Module<T> {
 
     //Sums the accumulated obj_state_bloat_bond and size to the new object in the iteration.
     fn calculate_acc_size_and_acc_obj_state_bloat_bond(
-        mut acc_obj: Vec<DataObject<BalanceOf<T>>>,
+        mut acc_obj: Vec<DataObjectOf<T>>,
         acc_state_bloat_bond: BalanceOf<T>,
         acc_size: u64,
-        obj: DataObject<BalanceOf<T>>,
-    ) -> (Vec<DataObject<BalanceOf<T>>>, BalanceOf<T>, u64) {
+        obj: DataObjectOf<T>,
+    ) -> (Vec<DataObjectOf<T>>, BalanceOf<T>, u64) {
         let acc_state_bloat_bond: T::Balance =
-            acc_state_bloat_bond.saturating_add(obj.state_bloat_bond);
+            acc_state_bloat_bond.saturating_add(obj.state_bloat_bond.amount);
 
         let acc_size: u64 = acc_size.saturating_add(obj.size);
 
@@ -4376,6 +4358,7 @@ impl<T: Config> Module<T> {
     //If one object doesn't exist the iteration stops immediately.
     //At last, it'll return the list of objects to create/update, total state bloat bond to pay and total size.
     fn construct_objects_from_list(
+        bloat_bond_account_id: &T::AccountId,
         list: &[DataObjectCreationParameters],
     ) -> DataObjAndStateBloatBondAndObjSize<T> {
         let state_bloat_bond = Self::data_object_state_bloat_bond_value();
@@ -4384,7 +4367,10 @@ impl<T: Config> Module<T> {
                 Self::upload_data_objects_checks(param).and({
                     Ok(DataObject {
                         accepted: false,
-                        state_bloat_bond,
+                        state_bloat_bond: RepayableBloatBond::new(
+                            bloat_bond_account_id.clone(),
+                            state_bloat_bond,
+                        ),
                         size: param.size,
                         ipfs_content_id: param.ipfs_content_id.clone(),
                     })
@@ -4410,36 +4396,30 @@ impl<T: Config> Module<T> {
             .and_then(|x| x)
     }
 
-    fn construct_objects_to_remove(
+    fn validate_objects_to_remove(
         bag_id: &BagId<T>,
         specific_objects: Option<&BTreeSet<T::DataObjectId>>,
-    ) -> DataObjAndStateBloatBondAndObjSize<T> {
-        let objects: Vec<DataObject<T::Balance>> = if let Some(object_ids) = specific_objects {
-            object_ids
+    ) -> Result<(DataObjectsWithIds<T>, u64), DispatchError> {
+        let mut total_size = 0u64;
+        if let Some(object_ids) = specific_objects {
+            let objects = object_ids
                 .iter()
-                .map(|id| Self::ensure_data_object_exists(bag_id, id))
-                .collect()
+                .map(|id| {
+                    let obj = Self::ensure_data_object_exists(bag_id, id)?;
+                    total_size = total_size.saturating_add(obj.size);
+                    Ok((*id, obj))
+                })
+                .collect::<Result<_, DispatchError>>()?;
+            Ok((objects, total_size))
         } else {
-            Result::<Vec<DataObject<T::Balance>>, DispatchError>::Ok(
-                DataObjectsById::<T>::iter_prefix(&bag_id)
-                    .map(|(_, v)| v)
-                    .collect(),
-            )
-        }?;
-
-        let result = objects.into_iter().fold(
-            (Vec::new(), Zero::zero(), 0),
-            |(acc_obj, acc_state_bloat_bond_refund, acc_size), obj| {
-                Self::calculate_acc_size_and_acc_obj_state_bloat_bond(
-                    acc_obj,
-                    acc_state_bloat_bond_refund,
-                    acc_size,
-                    obj,
-                )
-            },
-        );
-
-        Ok(result)
+            let objects = DataObjectsById::<T>::iter_prefix(&bag_id)
+                .map(|(id, obj)| {
+                    total_size = total_size.saturating_add(obj.size);
+                    (id, obj)
+                })
+                .collect();
+            Ok((objects, total_size))
+        }
     }
 
     fn ensure_sufficient_balance(
@@ -4447,11 +4427,13 @@ impl<T: Config> Module<T> {
         state_bloat_bond_request: T::Balance,
         storage_fee: T::Balance,
     ) -> DispatchResult {
-        ensure!(
-            Balances::<T>::usable_balance(account_id)
-                >= state_bloat_bond_request.saturating_add(storage_fee),
-            Error::<T>::InsufficientBalance
+        let bloat_bond_cost = Cost::new(
+            state_bloat_bond_request,
+            &T::DataObjectBloatBondAllowedLocks::get(),
         );
+        let storage_fee_cost = Cost::new(storage_fee, &T::DataSizeFeeAllowedLocks::get());
+        ensure_can_cover_costs::<T>(account_id, &[bloat_bond_cost, storage_fee_cost])
+            .map_err(|_| Error::<T>::InsufficientBalance)?;
 
         Ok(())
     }
@@ -4503,5 +4485,22 @@ impl<T: Config> Module<T> {
         }
 
         Ok(())
+    }
+
+    fn pay_bloat_bond(source: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+        let treasury = <StorageTreasury<T>>::module_account_id();
+        pay_cost::<T>(
+            source,
+            Some(&treasury),
+            Cost::new(amount, &T::DataObjectBloatBondAllowedLocks::get()),
+        )
+    }
+
+    fn pay_storage_fee(source: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+        pay_cost::<T>(
+            source,
+            None,
+            Cost::new(amount, &T::DataSizeFeeAllowedLocks::get()),
+        )
     }
 }

@@ -8,6 +8,7 @@ use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
 use frame_support::traits::Currency;
+use frame_support::traits::WithdrawReasons;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use project_token::types::TransferPolicyParamsOf;
@@ -18,6 +19,7 @@ use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
+use staking_handler::StakingHandler;
 use storage::DynamicBagType;
 use strum::IntoEnumIterator;
 
@@ -107,8 +109,9 @@ impl CreateChannelFixture {
                 collaborators: BTreeMap::new(),
                 storage_buckets: BTreeSet::new(),
                 distribution_buckets: BTreeSet::new(),
-                expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-                expected_channel_state_bloat_bond: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+                expected_data_object_state_bloat_bond:
+                    Storage::<Test>::data_object_state_bloat_bond_value(),
+                expected_channel_state_bloat_bond: Content::channel_state_bloat_bond_value(),
             },
         }
     }
@@ -194,7 +197,7 @@ impl CreateChannelFixture {
     }
 
     fn get_balance(&self) -> BalanceOf<Test> {
-        Balances::<Test>::usable_balance(&self.sender)
+        Balances::<Test>::free_balance(&self.sender)
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -245,7 +248,10 @@ impl CreateChannelFixture {
                         daily_nft_counter: Default::default(),
                         weekly_nft_counter: Default::default(),
                         creator_token_id: None,
-                        channel_state_bloat_bond: self.params.expected_channel_state_bloat_bond
+                        channel_state_bloat_bond: RepayableBloatBond::new(
+                            self.sender.clone(),
+                            self.params.expected_channel_state_bloat_bond
+                        )
                     },
                     self.params.clone(),
                     channel_account
@@ -262,9 +268,13 @@ impl CreateChannelFixture {
                         acc.saturating_add(self.params.expected_data_object_state_bloat_bond)
                     });
 
+                let data_size_fee = Storage::<Test>::data_object_per_mega_byte_fee();
+
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    objects_state_bloat_bond + Content::channel_state_bloat_bond_value(),
+                    objects_state_bloat_bond
+                        + data_size_fee
+                        + Content::channel_state_bloat_bond_value(),
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -297,8 +307,9 @@ impl CreateVideoFixture {
                 assets: None,
                 meta: None,
                 auto_issue_nft: None,
-                expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-                expected_video_state_bloat_bond: DEFAULT_VIDEO_STATE_BLOAT_BOND,
+                expected_data_object_state_bloat_bond:
+                    Storage::<Test>::data_object_state_bloat_bond_value(),
+                expected_video_state_bloat_bond: Content::video_state_bloat_bond_value(),
             },
             channel_id: ChannelId::one(), // channel index starts at 1
         }
@@ -385,7 +396,7 @@ impl CreateVideoFixture {
     }
 
     fn get_balance(&self) -> BalanceOf<Test> {
-        Balances::<Test>::usable_balance(&self.sender)
+        Balances::<Test>::free_balance(&self.sender)
     }
 
     pub fn call(self) {
@@ -440,10 +451,12 @@ impl CreateVideoFixture {
                     .fold(BalanceOf::<Test>::zero(), |acc, _| {
                         acc.saturating_add(self.params.expected_data_object_state_bloat_bond)
                     });
+                let data_size_fee = Storage::<Test>::data_object_per_mega_byte_fee();
+                let video_bloat_bond = Content::video_state_bloat_bond_value();
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    objects_state_bloat_bond + Content::video_state_bloat_bond_value()
+                    objects_state_bloat_bond + data_size_fee + video_bloat_bond
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -484,7 +497,8 @@ impl UpdateChannelFixture {
                 new_meta: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
-                expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
+                expected_data_object_state_bloat_bond:
+                    Storage::<Test>::data_object_state_bloat_bond_value(),
             },
         }
     }
@@ -583,6 +597,7 @@ impl UpdateChannelFixture {
                 .fold(BalanceOf::<Test>::zero(), |acc, id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, id)
                         .state_bloat_bond
+                        .amount
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -730,7 +745,8 @@ impl UpdateVideoFixture {
                 assets_to_remove: BTreeSet::new(),
                 new_meta: None,
                 auto_issue_nft: Default::default(),
-                expected_data_object_state_bloat_bond: Default::default(),
+                expected_data_object_state_bloat_bond:
+                    Storage::<Test>::data_object_state_bloat_bond_value(),
             },
         }
     }
@@ -802,14 +818,14 @@ impl UpdateVideoFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender);
-        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let balance_pre = Balances::<Test>::free_balance(self.sender);
         let video_pre = Content::video_by_id(&self.video_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
 
-        let state_bloat_bond = DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND;
+        let state_bloat_bond = Storage::<Test>::data_object_state_bloat_bond_value();
 
-        let state_bloat_bond_deposited =
+        let fees_paid =
             self.params
                 .assets_to_upload
                 .as_ref()
@@ -820,6 +836,7 @@ impl UpdateVideoFixture {
                         .fold(BalanceOf::<Test>::zero(), |acc, _| {
                             acc.saturating_add(state_bloat_bond)
                         })
+                        .saturating_add(Storage::<Test>::data_object_per_mega_byte_fee())
                 });
 
         let state_bloat_bond_withdrawn = if !self.params.assets_to_remove.is_empty() {
@@ -829,6 +846,7 @@ impl UpdateVideoFixture {
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
                         .state_bloat_bond
+                        .amount
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -838,7 +856,7 @@ impl UpdateVideoFixture {
             Content::update_video(origin, self.actor, self.video_id, self.params.clone());
 
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
-        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let balance_post = Balances::<Test>::free_balance(self.sender);
         let video_post = Content::video_by_id(&self.video_id);
 
         assert_eq!(actual_result, expected_result);
@@ -856,8 +874,9 @@ impl UpdateVideoFixture {
                 );
 
                 assert_eq!(
-                    balance_post.saturating_sub(balance_pre),
-                    state_bloat_bond_withdrawn.saturating_sub(state_bloat_bond_deposited),
+                    // it may underflow, but this is fine in this use-case
+                    balance_post - balance_pre,
+                    state_bloat_bond_withdrawn - fees_paid,
                 );
 
                 if self.params.assets_to_upload.is_some() {
@@ -938,6 +957,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
                         .state_bloat_bond
+                        .amount
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -1009,18 +1029,17 @@ pub trait ChannelDeletion {
     fn execute_call(&self) -> DispatchResult;
     fn expected_event_on_success(&self) -> MetaEvent;
 
-    fn get_balance(&self) -> BalanceOf<Test> {
-        Balances::<Test>::usable_balance(self.get_sender())
-    }
-
     fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = self.get_balance();
+        let channel = Content::ensure_channel_exists(self.get_channel_id()).ok();
+        let bloat_bond_recipient_balance_pre = channel.as_ref().map_or(0, |c| {
+            Balances::<Test>::free_balance(c.channel_state_bloat_bond.get_recipient().unwrap())
+        });
         let bag_id_for_channel = Content::bag_id_for_channel(self.get_channel_id());
 
         let objects_state_bloat_bond =
             storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
                 .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
-                    acc + obj.state_bloat_bond
+                    acc + obj.state_bloat_bond.amount
                 });
 
         let channel_objects_ids =
@@ -1030,7 +1049,9 @@ pub trait ChannelDeletion {
 
         let actual_result = self.execute_call();
 
-        let balance_post = self.get_balance();
+        let bloat_bond_recipient_balance_post = channel.as_ref().map_or(0, |c| {
+            Balances::<Test>::free_balance(c.channel_state_bloat_bond.get_recipient().unwrap())
+        });
         assert_eq!(actual_result, expected_result);
 
         match actual_result {
@@ -1041,7 +1062,8 @@ pub trait ChannelDeletion {
                 );
 
                 assert_eq!(
-                    balance_post.saturating_sub(balance_pre),
+                    bloat_bond_recipient_balance_post
+                        .saturating_sub(bloat_bond_recipient_balance_pre),
                     objects_state_bloat_bond + Content::channel_state_bloat_bond_value(),
                 );
                 assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
@@ -1052,7 +1074,10 @@ pub trait ChannelDeletion {
             }
 
             Err(err) => {
-                assert_eq!(balance_pre, balance_post);
+                assert_eq!(
+                    bloat_bond_recipient_balance_pre,
+                    bloat_bond_recipient_balance_post
+                );
                 if err != Error::<Test>::ChannelDoesNotExist.into() {
                     assert!(ChannelById::<Test>::contains_key(&self.get_channel_id()));
                     assert!(channel_objects_ids.iter().all(|id| {
@@ -1432,6 +1457,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
                         .state_bloat_bond
+                        .amount
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -1503,13 +1529,12 @@ pub trait VideoDeletion {
     fn execute_call(&self) -> DispatchResult;
     fn expected_event_on_success(&self) -> MetaEvent;
 
-    fn get_balance(&self) -> BalanceOf<Test> {
-        Balances::<Test>::usable_balance(self.get_sender())
-    }
-
     fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = self.get_balance();
         let video_pre = <VideoById<Test>>::get(&self.get_video_id());
+        let bloat_bond_reciever_balance_pre: BalanceOf<Test> = video_pre
+            .video_state_bloat_bond
+            .get_recipient()
+            .map_or(Zero::zero(), |r| Balances::<Test>::free_balance(r));
         let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
         let data_obj_state_bloat_bond =
             video_pre
@@ -1518,11 +1543,15 @@ pub trait VideoDeletion {
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id)
                         .state_bloat_bond
+                        .amount
                 });
 
         let actual_result = self.execute_call();
 
-        let balance_post = self.get_balance();
+        let bloat_bond_reciever_balance_post: BalanceOf<Test> = video_pre
+            .video_state_bloat_bond
+            .get_recipient()
+            .map_or(Zero::zero(), |r| Balances::<Test>::free_balance(r));
 
         assert_eq!(actual_result, expected_result);
 
@@ -1534,7 +1563,8 @@ pub trait VideoDeletion {
                 );
 
                 assert_eq!(
-                    balance_post.saturating_sub(balance_pre),
+                    bloat_bond_reciever_balance_post
+                        .saturating_sub(bloat_bond_reciever_balance_pre),
                     data_obj_state_bloat_bond + Content::video_state_bloat_bond_value()
                 );
 
@@ -1545,7 +1575,10 @@ pub trait VideoDeletion {
                 assert!(!<VideoById<Test>>::contains_key(self.get_video_id()));
             }
             Err(err) => {
-                assert_eq!(balance_pre, balance_post);
+                assert_eq!(
+                    bloat_bond_reciever_balance_pre,
+                    bloat_bond_reciever_balance_post
+                );
 
                 if err == storage::Error::<Test>::DataObjectDoesntExist.into() {
                     let video_post = <VideoById<Test>>::get(self.get_video_id());
@@ -4661,7 +4694,7 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
 pub fn create_default_member_owned_channel() {
     create_default_member_owned_channel_with_storage_buckets(
         true,
-        DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
+        Storage::<Test>::data_object_state_bloat_bond_value(),
         &[],
     )
 }
@@ -4671,7 +4704,7 @@ pub fn create_default_member_owned_channel_with_collaborator_permissions(
 ) {
     create_default_member_owned_channel_with_storage_buckets(
         true,
-        DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
+        Storage::<Test>::data_object_state_bloat_bond_value(),
         collaborator_permissions,
     )
 }
@@ -4739,7 +4772,6 @@ pub fn create_default_member_owned_channel_with_videos(
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_data_object_state_bloat_bond(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -5563,4 +5595,34 @@ impl UpdateChannelNftLimitFixture {
             assert_eq!(old_limit, new_limit);
         }
     }
+}
+
+pub fn set_fees(
+    data_size_fee: BalanceOf<Test>,
+    data_obj_bloat_bond: BalanceOf<Test>,
+    channel_state_bloat_bond: BalanceOf<Test>,
+    video_state_bloat_bond: BalanceOf<Test>,
+) {
+    storage::DataObjectPerMegabyteFee::<Test>::set(data_size_fee);
+    storage::DataObjectStateBloatBondValue::<Test>::set(data_obj_bloat_bond);
+    ChannelStateBloatBondValue::<Test>::set(channel_state_bloat_bond);
+    VideoStateBloatBondValue::<Test>::set(video_state_bloat_bond);
+}
+
+pub fn set_invitation_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }

@@ -1,11 +1,13 @@
 mod mock;
 
+use frame_support::assert_noop;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_system::RawOrigin;
 use frame_system::{EventRecord, Phase};
 
 use crate::*;
 
+pub(crate) use mock::Balances;
 pub(crate) use mock::*;
 
 struct EventFixture;
@@ -60,7 +62,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = DiscussionPost {
             author_id: 1,
-            cleanup_pay_off: <Test as Config>::PostDeposit::get(),
+            cleanup_pay_off: RepayableBloatBond::new(1, <Test as Config>::PostDeposit::get()),
             last_edited: frame_system::Pallet::<Test>::block_number(),
         };
 
@@ -121,7 +123,7 @@ impl PostFixture {
             thread_id,
             origin: RawOrigin::Signed(1),
             post_id: None,
-            initial_balance: <Test as Config>::PostDeposit::get(),
+            initial_balance: ed() + <Test as Config>::PostDeposit::get(),
             account_id: 1,
             editable: true,
         }
@@ -198,7 +200,11 @@ impl PostFixture {
     }
 
     fn delete_post_and_assert(&mut self, result: DispatchResult) -> Option<u64> {
-        let initial_balance = balances::Pallet::<Test>::usable_balance(&self.account_id);
+        let post =
+            PostThreadIdByPostId::<Test>::get(self.thread_id, self.post_id.unwrap_or_default());
+        let bloat_bond_reciever = post.cleanup_pay_off.get_recipient();
+        let bloat_bond_reciever_initial_balance =
+            bloat_bond_reciever.map(|r| balances::Pallet::<Test>::free_balance(r));
         let add_post_result = Discussions::delete_post(
             self.origin.clone().into(),
             self.author_id,
@@ -211,8 +217,8 @@ impl PostFixture {
 
         if result.is_ok() {
             assert_eq!(
-                balances::Pallet::<Test>::usable_balance(&self.account_id),
-                initial_balance + <Test as Config>::PostDeposit::get()
+                balances::Pallet::<Test>::free_balance(bloat_bond_reciever.unwrap()),
+                bloat_bond_reciever_initial_balance.unwrap() + <Test as Config>::PostDeposit::get()
             );
             assert!(!<PostThreadIdByPostId<Test>>::contains_key(
                 self.thread_id,
@@ -369,6 +375,63 @@ fn delete_post_call_succeds_with_any_user_after_post_lifetime() {
             .with_author(10)
             .with_account_id(10)
             .delete_post_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn delete_post_call_succeds_with_bloat_bond_repaid_to_correct_account() {
+    initial_test_ext().execute_with(|| {
+        let creator_id: <Test as frame_system::Config>::AccountId = 1;
+        let remover_id: <Test as frame_system::Config>::AccountId = 2;
+
+        let creator_balance = ed() + <Test as Config>::PostDeposit::get();
+        let _ = Balances::make_free_balance_be(&creator_id, creator_balance);
+        set_invitation_lock(&creator_id, creator_balance);
+
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        Discussions::add_post(
+            RawOrigin::Signed(creator_id).into(),
+            creator_id as u64,
+            thread_id,
+            b"text".to_vec(),
+            true,
+        )
+        .unwrap();
+        let post_id = Discussions::post_count();
+
+        // Remove the thread and skip PostLifeTime blocks to make the post
+        // removeable by anyone
+        <ThreadById<Test>>::remove(thread_id);
+        let current_block = frame_system::Pallet::<Test>::block_number();
+        run_to_block(current_block + <Test as Config>::PostLifeTime::get());
+
+        // Delete the post as different user
+        Discussions::delete_post(
+            RawOrigin::Signed(remover_id).into(),
+            remover_id as u64,
+            post_id,
+            thread_id,
+            true,
+        )
+        .unwrap();
+
+        // Make sure bloat bond was removed from module account
+        let module_account_id = Discussions::module_account_id();
+        assert_eq!(Balances::usable_balance(module_account_id), ed());
+        // Make sure the creator recieved the bloat bond, but it's still locked
+        assert_eq!(
+            System::account(creator_id).data,
+            balances::AccountData {
+                free: creator_balance,
+                reserved: 0,
+                misc_frozen: creator_balance,
+                fee_frozen: 0
+            }
+        )
     });
 }
 
@@ -551,6 +614,115 @@ fn add_post_call_with_invalid_thread_failed() {
 
         let mut post_fixture = PostFixture::default_for_thread(2);
         post_fixture.add_post_and_assert(Err(Error::<Test>::ThreadDoesntExist.into()));
+    });
+}
+
+#[test]
+fn add_post_call_with_invitation_locked_funds_succeeded() {
+    initial_test_ext().execute_with(|| {
+        let user_id: <Test as frame_system::Config>::AccountId = 1;
+
+        let user_balance = ed() + <Test as Config>::PostDeposit::get();
+        let _ = Balances::make_free_balance_be(&user_id, user_balance);
+        set_invitation_lock(&user_id, user_balance);
+
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        Discussions::add_post(
+            RawOrigin::Signed(user_id).into(),
+            user_id as u64,
+            thread_id,
+            b"text".to_vec(),
+            true,
+        )
+        .unwrap();
+
+        let module_account_id = Discussions::module_account_id();
+        assert_eq!(
+            Balances::usable_balance(module_account_id),
+            ed() + <Test as Config>::PostDeposit::get()
+        );
+        assert_eq!(
+            System::account(user_id).data,
+            balances::AccountData {
+                free: ed(),
+                reserved: 0,
+                misc_frozen: user_balance,
+                fee_frozen: 0
+            }
+        )
+    });
+}
+
+#[test]
+fn add_post_call_with_insufficient_locked_funds_fails() {
+    initial_test_ext().execute_with(|| {
+        let user_id: <Test as frame_system::Config>::AccountId = 1;
+
+        let user_balance = ed() + <Test as Config>::PostDeposit::get() - 1;
+        let _ = Balances::make_free_balance_be(&user_id, user_balance);
+        set_invitation_lock(&user_id, user_balance);
+
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        assert_noop!(
+            Discussions::add_post(
+                RawOrigin::Signed(user_id).into(),
+                user_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            ),
+            Error::<Test>::InsufficientBalanceForPost
+        );
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        let _ = Balances::deposit_creating(&user_id, 1);
+        set_staking_candidate_lock(&user_id, ed() + 1);
+
+        assert_noop!(
+            Discussions::add_post(
+                RawOrigin::Signed(user_id).into(),
+                user_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            ),
+            Error::<Test>::InsufficientBalanceForPost
+        );
+    });
+}
+
+#[test]
+fn add_post_call_with_incompatible_locked_funds_fails() {
+    initial_test_ext().execute_with(|| {
+        let user_id: <Test as frame_system::Config>::AccountId = 1;
+
+        let user_balance = ed() + <Test as Config>::PostDeposit::get();
+        let _ = Balances::make_free_balance_be(&user_id, user_balance);
+        set_staking_candidate_lock(&user_id, user_balance);
+
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        assert_noop!(
+            Discussions::add_post(
+                RawOrigin::Signed(user_id).into(),
+                user_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            ),
+            Error::<Test>::InsufficientBalanceForPost
+        );
     });
 }
 

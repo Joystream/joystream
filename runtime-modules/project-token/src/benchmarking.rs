@@ -428,7 +428,7 @@ benchmarks! {
             split_staking_status: None,
             last_sale_total_purchased_amount: Some((sale_id, DEFAULT_SALE_PURCHASE.into())),
             next_vesting_transfer_id: 0,
-            bloat_bond,
+            bloat_bond: RepayableBloatBond::new(participant.clone(), bloat_bond),
         });
         assert_last_event::<T>(
             RawEvent::TokensPurchasedOnSale(
@@ -557,12 +557,14 @@ benchmarks! {
         assert_eq!(
             Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap(),
             AccountDataOf::<T> {
-            split_staking_status: Some(StakingStatus {
-                split_id: 0,
-                amount: TokenBalanceOf::<T>::zero()
-            }),
-            ..Default::default()
-        });
+                split_staking_status: Some(StakingStatus {
+                    split_id: 0,
+                    amount: TokenBalanceOf::<T>::zero()
+                }),
+                bloat_bond: RepayableBloatBond::new(owner_account, Zero::zero()),
+                ..Default::default()
+            }
+        );
         assert_last_event::<T>(
             RawEvent::TokensBurned(
                 token_id,

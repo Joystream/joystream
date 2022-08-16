@@ -696,7 +696,11 @@ impl DeleteDataObjectsFixture {
             .collect::<Vec<_>>();
 
         let state_bloat_bond = self.data_object_ids.iter().fold(0u64, |acc, id| {
-            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).state_bloat_bond)
+            acc.saturating_add(
+                Storage::data_object_by_id(&self.bag_id, id)
+                    .state_bloat_bond
+                    .amount,
+            )
         });
 
         let total_size_removed = self.data_object_ids.iter().fold(0u64, |acc, id| {
@@ -859,14 +863,13 @@ impl DeleteDynamicBagFixture {
 
         let state_bloat_bond = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
             .fold(0, |acc: u64, (_, obj)| {
-                acc.saturating_add(obj.state_bloat_bond)
+                acc.saturating_add(obj.state_bloat_bond.amount)
             });
 
         let total_size_removed = bag.objects_total_size;
         let total_number_removed = bag.objects_number;
 
-        let actual_result =
-            Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
+        let actual_result = Storage::delete_dynamic_bag(self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
 

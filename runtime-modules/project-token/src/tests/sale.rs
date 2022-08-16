@@ -875,6 +875,120 @@ fn succesful_sale_purchase_not_auto_finalizing_the_sale() {
     })
 }
 
+#[test]
+fn succesful_sale_purchase_with_invitation_locked_funds_used_for_bloat_bond() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&member!(1).1, ed() + bloat_bond);
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            ed() + bloat_bond + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+        );
+        set_invitation_lock(&member!(2).1, ed() + bloat_bond);
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(Token::module_treasury_account()),
+            ed() + bloat_bond * 2
+        );
+        assert_eq!(
+            System::account(member!(2).1).data,
+            balances::AccountData {
+                free: ed(),
+                reserved: 0,
+                misc_frozen: ed() + bloat_bond,
+                fee_frozen: 0
+            }
+        );
+    });
+}
+
+#[test]
+fn unsuccesful_sale_purchase_with_insufficient_locked_funds_to_cover_bloat_bond() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&member!(1).1, ed() + bloat_bond);
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            ed() + bloat_bond + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT - 1,
+        );
+        set_invitation_lock(&member!(2).1, ed() + bloat_bond - 1);
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        increase_account_balance(&member!(2).1, 1);
+        set_staking_candidate_lock(&member!(2).1, ed() + 1);
+
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
+    });
+}
+
+#[test]
+fn unsuccesful_sale_purchase_with_bloat_bond_incompatible_locked_funds() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&member!(1).1, ed() + bloat_bond);
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            ed() + bloat_bond + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+        );
+        set_staking_candidate_lock(&member!(2).1, ed() + bloat_bond);
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
+    });
+}
+
+#[test]
+fn unsuccesful_sale_purchase_with_invitation_locked_funds_used_for_purchase() {
+    let bloat_bond = joy!(100);
+    let sale_platform_fee = Permill::from_percent(30);
+    let configs = vec![
+        // Platform fee case
+        GenesisConfigBuilder::new_empty()
+            .with_bloat_bond(bloat_bond)
+            .with_sale_platform_fee(sale_platform_fee)
+            .build(),
+        // No platform fee case
+        GenesisConfigBuilder::new_empty()
+            .with_bloat_bond(bloat_bond)
+            .build(),
+    ];
+    for config in configs {
+        build_test_externalities(config).execute_with(|| {
+            increase_account_balance(&member!(1).1, ed() + bloat_bond);
+            IssueTokenFixture::default().call_and_assert(Ok(()));
+            InitTokenSaleFixture::default().call_and_assert(Ok(()));
+            increase_account_balance(
+                &member!(2).1,
+                ed() + bloat_bond + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            );
+            set_invitation_lock(&member!(2).1, ed() + bloat_bond + 1);
+            PurchaseTokensOnSaleFixture::default()
+                .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
+        });
+    }
+}
+
 /////////////////////////////////////////////////////////
 ////////////////// FINALIZE TOKEN SALE //////////////////
 /////////////////////////////////////////////////////////

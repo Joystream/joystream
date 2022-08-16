@@ -455,6 +455,7 @@ parameter_types! {
     pub const PostLifeTime: u64 = 10;
     pub const PostDeposit: u64 = 100;
     pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:propo");
+    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 impl proposals_discussion::Config for Test {
@@ -469,6 +470,7 @@ impl proposals_discussion::Config for Test {
     type PostLifeTime = PostLifeTime;
     type PostDeposit = PostDeposit;
     type ModuleId = ProposalsDiscussionModuleId;
+    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 pub struct MockVotersParameters;

@@ -3,6 +3,7 @@
 mod fixtures;
 pub(crate) mod mocks;
 
+use common::costs::Cost;
 use frame_support::dispatch::DispatchError;
 use frame_support::{assert_err, assert_ok, StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
@@ -17,14 +18,16 @@ use common::working_group::WorkingGroup;
 use crate::{
     BagId, DataObject, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
     DistributionBucketId, DynamicBagId, DynamicBagType, Error, ModuleAccount, RawEvent,
-    StaticBagId, StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
+    RepayableBloatBond, StaticBagId, StorageBucketOperatorStatus, StorageTreasury,
+    UploadParameters, Voucher,
 };
 
+use common::costs::ensure_can_cover_costs;
 use mocks::{
     build_test_externalities, create_cid, Balances, BlacklistSizeLimit,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
-    ExistentialDeposit, MaxDataObjectSize, MaxDistributionBucketFamilyNumber, Storage, Test,
-    ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
+    ExistentialDeposit, InviteMemberLockId, MaxDataObjectSize, MaxDistributionBucketFamilyNumber,
+    Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
@@ -760,7 +763,10 @@ fn upload_succeeded() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: data_object_state_bloat_bond,
+                state_bloat_bond: RepayableBloatBond::new(
+                    upload_params.state_bloat_bond_source_account_id,
+                    data_object_state_bloat_bond
+                ),
                 accepted: false,
             }
         );
@@ -1158,7 +1164,10 @@ fn upload_succeeded_with_dynamic_bag() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: data_object_state_bloat_bond,
+                state_bloat_bond: RepayableBloatBond::new(
+                    upload_params.state_bloat_bond_source_account_id,
+                    data_object_state_bloat_bond
+                ),
                 accepted: false,
             }
         );
@@ -2974,10 +2983,7 @@ fn delete_dynamic_bags_succeeded() {
             initial_balance
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeleted(
-            DEFAULT_MEMBER_ACCOUNT_ID,
-            dynamic_bag_id,
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeleted(dynamic_bag_id));
     });
 }
 
@@ -6126,7 +6132,7 @@ fn initial_module_account_balance_set() {
 }
 
 #[test]
-fn funds_needed_for_upload_succeeds() {
+fn get_upload_costs_succeeds() {
     //Module == 0 -> 0
     build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(0);
@@ -6136,10 +6142,16 @@ fn funds_needed_for_upload_succeeds() {
 
         let objs_total_size_in_bytes = 0;
 
-        let funds_needed =
-            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+        let upload_costs =
+            Storage::get_upload_costs(num_of_objs_to_upload, objs_total_size_in_bytes);
 
-        assert_eq!(funds_needed, 0);
+        assert_eq!(
+            upload_costs,
+            vec![
+                Cost::new(0, &[InviteMemberLockId::get()]),
+                Cost::new(0, &[InviteMemberLockId::get()])
+            ]
+        );
     });
 
     //Module > 0 round_up((ONE_MB - 1) % ONE_MB) -> 1
@@ -6151,10 +6163,16 @@ fn funds_needed_for_upload_succeeds() {
 
         let objs_total_size_in_bytes = ONE_MB - 1;
 
-        let funds_needed =
-            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+        let upload_costs =
+            Storage::get_upload_costs(num_of_objs_to_upload, objs_total_size_in_bytes);
 
-        assert_eq!(funds_needed, 1);
+        assert_eq!(
+            upload_costs,
+            vec![
+                Cost::new(0, &[InviteMemberLockId::get()]),
+                Cost::new(1, &[InviteMemberLockId::get()])
+            ]
+        );
     });
 
     //Module == 0 ONE_MB % ONE_MB -> 1
@@ -6166,10 +6184,16 @@ fn funds_needed_for_upload_succeeds() {
 
         let objs_total_size_in_bytes = ONE_MB;
 
-        let funds_needed =
-            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+        let upload_costs =
+            Storage::get_upload_costs(num_of_objs_to_upload, objs_total_size_in_bytes);
 
-        assert_eq!(funds_needed, 1);
+        assert_eq!(
+            upload_costs,
+            vec![
+                Cost::new(0, &[InviteMemberLockId::get()]),
+                Cost::new(1, &[InviteMemberLockId::get()])
+            ]
+        );
     });
 
     //Module =! 0 round_up((ONE_MB + 1 ) % ONE_MB) -> 2
@@ -6181,15 +6205,21 @@ fn funds_needed_for_upload_succeeds() {
 
         let objs_total_size_in_bytes = ONE_MB + 1;
 
-        let funds_needed =
-            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+        let upload_costs =
+            Storage::get_upload_costs(num_of_objs_to_upload, objs_total_size_in_bytes);
 
-        assert_eq!(funds_needed, 2);
+        assert_eq!(
+            upload_costs,
+            vec![
+                Cost::new(0, &[InviteMemberLockId::get()]),
+                Cost::new(2, &[InviteMemberLockId::get()])
+            ]
+        );
     });
 }
 
 #[test]
-fn funds_needed_for_upload_succeeds_overflow_sat() {
+fn get_upload_costs_succeeds_overflow_sat() {
     build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(0);
@@ -6197,15 +6227,27 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
 
         //(3689348814741910323 * 5) + (0 * 0) = u64 max + 0
         let num_of_objs_to_upload = 3689348814741910323;
-        let funds_needed = Storage::funds_needed_for_upload(num_of_objs_to_upload, 0);
+        let upload_costs = Storage::get_upload_costs(num_of_objs_to_upload, 0);
 
-        assert_eq!(funds_needed, u64::MAX);
+        assert_eq!(
+            upload_costs,
+            vec![
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()]),
+                Cost::new(0, &[InviteMemberLockId::get()])
+            ]
+        );
 
         //(3689348814741910324 * 5) + (0 * 0) = u64 max + 5 -> u64 max overflow
         let num_of_objs_to_upload = 3689348814741910324;
-        let funds_needed_saturated = Storage::funds_needed_for_upload(num_of_objs_to_upload, 0);
+        let upload_costs_saturated = Storage::get_upload_costs(num_of_objs_to_upload, 0);
 
-        assert_eq!(funds_needed_saturated, u64::MAX);
+        assert_eq!(
+            upload_costs_saturated,
+            vec![
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()]),
+                Cost::new(0, &[InviteMemberLockId::get()])
+            ]
+        );
     });
 
     build_test_externalities().execute_with(|| {
@@ -6214,33 +6256,66 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
         set_data_object_state_bloat_bond_value(0);
 
         //(0 * 0) + (5 * 3689348814741910323) = 18446744073709551615 + 0
-        let funds_needed_saturated = Storage::funds_needed_for_upload(0, 5 * ONE_MB);
+        let upload_costs = Storage::get_upload_costs(0, 5 * ONE_MB);
 
-        assert_eq!(funds_needed_saturated, u64::MAX);
+        assert_eq!(
+            upload_costs,
+            vec![
+                Cost::new(0, &[InviteMemberLockId::get()]),
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()])
+            ]
+        );
 
         set_data_object_per_mega_byte_fee(3689348814741910324);
 
         //(0 * 0) + (5 * 3689348814741910324) = 18446744073709551615 + 5 -> u64 max overflow
-        let funds_needed_saturated = Storage::funds_needed_for_upload(0, 5 * ONE_MB);
+        let upload_costs_saturated = Storage::get_upload_costs(0, 5 * ONE_MB);
 
-        assert_eq!(funds_needed_saturated, u64::MAX);
+        assert_eq!(
+            upload_costs_saturated,
+            vec![
+                Cost::new(0, &[InviteMemberLockId::get()]),
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()])
+            ]
+        );
     });
 
     build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
-        set_data_object_per_mega_byte_fee(3689348814741910303);
-        set_data_object_state_bloat_bond_value(5);
+        set_data_object_per_mega_byte_fee(3689348814741910323);
+        set_data_object_state_bloat_bond_value(3689348814741910323);
 
-        //(20 * 5) + (5 * 3689348814741910303) = 18446744073709551615 + 0
-        let funds_needed_saturated = Storage::funds_needed_for_upload(20, 5 * ONE_MB);
+        // 5 * 3689348814741910323 = 18446744073709551615 + 0
+        let upload_costs = Storage::get_upload_costs(5, 5 * ONE_MB);
 
-        assert_eq!(funds_needed_saturated, u64::MAX);
+        assert_eq!(
+            upload_costs,
+            vec![
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()]),
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()])
+            ]
+        );
 
-        set_data_object_per_mega_byte_fee(3689348814741910304);
+        set_data_object_per_mega_byte_fee(3689348814741910324);
+        set_data_object_state_bloat_bond_value(3689348814741910324);
 
-        //(20 * 5) + (5 * 3689348814741910304) = 18446744073709551615 + 5 -> u64 max overflow
-        let funds_needed_saturated = Storage::funds_needed_for_upload(20, 5 * ONE_MB);
+        // 3689348814741910324 * 5 -> u64 max overflow
+        let upload_costs_saturated = Storage::get_upload_costs(5, 5 * ONE_MB);
 
-        assert_eq!(funds_needed_saturated, u64::MAX);
+        assert_eq!(
+            upload_costs_saturated,
+            vec![
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()]),
+                Cost::new(u64::MAX, &[InviteMemberLockId::get()])
+            ]
+        );
+
+        // ensure_can_cover_costs overflow
+        assert_eq!(
+            ensure_can_cover_costs::<Test>(&DEFAULT_ACCOUNT_ID, &upload_costs),
+            Err(DispatchError::Other(
+                "ensure_can_cover_costs: Unexpected overflow"
+            ))
+        )
     });
 }

@@ -12,7 +12,8 @@ use crate::types::{
 };
 use crate::{
     account, assert_approx_eq, balance, block, joy, last_event_eq, member, merkle_proof,
-    merkle_root, origin, token, yearly_rate, Config, Error, RawEvent, TokenDataOf,
+    merkle_root, origin, token, yearly_rate, Config, Error, RawEvent, RepayableBloatBond,
+    TokenDataOf,
 };
 use frame_support::traits::Currency;
 use sp_runtime::DispatchError;
@@ -354,11 +355,125 @@ fn join_whitelist_ok_with_new_account_correctly_created() {
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &user_id),
             AccountData {
-                bloat_bond,
+                bloat_bond: RepayableBloatBond::new(user_acc, bloat_bond),
                 ..AccountData::default()
             }
         );
     })
+}
+
+#[test]
+fn join_whitelist_ok_with_invitation_locked_funds_used_for_bloat_bond() {
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+        (member!(1), member!(2), member!(3));
+    let proof = merkle_proof!(0, [user_id, other_user_id]);
+    let commit = merkle_root![user_id, other_user_id];
+    let bloat_bond = joy!(100);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .with_token_and_owner(token_id, token_data, owner_id, init_supply)
+        .build();
+
+    let required_joy_balance: JoyBalance = bloat_bond + ed();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&user_acc, required_joy_balance);
+        set_invitation_lock(&user_acc, required_joy_balance);
+
+        let _ = Token::join_whitelist(origin!(user_acc), user_id, token_id, proof);
+
+        assert_eq!(
+            Balances::usable_balance(Token::module_treasury_account()),
+            required_joy_balance
+        );
+        assert_eq!(
+            System::account(user_acc).data,
+            balances::AccountData {
+                free: ed(),
+                reserved: 0,
+                misc_frozen: required_joy_balance,
+                fee_frozen: 0
+            }
+        );
+    });
+}
+
+#[test]
+fn join_whitelist_fails_with_insufficient_locked_funds() {
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+        (member!(1), member!(2), member!(3));
+    let proof = merkle_proof!(0, [user_id, other_user_id]);
+    let commit = merkle_root![user_id, other_user_id];
+    let bloat_bond = joy!(100);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .with_token_and_owner(token_id, token_data, owner_id, init_supply)
+        .build();
+
+    let required_joy_balance: JoyBalance = bloat_bond + ed();
+    let user_balance = required_joy_balance - 1;
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&user_acc, user_balance);
+        set_invitation_lock(&user_acc, user_balance);
+
+        assert_noop!(
+            Token::join_whitelist(origin!(user_acc), user_id, token_id, proof.clone()),
+            Error::<Test>::InsufficientJoyBalance
+        );
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        increase_account_balance(&user_acc, 1);
+        set_staking_candidate_lock(&user_acc, ed() + 1);
+
+        assert_noop!(
+            Token::join_whitelist(origin!(user_acc), user_id, token_id, proof),
+            Error::<Test>::InsufficientJoyBalance
+        );
+    });
+}
+
+#[test]
+fn join_whitelist_fails_with_incompatible_locked_funds() {
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+        (member!(1), member!(2), member!(3));
+    let proof = merkle_proof!(0, [user_id, other_user_id]);
+    let commit = merkle_root![user_id, other_user_id];
+    let bloat_bond = joy!(100);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .with_token_and_owner(token_id, token_data, owner_id, init_supply)
+        .build();
+
+    let required_joy_balance: JoyBalance = bloat_bond + ed();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&user_acc, required_joy_balance);
+        set_staking_candidate_lock(&user_acc, required_joy_balance);
+
+        assert_noop!(
+            Token::join_whitelist(origin!(user_acc), user_id, token_id, proof),
+            Error::<Test>::InsufficientJoyBalance
+        );
+    });
 }
 
 #[test]
@@ -461,7 +576,10 @@ fn dust_account_ok_with_permissioned_mode_and_empty_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
+        .with_account(
+            user_id,
+            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(user_acc, 0)),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -474,15 +592,21 @@ fn dust_account_ok_with_permissioned_mode_and_empty_owned_account() {
 #[test]
 fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
     let (token_id, init_supply) = (token!(1), balance!(100));
-    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, other_user_acc)) =
         (member!(1), member!(2), member!(3));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
-        .with_account(other_user_id, AccountData::default())
+        .with_account(
+            user_id,
+            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(user_acc, 0)),
+        )
+        .with_account(
+            other_user_id,
+            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(other_user_acc, 0)),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -495,15 +619,21 @@ fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
 #[test]
 fn dust_account_ok_with_event_deposit() {
     let (token_id, init_supply) = (token!(1), balance!(100));
-    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, other_user_acc)) =
         (member!(1), member!(2), member!(3));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
-        .with_account(other_user_id, AccountData::default())
+        .with_account(
+            user_id,
+            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(user_acc, 0)),
+        )
+        .with_account(
+            other_user_id,
+            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(other_user_acc, 0)),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -580,7 +710,10 @@ fn dust_account_ok_by_user_with_correct_bloat_bond_refunded() {
         .with_account(user_id, AccountData::default())
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(balance!(0), bloat_bond),
+            AccountData::new_with_amount_and_bond(
+                balance!(0),
+                RepayableBloatBond::new(other_user_acc, bloat_bond),
+            ),
         )
         .build();
 
@@ -597,7 +730,7 @@ fn dust_account_ok_by_user_with_correct_bloat_bond_refunded() {
 fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let treasury = Token::module_treasury_account();
-    let ((owner_id, _), (other_user_id, _)) = (member!(1), member!(2));
+    let ((owner_id, _), (other_user_id, other_user_acc)) = (member!(1), member!(2));
     let user_acc = account!(99999);
     let bloat_bond = joy!(100);
 
@@ -608,7 +741,10 @@ fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
         .with_bloat_bond(bloat_bond)
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(balance!(0), bloat_bond),
+            AccountData::new_with_amount_and_bond(
+                balance!(0),
+                RepayableBloatBond::new(other_user_acc, bloat_bond),
+            ),
         )
         .build();
 
@@ -624,7 +760,7 @@ fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
 #[test]
 fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
     let (token_id, init_supply) = (token!(1), balance!(100));
-    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, other_user_acc)) =
         (member!(1), member!(2), member!(3));
     let treasury = Token::module_treasury_account();
     let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
@@ -637,7 +773,10 @@ fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
         .with_account(user_id, AccountData::default())
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(balance!(0), bloat_bond),
+            AccountData::new_with_amount_and_bond(
+                balance!(0),
+                RepayableBloatBond::new(other_user_acc, bloat_bond),
+            ),
         )
         .build();
 
@@ -1111,7 +1250,10 @@ fn issue_token_ok_with_owner_accounts_data_added() {
         let _ = Token::issue_token(owner_acc, params, default_upload_context());
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &owner_id),
-            AccountData::new_with_amount(owner_balance)
+            AccountData::new_with_amount_and_bond(
+                owner_balance,
+                RepayableBloatBond::new(owner_acc, 0)
+            )
         );
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &mem1),
@@ -1122,7 +1264,7 @@ fn issue_token_ok_with_owner_accounts_data_added() {
                     mem1_balance,
                     non_owner_vesting.clone()
                 ),
-                0
+                RepayableBloatBond::new(owner_acc, 0)
             )
         );
         assert_ok!(
@@ -1134,10 +1276,128 @@ fn issue_token_ok_with_owner_accounts_data_added() {
                     mem2_balance,
                     non_owner_vesting.clone()
                 ),
-                0
+                RepayableBloatBond::new(owner_acc, 0)
             )
         );
     })
+}
+
+#[test]
+fn issue_token_ok_with_invitation_locked_funds_used_for_bloat_bond() {
+    let token_id = token!(1);
+    let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
+    let (treasury, bloat_bond) = (Token::module_treasury_account(), joy!(100));
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
+        ..Default::default()
+    }
+    .with_allocation(&owner_id, 0, None)
+    .with_allocation(&mem1, 0, None)
+    .with_allocation(&mem2, 0, None);
+
+    let required_joy_balance = ed() + bloat_bond * 3;
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&owner_acc, required_joy_balance);
+        set_invitation_lock(&owner_acc, required_joy_balance);
+
+        assert_ok!(Token::issue_token(
+            owner_acc,
+            params.clone(),
+            default_upload_context()
+        ));
+
+        assert_eq!(Balances::usable_balance(treasury), required_joy_balance);
+        assert_eq!(
+            System::account(owner_acc).data,
+            balances::AccountData {
+                free: ed(),
+                reserved: 0,
+                misc_frozen: required_joy_balance,
+                fee_frozen: 0
+            }
+        );
+    });
+}
+
+#[test]
+fn issue_token_fails_with_insufficient_locked_funds() {
+    let token_id = token!(1);
+    let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
+    let bloat_bond = joy!(100);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
+        ..Default::default()
+    }
+    .with_allocation(&owner_id, 0, None)
+    .with_allocation(&mem1, 0, None)
+    .with_allocation(&mem2, 0, None);
+
+    let required_joy_balance = ed() + bloat_bond * 3;
+    let owner_balance = required_joy_balance - 1;
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&owner_acc, owner_balance);
+        set_invitation_lock(&owner_acc, owner_balance);
+
+        assert_noop!(
+            Token::issue_token(owner_acc, params.clone(), default_upload_context()),
+            Error::<Test>::InsufficientJoyBalance
+        );
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        increase_account_balance(&owner_acc, 1);
+        set_staking_candidate_lock(&owner_acc, ed() + 1);
+
+        assert_noop!(
+            Token::issue_token(owner_acc, params.clone(), default_upload_context()),
+            Error::<Test>::InsufficientJoyBalance
+        );
+    });
+}
+
+#[test]
+fn issue_token_fails_with_incompatible_locked_funds() {
+    let token_id = token!(1);
+    let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
+    let bloat_bond = joy!(100);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
+        ..Default::default()
+    }
+    .with_allocation(&owner_id, 0, None)
+    .with_allocation(&mem1, 0, None)
+    .with_allocation(&mem2, 0, None);
+
+    let required_joy_balance = ed() + bloat_bond * 3;
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&owner_acc, required_joy_balance);
+        set_staking_candidate_lock(&owner_acc, required_joy_balance);
+
+        assert_noop!(
+            Token::issue_token(owner_acc, params.clone(), default_upload_context()),
+            Error::<Test>::InsufficientJoyBalance
+        );
+    });
 }
 
 #[test]

@@ -350,7 +350,7 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_exi
         ContentTest::with_member_channel().setup();
 
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
-            Error::<Test>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit.into(),
+            Error::<Test>::WithdrawalAmountExceedsChannelAccountWithdrawableBalance.into(),
         ));
     })
 }
@@ -390,7 +390,7 @@ fn unsuccessful_channel_balance_double_spend_withdrawal() {
 
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Ok(()));
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
-            Error::<Test>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit.into(),
+            Error::<Test>::WithdrawalAmountExceedsChannelAccountWithdrawableBalance.into(),
         ));
     })
 }
@@ -691,7 +691,7 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
 
         // withdraw only
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
-            Error::<Test>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit.into(),
+            Error::<Test>::WithdrawalAmountExceedsChannelAccountWithdrawableBalance.into(),
         ))
     })
 }

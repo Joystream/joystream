@@ -10,6 +10,7 @@ mod tests;
 mod types;
 
 use core::marker::PhantomData;
+use frame_support::traits::LockIdentifier;
 use project_token::traits::PalletToken;
 use project_token::types::{
     TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,
@@ -31,6 +32,8 @@ pub use storage::{
 };
 
 pub use common::{
+    bloat_bond::RepayableBloatBond,
+    costs::{ensure_can_cover_costs, pay_cost, Cost},
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
@@ -141,6 +144,12 @@ pub trait Config:
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit: Get<BalanceOf<Self>>;
+
+    /// Locks compatible with channel state bloat bond
+    type ChannelStateBloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
+
+    /// Locks compatible with video state bloat bond
+    type VideoStateBloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
 }
 
 decl_storage! {
@@ -491,14 +500,16 @@ decl_module! {
             let num_objs = storage_assets.object_creation_list.len();
 
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
-            let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
-            let total_funds_needed = channel_state_bloat_bond.saturating_add(funds_needed);
+            let upload_costs = <T as Config>::DataObjectStorage::get_upload_costs(num_objs, total_size);
+            let bloat_bond_cost = Cost::<BalanceOf<T>>::new(
+                channel_state_bloat_bond,
+                &T::ChannelStateBloatBondAllowedLocks::get()
+            );
 
-            Self::ensure_sufficient_usable_balance_and_keep_alive(
+            ensure_can_cover_costs::<T>(
                 &sender,
-                total_funds_needed,
-                Error::<T>::InsufficientBalanceForChannelCreation
-            )?;
+                &[upload_costs, vec![bloat_bond_cost.clone()]].concat()
+            ).map_err(|_| Error::<T>::InsufficientBalanceForChannelCreation)?;
 
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
@@ -521,7 +532,11 @@ decl_module! {
             //
 
             // pay bloat bond into the channel account
-            Self::pay_bloat_bond(&sender, &channel_account, channel_state_bloat_bond)?;
+            pay_cost::<T>(
+                &sender,
+                Some(&channel_account),
+                bloat_bond_cost
+            )?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -541,7 +556,8 @@ decl_module! {
                 daily_nft_counter: Default::default(),
                 weekly_nft_counter: Default::default(),
                 creator_token_id: None,
-                channel_state_bloat_bond
+                channel_state_bloat_bond:
+                    RepayableBloatBond::new(sender, channel_state_bloat_bond),
             };
 
             // add channel to onchain state
@@ -691,7 +707,7 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender, channel_id, channel)?;
+            Self::try_to_perform_channel_deletion(channel_id, channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -771,7 +787,7 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender, channel_id, channel)?;
+            Self::try_to_perform_channel_deletion(channel_id, channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -857,14 +873,16 @@ decl_module! {
             let num_objs = storage_assets.object_creation_list.len();
 
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
-            let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
-            let total_funds_needed = video_state_bloat_bond.saturating_add(funds_needed);
+            let upload_costs = <T as Config>::DataObjectStorage::get_upload_costs(num_objs, total_size);
+            let bloat_bond_cost = Cost::<BalanceOf<T>>::new(
+                video_state_bloat_bond,
+                &T::VideoStateBloatBondAllowedLocks::get()
+            );
 
-            Self::ensure_sufficient_usable_balance_and_keep_alive(
+            ensure_can_cover_costs::<T>(
                 &sender,
-                total_funds_needed,
-                Error::<T>::InsufficientBalanceForVideoCreation
-            )?;
+                &[upload_costs, vec![bloat_bond_cost.clone()]].concat()
+            ).map_err(|_| Error::<T>::InsufficientBalanceForVideoCreation)?;
 
             if nft_status.is_some() {
                 Self::check_nft_limits(&channel)?;
@@ -891,11 +909,16 @@ decl_module! {
                 in_channel: channel_id,
                 nft_status: nft_status.clone(),
                 data_objects: data_objects_ids.clone(),
-                video_state_bloat_bond
+                video_state_bloat_bond:
+                    RepayableBloatBond::new(sender.clone(), video_state_bloat_bond),
             };
 
             let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
-            Self::pay_bloat_bond(&sender, &channel_account, video_state_bloat_bond)?;
+            pay_cost::<T>(
+                &sender,
+                Some(&channel_account),
+                bloat_bond_cost
+            )?;
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -1263,9 +1286,8 @@ decl_module! {
             );
 
             ensure!(
-                <Balances<T>>::usable_balance(&reward_account)
-                    .saturating_sub(T::ExistentialDeposit::get()) >= amount,
-                Error::<T>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit
+                Self::channel_account_withdrawable_balance(&reward_account, &channel) >= amount,
+                Error::<T>::WithdrawalAmountExceedsChannelAccountWithdrawableBalance
             );
 
             ensure!(
@@ -2876,7 +2898,8 @@ decl_module! {
 
             // Get channel's reward account and its balance
             let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
-            let reward_account_balance = Balances::<T>::usable_balance(&reward_account);
+            let withdrawable_balance =
+                Self::channel_account_withdrawable_balance(&reward_account, &channel);
 
             // Get leftover funds destination
             let leftover_destination = Self::channel_funds_destination(&channel)?;
@@ -2887,7 +2910,7 @@ decl_module! {
                 start,
                 duration,
                 reward_account.clone(),
-                reward_account_balance.saturating_sub(channel.channel_state_bloat_bond)
+                withdrawable_balance
             )?;
 
 
@@ -3206,10 +3229,11 @@ impl<T: Config> Module<T> {
             channel.num_videos = channel.num_videos.saturating_sub(1)
         });
 
-        // Return video state bloat bond
+        // Repay video state bloat bond
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
-        let bloat_bond = video.video_state_bloat_bond;
-        Self::return_bloat_bond(&channel_account, sender, bloat_bond, false)?;
+        video
+            .video_state_bloat_bond
+            .repay::<T>(&channel_account, false)?;
 
         Ok(())
     }
@@ -3237,14 +3261,13 @@ impl<T: Config> Module<T> {
     }
 
     fn try_to_perform_channel_deletion(
-        sender: T::AccountId,
         channel_id: T::ChannelId,
         channel: Channel<T>,
     ) -> DispatchResult {
         let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
 
         // try to delete channel dynamic bag with objects
-        Storage::<T>::delete_dynamic_bag(sender.clone(), dynamic_bag_id)?;
+        Storage::<T>::delete_dynamic_bag(dynamic_bag_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -3253,10 +3276,11 @@ impl<T: Config> Module<T> {
         // remove channel from on chain state
         ChannelById::<T>::remove(channel_id);
 
-        // return channel state bloat bond
+        // Repay channel state bloat bond
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
-        let bloat_bond = channel.channel_state_bloat_bond;
-        Self::return_bloat_bond(&channel_account, &sender, bloat_bond, true)?;
+        channel
+            .channel_state_bloat_bond
+            .repay::<T>(&channel_account, true)?;
 
         Ok(())
     }
@@ -3319,22 +3343,6 @@ impl<T: Config> Module<T> {
             .difference(ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
-    }
-
-    fn ensure_sufficient_usable_balance_and_keep_alive(
-        account_id: &T::AccountId,
-        amount: BalanceOf<T>,
-        err: Error<T>,
-    ) -> DispatchResult {
-        let usable_balance = Balances::<T>::usable_balance(account_id);
-        let total_balance = Balances::<T>::total_balance(account_id);
-
-        ensure!(
-            usable_balance >= amount
-                && total_balance >= amount.saturating_add(T::ExistentialDeposit::get()),
-            err
-        );
-        Ok(())
     }
 
     fn ensure_sufficient_balance_for_channel_transfer(
@@ -3590,7 +3598,7 @@ impl<T: Config> Module<T> {
                     reward_account,
                     account_id,
                     amount,
-                    ExistenceRequirement::AllowDeath,
+                    ExistenceRequirement::KeepAlive,
                 )
             }
             ChannelFundsDestination::CouncilBudget => {
@@ -3649,36 +3657,13 @@ impl<T: Config> Module<T> {
         }
     }
 
-    // Utility function for paying channel/video bloat bond
-    fn pay_bloat_bond(
-        source: &T::AccountId,
-        dest: &T::AccountId,
-        amount: BalanceOf<T>,
-    ) -> DispatchResult {
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            source,
-            dest,
-            amount,
-            ExistenceRequirement::KeepAlive,
-        )
-    }
-
-    // Utility function for returning channel/video bloat bond
-    fn return_bloat_bond(
-        source: &T::AccountId,
-        dest: &T::AccountId,
-        amount: BalanceOf<T>,
-        allow_death: bool,
-    ) -> DispatchResult {
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            source,
-            dest,
-            amount,
-            match allow_death {
-                true => ExistenceRequirement::AllowDeath,
-                false => ExistenceRequirement::KeepAlive,
-            },
-        )
+    fn channel_account_withdrawable_balance(
+        channel_account: &T::AccountId,
+        channel: &Channel<T>,
+    ) -> BalanceOf<T> {
+        let usable_balance = balances::Pallet::<T>::usable_balance(channel_account);
+        let bloat_bond_value = channel.channel_state_bloat_bond.amount;
+        usable_balance.saturating_sub(bloat_bond_value)
     }
 }
 

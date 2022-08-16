@@ -2,7 +2,7 @@
 
 pub use frame_system;
 
-use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize, WithdrawReasons};
 use frame_support::{
     parameter_types,
     traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
@@ -16,13 +16,12 @@ use sp_runtime::{
     DispatchResult,
 };
 
-use crate::CouncilOriginValidator;
-use crate::{MemberOriginValidator, MembershipInfoProvider};
+use crate::{BalanceOf, CouncilOriginValidator, MemberOriginValidator, MembershipInfoProvider};
 
 use frame_support::dispatch::DispatchError;
 use sp_std::convert::{TryFrom, TryInto};
 
-use staking_handler::{LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingHandler, StakingManager};
 
 use crate as proposals_discussion;
 
@@ -69,6 +68,7 @@ parameter_types! {
     pub const PostLifeTime: u64 = 10;
     pub const PostDeposit: u64 = 100;
     pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:propo");
+    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 impl frame_system::Config for Test {
@@ -219,6 +219,7 @@ impl crate::Config for Test {
     type PostLifeTime = PostLifeTime;
     type PostDeposit = PostDeposit;
     type ModuleId = ProposalsDiscussionModuleId;
+    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 impl MemberOriginValidator<Origin, u64, u128> for () {
@@ -404,4 +405,26 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
         <Discussions as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+pub fn ed() -> BalanceOf<Test> {
+    ExistentialDeposit::get().into()
+}
+
+pub fn set_invitation_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }

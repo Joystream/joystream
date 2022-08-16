@@ -3,7 +3,7 @@
 use crate as forum;
 use crate::*;
 
-pub use frame_support::assert_err;
+pub use frame_support::{assert_err, assert_noop};
 use sp_core::H256;
 
 use crate::Config;
@@ -11,9 +11,9 @@ use frame_support::traits::{
     ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize,
 };
 use sp_std::cell::RefCell;
-use staking_handler::LockComparator;
+use staking_handler::{LockComparator, StakingHandler};
 
-use frame_support::parameter_types;
+use frame_support::{parameter_types, storage_root, StateVersion};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Hash, IdentityLookup},
@@ -179,6 +179,7 @@ parameter_types! {
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: PalletId = PalletId(*b"m0:forum"); // module : forum
+    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InviteMemberLockId::get()];
 }
 
 pub struct MapLimits;
@@ -205,6 +206,8 @@ impl Config for Runtime {
     type PostDeposit = PostDeposit;
 
     type ModuleId = ForumModuleId;
+
+    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
@@ -240,7 +243,9 @@ impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
         let mut benchmarks_accounts: Vec<u128> = (1..max_worker_number).collect::<Vec<_>>();
         allowed_accounts.append(&mut benchmarks_accounts);
 
-        allowed_accounts.contains(account_id) && account_id == member_id
+        (allowed_accounts.contains(account_id) && account_id == member_id)
+            || (*account_id == NOT_FORUM_LEAD_ALT_ORIGIN_ID
+                && *member_id == NOT_FORUM_LEAD_ORIGIN_ID)
     }
 }
 
@@ -320,6 +325,10 @@ pub const FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(FORUM_LEAD_ORIGIN_I
 pub const NOT_FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 111;
 
 pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ORIGIN_ID);
+
+pub const NOT_FORUM_LEAD_ALT_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 211;
+
+pub const NOT_FORUM_LEAD_ALT_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ALT_ORIGIN_ID);
 
 pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 112;
 
@@ -442,17 +451,16 @@ pub fn create_thread_mock(
 ) -> <Runtime as Config>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
     let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
+    let storage_root_pre = storage_root(StateVersion::V1);
 
-    assert_eq!(
-        TestForumModule::create_thread(
-            mock_origin(origin),
-            forum_user_id,
-            category_id,
-            title.clone(),
-            text.clone(),
-        ),
-        result
+    let actual_result = TestForumModule::create_thread(
+        mock_origin(origin),
+        forum_user_id,
+        category_id,
+        title.clone(),
+        text.clone(),
     );
+    assert_eq!(actual_result, result);
     if result.is_ok() {
         assert_eq!(TestForumModule::next_thread_id(), thread_id + 1);
         assert_eq!(
@@ -474,10 +482,7 @@ pub fn create_thread_mock(
                 - <Runtime as Config>::PostDeposit::get()
         );
     } else {
-        assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance
-        );
+        assert_eq!(storage_root(StateVersion::V1), storage_root_pre);
     }
     thread_id
 }
@@ -518,30 +523,35 @@ pub fn edit_thread_metadata_mock(
 /// Create delete thread mock
 pub fn delete_thread_mock(
     origin: OriginType,
-    account_id: <Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
     thread_id: <Runtime as Config>::ThreadId,
     result: DispatchResult,
 ) {
-    let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
+    let storage_root_pre = storage_root(StateVersion::V1);
+    let thread = ThreadById::<Runtime>::get(category_id, thread_id);
+    let bloat_bond_reciever = thread.cleanup_pay_off.get_recipient();
+    let bloat_bond_reciever_initial_balance = bloat_bond_reciever.map_or(Zero::zero(), |r| {
+        balances::Pallet::<Runtime>::free_balance(r)
+    });
     let hide = false;
 
     let num_direct_threads = match <CategoryById<Runtime>>::contains_key(category_id) {
         true => <CategoryById<Runtime>>::get(category_id).num_direct_threads,
         false => 0,
     };
-    let thread_payment = <ThreadById<Runtime>>::get(category_id, thread_id).cleanup_pay_off;
-    assert_eq!(
-        TestForumModule::delete_thread(
-            mock_origin(origin),
-            forum_user_id,
-            category_id,
-            thread_id,
-            hide,
-        ),
-        result
+    let thread_payment = <ThreadById<Runtime>>::get(category_id, thread_id)
+        .cleanup_pay_off
+        .amount;
+
+    let actual_result = TestForumModule::delete_thread(
+        mock_origin(origin),
+        forum_user_id,
+        category_id,
+        thread_id,
+        hide,
     );
+    assert_eq!(actual_result, result);
     if result.is_ok() {
         assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
@@ -559,21 +569,21 @@ pub fn delete_thread_mock(
         );
 
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance + thread_payment
+            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever.unwrap()),
+            bloat_bond_reciever_initial_balance + thread_payment
+        );
+        assert_eq!(
+            balances::Pallet::<Runtime>::total_balance(&TestForumModule::thread_account(thread_id)),
+            0
         );
     } else {
-        assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance
-        );
+        assert_eq!(storage_root(StateVersion::V1), storage_root_pre);
     }
 }
 
 /// Create delete post mock
 pub fn delete_post_mock(
     origin: OriginType,
-    account_id: <Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
     thread_id: <Runtime as Config>::ThreadId,
@@ -581,7 +591,12 @@ pub fn delete_post_mock(
     result: DispatchResult,
     hide: bool,
 ) {
-    let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
+    let storage_root_pre = storage_root(StateVersion::V1);
+    let post = PostById::<Runtime>::get(thread_id, post_id);
+    let bloat_bond_reciever = post.cleanup_pay_off.get_recipient();
+    let bloat_bond_reciever_initial_balance = bloat_bond_reciever.map_or(Zero::zero(), |r| {
+        balances::Pallet::<Runtime>::free_balance(r)
+    });
     let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
     let mut deleted_posts = BTreeMap::new();
     let extended_post_id = ExtendedPostIdObject {
@@ -620,14 +635,11 @@ pub fn delete_post_mock(
         );
 
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance + <Runtime as Config>::PostDeposit::get()
+            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever.unwrap()),
+            bloat_bond_reciever_initial_balance + <Runtime as Config>::PostDeposit::get()
         );
     } else {
-        assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance
-        );
+        assert_eq!(storage_root(StateVersion::V1), storage_root_pre);
     }
 }
 
@@ -922,8 +934,7 @@ pub fn moderate_thread_mock(
     rationale: Vec<u8>,
     result: DispatchResult,
 ) -> <Runtime as Config>::ThreadId {
-    let thread_account_id =
-        <Runtime as Config>::ModuleId::get().into_sub_account_truncating(thread_id);
+    let thread_account_id = TestForumModule::thread_account(thread_id);
     assert_eq!(
         TestForumModule::moderate_thread(
             mock_origin(origin),
@@ -947,7 +958,7 @@ pub fn moderate_thread_mock(
         );
 
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&thread_account_id),
+            balances::Pallet::<Runtime>::total_balance(&thread_account_id),
             0
         );
     }
@@ -1070,6 +1081,28 @@ pub fn react_post_mock(
             ))
         );
     };
+}
+
+pub fn ed() -> BalanceOf<Runtime> {
+    ExistentialDeposit::get().into()
+}
+
+pub fn set_invitation_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
 
 /// Create default genesis config

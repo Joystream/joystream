@@ -119,6 +119,7 @@ parameter_types! {
     pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
         crate::DistributionBucketsPerBagValueConstraint {min: 2, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = u64::MAX - 1000;
+    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InviteMemberLockId::get()];
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -169,6 +170,8 @@ impl crate::Config for Test {
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type ModuleAccountInitialBalance = ExistentialDeposit;
+    type DataSizeFeeAllowedLocks = BloatBondAllowedLocks;
+    type DataObjectBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 pub const DEFAULT_MEMBER_ID: u64 = 100;

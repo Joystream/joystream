@@ -8,6 +8,7 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_err;
 use storage::DynamicBagType;
+use storage::ModuleAccount as StorageModuleAccount;
 
 #[test]
 fn delete_video_nft_is_issued() {
@@ -196,6 +197,7 @@ fn unsuccessful_video_creation_with_invalid_expected_video_state_bloat_bond() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
             })
+            .with_expected_video_state_bloat_bond(video_state_bloat_bond - 1)
             .call_and_assert(Err(Error::<Test>::VideoStateBloatBondChanged.into()));
     })
 }
@@ -481,6 +483,117 @@ fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
                 }],
             })
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
+    })
+}
+
+#[test]
+fn successful_video_creation_with_invitation_lock() {
+    with_default_mock_builder(|| {
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond, video_state_bloat_bond) =
+            (10u64, 20u64, ed(), 30u64);
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            video_state_bloat_bond,
+        );
+
+        ContentTest::with_member_channel().setup();
+
+        let total_cost =
+            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + video_state_bloat_bond;
+        let member_balance = ed() + total_cost;
+
+        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        CreateVideoFixture::default()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+
+        let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
+
+        assert_eq!(
+            Balances::<Test>::usable_balance(storage_module_acc),
+            ed() + data_obj_bloat_bond * DATA_OBJECTS_NUMBER * 2
+        );
+        assert_eq!(
+            System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
+            balances::AccountData {
+                free: ed(),
+                reserved: 0,
+                misc_frozen: ed() + total_cost,
+                fee_frozen: 0
+            }
+        )
+    })
+}
+
+#[test]
+fn unsuccessful_video_creation_with_locks_and_insufficient_balance() {
+    with_default_mock_builder(|| {
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond, video_state_bloat_bond) =
+            (10u64, 20u64, ed(), 30u64);
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            video_state_bloat_bond,
+        );
+
+        ContentTest::with_member_channel().setup();
+
+        let total_cost =
+            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + video_state_bloat_bond;
+        let member_balance = ed() + total_cost - 1;
+
+        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        CreateVideoFixture::default()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::InsufficientBalanceForVideoCreation.into()
+            ));
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, 1);
+        set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, ed() + 1);
+
+        CreateVideoFixture::default()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::InsufficientBalanceForVideoCreation.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_creation_with_not_allowed_lock() {
+    with_default_mock_builder(|| {
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond, video_state_bloat_bond) =
+            (10u64, 20u64, ed(), 30u64);
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            video_state_bloat_bond,
+        );
+
+        ContentTest::with_member_channel().setup();
+
+        let total_cost =
+            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + video_state_bloat_bond;
+        let member_balance = ed() + total_cost;
+
+        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        CreateVideoFixture::default()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::InsufficientBalanceForVideoCreation.into()
+            ));
     })
 }
 
@@ -1202,6 +1315,60 @@ fn unsuccessful_video_deletion_with_invalid_num_objects_to_delete() {
                 Error::<Test>::InvalidVideoDataObjectsCountProvided.into()
             ));
     })
+}
+
+#[test]
+fn successful_video_deletion_with_bloat_bond_repaid_to_correct_account() {
+    with_default_mock_builder(|| {
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond, video_state_bloat_bond) =
+            (10u64, 20u64, ed(), 30u64);
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            video_state_bloat_bond,
+        );
+
+        ContentTest::with_member_channel().setup();
+
+        let total_cost =
+            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + video_state_bloat_bond;
+        let member_balance = ed() + total_cost;
+
+        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        CreateVideoFixture::default()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+
+        // Delete video using different (alternative) controller account
+        DeleteVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ALT_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+
+        let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
+        let channel_acc = ContentTreasury::<Test>::account_for_channel(ChannelId::one());
+
+        // Verify that video and assets bloat bonds were returned to the user and remain locked
+        assert_eq!(
+            Balances::<Test>::usable_balance(&channel_acc),
+            channel_state_bloat_bond
+        );
+        assert_eq!(
+            Balances::<Test>::usable_balance(storage_module_acc),
+            ed() + data_obj_bloat_bond * DATA_OBJECTS_NUMBER
+        );
+        assert_eq!(
+            System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
+            balances::AccountData {
+                free: ed() + total_cost - data_size_fee,
+                reserved: 0,
+                misc_frozen: member_balance,
+                fee_frozen: 0
+            }
+        )
+    });
 }
 
 #[test]
