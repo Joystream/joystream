@@ -1199,6 +1199,37 @@ benchmarks! {
 
             assert_eq!(Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id).amount, 0u32.into());
         }
+
+    make_open_auction_bid {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
+        let (video_id,participant_id,participant_account_id) = setup_video_with_nft_in_open_auction::<T>(
+            curator_account_id.clone(),
+            nft_owner_actor,
+            channel_id
+        )?;
+
+        System::<T>::set_block_number(System::<T>::block_number() + 2u32.into());
+        let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
+        let old_bid_amount = add_open_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id).amount;
+        let origin = RawOrigin::Signed(participant_account_id.clone());
+
+        System::<T>::set_block_number(System::<T>::block_number() + 10u32.into());
+        let bid_amount = Pallet::<T>::min_starting_price()
+            + Pallet::<T>::min_bid_step().mul(11u32.into()); // bid above buy now
+    }: _(origin, participant_id, video_id, bid_amount)
+        verify {
+            assert_eq!(
+                balance_pre + old_bid_amount - bid_amount,
+                Balances::<T>::usable_balance(participant_account_id)
+            );
+
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+        }
 }
 
 #[cfg(test)]
@@ -1462,6 +1493,13 @@ pub mod tests {
     fn pick_open_auction_winner() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_pick_open_auction_winner());
+        })
+    }
+
+    #[test]
+    fn make_open_auction_bid() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_make_open_auction_bid());
         })
     }
 }
