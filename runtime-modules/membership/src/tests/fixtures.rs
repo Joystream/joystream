@@ -110,6 +110,14 @@ pub const BOB_CONTROLLER_ACCOUNT_ID: u64 = BOB_ACCOUNT_ID;
 pub const ALICE_MEMBER_ID: u64 = 0;
 pub const BOB_MEMBER_ID: u64 = 1;
 
+pub fn set_alice_as_initial_member() {
+    let initial_balance = DefaultMembershipPrice::get();
+    set_alice_free_balance(initial_balance);
+    let next_member_id = Membership::members_created();
+    assert_ok!(buy_default_membership_as_alice());
+    assert_eq!(ALICE_MEMBER_ID, next_member_id);
+}
+
 pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
     let info = get_alice_info();
 

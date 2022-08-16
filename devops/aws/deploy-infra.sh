@@ -86,7 +86,6 @@ if [ $? -eq 0 ]; then
                   data_path=$DATA_PATH number_of_validators=$NUMBER_OF_VALIDATORS
                   deployment_type=$DEPLOYMENT_TYPE
                   initial_balances_file=$INITIAL_BALANCES_PATH
-                  initial_members_file=$INITIAL_MEMBERS_PATH
                   skip_chain_setup=$SKIP_CHAIN_SETUP"
 
   echo -e "\n\n=========== Delete Build instance ==========="

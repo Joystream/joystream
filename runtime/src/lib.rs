@@ -1399,6 +1399,9 @@ parameter_types! {
     // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
     // The new compressed wasm format is much smaller in size ~ 1MB
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_500_000;
+    pub const FundingRequestProposalMaxAmount: Balance = 1_000_000 * currency::DOLLARS; // TODO: adjust
+    pub const FundingRequestProposalMaxAccounts: u32 = 100;
+    pub const SetMaxValidatorCountProposalMaxValidators: u32 = 300;
 }
 
 impl proposals_codex::Config for Runtime {
@@ -1434,6 +1437,9 @@ impl proposals_codex::Config for Runtime {
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    type FundingRequestProposalMaxAmount = FundingRequestProposalMaxAmount;
+    type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
+    type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1551,7 +1557,7 @@ construct_runtime!(
         // Joystream
         Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Members: membership::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Members: membership::{Pallet, Call, Storage, Event<T>},
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Pallet, Call, Storage, Event},
         // Bounty: bounty::{Pallet, Call, Storage, Event<T>},

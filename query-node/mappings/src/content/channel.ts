@@ -60,7 +60,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
 
     collaborators: Array.from(channelCreationParameters.collaborators).map(
-      (id) => new Membership({ id: id.toString() })
+      (id) => new Membership({ id: id[0].toString() })
     ),
     rewardAccount: rewardAccount.toString(),
   })
@@ -130,7 +130,7 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 
   const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
   if (newCollaborators) {
-    channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id.toString() }))
+    channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id[0].toString() }))
   }
 
   // save channel

@@ -46,7 +46,6 @@
 #![allow(clippy::unused_unit)]
 
 pub mod benchmarking;
-pub mod genesis;
 #[cfg(test)]
 mod tests;
 pub mod weights;
@@ -351,27 +350,6 @@ decl_storage! {
         /// Double of a staking account id and member id to the confirmation status.
         pub(crate) StakingAccountIdMemberStatus get(fn staking_account_id_member_status):
             map hasher(blake2_128_concat) T::AccountId => StakingAccountMemberBinding<T::MemberId>;
-    }
-    add_extra_genesis {
-        config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
-        build(|config: &GenesisConfig<T>| {
-            for member in &config.members {
-                let handle_hash = <Module<T>>::get_handle_hash(
-                    &Some(member.handle.clone().into_bytes()),
-                ).expect("Importing Member Failed");
-
-                let member_id = <Module<T>>::insert_member(
-                    &member.root_account,
-                    &member.controller_account,
-                    handle_hash,
-                    Zero::zero(),
-                    false
-                );
-
-                // ensure imported member id matches assigned id
-                assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
-            }
-        });
     }
 }
 

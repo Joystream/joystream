@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::mock::*;
-use frame_support::assert_err;
 use frame_support::traits::Currency;
 
 /// test cases are arranged as two layers.
@@ -2504,76 +2503,6 @@ fn set_stickied_threads_thread_not_exists() {
             category_id,
             vec![wrong_thread_id],
             Err(Error::<Runtime>::ThreadDoesNotExist.into()),
-        );
-    });
-}
-
-#[test]
-fn test_migration_not_done() {
-    let config = migration_not_done_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        let forum_user_id = 1;
-        let moderator_id = 1;
-        let category_id = 1;
-        let thread_id = 1;
-        let post_id = 1;
-
-        assert_err!(
-            TestForumModule::create_category(
-                mock_origin(origin.clone()),
-                None,
-                good_category_title(),
-                good_category_description()
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::create_thread(
-                mock_origin(origin.clone()),
-                forum_user_id,
-                category_id,
-                good_thread_metadata(),
-                good_thread_text(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::add_post(
-                mock_origin(origin.clone()),
-                forum_user_id,
-                category_id,
-                thread_id,
-                good_post_text(),
-                true,
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::moderate_thread(
-                mock_origin(origin.clone()),
-                PrivilegedActor::Moderator(moderator_id),
-                category_id,
-                thread_id,
-                good_moderation_rationale(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::moderate_post(
-                mock_origin(origin.clone()),
-                PrivilegedActor::Moderator(moderator_id),
-                category_id,
-                thread_id,
-                post_id,
-                good_moderation_rationale(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
         );
     });
 }

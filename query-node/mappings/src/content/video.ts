@@ -67,6 +67,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     createdInBlock: event.blockNumber,
     isCommentSectionEnabled: true,
     isReactionFeatureEnabled: true,
+    videoStateBloatBond: videoCreationParameters.expectedVideoStateBloatBond,
     commentsCount: 0,
     reactionsCount: 0,
   })

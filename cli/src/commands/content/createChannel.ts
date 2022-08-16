@@ -30,7 +30,6 @@ export default class CreateChannelCommand extends UploadCommandBase {
       context = await this.promptForChannelCreationContext()
     }
     const [channelOwner, address] = await this.getChannelOwner(context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const channelInput = await getInputJson<ChannelCreationInputParameters>(input, ChannelCreationInputSchema)
@@ -57,19 +56,16 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const storageBuckets = await this.getApi().selectStorageBucketsForNewChannel()
     const distributionBuckets = await this.getApi().selectDistributionBucketsForNewChannel()
 
-    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets, 'createChannel')
     const channelCreationParameters = createType('PalletContentChannelCreationParametersRecord', {
       assets,
       expectedChannelStateBloatBond,
       expectedDataObjectStateBloatBond,
+      storageBuckets,
+      distributionBuckets,
       meta: metadataToBytes(ChannelMetadata, meta),
-      storageBuckets: storageBuckets,
-      distributionBuckets: createType('BTreeSet<PalletStorageDistributionBucketIdRecord>', distributionBuckets),
       collaborators: new Map(
-        collaborators?.map(({ memberId, channelAgentPermissions }) => [
-          memberId,
-          channelAgentPermissions.map((p) => createType('PalletContentChannelActionPermission', p)),
-        ])
+        collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions])
       ),
     })
 
@@ -91,8 +87,6 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     if (dataObjects.size) {
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
         [...dataObjects].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
