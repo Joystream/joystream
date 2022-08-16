@@ -752,15 +752,17 @@ fn unsuccessful_channel_deletion_with_creator_token_issued() {
 }
 
 #[test]
-fn unsuccessful_channel_deletion_with_invalid_storage_buckets_num_witness() {
+fn unsuccessful_channel_deletion_with_invalid_channel_bag_witness() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
 
         DeleteChannelFixture::default()
-            .with_storage_buckets_num_witness(0)
-            .call_and_assert(Err(
-                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
-            ));
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
     })
 }
 
@@ -931,12 +933,9 @@ fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_d
 }
 
 #[test]
-fn unsuccessful_moderation_action_channel_and_invalid_storage_buckets_num_witness() {
+fn unsuccessful_moderation_action_channel_and_invalid_channel_bag_witness() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
 
         curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
@@ -946,11 +945,14 @@ fn unsuccessful_moderation_action_channel_and_invalid_storage_buckets_num_witnes
             )]),
         );
 
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
         DeleteChannelAsModeratorFixture::default()
-            .with_storage_buckets_num_witness(0)
-            .call_and_assert(Err(
-                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
-            ));
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
     })
 }
 
@@ -1492,11 +1494,7 @@ fn unsuccessful_moderation_action_non_existing_channel_assets_deletion() {
 fn unsuccessful_moderation_action_channel_assets_deletion_and_invalid_storage_buckets_num_witness()
 {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
@@ -1520,11 +1518,7 @@ fn unsuccessful_moderation_action_channel_assets_deletion_and_invalid_storage_bu
 fn unsuccessful_moderation_action_channel_assets_deletion_and_missing_storage_buckets_num_witness()
 {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,

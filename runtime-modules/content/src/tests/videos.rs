@@ -1604,11 +1604,7 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_lead() {
 fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_storage_buckets_num_witness(
 ) {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().with_video().setup();
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
@@ -1632,11 +1628,7 @@ fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_storage
 fn unsuccessful_moderation_action_video_deletion_by_curator_with_missing_storage_buckets_num_witness(
 ) {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().with_video().setup();
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
@@ -1999,11 +1991,7 @@ fn unsuccessful_moderation_action_non_existing_video_assets_deletion() {
 fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_invalid_storage_buckets_num_witness(
 ) {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_with_nft();
+        ContentTest::with_member_channel().with_video_nft().setup();
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,
@@ -2027,11 +2015,7 @@ fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_inva
 fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_missing_storage_buckets_num_witness(
 ) {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_with_nft();
+        ContentTest::with_member_channel().with_video_nft().setup();
 
         let curator_group_id = curators::add_curator_to_new_group_with_permissions(
             DEFAULT_CURATOR_ID,

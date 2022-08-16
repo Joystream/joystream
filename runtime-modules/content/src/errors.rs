@@ -26,6 +26,9 @@ decl_error! {
         /// Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
         MaxNumberOfVideoAssetsExceeded,
 
+        /// Channel bag witness parameters don't match the current runtime state
+        InvalidChannelBagWitnessProvided,
+
         /// Storage buckets number witness parameter does not match the current runtime state
         InvalidStorageBucketsNumWitnessProvided,
 

@@ -742,7 +742,15 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, params, new_data_object_ids));
         }
 
-        // Extrinsic for updating channel privilege level (requires lead access)
+        /// Extrinsic for updating channel privilege level (requires lead access)
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::update_channel_privilege_level()]
         pub fn update_channel_privilege_level(
             origin,
@@ -766,7 +774,16 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
         }
 
-        // extrinsics for pausing/re-enabling channel features
+        /// Extrinsic for pausing/re-enabling channel features
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = Module::<T>::set_channel_paused_features_as_moderator_weight(rationale)]
         pub fn set_channel_paused_features_as_moderator(
             origin,
@@ -806,15 +823,16 @@ decl_module! {
         /// `O (A + B + C)` where:
         /// - `A` is `num_objects_to_delete`
         /// - `B` is `channel_bag_witness.storage_buckets_num`
+        /// - `C` is `channel_bag_witness.distribution_buckets_num`
         /// - DB:
-        ///    - `O(A + B)` - from the the generated weights
+        ///    - `O(A + B + C)` - from the the generated weights
         /// # </weight>
-        #[weight = Module::<T>::delete_channel_weight(storage_buckets_num_witness, num_objects_to_delete)]
+        #[weight = Module::<T>::delete_channel_weight(channel_bag_witness, num_objects_to_delete)]
         pub fn delete_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            storage_buckets_num_witness: u32,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
@@ -823,7 +841,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             // verify channel bag witness
-            Self::verify_storage_buckets_num_witness(channel_id, storage_buckets_num_witness)?;
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // ensure no creator token is issued for the channel
             channel.ensure_creator_token_not_issued::<T>()?;
@@ -853,6 +871,16 @@ decl_module! {
             Ok(())
         }
 
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is the length of `assets_to_remove`
+        /// - `B` is the value of `storage_buckets_num_witness`
+        /// - `C` is the length of `rationale`
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::delete_channel_assets_as_moderator_weight(assets_to_remove, storage_buckets_num_witness, rationale)]
         pub fn delete_channel_assets_as_moderator(
             origin,
@@ -910,12 +938,12 @@ decl_module! {
         }
 
         // extrinsics for channel deletion as moderator
-        #[weight = Module::<T>::delete_channel_as_moderator_weight(storage_buckets_num_witness, num_objects_to_delete, rationale)]
+        #[weight = Module::<T>::delete_channel_as_moderator_weight(channel_bag_witness, num_objects_to_delete, rationale)]
         pub fn delete_channel_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            storage_buckets_num_witness: u32,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
             rationale: Vec<u8>,
         ) -> DispatchResult {
@@ -926,7 +954,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             // verify channel bag witness
-            Self::verify_storage_buckets_num_witness(channel_id, storage_buckets_num_witness)?;
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteChannel];
@@ -954,7 +982,16 @@ decl_module! {
             Ok(())
         }
 
-        // extrinsics for channel visibility status (hidden/visible) setting by moderator
+        /// Extrinsic for setting channel visibility status (hidden/visible) by moderator
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = Module::<T>::set_channel_visibility_as_moderator_weight(rationale)]
         pub fn set_channel_visibility_as_moderator(
             origin,
@@ -1229,6 +1266,16 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
 
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is the length of `assets_to_remove`
+        /// - `B` is the value of `storage_buckets_num_witness`
+        /// - `C` is the length of `rationale`
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::delete_video_assets_as_moderator_weight(assets_to_remove, storage_buckets_num_witness, rationale)]
         pub fn delete_video_assets_as_moderator(
             origin,
@@ -1290,6 +1337,16 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoAssetsDeletedByModerator(actor, video_id, assets_to_remove, is_nft, rationale));
         }
 
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is the value of `num_objects_to_delete`
+        /// - `B` is the value of `storage_buckets_num_witness`
+        /// - `C` is the length of `rationale`
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
         #[weight = Module::<T>::delete_video_as_moderator_weight(num_objects_to_delete, storage_buckets_num_witness, rationale)]
         pub fn delete_video_as_moderator(
             origin,
@@ -3947,6 +4004,25 @@ impl<T: Config> Module<T> {
         }
     }
 
+    fn verify_channel_bag_witness(
+        channel_id: T::ChannelId,
+        witness: &ChannelBagWitness,
+    ) -> DispatchResult {
+        let bag_id = Self::bag_id_for_channel(&channel_id);
+        let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+
+        ensure!(
+            channel_bag.stored_by.len() == witness.storage_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+        ensure!(
+            channel_bag.distributed_by.len() == witness.distribution_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+
+        Ok(())
+    }
+
     fn verify_storage_buckets_num_witness(
         channel_id: T::ChannelId,
         witness_num: u32,
@@ -4025,16 +4101,19 @@ impl<T: Config> Module<T> {
 
     // Calculates weight for delete_channel extrinsic.
     fn delete_channel_weight(
-        storage_buckets_num_witness: &u32,
+        channel_bag_witness: &ChannelBagWitness,
         num_objects_to_delete: &u64,
     ) -> Weight {
         //num_objects_to_delete
         let a = (*num_objects_to_delete) as u32;
 
-        //storage_buckets_num_witness storage_buckets_num
-        let b = *storage_buckets_num_witness;
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
 
-        WeightInfoContent::<T>::delete_channel(a, b)
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
+
+        WeightInfoContent::<T>::delete_channel(a, b, c)
     }
 
     // Calculates weight for set_channel_paused_features_as_moderator extrinsic.
@@ -4050,40 +4129,32 @@ impl<T: Config> Module<T> {
         storage_buckets_num_witness: &Option<u32>,
         rationale: &Vec<u8>,
     ) -> Weight {
-        if !assets_to_remove.is_empty() {
-            //assets_to_remove
-            let a = (*assets_to_remove).len() as u32;
-
-            //storage_buckets_num_witness storage_buckets_num
-            let b = storage_buckets_num_witness.map_or(0, |v| v);
-
-            //rationale
-            let c = (*rationale).len() as u32;
-
-            WeightInfoContent::<T>::delete_channel_assets_as_moderator_with_assets(a, b, c)
-        } else {
-            //rationale
-            let a = (*rationale).len() as u32;
-
-            WeightInfoContent::<T>::delete_channel_assets_as_moderator_without_assets(a)
-        }
+        //assets_to_remove
+        let a = (*assets_to_remove).len() as u32;
+        //storage_buckets_num_witness storage_buckets_num
+        let b = storage_buckets_num_witness.map_or(0, |v| v);
+        //rationale
+        let c = (*rationale).len() as u32;
+        WeightInfoContent::<T>::delete_channel_assets_as_moderator(a, b, c)
     }
 
     // Calculates weight for delete_channel_as_moderator extrinsic.
     fn delete_channel_as_moderator_weight(
-        storage_buckets_num_witness: &u32,
+        channel_bag_witness: &ChannelBagWitness,
         num_objects_to_delete: &u64,
         rationale: &Vec<u8>,
     ) -> Weight {
         //num_objects_to_delete
         let a = (*num_objects_to_delete) as u32;
 
-        //storage_buckets_num_witness storage_buckets_num
-        let b = *storage_buckets_num_witness;
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
 
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
         //rationale
-        let c = (*rationale).len() as u32;
-        WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c)
+        let d = (*rationale).len() as u32;
+        WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c, d)
     }
 
     // Calculates weight for set_channel_visibility_as_moderator extrinsic.
@@ -4093,32 +4164,25 @@ impl<T: Config> Module<T> {
         WeightInfoContent::<T>::set_channel_visibility_as_moderator(a)
     }
 
-    // Calculates weight for delete_channel_assets_as_moderator extrinsic.
+    // Calculates weight for delete_video_assets_as_moderator extrinsic.
     fn delete_video_assets_as_moderator_weight(
         assets_to_remove: &BTreeSet<DataObjectId<T>>,
         storage_buckets_num_witness: &Option<u32>,
         rationale: &Vec<u8>,
     ) -> Weight {
-        if !assets_to_remove.is_empty() {
-            //assets_to_remove
-            let a = (*assets_to_remove).len() as u32;
+        //assets_to_remove
+        let a = (*assets_to_remove).len() as u32;
 
-            //storage_buckets_num_witness storage_buckets_num
-            let b = storage_buckets_num_witness.map_or(0, |v| v);
+        //storage_buckets_num_witness storage_buckets_num
+        let b = storage_buckets_num_witness.map_or(0, |v| v);
 
-            //rationale
-            let c = (*rationale).len() as u32;
+        //rationale
+        let c = (*rationale).len() as u32;
 
-            WeightInfoContent::<T>::delete_video_assets_as_moderator_with_assets(a, b, c)
-        } else {
-            //rationale
-            let a = (*rationale).len() as u32;
-
-            WeightInfoContent::<T>::delete_video_assets_as_moderator_without_assets(a)
-        }
+        WeightInfoContent::<T>::delete_video_assets_as_moderator(a, b, c)
     }
 
-    // Calculates weight for delete_channel_assets_as_moderator extrinsic.
+    // Calculates weight for delete_video_as_moderator extrinsic.
     fn delete_video_as_moderator_weight(
         num_objects_to_delete: &u64,
         storage_buckets_num_witness: &Option<u32>,
