@@ -1,6 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::nft::{Nft, NftOwner, TransactionalStatus, OpenAuctionParams};
+use crate::nft::{Nft, NftOwner, OpenAuctionParams, TransactionalStatus};
 use crate::permissions::*;
 use crate::types::*;
 use crate::Module as Pallet;
@@ -1156,6 +1156,24 @@ benchmarks! {
             })))
         }
 
+    cancel_open_auction_bid {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
+        let (video_id,participant_id,participant_account_id) = setup_video_with_nft_in_open_auction::<T>(
+            curator_account_id,
+            nft_owner_actor,
+            channel_id
+        )?;
+
+        let origin = RawOrigin::Signed(participant_account_id.clone());
+        System::<T>::set_block_number(System::<T>::block_number() + 2u32.into());
+        let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
+        System::<T>::set_block_number(System::<T>::block_number() + 10u32.into()); // skip bid lock
+    }: _(origin, participant_id, video_id)
+        verify {
+            assert_eq!(Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id).amount, 0u32.into());
+        }
 }
 
 #[cfg(test)]
@@ -1405,6 +1423,13 @@ pub mod tests {
     fn cancel_open_auction() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_cancel_open_auction());
+        })
+    }
+
+    #[test]
+    fn cancel_open_auction_bid() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_open_auction_bid());
         })
     }
 }

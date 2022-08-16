@@ -1,6 +1,8 @@
 mod benchmarking;
 
-use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters, OpenAuctionParams};
+use crate::nft::{
+    EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters, OpenAuctionParams, OpenAuctionBid
+};
 use crate::{
     permissions::*, types::*, ContentModerationAction, InitTransferParametersOf,
     ModerationPermissionsByLevel,
@@ -33,9 +35,9 @@ use sp_std::{
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     convert::TryInto,
     iter::FromIterator,
+    ops::Mul,
     vec,
     vec::Vec,
-    ops::Mul,
 };
 
 // The storage working group instance alias.
@@ -1236,25 +1238,20 @@ fn setup_video_with_nft_in_english_auction<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel_id: T::ChannelId,
-) -> Result<(
-    T::VideoId,
-    T::MemberId,
-    T::AccountId
-),
-            DispatchError>
+) -> Result<(T::VideoId, T::MemberId, T::AccountId), DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     let whitelisted_members = (0..(whitelist_size as usize))
-                .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
-                .collect::<Vec<_>>();
+        .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
+        .collect::<Vec<_>>();
 
     let (participant_account_id, participant_id) = whitelisted_members[0].clone();
 
-    let buy_now_price = Pallet::<T>::min_starting_price()
-        + Pallet::<T>::min_bid_step().mul(10u32.into());
+    let buy_now_price =
+        Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(10u32.into());
     let video_id = setup_video_with_nft_transactional_status::<T>(
         account_id,
         actor,
@@ -1266,7 +1263,7 @@ where
             min_bid_step: Pallet::<T>::min_bid_step(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-            whitelist: whitelisted_members.into_iter().map(|(_,id)| id).collect()
+            whitelist: whitelisted_members.into_iter().map(|(_, id)| id).collect(),
         }),
     )?;
 
@@ -1277,25 +1274,20 @@ fn setup_video_with_nft_in_open_auction<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel_id: T::ChannelId,
-) -> Result<(
-    T::VideoId,
-    T::MemberId,
-    T::AccountId
-),
-            DispatchError>
+) -> Result<(T::VideoId, T::MemberId, T::AccountId), DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     let whitelisted_members = (0..(whitelist_size as usize))
-                .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
-                .collect::<Vec<_>>();
+        .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
+        .collect::<Vec<_>>();
 
     let (participant_account_id, participant_id) = whitelisted_members[0].clone();
 
-    let buy_now_price = Pallet::<T>::min_starting_price()
-        + Pallet::<T>::min_bid_step().mul(10u32.into());
+    let buy_now_price =
+        Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(10u32.into());
     let video_id = setup_video_with_nft_transactional_status::<T>(
         account_id,
         actor,
@@ -1305,7 +1297,7 @@ where
             bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-            whitelist: whitelisted_members.into_iter().map(|(_,id)| id).collect()
+            whitelist: whitelisted_members.into_iter().map(|(_, id)| id).collect(),
         }),
     )?;
 
@@ -1353,9 +1345,25 @@ where
     Ok(video_id)
 }
 
-fn add_english_auction_bid<T: Config>(sender: T::AccountId, participant_id: T::MemberId, video_id: T::VideoId) -> BalanceOf::<T> {
+fn add_english_auction_bid<T: Config>(
+    sender: T::AccountId,
+    participant_id: T::MemberId,
+    video_id: T::VideoId,
+) -> BalanceOf<T> {
     let bid_amount = Pallet::<T>::min_starting_price();
     let origin: T::Origin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_english_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
     bid_amount
+}
+
+fn add_open_auction_bid<T: Config>(
+    sender: T::AccountId,
+    participant_id: T::MemberId,
+    video_id: T::VideoId,
+) -> OpenAuctionBid<T> {
+    let bid_amount = Pallet::<T>::min_starting_price();
+    let origin: T::Origin = RawOrigin::Signed(sender).into();
+    Pallet::<T>::make_open_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
+    let bid = Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id);
+    bid
 }
