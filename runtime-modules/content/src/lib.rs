@@ -1695,7 +1695,7 @@ decl_module! {
         }
 
         /// Start video nft open auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::start_open_auction()]
         pub fn start_open_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1847,7 +1847,7 @@ decl_module! {
         }
 
         // Cancel video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::cancel_open_auction()]
         pub fn cancel_open_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2017,7 +2017,7 @@ decl_module! {
 
 
         /// Make auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::make_open_auction_bid()]
         pub fn make_open_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -2227,7 +2227,7 @@ decl_module! {
         }
 
         /// Cancel open auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::cancel_open_auction_bid()]
         pub fn cancel_open_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -2320,7 +2320,7 @@ decl_module! {
 
         /// Accept open auction bid
         /// Should only be called by auctioneer
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::pick_open_auction_winner()]
         pub fn pick_open_auction_winner(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
