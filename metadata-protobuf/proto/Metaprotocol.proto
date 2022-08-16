@@ -46,7 +46,7 @@ message EditComment {
     required string new_body = 2;
 }
 
-// delete comment by author 
+// delete comment by author
 message DeleteComment {
     // ID of the comment which will be deleted
     required string comment_id = 1;
@@ -79,7 +79,7 @@ message ModerateComment {
     required string rationale = 2;
 }
 
-message BanOrUnbanMemberFromChannel { 
+message BanOrUnbanMemberFromChannel {
     // ID of the member that channel owner wants to ban from participating on any video.
     required uint64 member_id = 1;
 
@@ -107,20 +107,27 @@ message VideoReactionsPreference {
     required Option option = 2;
 }
 
+message CreateVideoCategory {
+    required string name = 1;
+    optional string description = 2;
+    optional string parent_category_id = 3;
+}
+
 message MemberRemarked {
-    // member_remark extrinsic would emit event containing 
+    // member_remark extrinsic would emit event containing
     // any one of the following serialized messages
     oneof member_remarked {
-     ReactVideo react_video = 1;
-     ReactComment react_comment = 2;
-     CreateComment create_comment = 3;
-     EditComment edit_comment = 4;
-     DeleteComment delete_comment = 5;
+        ReactVideo react_video = 1;
+        ReactComment react_comment = 2;
+        CreateComment create_comment = 3;
+        EditComment edit_comment = 4;
+        DeleteComment delete_comment = 5;
+        CreateVideoCategory create_video_category = 6;
     }
 }
 
 message ChannelModeratorRemarked {
-    // channel_moderator_remark extrinsic would emit event containing 
+    // channel_moderator_remark extrinsic would emit event containing
     // any one of the following serialized messages
     oneof channel_moderator_remarked {
         ModerateComment moderate_comment = 1;
@@ -128,33 +135,12 @@ message ChannelModeratorRemarked {
 }
 
 message ChannelOwnerRemarked {
-    // channel_owner_remark extrinsic would emit event containing 
+    // channel_owner_remark extrinsic would emit event containing
     // any one of the following serialized messages
     oneof channel_owner_remarked {
         PinOrUnpinComment pin_or_unpin_comment = 1;
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         VideoReactionsPreference video_reactions_preference = 3;
         ModerateComment moderate_comment = 5;
-    }
-}
-
-message CreateVideoCategory {
-    required string name = 1;
-}
-
-message UpdateVideoCategory {
-    required string video_category_id = 1;
-    required string name = 2;
-}
-
-message DeleteVideoCategory {
-    required string video_category_id = 1;
-}
-
-message WorkerGroupLeadRemarked {
-    oneof worker_group_lead_remarked {
-        CreateVideoCategory create_video_category = 1;
-        UpdateVideoCategory update_video_category = 2;
-        DeleteVideoCategory delete_video_category = 3;
     }
 }

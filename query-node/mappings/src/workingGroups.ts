@@ -14,10 +14,6 @@ import {
   IWorkingGroupMetadataAction,
   OpeningMetadata,
   WorkingGroupMetadataAction,
-  ICreateVideoCategory,
-  IUpdateVideoCategory,
-  IDeleteVideoCategory,
-  WorkerGroupLeadRemarked,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
 import {
@@ -30,9 +26,6 @@ import {
   INT32MAX,
   inconsistentState,
   getWorkingGroupByName,
-  saveMetaprotocolTransactionSuccessful,
-  saveMetaprotocolTransactionErrored,
-  logger,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -89,13 +82,10 @@ import {
   BudgetSpendingEvent,
   LeaderSetEvent,
   WorkerStatusLeaving,
-  MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
-
-import { createVideoCategory, updateVideoCategory, deleteVideoCategory } from './content/videoCategory'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -933,65 +923,4 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   group.budget = group.budget.sub(amount)
 
   await store.save<WorkingGroup>(group)
-}
-
-export async function workingGroups_content_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [message] = new WorkingGroups.LeadRemarkedEvent(event).params
-
-  try {
-    const decodedMessage = WorkerGroupLeadRemarked.decode(message.toU8a(true))
-
-    const metaTransactionInfo = await processVideoCategoriesModeration(store, event, decodedMessage)
-
-    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
-
-    // emit log event
-    logger.info('Content working group lead remarked', { decodedMessage })
-  } catch (e) {
-    // emit log event
-    logger.info(`Bad metadata for WorkingGroup's LeadRemark`, { e })
-
-    // save metaprotocol info
-    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for WorkingGroup's LeadRemark`)
-  }
-}
-
-async function processVideoCategoriesModeration(
-  store: DatabaseManager,
-  event: SubstrateEvent,
-  moderationParameters: WorkerGroupLeadRemarked
-): Promise<Partial<MetaprotocolTransactionSuccessful>> {
-  const messageType = moderationParameters.workerGroupLeadRemarked
-
-  if (messageType === 'createVideoCategory') {
-    const createParams = moderationParameters.createVideoCategory as ICreateVideoCategory
-
-    const videoCategory = await createVideoCategory(store, event, createParams.name)
-
-    return { videoCategoryCreatedId: videoCategory.id }
-  }
-
-  if (messageType === 'updateVideoCategory') {
-    const updateParams = moderationParameters.updateVideoCategory as IUpdateVideoCategory
-
-    const videoCategory = await updateVideoCategory(
-      store,
-      event,
-      updateParams.videoCategoryId.toString(),
-      updateParams.name
-    )
-
-    return { videoCategoryUpdatedId: videoCategory.id }
-  }
-
-  if (messageType === 'deleteVideoCategory') {
-    const deleteParams = moderationParameters.deleteVideoCategory as IDeleteVideoCategory
-
-    const videoCategory = await deleteVideoCategory(store, event, deleteParams.videoCategoryId.toString())
-
-    return { videoCategoryDeletedId: videoCategory.id }
-  }
-
-  // unknown message type
-  return inconsistentState('Unsupported message type in lead_remark action', messageType)
 }

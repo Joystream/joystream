@@ -1,8 +1,8 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { metadataToString } from '../../helpers/serialization'
 import chalk from 'chalk'
-import { CreateVideoCategory, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
-import WorkerGroupLeadRemarkedCommand from '../working-groups/leadRemark'
+import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
+import MemberRemarkCommand from '../membership/memberRemark'
 
 export default class CreateVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create video category inside content directory.'
@@ -12,6 +12,16 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
       required: true,
       description: 'Video category name',
     },
+    {
+      name: 'description',
+      required: false,
+      description: 'Video category description',
+    },
+    {
+      name: 'parentCategoryId',
+      required: false,
+      description: 'Parent category ID',
+    },
   ]
 
   static flags = {
@@ -19,16 +29,18 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
   }
 
   async run(): Promise<void> {
-    const { name } = this.parse(CreateVideoCategoryCommand).args
+    const { name, description, parentCategoryId } = this.parse(CreateVideoCategoryCommand).args
 
-    const meta = new WorkerGroupLeadRemarked({
+    const meta = new MemberRemarked({
       createVideoCategory: new CreateVideoCategory({
         name,
+        description,
+        parentCategoryId,
       }),
     })
-    const metaMessage = metadataToString(WorkerGroupLeadRemarked, meta)
+    const metaMessage = metadataToString(MemberRemarked, meta)
 
-    await WorkerGroupLeadRemarkedCommand.run(['--group', 'curators', metaMessage])
+    await MemberRemarkCommand.run([metaMessage])
 
     this.log(chalk.green(`Video category successfully created!`))
   }

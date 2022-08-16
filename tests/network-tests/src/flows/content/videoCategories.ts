@@ -23,12 +23,4 @@ export default async function videoCategories({ api, query, env }: FlowProps): P
   // create channel categories and video categories
   const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
-
-  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
-
-  const updateVideoCategoryFixture = new UpdateVideoCategoryFixture(api, query, joystreamCli, videoCategoryIds[0])
-  await new FixtureRunner(updateVideoCategoryFixture).run()
-
-  const deleteVideoCategoryFixture = new DeleteVideoCategoryFixture(api, query, joystreamCli, videoCategoryIds[1])
-  await new FixtureRunner(deleteVideoCategoryFixture).run()
 }

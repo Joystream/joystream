@@ -9,7 +9,7 @@ import {
   PalletMembershipInviteMembershipParameters as InviteMembershipParameters,
   PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
 } from '@polkadot/types/lookup'
-import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
+import { MembershipMetadata, MemberRemarked, ICreateVideoCategory } from '@joystream/metadata-protobuf'
 import {
   bytesToString,
   deserializeMetadata,
@@ -55,6 +55,7 @@ import {
   processEditCommentMessage,
   processDeleteCommentMessage,
 } from './content'
+import { createVideoCategory } from './content/videoCategory'
 
 async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
@@ -527,7 +528,7 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   try {
     const decodedMessage = MemberRemarked.decode(message.toU8a(true))
 
-    const metaTransactionInfo = await processReactOrComment(store, event, memberId, decodedMessage)
+    const metaTransactionInfo = await processMemberRemark(store, event, memberId, decodedMessage)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
@@ -542,7 +543,7 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   }
 }
 
-async function processReactOrComment(
+async function processMemberRemark(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
@@ -576,6 +577,14 @@ async function processReactOrComment(
   if (messageType === 'deleteComment') {
     const comment = await processDeleteCommentMessage(store, event, memberId, decodedMessage.deleteComment!)
     return { commentDeletedId: comment.id }
+  }
+
+  if (messageType === 'createVideoCategory') {
+    const createParams = decodedMessage.createVideoCategory as ICreateVideoCategory
+
+    const videoCategory = await createVideoCategory(store, event, createParams)
+
+    return { videoCategoryCreatedId: videoCategory.id }
   }
 
   // unknown message type

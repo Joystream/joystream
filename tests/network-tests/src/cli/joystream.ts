@@ -149,31 +149,6 @@ export class JoystreamCLI extends CLI {
   }
 
   /**
-    Creates an existing video category.
-  */
-  async updateVideoCategory(videoCategoryId: string, newName: string): Promise<void> {
-    const { stdout, stderr, exitCode } = await this.run('content:updateVideoCategory', [
-      videoCategoryId.toString(),
-      newName,
-    ])
-
-    if (exitCode) {
-      throw new Error(`Unexpected CLI failure on updating video category: "${stderr}"`)
-    }
-  }
-
-  /**
-    Deletes an existing video category.
-  */
-  async deleteVideoCategory(videoCategoryId: string): Promise<void> {
-    const { stdout, stderr, exitCode } = await this.run('content:deleteVideoCategory', [videoCategoryId.toString()])
-
-    if (exitCode) {
-      throw new Error(`Unexpected CLI failure on deleting video category: "${stderr}"`)
-    }
-  }
-
-  /**
     Updates an existing video.
   */
   async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category: string }>): Promise<void> {

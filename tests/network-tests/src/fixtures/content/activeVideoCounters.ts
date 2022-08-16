@@ -99,7 +99,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     in Query node.
   */
   private async assertCounterMatch(
-    entityName: 'channel' | 'channelCategory' | 'videoCategory',
+    entityName: 'channel' | 'videoCategory',
     entityId: number | string,
     expectedCount: number
   ) {

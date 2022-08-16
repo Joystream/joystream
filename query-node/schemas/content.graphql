@@ -71,10 +71,16 @@ type VideoCategory @entity {
   id: ID!
 
   "The name of the category"
-  name: String! @fulltext(query: "videoCategoriesByName")
+  name: String @fulltext(query: "videoCategoriesByName")
 
-  "Count of channel's videos with an uploaded asset that are public and not censored."
+  "The description of the category"
+  description: String
+
+  "Count of category's videos with an uploaded asset that are public and not censored."
   activeVideosCounter: Int!
+
+  "Parent category if defined"
+  parentCategory: VideoCategory
 
   videos: [Video!]! @derivedFrom(field: "category")
 

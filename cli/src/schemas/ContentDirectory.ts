@@ -22,6 +22,14 @@ export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> 
     name: {
       type: 'string',
     },
+    description: {
+      type: 'string',
+      required: false,
+    },
+    parentCategoryId: {
+      type: 'string',
+      required: false,
+    },
   },
 }
 

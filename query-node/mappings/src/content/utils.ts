@@ -518,10 +518,17 @@ async function processVideoCategory(
     where: { id: categoryId.toString() },
   })
 
-  // ensure video category exists
+  // if category is not found, create new one
   if (!category) {
-    invalidMetadata('Non-existing video category association with video requested', categoryId)
-    return currentCategory
+    logger.info('Creating unknown video category', { categoryId })
+    const newCategory = new VideoCategory({
+      id: categoryId,
+      videos: [],
+      createdInBlock: ctx.event.blockNumber,
+      activeVideosCounter: 0,
+    })
+    await store.save<VideoCategory>(newCategory)
+    return newCategory
   }
 
   return category

@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, BTreeSet, Option } from '@polkadot/types'
+import { u32, u64, BTreeSet, Option } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -54,7 +54,7 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { CreateVideoCategory, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
+import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -722,20 +722,22 @@ export class Api {
     return event.data[2]
   }
 
-  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const [, lead] = await this.getLeader('contentWorkingGroup')
+  async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
 
-    const account = lead.roleAccountId
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
 
-    const meta = new WorkerGroupLeadRemarked({
+    const meta = new MemberRemarked({
       createVideoCategory: new CreateVideoCategory({
         name,
       }),
     })
 
     return this.sender.signAndSend(
-      this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(WorkerGroupLeadRemarked, meta)),
-      account?.toString()
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      memberAccount.toString()
     )
   }
 
