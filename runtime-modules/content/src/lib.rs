@@ -1751,7 +1751,7 @@ decl_module! {
         }
 
         /// Start video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::start_english_auction()]
         pub fn start_english_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1806,7 +1806,7 @@ decl_module! {
         }
 
         // Cancel video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::cancel_english_auction()]
         pub fn cancel_english_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2112,7 +2112,7 @@ decl_module! {
         }
 
         /// Make auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::make_english_auction_bid()]
         pub fn make_english_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -2271,7 +2271,7 @@ decl_module! {
 
         /// Claim won english auction
         /// Can be called by anyone
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoContent::<T>::settle_english_auction()]
         pub fn settle_english_auction(
             origin,
             video_id: T::VideoId,
