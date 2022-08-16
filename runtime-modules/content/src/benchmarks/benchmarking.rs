@@ -34,7 +34,7 @@ benchmarks! {
     ============================================================================
     ======================================== CHANNEL CUD GROUP =================
     ============================================================================
-    */
+     */
 
     create_channel {
 
@@ -44,8 +44,8 @@ benchmarks! {
             (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
         let c in
-        (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-        (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
         let d in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
@@ -76,23 +76,23 @@ benchmarks! {
         );
 
     }: _ (sender, channel_owner, params.clone())
-    verify {
+        verify {
 
-        let channel_id: T::ChannelId = One::one();
-        assert!(ChannelById::<T>::contains_key(&channel_id));
+            let channel_id: T::ChannelId = One::one();
+            assert!(ChannelById::<T>::contains_key(&channel_id));
 
-        let channel = ChannelById::<T>::get(channel_id);
-        let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
+            let channel = ChannelById::<T>::get(channel_id);
+            let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
 
-        assert_last_event::<T>(
-            Event::<T>::ChannelCreated(
-                channel_id,
-                channel,
-                params,
-                channel_acc
-            ).into()
-        );
-    }
+            assert_last_event::<T>(
+                Event::<T>::ChannelCreated(
+                    channel_id,
+                    channel,
+                    params,
+                    channel_acc
+                ).into()
+            );
+        }
 
     channel_update_with_assets {
 
@@ -105,23 +105,23 @@ benchmarks! {
         let d in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
 
         let e in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
         let assets_to_remove: BTreeSet<T::DataObjectId> = (0..c).map(|i| i.saturated_into()).collect();
 
         let (channel_id,
-            group_id,
-            lead_account_id,
-            curator_id,
-            curator_account_id) =
-        setup_worst_case_scenario_curator_channel::<T>(
-            c,
-            e,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            false
-        ).unwrap();
+             group_id,
+             lead_account_id,
+             curator_id,
+             curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                c,
+                e,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                false
+            ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
 
@@ -132,20 +132,20 @@ benchmarks! {
             .collect();
 
         let collaborators = Some(channel.collaborators
-            .into_iter()
-            .take(a as usize)
-            .map(|(member_id, _)|{
-                (member_id, permissions.clone())
-            })
-            .collect::<BTreeMap<_, _>>());
+                                 .into_iter()
+                                 .take(a as usize)
+                                 .map(|(member_id, _)|{
+                                     (member_id, permissions.clone())
+                                 })
+                                 .collect::<BTreeMap<_, _>>());
 
         let assets_to_upload = StorageAssets::<T> {
-                expected_data_size_fee:
-                    Storage::<T>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_object_candidates_helper(
-                    b,
-                    max_obj_size
-                ),
+            expected_data_size_fee:
+            Storage::<T>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_object_candidates_helper(
+                b,
+                max_obj_size
+            ),
         };
 
         let new_data_object_ids: BTreeSet<T::DataObjectId> = (c..c+b).map(|i| i.saturated_into()).collect();
@@ -169,17 +169,17 @@ benchmarks! {
 
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
-    verify {
+        verify {
 
-        assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(&channel_id));
 
-        assert_last_event::<T>(
-            Event::<T>::ChannelUpdated(actor,
-                channel_id,
-                update_params,
-                new_data_object_ids).into()
-        );
-    }
+            assert_last_event::<T>(
+                Event::<T>::ChannelUpdated(actor,
+                                           channel_id,
+                                           update_params,
+                                           new_data_object_ids).into()
+            );
+        }
 
     channel_update_without_assets {
 
@@ -188,16 +188,16 @@ benchmarks! {
         let b in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
 
         let (channel_id,
-            group_id,
-            lead_account_id,
-            curator_id,
-            curator_account_id) =
-        setup_worst_case_scenario_curator_channel::<T>(
-            T::MaxNumberOfAssetsPerChannel::get(),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            false
-        ).unwrap();
+             group_id,
+             lead_account_id,
+             curator_id,
+             curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                false
+            ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
 
@@ -208,12 +208,12 @@ benchmarks! {
             .collect();
 
         let collaborators = Some(channel.collaborators
-            .into_iter()
-            .take(a as usize)
-            .map(|(member_id, _)|{
-                (member_id, permissions.clone())
-            })
-            .collect::<BTreeMap<_, _>>());
+                                 .into_iter()
+                                 .take(a as usize)
+                                 .map(|(member_id, _)|{
+                                     (member_id, permissions.clone())
+                                 })
+                                 .collect::<BTreeMap<_, _>>());
 
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
@@ -234,24 +234,24 @@ benchmarks! {
 
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
-    verify {
+        verify {
 
-        assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(&channel_id));
 
-        assert_last_event::<T>(
-            Event::<T>::ChannelUpdated(actor,
-                channel_id,
-                update_params,
-                BTreeSet::new()).into()
-        );
-    }
+            assert_last_event::<T>(
+                Event::<T>::ChannelUpdated(actor,
+                                           channel_id,
+                                           update_params,
+                                           BTreeSet::new()).into()
+            );
+        }
 
     delete_channel {
 
         let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
         let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
         let c in
             (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
@@ -266,21 +266,21 @@ benchmarks! {
             curator_id,
             curator_account_id
         ) =
-        setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
+            setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
 
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
     }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
-    verify {
+        verify {
 
-        assert_last_event::<T>(
-            Event::<T>::ChannelDeleted(
-                actor,
-                channel_id
-            ).into()
-        );
-    }
+            assert_last_event::<T>(
+                Event::<T>::ChannelDeleted(
+                    actor,
+                    channel_id
+                ).into()
+            );
+        }
 
     /*
     ===============================================================================================
@@ -523,7 +523,7 @@ benchmarks! {
         let hash = <<T as frame_system::Config>::Hashing as Hash>::hash(&"test".encode());
         let params = crate::UpdateChannelPayoutsParameters::<T> {
             commitment: Some(hash.clone()),
-                        payload: Some(crate::ChannelPayoutsPayloadParameters::<T>{
+            payload: Some(crate::ChannelPayoutsPayloadParameters::<T>{
                 uploader_account: account_id,
                 object_creation_params: storage::DataObjectCreationParameters {
                     size: 1u64,
@@ -627,7 +627,7 @@ benchmarks! {
         set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![crate::PausableChannelFeature::CreatorCashout]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-           commitment: Some(commitment),
+            commitment: Some(commitment),
             ..Default::default()
         })?;
 
@@ -661,12 +661,12 @@ benchmarks! {
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
         set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![
-                crate::PausableChannelFeature::CreatorCashout,
-                crate::PausableChannelFeature::ChannelFundsTransfer,
-            ]);
+            crate::PausableChannelFeature::CreatorCashout,
+            crate::PausableChannelFeature::ChannelFundsTransfer,
+        ]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-           commitment: Some(commitment),
+            commitment: Some(commitment),
             ..Default::default()
         })?;
 
@@ -777,7 +777,7 @@ benchmarks! {
     // - DB Read: Video -> O(1)
     // - DB Read: Channel -> O(1)
     // - DB Write: Video -> O(1)
-     offer_nft {
+    offer_nft {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
@@ -1017,19 +1017,19 @@ benchmarks! {
             channel_id
         )?;
         let auction_params = EnglishAuctionParams::<T> {
-                buy_now_price: Some(
-                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
-                ),
-                duration: Pallet::<T>::min_auction_duration(),
-                extension_period: Pallet::<T>::min_auction_extension_period(),
-                min_bid_step: Pallet::<T>::min_bid_step(),
-                starting_price: Pallet::<T>::min_starting_price(),
-                starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-                whitelist: (0..(Pallet::<T>::max_auction_whitelist_length() as usize))
-                    .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
-                    .collect(),
-            };
-     }: _(origin, nft_owner_actor, video_id, auction_params)
+            buy_now_price: Some(
+                Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
+            ),
+            duration: Pallet::<T>::min_auction_duration(),
+            extension_period: Pallet::<T>::min_auction_extension_period(),
+            min_bid_step: Pallet::<T>::min_bid_step(),
+            starting_price: Pallet::<T>::min_starting_price(),
+            starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+            whitelist: (0..(Pallet::<T>::max_auction_whitelist_length() as usize))
+                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                .collect(),
+        };
+    }: _(origin, nft_owner_actor, video_id, auction_params)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
                 transactional_status: TransactionalStatus::<T>::EnglishAuction(..),
@@ -1109,7 +1109,7 @@ benchmarks! {
     // ================================================================================
 
     start_open_auction {
-                let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
@@ -1126,11 +1126,11 @@ benchmarks! {
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
             whitelist: (0..(Pallet::<T>::max_auction_whitelist_length() as usize))
-                    .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
-                    .collect(),
+                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                .collect(),
 
         };
-     }: _(origin, nft_owner_actor, video_id, auction_params)
+    }: _(origin, nft_owner_actor, video_id, auction_params)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
                 transactional_status: TransactionalStatus::<T>::OpenAuction(..),
@@ -1172,6 +1172,31 @@ benchmarks! {
         System::<T>::set_block_number(System::<T>::block_number() + 10u32.into()); // skip bid lock
     }: _(origin, participant_id, video_id)
         verify {
+            assert_eq!(Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id).amount, 0u32.into());
+        }
+
+    pick_open_auction_winner {
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let (video_id,participant_id,participant_account_id) = setup_video_with_nft_in_open_auction::<T>(
+            curator_account_id.clone(),
+            nft_owner_actor,
+            channel_id
+        )?;
+
+        System::<T>::set_block_number(System::<T>::block_number() + 2u32.into());
+        let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
+        System::<T>::set_block_number(System::<T>::block_number() + 10u32.into()); // skip bid lock
+        let balance_pre = Balances::<T>::usable_balance(curator_account_id);
+    }: _(origin, nft_owner_actor, video_id, participant_id, bid.amount)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+
             assert_eq!(Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id).amount, 0u32.into());
         }
 }
@@ -1430,6 +1455,13 @@ pub mod tests {
     fn cancel_open_auction_bid() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_cancel_open_auction_bid());
+        })
+    }
+
+    #[test]
+    fn pick_open_auction_winner() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_pick_open_auction_winner());
         })
     }
 }
