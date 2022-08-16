@@ -1,6 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::nft::{Nft, NftOwner, TransactionalStatus};
+use crate::nft::{Nft, NftOwner, TransactionalStatus, OpenAuctionParams};
 use crate::permissions::*;
 use crate::types::*;
 use crate::Module as Pallet;
@@ -1003,7 +1003,7 @@ benchmarks! {
         }
 
     // ================================================================================
-    // ========================== NFT - UPDATE LIMITS =================================1
+    // ========================= NFT - ENGLISH AUCTION ================================
     // ================================================================================
 
     start_english_auction {
@@ -1100,6 +1100,40 @@ benchmarks! {
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
                 transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+        }
+
+    // ================================================================================
+    // =========================== NFT - OPEN AUCTION =================================
+    // ================================================================================
+
+    start_open_auction {
+                let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let nft_owner_actor = ContentActor::Curator(group_id, curator_id);
+        let video_id = setup_video_with_idle_nft::<T>(
+            curator_account_id,
+            nft_owner_actor,
+            channel_id
+        )?;
+        let buy_now_price = Pallet::<T>::min_starting_price()
+            + Pallet::<T>::min_bid_step().mul(10u32.into());
+        let auction_params = OpenAuctionParams::<T> {
+            buy_now_price: Some(buy_now_price),
+            bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
+            starting_price: Pallet::<T>::min_starting_price(),
+            starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+            whitelist: (0..(Pallet::<T>::max_auction_whitelist_length() as usize))
+                    .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                    .collect(),
+
+        };
+     }: _(origin, nft_owner_actor, video_id, auction_params)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::OpenAuction(..),
                 ..
             })));
         }
@@ -1338,6 +1372,13 @@ pub mod tests {
     fn settle_english_auction() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_settle_english_auction());
+        })
+    }
+
+    #[test]
+    fn start_open_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_start_open_auction());
         })
     }
 

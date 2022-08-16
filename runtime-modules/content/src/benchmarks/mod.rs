@@ -1,6 +1,6 @@
 mod benchmarking;
 
-use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters};
+use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters, OpenAuctionParams};
 use crate::{
     permissions::*, types::*, ContentModerationAction, InitTransferParametersOf,
     ModerationPermissionsByLevel,
