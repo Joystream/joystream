@@ -1,6 +1,6 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use crate::nft::{Nft, NftOwner, TransactionalStatus, EnglishAuction, EnglishAuctionBid};
+use crate::nft::{Nft, NftOwner, TransactionalStatus};
 use crate::permissions::*;
 use crate::types::*;
 use crate::Module as Pallet;
@@ -1055,6 +1055,9 @@ benchmarks! {
             })))
         }
 
+    // WORST CASE SCENARIO:
+    // - there is already a bid oustanding
+    // - bid triggers buy
     make_english_auction_bid {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1068,27 +1071,14 @@ benchmarks! {
         let old_bid_amount = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
 
         let origin = RawOrigin::Signed(participant_account_id.clone());
-        let bid_amount = Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step();
+        let buy_now_amount = Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(11u32.into());
         let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
-        // let buy_now_amount = Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(11u32.into());
-    }: _(origin, participant_id, video_id, bid_amount)
+    }: _(origin, participant_id, video_id, buy_now_amount)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
-                transactional_status: TransactionalStatus::<T>::EnglishAuction( EnglishAuction::<T> {
-                    top_bid: Some(EnglishAuctionBid::<_,_> {
-                        amount: bid_amount,
-                        bidder_id: participant_id,
-                    }),
-                    ..
-                }),
+                transactional_status: TransactionalStatus::<T>::Idle,
                 ..
             })));
-
-            assert_eq!(
-                Balances::<T>::usable_balance(participant_account_id),
-                balance_pre - bid_amount + old_bid_amount,
-            )
-
 
         }
 
