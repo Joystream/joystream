@@ -64,6 +64,7 @@ pub use types::{
 };
 use types::{ApplicationInfo, WorkerInfo};
 
+use common::costs::burn_from_usable;
 use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
@@ -1192,7 +1193,7 @@ decl_module! {
 
             ensure!(amount > Zero::zero(), Error::<T, I>::ZeroTokensFunding);
             ensure!(
-                Balances::<T>::can_slash(&account_id, amount),
+                Balances::<T>::usable_balance(&account_id) >= amount,
                 Error::<T, I>::InsufficientTokensForFunding
             );
 
@@ -1200,9 +1201,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::set_working_group_budget(wg_budget.saturating_add(amount));
+            // An account is allowed to die when funding working group budget
+            burn_from_usable::<T>(&account_id, amount, true)?;
 
-            let _ = Balances::<T>::slash(&account_id, amount);
+            Self::set_working_group_budget(wg_budget.saturating_add(amount));
 
             Self::deposit_event(
                 RawEvent::WorkingGroupBudgetFunded(

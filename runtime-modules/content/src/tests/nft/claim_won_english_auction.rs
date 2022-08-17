@@ -41,7 +41,7 @@ fn settle_english_auction() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         let module_account_id = ContentTreasury::<Test>::module_account_id();
         assert_eq!(Balances::<Test>::usable_balance(&module_account_id), ed());
@@ -55,7 +55,7 @@ fn settle_english_auction() {
         ));
 
         // Module account contains a bid.
-        assert_eq!(ContentTreasury::<Test>::usable_balance(), bid + ed());
+        assert_eq!(ContentTreasury::<Test>::usable_balance(), ed() + bid);
 
         // Run to the block where auction expires
         run_to_block(Content::max_auction_duration() + 1);
@@ -133,7 +133,7 @@ fn settle_english_auction_cannot_be_completed() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -272,7 +272,7 @@ fn settle_english_auction_is_not_english_auction_type() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -577,7 +577,10 @@ fn settle_english_auction_fails_during_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
             .setup();
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
+        increase_account_balance_helper(
+            SECOND_MEMBER_ACCOUNT_ID,
+            ed() + Content::min_starting_price(),
+        );
         assert_ok!(Content::make_english_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,

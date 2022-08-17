@@ -4,13 +4,13 @@
 #![allow(clippy::unused_unit)]
 
 use common::bloat_bond::RepayableBloatBond;
-use common::costs::ensure_can_cover_costs;
+use common::costs::{burn_from_usable, ensure_can_cover_costs};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
 pub use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, ExistenceRequirement, LockIdentifier, WithdrawReasons};
+use frame_support::traits::LockIdentifier;
 
 use common::costs::{pay_cost, Cost};
 use frame_support::{
@@ -80,8 +80,6 @@ pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
     pub thread_id: ThreadId,
     pub post_id: PostId,
 }
-
-type Balances<T> = balances::Pallet<T>;
 
 pub trait Config:
     frame_system::Config
@@ -1358,18 +1356,7 @@ impl<T: Config> Module<T> {
         allow_death: bool,
     ) -> DispatchResult {
         let thread_account_id = Self::thread_account(thread_id);
-        // We need to use `withdraw` instead of `slash`
-        // in order to be able to actually remove the account
-        Balances::<T>::withdraw(
-            &thread_account_id,
-            amount,
-            WithdrawReasons::FEE,
-            match allow_death {
-                true => ExistenceRequirement::AllowDeath,
-                false => ExistenceRequirement::KeepAlive,
-            },
-        )
-        .map(|_| ())
+        burn_from_usable::<T>(&thread_account_id, amount, allow_death)
     }
 
     fn pay_bloat_bond(

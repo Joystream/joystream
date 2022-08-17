@@ -379,6 +379,33 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
+        increase_account_balance_helper(
+            SECOND_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE - 1,
+        );
+
+        AcceptChannelTransferFixture::default()
+            .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForTransfer.into()))
+    })
+}
+
+#[test]
+fn accept_transfer_status_fails_with_locked_balance_for_members() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance_helper(
+            SECOND_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE,
+        );
+        set_invitation_lock(&SECOND_MEMBER_ACCOUNT_ID, ed() + 1);
+
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
@@ -397,7 +424,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
-        <Test as Config>::ContentWorkingGroup::set_budget(0u64);
+        <Test as Config>::ContentWorkingGroup::set_budget(DEFAULT_CHANNEL_TRANSFER_PRICE - 1);
 
         AcceptChannelTransferFixture::default()
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
@@ -411,7 +438,7 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
     ExtBuilder::default()
         .build_with_balances(vec![(
             SECOND_MEMBER_ACCOUNT_ID,
-            DEFAULT_CHANNEL_TRANSFER_PRICE,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE,
         )])
         .execute_with(|| {
             ContentTest::with_member_channel().setup();
@@ -444,7 +471,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
     ExtBuilder::default()
         .build_with_balances(vec![(
             SECOND_MEMBER_ACCOUNT_ID,
-            DEFAULT_CHANNEL_TRANSFER_PRICE,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE,
         )])
         .execute_with(|| {
             ContentTest::with_curator_channel().setup();

@@ -739,7 +739,7 @@ pub trait ModuleAccount<T: Config> {
             &Self::module_account_id(),
             dest_account_id,
             amount,
-            ExistenceRequirement::AllowDeath,
+            ExistenceRequirement::KeepAlive,
         )
     }
 
@@ -749,7 +749,7 @@ pub trait ModuleAccount<T: Config> {
             src_account_id,
             &Self::module_account_id(),
             amount,
-            ExistenceRequirement::AllowDeath,
+            ExistenceRequirement::KeepAlive,
         )
     }
 

@@ -8,7 +8,8 @@ use sp_core::H256;
 
 use crate::Config;
 use frame_support::traits::{
-    ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize,
+    ConstU16, ConstU32, ConstU64, Currency, LockIdentifier, OnFinalize, OnInitialize,
+    WithdrawReasons,
 };
 use sp_std::cell::RefCell;
 use staking_handler::{LockComparator, StakingHandler};

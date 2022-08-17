@@ -2,10 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{
-    assert_err, assert_noop, assert_ok,
-    traits::{LockableCurrency, WithdrawReasons},
-};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 #[test]
 fn accept_incoming_offer() {
@@ -194,7 +191,7 @@ fn accept_incoming_offer_ok_with_nft_member_owner_correctly_credited() {
                 Some(DEFAULT_NFT_PRICE),
             ))
             .call_and_assert(Ok(()));
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
         let royalty = Perbill::from_percent(DEFAULT_ROYALTY).mul_floor(DEFAULT_NFT_PRICE);
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
 
@@ -207,7 +204,7 @@ fn accept_incoming_offer_ok_with_nft_member_owner_correctly_credited() {
         // check member owner balance increased by NFT PRICE - ROYALTY - FEE
         assert_eq!(
             Balances::<Test>::usable_balance(THIRD_MEMBER_ACCOUNT_ID),
-            ed() + DEFAULT_NFT_PRICE - royalty - platform_fee,
+            DEFAULT_NFT_PRICE - royalty - platform_fee,
         );
     })
 }
@@ -223,7 +220,7 @@ fn accept_incoming_offer_reward_account_ok_with_owner_channel_account_correctly_
                 Some(DEFAULT_NFT_PRICE),
             ))
             .call_and_assert(Ok(()));
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
 
         assert_ok!(Content::accept_incoming_offer(
@@ -243,21 +240,8 @@ fn accept_incoming_offer_reward_account_ok_with_owner_channel_account_correctly_
 #[test]
 fn accept_incoming_offer_insufficient_balance() {
     with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
         let video_id = NextVideoId::<Test>::get();
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        ContentTest::with_member_channel().with_video_nft().setup();
 
         // Offer nft
         assert_ok!(Content::offer_nft(
@@ -268,16 +252,14 @@ fn accept_incoming_offer_insufficient_balance() {
             Some(DEFAULT_NFT_PRICE),
         ));
 
-        // Make an attempt to accept incoming nft offer if there is no incoming transfers
-        let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-            Some(DEFAULT_NFT_PRICE),
-        );
-
-        // Failure checked
-        assert_err!(
-            accept_incoming_offer_result,
+        // Make an attempt to accept incoming nft offer with insufficient funds
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE - 1);
+        assert_noop!(
+            Content::accept_incoming_offer(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                video_id,
+                Some(DEFAULT_NFT_PRICE),
+            ),
             Error::<Test>::InsufficientBalance
         );
     })
@@ -341,24 +323,8 @@ fn accept_incoming_offer_fails_when_trying_to_use_locked_balance() {
             .with_price(Some(DEFAULT_NFT_PRICE))
             .call_and_assert(Ok(()));
 
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE - ed());
-
-        Balances::<Test>::set_lock(
-            LockId::get(),
-            &SECOND_MEMBER_ACCOUNT_ID,
-            1,
-            WithdrawReasons::TRANSFER,
-        );
-
-        assert_eq!(
-            Balances::<Test>::free_balance(SECOND_MEMBER_ACCOUNT_ID),
-            DEFAULT_NFT_PRICE
-        );
-
-        assert_eq!(
-            Balances::<Test>::usable_balance(SECOND_MEMBER_ACCOUNT_ID),
-            DEFAULT_NFT_PRICE - 1
-        );
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
+        set_invitation_lock(&SECOND_MEMBER_ACCOUNT_ID, ed() + 1);
 
         assert_noop!(
             Content::accept_incoming_offer(

@@ -4972,23 +4972,6 @@ pub fn ed() -> BalanceOf<Test> {
     <Test as balances::Config>::ExistentialDeposit::get().into()
 }
 
-pub fn init_existential_deposits() {
-    let ed = ed();
-    increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, ed);
-    increase_account_balance_helper(LEAD_ACCOUNT_ID, ed);
-    increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, ed);
-    increase_account_balance_helper(UNAUTHORIZED_LEAD_ACCOUNT_ID, ed);
-    increase_account_balance_helper(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(THIRD_MEMBER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(LEAD_MEMBER_CONTROLLER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID, ed);
-    increase_account_balance_helper(UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID, ed);
-}
-
 #[derive(Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum NftTransactionalStatusType {
     Idle,
@@ -5118,7 +5101,6 @@ impl ContentTest {
     pub fn setup(&self) {
         run_to_block(1);
         create_initial_storage_buckets_helper();
-        init_existential_deposits();
         increase_account_balance_helper(self.channel_owner_sender, INITIAL_BALANCE);
 
         // Create channel

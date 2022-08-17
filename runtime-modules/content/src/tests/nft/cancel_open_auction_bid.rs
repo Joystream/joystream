@@ -43,7 +43,7 @@ fn setup_open_auction_scenario_with_bid() {
     // deposit initial balance
     let bid = Content::min_starting_price();
 
-    let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+    let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
     // Make nft auction bid
     assert_ok!(Content::make_open_auction_bid(
@@ -296,7 +296,10 @@ fn cancel_open_auction_bid_fails_during_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
             .setup();
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
+        increase_account_balance_helper(
+            SECOND_MEMBER_ACCOUNT_ID,
+            ed() + Content::min_starting_price(),
+        );
         InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));

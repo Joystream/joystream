@@ -1,7 +1,11 @@
 use balances::BalanceLock;
 use frame_support::{
     ensure,
-    traits::{Currency, Get, Imbalance, LockIdentifier, SignedImbalance},
+    traits::{
+        fungible::{Inspect, Mutate},
+        tokens::WithdrawConsequence,
+        Currency, Get, Imbalance, LockIdentifier, SignedImbalance,
+    },
 };
 use sp_arithmetic::traits::{CheckedAdd, CheckedSub, Saturating};
 use sp_runtime::{traits::Zero, DispatchError, DispatchResult};
@@ -158,6 +162,37 @@ pub fn pay_cost<T: frame_system::Config + balances::Config>(
             DispatchError::Other("pay_cost: Unexpected deposit imbalance")
         );
     }
+
+    Ok(())
+}
+
+pub fn has_sufficient_usable_balance_and_stays_alive<T: frame_system::Config + balances::Config>(
+    account: &T::AccountId,
+    amount: T::Balance,
+) -> bool {
+    balances::Pallet::<T>::can_withdraw(account, amount) == WithdrawConsequence::Success
+}
+
+pub fn burn_from_usable<T: frame_system::Config + balances::Config>(
+    account: &T::AccountId,
+    amount: T::Balance,
+    allow_death: bool,
+) -> DispatchResult {
+    let burned = balances::Pallet::<T>::burn_from(account, amount)?;
+
+    ensure!(
+        allow_death
+            || balances::Pallet::<T>::total_balance(account) >= T::ExistentialDeposit::get(),
+        DispatchError::Other("burn_from_usable: Keep alive")
+    );
+
+    ensure!(
+        burned == amount
+            || (allow_death
+                && burned > amount
+                && burned <= amount.saturating_add(T::ExistentialDeposit::get())),
+        DispatchError::Other("burn_from_usable: Unexpected burned amount")
+    );
 
     Ok(())
 }

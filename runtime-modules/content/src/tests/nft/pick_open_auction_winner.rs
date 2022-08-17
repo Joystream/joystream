@@ -43,7 +43,7 @@ fn pick_open_auction_winner() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -124,7 +124,7 @@ fn pick_open_auction_winner_auth_failed() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -195,7 +195,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -357,7 +357,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -525,7 +525,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 #[test]
 fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
     with_default_mock_builder(|| {
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
         let royalty = Perbill::from_percent(DEFAULT_ROYALTY).mul_floor(DEFAULT_NFT_PRICE);
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
         ContentTest::default().with_video().setup();
@@ -552,7 +552,7 @@ fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
         // net revenue for member owner : NFT PRICE - ROYALTY - FEE
         assert_eq!(
             Balances::<Test>::usable_balance(THIRD_MEMBER_ACCOUNT_ID),
-            ed() + DEFAULT_NFT_PRICE - royalty - platform_fee
+            DEFAULT_NFT_PRICE - royalty - platform_fee
         );
     })
 }
@@ -560,7 +560,7 @@ fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
 #[test]
 fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
     with_default_mock_builder(|| {
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
         ContentTest::default().with_video().setup();
         IssueNftFixture::default()

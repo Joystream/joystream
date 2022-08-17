@@ -996,7 +996,7 @@ fn create_thread_succeeds_with_invitation_locked_balance() {
 
         let thread_account_id = TestForumModule::thread_account(thread_id);
 
-        assert_eq!(Balances::<Runtime>::usable_balance(thread_account_id), fees);
+        assert_eq!(Balances::usable_balance(thread_account_id), fees);
         assert_eq!(
             System::account(forum_lead).data,
             balances::AccountData {
@@ -1039,7 +1039,7 @@ fn create_thread_fails_with_insufficient_locked_balance() {
         );
 
         // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
-        let _ = Balances::<Runtime>::deposit_creating(&forum_lead, 1);
+        let _ = Balances::deposit_creating(&forum_lead, 1);
         set_staking_candidate_lock(&forum_lead, ed() + 1);
 
         create_thread_mock(
@@ -1129,7 +1129,7 @@ fn add_post_succeeds_with_invitation_locked_balance() {
         let thread_account_id = TestForumModule::thread_account(thread_id);
 
         assert_eq!(
-            Balances::<Runtime>::usable_balance(thread_account_id),
+            Balances::usable_balance(thread_account_id),
             <Runtime as Config>::ThreadDeposit::get() + <Runtime as Config>::PostDeposit::get() * 2
         );
         assert_eq!(
@@ -1186,7 +1186,7 @@ fn add_post_fails_with_insufficient_locked_balance() {
         );
 
         // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
-        let _ = Balances::<Runtime>::deposit_creating(&forum_lead, 1);
+        let _ = Balances::deposit_creating(&forum_lead, 1);
         set_staking_candidate_lock(&forum_user, ed() + 1);
 
         create_post_mock(
@@ -2732,7 +2732,7 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
     let initial_balance = 10_000_000;
 
     with_test_externalities(|| {
-        Balances::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        Balances::make_free_balance_be(&forum_lead, initial_balance);
 
         let moderator_id = forum_lead;
         let category_id = create_category_mock(

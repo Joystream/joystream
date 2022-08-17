@@ -254,7 +254,7 @@ fn issue_and_sell_nft() {
     ));
 
     // deposit balance to second member
-    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
 
     // Sell nft
     assert_ok!(Content::sell_nft(

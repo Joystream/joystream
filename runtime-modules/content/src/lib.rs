@@ -33,7 +33,9 @@ pub use storage::{
 
 pub use common::{
     bloat_bond::RepayableBloatBond,
-    costs::{ensure_can_cover_costs, pay_cost, Cost},
+    costs::{
+        ensure_can_cover_costs, has_sufficient_usable_balance_and_stays_alive, pay_cost, Cost,
+    },
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
@@ -1856,7 +1858,7 @@ decl_module! {
                         royalty_payment,
                         participant_id,
                         buy_now_price,
-                    );
+                    )?;
 
                     (
                         updated_nft,
@@ -1967,7 +1969,7 @@ decl_module! {
                         royalty_payment,
                         participant_id,
                         buy_now_price,
-                    );
+                    )?;
 
 
                     (
@@ -2087,7 +2089,7 @@ decl_module! {
                 royalty_payment,
                 top_bidder_id,
                 top_bid.amount
-            );
+            )?;
 
             // Update the video
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
@@ -2148,7 +2150,7 @@ decl_module! {
                 royalty_payment,
                 winner_id,
                 bid.amount,
-            );
+            )?;
 
             // remove bid
             OpenAuctionBidByVideoAndMember::<T>::remove(video_id, winner_id);
@@ -2293,7 +2295,7 @@ decl_module! {
                 royalty_payment,
                 nft_owner_account,
                 receiver_account_id
-            );
+            )?;
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -2387,7 +2389,7 @@ decl_module! {
                 old_nft_owner_account_id,
                 participant_account_id,
                 participant_id
-            );
+            )?;
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -3349,19 +3351,22 @@ impl<T: Config> Module<T> {
         owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         transfer_cost: BalanceOf<T>,
     ) -> DispatchResult {
-        let balance = match owner {
+        let funds_are_sufficient = match owner {
             ChannelOwner::Member(member_id) => {
                 let controller_account_id =
                     T::MemberAuthenticator::controller_account_id(*member_id)?;
 
                 // Funds received from the member invitation cannot be used!!
-                Balances::<T>::usable_balance(&controller_account_id)
+                has_sufficient_usable_balance_and_stays_alive::<T>(
+                    &controller_account_id,
+                    transfer_cost,
+                )
             }
-            ChannelOwner::CuratorGroup(_) => T::ContentWorkingGroup::get_budget(),
+            ChannelOwner::CuratorGroup(_) => T::ContentWorkingGroup::get_budget() >= transfer_cost,
         };
 
         ensure!(
-            balance >= transfer_cost,
+            funds_are_sufficient,
             Error::<T>::InsufficientBalanceForTransfer
         );
         Ok(())

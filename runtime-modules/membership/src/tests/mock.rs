@@ -2,8 +2,8 @@
 
 pub use crate::{Config, Weight, WeightInfo};
 
-use crate as membership;
 use crate::tests::fixtures::ALICE_MEMBER_ID;
+use crate::{self as membership, BalanceOf};
 pub use balances;
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{
@@ -304,4 +304,8 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 
 pub fn build_test_externalities_with_lead_set() -> sp_io::TestExternalities {
     TestExternalitiesBuilder::default().with_lead().build()
+}
+
+pub fn ed() -> BalanceOf<Test> {
+    ExistentialDeposit::get().into()
 }

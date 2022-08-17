@@ -46,23 +46,23 @@
 
 // used dependencies
 use codec::{Decode, Encode};
+use common::costs::burn_from_usable;
+use common::council::CouncilOriginValidator;
+use common::membership::{MemberId, MemberOriginValidator};
+use common::{FundingRequestParameters, StakingAccountValidator};
 use core::marker::PhantomData;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 use frame_system::ensure_root;
+use referendum::{CastVote, OptionResult, ReferendumManager};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
-
-use common::council::CouncilOriginValidator;
-use common::membership::{MemberId, MemberOriginValidator};
-use common::{FundingRequestParameters, StakingAccountValidator};
-use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
 // declared modules
@@ -899,7 +899,7 @@ decl_module! {
 
             ensure!(amount > Zero::zero(), Error::<T>::ZeroTokensFunding);
             ensure!(
-                Balances::<T>::can_slash(&account_id, amount),
+                balances::Pallet::<T>::usable_balance(&account_id) >= amount,
                 Error::<T>::InsufficientTokensForFunding
             );
 
@@ -907,9 +907,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(budget.saturating_add(amount));
+            // Account is allowed to die when funding the council
+            burn_from_usable::<T>(&account_id, amount, true)?;
 
-            let _ = Balances::<T>::slash(&account_id, amount);
+            Mutations::<T>::set_budget(budget.saturating_add(amount));
 
             Self::deposit_event(
                 RawEvent::CouncilBudgetFunded(

@@ -63,7 +63,10 @@ fn create_member<T: Config>(
     handle: &[u8],
 ) -> <T as MembershipTypes>::MemberId {
     let member_id = Members::<T>::members_created();
-    let _ = Balances::<T>::deposit_creating(account_id, Members::<T>::membership_price());
+    let _ = Balances::<T>::deposit_creating(
+        account_id,
+        T::JoyExistentialDeposit::get() + Members::<T>::membership_price(),
+    );
     Members::<T>::buy_membership(
         RawOrigin::Signed(account_id.clone()).into(),
         BuyMembershipParameters {
@@ -81,7 +84,6 @@ fn create_member<T: Config>(
 fn create_owner<T: Config>() -> (<T as MembershipTypes>::MemberId, T::AccountId) {
     let owner_account = token_owner_account::<T>();
     let owner_member_id = create_member::<T>(&owner_account, b"owner");
-    let _ = Joy::<T>::deposit_creating(&owner_account, T::JoyExistentialDeposit::get());
     (owner_member_id, owner_account)
 }
 
@@ -354,7 +356,7 @@ benchmarks! {
         // Make sure that proof.0.len() is h
         assert_eq!(proof.0.len() as u32, h);
 
-        let _ = Joy::<T>::deposit_creating(&acc, T::JoyExistentialDeposit::get() + bloat_bond);
+        let _ = Joy::<T>::deposit_creating(&acc, bloat_bond);
         let token_id = issue_token::<T>(transfer_policy_params.clone())?;
         BloatBond::<T>::set(bloat_bond);
     }: _(
@@ -395,7 +397,6 @@ benchmarks! {
 
         let _ = Joy::<T>::deposit_creating(
             &participant,
-            T::JoyExistentialDeposit::get() +
             bloat_bond +
             (DEFAULT_SALE_PURCHASE * DEFAULT_SALE_UNIT_PRICE).into()
         );
@@ -479,7 +480,7 @@ benchmarks! {
         );
         assert_eq!(
             Joy::<T>::usable_balance(&participant_acc),
-            DEFAULT_SPLIT_PAYOUT.saturated_into()
+            T::JoyExistentialDeposit::get() + DEFAULT_SPLIT_PAYOUT.saturated_into()
         );
         assert_last_event::<T>(
             RawEvent::UserParticipatedInSplit(

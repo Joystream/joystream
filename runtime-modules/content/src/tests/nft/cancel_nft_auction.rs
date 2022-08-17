@@ -259,7 +259,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
 
         // Make an english auction bid
         assert_ok!(Content::make_english_auction_bid(

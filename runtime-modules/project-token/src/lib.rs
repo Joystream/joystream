@@ -37,7 +37,9 @@ mod utils;
 
 // crate imports
 use common::bloat_bond::RepayableBloatBond;
-use common::costs::{ensure_can_cover_costs, pay_cost, Cost};
+use common::costs::{
+    ensure_can_cover_costs, has_sufficient_usable_balance_and_stays_alive, pay_cost, Cost,
+};
 pub use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
@@ -1679,20 +1681,16 @@ impl<T: Config> Module<T> {
     pub(crate) fn ensure_can_transfer_joy(
         src: &T::AccountId,
         destinations: &[(&T::AccountId, JoyBalanceOf<T>)],
-    ) -> Result<JoyBalanceOf<T>, DispatchError> {
+    ) -> DispatchResult {
         let total_amount: JoyBalanceOf<T> = destinations
             .iter()
             .map(|(_, amount)| amount)
             .fold(JoyBalanceOf::<T>::zero(), |total, current| {
                 total.saturating_add(*current)
             });
-        let src_usable_balance = Joy::<T>::usable_balance(src);
-        let src_total_balance = Joy::<T>::total_balance(src);
         if !total_amount.is_zero() {
             ensure!(
-                src_usable_balance >= total_amount
-                    && src_total_balance
-                        >= total_amount.saturating_add(T::ExistentialDeposit::get()),
+                has_sufficient_usable_balance_and_stays_alive::<T>(src, total_amount),
                 Error::<T>::InsufficientJoyBalance
             );
             for (dst, amount) in destinations {
@@ -1705,7 +1703,7 @@ impl<T: Config> Module<T> {
                 }
             }
         }
-        Ok(src_usable_balance.saturating_sub(total_amount))
+        Ok(())
     }
 
     pub(crate) fn transfer_joy(src: &T::AccountId, dst: &T::AccountId, amount: JoyBalanceOf<T>) {
