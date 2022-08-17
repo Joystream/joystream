@@ -5,6 +5,7 @@ import { Api } from '../../Api'
 import * as path from 'path'
 import { getVideoDefaults, getChannelDefaults } from './contentTemplates'
 import { IMember } from './createMembersAndCurators'
+import { ChannelUpdateInputParameters } from '@joystream/cli/src/Types'
 
 const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'
 
@@ -15,6 +16,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   private channelCategoryId: number
   private videoCategoryId: number
   private author: IMember
+  private channelCollaborators: NonNullable<ChannelUpdateInputParameters['collaborators']>
   private createdItems: {
     channelIds: number[]
     videosData: ICreatedVideoData[]
@@ -28,7 +30,8 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     videoCount: number,
     channelCategoryId: number,
     videoCategoryId: number,
-    author: IMember
+    author: IMember,
+    channelCollaborators: ChannelUpdateInputParameters['collaborators'] = []
   ) {
     super(api, query)
     this.cli = cli
@@ -37,6 +40,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     this.channelCategoryId = channelCategoryId
     this.videoCategoryId = videoCategoryId
     this.author = author
+    this.channelCollaborators = channelCollaborators
 
     this.createdItems = {
       channelIds: [],
@@ -56,7 +60,11 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     await this.cli.importAccount(this.author.keyringPair)
 
     this.debug('Creating channels')
-    this.createdItems.channelIds = await this.createChannels(this.channelCount, this.channelCategoryId)
+    this.createdItems.channelIds = await this.createChannels(
+      this.channelCount,
+      this.channelCategoryId,
+      this.channelCollaborators
+    )
 
     this.debug('Creating videos')
     this.createdItems.videosData = await this.createVideos(
@@ -69,12 +77,17 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   /**
     Creates a new channel.
   */
-  private async createChannels(count: number, channelCategoryId: number): Promise<number[]> {
+  private async createChannels(
+    count: number,
+    channelCategoryId: number,
+    channelCollaborators: NonNullable<ChannelUpdateInputParameters['collaborators']>
+  ): Promise<number[]> {
     const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannel(
         {
           ...getChannelDefaults(index, cliExamplesFolderPath),
           category: channelCategoryId,
+          collaborators: channelCollaborators,
         },
         ['--context', 'Member', '--useMemberId', this.author.memberId.toString()]
       )

@@ -208,7 +208,7 @@ export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhot
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
-  collaborators?: { memberId: number; channelAgentPermissions: ChannelActionPermission['type'][] }[]
+  collaborators?: { memberId: number; permissions: ChannelActionPermission['type'][] }[]
   privilegeLevel?: number
 }
 

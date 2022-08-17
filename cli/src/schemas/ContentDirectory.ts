@@ -45,7 +45,7 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
         type: 'object',
         properties: {
           memberId: { type: 'integer' },
-          channelAgentPermissions: {
+          permissions: {
             type: 'array',
             items: {
               type: 'string',

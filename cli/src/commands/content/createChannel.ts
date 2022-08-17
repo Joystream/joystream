@@ -65,7 +65,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
       distributionBuckets,
       meta: metadataToBytes(ChannelMetadata, meta),
       collaborators: new Map(
-        collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions])
+        collaborators?.map(({ memberId, permissions }) => [memberId, permissions])
       ),
     })
 

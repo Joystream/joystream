@@ -2,6 +2,7 @@ import createAndUpdateChannel from '../flows/clis/createAndUpdateChannel'
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import curatorModerationActions from '../flows/content/curatorModerationActions'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
+import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 import leadOpening from '../flows/working-groups/leadOpening'
 import { scenario } from '../Scenario'
 
@@ -11,8 +12,10 @@ scenario('Content directory', async ({ job }) => {
     'Set content working group leads',
     leadOpening(true, ['contentWorkingGroup', 'storageWorkingGroup'])
   )
+
   const channelJob = job('Create and Update Channel with assets', createAndUpdateChannel).requires(leadSetupJob)
   job('nft auction and offers', nftAuctionAndOffers).requires(channelJob)
   job('curator moderation actions', curatorModerationActions).requires(channelJob)
   job('video comments and reactions', commentsAndReactions).after(channelJob)
+  job('curators and collaborators permissions', collaboratorAndCuratorPermissions).after(channelJob)
 })
