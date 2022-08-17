@@ -1751,6 +1751,13 @@ decl_module! {
         }
 
         /// Start video nft english auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::start_english_auction()]
         pub fn start_english_auction(
             origin,
@@ -1805,7 +1812,14 @@ decl_module! {
             );
         }
 
-        // Cancel video nft english auction
+        /// Cancel video nft english auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::cancel_english_auction()]
         pub fn cancel_english_auction(
             origin,
@@ -2127,7 +2141,14 @@ decl_module! {
 
         }
 
-        /// Make auction bid
+        /// Make english auction bid
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::make_english_auction_bid()]
         pub fn make_english_auction_bid(
             origin,
@@ -2287,6 +2308,13 @@ decl_module! {
 
         /// Claim won english auction
         /// Can be called by anyone
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::settle_english_auction()]
         pub fn settle_english_auction(
             origin,
