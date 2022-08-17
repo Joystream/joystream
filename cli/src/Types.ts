@@ -23,8 +23,7 @@ import { JSONSchema4 } from 'json-schema'
 import {
   IChannelMetadata,
   IVideoMetadata,
-  IVideoCategoryMetadata,
-  IChannelCategoryMetadata,
+  ICreateVideoCategory,
   IOpeningMetadata,
   IWorkingGroupMetadata,
 } from '@joystream/metadata-protobuf'
@@ -235,9 +234,7 @@ export type ModerationPermissionsByLevelInputParameters = {
 
 export type ChannelUpdateInputParameters = ChannelCreationInputParameters
 
-export type ChannelCategoryInputParameters = IChannelCategoryMetadata
-
-export type VideoCategoryInputParameters = IVideoCategoryMetadata
+export type VideoCategoryInputParameters = ICreateVideoCategory
 
 export type WorkingGroupOpeningInputParameters = Omit<IOpeningMetadata, 'applicationFormQuestions'> & {
   stakingPolicy: {

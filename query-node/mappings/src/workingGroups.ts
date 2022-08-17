@@ -24,6 +24,7 @@ import {
   WorkingGroupModuleName,
   toNumber,
   INT32MAX,
+  inconsistentState,
   getWorkingGroupByName,
 } from './common'
 import BN from 'bn.js'
@@ -104,7 +105,7 @@ async function getOpening(
 ): Promise<WorkingGroupOpening> {
   const opening = await store.get(WorkingGroupOpening, { where: { id: openingstoreId }, relations })
   if (!opening) {
-    throw new Error(`Opening not found by id ${openingstoreId}`)
+    return inconsistentState(`Opening not found by id ${openingstoreId}`)
   }
 
   return opening
@@ -113,7 +114,7 @@ async function getOpening(
 async function getApplication(store: DatabaseManager, applicationstoreId: string): Promise<WorkingGroupApplication> {
   const application = await store.get(WorkingGroupApplication, { where: { id: applicationstoreId } })
   if (!application) {
-    throw new Error(`Application not found by id ${applicationstoreId}`)
+    return inconsistentState(`Application not found by id`, applicationstoreId)
   }
 
   return application
@@ -129,10 +130,10 @@ async function getApplicationFormQuestions(
   ])
 
   if (!openingWithQuestions) {
-    throw new Error(`Opening not found by id: ${openingstoreId}`)
+    return inconsistentState('Opening not found by id', openingstoreId)
   }
   if (!openingWithQuestions.metadata.applicationFormQuestions) {
-    throw new Error(`Application form questions not found for opening: ${openingstoreId}`)
+    return inconsistentState('Application form questions not found for opening', openingstoreId)
   }
   return openingWithQuestions.metadata.applicationFormQuestions
 }
@@ -363,7 +364,7 @@ export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?
   const leaderSetEvent = await store.get(LeaderSetEvent, { where: { inExtrinsic: txHash } })
 
   if (!leaderSetEvent) {
-    throw new Error(`LeaderSet event not found by tx hash: ${txHash}`)
+    return inconsistentState(`LeaderSet event not found by tx hash`, txHash)
   }
 
   return leaderSetEvent
@@ -503,8 +504,9 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
                 ([applicationRuntimeId]) => applicationRuntimeId.toNumber() === application.runtimeId
               ) || []
             if (!workerRuntimeId) {
-              throw new Error(
-                `Fatal: No worker id found by accepted application id ${application.id} when handling OpeningFilled event!`
+              return inconsistentState(
+                'Fatal: No worker id found by accepted application when handling OpeningFilled event!',
+                application.id
               )
             }
             const worker = new Worker({

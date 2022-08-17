@@ -51,6 +51,7 @@ typegen:
     - storageWorkingGroup.BudgetSpending
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
+    - storageWorkingGroup.LeadRemarked
     # Proposals
     - proposalsCodex.ProposalCreated
     - proposalsEngine.ProposalStatusUpdated
