@@ -515,6 +515,11 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
+    // DB OPERATIONS:
     // - DB read cost already maxed out due to `payload` being a struct of `Option`s
     // - `payload` fields `Some(..)` in order to maximize the number of storage mutation performed
     update_channel_payouts {
@@ -575,6 +580,11 @@ benchmarks! {
     //         );
     //     }
 
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     withdraw_from_channel_balance {
         let (channel_id, member_id, member_account_id, lead_account_id) =
             setup_worst_case_scenario_member_channel::<T>(
@@ -610,8 +620,11 @@ benchmarks! {
             );
         }
 
-    // Worst case scenario:
-    // - curator channel belonging to a group with max number curator and max curator permissions
+    // WORST CASE SCENARIO:
+    // COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     claim_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
@@ -647,7 +660,9 @@ benchmarks! {
         }
 
     // Worst case scenario:
-    // - curator channel belonging to a group with max number curator and max curator permissions
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     claim_and_withdraw_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
@@ -691,7 +706,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - max number of paused features (except necessary ones)
     // - English Auction with max whitelisted member & some royalty
     // - nft limits are set
@@ -724,7 +741,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -745,7 +764,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -771,7 +792,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -797,7 +820,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -822,7 +847,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
