@@ -1695,6 +1695,13 @@ decl_module! {
         }
 
         /// Start video nft open auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::start_open_auction()]
         pub fn start_open_auction(
             origin,
@@ -1846,7 +1853,14 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
         }
 
-        // Cancel video nft english auction
+        /// Cancel video nft english auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::cancel_open_auction()]
         pub fn cancel_open_auction(
             origin,
@@ -1990,7 +2004,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::update_buy_now_price()]
+        #[weight = WeightInfoContent::<T>::update_buy_now_price()]
         pub fn update_buy_now_price(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2033,6 +2047,13 @@ decl_module! {
 
 
         /// Make auction bid
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::make_open_auction_bid()]
         pub fn make_open_auction_bid(
             origin,
@@ -2243,6 +2264,13 @@ decl_module! {
         }
 
         /// Cancel open auction bid
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::cancel_open_auction_bid()]
         pub fn cancel_open_auction_bid(
             origin,
@@ -2336,6 +2364,13 @@ decl_module! {
 
         /// Accept open auction bid
         /// Should only be called by auctioneer
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::pick_open_auction_winner()]
         pub fn pick_open_auction_winner(
             origin,
@@ -2571,7 +2606,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::sell_nft()]
+        #[weight = WeightInfoContent::<T>::sell_nft()]
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
@@ -2679,7 +2714,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::toggle_nft_limits()]
+        #[weight = WeightInfoContent::<T>::toggle_nft_limits()]
         pub fn toggle_nft_limits(
             origin,
             enabled: bool
@@ -2892,7 +2927,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::update_global_nft_limit()]
+        #[weight = WeightInfoContent::<T>::update_global_nft_limit()]
         pub fn update_global_nft_limit(
             origin,
             nft_limit_period: NftLimitPeriod,
@@ -2922,7 +2957,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::update_channel_nft_limit()]
+        #[weight = WeightInfoContent::<T>::update_channel_nft_limit()]
         pub fn update_channel_nft_limit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
