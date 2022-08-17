@@ -17,7 +17,6 @@ import {
 } from '../../fixtures/proposalsDiscussion'
 import { FlowProps } from '../../Flow'
 import { Resource } from '../../Resources'
-import { Bytes } from '@polkadot/types'
 
 export default async function proposalsDiscussion({ api, query, lock }: FlowProps): Promise<void> {
   const debug = Debugger('flow:proposals-discussion')

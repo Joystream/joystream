@@ -32,6 +32,7 @@ docker-compose -f ../docker-compose.yml up -d joystream-node
 
 ../tests/network-tests/start-storage.sh
 export REUSE_KEYS=true
+export IGNORE_HIRED_LEADS=true # this directive is needed to run `full` scenario without problems
 
 # pass the scenario name without .ts extension
 SCENARIO=$1

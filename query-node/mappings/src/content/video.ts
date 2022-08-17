@@ -79,7 +79,7 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   // load channel
   const channel = await store.get(Channel, {
     where: { id: channelId.toString() },
-    relations: ['category', 'ownerMember', 'ownerCuratorGroup'],
+    relations: ['ownerMember', 'ownerCuratorGroup'],
   })
 
   // ensure channel exists

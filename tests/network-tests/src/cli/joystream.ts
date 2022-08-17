@@ -6,8 +6,6 @@ import {
   VideoInputParameters,
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
-  ChannelCategoryInputParameters,
-  VideoCategoryInputParameters,
 } from '@joystream/cli/src/Types'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
 
@@ -96,10 +94,7 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new channel.
   */
-  async createChannel(
-    channel: Modify<ChannelCreationInputParameters, { category?: number }>,
-    args: string[]
-  ): Promise<number> {
+  async createChannel(channel: ChannelCreationInputParameters, args: string[]): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
     const { out, stderr, exitCode } = await this.run('content:createChannel', ['--input', jsonFile, ...args])
@@ -112,31 +107,11 @@ export class JoystreamCLI extends CLI {
   }
 
   /**
-    Creates a new channel category.
-  */
-  async createChannelCategory(channelCategory: ChannelCategoryInputParameters): Promise<number> {
-    const jsonFile = this.tmpFileManager.jsonFile(channelCategory)
-
-    const { stdout, stderr, exitCode } = await this.run('content:createChannelCategory', [
-      '--input',
-      jsonFile,
-      '--context',
-      'Lead',
-    ])
-
-    if (exitCode) {
-      throw new Error(`Unexpected CLI failure on creating channel category: "${stderr}"`)
-    }
-
-    return this.parseCreatedIdFromOutput(stderr)
-  }
-
-  /**
     Creates a new video.
   */
   async createVideo(
     channelId: number,
-    video: Modify<VideoInputParameters, { category?: number }>,
+    video: Modify<VideoInputParameters, { category?: string }>,
     canOmitUpload = true
   ): Promise<ICreatedVideoData> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
@@ -166,34 +141,25 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new video category.
   */
-  async createVideoCategory(videoCategory: VideoCategoryInputParameters): Promise<number> {
-    const jsonFile = this.tmpFileManager.jsonFile(videoCategory)
-
-    const { stdout, stderr, exitCode } = await this.run('content:createVideoCategory', [
-      '--input',
-      jsonFile,
-      '--context',
-      'Lead',
-    ])
+  async createVideoCategory(name: string): Promise<void> {
+    const { stdout, stderr, exitCode } = await this.run('content:createVideoCategory', [name])
 
     if (exitCode) {
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
-
-    return this.parseCreatedIdFromOutput(stderr)
   }
 
   /**
     Updates an existing video.
   */
-  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category?: number }>): Promise<void> {
+  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category?: string }>): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
     const { stderr, exitCode } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
 
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
-      // ignore warningscreating
-      throw new Error(`Unexpected CLI failure on  updating video: "${stderr}"`)
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on updating video: "${stderr}"`)
     }
   }
 

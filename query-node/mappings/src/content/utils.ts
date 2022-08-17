@@ -22,7 +22,6 @@ import {
   // asset
   Membership,
   VideoMediaEncoding,
-  ChannelCategory,
   StorageDataObject,
   DataObjectTypeChannelAvatar,
   DataObjectTypeChannelCoverPhoto,
@@ -80,7 +79,7 @@ const ASSET_TYPES = {
 } as const
 
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = ['channel', 'channel.category', 'category', 'thumbnailPhoto', 'media']
+export const videoRelationsForCounters = ['channel', 'category', 'thumbnailPhoto', 'media']
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
@@ -177,11 +176,6 @@ export async function processChannelMetadata(
 
   await processChannelAssets(ctx, assets, channel, meta)
 
-  // prepare channel category if needed
-  if (isSet(meta.category)) {
-    channel.category = await processChannelCategory(ctx, channel.category, parseInt(meta.category))
-  }
-
   // prepare language if needed
   if (isSet(meta.language)) {
     channel.language = await processLanguage(ctx, channel.language, meta.language)
@@ -204,7 +198,7 @@ export async function processVideoMetadata(
 
   // prepare video category if needed
   if (meta.category) {
-    video.category = await processVideoCategory(ctx, video.category, parseInt(meta.category))
+    video.category = await processVideoCategory(ctx, video.category, meta.category)
   }
 
   // prepare media meta information if needed
@@ -595,7 +589,7 @@ function isLicenseEmpty(licenseObject: ILicense): boolean {
 async function processVideoCategory(
   ctx: EventContext & StoreContext,
   currentCategory: VideoCategory | undefined,
-  categoryId: number
+  categoryId: string
 ): Promise<VideoCategory | undefined> {
   const { store } = ctx
 
@@ -604,31 +598,17 @@ async function processVideoCategory(
     where: { id: categoryId.toString() },
   })
 
-  // ensure video category exists
+  // if category is not found, create new one
   if (!category) {
-    invalidMetadata('Non-existing video category association with video requested', categoryId)
-    return currentCategory
-  }
-
-  return category
-}
-
-async function processChannelCategory(
-  ctx: EventContext & StoreContext,
-  currentCategory: ChannelCategory | undefined,
-  categoryId: number
-): Promise<ChannelCategory | undefined> {
-  const { store } = ctx
-
-  // load video category
-  const category = await store.get(ChannelCategory, {
-    where: { id: categoryId.toString() },
-  })
-
-  // ensure video category exists
-  if (!category) {
-    invalidMetadata('Non-existing channel category association with channel requested', categoryId)
-    return currentCategory
+    logger.info('Creating unknown video category', { categoryId })
+    const newCategory = new VideoCategory({
+      id: categoryId,
+      videos: [],
+      createdInBlock: ctx.event.blockNumber,
+      activeVideosCounter: 0,
+    })
+    await store.save<VideoCategory>(newCategory)
+    return newCategory
   }
 
   return category
