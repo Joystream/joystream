@@ -1,7 +1,6 @@
 import { VideoCategory } from 'query-node/dist/model'
 import { invalidMetadata, logger } from '../common'
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { generateNextId } from '@joystream/hydra-processor/lib/executor/EntityIdGenerator'
 import { ICreateVideoCategory } from '@joystream/metadata-protobuf'
 
 export async function createVideoCategory(
@@ -9,7 +8,7 @@ export async function createVideoCategory(
   event: SubstrateEvent,
   categoryData: ICreateVideoCategory
 ): Promise<VideoCategory> {
-  const videoCategoryId = await generateNextId(store, VideoCategory)
+  const videoCategoryId = await getNewCategoryId(store, event)
 
   let parentCategory: VideoCategory | undefined
 
@@ -45,4 +44,17 @@ export async function createVideoCategory(
   logger.info('Video category has been created', { id: videoCategory.id })
 
   return videoCategory
+}
+
+async function getNewCategoryId(store: DatabaseManager, event: SubstrateEvent): Promise<string> {
+  let categoryId = `${event.blockNumber}-${event.indexInBlock}`
+  let tries = 0
+
+  // make sure category id is unique
+  while (await store.get<VideoCategory>(VideoCategory, { where: { id: categoryId } })) {
+    tries++
+    categoryId = `${event.blockNumber}-${event.indexInBlock}-${tries}`
+  }
+
+  return categoryId
 }
