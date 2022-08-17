@@ -70,6 +70,9 @@ pub trait WeightInfo {
 	fn cancel_buy_now() -> Weight;
 	fn update_buy_now_price() -> Weight;
 	fn buy_nft() -> Weight;
+	fn toggle_nft_limits() -> Weight;
+	fn update_global_nft_limit() -> Weight;
+	fn update_channel_nft_limit() -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -428,6 +431,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
+
+	fn toggle_nft_limits() -> Weight {
+		0
+	}
+	fn update_global_nft_limit() -> Weight {
+		0
+	}
+	fn update_channel_nft_limit() -> Weight {
+		0
+	}
 }
 
 // Default implementation for tests
@@ -508,6 +521,15 @@ impl WeightInfo for () {
 		0
 	}
 	fn buy_nft() -> Weight {
+		0
+	}
+	fn toggle_nft_limits() -> Weight {
+		0
+	}
+	fn update_global_nft_limit() -> Weight {
+		0
+	}
+	fn update_channel_nft_limit() -> Weight {
 		0
 	}
 }
