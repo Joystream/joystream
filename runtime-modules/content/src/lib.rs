@@ -1990,7 +1990,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::update_buy_now_price()]
+        #[weight = WeightInfoContent::<T>::update_buy_now_price()]
         pub fn update_buy_now_price(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2571,7 +2571,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::sell_nft()]
+        #[weight = WeightInfoContent::<T>::sell_nft()]
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
