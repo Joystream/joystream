@@ -1025,6 +1025,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
+    // - channel has max collaborators
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Channel -> O(1)
@@ -1042,9 +1043,21 @@ benchmarks! {
         }
 
     // ================================================================================
-    // ========================== NFT - UPDATE LIMITS =================================1
+    // ========================== NFT - UPDATE LIMITS =================================
     // ================================================================================
 
+    // WORST CASE SCENARIO
+    // COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
+    // - channel has max collaborators
+    // - NFT owner == channel owner
+    // - Member whitelist at max capacity
+    // DB OPERATIONS
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
     start_english_auction {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1076,6 +1089,16 @@ benchmarks! {
             })))
         }
 
+    // WORST CASE SCENARIO
+    // COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
+    // - channel has max collaborators
+    // DB OPERATIONS
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
     cancel_english_auction {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1095,8 +1118,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // - there is already a bid oustanding
-    // - bid triggers buy
+    // - channel has max collaborators
+    // - previous bid already exists
+    // - bid amount triggers buy now (TESTED against non buy now case)
+    // - nft royalty is some
+    // DB OPERATIONS
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
     make_english_auction_bid {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1121,6 +1150,13 @@ benchmarks! {
 
         }
 
+    // WORST CASE SCENARIO:
+    // - channel has max collaborators
+    // - nft royalty is some
+    // DB OPERATIONS
+    // - DB Read: Video -> O(1)
+    // - DB Read: Channel -> O(1)
+    // - DB Write: Video -> O(1)
     settle_english_auction {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
