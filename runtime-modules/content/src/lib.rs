@@ -2672,7 +2672,14 @@ decl_module! {
         }
 
         /// Only Council can toggle nft issuance limits constraints
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::toggle_nft_limits()]
         pub fn toggle_nft_limits(
             origin,
             enabled: bool
@@ -2877,8 +2884,15 @@ decl_module! {
             );
         }
 
-        /// Updates global NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Updates global NFT limit
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::update_global_nft_limit()]
         pub fn update_global_nft_limit(
             origin,
             nft_limit_period: NftLimitPeriod,
@@ -2901,7 +2915,14 @@ decl_module! {
         }
 
         /// Updates channel's NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::update_channel_nft_limit()]
         pub fn update_channel_nft_limit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

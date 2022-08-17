@@ -1022,7 +1022,10 @@ benchmarks! {
         }
 
     // COMPLEXITY
-    // - context = Curator channel with moderation actions number maxed out
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
+    // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Channel -> O(1)
     // - DB Write: Channel -> O(1)
