@@ -884,7 +884,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -908,7 +910,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -932,7 +936,9 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
@@ -957,8 +963,11 @@ benchmarks! {
 
     // WORST CASE SCENARIO:
     // COMPLEXITY
-    // - context = Curator with max permission and channel is s.t. DB operation are as expensive as possible
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
     // - NFT owner == channel owner
+    // - NFT royalty is some
     // DB OPERATIONS:
     // - DB Read: Video -> O(1)
     // - DB Read: Channel -> O(1)
