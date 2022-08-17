@@ -13,8 +13,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
   private channelCount: number
   private videoCount: number
-  private channelCategoryId: number
-  private videoCategoryId: number
+  private videoCategoryId: string
   private author: IMember
   private channelCollaborators: NonNullable<ChannelUpdateInputParameters['collaborators']>
   private createdItems: {
@@ -28,8 +27,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     cli: JoystreamCLI,
     channelCount: number,
     videoCount: number,
-    channelCategoryId: number,
-    videoCategoryId: number,
+    videoCategoryId: string,
     author: IMember,
     channelCollaborators: ChannelUpdateInputParameters['collaborators'] = []
   ) {
@@ -37,7 +35,6 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     this.cli = cli
     this.channelCount = channelCount
     this.videoCount = videoCount
-    this.channelCategoryId = channelCategoryId
     this.videoCategoryId = videoCategoryId
     this.author = author
     this.channelCollaborators = channelCollaborators
@@ -60,11 +57,8 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     await this.cli.importAccount(this.author.keyringPair)
 
     this.debug('Creating channels')
-    this.createdItems.channelIds = await this.createChannels(
-      this.channelCount,
-      this.channelCategoryId,
-      this.channelCollaborators
-    )
+
+    this.createdItems.channelIds = await this.createChannels(this.channelCount, this.channelCollaborators)
 
     this.debug('Creating videos')
     this.createdItems.videosData = await this.createVideos(
@@ -77,16 +71,15 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   /**
     Creates a new channel.
   */
+
   private async createChannels(
     count: number,
-    channelCategoryId: number,
     channelCollaborators: NonNullable<ChannelUpdateInputParameters['collaborators']>
   ): Promise<number[]> {
     const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannel(
         {
           ...getChannelDefaults(index, cliExamplesFolderPath),
-          category: channelCategoryId,
           collaborators: channelCollaborators,
         },
         ['--context', 'Member', '--useMemberId', this.author.memberId.toString()]
@@ -101,7 +94,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
 
     Note: Assets have to be accepted later on for videos to be counted as active.
   */
-  private async createVideos(count: number, channelId: number, videoCategoryId: number): Promise<ICreatedVideoData[]> {
+  private async createVideos(count: number, channelId: number, videoCategoryId: string): Promise<ICreatedVideoData[]> {
     const createVideo = async (index: number) => {
       return await this.cli.createVideo(channelId, {
         ...getVideoDefaults(index, cliExamplesFolderPath),

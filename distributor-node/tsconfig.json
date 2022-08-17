@@ -10,13 +10,9 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "esModuleInterop": true,
-    "types" : [ "node", "mocha" ],
+    "types": ["node", "mocha"],
     "resolveJsonModule": true,
     "strictNullChecks": true
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }
-
-

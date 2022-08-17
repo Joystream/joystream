@@ -68,6 +68,7 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
 
   // create channel
   const notUsed = 0
+  const notUsedString = ''
   const oneChannel = 1
   const collaborators = [{ memberId: curatorId.toNumber(), permissions: testingPermissions }]
   const nextCollaborators = [
@@ -80,8 +81,7 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
     joystreamCli,
     oneChannel,
     notUsed,
-    notUsed,
-    notUsed,
+    notUsedString,
     author,
     collaborators
   )

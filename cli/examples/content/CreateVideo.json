@@ -8,7 +8,7 @@
   "isPublic": true,
   "isExplicit": false,
   "persons": [],
-  "category": 1,
+  "category": "00000001",
   "license": {
     "code": 1001,
     "attribution": "by Joystream Contributors"

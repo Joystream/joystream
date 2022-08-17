@@ -1,6 +1,8 @@
 import createAndUpdateChannel from '../flows/clis/createAndUpdateChannel'
 import commentsAndReactions from '../flows/content/commentsAndReactions'
+import videoCategories from '../flows/content/videoCategories'
 import curatorModerationActions from '../flows/content/curatorModerationActions'
+import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 import leadOpening from '../flows/working-groups/leadOpening'
@@ -13,9 +15,16 @@ scenario('Content directory', async ({ job }) => {
     leadOpening(true, ['contentWorkingGroup', 'storageWorkingGroup'])
   )
 
+  // following jobs must be run sequentially due to some QN queries that could interfere
   const channelJob = job('Create and Update Channel with assets', createAndUpdateChannel).requires(leadSetupJob)
-  job('nft auction and offers', nftAuctionAndOffers).requires(channelJob)
-  job('curator moderation actions', curatorModerationActions).requires(channelJob)
-  job('video comments and reactions', commentsAndReactions).after(channelJob)
-  job('curators and collaborators permissions', collaboratorAndCuratorPermissions).after(channelJob)
+  const videoCategoriesJob = job('video categories', videoCategories).after(channelJob)
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(videoCategoriesJob)
+  const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  const curatorModerationActionsJob = job('curator moderation actions', curatorModerationActions).after(
+    nftAuctionAndOffersJob
+  )
+  const videoCommentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
+    curatorModerationActionsJob
+  )
+  job('curators and collaborators permissions', collaboratorAndCuratorPermissions).after(videoCommentsAndReactionsJob)
 })

@@ -24,7 +24,6 @@ export type MemberId = u64
 
 // Content
 export type ChannelId = u64
-export type ChannelCategoryId = u64
 export type VideoId = u64
 export type OpenAuctionId = u64
 export type CuratorId = u64
