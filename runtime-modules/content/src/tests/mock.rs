@@ -593,6 +593,10 @@ impl ExtBuilder {
             .assimilate_storage(&mut t)
             .unwrap();
 
+        project_token::GenesisConfig::<Test>::default()
+            .assimilate_storage(&mut t)
+            .unwrap();
+
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
         crate::GenesisConfig::<Test> {
             next_channel_id: self.next_channel_id,

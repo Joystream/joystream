@@ -34,7 +34,8 @@ pub use storage::{
 pub use common::{
     bloat_bond::RepayableBloatBond,
     costs::{
-        ensure_can_cover_costs, has_sufficient_usable_balance_and_stays_alive, pay_cost, Cost,
+        burn_from_usable, ensure_can_cover_costs, has_sufficient_usable_balance_and_stays_alive,
+        pay_cost, Cost,
     },
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
@@ -57,7 +58,9 @@ use sp_arithmetic::{
     traits::{BaseArithmetic, One, Saturating, Zero},
     Perbill,
 };
-use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
+use sp_runtime::traits::{
+    AccountIdConversion, CheckedSub, Hash, MaybeSerializeDeserialize, Member,
+};
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 /// Module configuration trait for Content Directory Module
@@ -3398,34 +3401,46 @@ impl<T: Config> Module<T> {
         new_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         price: BalanceOf<T>,
     ) -> DispatchResult {
-        // Decrease (or slash) balance for the new owner
-        match new_owner {
-            ChannelOwner::Member(member_id) => {
-                let controller_account_id =
-                    T::MemberAuthenticator::controller_account_id(*member_id)?;
+        // Settle the payment depending on `old_owner` and `new_owner` types
+        match (old_owner, new_owner) {
+            (ChannelOwner::Member(old_owner_id), ChannelOwner::Member(new_owner_id)) => {
+                let old_owner_controller_acc =
+                    T::MemberAuthenticator::controller_account_id(*old_owner_id)?;
+                let new_owner_controller_acc =
+                    T::MemberAuthenticator::controller_account_id(*new_owner_id)?;
 
-                let _ = Balances::<T>::slash(&controller_account_id, price);
+                // Transfer funds from the new owner to the old owner
+                <Balances<T> as Currency<T::AccountId>>::transfer(
+                    &new_owner_controller_acc,
+                    &old_owner_controller_acc,
+                    price,
+                    ExistenceRequirement::KeepAlive,
+                )?;
             }
-            ChannelOwner::CuratorGroup(_) => {
-                // The budget is sufficient. It was checked previously in functions:
-                // validate_channel_transfer_acceptance() ->
-                // ensure_sufficient_balance_for_channel_transfer()
-                let new_budget = T::ContentWorkingGroup::get_budget().saturating_sub(price);
+            (ChannelOwner::Member(old_owner_id), ChannelOwner::CuratorGroup(_)) => {
+                let old_owner_controller_acc =
+                    T::MemberAuthenticator::controller_account_id(*old_owner_id)?;
+                // Decrease working group budget.
+                let new_budget = T::ContentWorkingGroup::get_budget()
+                    .checked_sub(&price)
+                    .ok_or(DispatchError::Other(
+                        "pay_for_channel_swap: Unexpected working group budget underflow",
+                    ))?;
                 T::ContentWorkingGroup::set_budget(new_budget);
+                // Deposit funds to old owner
+                let _ = Balances::<T>::deposit_creating(&old_owner_controller_acc, price);
             }
-        };
-
-        // Increase (deposit) balance for the old owner
-        match old_owner {
-            ChannelOwner::Member(member_id) => {
-                let controller_account_id =
-                    T::MemberAuthenticator::controller_account_id(*member_id)?;
-
-                let _ = Balances::<T>::deposit_creating(&controller_account_id, price);
-            }
-            ChannelOwner::CuratorGroup(_) => {
+            (ChannelOwner::CuratorGroup(_), ChannelOwner::Member(new_owner_id)) => {
+                let new_owner_controller_acc =
+                    T::MemberAuthenticator::controller_account_id(*new_owner_id)?;
+                // Burn funds from new owner's usable balance
+                burn_from_usable::<T>(&new_owner_controller_acc, price, false)?;
+                // Increase content working group budget
                 let new_budget = T::ContentWorkingGroup::get_budget().saturating_add(price);
                 T::ContentWorkingGroup::set_budget(new_budget);
+            }
+            (ChannelOwner::CuratorGroup(_), ChannelOwner::CuratorGroup(_)) => {
+                // No-op since budget would be decreased and then increased by `price`
             }
         };
 
@@ -3607,7 +3622,7 @@ impl<T: Config> Module<T> {
                 )
             }
             ChannelFundsDestination::CouncilBudget => {
-                let _ = Balances::<T>::slash(reward_account, amount);
+                burn_from_usable::<T>(reward_account, amount, false)?;
                 T::CouncilBudgetManager::increase_budget(amount);
                 Ok(())
             }

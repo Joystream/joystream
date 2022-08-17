@@ -692,7 +692,7 @@ decl_module! {
                 &treasury_account,
                 &sender,
                 dividend_amount
-            );
+            )?;
 
             TokenInfoById::<T>::mutate(token_id, |token_info| {
                 token_info.revenue_split.account_for_dividend(dividend_amount);
@@ -1221,7 +1221,7 @@ impl<T: Config>
             &revenue_source_account,
             &treasury_account,
             allocation_amount,
-        );
+        )?;
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.activate_new_revenue_split(allocation_amount, timeline);
@@ -1262,7 +1262,7 @@ impl<T: Config>
         let treasury_account = Self::module_treasury_account();
         let amount_to_withdraw = split_info.leftovers();
 
-        Self::transfer_joy(&treasury_account, &account_id, amount_to_withdraw);
+        Self::transfer_joy(&treasury_account, &account_id, amount_to_withdraw)?;
 
         TokenInfoById::<T>::mutate(token_id, |token_info| token_info.deactivate_revenue_split());
 
@@ -1706,13 +1706,17 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn transfer_joy(src: &T::AccountId, dst: &T::AccountId, amount: JoyBalanceOf<T>) {
-        let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
+    pub(crate) fn transfer_joy(
+        src: &T::AccountId,
+        dst: &T::AccountId,
+        amount: JoyBalanceOf<T>,
+    ) -> DispatchResult {
+        <Joy<T> as Currency<T::AccountId>>::transfer(
             src,
             dst,
             amount,
             ExistenceRequirement::KeepAlive,
-        );
+        )
     }
 
     pub(crate) fn do_insert_new_account_for_token(
