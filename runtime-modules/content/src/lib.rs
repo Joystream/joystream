@@ -1935,7 +1935,15 @@ decl_module! {
         }
 
         /// Cancel Nft sell order
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// </weight>
+        #[weight = WeightInfoContent::<T>::cancel_buy_now()]
         pub fn cancel_buy_now(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1974,7 +1982,15 @@ decl_module! {
         }
 
         /// Update Buy now nft price
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::update_buy_now_price()]
         pub fn update_buy_now_price(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2390,7 +2406,7 @@ decl_module! {
         /// `O (1)`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::offer_nft()]
         pub fn offer_nft(
             origin,
@@ -2548,7 +2564,14 @@ decl_module! {
         }
 
         /// Sell Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::sell_nft()]
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
@@ -2594,7 +2617,15 @@ decl_module! {
         }
 
         /// Buy Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::buy_nft()]
         pub fn buy_nft(
             origin,
             video_id: T::VideoId,
@@ -2641,7 +2672,14 @@ decl_module! {
         }
 
         /// Only Council can toggle nft issuance limits constraints
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::toggle_nft_limits()]
         pub fn toggle_nft_limits(
             origin,
             enabled: bool
@@ -2846,8 +2884,15 @@ decl_module! {
             );
         }
 
-        /// Updates global NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Updates global NFT limit
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::update_global_nft_limit()]
         pub fn update_global_nft_limit(
             origin,
             nft_limit_period: NftLimitPeriod,
@@ -2870,7 +2915,14 @@ decl_module! {
         }
 
         /// Updates channel's NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeigthInfoContent::<T>::update_channel_nft_limit()]
         pub fn update_channel_nft_limit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
