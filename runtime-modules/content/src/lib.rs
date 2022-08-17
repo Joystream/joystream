@@ -2004,7 +2004,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::update_buy_now_price()]
+        #[weight = WeightInfoContent::<T>::update_buy_now_price()]
         pub fn update_buy_now_price(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2599,7 +2599,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::sell_nft()]
+        #[weight = WeightInfoContent::<T>::sell_nft()]
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
@@ -2707,7 +2707,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::toggle_nft_limits()]
+        #[weight = WeightInfoContent::<T>::toggle_nft_limits()]
         pub fn toggle_nft_limits(
             origin,
             enabled: bool
@@ -2920,7 +2920,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::update_global_nft_limit()]
+        #[weight = WeightInfoContent::<T>::update_global_nft_limit()]
         pub fn update_global_nft_limit(
             origin,
             nft_limit_period: NftLimitPeriod,
@@ -2950,7 +2950,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeigthInfoContent::<T>::update_channel_nft_limit()]
+        #[weight = WeightInfoContent::<T>::update_channel_nft_limit()]
         pub fn update_channel_nft_limit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
