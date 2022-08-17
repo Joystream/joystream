@@ -1,8 +1,3 @@
-type MetaprotocolTransactionPending @variant {
-  "Type needs to have at least one non-relation entity. This value is not used."
-  dummy: Int
-}
-
 type MetaprotocolTransactionSuccessful @variant {
   "Type needs to have at least one non-relation entity. This value is not used."
   dummy: Int
@@ -18,16 +13,23 @@ type MetaprotocolTransactionSuccessful @variant {
 
   "ID of the moderated comment (if any)"
   commentModerated: Comment
+
+  "ID of the created video category (if any)"
+  videoCategoryCreated: Video
+
+  "ID of the updated video category (if any)"
+  videoCategoryUpdated: Video
+
+  # TODO: deletion event will need rework - can't have relation to no longer existing record
+  "ID of the delete video category (if any)"
+  videoCategoryDeleted: Video
 }
 
 type MetaprotocolTransactionErrored @variant {
   message: String!
 }
 
-union MetaprotocolTransactionStatus =
-    MetaprotocolTransactionPending
-  | MetaprotocolTransactionSuccessful
-  | MetaprotocolTransactionErrored
+union MetaprotocolTransactionStatus = MetaprotocolTransactionSuccessful | MetaprotocolTransactionErrored
 
 type MetaprotocolTransactionStatusEvent implements Event @entity {
   ### GENERIC DATA ###

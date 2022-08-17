@@ -57,15 +57,12 @@ export type ChannelFieldsFragment = {
   language?: Types.Maybe<{ iso: string }>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
-  category?: Types.Maybe<{ name?: Types.Maybe<string> }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   bannedMembers: Array<{ id: string }>
 }
 
-export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: number }
-
-export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+export type VideoCategoryFieldsFragment = { id: string; name: string; activeVideosCounter: number }
 
 export type VideoReactionFieldsFragment = {
   id: string
@@ -169,17 +166,17 @@ export type GetChannelsByIdsQueryVariables = Types.Exact<{
 
 export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
 
-export type GetChannelCategoryByIdQueryVariables = Types.Exact<{
-  id: Types.Scalars['ID']
-}>
-
-export type GetChannelCategoryByIdQuery = { channelCategoryByUniqueInput?: Types.Maybe<ChannelCategoryFieldsFragment> }
-
 export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
 
 export type GetVideoCategoryByIdQuery = { videoCategoryByUniqueInput?: Types.Maybe<VideoCategoryFieldsFragment> }
+
+export type GetVideoCategoriesQueryVariables = Types.Exact<{
+  order?: Types.Maybe<Array<Types.VideoCategoryOrderByInput> | Types.VideoCategoryOrderByInput>
+}>
+
+export type GetVideoCategoriesQuery = { videoCategories: Array<VideoCategoryFieldsFragment> }
 
 export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
   videoId: Types.Scalars['ID']
@@ -2471,9 +2468,6 @@ export const ChannelFields = gql`
     ownerCuratorGroup {
       id
     }
-    category {
-      name
-    }
     avatarPhoto {
       ...StorageDataObjectFields
     }
@@ -2487,15 +2481,10 @@ export const ChannelFields = gql`
   }
   ${StorageDataObjectFields}
 `
-export const ChannelCategoryFields = gql`
-  fragment ChannelCategoryFields on ChannelCategory {
-    id
-    activeVideosCounter
-  }
-`
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
     id
+    name
     activeVideosCounter
   }
 `
@@ -4670,17 +4659,17 @@ export const GetChannelsByIds = gql`
   }
   ${ChannelFields}
 `
-export const GetChannelCategoryById = gql`
-  query getChannelCategoryById($id: ID!) {
-    channelCategoryByUniqueInput(where: { id: $id }) {
-      ...ChannelCategoryFields
-    }
-  }
-  ${ChannelCategoryFields}
-`
 export const GetVideoCategoryById = gql`
   query getVideoCategoryById($id: ID!) {
     videoCategoryByUniqueInput(where: { id: $id }) {
+      ...VideoCategoryFields
+    }
+  }
+  ${VideoCategoryFields}
+`
+export const GetVideoCategories = gql`
+  query getVideoCategories($order: [VideoCategoryOrderByInput!] = [createdAt_DESC]) {
+    videoCategories(orderBy: $order) {
       ...VideoCategoryFields
     }
   }
