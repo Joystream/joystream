@@ -71,11 +71,11 @@ export default class DeleteVideoAsModeratorCommand extends ContentDirectoryComma
       const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
         `Video state bloat bond of ${chalk.cyanBright(
-          formatBalance(videoStateBloatBond)
-        )} will be transferred to ${chalk.magentaBright(address)}\n` +
+          formatBalance(videoStateBloatBond.amount)
+        )} will be transferred to ${chalk.magentaBright(videoStateBloatBond.account.unwrap().toString())}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
             formatBalance(stateBloatBond)
-          )} will be transferred to ${chalk.magentaBright(address)}`
+          )} will be transferred back to account(s) that originally deposited the bond(s)`
       )
     }
 

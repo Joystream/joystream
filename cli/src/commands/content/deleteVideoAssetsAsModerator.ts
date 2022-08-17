@@ -72,7 +72,7 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
     this.log(
       `Data objects state bloat bond of ${chalk.cyanBright(
         formatBalance(stateBloatBond)
-      )} will be transferred to ${chalk.magentaBright(address)}`
+      )} will be transferred back to account(s) that originally deposited the bond(s)`
     )
 
     await this.requireConfirmation(
