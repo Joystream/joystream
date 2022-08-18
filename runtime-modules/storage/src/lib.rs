@@ -2969,8 +2969,6 @@ decl_module! {
 
         /// Upload new data objects. Development mode.
         #[weight = 10_000_000]
-        #[allow(dead_code)]
-        #[allow(unused_variables)]
         pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
             ensure_root(origin)?;
 
