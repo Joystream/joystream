@@ -62,7 +62,7 @@ export type ChannelFieldsFragment = {
   bannedMembers: Array<{ id: string }>
 }
 
-export type VideoCategoryFieldsFragment = { id: string; name: string; activeVideosCounter: number }
+export type VideoCategoryFieldsFragment = { id: string; name?: Types.Maybe<string>; activeVideosCounter: number }
 
 export type VideoReactionFieldsFragment = {
   id: string
