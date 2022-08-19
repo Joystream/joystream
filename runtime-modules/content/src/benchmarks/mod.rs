@@ -2,23 +2,30 @@
 
 mod benchmarking;
 
-use crate::nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters};
-use crate::permissions::*;
-use crate::types::{
-    ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness, ChannelCreationParameters,
-    ChannelOwner, StorageAssets, VideoCreationParameters,
+use crate::{
+    nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters},
+    permissions::*,
+    types::{
+        ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness,
+        ChannelCreationParameters, ChannelOwner, StorageAssets, VideoCreationParameters,
+    },
+    Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
+    Module as Pallet,
 };
-use crate::{Config, Module as Pallet};
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
-use frame_support::storage::{StorageMap, StorageValue};
-use frame_support::traits::{Currency, Get, Instance};
+use frame_support::{
+    dispatch::DispatchError,
+    storage::{StorageMap, StorageValue},
+    traits::{Currency, Get, Instance},
+};
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::{DispatchError, SaturatedConversion};
+use sp_runtime::SaturatedConversion;
 use sp_std::{
+    cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     convert::TryInto,
     iter::FromIterator,
@@ -31,9 +38,8 @@ use storage::{
 };
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    StakeParameters, StakePolicy, WorkerById,
+    StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
-
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -55,10 +61,11 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
     res
 }
 
-pub const MEMBER_IDS_INIT: u128 = 500;
-pub const MAX_MEMBER_IDS: usize = 100;
+pub const CURATOR_IDS_INIT: u128 = 600;
+pub const MAX_CURATOR_IDS: usize = 100;
 
-pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
+pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
+    gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
 
 pub const COLABORATOR_IDS_INIT: u128 = 700;
 pub const MAX_COLABORATOR_IDS: usize = 100;
@@ -66,19 +73,12 @@ pub const MAX_COLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
     gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
-pub const CURATOR_IDS_INIT: u128 = 800;
-pub const MAX_CURATOR_IDS: usize = 100;
-
-pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
-    gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
-
-const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[1];
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
-const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100002;
+const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES: u32 = 50000;
-// FIXME: Since we have no bounds for this in the runtime, as this value relies
-// solely on the genesis config, we use this arbitrary constant for benchmarking purposes
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // Close to the block space available for standard txs
+                                                 // FIXME: Since we have no bounds for this in the runtime, as this value relies
+                                                 // solely on the genesis config, we use this arbitrary constant for benchmarking purposes
 const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
@@ -119,6 +119,14 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::UpdateChannelNftLimits,
 ];
 
+fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
+    (T::MaxNumberOfAssetsPerChannel::get() as u64) * 100
+}
+
+fn storage_bucket_objs_size_limit<T: Config>() -> u64 {
+    T::MaxDataObjectSize::get() * storage_bucket_objs_number_limit::<T>() * 1000
+}
+
 pub trait CreateAccountId {
     fn create_account_id(id: u128) -> Self;
 }
@@ -126,6 +134,12 @@ pub trait CreateAccountId {
 impl CreateAccountId for u128 {
     fn create_account_id(id: u128) -> Self {
         id
+    }
+}
+
+impl CreateAccountId for u64 {
+    fn create_account_id(id: u128) -> Self {
+        id.try_into().unwrap()
     }
 }
 
@@ -157,6 +171,22 @@ impl<T> RuntimeConfig for T where
         + working_group::Config<DistributionWorkingGroupInstance>
         + working_group::Config<ContentWorkingGroupInstance>
 {
+}
+
+fn get_signed_account_id<T>(account_id: u128) -> T::Origin
+where
+    T::AccountId: CreateAccountId,
+    T: Config,
+{
+    RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
+}
+
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+    let events = System::<T>::events();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
 }
 
 fn get_byte(num: u128, byte_number: u8) -> u8 {
@@ -253,76 +283,6 @@ fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
     opening_id
 }
 
-fn insert_storage_leader<T>() -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    insert_leader::<T, StorageWorkingGroupInstance>(STORAGE_WG_LEADER_ACCOUNT_ID)
-}
-
-fn insert_distribution_leader<T>() -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    insert_leader::<T, DistributionWorkingGroupInstance>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID)
-}
-
-fn insert_content_leader<T>() -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID)
-}
-
-fn insert_leader<T, I>(id: u128) -> T::AccountId
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig + working_group::Config<I>,
-    I: Instance,
-{
-    let (caller_id, member_id) = member_funded_account::<T>(id);
-
-    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(RawOrigin::Root),
-        &caller_id,
-        &member_id,
-        &OpeningType::Leader,
-    );
-
-    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
-
-    let worker_id = working_group::NextWorkerId::<T, I>::get();
-    working_group::Module::<T, I>::fill_opening(
-        RawOrigin::Root.into(),
-        opening_id,
-        successful_application_ids,
-    )
-    .unwrap();
-
-    assert!(WorkerById::<T, I>::contains_key(worker_id));
-
-    caller_id
-}
-
-fn insert_curator<T>(id: u128) -> (T::CuratorId, T::AccountId)
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    let (actor_id, account_id) = insert_worker::<T, ContentWorkingGroupInstance>(
-        T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID),
-        id,
-    );
-
-    (
-        actor_id.saturated_into::<u64>().saturated_into(),
-        account_id,
-    )
-}
-
 fn insert_worker<T, I>(
     leader_acc: T::AccountId,
     id: u128,
@@ -332,9 +292,12 @@ where
     T: RuntimeConfig + working_group::Config<I>,
     I: Instance,
 {
-    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    // let worker_id = working_group::NextWorkerId::<T, I>::get();
 
     let (account_id, member_id) = member_funded_account::<T>(id);
+
+    let worker_id: WorkerId<T> = WorkerId::<T>::saturated_from(id);
+    working_group::NextWorkerId::<T, I>::put(worker_id);
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         &T::Origin::from(RawOrigin::Signed(leader_acc.clone())),
@@ -357,6 +320,76 @@ where
     (worker_id, account_id)
 }
 
+fn insert_leader<T, I>(id: u128) -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig + working_group::Config<I>,
+    I: Instance,
+{
+    let (account_id, member_id) = member_funded_account::<T>(id.saturated_into());
+
+    let (opening_id, application_id) = add_and_apply_opening::<T, I>(
+        &T::Origin::from(RawOrigin::Root),
+        &account_id,
+        &member_id,
+        &OpeningType::Leader,
+    );
+
+    let successful_application_ids = BTreeSet::<ApplicationId>::from_iter(vec![application_id]);
+
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
+    working_group::Module::<T, I>::fill_opening(
+        RawOrigin::Root.into(),
+        opening_id,
+        successful_application_ids,
+    )
+    .unwrap();
+
+    assert!(WorkerById::<T, I>::contains_key(worker_id));
+
+    (worker_id, account_id)
+}
+
+fn insert_storage_leader<T>() -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    insert_leader::<T, StorageWorkingGroupInstance>(STORAGE_WG_LEADER_ACCOUNT_ID)
+}
+
+fn insert_distribution_leader<T>() -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    insert_leader::<T, DistributionWorkingGroupInstance>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID)
+}
+
+fn insert_content_leader<T>() -> (<T as MembershipTypes>::ActorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID)
+}
+
+fn insert_curator<T>(id: u128) -> (T::CuratorId, T::AccountId)
+where
+    T::AccountId: CreateAccountId,
+    T: RuntimeConfig,
+{
+    let (actor_id, account_id) = insert_worker::<T, ContentWorkingGroupInstance>(
+        T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID),
+        id,
+    );
+
+    (
+        actor_id.saturated_into::<u64>().saturated_into(),
+        account_id,
+    )
+}
+
 //defines initial balance
 fn initial_balance<T: balances::Config>() -> T::Balance {
     1000000u32.into()
@@ -366,6 +399,10 @@ fn member_funded_account<T: RuntimeConfig>(id: u128) -> (T::AccountId, T::Member
 where
     T::AccountId: CreateAccountId,
 {
+    if membership::MembershipById::<T>::contains_key::<T::MemberId>(id.saturated_into()) {
+        panic!("Member {:?} already exists!", id)
+    }
+
     let account_id = T::AccountId::create_account_id(id);
 
     let handle = handle_from_id::<T>(id);
@@ -453,13 +490,9 @@ fn set_storage_buckets_voucher_max_limits<T>(
     .unwrap();
 }
 
-fn create_storage_bucket<T>(
-    lead_account_id: T::AccountId,
-    accepting_bags: bool,
-    bucket_objs_size_limit: u64,
-    bucket_objs_number_limit: u64,
-) where
-    T: RuntimeConfig,
+fn create_storage_bucket<T>(lead_account_id: T::AccountId, accepting_bags: bool)
+where
+    T: Config + storage::Config,
 {
     // Set storage bucket in the dynamic bag creation policy to zero.
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
@@ -467,8 +500,8 @@ fn create_storage_bucket<T>(
         T::Origin::from(storage_wg_leader_signed),
         None,
         accepting_bags,
-        bucket_objs_size_limit,
-        bucket_objs_number_limit,
+        storage_bucket_objs_size_limit::<T>(),
+        storage_bucket_objs_number_limit::<T>(),
     )
     .unwrap();
 }
@@ -541,250 +574,6 @@ pub fn create_data_object_candidates_helper(
         .collect()
 }
 
-fn generate_channel_creation_params<T>(
-    storage_wg_lead_account_id: T::AccountId,
-    distribution_wg_lead_account_id: T::AccountId,
-    colaborator_num: u32,
-    storage_bucket_num: u32,
-    distribution_bucket_num: u32,
-    objects_num: u32,
-    max_obj_size: u64,
-) -> ChannelCreationParameters<T>
-where
-    T: RuntimeConfig,
-    T::AccountId: CreateAccountId,
-{
-    // set limits that allow channel + video with max. number of assets creation
-    let storage_objects_limit: u64 =
-        (T::MaxNumberOfAssetsPerChannel::get() + T::MaxNumberOfAssetsPerVideo::get()) as u64;
-    let storage_size_limit: u64 = storage_objects_limit * T::MaxDataObjectSize::get() as u64;
-
-    let metadata = vec![0u8].repeat(MAX_BYTES as usize);
-
-    set_dyn_bag_creation_storage_bucket_numbers::<T>(
-        storage_wg_lead_account_id.clone(),
-        storage_bucket_num.into(),
-        DynamicBagType::Channel,
-    );
-
-    set_storage_buckets_voucher_max_limits::<T>(
-        storage_wg_lead_account_id.clone(),
-        storage_size_limit,
-        storage_objects_limit,
-    );
-
-    let assets = StorageAssets::<T> {
-        expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
-        object_creation_list: create_data_object_candidates_helper(objects_num, max_obj_size),
-    };
-
-    let collaborators = worst_case_scenario_collaborators::<T>(0, colaborator_num);
-
-    let storage_buckets = (0..storage_bucket_num)
-        .map(|id| {
-            create_storage_bucket::<T>(
-                storage_wg_lead_account_id.clone(),
-                true,
-                storage_size_limit,
-                storage_objects_limit,
-            );
-            id.saturated_into()
-        })
-        .collect::<BTreeSet<_>>();
-
-    let (db_family_id, distribution_buckets) = create_distribution_bucket_with_family::<T>(
-        distribution_wg_lead_account_id.clone(),
-        distribution_bucket_num,
-    );
-
-    let distribution_buckets_families_policy =
-        BTreeMap::from_iter([(db_family_id, distribution_buckets.len() as u32)]);
-
-    update_families_in_dynamic_bag_creation_policy::<T>(
-        distribution_wg_lead_account_id,
-        DynamicBagType::Channel,
-        distribution_buckets_families_policy,
-    );
-
-    let expected_data_object_state_bloat_bond = Storage::<T>::data_object_state_bloat_bond_value();
-
-    let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
-
-    ChannelCreationParameters::<T> {
-        assets: Some(assets),
-        meta: Some(metadata),
-        collaborators,
-        storage_buckets,
-        distribution_buckets,
-        expected_data_object_state_bloat_bond,
-        expected_channel_state_bloat_bond,
-    }
-}
-
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
-    let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
-    // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
-}
-
-fn worst_case_content_moderation_actions_set() -> BTreeSet<ContentModerationAction> {
-    CONTENT_MODERATION_ACTIONS.iter().cloned().collect()
-}
-
-fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
-    CHANNEL_AGENT_PERMISSIONS.iter().cloned().collect()
-}
-
-fn worst_case_scenario_collaborators<T: RuntimeConfig>(
-    start_id: u32,
-    num: u32,
-) -> BTreeMap<T::MemberId, ChannelAgentPermissions>
-where
-    T::AccountId: CreateAccountId,
-{
-    (0..num)
-        .map(|i| {
-            let (_, collaborator_id) =
-                member_funded_account::<T>(COLABORATOR_IDS[(start_id + i) as usize]);
-            (collaborator_id, worst_case_channel_agent_permissions())
-        })
-        .collect()
-}
-
-fn setup_worst_case_scenario_channel<T: RuntimeConfig>(
-    sender: T::AccountId,
-    channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
-    storage_buckets_num: u32,
-    distribution_buckets_num: u32,
-) -> Result<T::ChannelId, DispatchError>
-where
-    T::AccountId: CreateAccountId,
-{
-    let storage_wg_lead_account_id = insert_storage_leader::<T>();
-    let distribution_wg_lead_account_id = insert_distribution_leader::<T>();
-    let origin = RawOrigin::Signed(sender);
-
-    let params = generate_channel_creation_params::<T>(
-        storage_wg_lead_account_id,
-        distribution_wg_lead_account_id,
-        T::MaxNumberOfCollaboratorsPerChannel::get(),
-        storage_buckets_num,
-        distribution_buckets_num,
-        T::MaxNumberOfAssetsPerChannel::get(),
-        T::MaxDataObjectSize::get(),
-    );
-
-    let channel_id = Pallet::<T>::next_channel_id();
-
-    Pallet::<T>::create_channel(origin.into(), channel_owner, params)?;
-
-    Ok(channel_id)
-}
-
-fn setup_worst_case_curator_group_with_curators<T>(
-    curators_len: u32,
-) -> Result<T::CuratorGroupId, DispatchError>
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    let permissions_by_level: ModerationPermissionsByLevel<T> = (0
-        ..T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get())
-        .map(|i| {
-            (
-                i.saturated_into(),
-                worst_case_content_moderation_actions_set(),
-            )
-        })
-        .collect();
-
-    let group_id = Pallet::<T>::next_curator_group_id();
-
-    Pallet::<T>::create_curator_group(
-        RawOrigin::Signed(T::AccountId::create_account_id(
-            CONTENT_WG_LEADER_ACCOUNT_ID,
-        ))
-        .into(),
-        true,
-        permissions_by_level,
-    )?;
-
-    // We substract 1 from `next_worker_id`, because we're not counting the lead
-    let already_existing_curators_num =
-        working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
-            .saturated_into::<u32>()
-            - 1;
-
-    for c in CURATOR_IDS
-        .iter()
-        .skip(already_existing_curators_num as usize)
-        .take(curators_len as usize)
-    {
-        let (curator_id, _) = insert_curator::<T>(*c);
-        Pallet::<T>::add_curator_to_group(
-            RawOrigin::Signed(T::AccountId::create_account_id(
-                CONTENT_WG_LEADER_ACCOUNT_ID,
-            ))
-            .into(),
-            group_id,
-            curator_id.saturated_into::<u64>().saturated_into(),
-            worst_case_channel_agent_permissions(),
-        )?;
-    }
-
-    Ok(group_id)
-}
-
-type CuratorChannelData<T> = (
-    <T as storage::Config>::ChannelId,                // channel id
-    <T as ContentActorAuthenticator>::CuratorGroupId, // curator group id
-    <T as frame_system::Config>::AccountId,           // lead_account_id
-    <T as ContentActorAuthenticator>::CuratorId,      // curator_id
-    <T as frame_system::Config>::AccountId,           // curator_account_id
-);
-
-fn setup_worst_case_scenario_curator_channel<T>(
-    storage_buckets_num: u32,
-    distribution_buckets_num: u32,
-) -> Result<CuratorChannelData<T>, DispatchError>
-where
-    T: RuntimeConfig,
-    T::AccountId: CreateAccountId,
-{
-    let lead_account_id = insert_content_leader::<T>();
-    let group_id =
-        setup_worst_case_curator_group_with_curators::<T>(T::MaxNumberOfCuratorsPerGroup::get())?;
-    let channel_id = setup_worst_case_scenario_channel::<T>(
-        lead_account_id.clone(),
-        ChannelOwner::CuratorGroup(group_id),
-        storage_buckets_num,
-        distribution_buckets_num,
-    )?;
-    let group = Pallet::<T>::curator_group_by_id(group_id);
-    let curator_id: T::CuratorId = *group.get_curators().keys().next().unwrap();
-    let curator_account_id = T::AccountId::create_account_id(CURATOR_IDS[0]);
-
-    Ok((
-        channel_id,
-        group_id,
-        lead_account_id,
-        curator_id,
-        curator_account_id,
-    ))
-}
-
-fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
-    StorageAssets::<T> {
-        expected_data_size_fee: storage::Pallet::<T>::data_object_per_mega_byte_fee(),
-        object_creation_list: create_data_object_candidates_helper(
-            num,                         // number of objects
-            T::MaxDataObjectSize::get(), // object size
-        ),
-    }
-}
-
 type BloatBonds<T> = (
     <T as balances::Config>::Balance, // channel_state_bloat_bond
     <T as balances::Config>::Balance, // video_state_bloat_bond
@@ -794,7 +583,7 @@ type BloatBonds<T> = (
 
 fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
 where
-    T: RuntimeConfig,
+    T: Config,
     T::AccountId: CreateAccountId,
 {
     let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
@@ -835,7 +624,322 @@ where
     ))
 }
 
-fn channel_bag_witness<T: RuntimeConfig>(
+#[allow(clippy::too_many_arguments)]
+fn generate_channel_creation_params<T>(
+    storage_wg_lead_account_id: T::AccountId,
+    distribution_wg_lead_account_id: T::AccountId,
+    colaborator_num: u32,
+    storage_bucket_num: u32,
+    distribution_bucket_num: u32,
+    objects_num: u32,
+    max_bytes_metadata: u32,
+    max_obj_size: u64,
+) -> ChannelCreationParameters<T>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    set_dyn_bag_creation_storage_bucket_numbers::<T>(
+        storage_wg_lead_account_id.clone(),
+        storage_bucket_num.into(),
+        DynamicBagType::Channel,
+    );
+    set_storage_buckets_voucher_max_limits::<T>(
+        storage_wg_lead_account_id.clone(),
+        storage_bucket_objs_size_limit::<T>(),
+        storage_bucket_objs_number_limit::<T>(),
+    );
+
+    setup_bloat_bonds::<T>().unwrap();
+
+    let assets = Some(StorageAssets::<T> {
+        expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_object_candidates_helper(objects_num, max_obj_size),
+    });
+
+    let collaborators = worst_case_scenario_collaborators::<T>(0, colaborator_num);
+
+    let storage_buckets = (0..storage_bucket_num)
+        .map(|id| {
+            create_storage_bucket::<T>(storage_wg_lead_account_id.clone(), true);
+            id.saturated_into()
+        })
+        .collect::<BTreeSet<_>>();
+
+    let (db_family_id, distribution_buckets) = create_distribution_bucket_with_family::<T>(
+        distribution_wg_lead_account_id.clone(),
+        distribution_bucket_num,
+    );
+
+    let distribution_buckets_families_policy =
+        BTreeMap::from_iter([(db_family_id, distribution_buckets.len() as u32)]);
+
+    update_families_in_dynamic_bag_creation_policy::<T>(
+        distribution_wg_lead_account_id,
+        DynamicBagType::Channel,
+        distribution_buckets_families_policy,
+    );
+
+    let expected_data_object_state_bloat_bond = Storage::<T>::data_object_state_bloat_bond_value();
+
+    let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
+
+    let meta = Some(vec![0u8].repeat(max_bytes_metadata as usize));
+
+    ChannelCreationParameters::<T> {
+        assets,
+        meta,
+        collaborators,
+        storage_buckets,
+        distribution_buckets,
+        expected_data_object_state_bloat_bond,
+        expected_channel_state_bloat_bond,
+    }
+}
+
+fn worst_case_content_moderation_actions_set() -> BTreeSet<ContentModerationAction> {
+    CONTENT_MODERATION_ACTIONS.iter().cloned().collect()
+}
+
+fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
+    CHANNEL_AGENT_PERMISSIONS.iter().cloned().collect()
+}
+
+fn worst_case_scenario_collaborators<T: RuntimeConfig>(
+    start_id: u32,
+    num: u32,
+) -> BTreeMap<T::MemberId, ChannelAgentPermissions>
+where
+    T::AccountId: CreateAccountId,
+{
+    assert!(
+        start_id + num <= MAX_COLABORATOR_IDS as u32,
+        "Too many collaborators created"
+    );
+    (0..num)
+        .map(|i| {
+            let (_, collaborator_id) =
+                member_funded_account::<T>(COLABORATOR_IDS[(start_id + i) as usize]);
+            (collaborator_id, worst_case_channel_agent_permissions())
+        })
+        .collect()
+}
+
+fn setup_worst_case_scenario_channel<T: Config>(
+    sender: T::AccountId,
+    channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+    // benchmarks should always use "true" if possible (ie. the benchmarked tx
+    // is allowed during active transfer, for example - delete_channel)
+    with_transfer: bool,
+) -> Result<T::ChannelId, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
+    let (_, distribution_wg_lead_account_id) = insert_distribution_leader::<T>();
+    let origin = RawOrigin::Signed(sender);
+
+    let params = generate_channel_creation_params::<T>(
+        storage_wg_lead_account_id,
+        distribution_wg_lead_account_id,
+        T::MaxNumberOfCollaboratorsPerChannel::get(),
+        storage_buckets_num,
+        distribution_buckets_num,
+        objects_num,
+        MAX_BYTES_METADATA,
+        T::MaxDataObjectSize::get(),
+    );
+
+    let channel_id = Pallet::<T>::next_channel_id();
+
+    Pallet::<T>::create_channel(origin.clone().into(), channel_owner.clone(), params)?;
+
+    // initialize worst-case-scenario transfer
+    if with_transfer {
+        let (_, new_owner_id) = member_funded_account::<T>(0);
+        let new_owner = ChannelOwner::Member(new_owner_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
+            T::MaxNumberOfCollaboratorsPerChannel::get(), // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        let actor = match channel_owner {
+            ChannelOwner::Member(member_id) => ContentActor::Member(member_id),
+            ChannelOwner::CuratorGroup(_) => ContentActor::Lead,
+        };
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner,
+            new_collaborators,
+            price,
+        };
+        Pallet::<T>::initialize_channel_transfer(
+            origin.into(),
+            channel_id,
+            actor,
+            transfer_params,
+        )?;
+    }
+
+    Ok(channel_id)
+}
+
+fn setup_worst_case_curator_group_with_curators<T>(
+    curators_len: u32,
+) -> Result<T::CuratorGroupId, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let permissions_by_level: ModerationPermissionsByLevel<T> = (0
+        ..T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get())
+        .map(|i| {
+            (
+                i.saturated_into(),
+                worst_case_content_moderation_actions_set(),
+            )
+        })
+        .collect();
+
+    let group_id = Pallet::<T>::next_curator_group_id();
+
+    Pallet::<T>::create_curator_group(
+        get_signed_account_id::<T>(CONTENT_WG_LEADER_ACCOUNT_ID),
+        true,
+        permissions_by_level,
+    )?;
+
+    // We substract 1 from `next_worker_id`, because we're not counting the lead
+    let already_existing_curators_num =
+        working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
+            .saturated_into::<u32>()
+            .saturating_sub(1);
+
+    assert!(
+        already_existing_curators_num + curators_len <= MAX_COLABORATOR_IDS as u32,
+        "Too many curators created"
+    );
+
+    for c in CURATOR_IDS
+        .iter()
+        .skip(already_existing_curators_num as usize)
+        .take(curators_len as usize)
+    {
+        let (curator_id, _) = insert_curator::<T>(*c);
+
+        Pallet::<T>::add_curator_to_group(
+            get_signed_account_id::<T>(CONTENT_WG_LEADER_ACCOUNT_ID),
+            group_id,
+            curator_id.saturated_into::<u64>().saturated_into(),
+            worst_case_channel_agent_permissions(),
+        )?;
+    }
+    Ok(group_id)
+}
+
+type CuratorChannelData<T> = (
+    <T as storage::Config>::ChannelId,                // channel id
+    <T as ContentActorAuthenticator>::CuratorGroupId, // curator group id
+    <T as frame_system::Config>::AccountId,           // lead_account_id
+    <T as ContentActorAuthenticator>::CuratorId,      // curator_id
+    <T as frame_system::Config>::AccountId,           // curator_account_id
+);
+
+fn setup_worst_case_scenario_curator_channel<T>(
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+    // benchmarks should always use "true" unless initializing a transfer
+    // is part of the benchmarks itself
+    with_transfer: bool,
+) -> Result<CuratorChannelData<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (_, lead_account_id) = insert_content_leader::<T>();
+
+    let group_id =
+        setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
+
+    let channel_id = setup_worst_case_scenario_channel::<T>(
+        lead_account_id.clone(),
+        ChannelOwner::CuratorGroup(group_id),
+        objects_num,
+        storage_buckets_num,
+        distribution_buckets_num,
+        with_transfer,
+    )?;
+
+    let group = Pallet::<T>::curator_group_by_id(group_id);
+    let curator_id: T::CuratorId = *group.get_curators().keys().next().unwrap();
+    let curator_account_id = T::AccountId::create_account_id(CURATOR_IDS[0]);
+
+    Ok((
+        channel_id,
+        group_id,
+        lead_account_id,
+        curator_id,
+        curator_account_id,
+    ))
+}
+
+fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
+    StorageAssets::<T> {
+        expected_data_size_fee: storage::Pallet::<T>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_object_candidates_helper(
+            num,                         // number of objects
+            T::MaxDataObjectSize::get(), // object size
+        ),
+    }
+}
+
+fn setup_worst_case_scenario_curator_channel_all_max<T>(
+    with_transfer: bool,
+) -> Result<CuratorChannelData<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    setup_worst_case_scenario_curator_channel::<T>(
+        T::MaxNumberOfAssetsPerChannel::get(),
+        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        with_transfer,
+    )
+}
+
+fn clone_curator_group<T>(group_id: T::CuratorGroupId) -> Result<T::CuratorGroupId, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let new_group_id = Pallet::<T>::next_curator_group_id();
+    let group = Pallet::<T>::curator_group_by_id(group_id);
+
+    let lead_acc_id = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
+    Pallet::<T>::create_curator_group(
+        RawOrigin::Signed(lead_acc_id.clone()).into(),
+        group.is_active(),
+        group.get_permissions_by_level().clone(),
+    )?;
+
+    for (curator_id, permissions) in group.get_curators() {
+        Pallet::<T>::add_curator_to_group(
+            RawOrigin::Signed(lead_acc_id.clone()).into(),
+            new_group_id,
+            *curator_id,
+            permissions.clone(),
+        )?;
+    }
+
+    Ok(new_group_id)
+}
+
+fn channel_bag_witness<T: Config>(
     channel_id: T::ChannelId,
 ) -> Result<ChannelBagWitness, DispatchError> {
     let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
@@ -903,8 +1007,10 @@ where
 {
     let (channel_id, group_id, _, curator_id, curator_account_id) =
         setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
             storage_buckets_num,
             distribution_buckets_num,
+            false,
         )?;
     let actor = ContentActor::Curator(group_id, curator_id);
     let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
@@ -922,7 +1028,7 @@ where
             auto_issue_nft,
             expected_video_state_bloat_bond: video_state_bloat_bond,
             expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
-            channel_bag_witness: channel_bag_witness::<T>(channel_id)?,
+            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
         },
     ))
 }
@@ -946,4 +1052,17 @@ where
     Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
 
     Ok((video_id, p))
+}
+
+fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u32, DispatchError> {
+    let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
+    let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+    Ok(channel_bag.stored_by.len() as u32)
+}
+
+fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
+    min(
+        <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
+        T::MaxNumberOfCuratorsPerGroup::get(),
+    )
 }

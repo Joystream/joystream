@@ -2,7 +2,7 @@
 
 mod canonical;
 mod fixtures;
-mod mock;
+pub mod mock;
 mod patronage;
 mod sale;
 mod split;

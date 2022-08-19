@@ -11,7 +11,7 @@ export function getMemberDefaults(index: number) {
 
 export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
   return {
-    title: 'Active video counters Testing channel',
+    title: 'Active video counters Testing video',
     description: 'Video for testing active video counters.',
     videoPath: cliExamplesFolderPath + '/video.mp4',
     thumbnailPhotoPath: cliExamplesFolderPath + '/avatar-photo-1.png',

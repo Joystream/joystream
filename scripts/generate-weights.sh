@@ -94,3 +94,4 @@ joystream_pallet_benchmark membership membership
 joystream_pallet_benchmark joystream_utility utility
 joystream_pallet_benchmark storage storage
 joystream_pallet_benchmark content content
+joystream_pallet_benchmark project_token project-token
