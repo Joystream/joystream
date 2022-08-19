@@ -25,6 +25,8 @@ enum MembershipExternalResourceType {
 }
 
 type MembershipExternalResource @entity {
+  "Unique combination of {MemberMetadata.id}-{resourceType}"
+  id: ID!
   type: MembershipExternalResourceType!
   value: String!
   memberMetadata: MemberMetadata!

@@ -107,10 +107,11 @@ async function saveMembershipExternalResources(
   }
 
   const externalResources = (from ?? txExtResources?.flatMap(asMembershipExternalResource) ?? []).map(
-    ({ type, value }) => new MembershipExternalResource({ type, value, memberMetadata })
+    ({ type, value }) =>
+      new MembershipExternalResource({ id: `${memberMetadata.id}-${type}`, type, value, memberMetadata })
   )
   for (const resource of externalResources) {
-    await store.save<MembershipExternalResource>(new MembershipExternalResource(resource))
+    await store.save<MembershipExternalResource>(resource)
   }
 
   return externalResources
