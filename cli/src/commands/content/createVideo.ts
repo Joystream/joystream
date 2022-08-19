@@ -79,6 +79,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
       expectedVideoStateBloatBond,
       expectedDataObjectStateBloatBond,
       autoIssueNft: null,
+      storageBucketsNumWitness: await this.getStorageBucketsNumWitness(channelId),
     })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))

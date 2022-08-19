@@ -344,4 +344,9 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       distributionBucketsNum: channelBag.distributedBy.size,
     }
   }
+
+  public async getStorageBucketsNumWitness(channelId: ChannelId | number): Promise<number> {
+    const channelBag = await this.getApi().channelBagByChannelId(channelId)
+    return channelBag.storedBy.size
+  }
 }

@@ -515,7 +515,6 @@ fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
 fn unsuccessful_video_creation_with_invalid_storage_buckets_num_witness() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-
         CreateVideoFixture::default()
             .with_storage_buckets_num_witness(0)
             .call_and_assert(Err(
@@ -1058,7 +1057,6 @@ fn unsuccessful_video_update_with_nft() {
 fn unsuccessful_video_update_with_assets_to_upload_and_invalid_storage_buckets_num_witness() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().with_video().setup();
-
         UpdateVideoFixture::default()
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
@@ -1075,7 +1073,6 @@ fn unsuccessful_video_update_with_assets_to_upload_and_invalid_storage_buckets_n
 fn unsuccessful_video_update_with_assets_to_upload_and_missing_storage_buckets_num_witness() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().with_video().setup();
-
         UpdateVideoFixture::default()
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),

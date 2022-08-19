@@ -5557,6 +5557,7 @@ pub fn run_all_fixtures_with_contexts(
             .call_and_assert(expected_err);
     }
 }
+
 #[derive(Fixture, new)]
 pub struct UpdateGlobalNftLimitFixture {
     #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]

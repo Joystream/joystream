@@ -76,10 +76,12 @@ pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // Close to the block space available for standard txs
-                                                 // FIXME: Since we have no bounds for this in the runtime, as this value relies
-                                                 // solely on the genesis config, we use this arbitrary constant for benchmarking purposes
+/**
+ * FIXME: Since we have no bounds for this in the runtime, as this value relies solely on the
+ * genesis config, we use this arbitrary constant for benchmarking purposes
+ */
 const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to max blockspace available for standard extrinsics
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
     ChannelActionPermission::AddVideo,
@@ -998,7 +1000,6 @@ type VideoCreationInputParameters<T> = (
 fn prepare_worst_case_scenario_video_creation_parameters<T>(
     assets_num: Option<u32>,
     storage_buckets_num: u32,
-    distribution_buckets_num: u32,
     nft_auction_whitelist_size: Option<u32>,
 ) -> Result<VideoCreationInputParameters<T>, DispatchError>
 where
@@ -1009,7 +1010,7 @@ where
         setup_worst_case_scenario_curator_channel::<T>(
             T::MaxNumberOfAssetsPerChannel::get(),
             storage_buckets_num,
-            distribution_buckets_num,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
             false,
         )?;
     let actor = ContentActor::Curator(group_id, curator_id);
@@ -1036,7 +1037,6 @@ where
 fn setup_worst_case_scenario_mutable_video<T>(
     assets_num: Option<u32>,
     storage_buckets_num: u32,
-    distribution_buckets_num: u32,
 ) -> Result<(T::VideoId, VideoCreationInputParameters<T>), DispatchError>
 where
     T: RuntimeConfig,
@@ -1045,7 +1045,6 @@ where
     let p = prepare_worst_case_scenario_video_creation_parameters::<T>(
         assets_num,
         storage_buckets_num,
-        distribution_buckets_num,
         None,
     )?;
     let video_id = Pallet::<T>::next_video_id();

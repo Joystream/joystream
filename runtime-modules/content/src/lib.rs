@@ -684,7 +684,7 @@ decl_module! {
 
             let upload_parameters =
                 if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
-                    // verify channel bag witness
+                    // verify storage buckets num witness
                     match params.storage_buckets_num_witness {
                         Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
                         None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
@@ -1002,7 +1002,7 @@ decl_module! {
                 channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
 
-            // verify channel bag witness
+            // verify storage buckets num witness
             Self::verify_storage_buckets_num_witness(channel_id, params.storage_buckets_num_witness)?;
 
             // next video id
@@ -1151,9 +1151,14 @@ decl_module! {
                         &params.assets_to_remove,
                         &video.data_objects
                     )?;
-                    // ensure max. video assets not exceeded
+
+                    // ensure max number of assets not exceeded
                     let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
-                    Self::ensure_max_video_assets_not_exceeded(&video.data_objects, &assets_to_upload, &params.assets_to_remove)?;
+                    Self::ensure_max_video_assets_not_exceeded(
+                        &video.data_objects,
+                        &assets_to_upload,
+                        &params.assets_to_remove
+                    )?;
 
                     let upload_parameters = UploadParameters::<T> {
                         bag_id: Self::bag_id_for_channel(&channel_id),
@@ -1167,7 +1172,6 @@ decl_module! {
                 } else {
                     None
                 };
-
 
             let nft_status = params.auto_issue_nft
                 .as_ref()
@@ -1188,20 +1192,20 @@ decl_module! {
 
             let new_data_objects_ids = if let Some(upload_parameters) = upload_parameters {
                 // upload/delete video assets from storage with commit or rollback semantics
-                let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
+                let new_data_objects_ids = Storage::<T>::upload_and_delete_data_objects(
                     upload_parameters,
                     params.assets_to_remove.clone(),
                 )?;
                 // update video assets set
                 let updated_assets = Self::create_updated_video_assets_set(
                     &video.data_objects,
-                    &new_data_object_ids,
+                    &new_data_objects_ids,
                     &params.assets_to_remove
                 )?;
                 VideoById::<T>::mutate(video_id, |video| {
                     video.data_objects = updated_assets;
                 });
-                new_data_object_ids
+                new_data_objects_ids
             } else {
                 BTreeSet::new()
             };
@@ -1225,7 +1229,10 @@ decl_module! {
         /// - DB:
         ///    - `O(A + B)` - from the the generated weights
         /// # </weight>
-        #[weight = Module::<T>::delete_video_weight(num_objects_to_delete, storage_buckets_num_witness)]
+        #[weight = Module::<T>::delete_video_weight(
+            num_objects_to_delete,
+            storage_buckets_num_witness
+        )]
         pub fn delete_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1258,7 +1265,7 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
-            // Verify channel_bag_witness
+            // Verify storage buckets num witness
             if !num_objects_to_delete.is_zero() {
                 match storage_buckets_num_witness {
                     Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
