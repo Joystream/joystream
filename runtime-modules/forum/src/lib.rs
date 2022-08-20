@@ -4,15 +4,13 @@
 #![allow(clippy::unused_unit)]
 
 use common::bloat_bond::RepayableBloatBond;
-use common::costs::{burn_from_usable, ensure_can_cover_costs};
+use common::costs::{burn_from_usable, has_sufficient_balance_for_fees, pay_fee};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
 pub use frame_support::dispatch::DispatchResult;
-use frame_support::traits::LockIdentifier;
 
-use common::costs::{pay_cost, Cost};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
 };
@@ -164,9 +162,6 @@ pub trait Config:
         common::MemberId<Self>,
         Self::AccountId,
     >;
-
-    /// Locks compatible with thread/post bloat bond
-    type BloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
@@ -800,7 +795,7 @@ decl_module! {
         ) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
 
-            let cost = Self::ensure_can_create_thread(&account_id, &forum_user_id, &category_id)?;
+            let fees = Self::ensure_can_create_thread(&account_id, &forum_user_id, &category_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -810,7 +805,7 @@ decl_module! {
             let new_thread_id = <NextThreadId<T>>::get();
 
             // Pay the thread + post bloat bond into thread treasury account
-            Self::pay_bloat_bond(cost, new_thread_id, &account_id)?;
+            Self::pay_bloat_bond(fees, new_thread_id, &account_id)?;
 
             // Build a new thread
             let new_thread = Thread {
@@ -1069,22 +1064,21 @@ decl_module! {
             // Make sure thread exists and is mutable
             let _ = Self::ensure_can_add_post(&account_id, &forum_user_id, &category_id, &thread_id)?;
 
-            let bloat_bond_cost = if editable {
-                let cost = Cost::new(T::PostDeposit::get(), &T::BloatBondAllowedLocks::get());
-                ensure_can_cover_costs::<T>(&account_id, &[cost.clone()]).map_err(|_| {
+            let post_deposit = T::PostDeposit::get();
+
+            if editable {
+                ensure!(
+                    has_sufficient_balance_for_fees::<T>(&account_id, post_deposit),
                     Error::<T>::InsufficientBalanceForPost
-                })?;
-                Result::<_, DispatchError>::Ok(Some(cost))
-            } else {
-                Result::<_, DispatchError>::Ok(None)
-            }?;
+                );
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(cost) = bloat_bond_cost {
-                Self::pay_bloat_bond(cost, thread_id, &account_id)?;
+            if editable {
+                Self::pay_bloat_bond(post_deposit, thread_id, &account_id)?;
             }
 
             // Add new post
@@ -1360,12 +1354,12 @@ impl<T: Config> Module<T> {
     }
 
     fn pay_bloat_bond(
-        cost: Cost<T::Balance>,
+        amount: T::Balance,
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
     ) -> DispatchResult {
         let thread_account_id = Self::thread_account(thread_id);
-        pay_cost::<T>(account_id, Some(&thread_account_id), cost)
+        pay_fee::<T>(account_id, Some(&thread_account_id), amount)
     }
 
     /// Add new posts & increase thread counter
@@ -1924,7 +1918,7 @@ impl<T: Config> Module<T> {
         account_id: &T::AccountId,
         forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
-    ) -> Result<Cost<T::Balance>, Error<T>> {
+    ) -> Result<T::Balance, Error<T>> {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
@@ -1933,14 +1927,12 @@ impl<T: Config> Module<T> {
         Self::ensure_category_is_mutable(category_id)?;
 
         // Check if the costs associated with thread and post creation are coverable
-        let cost = Cost::new(
-            T::ThreadDeposit::get().saturating_add(T::PostDeposit::get()),
-            &T::BloatBondAllowedLocks::get(),
+        let fees = T::ThreadDeposit::get().saturating_add(T::PostDeposit::get());
+        ensure!(
+            has_sufficient_balance_for_fees::<T>(account_id, fees),
+            Error::<T>::InsufficientBalanceForThreadCreation
         );
-        ensure_can_cover_costs::<T>(account_id, &[cost.clone()])
-            .map_err(|_| Error::<T>::InsufficientBalanceForThreadCreation)?;
-
-        Ok(cost)
+        Ok(fees)
     }
 
     fn ensure_can_add_post(

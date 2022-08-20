@@ -6,6 +6,7 @@ pub mod constraints;
 pub mod costs;
 pub mod council;
 pub mod currency;
+pub mod locks;
 pub mod membership;
 pub mod storage;
 pub mod working_group;

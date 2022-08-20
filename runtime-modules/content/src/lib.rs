@@ -10,7 +10,6 @@ mod tests;
 mod types;
 
 use core::marker::PhantomData;
-use frame_support::traits::LockIdentifier;
 use project_token::traits::PalletToken;
 use project_token::types::{
     TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,
@@ -34,8 +33,8 @@ pub use storage::{
 pub use common::{
     bloat_bond::RepayableBloatBond,
     costs::{
-        burn_from_usable, ensure_can_cover_costs, has_sufficient_usable_balance_and_stays_alive,
-        pay_cost, Cost,
+        burn_from_usable, has_sufficient_balance_for_fees, has_sufficient_balance_for_payment,
+        pay_fee,
     },
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
@@ -149,12 +148,6 @@ pub trait Config:
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit: Get<BalanceOf<Self>>;
-
-    /// Locks compatible with channel state bloat bond
-    type ChannelStateBloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
-
-    /// Locks compatible with video state bloat bond
-    type VideoStateBloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
 }
 
 decl_storage! {
@@ -487,8 +480,7 @@ decl_module! {
 
             // ensure channel state bloat bond
             ensure!(
-                params.expected_channel_state_bloat_bond
-                    == channel_state_bloat_bond,
+                params.expected_channel_state_bloat_bond == channel_state_bloat_bond,
                 Error::<T>::ChannelStateBloatBondChanged,
             );
 
@@ -505,16 +497,15 @@ decl_module! {
             let num_objs = storage_assets.object_creation_list.len();
 
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
-            let upload_costs = <T as Config>::DataObjectStorage::get_upload_costs(num_objs, total_size);
-            let bloat_bond_cost = Cost::<BalanceOf<T>>::new(
-                channel_state_bloat_bond,
-                &T::ChannelStateBloatBondAllowedLocks::get()
-            );
+            let upload_fee = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
 
-            ensure_can_cover_costs::<T>(
-                &sender,
-                &[upload_costs, vec![bloat_bond_cost.clone()]].concat()
-            ).map_err(|_| Error::<T>::InsufficientBalanceForChannelCreation)?;
+            ensure!(
+                has_sufficient_balance_for_fees::<T>(
+                    &sender,
+                    upload_fee.saturating_add(channel_state_bloat_bond)
+                ),
+                Error::<T>::InsufficientBalanceForChannelCreation
+            );
 
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
@@ -537,11 +528,7 @@ decl_module! {
             //
 
             // pay bloat bond into the channel account
-            pay_cost::<T>(
-                &sender,
-                Some(&channel_account),
-                bloat_bond_cost
-            )?;
+            pay_fee::<T>(&sender, Some(&channel_account), channel_state_bloat_bond)?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -878,16 +865,15 @@ decl_module! {
             let num_objs = storage_assets.object_creation_list.len();
 
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
-            let upload_costs = <T as Config>::DataObjectStorage::get_upload_costs(num_objs, total_size);
-            let bloat_bond_cost = Cost::<BalanceOf<T>>::new(
-                video_state_bloat_bond,
-                &T::VideoStateBloatBondAllowedLocks::get()
-            );
+            let upload_fee = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
 
-            ensure_can_cover_costs::<T>(
-                &sender,
-                &[upload_costs, vec![bloat_bond_cost.clone()]].concat()
-            ).map_err(|_| Error::<T>::InsufficientBalanceForVideoCreation)?;
+            ensure!(
+                has_sufficient_balance_for_fees::<T>(
+                    &sender,
+                    upload_fee.saturating_add(video_state_bloat_bond)
+                ),
+                Error::<T>::InsufficientBalanceForVideoCreation
+            );
 
             if nft_status.is_some() {
                 Self::check_nft_limits(&channel)?;
@@ -919,11 +905,7 @@ decl_module! {
             };
 
             let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
-            pay_cost::<T>(
-                &sender,
-                Some(&channel_account),
-                bloat_bond_cost
-            )?;
+            pay_fee::<T>(&sender, Some(&channel_account), video_state_bloat_bond)?;
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -3360,10 +3342,7 @@ impl<T: Config> Module<T> {
                     T::MemberAuthenticator::controller_account_id(*member_id)?;
 
                 // Funds received from the member invitation cannot be used!!
-                has_sufficient_usable_balance_and_stays_alive::<T>(
-                    &controller_account_id,
-                    transfer_cost,
-                )
+                has_sufficient_balance_for_payment::<T>(&controller_account_id, transfer_cost)
             }
             ChannelOwner::CuratorGroup(_) => T::ContentWorkingGroup::get_budget() >= transfer_cost,
         };

@@ -5,6 +5,7 @@ use frame_support::{
     traits::{Currency, OnFinalize, OnInitialize},
 };
 
+use common::locks::{BoundStakingAccountLockId, InvitedMemberLockId};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use frame_support::{
     ensure,
@@ -97,13 +98,9 @@ parameter_types! {
     pub const MaxDataObjectSize: u64 = 1_000_000_000;
     // constants for membership::Config
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const ReferralCutMaximumPercent: u8 = 50;
-    // other
-    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -149,8 +146,6 @@ impl storage::Config for Test {
     type DistributionWorkingGroup = DistributionWG;
     type ModuleAccountInitialBalance = ExistentialDeposit;
     type WeightInfo = ();
-    type DataObjectBloatBondAllowedLocks = BloatBondAllowedLocks;
-    type DataSizeFeeAllowedLocks = BloatBondAllowedLocks;
 }
 
 impl common::MembershipTypes for Test {
@@ -171,7 +166,6 @@ impl Config for Test {
     type WeightInfo = ();
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
-    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 // Working group integration
@@ -379,7 +373,7 @@ impl membership::Config for Test {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }

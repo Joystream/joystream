@@ -69,7 +69,7 @@ use sp_runtime::{
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
-use common::costs::{burn_from_usable, has_sufficient_usable_balance_and_stays_alive};
+use common::costs::{burn_from_usable, has_sufficient_balance_for_payment};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::working_group::{WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use staking_handler::StakingHandler;
@@ -450,7 +450,7 @@ decl_module! {
 
             // Ensure enough free balance to cover membership fee.
             ensure!(
-                has_sufficient_usable_balance_and_stays_alive::<T>(&who, fee),
+                has_sufficient_balance_for_payment::<T>(&who, fee),
                 Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
@@ -810,7 +810,7 @@ decl_module! {
                 .saturating_add(params.credit_root_account);
 
             ensure!(
-                has_sufficient_usable_balance_and_stays_alive::<T>(
+                has_sufficient_balance_for_payment::<T>(
                     &gifter,
                     membership_fee.saturating_add(total_credit)
                 ),

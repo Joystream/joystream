@@ -59,7 +59,7 @@ pub use weights::WeightInfo;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Currency;
-use frame_support::traits::{Get, LockIdentifier};
+use frame_support::traits::Get;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, PalletId, Parameter,
 };
@@ -69,7 +69,7 @@ use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::bloat_bond::RepayableBloatBond;
-use common::costs::{ensure_can_cover_costs, pay_cost, Cost};
+use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::MemberId;
@@ -155,9 +155,6 @@ pub trait Config:
 
     /// Maximum number of blocks before a post can be erased by anyone
     type PostLifeTime: Get<Self::BlockNumber>;
-
-    /// Locks compatible with post bloat bond
-    type BloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
 }
 
 decl_error! {
@@ -269,20 +266,17 @@ decl_module! {
             Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
 
             if editable {
-                // Ensure account has enough funds
-                let bloat_bond_cost = Cost::new(T::PostDeposit::get(), &T::BloatBondAllowedLocks::get());
-
-                ensure_can_cover_costs::<T>(&account_id, &[bloat_bond_cost.clone()])
-                    .map_err(|_| Error::<T>::InsufficientBalanceForPost)?;
+                let post_deposit = T::PostDeposit::get();
+                ensure!(
+                    has_sufficient_balance_for_fees::<T>(&account_id, post_deposit),
+                    Error::<T>::InsufficientBalanceForPost
+                );
 
                 //
                 // MUTATION SAFE
                 //
 
-                Self::pay_bloat_bond(
-                    bloat_bond_cost,
-                    &account_id,
-                )?;
+                Self::pay_bloat_bond(post_deposit, &account_id)?;
             }
 
             let next_post_count_value = Self::post_count() + 1;
@@ -509,9 +503,9 @@ impl<T: Config> Module<T> {
                 >= T::PostLifeTime::get()
     }
 
-    fn pay_bloat_bond(cost: Cost<T::Balance>, account_id: &T::AccountId) -> DispatchResult {
+    fn pay_bloat_bond(amount: T::Balance, account_id: &T::AccountId) -> DispatchResult {
         let state_cleanup_treasury_account = Self::module_account_id();
-        pay_cost::<T>(account_id, Some(&state_cleanup_treasury_account), cost)
+        pay_fee::<T>(account_id, Some(&state_cleanup_treasury_account), amount)
     }
 
     fn ensure_thread_mode(

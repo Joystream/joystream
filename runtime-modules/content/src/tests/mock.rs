@@ -19,6 +19,7 @@ use staking_handler::LockComparator;
 
 use crate::Config;
 use crate::ContentActorAuthenticator;
+use common::locks::{BoundStakingAccountLockId, InvitedMemberLockId};
 
 /// Type aliases
 pub type HashOutput = <Test as frame_system::Config>::Hash;
@@ -343,8 +344,6 @@ impl storage::Config for Test {
     type DistributionWorkingGroup = DistributionWG;
     type WeightInfo = ();
     type ModuleAccountInitialBalance = ExistentialDeposit;
-    type DataSizeFeeAllowedLocks = BloatBondAllowedLocks;
-    type DataObjectBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 // Anyone can upload and delete without restriction
@@ -433,12 +432,6 @@ impl Config for Test {
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
-
-    /// Channel bloat bond: Allowed locks
-    type ChannelStateBloatBondAllowedLocks = BloatBondAllowedLocks;
-
-    /// Video bloat bond: Allowed locks
-    type VideoStateBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -678,20 +671,16 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
 parameter_types! {
     pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
 }
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
-    pub const LockId: LockIdentifier = [9; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MinimumStakeForOpening: u32 = 50;
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
-    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 impl membership::Config for Test {
@@ -702,7 +691,7 @@ impl membership::Config for Test {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }
@@ -1030,7 +1019,6 @@ impl project_token::Config for Test {
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
     type WeightInfo = ();
-    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 pub struct Block2Balance {}

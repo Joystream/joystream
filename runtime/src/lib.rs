@@ -790,7 +790,6 @@ parameter_types! {
     };  // TODO: update
     pub const MinimumCashoutAllowedLimit: Balance = ExistentialDeposit::get() + 1; // TODO: update
     pub const MaximumCashoutAllowedLimit: Balance = 1_000_000 * currency::DOLLARS; // TODO: update
-    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 impl content::Config for Runtime {
@@ -813,8 +812,6 @@ impl content::Config for Runtime {
     type TransferId = TransferId;
     type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
-    type ChannelStateBloatBondAllowedLocks = BloatBondAllowedLocks;
-    type VideoStateBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 parameter_types! {
@@ -836,7 +833,6 @@ impl project_token::Config for Runtime {
     type MemberOriginValidator = Members;
     type MembershipInfoProvider = Members;
     type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
-    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 // The referendum instance alias.
@@ -1049,8 +1045,6 @@ impl storage::Config for Runtime {
     type StorageWorkingGroup = StorageWorkingGroup;
     type DistributionWorkingGroup = DistributionWorkingGroup;
     type ModuleAccountInitialBalance = ExistentialDeposit;
-    type DataSizeFeeAllowedLocks = BloatBondAllowedLocks;
-    type DataObjectBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 impl common::membership::MembershipTypes for Runtime {
@@ -1113,7 +1107,6 @@ impl forum::Config for Runtime {
     type WorkingGroup = ForumWorkingGroup;
     type MemberOriginValidator = Members;
     type PostLifeTime = PostLifeTime;
-    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
@@ -1387,7 +1380,6 @@ impl proposals_discussion::Config for Runtime {
     type PostDeposit = ProposalsPostDeposit;
     type ModuleId = ProposalsDiscussionModuleId;
     type PostLifeTime = ForumPostLifeTime;
-    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 impl joystream_utility::Config for Runtime {

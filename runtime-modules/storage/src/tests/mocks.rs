@@ -1,7 +1,10 @@
 #![cfg(test)]
 
+use common::locks::{
+    BoundStakingAccountLockId, DistributionWorkingGroupLockId, InvitedMemberLockId,
+    StorageWorkingGroupLockId,
+};
 pub use frame_support::traits::LockIdentifier;
-
 use frame_support::{
     ensure, parameter_types,
     traits::{ConstU16, ConstU32, ConstU64},
@@ -119,7 +122,6 @@ parameter_types! {
     pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
         crate::DistributionBucketsPerBagValueConstraint {min: 2, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = u64::MAX - 1000;
-    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InviteMemberLockId::get()];
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -170,8 +172,6 @@ impl crate::Config for Test {
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type ModuleAccountInitialBalance = ExistentialDeposit;
-    type DataSizeFeeAllowedLocks = BloatBondAllowedLocks;
-    type DataObjectBloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 pub const DEFAULT_MEMBER_ID: u64 = 100;
@@ -188,9 +188,6 @@ impl common::MembershipTypes for Test {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
-    pub const LockId: [u8; 8] = [9; 8];
-    pub const LockId2: [u8; 8] = [10; 8];
-    pub const LockId3: [u8; 8] = [11; 8];
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
 }
@@ -200,7 +197,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingHandler = staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -214,7 +211,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId3>;
+    type StakingHandler = staking_handler::StakingManager<Self, DistributionWorkingGroupLockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -323,10 +320,10 @@ impl membership::Config for Test {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = MembershipWG;
     type WeightInfo = ();
-    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
 }
 
@@ -334,8 +331,6 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const PostDeposit: u64 = 10;
     pub const CandidateStake: u64 = 100;
-    pub const StakingCandidateLockId: [u8; 8] = [10; 8];
-    pub const InviteMemberLockId: [u8; 8] = [9; 8];
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
 }

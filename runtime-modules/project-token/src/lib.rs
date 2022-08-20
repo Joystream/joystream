@@ -10,7 +10,7 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get, LockIdentifier},
+    traits::{Currency, ExistenceRequirement, Get},
     PalletId,
 };
 use frame_system::ensure_signed;
@@ -38,7 +38,7 @@ mod utils;
 // crate imports
 use common::bloat_bond::RepayableBloatBond;
 use common::costs::{
-    ensure_can_cover_costs, has_sufficient_usable_balance_and_stays_alive, pay_cost, Cost,
+    burn_from_usable, has_sufficient_balance_for_fees, has_sufficient_balance_for_payment, pay_fee,
 };
 pub use errors::Error;
 pub use events::{Event, RawEvent};
@@ -103,9 +103,6 @@ pub trait Config:
 
     /// Membership info provider
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
-
-    /// Locks compatible with account data bloat bond
-    type BloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
 }
 
 decl_storage! {
@@ -397,16 +394,17 @@ decl_module! {
             }?;
 
             let bloat_bond = Self::bloat_bond();
-            let bloat_bond_cost = Cost::new(bloat_bond, &T::BloatBondAllowedLocks::get());
             let treasury = Self::module_treasury_account();
 
-            // No project_token or balances state corrupted in case of failure
-            ensure_can_cover_costs::<T>(&sender, &[bloat_bond_cost.clone()])
-                .map_err(|_| Error::<T>::InsufficientJoyBalance)?;
+            // Ensure sender can cover the bloat bond
+            ensure!(
+                has_sufficient_balance_for_fees::<T>(&sender, bloat_bond),
+                Error::<T>::InsufficientJoyBalance
+            );
 
             // == MUTATION SAFE ==
 
-            pay_cost::<T>(&sender, Some(&treasury), bloat_bond_cost)?;
+            pay_fee::<T>(&sender, Some(&treasury), bloat_bond)?;
 
             Self::do_insert_new_account_for_token(
                 token_id,
@@ -511,17 +509,16 @@ decl_module! {
             let vesting_schedule = sale.get_vesting_schedule(amount);
             let treasury = Self::module_treasury_account();
 
-            // Ensure buyer can cover the required costs
-            let transfer_cost = Cost::new(transfer_amount, &[]);
-            let burn_cost = Cost::new(burn_amount, &[]);
-            let bloat_bond_cost = Cost::new(bloat_bond, &T::BloatBondAllowedLocks::get());
-            let costs = match account_data.as_ref() {
-                Some(_) => vec![transfer_cost.clone(), burn_cost.clone()],
-                None => vec![transfer_cost.clone(), burn_cost.clone(), bloat_bond_cost.clone()]
+            // Ensure buyer can cover the total cost of the transaction
+            let total_cost = match account_data.as_ref() {
+                Some(_) => joy_amount,
+                None => joy_amount.saturating_add(bloat_bond)
             };
 
-            ensure_can_cover_costs::<T>(&sender, &costs)
-                .map_err(|_| Error::<T>::InsufficientJoyBalance)?;
+            ensure!(
+                has_sufficient_balance_for_payment::<T>(&sender, total_cost),
+                Error::<T>::InsufficientJoyBalance
+            );
 
             // Ensure enough tokens are available on sale
             ensure!(
@@ -559,19 +556,11 @@ decl_module! {
             // == MUTATION SAFE ==
 
             if let Some(dst) = sale.earnings_destination.as_ref() {
-                pay_cost::<T>(
-                    &sender,
-                    Some(dst),
-                    transfer_cost
-                )?;
+                Self::transfer_joy(&sender, dst, transfer_amount)?;
             }
 
             if !burn_amount.is_zero() {
-                pay_cost::<T>(
-                    &sender,
-                    None,
-                    burn_cost
-                )?;
+                burn_from_usable::<T>(&sender, burn_amount, false)?;
             }
 
             if account_data.is_some() {
@@ -584,7 +573,7 @@ decl_module! {
                     );
                 });
             } else {
-                pay_cost::<T>(&sender, Some(&treasury), bloat_bond_cost)?;
+                Self::transfer_joy(&sender, &treasury, bloat_bond)?;
                 Self::do_insert_new_account_for_token(
                     token_id,
                     &member_id,
@@ -933,16 +922,17 @@ impl<T: Config>
 
         let total_bloat_bond = issuance_parameters.get_initial_allocation_bloat_bond(bloat_bond);
         let treasury = Self::module_treasury_account();
-        let total_cost = Cost::new(total_bloat_bond, &T::BloatBondAllowedLocks::get());
-        ensure_can_cover_costs::<T>(&issuer_account, &[total_cost.clone()])
-            .map_err(|_| Error::<T>::InsufficientJoyBalance)?;
+        ensure!(
+            has_sufficient_balance_for_fees::<T>(&issuer_account, total_bloat_bond),
+            Error::<T>::InsufficientJoyBalance
+        );
 
         // == MUTATION SAFE ==
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
-        pay_cost::<T>(&issuer_account, Some(&treasury), total_cost)?;
+        pay_fee::<T>(&issuer_account, Some(&treasury), total_bloat_bond)?;
 
         Self::perform_initial_allocation(
             token_id,
@@ -1368,14 +1358,10 @@ impl<T: Config> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        ensure_can_cover_costs::<T>(
-            bloat_bond_payer,
-            &[Cost::new(
-                cumulative_bloat_bond,
-                &T::BloatBondAllowedLocks::get(),
-            )],
-        )
-        .map_err(|_| Error::<T>::InsufficientJoyBalance)?;
+        ensure!(
+            has_sufficient_balance_for_fees::<T>(bloat_bond_payer, cumulative_bloat_bond),
+            Error::<T>::InsufficientJoyBalance
+        );
 
         Ok(validated_transfers)
     }
@@ -1455,9 +1441,7 @@ impl<T: Config> Module<T> {
 
         let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
         if !cumulative_bloat_bond.is_zero() {
-            let bloat_bond_cost =
-                Cost::new(cumulative_bloat_bond, &T::BloatBondAllowedLocks::get());
-            pay_cost::<T>(bloat_bond_payer, Some(treasury), bloat_bond_cost)?;
+            pay_fee::<T>(bloat_bond_payer, Some(treasury), cumulative_bloat_bond)?;
         }
 
         AccountInfoByTokenAndMember::<T>::mutate(token_id, &src_member_id, |account_data| {
@@ -1690,7 +1674,7 @@ impl<T: Config> Module<T> {
             });
         if !total_amount.is_zero() {
             ensure!(
-                has_sufficient_usable_balance_and_stays_alive::<T>(src, total_amount),
+                has_sufficient_balance_for_payment::<T>(src, total_amount),
                 Error::<T>::InsufficientJoyBalance
             );
             for (dst, amount) in destinations {

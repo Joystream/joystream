@@ -2,6 +2,9 @@
 
 pub use frame_system;
 
+use common::locks::{
+    BoundStakingAccountLockId, CandidacyLockId, CouncilorLockId, InvitedMemberLockId, VotingLockId,
+};
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize, WithdrawReasons};
 use frame_support::{
     parameter_types,
@@ -61,14 +64,11 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 4;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const ReferralCutMaximumPercent: u8 = 50;
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
     pub const PostLifeTime: u64 = 10;
     pub const PostDeposit: u64 = 100;
     pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:propo");
-    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InvitedMemberLockId::get()];
 }
 
 impl frame_system::Config for Test {
@@ -135,7 +135,7 @@ impl membership::Config for Test {
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
 }
 
@@ -219,7 +219,6 @@ impl crate::Config for Test {
     type PostLifeTime = PostLifeTime;
     type PostDeposit = PostDeposit;
     type ModuleId = ProposalsDiscussionModuleId;
-    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 }
 
 impl MemberOriginValidator<Origin, u64, u128> for () {
@@ -267,8 +266,6 @@ parameter_types! {
     pub const IdlePeriodDuration: u64 = 27;
     pub const CouncilSize: u64 = 4;
     pub const MinCandidateStake: u64 = 11000;
-    pub const CandidacyLockId: LockIdentifier = *b"council1";
-    pub const CouncilorLockId: LockIdentifier = *b"council2";
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
@@ -319,7 +316,6 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 23;
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
-    pub const VotingLockId: LockIdentifier = *b"referend";
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 

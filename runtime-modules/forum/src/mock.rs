@@ -7,6 +7,7 @@ pub use frame_support::{assert_err, assert_noop};
 use sp_core::H256;
 
 use crate::Config;
+use common::locks::{BoundStakingAccountLockId, ForumGroupLockId, InvitedMemberLockId};
 use frame_support::traits::{
     ConstU16, ConstU32, ConstU64, Currency, LockIdentifier, OnFinalize, OnInitialize,
     WithdrawReasons,
@@ -101,9 +102,6 @@ impl common::membership::MembershipTypes for Runtime {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
-    pub const LockId: [u8; 8] = [9; 8];
-    pub const InviteMemberLockId: [u8; 8] = [9; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [10; 8];
     pub const CandidateStake: u64 = 100;
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
@@ -116,7 +114,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Runtime>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -163,10 +161,10 @@ impl membership::Config for Runtime {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = Wg;
     type WeightInfo = ();
-    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
 }
 
@@ -180,7 +178,6 @@ parameter_types! {
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: PalletId = PalletId(*b"m0:forum"); // module : forum
-    pub BloatBondAllowedLocks: Vec<LockIdentifier> = vec![InviteMemberLockId::get()];
 }
 
 pub struct MapLimits;
@@ -207,8 +204,6 @@ impl Config for Runtime {
     type PostDeposit = PostDeposit;
 
     type ModuleId = ForumModuleId;
-
-    type BloatBondAllowedLocks = BloatBondAllowedLocks;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)

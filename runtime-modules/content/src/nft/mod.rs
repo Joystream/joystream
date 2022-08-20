@@ -1,5 +1,5 @@
 mod types;
-use common::costs::{burn_from_usable, has_sufficient_usable_balance_and_stays_alive};
+use common::costs::{burn_from_usable, has_sufficient_balance_for_payment};
 use sp_std::borrow::ToOwned;
 use sp_std::cmp::min;
 pub use types::*;
@@ -15,10 +15,7 @@ impl<T: Config> Module<T> {
         let old_bid = old_bid.unwrap_or_else(Zero::zero);
 
         ensure!(
-            has_sufficient_usable_balance_and_stays_alive::<T>(
-                participant,
-                bid.saturating_sub(old_bid)
-            ),
+            has_sufficient_balance_for_payment::<T>(participant, bid.saturating_sub(old_bid)),
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -261,7 +258,7 @@ impl<T: Config> Module<T> {
         price: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            has_sufficient_usable_balance_and_stays_alive::<T>(participant_account_id, price),
+            has_sufficient_balance_for_payment::<T>(participant_account_id, price),
             Error::<T>::InsufficientBalance
         );
         Ok(())

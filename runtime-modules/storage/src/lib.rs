@@ -128,7 +128,7 @@ pub use weights::WeightInfo;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, Get, LockIdentifier};
+use frame_support::traits::{Currency, Get};
 
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, IterableStorageDoubleMap, PalletId,
@@ -146,12 +146,11 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
-use sp_std::vec;
 use sp_std::vec::Vec;
 
 use common::bloat_bond::RepayableBloatBond;
 use common::constraints::BoundedValueConstraint;
-use common::costs::{ensure_can_cover_costs, pay_cost, Cost};
+use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::working_group::WorkingGroup;
 use common::working_group::WorkingGroupAuthenticator;
 
@@ -190,13 +189,13 @@ pub trait DataObjectStorage<T: Config> {
         params: UploadParameters<T>,
     ) -> Result<BTreeSet<T::DataObjectId>, DispatchError>;
 
-    /// Returns costs associated with uploading the data objects, based on number of objects and their total size.
+    /// Returns the funds needed for uploading the data objects, based on number of objects and their total size.
     /// This is dependent on (data_obj_state_bloat_bond * num_of_objs_to_upload) plus a storage fee that depends on the
     /// objs_total_size_in_bytes
-    fn get_upload_costs(
+    fn funds_needed_for_upload(
         num_of_objs_to_upload: usize,
         objs_total_size_in_bytes: u64,
-    ) -> Vec<Cost<BalanceOf<T>>>;
+    ) -> BalanceOf<T>;
 
     /// Validates moving objects parameters.
     /// Validates voucher usage for affected buckets.
@@ -425,12 +424,6 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
 
     /// Module account initial balance (existential deposit).
     type ModuleAccountInitialBalance: Get<BalanceOf<Self>>;
-
-    /// Locks compatible with data size fee
-    type DataSizeFeeAllowedLocks: Get<Vec<LockIdentifier>>;
-
-    /// Locks compatible with data object bloat bond
-    type DataObjectBloatBondAllowedLocks: Get<Vec<LockIdentifier>>;
 }
 
 /// Operations with local pallet account.
@@ -3250,20 +3243,17 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
             .collect()
     }
 
-    fn get_upload_costs(
+    fn funds_needed_for_upload(
         num_of_objs_to_upload: usize,
         objs_total_size_in_bytes: u64,
-    ) -> Vec<Cost<BalanceOf<T>>> {
+    ) -> BalanceOf<T> {
         let num_of_objs_to_upload = num_of_objs_to_upload.saturated_into();
         let deletion_fee =
             Self::data_object_state_bloat_bond_value().saturating_mul(num_of_objs_to_upload);
 
         let storage_fee = Self::calculate_data_storage_fee(objs_total_size_in_bytes);
 
-        vec![
-            Cost::new(deletion_fee, &T::DataObjectBloatBondAllowedLocks::get()),
-            Cost::new(storage_fee, &T::DataSizeFeeAllowedLocks::get()),
-        ]
+        deletion_fee.saturating_add(storage_fee)
     }
 }
 
@@ -4427,13 +4417,13 @@ impl<T: Config> Module<T> {
         state_bloat_bond_request: T::Balance,
         storage_fee: T::Balance,
     ) -> DispatchResult {
-        let bloat_bond_cost = Cost::new(
-            state_bloat_bond_request,
-            &T::DataObjectBloatBondAllowedLocks::get(),
+        ensure!(
+            has_sufficient_balance_for_fees::<T>(
+                account_id,
+                state_bloat_bond_request.saturating_add(storage_fee)
+            ),
+            Error::<T>::InsufficientBalance
         );
-        let storage_fee_cost = Cost::new(storage_fee, &T::DataSizeFeeAllowedLocks::get());
-        ensure_can_cover_costs::<T>(account_id, &[bloat_bond_cost, storage_fee_cost])
-            .map_err(|_| Error::<T>::InsufficientBalance)?;
 
         Ok(())
     }
@@ -4489,18 +4479,10 @@ impl<T: Config> Module<T> {
 
     fn pay_bloat_bond(source: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
         let treasury = <StorageTreasury<T>>::module_account_id();
-        pay_cost::<T>(
-            source,
-            Some(&treasury),
-            Cost::new(amount, &T::DataObjectBloatBondAllowedLocks::get()),
-        )
+        pay_fee::<T>(source, Some(&treasury), amount)
     }
 
     fn pay_storage_fee(source: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-        pay_cost::<T>(
-            source,
-            None,
-            Cost::new(amount, &T::DataSizeFeeAllowedLocks::get()),
-        )
+        pay_fee::<T>(source, None, amount)
     }
 }
