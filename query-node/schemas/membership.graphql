@@ -30,6 +30,7 @@ type MembershipExternalResource @entity {
   type: MembershipExternalResourceType!
   value: String!
   memberMetadata: MemberMetadata!
+  member: Membership
 }
 
 type MemberMetadata @entity {
@@ -41,6 +42,8 @@ type MemberMetadata @entity {
 
   "Short text chosen by member to share information about themselves"
   about: String
+
+  member: Membership @derivedFrom(field: "metadata")
 
   "Social media handles, email address..."
   externalResources: [MembershipExternalResource] @derivedFrom(field: "memberMetadata")
@@ -116,6 +119,9 @@ type Membership @entity {
 
   "Whether member is elected in the current council."
   isCouncilMember: Boolean!
+
+  "Social media handles, email address..."
+  externalResources: [MembershipExternalResource] @derivedFrom(field: "member")
 
   "Member's working group roles (current and past)"
   roles: [Worker!] @derivedFrom(field: "membership")

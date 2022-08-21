@@ -10,7 +10,12 @@ import {
   PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
 } from '@polkadot/types/lookup'
 import { Bytes } from '@polkadot/types'
-import { MembershipMetadata, MemberRemarked, ICreateVideoCategory } from '@joystream/metadata-protobuf'
+import {
+  MembershipMetadata,
+  MemberRemarked,
+  ICreateVideoCategory,
+  IMembershipMetadata,
+} from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import {
   bytesToString,
@@ -60,6 +65,7 @@ import {
   processDeleteCommentMessage,
 } from './content'
 import { createVideoCategory } from './content/videoCategory'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
 async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations })
@@ -94,59 +100,59 @@ async function getOrCreateMembershipSnapshot({ store, event }: EventContext & St
 
 async function saveMembershipExternalResources(
   store: DatabaseManager,
-  from: MembershipExternalResource[] | undefined,
-  txExtResources: MembershipMetadata.IExternalResource[] | undefined | null,
-  memberMetadata: MemberMetadata
+  member: Membership,
+  externalResources: Pick<MembershipExternalResource, 'type' | 'value'>[] = [],
+  memberMetadata: MemberMetadata = member.metadata
 ): Promise<MembershipExternalResource[] | undefined> {
-  if (!from && !txExtResources) {
-    return
-  }
-
-  for (const prevResource of memberMetadata.externalResources ?? []) {
-    await store.remove(prevResource)
-  }
-
-  const externalResources = (from ?? txExtResources?.flatMap(asMembershipExternalResource) ?? []).map(
+  const newExternalResources = externalResources.map(
     ({ type, value }) =>
-      new MembershipExternalResource({ id: `${memberMetadata.id}-${type}`, type, value, memberMetadata })
+      new MembershipExternalResource({
+        id: `${memberMetadata.id}-${type}`,
+        type,
+        value,
+        memberMetadata,
+        member: member.metadata.externalResources ? undefined : member,
+      })
   )
-  for (const resource of externalResources) {
+  for (const resource of newExternalResources) {
     await store.save<MembershipExternalResource>(resource)
   }
 
-  return externalResources
+  return newExternalResources
+}
 
-  function asMembershipExternalResource(
-    resource: MembershipMetadata.IExternalResource
-  ): Pick<MembershipExternalResource, 'type' | 'value'>[] {
-    const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]
+function asMembershipExternalResource(
+  resource: MembershipMetadata.IExternalResource
+): Pick<MembershipExternalResource, 'type' | 'value'>[] {
+  const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]
 
-    if (!typeKey || !(typeKey in MembershipExternalResourceType)) {
-      throw new Error(`Invalid ResourceType: ${typeKey}`)
-    }
-
-    const type = MembershipExternalResourceType[typeKey]
-    const value = resource.value
-    return type && value ? [{ type, value }] : []
+  if (!typeKey || !(typeKey in MembershipExternalResourceType)) {
+    throw new Error(`Invalid ResourceType: ${typeKey}`)
   }
+
+  const type = MembershipExternalResourceType[typeKey]
+  const value = resource.value
+  return type && value ? [{ type, value }] : []
 }
 
 async function saveMembershipMetadata(
   store: DatabaseManager,
-  from: Partial<MemberMetadata>,
-  metadataBytes?: Bytes
+  member?: Membership,
+  metadata?: DecodedMetadataObject<IMembershipMetadata> | null
 ): Promise<MemberMetadata> {
-  const metadata = metadataBytes && deserializeMetadata(MembershipMetadata, metadataBytes)
-
-  const avatar = from.avatar || metadata?.avatarUri ? new AvatarUri() : undefined
+  const avatarUri =
+    member?.metadata?.avatar && 'avatarUri' in member?.metadata.avatar
+      ? member?.metadata.avatar.avatarUri
+      : metadata?.avatarUri || ''
+  const avatar = avatarUri ? new AvatarUri() : undefined
   if (avatar) {
-    avatar.avatarUri = from.avatar && 'avatarUri' in from.avatar ? from.avatar.avatarUri : metadata?.avatarUri || ''
+    avatar.avatarUri = avatarUri
   }
 
   const metadataEntity = new MemberMetadata({
     name: metadata?.name || undefined,
     about: metadata?.about || undefined,
-    ...from,
+    ...member?.metadata,
     id: undefined,
     avatar,
     externalResources: undefined,
@@ -154,12 +160,14 @@ async function saveMembershipMetadata(
 
   await store.save<MemberMetadata>(metadataEntity)
 
-  metadataEntity.externalResources = await saveMembershipExternalResources(
-    store,
-    from.externalResources,
-    metadata?.externalResources,
-    metadataEntity
-  )
+  if (member) {
+    metadataEntity.externalResources = await saveMembershipExternalResources(
+      store,
+      member,
+      member.metadata.externalResources,
+      metadataEntity
+    )
+  }
 
   return metadataEntity
 }
@@ -173,15 +181,14 @@ async function createNewMemberFromParams(
 ): Promise<Membership> {
   const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(store)
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
-
-  const metadataEntity = await saveMembershipMetadata(store, {}, metadataBytes)
+  const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
 
   const member = new Membership({
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
     handle: handle.unwrap().toHuman()?.toString(),
-    metadata: metadataEntity,
+    metadata: await saveMembershipMetadata(store, undefined, metadata),
     entry: entryMethod,
     referredBy:
       entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrerId.isSome
@@ -204,6 +211,12 @@ async function createNewMemberFromParams(
   })
 
   await store.save<Membership>(member)
+
+  member.metadata.externalResources = await saveMembershipExternalResources(
+    store,
+    member,
+    metadata?.externalResources?.flatMap(asMembershipExternalResource)
+  )
 
   return member
 }
@@ -266,7 +279,7 @@ export async function members_MembershipBought({ store, event }: EventContext & 
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: await saveMembershipMetadata(store, member.metadata),
+    metadata: await saveMembershipMetadata(store, member),
     referrer: member.referredBy,
   })
 
@@ -289,7 +302,7 @@ export async function members_MembershipGifted({ store, event }: EventContext & 
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: await saveMembershipMetadata(store, member.metadata),
+    metadata: await saveMembershipMetadata(store, member),
   })
 
   await store.save<MembershipGiftedEvent>(membershipGiftedEvent)
@@ -326,21 +339,26 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   await store.save<MemberMetadata>(member.metadata)
   await store.save<Membership>(member)
 
-  const externalResources = await saveMembershipExternalResources(
-    store,
-    undefined,
-    metadata?.externalResources,
-    member.metadata
-  )
+  if (metadata?.externalResources) {
+    // Remove previously set external resources
+    for (const prevResource of member.metadata.externalResources ?? []) {
+      await store.remove(prevResource)
+    }
+    member.metadata.externalResources = undefined
+
+    // Save new external resources
+    member.metadata.externalResources = await saveMembershipExternalResources(
+      store,
+      member,
+      metadata?.externalResources?.flatMap(asMembershipExternalResource)
+    )
+  }
 
   const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
     ...genericEventFields(event),
     member: member,
     newHandle: member.handle,
-    newMetadata: await saveMembershipMetadata(store, {
-      ...member.metadata,
-      externalResources: externalResources ?? member.metadata.externalResources,
-    }),
+    newMetadata: await saveMembershipMetadata(store, member),
   })
 
   await store.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
@@ -429,7 +447,7 @@ export async function members_MemberInvited({ store, event }: EventContext & Sto
     handle: invitedMember.handle,
     rootAccount: invitedMember.rootAccount,
     controllerAccount: invitedMember.controllerAccount,
-    metadata: await saveMembershipMetadata(store, invitedMember.metadata),
+    metadata: await saveMembershipMetadata(store, invitedMember),
   })
 
   await store.save<MemberInvitedEvent>(memberInvitedEvent)
