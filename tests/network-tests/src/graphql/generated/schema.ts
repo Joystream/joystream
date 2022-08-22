@@ -12777,10 +12777,10 @@ export type MemberMetadata = BaseGraphQlObject & {
   avatar?: Maybe<Avatar>
   /** Short text chosen by member to share information about themselves */
   about?: Maybe<Scalars['String']>
+  member?: Maybe<Membership>
   externalResources?: Maybe<Array<MembershipExternalResource>>
   memberinvitedeventmetadata?: Maybe<Array<MemberInvitedEvent>>
   memberprofileupdatedeventnewMetadata?: Maybe<Array<MemberProfileUpdatedEvent>>
-  membershipmetadata?: Maybe<Array<Membership>>
   membershipboughteventmetadata?: Maybe<Array<MembershipBoughtEvent>>
   membershipgiftedeventmetadata?: Maybe<Array<MembershipGiftedEvent>>
 }
@@ -12857,6 +12857,7 @@ export type MemberMetadataWhereInput = {
   about_startsWith?: Maybe<Scalars['String']>
   about_endsWith?: Maybe<Scalars['String']>
   about_in?: Maybe<Array<Scalars['String']>>
+  member?: Maybe<MembershipWhereInput>
   externalResources_none?: Maybe<MembershipExternalResourceWhereInput>
   externalResources_some?: Maybe<MembershipExternalResourceWhereInput>
   externalResources_every?: Maybe<MembershipExternalResourceWhereInput>
@@ -12866,9 +12867,6 @@ export type MemberMetadataWhereInput = {
   memberprofileupdatedeventnewMetadata_none?: Maybe<MemberProfileUpdatedEventWhereInput>
   memberprofileupdatedeventnewMetadata_some?: Maybe<MemberProfileUpdatedEventWhereInput>
   memberprofileupdatedeventnewMetadata_every?: Maybe<MemberProfileUpdatedEventWhereInput>
-  membershipmetadata_none?: Maybe<MembershipWhereInput>
-  membershipmetadata_some?: Maybe<MembershipWhereInput>
-  membershipmetadata_every?: Maybe<MembershipWhereInput>
   membershipboughteventmetadata_none?: Maybe<MembershipBoughtEventWhereInput>
   membershipboughteventmetadata_some?: Maybe<MembershipBoughtEventWhereInput>
   membershipboughteventmetadata_every?: Maybe<MembershipBoughtEventWhereInput>
@@ -13210,6 +13208,7 @@ export type Membership = BaseGraphQlObject & {
   isFoundingMember: Scalars['Boolean']
   /** Whether member is elected in the current council. */
   isCouncilMember: Scalars['Boolean']
+  externalResources?: Maybe<Array<MembershipExternalResource>>
   roles: Array<Worker>
   whitelistedIn: Array<ProposalDiscussionWhitelist>
   whitelistedInBounties: Array<BountyEntrantWhitelist>
@@ -13521,6 +13520,8 @@ export type MembershipExternalResource = BaseGraphQlObject & {
   value: Scalars['String']
   memberMetadata: MemberMetadata
   memberMetadataId: Scalars['String']
+  member?: Maybe<Membership>
+  memberId?: Maybe<Scalars['String']>
 }
 
 export type MembershipExternalResourceConnection = {
@@ -13533,6 +13534,7 @@ export type MembershipExternalResourceCreateInput = {
   type: MembershipExternalResourceType
   value: Scalars['String']
   memberMetadata: Scalars['ID']
+  member?: Maybe<Scalars['ID']>
 }
 
 export type MembershipExternalResourceEdge = {
@@ -13553,6 +13555,8 @@ export enum MembershipExternalResourceOrderByInput {
   ValueDesc = 'value_DESC',
   MemberMetadataAsc = 'memberMetadata_ASC',
   MemberMetadataDesc = 'memberMetadata_DESC',
+  MemberAsc = 'member_ASC',
+  MemberDesc = 'member_DESC',
 }
 
 export enum MembershipExternalResourceType {
@@ -13573,6 +13577,7 @@ export type MembershipExternalResourceUpdateInput = {
   type?: Maybe<MembershipExternalResourceType>
   value?: Maybe<Scalars['String']>
   memberMetadata?: Maybe<Scalars['ID']>
+  member?: Maybe<Scalars['ID']>
 }
 
 export type MembershipExternalResourceWhereInput = {
@@ -13608,6 +13613,7 @@ export type MembershipExternalResourceWhereInput = {
   value_endsWith?: Maybe<Scalars['String']>
   value_in?: Maybe<Array<Scalars['String']>>
   memberMetadata?: Maybe<MemberMetadataWhereInput>
+  member?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<MembershipExternalResourceWhereInput>>
   OR?: Maybe<Array<MembershipExternalResourceWhereInput>>
   NOT?: Maybe<Array<MembershipExternalResourceWhereInput>>
@@ -14150,6 +14156,9 @@ export type MembershipWhereInput = {
   referredMembers_some?: Maybe<MembershipWhereInput>
   referredMembers_every?: Maybe<MembershipWhereInput>
   referredBy?: Maybe<MembershipWhereInput>
+  externalResources_none?: Maybe<MembershipExternalResourceWhereInput>
+  externalResources_some?: Maybe<MembershipExternalResourceWhereInput>
+  externalResources_every?: Maybe<MembershipExternalResourceWhereInput>
   roles_none?: Maybe<WorkerWhereInput>
   roles_some?: Maybe<WorkerWhereInput>
   roles_every?: Maybe<WorkerWhereInput>
