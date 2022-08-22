@@ -79,13 +79,8 @@ message VideoMetadata {
     repeated uint64 persons = 15 [packed=true];
 
     // Video Category Id
-    optional uint64 category = 16;
+    optional string category = 16;
 
     // Enable/Disable the comment section
     optional bool enable_comments = 18;
-}
-
-message VideoCategoryMetadata {
-    // Category name
-    optional string name = 1;
 }

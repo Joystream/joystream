@@ -39,21 +39,14 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   const videoCategoryCount = 1
   const channelCount = 1
   const curatorCount = 1
-  const channelCategoryCount = 1
   const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // prepare content
 
-  const createContentStructureFixture = new CreateContentStructureFixture(
-    api,
-    query,
-    joystreamCli,
-    videoCategoryCount,
-    channelCategoryCount
-  )
+  const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
-  const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos as well as auction participants
   const createMembersFixture = new CreateMembersFixture(api, query, channelCount, curatorCount, sufficientTopupAmount)
@@ -70,7 +63,6 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     joystreamCli,
     channelCount,
     videoCount,
-    channelCategoryIds[0],
     videoCategoryIds[0],
     channelOwner
   )

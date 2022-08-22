@@ -1,4 +1,4 @@
-import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import {
   BanOrUnbanMemberFromChannel,
   IBanOrUnbanMemberFromChannel,
@@ -189,7 +189,8 @@ function parseVideoReaction(reaction: ReactVideo.Reaction): VideoReactionOptions
 }
 
 export async function processReactVideoMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   memberId: MemberId,
   message: IReactVideo
 ): Promise<void> {
@@ -286,7 +287,8 @@ export async function processReactVideoMessage(
 }
 
 export async function processReactCommentMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   memberId: MemberId,
   message: IReactComment
 ): Promise<void> {
@@ -351,7 +353,8 @@ export async function processReactCommentMessage(
 }
 
 export async function processCreateCommentMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   memberId: MemberId,
   message: ICreateComment
 ): Promise<Comment> {
@@ -420,7 +423,8 @@ export async function processCreateCommentMessage(
 }
 
 export async function processEditCommentMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   memberId: MemberId,
   message: IEditComment
 ): Promise<Comment> {
@@ -469,7 +473,8 @@ export async function processEditCommentMessage(
 }
 
 export async function processDeleteCommentMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   memberId: MemberId,
   message: IDeleteComment
 ): Promise<Comment> {
@@ -530,7 +535,8 @@ export async function processDeleteCommentMessage(
 }
 
 export async function processModerateCommentMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   channelOwnerOrModerator: typeof ContentActor,
   channelId: ChannelId,
   message: IModerateComment
@@ -586,7 +592,8 @@ export async function processModerateCommentMessage(
 }
 
 export async function processPinOrUnpinCommentMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   channelOwner: typeof ContentActor,
   channelId: ChannelId,
   message: IPinOrUnpinComment
@@ -620,7 +627,8 @@ export async function processPinOrUnpinCommentMessage(
 }
 
 export async function processBanOrUnbanMemberFromChannelMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   channelOwner: typeof ContentActor,
   channelId: ChannelId,
   message: IBanOrUnbanMemberFromChannel
@@ -658,7 +666,8 @@ export async function processBanOrUnbanMemberFromChannelMessage(
 }
 
 export async function processVideoReactionsPreferenceMessage(
-  { store, event }: EventContext & StoreContext,
+  store: DatabaseManager,
+  event: SubstrateEvent,
   channelOwner: typeof ContentActor,
   channelId: ChannelId,
   message: IVideoReactionsPreference

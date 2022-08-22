@@ -2626,6 +2626,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       BlacklistSizeLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Call Disabled
+       **/
+      CallDisabled: AugmentedError<ApiType>;
+      /**
        * Cannot delete non empty dynamic bag.
        **/
       CannotDeleteNonEmptyDynamicBag: AugmentedError<ApiType>;

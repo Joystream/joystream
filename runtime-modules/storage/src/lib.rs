@@ -1620,6 +1620,9 @@ decl_error! {
 
         /// Not allowed 'number of distribution buckets'
         NumberOfDistributionBucketsOutsideOfAllowedContraints,
+
+        /// Call Disabled
+        CallDisabled,
     }
 }
 
@@ -2946,8 +2949,6 @@ decl_module! {
             );
         }
 
-        // ===== Sudo actions (development mode) =====
-
         /// Upload new data objects. Development mode.
         #[weight = 10_000_000]
         pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
@@ -2957,18 +2958,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::upload_data_objects(params)?;
-        }
-
-        /// Create a dynamic bag. Development mode.
-        #[weight = 10_000_000]
-        pub fn sudo_create_dynamic_bag(
-            origin,
-            params: DynBagCreationParameters<T>,
-        ) {
-            ensure_root(origin)?;
-
-            Self::create_dynamic_bag(params)?;
+            if cfg!(feature = "staging_runtime") || cfg!(feature = "testing_runtime") {
+                Self::upload_data_objects(params)?;
+            } else {
+                return Err(Error::<T>::CallDisabled.into());
+            }
         }
 
         /// Create a dynamic bag. Development mode.
