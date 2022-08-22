@@ -299,9 +299,6 @@ async function updateChannelAgentsPermissions(
   // create new records for privledged members
   for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
     const permissionsArray = Array.from(permissions)
-    if (!permissionsArray.length) {
-      return
-    }
 
     const collaborator = new Collaborator({
       channel: new Channel({ id: channel.id.toString() }),

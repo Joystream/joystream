@@ -120,9 +120,6 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
     return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
-  // save curator group
-  await store.save<CuratorGroup>(curatorGroup)
-
   // load curator
   const curator = await ensureCurator(store, curatorId.toString())
 
@@ -153,9 +150,6 @@ async function updateCuratorAgentPermissions(
   }
 
   const permissionsArray = Array.from(permissions || [])
-  if (!permissionsArray.length) {
-    return
-  }
 
   // create new records for privledged members
   const curatorAgentPermissions = new CuratorAgentPermissions({
