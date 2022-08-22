@@ -1400,6 +1400,85 @@ benchmarks! {
                 ..
             })));
         }
+
+    // ================================================================================
+    // ============================== CHANNEL REMARKS =================================
+    // ================================================================================
+
+    // WORST CASE SCENARIO
+    // COMPLEXITY
+    // DB OPERATIONS
+    // - DB Write: Metadata
+    channel_owner_remark {
+        let b in 1 .. MAX_BYTES_METADATA;
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let msg = vec![1u8].repeat(b as usize);
+        let origin = RawOrigin::Signed(lead_account_id);
+    }: _(origin, channel_id, msg.clone())
+        verify {
+            assert_last_event::<T>(
+                Event::<T>::ChannelOwnerRemarked(
+                    channel_id,
+                    msg
+                ).into()
+            );
+        }
+
+    // WORST CASE SCENARIO
+    // COMPLEXITY
+    // - channel is curator owned
+    // - channel has max collaborators
+    // - channel has all features paused except necessary ones
+    // - channel has max assets
+    // DB OPERATIONS
+    // - DB Write: Metadata
+    channel_agent_remark {
+        let b in 1 .. MAX_BYTES_METADATA;
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let msg = vec![1u8].repeat(b as usize);
+    }: _(origin, actor, channel_id, msg.clone())
+        verify {
+            assert_last_event::<T>(
+                Event::<T>::ChannelAgentRemarked(
+                    actor,
+                    channel_id,
+                    msg
+                ).into()
+            );
+        }
+
+    // WORST CASE SCENARIO
+    // COMPLEXITY
+    // - channel has max collaborators
+    // - channel has all features paused except necessary ones
+    // - channel has max assets
+    // - NFT owner == channel owner
+    // DB OPERATIONS
+    // - DB Write: Metadata
+    // - DB Read: Video
+    nft_owner_remark {
+        let b in 1 .. MAX_BYTES_METADATA;
+        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
+        let origin = RawOrigin::Signed(curator_account_id);
+        let msg = vec![1u8].repeat(b as usize);
+    }: _(origin, actor.clone(), video_id, msg.clone())
+        verify {
+            assert_last_event::<T>(
+                Event::<T>::NftOwnerRemarked(
+                    actor,
+                    video_id,
+                    msg
+                ).into()
+            );
+        }
 }
 
 #[cfg(test)]
@@ -1670,6 +1749,27 @@ pub mod tests {
     fn make_open_auction_bid() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_make_open_auction_bid());
+        })
+    }
+
+    #[test]
+    fn channel_owner_remark() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_channel_owner_remark());
+        })
+    }
+
+    #[test]
+    fn channel_agent_remark() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_channel_agent_remark());
+        })
+    }
+
+    #[test]
+    fn nft_owner_remark() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_nft_owner_remark());
         })
     }
 }
