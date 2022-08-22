@@ -8,7 +8,7 @@ import { MemberId } from '@joystream/types/primitives'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
-import { generateParamsFromAccountId } from './utils'
+import { asMembershipExternalResource, generateParamsFromAccountId } from './utils'
 import { SubmittableResult } from '@polkadot/api'
 
 type MemberInvitedEventDetails = EventDetails<EventType<'members', 'MemberInvited'>>
@@ -58,7 +58,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
         handle,
         rootAccount,
         controllerAccount,
-        metadata: { name, about },
+        metadata: { name, about, avatar, externalResources },
         isVerified,
         entry,
         invitedBy,
@@ -71,7 +71,11 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       assert.equal(name, metadata.name)
       assert.equal(about, metadata.about)
       assert.equal(inviteCount, 0)
-      // TODO: avatar
+      assert.equal(avatar?.avatarUri, metadata.avatarUri || undefined)
+      assert.includeDeepMembers(
+        externalResources ?? [],
+        metadata.externalResources?.map(asMembershipExternalResource) ?? []
+      )
       assert.equal(isVerified, false)
       Utils.assert(entry.__typename === 'MembershipEntryInvited', 'Query node: Invalid member entry method')
       Utils.assert(entry.memberInvitedEvent, 'Query node: Empty memberInvitedEvent reference')
@@ -92,7 +96,11 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
     assert.equal(qEvent.controllerAccount, txParams.controller_account)
     assert.equal(qEvent.metadata.name, metadata.name)
     assert.equal(qEvent.metadata.about, metadata.about)
-    // TODO: avatar
+    assert.equal(qEvent.metadata.avatar?.avatarUri, metadata.avatarUri || undefined)
+    assert.includeDeepMembers(
+      qEvent.metadata.externalResources ?? [],
+      metadata.externalResources?.map(asMembershipExternalResource) ?? []
+    )
   }
 
   async execute(): Promise<void> {

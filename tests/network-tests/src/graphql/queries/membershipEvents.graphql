@@ -38,8 +38,7 @@ fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
   }
   newHandle
   newMetadata {
-    name
-    about
+    ...MemberMetadataFields
   }
 }
 
