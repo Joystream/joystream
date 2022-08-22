@@ -4,7 +4,7 @@ use frame_support::{
     traits::{
         fungible::{Inspect, Mutate},
         tokens::WithdrawConsequence,
-        Currency, Get, Imbalance, SignedImbalance,
+        Currency, Get, Imbalance, SignedImbalance, StoredMap,
     },
 };
 use sp_arithmetic::traits::{CheckedSub, Saturating};
@@ -47,16 +47,19 @@ pub fn has_sufficient_balance_for_fees<T: frame_system::Config + balances::Confi
     usable_funds >= amount && total_balance >= amount.saturating_add(T::ExistentialDeposit::get())
 }
 
+// Pay a certain fee associated with a transaction (for example: a bloat bond, data size fee)
+// Fees are assumed to be payable w/ invitation-locked balance.
+// Returns the part of amount that was covered with invitation-locked balance (possibly 0).
 pub fn pay_fee<T: frame_system::Config + balances::Config>(
     payer: &T::AccountId,
     reciever: Option<&T::AccountId>,
     amount: T::Balance,
-) -> DispatchResult {
+) -> Result<T::Balance, DispatchError> {
     if amount == Zero::zero() {
-        return Ok(());
+        return Ok(Zero::zero());
     }
 
-    let free_balance = balances::Pallet::<T>::free_balance(payer);
+    let account = T::AccountStore::get(payer);
 
     ensure!(
         has_sufficient_balance_for_fees::<T>(payer, amount),
@@ -64,7 +67,8 @@ pub fn pay_fee<T: frame_system::Config + balances::Config>(
     );
 
     // Calculate payer's new free balance
-    let new_free_balance = free_balance
+    let new_free_balance = account
+        .free
         .checked_sub(&amount)
         .ok_or(DispatchError::Other("pay_fee: Free balance underflow"))?;
 
@@ -96,7 +100,14 @@ pub fn pay_fee<T: frame_system::Config + balances::Config>(
         );
     }
 
-    Ok(())
+    // locked_balance_used = min(account.frozen(Reasons::All).saturating_sub(new_free_balance), amount)
+    let locked_balance_used = account
+        .misc_frozen
+        .max(account.fee_frozen)
+        .saturating_sub(new_free_balance)
+        .min(amount);
+
+    Ok(locked_balance_used)
 }
 
 pub fn burn_from_usable<T: frame_system::Config + balances::Config>(

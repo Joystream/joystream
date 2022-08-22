@@ -7,8 +7,7 @@ pub use super::mock::Event as MetaEvent;
 use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
-use frame_support::traits::Currency;
-use frame_support::traits::WithdrawReasons;
+use frame_support::traits::{Currency, StoredMap, WithdrawReasons};
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use project_token::types::TransferPolicyParamsOf;
@@ -229,7 +228,31 @@ impl CreateChannelFixture {
 
             let channel_account = ContentTreasury::<Test>::account_for_channel(channel_id);
 
+            // calculate expected storage fees
+            let storage_fees = if let Some(assets) = self.params.assets.as_ref() {
+                let objects_state_bloat_bond = assets
+                    .object_creation_list
+                    .iter()
+                    .fold(BalanceOf::<Test>::zero(), |acc, _| {
+                        acc.saturating_add(self.params.expected_data_object_state_bloat_bond)
+                    });
+
+                let data_size_fee = Storage::<Test>::data_object_per_mega_byte_fee();
+                objects_state_bloat_bond + data_size_fee
+            } else {
+                0
+            };
+
             // event correctly deposited
+            let sender_acc_data = <Test as balances::Config>::AccountStore::get(&self.sender);
+            let locked_balance_consumed = sender_acc_data
+                .misc_frozen
+                .max(sender_acc_data.fee_frozen)
+                .saturating_sub(sender_acc_data.free);
+            let expected_blaot_bond_restricted_to = match locked_balance_consumed.is_zero() {
+                true => None,
+                false => Some(self.sender),
+            };
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::Content(RawEvent::ChannelCreated(
@@ -249,8 +272,8 @@ impl CreateChannelFixture {
                         weekly_nft_counter: Default::default(),
                         creator_token_id: None,
                         channel_state_bloat_bond: RepayableBloatBond::new(
-                            self.sender.clone(),
-                            self.params.expected_channel_state_bloat_bond
+                            self.params.expected_channel_state_bloat_bond,
+                            expected_blaot_bond_restricted_to
                         )
                     },
                     self.params.clone(),
@@ -258,25 +281,12 @@ impl CreateChannelFixture {
                 ))
             );
 
-            if let Some(assets) = self.params.assets.as_ref() {
-                // balance accounting is correct
+            assert_eq!(
+                balance_pre.saturating_sub(balance_post),
+                Content::channel_state_bloat_bond_value() + storage_fees,
+            );
 
-                let objects_state_bloat_bond = assets
-                    .object_creation_list
-                    .iter()
-                    .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                        acc.saturating_add(self.params.expected_data_object_state_bloat_bond)
-                    });
-
-                let data_size_fee = Storage::<Test>::data_object_per_mega_byte_fee();
-
-                assert_eq!(
-                    balance_pre.saturating_sub(balance_post),
-                    objects_state_bloat_bond
-                        + data_size_fee
-                        + Content::channel_state_bloat_bond_value(),
-                );
-
+            if self.params.assets.is_some() {
                 assert!((beg_obj_id..end_obj_id).all(|id| {
                     storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
                 }));
@@ -1030,17 +1040,24 @@ pub trait ChannelDeletion {
     fn expected_event_on_success(&self) -> MetaEvent;
 
     fn call_and_assert(&self, expected_result: DispatchResult) {
-        let channel = Content::ensure_channel_exists(self.get_channel_id()).ok();
-        let bloat_bond_recipient_balance_pre = channel.as_ref().map_or(0, |c| {
-            Balances::<Test>::free_balance(c.channel_state_bloat_bond.get_recipient().unwrap())
-        });
+        let channel = ChannelById::<Test>::get(self.get_channel_id());
+        let channel_bloat_bond_reciever = channel
+            .channel_state_bloat_bond
+            .get_recipient(self.get_sender());
+        let bloat_bond_recipient_balance_pre =
+            Balances::<Test>::free_balance(channel_bloat_bond_reciever);
         let bag_id_for_channel = Content::bag_id_for_channel(self.get_channel_id());
 
         let objects_state_bloat_bond =
-            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
-                .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
-                    acc + obj.state_bloat_bond.amount
-                });
+            storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel).fold(
+                BalanceOf::<Test>::zero(),
+                |acc, (_, obj)| match obj.state_bloat_bond.get_recipient(self.get_sender())
+                    == channel_bloat_bond_reciever
+                {
+                    true => acc + obj.state_bloat_bond.amount,
+                    false => acc,
+                },
+            );
 
         let channel_objects_ids =
             storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
@@ -1049,9 +1066,8 @@ pub trait ChannelDeletion {
 
         let actual_result = self.execute_call();
 
-        let bloat_bond_recipient_balance_post = channel.as_ref().map_or(0, |c| {
-            Balances::<Test>::free_balance(c.channel_state_bloat_bond.get_recipient().unwrap())
-        });
+        let bloat_bond_recipient_balance_post =
+            Balances::<Test>::free_balance(channel_bloat_bond_reciever);
         assert_eq!(actual_result, expected_result);
 
         match actual_result {
@@ -1531,27 +1547,33 @@ pub trait VideoDeletion {
 
     fn call_and_assert(&self, expected_result: DispatchResult) {
         let video_pre = <VideoById<Test>>::get(&self.get_video_id());
-        let bloat_bond_reciever_balance_pre: BalanceOf<Test> = video_pre
+        let video_bloat_bond_reciever = video_pre
             .video_state_bloat_bond
-            .get_recipient()
-            .map_or(Zero::zero(), |r| Balances::<Test>::free_balance(r));
+            .get_recipient(self.get_sender());
+        let bloat_bond_reciever_balance_pre: BalanceOf<Test> =
+            Balances::<Test>::free_balance(video_bloat_bond_reciever);
         let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
         let data_obj_state_bloat_bond =
             video_pre
                 .data_objects
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
-                    acc + storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id)
-                        .state_bloat_bond
-                        .amount
+                    let obj = storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id);
+                    match obj.state_bloat_bond.get_recipient(self.get_sender())
+                        == video_bloat_bond_reciever
+                    {
+                        true => acc + obj.state_bloat_bond.amount,
+                        false => acc,
+                    }
                 });
 
         let actual_result = self.execute_call();
 
-        let bloat_bond_reciever_balance_post: BalanceOf<Test> = video_pre
-            .video_state_bloat_bond
-            .get_recipient()
-            .map_or(Zero::zero(), |r| Balances::<Test>::free_balance(r));
+        let bloat_bond_reciever_balance_post: BalanceOf<Test> = Balances::<Test>::free_balance(
+            video_pre
+                .video_state_bloat_bond
+                .get_recipient(self.get_sender()),
+        );
 
         assert_eq!(actual_result, expected_result);
 

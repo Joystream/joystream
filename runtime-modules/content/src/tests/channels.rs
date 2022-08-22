@@ -892,54 +892,131 @@ fn unsuccessful_channel_deletion_with_creator_token_issued() {
 }
 
 #[test]
-fn successful_channel_deletion_with_bloat_bond_repaid_to_correct_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
+fn successful_channel_deletion_with_bloat_bonds_repaid_to_correct_accounts() {
+    let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
 
-        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
-        set_fees(
-            data_size_fee,
-            data_obj_bloat_bond,
-            channel_state_bloat_bond,
-            0,
-        );
-        let to_be_paid =
-            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + channel_state_bloat_bond;
+    let test_cases = [
+        (
+            ed(), // locked balance
+            (
+                ed(), // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10 + channel_state_bloat_bond, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond, // locked balance
+            (
+                ed() + channel_state_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee, // locked balance
+            (
+                ed() + channel_state_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 9, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 9, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond * 2, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 8, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond * 9 + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond * 10, // creator account post-removal balance
+                ed(), // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond * 10, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond * 10, // creator account post-removal balance
+                ed(), // remover account post-removal balance
+            ),
+        ),
+    ];
 
-        let member_balance = ed() + to_be_paid;
+    for case in test_cases {
+        let (locked_balance, (expected_creator_balance, expected_remover_balance)) = case;
+        with_default_mock_builder(|| {
+            run_to_block(1);
+            set_fees(
+                data_size_fee,
+                data_obj_bloat_bond,
+                channel_state_bloat_bond,
+                0,
+            );
+            let to_be_paid = data_size_fee
+                + data_obj_bloat_bond * DATA_OBJECTS_NUMBER
+                + channel_state_bloat_bond;
 
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
-        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+            let member_balance = ed() + to_be_paid;
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
-        create_initial_storage_buckets_helper();
+            increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+            increase_account_balance_helper(DEFAULT_MEMBER_ALT_ACCOUNT_ID, ed());
+            set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, locked_balance);
 
-        CreateChannelFixture::default()
-            .with_default_storage_buckets()
-            .with_assets(create_default_assets_helper())
-            .call_and_assert(Ok(()));
+            set_dynamic_bag_creation_policy_for_storage_numbers(0);
+            create_initial_storage_buckets_helper();
 
-        // Delete channel using different (alternative) controller account
-        DeleteChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ALT_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
+            CreateChannelFixture::default()
+                .with_default_storage_buckets()
+                .with_assets(create_default_assets_helper())
+                .call_and_assert(Ok(()));
 
-        let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
-        let channel_acc = ContentTreasury::<Test>::account_for_channel(ChannelId::one());
+            // Delete channel using different (alternative) controller account
+            DeleteChannelFixture::default()
+                .with_sender(DEFAULT_MEMBER_ALT_ACCOUNT_ID)
+                .call_and_assert(Ok(()));
 
-        // Verify that all bloat bonds were returned to the user and remain locked
-        assert_eq!(Balances::<Test>::total_balance(&channel_acc), 0);
-        assert_eq!(Balances::<Test>::usable_balance(storage_module_acc), ed());
-        assert_eq!(
-            System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
-            balances::AccountData {
-                free: ed() + to_be_paid - data_size_fee,
-                reserved: 0,
-                misc_frozen: ed() + to_be_paid,
-                fee_frozen: 0
-            }
-        );
-    });
+            let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
+            let channel_acc = ContentTreasury::<Test>::account_for_channel(ChannelId::one());
+
+            // Verify that all bloat bonds were returned to correct accounts
+            assert_eq!(Balances::<Test>::total_balance(&channel_acc), 0);
+            assert_eq!(Balances::<Test>::usable_balance(storage_module_acc), ed());
+            println!(
+                "Creator: {:?}\nRemover: {:?}\nExpected creator free: {:?}\nExpected remover free: {:?}",
+                System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
+                System::account(DEFAULT_MEMBER_ALT_ACCOUNT_ID).data,
+                expected_creator_balance,
+                expected_remover_balance
+            );
+            assert_eq!(
+                Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+                expected_creator_balance
+            );
+            assert_eq!(
+                Balances::<Test>::free_balance(DEFAULT_MEMBER_ALT_ACCOUNT_ID),
+                expected_remover_balance
+            );
+        });
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////

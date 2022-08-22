@@ -429,7 +429,7 @@ benchmarks! {
             split_staking_status: None,
             last_sale_total_purchased_amount: Some((sale_id, DEFAULT_SALE_PURCHASE.into())),
             next_vesting_transfer_id: 0,
-            bloat_bond: RepayableBloatBond::new(participant.clone(), bloat_bond),
+            bloat_bond: RepayableBloatBond::new(bloat_bond, None),
         });
         assert_last_event::<T>(
             RawEvent::TokensPurchasedOnSale(
@@ -562,7 +562,7 @@ benchmarks! {
                     split_id: 0,
                     amount: TokenBalanceOf::<T>::zero()
                 }),
-                bloat_bond: RepayableBloatBond::new(owner_account, Zero::zero()),
+                bloat_bond: RepayableBloatBond::new(Zero::zero(), None),
                 ..Default::default()
             }
         );

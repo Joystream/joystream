@@ -12,8 +12,8 @@ mod types;
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
-    TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,
-    YearlyRate,
+    JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
+    UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
 
@@ -527,8 +527,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // pay bloat bond into the channel account
-            pay_fee::<T>(&sender, Some(&channel_account), channel_state_bloat_bond)?;
+            // pay bloat bond into the channel account and get RepayableBloatBond object
+            let repayable_bloat_bond =
+                Self::pay_bloat_bond(channel_id, &sender, channel_state_bloat_bond)?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -548,8 +549,7 @@ decl_module! {
                 daily_nft_counter: Default::default(),
                 weekly_nft_counter: Default::default(),
                 creator_token_id: None,
-                channel_state_bloat_bond:
-                    RepayableBloatBond::new(sender, channel_state_bloat_bond),
+                channel_state_bloat_bond: repayable_bloat_bond,
             };
 
             // add channel to onchain state
@@ -699,7 +699,7 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(channel_id, channel)?;
+            Self::try_to_perform_channel_deletion(&sender, channel_id, channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -779,7 +779,7 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(channel_id, channel)?;
+            Self::try_to_perform_channel_deletion(&sender, channel_id, channel)?;
 
             //
             // == MUTATION SAFE ==
@@ -895,17 +895,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let repayable_bloat_bond = Self::pay_bloat_bond(channel_id, &sender, video_state_bloat_bond)?;
+
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
                 nft_status: nft_status.clone(),
                 data_objects: data_objects_ids.clone(),
-                video_state_bloat_bond:
-                    RepayableBloatBond::new(sender.clone(), video_state_bloat_bond),
+                video_state_bloat_bond: repayable_bloat_bond,
             };
-
-            let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
-            pay_fee::<T>(&sender, Some(&channel_account), video_state_bloat_bond)?;
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -3220,7 +3218,7 @@ impl<T: Config> Module<T> {
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
         video
             .video_state_bloat_bond
-            .repay::<T>(&channel_account, false)?;
+            .repay::<T>(&channel_account, sender, false)?;
 
         Ok(())
     }
@@ -3248,13 +3246,14 @@ impl<T: Config> Module<T> {
     }
 
     fn try_to_perform_channel_deletion(
+        sender: &T::AccountId,
         channel_id: T::ChannelId,
         channel: Channel<T>,
     ) -> DispatchResult {
         let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
 
         // try to delete channel dynamic bag with objects
-        Storage::<T>::delete_dynamic_bag(dynamic_bag_id)?;
+        Storage::<T>::delete_dynamic_bag(sender, dynamic_bag_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -3267,7 +3266,7 @@ impl<T: Config> Module<T> {
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
         channel
             .channel_state_bloat_bond
-            .repay::<T>(&channel_account, true)?;
+            .repay::<T>(&channel_account, sender, true)?;
 
         Ok(())
     }
@@ -3663,6 +3662,22 @@ impl<T: Config> Module<T> {
         let usable_balance = balances::Pallet::<T>::usable_balance(channel_account);
         let bloat_bond_value = channel.channel_state_bloat_bond.amount;
         usable_balance.saturating_sub(bloat_bond_value)
+    }
+
+    fn pay_bloat_bond(
+        channel_id: T::ChannelId,
+        from: &T::AccountId,
+        amount: JoyBalanceOf<T>,
+    ) -> Result<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>, DispatchError> {
+        let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
+
+        let locked_balance_used = pay_fee::<T>(from, Some(&channel_account), amount)?;
+
+        // construct RepayableBloatBond based on pay_fee result
+        Ok(match locked_balance_used.is_zero() {
+            true => RepayableBloatBond::new(amount, None),
+            false => RepayableBloatBond::new(amount, Some(from.clone())),
+        })
     }
 }
 

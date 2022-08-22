@@ -7,14 +7,13 @@ use frame_support::{
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::DispatchError;
 use sp_std::fmt::Debug;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 pub struct RepayableBloatBond<AccountId, Balance> {
-    /// Account where the bloat bond will be repaid.
-    account: Option<AccountId>, // We're using Option to sidestep the Default impl issue
+    /// Account where the bloat should be repaid (if restricted).
+    pub repayment_restricted_to: Option<AccountId>,
     /// Repayable amount
     pub amount: Balance,
 }
@@ -22,44 +21,51 @@ pub struct RepayableBloatBond<AccountId, Balance> {
 impl<AccountId, Balance: Default> Default for RepayableBloatBond<AccountId, Balance> {
     fn default() -> Self {
         Self {
-            account: None,
+            repayment_restricted_to: None,
             amount: Default::default(),
         }
     }
 }
 
-impl<AccountId, Balance: Copy + Debug + MaybeSerializeDeserialize>
+impl<AccountId: Clone, Balance: Copy + Debug + MaybeSerializeDeserialize>
     RepayableBloatBond<AccountId, Balance>
 {
-    pub fn new(account: AccountId, amount: Balance) -> Self {
+    pub fn new(amount: Balance, repayment_restricted_to: Option<AccountId>) -> Self {
         Self {
-            account: Some(account),
             amount,
+            repayment_restricted_to,
         }
     }
 
-    pub fn get_recipient(&self) -> Option<&AccountId> {
-        self.account.as_ref()
+    pub fn get_recipient(&self, fallback_to: &AccountId) -> AccountId {
+        self.repayment_restricted_to
+            .clone()
+            .unwrap_or(fallback_to.clone())
     }
 
-    pub fn repay<T>(&self, from: &T::AccountId, allow_death: bool) -> DispatchResult
+    // Repay the bloat bond.
+    // Payment will be sent from `from` account into either:
+    // - `self.repayment_restricted_to` account (if set)
+    // - `fallback_to` account (if `self.repayment_restricted_to` is not set)
+    pub fn repay<T>(
+        &self,
+        from: &T::AccountId,
+        fallback_to: &T::AccountId,
+        allow_death: bool,
+    ) -> DispatchResult
     where
         T: frame_system::Config<AccountId = AccountId> + balances::Config<Balance = Balance>,
     {
-        if let Some(recipient) = self.account.as_ref() {
-            <balances::Pallet<T> as Currency<T::AccountId>>::transfer(
-                from,
-                recipient,
-                self.amount,
-                match allow_death {
-                    true => ExistenceRequirement::AllowDeath,
-                    false => ExistenceRequirement::KeepAlive,
-                },
-            )
-        } else {
-            Err(DispatchError::Other(
-                "Cannot repay bloat bond: Missing destination",
-            ))
-        }
+        let to = self.get_recipient(fallback_to);
+
+        <balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+            from,
+            &to,
+            self.amount,
+            match allow_death {
+                true => ExistenceRequirement::AllowDeath,
+                false => ExistenceRequirement::KeepAlive,
+            },
+        )
     }
 }

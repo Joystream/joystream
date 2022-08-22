@@ -1318,57 +1318,127 @@ fn unsuccessful_video_deletion_with_invalid_num_objects_to_delete() {
 }
 
 #[test]
-fn successful_video_deletion_with_bloat_bond_repaid_to_correct_account() {
-    with_default_mock_builder(|| {
-        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond, video_state_bloat_bond) =
-            (10u64, 20u64, ed(), 30u64);
-        set_fees(
-            data_size_fee,
-            data_obj_bloat_bond,
-            channel_state_bloat_bond,
-            video_state_bloat_bond,
-        );
+fn successful_video_deletion_with_bloat_bonds_repaid_to_correct_accounts() {
+    let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond, video_state_bloat_bond) =
+        (10u64, 20u64, ed(), 30u64);
 
-        ContentTest::with_member_channel().setup();
+    let test_cases = [
+        (
+            ed(), // locked balance
+            (
+                ed(),                                                     // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10 + video_state_bloat_bond, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + 1, // locked balance
+            (
+                ed() + video_state_bloat_bond,   // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + video_state_bloat_bond, // locked balance
+            (
+                ed() + video_state_bloat_bond,   // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + video_state_bloat_bond + data_size_fee, // locked balance
+            (
+                ed() + video_state_bloat_bond,   // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + video_state_bloat_bond + data_size_fee + 1, // locked balance
+            (
+                ed() + video_state_bloat_bond + data_obj_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 9, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + video_state_bloat_bond + data_size_fee + data_obj_bloat_bond, // locked balance
+            (
+                ed() + video_state_bloat_bond + data_obj_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 9, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + video_state_bloat_bond + data_size_fee + data_obj_bloat_bond + 1, // locked balance
+            (
+                ed() + video_state_bloat_bond + data_obj_bloat_bond * 2, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 8, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + video_state_bloat_bond + data_size_fee + data_obj_bloat_bond * 9 + 1, // locked balance
+            (
+                ed() + video_state_bloat_bond + data_obj_bloat_bond * 10, // creator account post-removal balance
+                ed(), // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + video_state_bloat_bond + data_size_fee + data_obj_bloat_bond * 10, // locked balance
+            (
+                ed() + video_state_bloat_bond + data_obj_bloat_bond * 10, // creator account post-removal balance
+                ed(), // remover account post-removal balance
+            ),
+        ),
+    ];
 
-        let total_cost =
-            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + video_state_bloat_bond;
-        let member_balance = ed() + total_cost;
+    for case in test_cases {
+        let (locked_balance, (expected_creator_balance, expected_remover_balance)) = case;
+        with_default_mock_builder(|| {
+            set_fees(
+                data_size_fee,
+                data_obj_bloat_bond,
+                channel_state_bloat_bond,
+                video_state_bloat_bond,
+            );
 
-        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
-        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+            ContentTest::with_member_channel().setup();
 
-        CreateVideoFixture::default()
-            .with_assets(create_default_assets_helper())
-            .call_and_assert(Ok(()));
+            let total_cost =
+                data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + video_state_bloat_bond;
+            let member_balance = ed() + total_cost;
 
-        // Delete video using different (alternative) controller account
-        DeleteVideoFixture::default()
-            .with_sender(DEFAULT_MEMBER_ALT_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
+            Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+            Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ALT_ACCOUNT_ID, ed());
+            set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, locked_balance);
 
-        let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
-        let channel_acc = ContentTreasury::<Test>::account_for_channel(ChannelId::one());
+            CreateVideoFixture::default()
+                .with_assets(create_default_assets_helper())
+                .call_and_assert(Ok(()));
 
-        // Verify that video and assets bloat bonds were returned to the user and remain locked
-        assert_eq!(
-            Balances::<Test>::usable_balance(&channel_acc),
-            channel_state_bloat_bond
-        );
-        assert_eq!(
-            Balances::<Test>::usable_balance(storage_module_acc),
-            ed() + data_obj_bloat_bond * DATA_OBJECTS_NUMBER
-        );
-        assert_eq!(
-            System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
-            balances::AccountData {
-                free: ed() + total_cost - data_size_fee,
-                reserved: 0,
-                misc_frozen: member_balance,
-                fee_frozen: 0
-            }
-        )
-    });
+            // Delete video using different (alternative) controller account
+            DeleteVideoFixture::default()
+                .with_sender(DEFAULT_MEMBER_ALT_ACCOUNT_ID)
+                .call_and_assert(Ok(()));
+
+            let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
+            let channel_acc = ContentTreasury::<Test>::account_for_channel(ChannelId::one());
+
+            // Verify that video and assets bloat bonds were returned to correct accounts
+            assert_eq!(
+                Balances::<Test>::usable_balance(&channel_acc),
+                channel_state_bloat_bond
+            );
+            assert_eq!(
+                Balances::<Test>::usable_balance(storage_module_acc),
+                ed() + data_obj_bloat_bond * DATA_OBJECTS_NUMBER
+            );
+            assert_eq!(
+                Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+                expected_creator_balance
+            );
+            assert_eq!(
+                Balances::<Test>::free_balance(DEFAULT_MEMBER_ALT_ACCOUNT_ID),
+                expected_remover_balance
+            );
+        });
+    }
 }
 
 #[test]

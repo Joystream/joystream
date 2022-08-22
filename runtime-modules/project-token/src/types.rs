@@ -1326,7 +1326,7 @@ impl BlockRate {
 pub(crate) type TokenBalanceOf<T> = <T as Config>::Balance;
 
 /// JOY balance
-pub(crate) type JoyBalanceOf<T> = <T as balances::Config>::Balance;
+pub type JoyBalanceOf<T> = <T as balances::Config>::Balance;
 
 /// JOY balances module
 pub(crate) type Joy<T> = balances::Pallet<T>;

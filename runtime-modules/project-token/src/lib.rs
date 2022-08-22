@@ -210,14 +210,13 @@ decl_module! {
                 origin,
                 src_member_id
             )?;
-            let treasury = Self::module_treasury_account();
 
             // Currency transfer preconditions
             let validated_transfers = Self::ensure_can_transfer(token_id, &sender, &src_member_id, outputs.into(), false)?;
 
             // == MUTATION SAFE ==
 
-            Self::do_transfer(token_id, &sender, &src_member_id, &treasury, &validated_transfers)?;
+            Self::do_transfer(token_id, &sender, &src_member_id, &validated_transfers)?;
 
             Self::deposit_event(RawEvent::TokenAmountTransferred(
                 token_id,
@@ -316,6 +315,7 @@ decl_module! {
         /// Postconditions:
         /// - Account information for `token_id` x `member_id` removed from storage
         /// - bloat bond refunded to `member_id` controller account
+        ///   (or `bloat_bond.repayment_restricted_to` account)
         ///
         /// <weight>
         ///
@@ -346,7 +346,7 @@ decl_module! {
             });
 
 
-            account_to_remove_info.bloat_bond.repay::<T>(&treasury, false)?;
+            account_to_remove_info.bloat_bond.repay::<T>(&treasury, &member_controller, false)?;
 
             Self::deposit_event(RawEvent::AccountDustedBy(token_id, member_id, sender, token_info.transfer_policy));
 
@@ -394,7 +394,6 @@ decl_module! {
             }?;
 
             let bloat_bond = Self::bloat_bond();
-            let treasury = Self::module_treasury_account();
 
             // Ensure sender can cover the bloat bond
             ensure!(
@@ -404,14 +403,14 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            pay_fee::<T>(&sender, Some(&treasury), bloat_bond)?;
+            let repayable_bloat_bond = Self::pay_bloat_bond(&sender)?;
 
             Self::do_insert_new_account_for_token(
                 token_id,
                 &member_id,
                 AccountDataOf::<T>::new_with_amount_and_bond(
                     <T as Config>::Balance::zero(),
-                    RepayableBloatBond::new(sender, bloat_bond),
+                    repayable_bloat_bond,
                 ));
 
             Self::deposit_event(RawEvent::MemberJoinedWhitelist(token_id, member_id, token_info.transfer_policy));
@@ -580,7 +579,9 @@ decl_module! {
                     AccountDataOf::<T>
                         ::new_with_amount_and_bond(
                             TokenBalanceOf::<T>::zero(),
-                            RepayableBloatBond::new(sender, bloat_bond)
+                            // No restrictions on repayable bloat bond,
+                            // since only usable balance is allowed
+                            RepayableBloatBond::new(bloat_bond, None)
                         )
                         .process_sale_purchase(
                             sale_id,
@@ -921,7 +922,6 @@ impl<T: Config>
         })?;
 
         let total_bloat_bond = issuance_parameters.get_initial_allocation_bloat_bond(bloat_bond);
-        let treasury = Self::module_treasury_account();
         ensure!(
             has_sufficient_balance_for_fees::<T>(&issuer_account, total_bloat_bond),
             Error::<T>::InsufficientJoyBalance
@@ -932,14 +932,16 @@ impl<T: Config>
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
-        pay_fee::<T>(&issuer_account, Some(&treasury), total_bloat_bond)?;
+        let repayable_bloat_bonds = Self::pay_multiple_bloat_bonds(
+            &issuer_account,
+            issuance_parameters.initial_allocation.len() as u32,
+        )?;
 
         Self::perform_initial_allocation(
             token_id,
             &issuance_parameters.initial_allocation,
-            bloat_bond,
-            &issuer_account,
-        );
+            repayable_bloat_bonds,
+        )?;
 
         // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
         if let Some(params) = upload_params.as_ref() {
@@ -980,8 +982,6 @@ impl<T: Config>
         bloat_bond_payer: T::AccountId,
         outputs: TransfersWithVestingOf<T>,
     ) -> DispatchResult {
-        let treasury = Self::module_treasury_account();
-
         // Currency transfer preconditions
         let validated_transfers =
             Self::ensure_can_transfer(token_id, &bloat_bond_payer, &src_member_id, outputs, true)?;
@@ -992,7 +992,6 @@ impl<T: Config>
             token_id,
             &bloat_bond_payer,
             &src_member_id,
-            &treasury,
             &validated_transfers,
         )?;
 
@@ -1371,77 +1370,82 @@ impl<T: Config> Module<T> {
         token_id: T::TokenId,
         bloat_bond_payer: &T::AccountId,
         src_member_id: &T::MemberId,
-        treasury: &T::AccountId,
         validated_transfers: &ValidatedTransfersOf<T>,
     ) -> DispatchResult {
         let current_block = Self::current_block();
-        validated_transfers
-            .0
-            .iter()
-            .for_each(|(validated_account, validated_payment)| {
-                let vesting_schedule =
-                    validated_payment
-                        .payment
-                        .vesting_schedule
-                        .clone()
-                        .map(|vsp| {
-                            VestingSchedule::from_params(
-                                current_block,
-                                validated_payment.payment.amount,
-                                vsp,
-                            )
-                        });
-                match validated_account {
-                    Validated::<_>::Existing(dst_member_id) => {
-                        AccountInfoByTokenAndMember::<T>::mutate(
-                            token_id,
-                            &dst_member_id,
-                            |account_data| {
-                                if let Some(vs) = vesting_schedule {
-                                    account_data.add_or_update_vesting_schedule(
-                                        VestingSource::IssuerTransfer(
-                                            account_data.next_vesting_transfer_id,
-                                        ),
-                                        vs,
-                                        validated_payment.vesting_cleanup_candidate.clone(),
-                                    )
-                                } else {
-                                    account_data
-                                        .increase_amount_by(validated_payment.payment.amount);
-                                }
-                            },
-                        )
-                    }
-                    Validated::<_>::NonExisting(dst_member_id) => {
-                        Self::do_insert_new_account_for_token(
-                            token_id,
-                            dst_member_id,
+
+        let repayable_bloat_bonds = Self::pay_multiple_bloat_bonds(
+            bloat_bond_payer,
+            validated_transfers
+                .0
+                .iter()
+                .filter(|(a, _)| match a {
+                    Validated::<_>::NonExisting(_) => true,
+                    _ => false,
+                })
+                .count() as u32,
+        )?;
+
+        let mut bloat_bond_index = 0u32;
+        for (validated_account, validated_payment) in validated_transfers.0.iter() {
+            let vesting_schedule = validated_payment
+                .payment
+                .vesting_schedule
+                .clone()
+                .map(|vsp| {
+                    VestingSchedule::from_params(
+                        current_block,
+                        validated_payment.payment.amount,
+                        vsp,
+                    )
+                });
+            match validated_account {
+                Validated::<_>::Existing(dst_member_id) => {
+                    AccountInfoByTokenAndMember::<T>::mutate(
+                        token_id,
+                        &dst_member_id,
+                        |account_data| {
                             if let Some(vs) = vesting_schedule {
-                                AccountDataOf::<T>::new_with_vesting_and_bond(
-                                    VestingSource::IssuerTransfer(0),
-                                    vs,
-                                    RepayableBloatBond::new(
-                                        bloat_bond_payer.clone(),
-                                        Self::bloat_bond(),
+                                account_data.add_or_update_vesting_schedule(
+                                    VestingSource::IssuerTransfer(
+                                        account_data.next_vesting_transfer_id,
                                     ),
+                                    vs,
+                                    validated_payment.vesting_cleanup_candidate.clone(),
                                 )
                             } else {
-                                AccountDataOf::<T>::new_with_amount_and_bond(
-                                    validated_payment.payment.amount,
-                                    RepayableBloatBond::new(
-                                        bloat_bond_payer.clone(),
-                                        Self::bloat_bond(),
-                                    ),
-                                )
-                            },
-                        );
-                    }
+                                account_data.increase_amount_by(validated_payment.payment.amount);
+                            }
+                        },
+                    );
                 }
-            });
-
-        let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
-        if !cumulative_bloat_bond.is_zero() {
-            pay_fee::<T>(bloat_bond_payer, Some(treasury), cumulative_bloat_bond)?;
+                Validated::<_>::NonExisting(dst_member_id) => {
+                    let repayable_bloat_bond = repayable_bloat_bonds
+                        .get(bloat_bond_index as usize)
+                        .ok_or(
+                            // Should never happen, but in any case we don't want the runtime to panic
+                            DispatchError::Other("repayable_bloat_bonds: Index out of bounds"),
+                        )
+                        .map(|bb| bb.clone())?;
+                    Self::do_insert_new_account_for_token(
+                        token_id,
+                        dst_member_id,
+                        if let Some(vs) = vesting_schedule {
+                            AccountDataOf::<T>::new_with_vesting_and_bond(
+                                VestingSource::IssuerTransfer(0),
+                                vs,
+                                repayable_bloat_bond,
+                            )
+                        } else {
+                            AccountDataOf::<T>::new_with_amount_and_bond(
+                                validated_payment.payment.amount,
+                                repayable_bloat_bond,
+                            )
+                        },
+                    );
+                    bloat_bond_index += 1;
+                }
+            }
         }
 
         AccountInfoByTokenAndMember::<T>::mutate(token_id, &src_member_id, |account_data| {
@@ -1718,27 +1722,36 @@ impl<T: Config> Module<T> {
     pub(crate) fn perform_initial_allocation(
         token_id: T::TokenId,
         targets: &BTreeMap<T::MemberId, TokenAllocationOf<T>>,
-        bloat_bond: JoyBalanceOf<T>,
-        bloat_bond_payer: &T::AccountId,
-    ) {
+        repayable_bloat_bonds: Vec<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>>,
+    ) -> DispatchResult {
         let current_block = Self::current_block();
 
+        let mut i = 0u32;
         for (destination, allocation) in targets {
+            let repayable_bloat_bond = repayable_bloat_bonds
+                .get(i as usize)
+                .ok_or(
+                    // Should never happen, but in any case we don't want the runtime to panic
+                    DispatchError::Other("repayable_bloat_bonds: Index out of bounds"),
+                )
+                .map(|bb| bb.clone())?;
             let account_data = if let Some(vsp) = allocation.vesting_schedule_params.as_ref() {
                 AccountDataOf::<T>::new_with_vesting_and_bond(
                     VestingSource::InitialIssuance,
                     VestingSchedule::from_params(current_block, allocation.amount, vsp.clone()),
-                    RepayableBloatBond::new(bloat_bond_payer.clone(), bloat_bond),
+                    repayable_bloat_bond,
                 )
             } else {
                 AccountDataOf::<T>::new_with_amount_and_bond(
                     allocation.amount,
-                    RepayableBloatBond::new(bloat_bond_payer.clone(), bloat_bond),
+                    repayable_bloat_bond,
                 )
             };
 
             Self::do_insert_new_account_for_token(token_id, destination, account_data);
+            i += 1;
         }
+        Ok(())
     }
 
     #[allow(clippy::unnecessary_wraps)]
@@ -1758,5 +1771,40 @@ impl<T: Config> Module<T> {
 
     pub(crate) fn upload_data_object(_params: &UploadParameters<T>) {
         // TODO: TBD
+    }
+
+    fn pay_bloat_bond(
+        from: &T::AccountId,
+    ) -> Result<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>, DispatchError> {
+        let bloat_bond = Self::bloat_bond();
+        let treasury = Self::module_treasury_account();
+        let locked_balance_used = pay_fee::<T>(&from, Some(&treasury), bloat_bond)?;
+
+        Ok(match locked_balance_used.is_zero() {
+            true => RepayableBloatBond::new(bloat_bond, None),
+            false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
+        })
+    }
+
+    fn pay_multiple_bloat_bonds(
+        from: &T::AccountId,
+        number_of_bonds: u32,
+    ) -> Result<Vec<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>>, DispatchError> {
+        let bloat_bond = Self::bloat_bond();
+        let treasury = Self::module_treasury_account();
+        let locked_balance_used = pay_fee::<T>(
+            &from,
+            Some(&treasury),
+            bloat_bond.saturating_mul(number_of_bonds.into()),
+        )?;
+
+        Ok((0..number_of_bonds)
+            .map(
+                |i| match locked_balance_used <= bloat_bond.saturating_mul(i.into()) {
+                    true => RepayableBloatBond::new(bloat_bond, None),
+                    false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
+                },
+            )
+            .collect())
     }
 }

@@ -237,7 +237,7 @@ pub trait DataObjectStorage<T: Config> {
     /// - Data Objects are removed from storage
     /// - Bag state is updated as a result
     /// - Bag storage buckets are updated as a result
-    /// - relevant balance is deposited from storage treasury to caller account
+    /// - bloat bonds are repaid from storage treasury account
     fn delete_data_objects(
         state_bloat_bond_account_id: T::AccountId,
         bag_id: BagId<T>,
@@ -254,8 +254,8 @@ pub trait DataObjectStorage<T: Config> {
     /// - Bag is removed from storage
     /// - bag assignment is unregistered from storage buckets
     /// - bag assignment is unregistered from distribution buckets
-    /// - relevant balance is deposited from storage treasury to original bloat bond deposit accounts
-    fn delete_dynamic_bag(bag_id: DynamicBagId<T>) -> DispatchResult;
+    /// - bloat bonds are repaid from storage treasury account
+    fn delete_dynamic_bag(account_id: &T::AccountId, bag_id: DynamicBagId<T>) -> DispatchResult;
 
     /// Creates dynamic bag. BagId should provide the caller
     /// PRECONDITIONS:
@@ -3180,9 +3180,12 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
         Ok(new_object_ids)
     }
 
-    fn delete_dynamic_bag(dynamic_bag_id: DynamicBagId<T>) -> DispatchResult {
+    fn delete_dynamic_bag(
+        account_id: &T::AccountId,
+        dynamic_bag_id: DynamicBagId<T>,
+    ) -> DispatchResult {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
-        Self::try_performing_bag_removal(bag_id)?;
+        Self::try_performing_bag_removal(account_id, bag_id)?;
 
         Self::deposit_event(RawEvent::DynamicBagDeleted(dynamic_bag_id));
 
@@ -4127,7 +4130,7 @@ impl<T: Config> Module<T> {
         distribution_buckets: BTreeSet<DistributionBucketId<T>>,
     ) -> Result<(Bag<T>, BTreeSet<T::DataObjectId>), DispatchError> {
         let (object_creation_list, state_bloat_bond_request, upload_objs_size) =
-            Self::construct_objects_from_list(&account_id, &data_objects)?;
+            Self::construct_objects_from_list(&data_objects)?;
         let storage_fee = Self::calculate_data_storage_fee(upload_objs_size);
         let upload_objs_num = data_objects.len() as u64;
         let bag = Self::new_dynamic_bag(
@@ -4156,10 +4159,16 @@ impl<T: Config> Module<T> {
         //
 
         // state bloat bond request creating objects: no-op if state bloat bond requested is 0
-        if !state_bloat_bond_request.is_zero() {
-            Self::pay_bloat_bond(&account_id, state_bloat_bond_request)?;
+        let objects_to_insert = if !state_bloat_bond_request.is_zero() {
+            let repaybale_bloat_bonds =
+                Self::pay_data_object_bloat_bonds(&account_id, upload_objs_num)?;
+            let objects_to_insert =
+                Self::prepare_data_objects_to_insert(object_creation_list, repaybale_bloat_bonds)?;
             Self::pay_storage_fee(&account_id, storage_fee)?;
-        }
+            objects_to_insert
+        } else {
+            object_creation_list
+        };
 
         // Execute storage bucket updates
         for (id, updated_bucket) in updated_storage_buckets {
@@ -4177,7 +4186,7 @@ impl<T: Config> Module<T> {
         }
 
         // Add data objects
-        let created_objects_ids: BTreeSet<T::DataObjectId> = object_creation_list
+        let created_objects_ids: BTreeSet<T::DataObjectId> = objects_to_insert
             .iter()
             .map(|obj| {
                 let obj_id = NextDataObjectId::<T>::get();
@@ -4205,7 +4214,7 @@ impl<T: Config> Module<T> {
     ) -> Result<BTreeSet<T::DataObjectId>, DispatchError> {
         let bag = Self::ensure_bag_exists(&bag_id)?;
         let (object_creation_list, state_bloat_bond_request, upload_objs_size) =
-            Self::construct_objects_from_list(&account_id, &objects_to_upload)?;
+            Self::construct_objects_from_list(&objects_to_upload)?;
         let (remove_objs, remove_objs_size) =
             Self::validate_objects_to_remove(&bag_id, Some(&objects_to_remove))?;
         let storage_fee = Self::calculate_data_storage_fee(upload_objs_size);
@@ -4229,10 +4238,16 @@ impl<T: Config> Module<T> {
         //
 
         //state bloat bond request creating objects: no-op if state bloat bond requested is 0
-        if !state_bloat_bond_request.is_zero() {
-            Self::pay_bloat_bond(&account_id, state_bloat_bond_request)?;
+        let objects_to_insert = if !state_bloat_bond_request.is_zero() {
+            let repayable_bloat_bonds =
+                Self::pay_data_object_bloat_bonds(&account_id, upload_objs_num)?;
+            let objects_to_insert =
+                Self::prepare_data_objects_to_insert(object_creation_list, repayable_bloat_bonds)?;
             Self::pay_storage_fee(&account_id, storage_fee)?;
-        }
+            objects_to_insert
+        } else {
+            object_creation_list
+        };
 
         // Execute storage bucket updates
         for (id, updated_bucket) in updated_storage_buckets {
@@ -4245,11 +4260,12 @@ impl<T: Config> Module<T> {
         for (id, obj) in remove_objs {
             DataObjectsById::<T>::remove(&bag_id, id);
             // repay the bloat bond
-            obj.state_bloat_bond.repay::<T>(&module_account_id, false)?;
+            obj.state_bloat_bond
+                .repay::<T>(&module_account_id, &account_id, false)?;
         }
 
         // Add data objects
-        let created_objects_ids: BTreeSet<T::DataObjectId> = object_creation_list
+        let created_objects_ids: BTreeSet<T::DataObjectId> = objects_to_insert
             .iter()
             .map(|obj| {
                 let obj_id = NextDataObjectId::<T>::get();
@@ -4278,7 +4294,7 @@ impl<T: Config> Module<T> {
         Ok(created_objects_ids)
     }
 
-    fn try_performing_bag_removal(bag_id: BagId<T>) -> DispatchResult {
+    fn try_performing_bag_removal(account_id: &T::AccountId, bag_id: BagId<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&bag_id)?;
         let (remove_objs, remove_objs_size) = Self::validate_objects_to_remove(&bag_id, None)?;
         let remove_objs_num = bag.objects_number as u64;
@@ -4317,7 +4333,8 @@ impl<T: Config> Module<T> {
         for (id, obj) in remove_objs {
             DataObjectsById::<T>::remove(&bag_id, id);
             // Repay the bloat bond
-            obj.state_bloat_bond.repay::<T>(&module_account_id, false)?;
+            obj.state_bloat_bond
+                .repay::<T>(&module_account_id, account_id, false)?;
         }
 
         // Remove bag
@@ -4348,7 +4365,6 @@ impl<T: Config> Module<T> {
     //If one object doesn't exist the iteration stops immediately.
     //At last, it'll return the list of objects to create/update, total state bloat bond to pay and total size.
     fn construct_objects_from_list(
-        bloat_bond_account_id: &T::AccountId,
         list: &[DataObjectCreationParameters],
     ) -> DataObjAndStateBloatBondAndObjSize<T> {
         let state_bloat_bond = Self::data_object_state_bloat_bond_value();
@@ -4357,10 +4373,9 @@ impl<T: Config> Module<T> {
                 Self::upload_data_objects_checks(param).and({
                     Ok(DataObject {
                         accepted: false,
-                        state_bloat_bond: RepayableBloatBond::new(
-                            bloat_bond_account_id.clone(),
-                            state_bloat_bond,
-                        ),
+                        // Default value, possibly overriden later
+                        // based on pay_data_objects_bloat_bonds result
+                        state_bloat_bond: RepayableBloatBond::new(state_bloat_bond, None),
                         size: param.size,
                         ipfs_content_id: param.ipfs_content_id.clone(),
                     })
@@ -4384,6 +4399,31 @@ impl<T: Config> Module<T> {
             //Removes outer result
             //(Result<Result[Item1 + Item2 + Item3 + ...]>) -> Result[Item1 + Item2 + Item3 + ...]
             .and_then(|x| x)
+    }
+
+    fn prepare_data_objects_to_insert(
+        objects: Vec<DataObjectOf<T>>,
+        bloat_bonds: Vec<RepayableBloatBond<T::AccountId, T::Balance>>,
+    ) -> Result<Vec<DataObjectOf<T>>, DispatchError> {
+        let mut i = 0u64;
+        objects
+            .iter()
+            .map(|o| {
+                let state_bloat_bond = bloat_bonds
+                    .get(i as usize)
+                    .ok_or(
+                        // Should never happen, but in any case we don't want the runtime to panic
+                        DispatchError::Other("repayable_bloat_bonds: Index out of bounds"),
+                    )
+                    .map(|bb| bb.clone())?;
+                let prepared_obj = DataObject {
+                    state_bloat_bond,
+                    ..o.clone()
+                };
+                i += 1;
+                Ok(prepared_obj)
+            })
+            .collect()
     }
 
     fn validate_objects_to_remove(
@@ -4477,12 +4517,31 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn pay_bloat_bond(source: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+    fn pay_data_object_bloat_bonds(
+        source: &T::AccountId,
+        number_of_bonds: u64,
+    ) -> Result<Vec<RepayableBloatBond<T::AccountId, T::Balance>>, DispatchError> {
+        let data_object_bloat_bond = Self::data_object_state_bloat_bond_value();
         let treasury = <StorageTreasury<T>>::module_account_id();
-        pay_fee::<T>(source, Some(&treasury), amount)
+        let locked_balance_used = pay_fee::<T>(
+            source,
+            Some(&treasury),
+            data_object_bloat_bond.saturating_mul(number_of_bonds.saturated_into()),
+        )?;
+
+        Ok((0..number_of_bonds)
+            .map(|i| {
+                match locked_balance_used
+                    <= data_object_bloat_bond.saturating_mul(i.saturated_into())
+                {
+                    true => RepayableBloatBond::new(data_object_bloat_bond, None),
+                    false => RepayableBloatBond::new(data_object_bloat_bond, Some(source.clone())),
+                }
+            })
+            .collect())
     }
 
     fn pay_storage_fee(source: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-        pay_fee::<T>(source, None, amount)
+        pay_fee::<T>(source, None, amount).map(|_| ())
     }
 }

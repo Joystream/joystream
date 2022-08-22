@@ -869,7 +869,8 @@ impl DeleteDynamicBagFixture {
         let total_size_removed = bag.objects_total_size;
         let total_number_removed = bag.objects_number;
 
-        let actual_result = Storage::delete_dynamic_bag(self.bag_id.clone());
+        let actual_result =
+            Storage::delete_dynamic_bag(&self.deletion_account_id, self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
 

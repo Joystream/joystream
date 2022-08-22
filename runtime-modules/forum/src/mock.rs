@@ -324,8 +324,6 @@ pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_
 
 pub const NOT_FORUM_LEAD_ALT_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 211;
 
-pub const NOT_FORUM_LEAD_ALT_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ALT_ORIGIN_ID);
-
 pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 112;
 
 pub const NOT_FORUM_LEAD_2_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_2_ORIGIN_ID);
@@ -518,18 +516,18 @@ pub fn edit_thread_metadata_mock(
 
 /// Create delete thread mock
 pub fn delete_thread_mock(
-    origin: OriginType,
+    sender: &<Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
     thread_id: <Runtime as Config>::ThreadId,
     result: DispatchResult,
 ) {
+    let origin = mock::OriginType::Signed(sender.clone());
     let storage_root_pre = storage_root(StateVersion::V1);
     let thread = ThreadById::<Runtime>::get(category_id, thread_id);
-    let bloat_bond_reciever = thread.cleanup_pay_off.get_recipient();
-    let bloat_bond_reciever_initial_balance = bloat_bond_reciever.map_or(Zero::zero(), |r| {
-        balances::Pallet::<Runtime>::free_balance(r)
-    });
+    let bloat_bond_reciever = thread.cleanup_pay_off.get_recipient(sender);
+    let bloat_bond_reciever_initial_balance =
+        balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever);
     let hide = false;
 
     let num_direct_threads = match <CategoryById<Runtime>>::contains_key(category_id) {
@@ -565,7 +563,7 @@ pub fn delete_thread_mock(
         );
 
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever.unwrap()),
+            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever),
             bloat_bond_reciever_initial_balance + thread_payment
         );
         assert_eq!(
@@ -579,7 +577,7 @@ pub fn delete_thread_mock(
 
 /// Create delete post mock
 pub fn delete_post_mock(
-    origin: OriginType,
+    sender: &<Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
     thread_id: <Runtime as Config>::ThreadId,
@@ -587,12 +585,12 @@ pub fn delete_post_mock(
     result: DispatchResult,
     hide: bool,
 ) {
+    let origin = mock::OriginType::Signed(sender.clone());
     let storage_root_pre = storage_root(StateVersion::V1);
     let post = PostById::<Runtime>::get(thread_id, post_id);
-    let bloat_bond_reciever = post.cleanup_pay_off.get_recipient();
-    let bloat_bond_reciever_initial_balance = bloat_bond_reciever.map_or(Zero::zero(), |r| {
-        balances::Pallet::<Runtime>::free_balance(r)
-    });
+    let bloat_bond_reciever = post.cleanup_pay_off.get_recipient(sender);
+    let bloat_bond_reciever_initial_balance =
+        balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever);
     let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
     let mut deleted_posts = BTreeMap::new();
     let extended_post_id = ExtendedPostIdObject {
@@ -631,7 +629,7 @@ pub fn delete_post_mock(
         );
 
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever.unwrap()),
+            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever),
             bloat_bond_reciever_initial_balance + <Runtime as Config>::PostDeposit::get()
         );
     } else {

@@ -761,10 +761,7 @@ fn upload_succeeded() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: RepayableBloatBond::new(
-                    upload_params.state_bloat_bond_source_account_id,
-                    data_object_state_bloat_bond
-                ),
+                state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
         );
@@ -1162,10 +1159,7 @@ fn upload_succeeded_with_dynamic_bag() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: RepayableBloatBond::new(
-                    upload_params.state_bloat_bond_source_account_id,
-                    data_object_state_bloat_bond
-                ),
+                state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
         );

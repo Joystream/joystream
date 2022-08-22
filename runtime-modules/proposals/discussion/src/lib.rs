@@ -63,7 +63,7 @@ use frame_support::traits::Get;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, PalletId, Parameter,
 };
-use sp_runtime::traits::{AccountIdConversion, Saturating};
+use sp_runtime::traits::{AccountIdConversion, Saturating, Zero};
 use sp_std::clone::Clone;
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
@@ -265,6 +265,10 @@ decl_module! {
 
             Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
 
+            let next_post_count_value = Self::post_count() + 1;
+            let new_post_id = next_post_count_value;
+            let post_id = T::PostId::from(new_post_id);
+
             if editable {
                 let post_deposit = T::PostDeposit::get();
                 ensure!(
@@ -276,17 +280,11 @@ decl_module! {
                 // MUTATION SAFE
                 //
 
-                Self::pay_bloat_bond(post_deposit, &account_id)?;
-            }
+                let repayable_bloat_bond = Self::pay_bloat_bond(post_deposit, &account_id)?;
 
-            let next_post_count_value = Self::post_count() + 1;
-            let new_post_id = next_post_count_value;
-            let post_id = T::PostId::from(new_post_id);
-
-            if editable {
                 let new_post = DiscussionPost {
                     author_id: post_author_id,
-                    cleanup_pay_off: RepayableBloatBond::new(account_id, T::PostDeposit::get()),
+                    cleanup_pay_off: repayable_bloat_bond,
                     last_edited: frame_system::Pallet::<T>::block_number(),
                 };
 
@@ -315,7 +313,7 @@ decl_module! {
             thread_id: T::ThreadId,
             hide: bool,
         ) {
-            T::AuthorOriginValidator::ensure_member_controller_account_origin(
+            let sender = T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin.clone(),
                 deleter_id,
             )?;
@@ -340,7 +338,7 @@ decl_module! {
 
             // mutation
             let state_cleanup_treasury_account = Self::module_account_id();
-            post.cleanup_pay_off.repay::<T>(&state_cleanup_treasury_account, false)?;
+            post.cleanup_pay_off.repay::<T>(&state_cleanup_treasury_account, &sender, false)?;
 
             <PostThreadIdByPostId<T>>::remove(thread_id, post_id);
             Self::deposit_event(RawEvent::PostDeleted(deleter_id, thread_id, post_id, hide));
@@ -503,9 +501,19 @@ impl<T: Config> Module<T> {
                 >= T::PostLifeTime::get()
     }
 
-    fn pay_bloat_bond(amount: T::Balance, account_id: &T::AccountId) -> DispatchResult {
+    fn pay_bloat_bond(
+        amount: T::Balance,
+        account_id: &T::AccountId,
+    ) -> Result<RepayableBloatBond<T::AccountId, T::Balance>, DispatchError> {
         let state_cleanup_treasury_account = Self::module_account_id();
-        pay_fee::<T>(account_id, Some(&state_cleanup_treasury_account), amount)
+        let locked_balance_used =
+            pay_fee::<T>(account_id, Some(&state_cleanup_treasury_account), amount)?;
+
+        // construct RepayableBloatBond based on pay_fee result
+        Ok(match locked_balance_used.is_zero() {
+            true => RepayableBloatBond::new(amount, None),
+            false => RepayableBloatBond::new(amount, Some(account_id.clone())),
+        })
     }
 
     fn ensure_thread_mode(
