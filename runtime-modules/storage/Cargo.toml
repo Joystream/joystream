@@ -56,3 +56,6 @@ std = [
     'scale-info/std',
     'working-group/std',
 ]
+staging_runtime = []
+playground_runtime = ['staging_runtime']
+testing_runtime = []

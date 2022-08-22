@@ -206,7 +206,7 @@ pub enum CallFilter {}
 fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool {
     match call {
         Call::System(method) =>
-        // Allow all methods except the remark call
+        // All methods except the remark call
         {
             !matches!(method, frame_system::Call::<Runtime>::remark { .. })
         }
@@ -255,25 +255,6 @@ fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) 
     }
 }
 
-#[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
-    feature = "runtime-benchmarks"
-)))]
-fn filter_dev_extrinsics(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        Call::Storage(method) => {
-            // This is purely used for development testing of storage/distributor nodes
-            // Must always be disabled in production
-            !matches!(
-                method,
-                storage::Call::<Runtime>::sudo_upload_data_objects { .. }
-            )
-        }
-        _ => true, // Enable all other calls
-    }
-}
-
 // Live Production config
 #[cfg(not(any(
     feature = "staging_runtime",
@@ -282,9 +263,7 @@ fn filter_dev_extrinsics(call: &<Runtime as frame_system::Config>::Call) -> bool
 )))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_non_essential(call)
-            && filter_content_and_proposals(call)
-            && filter_dev_extrinsics(call)
+        filter_non_essential(call) && filter_content_and_proposals(call)
     }
 }
 

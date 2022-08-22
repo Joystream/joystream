@@ -1638,6 +1638,9 @@ decl_error! {
 
         /// Not allowed 'number of distribution buckets'
         NumberOfDistributionBucketsOutsideOfAllowedContraints,
+
+        /// Call Disabled
+        CallDisabled,
     }
 }
 
@@ -2973,7 +2976,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::upload_data_objects(params)?;
+            if cfg!(feature = "staging_runtime") || cfg!(feature = "testing_runtime") {
+                Self::upload_data_objects(params)?;
+            } else {
+                return Err(Error::<T>::CallDisabled.into());
+            }
         }
 
         /// Create a dynamic bag. Development mode.
