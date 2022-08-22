@@ -61,37 +61,37 @@ joystream_pallet_benchmark() {
 }
 
 # FRAME benchmarks
-# substrate_pallet_benchmark frame_system
-# substrate_pallet_benchmark substrate_utility
-# substrate_pallet_benchmark pallet_session
-# substrate_pallet_benchmark pallet_timestamp
-# substrate_pallet_benchmark pallet_vesting
+substrate_pallet_benchmark frame_system
+substrate_pallet_benchmark substrate_utility
+substrate_pallet_benchmark pallet_session
+substrate_pallet_benchmark pallet_timestamp
+substrate_pallet_benchmark pallet_vesting
 
-# # Module staking benchmarking takes too long.
-# substrate_pallet_benchmark pallet_staking
+# Module staking benchmarking takes too long.
+substrate_pallet_benchmark pallet_staking
 
-# # Benchmark should be run on the reference machine because it affects the fee model (transfer fee).
-# substrate_pallet_benchmark pallet_balances
+# Benchmark should be run on the reference machine because it affects the fee model (transfer fee).
+substrate_pallet_benchmark pallet_balances
 
-# # This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
-# # Will have it commented out until we test it in the reference machine. If there
-# # it still takes too long we will get rid of this benchmark for good and use always
-# # the default weights.
-# substrate_pallet_benchmark pallet_im_online
+# This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
+# Will have it commented out until we test it in the reference machine. If there
+# it still takes too long we will get rid of this benchmark for good and use always
+# the default weights.
+substrate_pallet_benchmark pallet_im_online
 
-# # Joystrem benchmarks
-# joystream_pallet_benchmark proposals_discussion proposals/discussion
-# joystream_pallet_benchmark proposals_engine proposals/engine
-# joystream_pallet_benchmark proposals_codex proposals/codex
-# joystream_pallet_benchmark pallet_constitution constitution
-# joystream_pallet_benchmark working_group working-group
-# joystream_pallet_benchmark council council
-# joystream_pallet_benchmark referendum referendum
-# joystream_pallet_benchmark forum forum
-# joystream_pallet_benchmark membership membership
-# # Disabled until we merge new bounty module
-# # joystream_pallet_benchmark bounty bounty
-# joystream_pallet_benchmark joystream_utility utility
-# joystream_pallet_benchmark storage storage
+# Joystrem benchmarks
+joystream_pallet_benchmark proposals_discussion proposals/discussion
+joystream_pallet_benchmark proposals_engine proposals/engine
+joystream_pallet_benchmark proposals_codex proposals/codex
+joystream_pallet_benchmark pallet_constitution constitution
+joystream_pallet_benchmark working_group working-group
+joystream_pallet_benchmark council council
+joystream_pallet_benchmark referendum referendum
+joystream_pallet_benchmark forum forum
+joystream_pallet_benchmark membership membership
+# Disabled until we merge new bounty module
+# joystream_pallet_benchmark bounty bounty
+joystream_pallet_benchmark joystream_utility utility
+joystream_pallet_benchmark storage storage
 joystream_pallet_benchmark content content
-# joystream_pallet_benchmark project_token project-token
+joystream_pallet_benchmark project_token project-token
