@@ -148,7 +148,7 @@ use sp_std::iter;
 use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
-use common::bloat_bond::RepayableBloatBond;
+use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::constraints::BoundedValueConstraint;
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::working_group::WorkingGroup;
@@ -524,8 +524,7 @@ pub struct DataObject<RepayableBloatBond> {
 }
 
 /// Type alias for DataObject.
-pub type DataObjectOf<T> =
-    DataObject<RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>>;
+pub type DataObjectOf<T> = DataObject<RepayableBloatBondOf<T>>;
 
 /// Type alias for the BagRecord.
 pub type Bag<T> = BagRecord<<T as Config>::StorageBucketId, DistributionBucketId<T>>;
@@ -4403,7 +4402,7 @@ impl<T: Config> Module<T> {
 
     fn prepare_data_objects_to_insert(
         objects: Vec<DataObjectOf<T>>,
-        bloat_bonds: Vec<RepayableBloatBond<T::AccountId, T::Balance>>,
+        bloat_bonds: Vec<RepayableBloatBondOf<T>>,
     ) -> Result<Vec<DataObjectOf<T>>, DispatchError> {
         let mut i = 0u64;
         objects
@@ -4520,7 +4519,7 @@ impl<T: Config> Module<T> {
     fn pay_data_object_bloat_bonds(
         source: &T::AccountId,
         number_of_bonds: u64,
-    ) -> Result<Vec<RepayableBloatBond<T::AccountId, T::Balance>>, DispatchError> {
+    ) -> Result<Vec<RepayableBloatBondOf<T>>, DispatchError> {
         let data_object_bloat_bond = Self::data_object_state_bloat_bond_value();
         let treasury = <StorageTreasury<T>>::module_account_id();
         let locked_balance_used = pay_fee::<T>(

@@ -18,6 +18,9 @@ pub struct RepayableBloatBond<AccountId, Balance> {
     pub amount: Balance,
 }
 
+pub type RepayableBloatBondOf<T> =
+    RepayableBloatBond<<T as frame_system::Config>::AccountId, <T as balances::Config>::Balance>;
+
 impl<AccountId, Balance: Default> Default for RepayableBloatBond<AccountId, Balance> {
     fn default() -> Self {
         Self {
@@ -40,7 +43,7 @@ impl<AccountId: Clone, Balance: Copy + Debug + MaybeSerializeDeserialize>
     pub fn get_recipient(&self, fallback_to: &AccountId) -> AccountId {
         self.repayment_restricted_to
             .clone()
-            .unwrap_or(fallback_to.clone())
+            .unwrap_or_else(|| fallback_to.clone())
     }
 
     // Repay the bloat bond.

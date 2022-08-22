@@ -68,7 +68,7 @@ use sp_std::clone::Clone;
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
-use common::bloat_bond::RepayableBloatBond;
+use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
@@ -504,7 +504,7 @@ impl<T: Config> Module<T> {
     fn pay_bloat_bond(
         amount: T::Balance,
         account_id: &T::AccountId,
-    ) -> Result<RepayableBloatBond<T::AccountId, T::Balance>, DispatchError> {
+    ) -> Result<RepayableBloatBondOf<T>, DispatchError> {
         let state_cleanup_treasury_account = Self::module_account_id();
         let locked_balance_used =
             pay_fee::<T>(account_id, Some(&state_cleanup_treasury_account), amount)?;

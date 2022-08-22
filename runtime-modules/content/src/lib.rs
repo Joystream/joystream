@@ -31,7 +31,7 @@ pub use storage::{
 };
 
 pub use common::{
-    bloat_bond::RepayableBloatBond,
+    bloat_bond::{RepayableBloatBond, RepayableBloatBondOf},
     costs::{
         burn_from_usable, has_sufficient_balance_for_fees, has_sufficient_balance_for_payment,
         pay_fee,
@@ -3668,7 +3668,7 @@ impl<T: Config> Module<T> {
         channel_id: T::ChannelId,
         from: &T::AccountId,
         amount: JoyBalanceOf<T>,
-    ) -> Result<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>, DispatchError> {
+    ) -> Result<RepayableBloatBondOf<T>, DispatchError> {
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
 
         let locked_balance_used = pay_fee::<T>(from, Some(&channel_account), amount)?;

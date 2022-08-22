@@ -3,7 +3,7 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::unused_unit)]
 
-use common::bloat_bond::RepayableBloatBond;
+use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{burn_from_usable, has_sufficient_balance_for_fees, pay_fee};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -51,11 +51,7 @@ type WeightInfoForum<T> = <T as Config>::WeightInfo;
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Alias for the thread
-pub type ThreadOf<T> = Thread<
-    ForumUserId<T>,
-    <T as Config>::CategoryId,
-    RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
->;
+pub type ThreadOf<T> = Thread<ForumUserId<T>, <T as Config>::CategoryId, RepayableBloatBondOf<T>>;
 
 /// Alias for the post
 pub type PostOf<T> = Post<
@@ -63,7 +59,7 @@ pub type PostOf<T> = Post<
     <T as Config>::ThreadId,
     <T as frame_system::Config>::Hash,
     <T as frame_system::Config>::BlockNumber,
-    RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
+    RepayableBloatBondOf<T>,
 >;
 
 /// Type alias for `ExtendedPostIdObject`
@@ -1355,7 +1351,7 @@ impl<T: Config> Module<T> {
     fn pay_post_deposit(
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
-    ) -> Result<RepayableBloatBond<T::AccountId, T::Balance>, DispatchError> {
+    ) -> Result<RepayableBloatBondOf<T>, DispatchError> {
         let post_deposit = T::PostDeposit::get();
         let thread_account_id = Self::thread_account(thread_id);
         let locked_balance_used = pay_fee::<T>(account_id, Some(&thread_account_id), post_deposit)?;
@@ -1370,13 +1366,7 @@ impl<T: Config> Module<T> {
     fn pay_thread_and_post_deposit(
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
-    ) -> Result<
-        (
-            RepayableBloatBond<T::AccountId, T::Balance>,
-            RepayableBloatBond<T::AccountId, T::Balance>,
-        ),
-        DispatchError,
-    > {
+    ) -> Result<(RepayableBloatBondOf<T>, RepayableBloatBondOf<T>), DispatchError> {
         let thread_deposit = T::ThreadDeposit::get();
         let post_deposit = T::PostDeposit::get();
         let total_deposit = thread_deposit.saturating_add(post_deposit);
@@ -1409,7 +1399,7 @@ impl<T: Config> Module<T> {
         category_id: T::CategoryId,
         text: &[u8],
         author_id: ForumUserId<T>,
-        repayable_bloat_bond: Option<RepayableBloatBond<T::AccountId, T::Balance>>,
+        repayable_bloat_bond: Option<RepayableBloatBondOf<T>>,
     ) -> T::PostId {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();

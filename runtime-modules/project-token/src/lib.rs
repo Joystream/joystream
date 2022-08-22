@@ -36,7 +36,7 @@ pub mod types;
 mod utils;
 
 // crate imports
-use common::bloat_bond::RepayableBloatBond;
+use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{
     burn_from_usable, has_sufficient_balance_for_fees, has_sufficient_balance_for_payment, pay_fee,
 };
@@ -1379,10 +1379,7 @@ impl<T: Config> Module<T> {
             validated_transfers
                 .0
                 .iter()
-                .filter(|(a, _)| match a {
-                    Validated::<_>::NonExisting(_) => true,
-                    _ => false,
-                })
+                .filter(|(a, _)| matches!(a, Validated::<_>::NonExisting(_)))
                 .count() as u32,
         )?;
 
@@ -1722,12 +1719,11 @@ impl<T: Config> Module<T> {
     pub(crate) fn perform_initial_allocation(
         token_id: T::TokenId,
         targets: &BTreeMap<T::MemberId, TokenAllocationOf<T>>,
-        repayable_bloat_bonds: Vec<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>>,
+        repayable_bloat_bonds: Vec<RepayableBloatBondOf<T>>,
     ) -> DispatchResult {
         let current_block = Self::current_block();
 
-        let mut i = 0u32;
-        for (destination, allocation) in targets {
+        for (i, (destination, allocation)) in targets.iter().enumerate() {
             let repayable_bloat_bond = repayable_bloat_bonds
                 .get(i as usize)
                 .ok_or(
@@ -1749,7 +1745,6 @@ impl<T: Config> Module<T> {
             };
 
             Self::do_insert_new_account_for_token(token_id, destination, account_data);
-            i += 1;
         }
         Ok(())
     }
@@ -1773,12 +1768,10 @@ impl<T: Config> Module<T> {
         // TODO: TBD
     }
 
-    fn pay_bloat_bond(
-        from: &T::AccountId,
-    ) -> Result<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>, DispatchError> {
+    fn pay_bloat_bond(from: &T::AccountId) -> Result<RepayableBloatBondOf<T>, DispatchError> {
         let bloat_bond = Self::bloat_bond();
         let treasury = Self::module_treasury_account();
-        let locked_balance_used = pay_fee::<T>(&from, Some(&treasury), bloat_bond)?;
+        let locked_balance_used = pay_fee::<T>(from, Some(&treasury), bloat_bond)?;
 
         Ok(match locked_balance_used.is_zero() {
             true => RepayableBloatBond::new(bloat_bond, None),
@@ -1789,11 +1782,11 @@ impl<T: Config> Module<T> {
     fn pay_multiple_bloat_bonds(
         from: &T::AccountId,
         number_of_bonds: u32,
-    ) -> Result<Vec<RepayableBloatBond<T::AccountId, JoyBalanceOf<T>>>, DispatchError> {
+    ) -> Result<Vec<RepayableBloatBondOf<T>>, DispatchError> {
         let bloat_bond = Self::bloat_bond();
         let treasury = Self::module_treasury_account();
         let locked_balance_used = pay_fee::<T>(
-            &from,
+            from,
             Some(&treasury),
             bloat_bond.saturating_mul(number_of_bonds.into()),
         )?;
