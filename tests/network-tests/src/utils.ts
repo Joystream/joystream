@@ -109,6 +109,10 @@ export class Utils {
     }
   }
 
+  public static hasDuplicates<T>(values: T[] | null | undefined): boolean {
+    return !!values && values.length > new Set(values).size
+  }
+
   public static async until(
     name: string,
     conditionFunc: (props: { debug: Debugger.Debugger }) => Promise<boolean>,
