@@ -1467,7 +1467,6 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let actor = ContentActor::Curator(group_id, curator_id);
         let video_id = setup_video_with_idle_nft::<T>(curator_account_id.clone(), actor, channel_id)?;
-        let origin = RawOrigin::Signed(curator_account_id);
         let msg = vec![1u8].repeat(b as usize);
     }: _(origin, actor.clone(), video_id, msg.clone())
         verify {
@@ -1477,6 +1476,42 @@ benchmarks! {
                     video_id,
                     msg
                 ).into()
+            );
+        }
+
+    // WORST CASE SCENARIO
+    // COMPLEXITY
+    // DB OPERATIONS
+    // - DB Write: Balance
+    // - DB Read: Balance
+    update_channel_state_bloat_bond {
+        let (_, _, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(lead_account_id);
+        let new_channel_bloat_bond: BalanceOf::<T> = 100u32.into();
+    }: _(origin, new_channel_bloat_bond)
+        verify {
+            assert_eq!(
+                Pallet::<T>::channel_state_bloat_bond_value(),
+                new_channel_bloat_bond
+            );
+        }
+
+    // WORST CASE SCENARIO
+    // COMPLEXITY
+    // DB OPERATIONS
+    // - DB Write: Balance
+    // - DB Read: Balance
+    update_video_state_bloat_bond {
+        let (_, _, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(lead_account_id);
+        let new_video_bloat_bond: BalanceOf::<T> = 100u32.into();
+    }: _(origin, new_video_bloat_bond)
+        verify {
+            assert_eq!(
+                Pallet::<T>::video_state_bloat_bond_value(),
+                new_video_bloat_bond
             );
         }
 }
@@ -1770,6 +1805,20 @@ pub mod tests {
     fn nft_owner_remark() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_nft_owner_remark());
+        })
+    }
+
+    #[test]
+    fn update_channel_state_bloat_bond() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_channel_state_bloat_bond());
+        })
+    }
+
+    #[test]
+    fn update_video_state_bloat_bond() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_video_state_bloat_bond());
         })
     }
 }
