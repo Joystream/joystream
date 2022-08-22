@@ -73,10 +73,12 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       this.log(
         `Video state bloat bond of ${chalk.cyanBright(
           formatBalance(video.videoStateBloatBond.amount)
-        )} will be transferred to ${chalk.magentaBright(video.videoStateBloatBond.account.unwrap().toString())}\n` +
+        )} will be transferred to ${chalk.magentaBright(
+          video.videoStateBloatBond.repaymentRestrictedTo.unwrapOr(address).toString()
+        )}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
             formatBalance(dataObjectsStateBloatBond)
-          )} will be transferred back to account(s) that originally deposited the bond(s)`
+          )} will be repaid with accordance to the bloat bond policy.`
       )
     }
 

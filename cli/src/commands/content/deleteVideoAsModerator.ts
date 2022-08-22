@@ -72,10 +72,12 @@ export default class DeleteVideoAsModeratorCommand extends ContentDirectoryComma
       this.log(
         `Video state bloat bond of ${chalk.cyanBright(
           formatBalance(videoStateBloatBond.amount)
-        )} will be transferred to ${chalk.magentaBright(videoStateBloatBond.account.unwrap().toString())}\n` +
+        )} will be transferred to ${chalk.magentaBright(
+          videoStateBloatBond.repaymentRestrictedTo.unwrapOr(address).toString()
+        )}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
             formatBalance(stateBloatBond)
-          )} will be transferred back to account(s) that originally deposited the bond(s)`
+          )} will be repaid with accordance to the bloat bond policy.`
       )
     }
 
