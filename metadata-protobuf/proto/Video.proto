@@ -50,7 +50,7 @@ message VideoMetadata {
     optional string description = 2;
 
     // Assets
-    
+
     // index into external [assets array](#.Assets)
     optional uint32 video = 3;
 
@@ -62,7 +62,7 @@ message VideoMetadata {
 
     // Resolution of the video (Height)
     optional uint32 media_pixel_height = 6;
-    
+
     // Resolution of the video (Width)
     optional uint32 media_pixel_width = 7;
 
@@ -91,18 +91,13 @@ message VideoMetadata {
     repeated uint64 persons = 15 [packed=true];
 
     // Video Category Id
-    optional uint64 category = 16;
+    optional string category = 16;
 
     // Video subtitles
     repeated SubtitleMetadata subtitles = 17;
 
     // Enable/Disable the comment section
     optional bool enable_comments = 18;
-}
-
-message VideoCategoryMetadata {
-    // Category name
-    optional string name = 1;
 }
 
 message ContentMetadata {

@@ -19,5 +19,12 @@ export class CreateMockCategories extends BaseFixture {
       'Science & Technology',
       'Nonprofits & Activism',
     ]
+
+    // use content lead as member to create categories
+    // this can be any member though - doesn't need any special privileges
+    const contentLead = await this.api.getLeader('contentWorkingGroup')
+    const member = contentLead[1].memberId
+
+    await Promise.all(categories.map((name) => this.api.createVideoCategory(member, name)))
   }
 }

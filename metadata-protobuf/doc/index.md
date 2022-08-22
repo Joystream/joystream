@@ -6,56 +6,59 @@
 - [proto/Bounty.proto](#proto/Bounty.proto)
     - [BountyMetadata](#.BountyMetadata)
     - [BountyWorkData](#.BountyWorkData)
-  
+
 - [proto/Channel.proto](#proto/Channel.proto)
-    - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
-  
+
 - [proto/Council.proto](#proto/Council.proto)
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
-  
+
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
     - [ForumPostReaction](#.ForumPostReaction)
     - [ForumThreadMetadata](#.ForumThreadMetadata)
-  
+
     - [ForumPostReaction.Reaction](#.ForumPostReaction.Reaction)
-  
+
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
-  
+
 - [proto/Metaprotocol.proto](#proto/Metaprotocol.proto)
     - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
     - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
     - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
     - [CreateComment](#.CreateComment)
+    - [CreateVideoCategory](#.CreateVideoCategory)
     - [DeleteComment](#.DeleteComment)
+    - [DeleteVideoCategory](#.DeleteVideoCategory)
     - [EditComment](#.EditComment)
     - [MemberRemarked](#.MemberRemarked)
     - [ModerateComment](#.ModerateComment)
     - [PinOrUnpinComment](#.PinOrUnpinComment)
     - [ReactComment](#.ReactComment)
     - [ReactVideo](#.ReactVideo)
+    - [UpdateVideoCategory](#.UpdateVideoCategory)
     - [VideoReactionsPreference](#.VideoReactionsPreference)
-  
+    - [WorkerGroupLeadRemarked](#.WorkerGroupLeadRemarked)
+
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
     - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
     - [ReactVideo.Reaction](#.ReactVideo.Reaction)
     - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
-  
+
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
-  
+
 - [proto/Playlist.proto](#proto/Playlist.proto)
     - [PlaylistMetadata](#.PlaylistMetadata)
-  
+
 - [proto/ProposalsDiscussion.proto](#proto/ProposalsDiscussion.proto)
     - [ProposalsDiscussionPostMetadata](#.ProposalsDiscussionPostMetadata)
-  
+
 - [proto/Series.proto](#proto/Series.proto)
     - [SeasonMetadata](#.SeasonMetadata)
     - [SeriesMetadata](#.SeriesMetadata)
-  
+
 - [proto/Storage.proto](#proto/Storage.proto)
     - [DistributionBucketFamilyMetadata](#.DistributionBucketFamilyMetadata)
     - [DistributionBucketOperatorMetadata](#.DistributionBucketOperatorMetadata)
@@ -63,18 +66,15 @@
     - [GeographicalArea](#.GeographicalArea)
     - [NodeLocationMetadata](#.NodeLocationMetadata)
     - [StorageBucketOperatorMetadata](#.StorageBucketOperatorMetadata)
-  
+
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
-  
+
 - [proto/Video.proto](#proto/Video.proto)
-    - [ContentMetadata](#.ContentMetadata)
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
-    - [SubtitleMetadata](#.SubtitleMetadata)
-    - [VideoCategoryMetadata](#.VideoCategoryMetadata)
     - [VideoMetadata](#.VideoMetadata)
-  
+
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
     - [AddUpcomingOpening](#.AddUpcomingOpening)
     - [ApplicationMetadata](#.ApplicationMetadata)
@@ -85,9 +85,9 @@
     - [UpcomingOpeningMetadata](#.UpcomingOpeningMetadata)
     - [WorkingGroupMetadata](#.WorkingGroupMetadata)
     - [WorkingGroupMetadataAction](#.WorkingGroupMetadataAction)
-  
+
     - [OpeningMetadata.ApplicationFormQuestion.InputType](#.OpeningMetadata.ApplicationFormQuestion.InputType)
-  
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -132,13 +132,13 @@
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -146,21 +146,6 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## proto/Channel.proto
-
-
-
-<a name=".ChannelCategoryMetadata"></a>
-
-### ChannelCategoryMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category Name |
-
-
-
 
 
 
@@ -178,19 +163,18 @@
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-| category | [uint64](#uint64) | optional | Channel Category Id |
 
 
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -218,13 +202,13 @@
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -276,7 +260,7 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
 
- 
+
 
 
 <a name=".ForumPostReaction.Reaction"></a>
@@ -290,11 +274,11 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | LIKE | 1 |  |
 
 
- 
 
- 
 
- 
+
+
+
 
 
 
@@ -322,13 +306,13 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -405,6 +389,21 @@ create comment
 
 
 
+<a name=".CreateVideoCategory"></a>
+
+### CreateVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".DeleteComment"></a>
 
 ### DeleteComment
@@ -414,6 +413,21 @@ delete comment by author
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | comment_id | [string](#string) | required | ID of the comment which will be deleted |
+
+
+
+
+
+
+<a name=".DeleteVideoCategory"></a>
+
+### DeleteVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_category_id | [string](#string) | required |  |
 
 
 
@@ -520,6 +534,22 @@ reacting, unreacting, and changing reaction to video
 
 
 
+<a name=".UpdateVideoCategory"></a>
+
+### UpdateVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_category_id | [string](#string) | required |  |
+| name | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".VideoReactionsPreference"></a>
 
 ### VideoReactionsPreference
@@ -535,7 +565,24 @@ Enable or disable reactions on a single video
 
 
 
- 
+
+<a name=".WorkerGroupLeadRemarked"></a>
+
+### WorkerGroupLeadRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
+| update_video_category | [UpdateVideoCategory](#UpdateVideoCategory) | optional |  |
+| delete_video_category | [DeleteVideoCategory](#DeleteVideoCategory) | optional |  |
+
+
+
+
+
+
 
 
 <a name=".BanOrUnbanMemberFromChannel.Option"></a>
@@ -586,11 +633,11 @@ Reacting again with the same message option will cancel the previous reaction
 | DISABLE | 1 | Disable reactions (nothing happens if they are already disabled) |
 
 
- 
 
- 
 
- 
+
+
+
 
 
 
@@ -620,13 +667,13 @@ Reacting again with the same message option will cancel the previous reaction
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -645,23 +692,20 @@ Reacting again with the same message option will cancel the previous reaction
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional | Title of the playlist |
-| description | [string](#string) | optional | Description of the playlist |
-| video_ids | [uint64](#uint64) | repeated | IDs of the videos to include in playlist (in given order) |
-| thumbnail_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-| is_public | [bool](#bool) | optional | Playlist status, whether it is public or private. If the field is omitted the default playlist status would be public??? |
+| title | [string](#string) | optional |  |
+| videos | [uint64](#uint64) | repeated | Videos in the playlist |
 
 
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -687,13 +731,13 @@ Reacting again with the same message option will cancel the previous reaction
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -739,13 +783,13 @@ Reacting again with the same message option will cancel the previous reaction
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -857,7 +901,7 @@ Reacting again with the same message option will cancel the previous reaction
 
 
 
- 
+
 
 
 <a name=".GeographicalArea.Continent"></a>
@@ -876,11 +920,11 @@ Reacting again with the same message option will cancel the previous reaction
 | SA | 7 |  |
 
 
- 
 
- 
 
- 
+
+
+
 
 
 
@@ -888,21 +932,6 @@ Reacting again with the same message option will cancel the previous reaction
 <p align="right"><a href="#top">Top</a></p>
 
 ## proto/Video.proto
-
-
-
-<a name=".ContentMetadata"></a>
-
-### ContentMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_metadata | [VideoMetadata](#VideoMetadata) | optional | ... Other possible metadata standards, e.g. `PlaylistMetadata` |
-
-
-
 
 
 
@@ -956,39 +985,6 @@ Publication status before joystream
 
 
 
-<a name=".SubtitleMetadata"></a>
-
-### SubtitleMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [string](#string) | required |  |
-| new_asset | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-| language | [string](#string) | required | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
-| mimeType | [string](#string) | required |  |
-
-
-
-
-
-
-<a name=".VideoCategoryMetadata"></a>
-
-### VideoCategoryMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category name |
-
-
-
-
-
-
 <a name=".VideoMetadata"></a>
 
 ### VideoMetadata
@@ -1012,21 +1008,20 @@ Publication status before joystream
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
-| category | [uint64](#uint64) | optional | Video Category Id |
-| subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
+| category | [string](#string) | optional | Video Category Id |
 | enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
 
 
 
 
 
- 
 
- 
 
- 
 
- 
+
+
+
+
 
 
 
@@ -1186,7 +1181,7 @@ Publication status before joystream
 
 
 
- 
+
 
 
 <a name=".OpeningMetadata.ApplicationFormQuestion.InputType"></a>
@@ -1200,11 +1195,11 @@ Publication status before joystream
 | TEXT | 1 |  |
 
 
- 
 
- 
 
- 
+
+
+
 
 
 
@@ -1228,7 +1223,88 @@ Publication status before joystream
 | <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
 | <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
 
+<!--
+    This extra documentation will be appended to the generated docs.
+-->
+
+## Referencing Assets
+<a name=".Assets"></a>
+
+Applications that process messages that contain a `uint32` field that references an asset such as a cover photo or video, should interpret this value as a zero based index into an array/vector that is received external (out of band) to the protobuf message.
+
+Example in context of query-node processing the runtime event `VideoCreated`
+
+```rust
+// Runtime event associated with creating a Video
+VideoCreated(video_id: VideoId, video: Video, assets: Vec<NewAsset>, params: VideoCreationParameters)
+
+struct VideoCreationParameters {
+  in_category: VideoCategoryId,
+  // binary serialized VideoMetadata protobuf message
+  meta: Vec<u8>,
+}
+
+// suppose assets is a vector of two elements. This is the "out of band" array being referenced by the VideoMetadata message
+assets = [
+    NewAsset::Uri("https://mydomain.net/thumbnail.png"),
+    NewAsset::Upload({
+       content_id,
+       ipfs_hash,
+       size,
+       ...
+    }),
+];
+
+meta = VideoMetadata {
+    ...
+    // refers to second element: assets[1] which is being uploaded to the storage system
+    video: 1,
+    // refers to the first element assets[0] which is being referneced by a url string.
+    thumbnail_photo: 0,
+    ...
+};
+```
 <!-- 
+    This extra documentation will be appended to the generated docs.
+-->
+
+## Referencing Assets
+<a name=".Assets"></a>
+
+Applications that process messages that contain a `uint32` field that references an asset such as a cover photo or video, should interpret this value as a zero based index into an array/vector that is received external (out of band) to the protobuf message.
+
+Example in context of query-node processing the runtime event `VideoCreated`
+
+```rust
+// Runtime event associated with creating a Video
+VideoCreated(video_id: VideoId, video: Video, assets: Vec<NewAsset>, params: VideoCreationParameters)
+
+struct VideoCreationParameters {
+  in_category: VideoCategoryId,
+  // binary serialized VideoMetadata protobuf message
+  meta: Vec<u8>,
+}
+
+// suppose assets is a vector of two elements. This is the "out of band" array being referenced by the VideoMetadata message
+assets = [
+    NewAsset::Uri("https://mydomain.net/thumbnail.png"),
+    NewAsset::Upload({
+       content_id,
+       ipfs_hash,
+       size,
+       ...
+    }),
+];
+
+meta = VideoMetadata {
+    ...
+    // refers to second element: assets[1] which is being uploaded to the storage system
+    video: 1,
+    // refers to the first element assets[0] which is being referneced by a url string.
+    thumbnail_photo: 0,
+    ...
+};
+```<!-- 
     This extra documentation will be appended to the generated docs.
 -->
 

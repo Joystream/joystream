@@ -73,13 +73,6 @@ pub use types::{
 };
 use working_group::{ApplicationId, OpeningId, OpeningType, WorkerId};
 
-// Max allowed value for 'Funding Request' proposal
-const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
-// Max validator count for the 'Set Max Validator Count' proposal
-const MAX_VALIDATOR_COUNT: u32 = 300;
-// Max number of account that a fund request accept
-const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
-
 type WeightInfoCodex<T> = <T as Config>::WeightInfo;
 
 // The forum working group instance alias.
@@ -253,6 +246,15 @@ pub trait Config:
     type UpdateChannelPayoutsProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// Max amount in funding request proposal (per account)
+    type FundingRequestProposalMaxAmount: Get<BalanceOf<Self>>;
+
+    /// Max number of accounts per funding request proposal
+    type FundingRequestProposalMaxAccounts: Get<u32>;
+
+    /// Max allowed number of validators in set max validator count proposal
+    type SetMaxValidatorCountProposalMaxValidators: Get<u32>;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -461,6 +463,18 @@ decl_module! {
 
         const UpdateChannelPayoutsProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
+
+        /// Max amount in funding request proposal (per account)
+        const FundingRequestProposalMaxAmount: BalanceOf<T> =
+            T::FundingRequestProposalMaxAmount::get();
+
+        /// Max number of accounts per funding request proposal
+        const FundingRequestProposalMaxAccounts: u32 =
+            T::FundingRequestProposalMaxAccounts::get();
+
+        /// Max allowed number of validators in set max validator count proposal
+        const SetMaxValidatorCountProposalMaxValidators: u32 =
+            T::SetMaxValidatorCountProposalMaxValidators::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -706,7 +720,7 @@ impl<T: Config> Module<T> {
                 );
 
                 ensure!(
-                    funding_requests.len() <= MAX_FUNDING_REQUEST_ACCOUNTS,
+                    funding_requests.len() <= T::FundingRequestProposalMaxAccounts::get() as usize,
                     Error::<T>::InvalidFundingRequestProposalNumberOfAccount
                 );
 
@@ -727,7 +741,7 @@ impl<T: Config> Module<T> {
                     );
 
                     ensure!(
-                        funding_request.amount <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
+                        funding_request.amount <= T::FundingRequestProposalMaxAmount::get(),
                         Error::<T>::InvalidFundingRequestProposalBalance
                     );
 
@@ -745,7 +759,7 @@ impl<T: Config> Module<T> {
                 );
 
                 ensure!(
-                    *new_validator_count <= MAX_VALIDATOR_COUNT,
+                    *new_validator_count <= T::SetMaxValidatorCountProposalMaxValidators::get(),
                     Error::<T>::InvalidValidatorCount
                 );
             }

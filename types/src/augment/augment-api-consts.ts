@@ -562,6 +562,14 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       fillWorkingGroupOpeningProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Max number of accounts per funding request proposal
+       **/
+      fundingRequestProposalMaxAccounts: u32 & AugmentedConst<ApiType>;
+      /**
+       * Max amount in funding request proposal (per account)
+       **/
+      fundingRequestProposalMaxAmount: u128 & AugmentedConst<ApiType>;
+      /**
        * Exports 'Funding Request' proposal parameters.
        **/
       fundingRequestProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
@@ -582,6 +590,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       setInitialInvitationBalanceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       setInvitationCountProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Max allowed number of validators in set max validator count proposal
+       **/
+      setMaxValidatorCountProposalMaxValidators: u32 & AugmentedConst<ApiType>;
       /**
        * Exports 'Set Max Validator Count' proposal parameters.
        **/

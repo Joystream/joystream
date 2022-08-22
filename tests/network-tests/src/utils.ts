@@ -54,7 +54,11 @@ export class Utils {
   }
 
   public static metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
-    return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
+    return createType('Bytes', Utils.metadataToString(metaClass, obj))
+  }
+
+  public static metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
+    return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
   }
 
   public static metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): DecodedMetadataObject<T> {
