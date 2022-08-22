@@ -1508,7 +1508,15 @@ decl_module! {
 
         /// Updates channel state bloat bond value.
         /// Only lead can upload this value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_channel_state_bloat_bond()]
         pub fn update_channel_state_bloat_bond(
             origin,
             new_channel_state_bloat_bond: BalanceOf<T>,
@@ -1528,7 +1536,15 @@ decl_module! {
 
         /// Updates video state bloat bond value.
         /// Only lead can upload this value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_video_state_bloat_bond()]
         pub fn update_video_state_bloat_bond(
             origin,
             new_video_state_bloat_bond: BalanceOf<T>,

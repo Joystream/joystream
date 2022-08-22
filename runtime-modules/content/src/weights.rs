@@ -85,6 +85,8 @@ pub trait WeightInfo {
 	fn channel_owner_remark(_b: u32, ) -> Weight;
 	fn channel_agent_remark(_b: u32, ) -> Weight;
 	fn nft_owner_remark(_b: u32, ) -> Weight;
+	fn update_channel_state_bloat_bond() -> Weight;
+	fn update_video_state_bloat_bond() -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -108,17 +110,17 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x95875cb80ebaf9f918457db6a86ac6adade883233841e9338c8e73f6b9f74890] (r:0 w:10)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b8727cd538b4597adba02e6593ace94e804] (r:0 w:1)
 	fn create_channel(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		(114_472_000 as Weight)
-			// Standard Error: 161_000
-			.saturating_add((3_477_000 as Weight).saturating_mul(a as Weight))
-			// Standard Error: 81_000
-			.saturating_add((4_673_000 as Weight).saturating_mul(b as Weight))
-			// Standard Error: 8_000
-			.saturating_add((6_266_000 as Weight).saturating_mul(c as Weight))
-			// Standard Error: 161_000
-			.saturating_add((2_554_000 as Weight).saturating_mul(d as Weight))
+		(74_346_000 as Weight)
+			// Standard Error: 194_000
+			.saturating_add((6_665_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 97_000
+			.saturating_add((6_359_000 as Weight).saturating_mul(b as Weight))
+			// Standard Error: 10_000
+			.saturating_add((6_342_000 as Weight).saturating_mul(c as Weight))
+			// Standard Error: 194_000
+			.saturating_add((770_000 as Weight).saturating_mul(d as Weight))
 			// Standard Error: 0
-			.saturating_add((3_000 as Weight).saturating_mul(e as Weight))
+			.saturating_add((1_000 as Weight).saturating_mul(e as Weight))
 			.saturating_add(T::DbWeight::get().reads(13 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
@@ -142,17 +144,17 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	// Storage: unknown [0x95875cb80ebaf9f918457db6a86ac6ad235899829563c4064c97520e04fce94e] (r:1 w:1)
 	fn channel_update_with_assets(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		(192_938_000 as Weight)
-			// Standard Error: 157_000
-			.saturating_add((3_855_000 as Weight).saturating_mul(a as Weight))
-			// Standard Error: 157_000
-			.saturating_add((2_685_000 as Weight).saturating_mul(b as Weight))
-			// Standard Error: 157_000
-			.saturating_add((4_486_000 as Weight).saturating_mul(c as Weight))
+		(151_225_000 as Weight)
+			// Standard Error: 200_000
+			.saturating_add((4_619_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 200_000
+			.saturating_add((3_478_000 as Weight).saturating_mul(b as Weight))
+			// Standard Error: 200_000
+			.saturating_add((6_811_000 as Weight).saturating_mul(c as Weight))
 			// Standard Error: 0
 			.saturating_add((1_000 as Weight).saturating_mul(d as Weight))
-			// Standard Error: 80_000
-			.saturating_add((4_942_000 as Weight).saturating_mul(e as Weight))
+			// Standard Error: 102_000
+			.saturating_add((5_331_000 as Weight).saturating_mul(e as Weight))
 			.saturating_add(T::DbWeight::get().reads(11 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
@@ -166,12 +168,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:0)
-	fn channel_update_without_assets(a: u32, b: u32, ) -> Weight {
-		(110_694_000 as Weight)
-			// Standard Error: 118_000
-			.saturating_add((5_035_000 as Weight).saturating_mul(a as Weight))
-			// Standard Error: 0
-			.saturating_add((2_000 as Weight).saturating_mul(b as Weight))
+	fn channel_update_without_assets(a: u32, _b: u32, ) -> Weight {
+		(121_722_000 as Weight)
+			// Standard Error: 126_000
+			.saturating_add((4_469_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
@@ -185,13 +185,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x95875cb80ebaf9f918457db6a86ac6ad33807bc23ee2cb31454339d2b2c6b0a8] (r:101 w:101)
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	fn delete_channel(a: u32, b: u32, c: u32, ) -> Weight {
-		(187_771_000 as Weight)
-			// Standard Error: 212_000
-			.saturating_add((5_858_000 as Weight).saturating_mul(a as Weight))
-			// Standard Error: 109_000
-			.saturating_add((4_092_000 as Weight).saturating_mul(b as Weight))
+		(194_279_000 as Weight)
+			// Standard Error: 204_000
+			.saturating_add((5_168_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 105_000
+			.saturating_add((4_128_000 as Weight).saturating_mul(b as Weight))
 			// Standard Error: 12_000
-			.saturating_add((4_962_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add((4_979_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
@@ -206,9 +206,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b870c0ce290812b08a3418d76f63fc3b322] (r:1 w:1)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:0 w:1)
 	fn create_curator_group(a: u32, ) -> Weight {
-		(16_658_000 as Weight)
-			// Standard Error: 6_000
-			.saturating_add((909_000 as Weight).saturating_mul(a as Weight))
+		(16_381_000 as Weight)
+			// Standard Error: 7_000
+			.saturating_add((894_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
@@ -216,9 +216,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn update_curator_group_permissions(a: u32, ) -> Weight {
-		(68_641_000 as Weight)
-			// Standard Error: 37_000
-			.saturating_add((786_000 as Weight).saturating_mul(a as Weight))
+		(66_695_000 as Weight)
+			// Standard Error: 27_000
+			.saturating_add((788_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -226,7 +226,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn set_curator_group_status() -> Weight {
-		(64_124_000 as Weight)
+		(65_162_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -234,7 +234,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:2 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn add_curator_to_group() -> Weight {
-		(101_842_000 as Weight)
+		(103_779_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -242,7 +242,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:1)
 	fn remove_curator_from_group() -> Weight {
-		(96_313_000 as Weight)
+		(96_244_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -252,9 +252,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b876c94feae87c592d6b11319fb0e516386] (r:1 w:1)
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:0)
 	fn initialize_channel_transfer(a: u32, ) -> Weight {
-		(124_897_000 as Weight)
-			// Standard Error: 221_000
-			.saturating_add((3_336_000 as Weight).saturating_mul(a as Weight))
+		(119_823_000 as Weight)
+			// Standard Error: 276_000
+			.saturating_add((4_362_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
@@ -263,7 +263,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn cancel_channel_transfer() -> Weight {
-		(117_017_000 as Weight)
+		(115_371_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -272,9 +272,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457f3928fc443e8d9cca27b4e39e5c29cac] (r:1 w:1)
 	fn accept_channel_transfer(a: u32, ) -> Weight {
-		(51_910_000 as Weight)
-			// Standard Error: 264_000
-			.saturating_add((1_900_000 as Weight).saturating_mul(a as Weight))
+		(48_467_000 as Weight)
+			// Standard Error: 103_000
+			.saturating_add((1_332_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
@@ -291,7 +291,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87b009e9a04ffa0cbce05e5827c4d4a6f8] (r:0 w:1)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87c881f7e86560cfd10e668fc0b706f7c7] (r:0 w:1)
 	fn update_channel_payouts() -> Weight {
-		(26_929_000 as Weight)
+		(26_176_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
@@ -299,7 +299,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:0)
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	fn withdraw_from_channel_balance() -> Weight {
-		(64_245_000 as Weight)
+		(64_434_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
@@ -313,7 +313,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87c881f7e86560cfd10e668fc0b706f7c7] (r:1 w:0)
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:1 w:1)
 	fn claim_channel_reward(_h: u32, ) -> Weight {
-		(81_547_000 as Weight)
+		(81_615_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(9 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -327,9 +327,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87c881f7e86560cfd10e668fc0b706f7c7] (r:1 w:0)
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:1 w:1)
 	fn claim_and_withdraw_channel_reward(h: u32, ) -> Weight {
-		(72_584_000 as Weight)
-			// Standard Error: 122_000
-			.saturating_add((836_000 as Weight).saturating_mul(h as Weight))
+		(70_493_000 as Weight)
+			// Standard Error: 116_000
+			.saturating_add((1_308_000 as Weight).saturating_mul(h as Weight))
 			.saturating_add(T::DbWeight::get().reads(9 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -355,7 +355,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87163a6537c0073cca32731acb69cf63e2] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87fbf3e09a262eab22b5614cc059547717] (r:1 w:1)
 	fn issue_nft() -> Weight {
-		(163_956_000 as Weight)
+		(195_424_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(21 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -364,7 +364,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn destroy_nft() -> Weight {
-		(163_464_000 as Weight)
+		(160_620_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -373,7 +373,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn sling_nft_back() -> Weight {
-		(162_713_000 as Weight)
+		(163_105_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -383,7 +383,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:0)
 	fn offer_nft() -> Weight {
-		(169_267_000 as Weight)
+		(167_595_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -392,7 +392,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn cancel_offer() -> Weight {
-		(166_026_000 as Weight)
+		(162_627_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -402,7 +402,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87dd035684a32b6434aa4ecfa552644c79] (r:1 w:0)
 	fn accept_incoming_offer() -> Weight {
-		(81_780_000 as Weight)
+		(82_287_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -411,7 +411,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn sell_nft() -> Weight {
-		(163_136_000 as Weight)
+		(144_232_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -420,7 +420,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn cancel_buy_now() -> Weight {
-		(167_192_000 as Weight)
+		(160_503_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -429,7 +429,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn update_buy_now_price() -> Weight {
-		(163_270_000 as Weight)
+		(163_891_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -439,19 +439,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87dd035684a32b6434aa4ecfa552644c79] (r:1 w:0)
 	fn buy_nft() -> Weight {
-		(85_373_000 as Weight)
+		(82_768_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87d2c14024f1b303fdc87019c4c1facfde] (r:1 w:1)
 	fn toggle_nft_limits() -> Weight {
-		(9_479_000 as Weight)
+		(10_047_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b8713013e1b58f6706b9bc1d1f2461e2668] (r:1 w:1)
 	fn update_global_nft_limit() -> Weight {
-		(10_348_000 as Weight)
+		(9_624_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -459,7 +459,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn update_channel_nft_limit() -> Weight {
-		(126_574_000 as Weight)
+		(124_232_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -478,7 +478,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b872b3448b5048347b84cf9031e0e5dd85d] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b871b10931eafb6faa5fa01f0cf89f95940] (r:1 w:0)
 	fn start_english_auction() -> Weight {
-		(182_327_000 as Weight)
+		(176_968_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(14 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -487,7 +487,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn cancel_english_auction() -> Weight {
-		(158_242_000 as Weight)
+		(156_151_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -497,7 +497,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:3 w:3)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87dd035684a32b6434aa4ecfa552644c79] (r:1 w:0)
 	fn make_english_auction_bid() -> Weight {
-		(98_970_000 as Weight)
+		(96_677_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -506,7 +506,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87dd035684a32b6434aa4ecfa552644c79] (r:1 w:0)
 	fn settle_english_auction() -> Weight {
-		(71_847_000 as Weight)
+		(71_627_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -521,7 +521,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b871b10931eafb6faa5fa01f0cf89f95940] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b8799806df27cdcf1eb83a25d651bf93c2d] (r:1 w:0)
 	fn start_open_auction() -> Weight {
-		(172_799_000 as Weight)
+		(169_593_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(10 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -530,7 +530,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	fn cancel_open_auction() -> Weight {
-		(157_254_000 as Weight)
+		(154_979_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -540,7 +540,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87cc590a6b7b23e179c91fadd8689c9798] (r:1 w:1)
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	fn cancel_open_auction_bid() -> Weight {
-		(71_937_000 as Weight)
+		(70_587_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -553,7 +553,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9] (r:2 w:2)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87dd035684a32b6434aa4ecfa552644c79] (r:1 w:0)
 	fn pick_open_auction_winner() -> Weight {
-		(194_353_000 as Weight)
+		(191_551_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(9 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -564,7 +564,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b8727cd538b4597adba02e6593ace94e804] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87dd035684a32b6434aa4ecfa552644c79] (r:1 w:0)
 	fn make_open_auction_bid() -> Weight {
-		(94_655_000 as Weight)
+		(94_734_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(8 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -572,14 +572,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec4573091994c5737d8f16ba1c53919a94bf2] (r:1 w:0)
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	fn channel_owner_remark(_b: u32, ) -> Weight {
-		(53_241_000 as Weight)
+		(57_391_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 	}
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b8727cd538b4597adba02e6593ace94e804] (r:1 w:0)
 	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
-	fn channel_agent_remark(_b: u32, ) -> Weight {
-		(113_598_000 as Weight)
+	fn channel_agent_remark(b: u32, ) -> Weight {
+		(103_097_000 as Weight)
+			// Standard Error: 0
+			.saturating_add((1_000 as Weight).saturating_mul(b as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 	}
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b870af9e4882a7d4dfc4aa025e76973af62] (r:1 w:0)
@@ -587,8 +589,24 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87af96ab8605611c2e562953c9f5fafe05] (r:1 w:0)
 	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b8727cd538b4597adba02e6593ace94e804] (r:1 w:0)
 	fn nft_owner_remark(_b: u32, ) -> Weight {
-		(142_667_000 as Weight)
+		(140_969_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+	}
+	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec4573091994c5737d8f16ba1c53919a94bf2] (r:1 w:0)
+	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
+	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b87aa6eccf0cc6941ba2e31cdb5870e3229] (r:0 w:1)
+	fn update_channel_state_bloat_bond() -> Weight {
+		(25_787_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+	}
+	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec4573091994c5737d8f16ba1c53919a94bf2] (r:1 w:0)
+	// Storage: unknown [0x43c6aad67b8d5d8180583e494c8ec457b88c49b6e6ccae735eb57de6295caf6a] (r:1 w:0)
+	// Storage: unknown [0xb5a494c92fa4747cc071573e93b32b874a4356070c8776bf14beca4fff00aa2d] (r:0 w:1)
+	fn update_video_state_bloat_bond() -> Weight {
+		(25_568_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 }
 
@@ -600,7 +618,7 @@ impl WeightInfo for () {
 	fn channel_update_with_assets(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
 		0
 	}
-	fn channel_update_without_assets(a: u32, b: u32, ) -> Weight {
+	fn channel_update_without_assets(a: u32, _b: u32, ) -> Weight {
 		0
 	}
 	fn delete_channel(a: u32, b: u32, c: u32, ) -> Weight {
@@ -711,10 +729,16 @@ impl WeightInfo for () {
 	fn channel_owner_remark(_b: u32, ) -> Weight {
 		0
 	}
-	fn channel_agent_remark(_b: u32, ) -> Weight {
+	fn channel_agent_remark(b: u32, ) -> Weight {
 		0
 	}
 	fn nft_owner_remark(_b: u32, ) -> Weight {
+		0
+	}
+	fn update_channel_state_bloat_bond() -> Weight {
+		0
+	}
+	fn update_video_state_bloat_bond() -> Weight {
 		0
 	}
 }
