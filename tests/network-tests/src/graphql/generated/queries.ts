@@ -921,7 +921,12 @@ export type GetPostDeletedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetPostDeletedEventsByEventIdsQuery = { postDeletedEvents: Array<PostDeletedEventFieldsFragment> }
 
-export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
+export type MemberMetadataFieldsFragment = {
+  name?: Types.Maybe<string>
+  about?: Types.Maybe<string>
+  avatar?: Types.Maybe<{ avatarUri: string }>
+  externalResources?: Types.Maybe<Array<{ type: Types.MembershipExternalResourceType; value: string }>>
+}
 
 export type MembershipFieldsFragment = {
   id: string
@@ -1009,7 +1014,7 @@ export type MemberProfileUpdatedEventFieldsFragment = {
   indexInBlock: number
   newHandle?: Types.Maybe<string>
   member: { id: string }
-  newMetadata: { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
+  newMetadata: MemberMetadataFieldsFragment
 }
 
 export type GetMemberProfileUpdatedEventsByMemberIdQueryVariables = Types.Exact<{
@@ -3368,6 +3373,15 @@ export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
     about
+    avatar {
+      ... on AvatarUri {
+        avatarUri
+      }
+    }
+    externalResources {
+      type
+      value
+    }
   }
 `
 export const MembershipFields = gql`
@@ -3450,10 +3464,10 @@ export const MemberProfileUpdatedEventFields = gql`
     }
     newHandle
     newMetadata {
-      name
-      about
+      ...MemberMetadataFields
     }
   }
+  ${MemberMetadataFields}
 `
 export const MemberAccountsUpdatedEventFields = gql`
   fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
