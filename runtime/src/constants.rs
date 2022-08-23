@@ -131,7 +131,7 @@ parameter_types! {
     pub const DistributionWorkingGroupLockId: LockIdentifier = *b"wg-distr";
 }
 
-// Staking lock ID used by nomination and validation in the staking pallet.
+// Staking lock ID used on stash accounts of validators and nominators in the staking pallet.
 // This is a copy because the current Substrate staking lock ID is not exported.
 pub const STAKING_LOCK_ID: LockIdentifier = *b"staking ";
 

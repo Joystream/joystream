@@ -49,8 +49,9 @@ use frame_election_provider_support::{
 };
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
-    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
-    LockIdentifier, OnUnbalanced,
+    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, ExistenceRequirement, Imbalance,
+    KeyOwnerProofSystem, LockIdentifier, LockableCurrency, OnUnbalanced, SignedImbalance,
+    WithdrawReasons,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -73,7 +74,7 @@ use sp_runtime::{
     curve::PiecewiseLinear,
     generic, impl_opaque_keys,
     traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
-    Perbill,
+    DispatchError, DispatchResult, Perbill,
 };
 
 use sp_std::boxed::Box;
@@ -549,7 +550,7 @@ impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
 
 impl pallet_staking::Config for Runtime {
     type MaxNominations = MaxNominations;
-    type Currency = Balances;
+    type Currency = BalancesProxyForStakingPallet;
     type CurrencyBalance = Balance;
     type UnixTime = Timestamp;
     type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote; // U128CurrencyToVote;
@@ -1581,3 +1582,135 @@ construct_runtime!(
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
     }
 );
+
+// Proxy into the Balances pallet, used to modify behavior of free_balance()
+// MUST ONLY BE USED BY THE STAKING PALLET
+pub struct BalancesProxyForStakingPallet {}
+impl Currency<AccountId> for BalancesProxyForStakingPallet {
+    type Balance = <Runtime as pallet_balances::Config>::Balance;
+    type PositiveImbalance =
+        <pallet_balances::Pallet<Runtime> as Currency<AccountId>>::PositiveImbalance;
+    type NegativeImbalance =
+        <pallet_balances::Pallet<Runtime> as Currency<AccountId>>::NegativeImbalance;
+
+    fn total_balance(who: &AccountId) -> Self::Balance {
+        Balances::total_balance(who)
+    }
+    fn can_slash(who: &AccountId, amount: Self::Balance) -> bool {
+        Balances::can_slash(who, amount)
+    }
+    fn total_issuance() -> Self::Balance {
+        Balances::total_issuance()
+    }
+    fn minimum_balance() -> Self::Balance {
+        Balances::minimum_balance()
+    }
+    fn burn(amount: Self::Balance) -> Self::PositiveImbalance {
+        Balances::burn(amount)
+    }
+    fn issue(amount: Self::Balance) -> Self::NegativeImbalance {
+        Balances::issue(amount)
+    }
+    fn pair(amount: Self::Balance) -> (Self::PositiveImbalance, Self::NegativeImbalance) {
+        Balances::pair(amount)
+    }
+    // Return a balance of 0 if there is a rivalrous lock on the account.
+    // This will not prevent stash account from bond()'ing,
+    // but the staking ledger will record the total and active bonded amount to be zero.
+    // Same if the account attempts to bond_extra(). This will in turn prevent the account from
+    // nominating or validating, unless ED is set to zero and MinValidatorBond/MinNominatorBond are also
+    // set to zero.
+    fn free_balance(who: &AccountId) -> Self::Balance {
+        let existing_locks = Balances::locks(who);
+        let existing_lock_ids: Vec<LockIdentifier> =
+            existing_locks.iter().map(|lock| lock.id).collect();
+
+        if Runtime::are_locks_conflicting(&STAKING_LOCK_ID, existing_lock_ids.as_slice()) {
+            0
+        } else {
+            Balances::free_balance(who)
+        }
+    }
+    fn ensure_can_withdraw(
+        who: &AccountId,
+        amount: Self::Balance,
+        reasons: WithdrawReasons,
+        new_balance: Self::Balance,
+    ) -> DispatchResult {
+        Balances::ensure_can_withdraw(who, amount, reasons, new_balance)
+    }
+    fn transfer(
+        source: &AccountId,
+        dest: &AccountId,
+        value: Self::Balance,
+        liveness: ExistenceRequirement,
+    ) -> DispatchResult {
+        <Balances as Currency<AccountId>>::transfer(source, dest, value, liveness)
+    }
+    fn slash(who: &AccountId, value: Self::Balance) -> (Self::NegativeImbalance, Self::Balance) {
+        Balances::slash(who, value)
+    }
+    fn deposit_into_existing(
+        who: &AccountId,
+        value: Self::Balance,
+    ) -> Result<Self::PositiveImbalance, DispatchError> {
+        Balances::deposit_into_existing(who, value)
+    }
+    fn resolve_into_existing(
+        who: &AccountId,
+        value: Self::NegativeImbalance,
+    ) -> Result<(), Self::NegativeImbalance> {
+        Balances::resolve_into_existing(who, value)
+    }
+    fn deposit_creating(who: &AccountId, value: Self::Balance) -> Self::PositiveImbalance {
+        Balances::deposit_creating(who, value)
+    }
+    fn resolve_creating(who: &AccountId, value: Self::NegativeImbalance) {
+        Balances::resolve_creating(who, value)
+    }
+    fn withdraw(
+        who: &AccountId,
+        value: Self::Balance,
+        reasons: WithdrawReasons,
+        liveness: ExistenceRequirement,
+    ) -> Result<Self::NegativeImbalance, DispatchError> {
+        Balances::withdraw(who, value, reasons, liveness)
+    }
+    fn settle(
+        who: &AccountId,
+        value: Self::PositiveImbalance,
+        reasons: WithdrawReasons,
+        liveness: ExistenceRequirement,
+    ) -> Result<(), Self::PositiveImbalance> {
+        Balances::settle(who, value, reasons, liveness)
+    }
+    fn make_free_balance_be(
+        who: &AccountId,
+        value: Self::Balance,
+    ) -> SignedImbalance<Self::Balance, Self::PositiveImbalance> {
+        Balances::make_free_balance_be(who, value)
+    }
+}
+impl LockableCurrency<AccountId> for BalancesProxyForStakingPallet {
+    type Moment = <Runtime as frame_system::Config>::BlockNumber;
+    type MaxLocks = <Runtime as pallet_balances::Config>::MaxLocks;
+    fn set_lock(
+        id: LockIdentifier,
+        who: &AccountId,
+        amount: Self::Balance,
+        reasons: WithdrawReasons,
+    ) {
+        Balances::set_lock(id, who, amount, reasons)
+    }
+    fn extend_lock(
+        id: LockIdentifier,
+        who: &AccountId,
+        amount: Self::Balance,
+        reasons: WithdrawReasons,
+    ) {
+        Balances::extend_lock(id, who, amount, reasons)
+    }
+    fn remove_lock(id: LockIdentifier, who: &AccountId) {
+        Balances::remove_lock(id, who)
+    }
+}
