@@ -20,7 +20,7 @@ use frame_support::{assert_err, assert_ok};
 use frame_system::RawOrigin;
 use mocks::{
     build_test_externalities, Balances, Bounty, ClosedContractSizeLimit, System, Test,
-    COUNCIL_BUDGET_ACCOUNT_ID, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
+    COUNCIL_BUDGET_ACCOUNT_ID, MAX_MEMBERS, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use sp_runtime::DispatchError;
 use sp_runtime::Perbill;
@@ -316,6 +316,20 @@ fn create_bounty_fails_with_invalid_closed_contract() {
         CreateBountyFixture::default()
             .with_closed_contract(large_member_id_list)
             .call_and_assert(Err(Error::<Test>::ClosedContractMemberListIsTooLarge.into()));
+
+        let invalid_member_id_list: Vec<u64> = (1..=ClosedContractSizeLimit::get())
+            .map(|x| {
+                if x == ClosedContractSizeLimit::get() {
+                    (MAX_MEMBERS + 1).into()
+                } else {
+                    x.into()
+                }
+            })
+            .collect();
+
+        CreateBountyFixture::default()
+            .with_closed_contract(invalid_member_id_list)
+            .call_and_assert(Err(Error::<Test>::ClosedContractMemberNotFound.into()));
     });
 }
 
@@ -433,6 +447,16 @@ fn create_bounty_fails_with_invalid_entrant_stake() {
     });
 }
 
+#[test]
+fn create_bounty_fails_with_invalid_oracle_member_id() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        CreateBountyFixture::default()
+            .with_oracle_member_id(9999)
+            .call_and_assert(Err(Error::<Test>::InvalidOracleMemberId.into()));
+    });
+}
 #[test]
 fn create_bounty_fails_with_insufficient_balances() {
     build_test_externalities().execute_with(|| {
@@ -3857,12 +3881,14 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             bounty_id,
             entry_id_2,
             worker_account_id_2,
+            amount_slashed_entry_2,
         ));
 
         EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
             bounty_id,
             entry_id_3,
             worker_account_id_3,
+            amount_slashed_entry_3,
         ));
 
         EventFixture::contains_crate_event(RawEvent::OracleJudgmentSubmitted(
@@ -4032,19 +4058,22 @@ fn submit_judgment_by_member_succeeded_with_complex_judgment() {
             worker_member_id_1,
         ));
 
+        let amount_slashed_entry_2 = slashing_share_entry_2 * entrant_stake;
         EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
             bounty_id,
             entry_id_2,
             worker_account_id_2,
+            amount_slashed_entry_2,
         ));
 
+        let amount_slashed_entry_3 = slashing_share_entry_3 * entrant_stake;
         EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
             bounty_id,
             entry_id_3,
             worker_account_id_3,
+            amount_slashed_entry_3,
         ));
 
-        let amount_slashed_entry_2 = slashing_share_entry_2 * entrant_stake;
         assert_eq!(
             Balances::free_balance(&worker_account_id_2),
             initial_balance - amount_slashed_entry_2
@@ -4054,7 +4083,6 @@ fn submit_judgment_by_member_succeeded_with_complex_judgment() {
             initial_balance - amount_slashed_entry_2
         );
 
-        let amount_slashed_entry_3 = slashing_share_entry_3 * entrant_stake;
         assert_eq!(
             Balances::free_balance(&worker_account_id_3),
             initial_balance - amount_slashed_entry_3
@@ -4150,7 +4178,7 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
         judgment.insert(
             entry_id,
             OracleWorkEntryJudgment::Rejected {
-                slashing_share: slashing_share,
+                slashing_share,
                 action_justification: reason,
             },
         );
@@ -4203,6 +4231,7 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
             bounty_id,
             entry_id,
             worker_account_id,
+            0,
         ));
 
         EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(

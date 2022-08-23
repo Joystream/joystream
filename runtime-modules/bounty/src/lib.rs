@@ -106,7 +106,7 @@ use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
 pub trait Config:
-    frame_system::Config + balances::Config + common::membership::MembershipTypes + TypeInfo
+    frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -414,8 +414,8 @@ pub type Entry<T> = EntryRecord<
 >;
 
 /// Work entry.
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct EntryRecord<AccountId, MemberId, BlockNumber> {
     /// Work entrant member ID.
     pub member_id: MemberId,
@@ -468,6 +468,7 @@ struct RequiredStakeInfo<T: Config> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[scale_info(skip_type_params(T))]
 pub struct Contribution<T: Config> {
     // contribution amount
     amount: BalanceOf<T>,
@@ -671,7 +672,7 @@ decl_event! {
         /// - message
         BountyEntrantRemarked(MemberId, BountyId, EntryId, Vec<u8>),
 
-        /// Bounty entrant made a message remark
+        /// Bounty creator made a message remark
         /// Params:
         /// - creator
         /// - bounty id
@@ -699,10 +700,12 @@ decl_event! {
         /// - bounty ID
         /// - entry ID
         /// - stake account
+        /// - slashed amount
         WorkEntrantStakeSlashed(
             BountyId,
             EntryId,
-            AccountId),
+            AccountId,
+            Balance),
 
         /// A member or a council funder has withdrawn the funder state bloat bond.
         /// Params:
@@ -788,6 +791,12 @@ decl_error! {
         /// Cannot create a 'closed assurance contract' bounty with member list larger
         /// than allowed max work entry limit.
         ClosedContractMemberListIsTooLarge,
+
+        /// 'closed assurance contract' bounty member list can only include existing members
+        ClosedContractMemberNotFound,
+
+        /// Provided oracle member id does not belong to an existing member
+        InvalidOracleMemberId,
 
         /// Staking account doesn't belong to a member.
         InvalidStakingAccountForMember,
@@ -1007,11 +1016,10 @@ decl_module! {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
 
-            let terminate_bounty_actor = BountyActorManager::<T>::ensure_bounty_actor_manager(
+            let terminate_bounty_actor_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 bounty.creation_params.creator.clone(),
             )?;
-            let bounty_creator_manager = Self::ensure_creator_actor_manager(&bounty)?;
 
             //If origin is council then
             //Stage can be NoFundingContributed, Funding, WorkSubmission or Judgment
@@ -1021,7 +1029,7 @@ decl_module! {
 
             let terminate_bounty_validation = Self::ensure_terminate_bounty_stage(&bounty_id,
                 &bounty,
-                &terminate_bounty_actor)?;
+                &terminate_bounty_actor_manager)?;
 
             //
             // == MUTATION SAFE ==
@@ -1030,8 +1038,8 @@ decl_module! {
             match terminate_bounty_validation {
                 ValidTerminateBountyStage::ValidTerminationRemoveBounty => {
                     //The origin is council or creator
-                    Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-                    Self::remove_bounty(&bounty_id, &bounty, &bounty_creator_manager);
+                    Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &terminate_bounty_actor_manager);
+                    Self::remove_bounty(&bounty_id, &bounty, &terminate_bounty_actor_manager);
                 },
                 ValidTerminateBountyStage::ValidTerminationToFailedStage=> {
                     //The origin is council and
@@ -1042,7 +1050,7 @@ decl_module! {
                         //funding expired | funding
                         //oracle reward > 0 | Contributions = 0 | work entries = 0
                         //If Contributions > 0 then cherry will not go to creator, it goes to funders by calling withdraw_funding
-                        Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
+                        Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &terminate_bounty_actor_manager);
                     }
 
                     <Bounties<T>>::mutate(bounty_id, |bounty| {
@@ -1051,7 +1059,7 @@ decl_module! {
 
                     Self::deposit_event(RawEvent::BountyTerminated(
                         bounty_id,
-                        terminate_bounty_actor.get_bounty_actor(),
+                        terminate_bounty_actor_manager.get_bounty_actor(),
                         bounty.creation_params.creator,
                         bounty.creation_params.oracle,
                     ));
@@ -1287,14 +1295,7 @@ decl_module! {
 
             // Update entry
             <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
-                *entry = entry.clone().map(|x| {
-                    Entry::<T> {
-                        member_id: x.member_id,
-                        staking_account_id: x.staking_account_id,
-                        submitted_at: x.submitted_at,
-                        work_submitted: true,
-                    }
-                });
+                entry.as_mut().map(|e| { e.work_submitted = true; });
             });
 
             Self::deposit_event(RawEvent::WorkSubmitted(bounty_id, entry_id, member_id, work_data));
@@ -1342,10 +1343,10 @@ decl_module! {
         /// # <weight>
         ///
         /// ## weight
-        /// `O (N x M + Z)`
-        /// - `N` is judgment,
-        /// - `M` is action_justification (inside OracleJudgment),
-        /// - `Z` is rationale
+        /// `O (N + M + Z)`
+        /// - `N` is number of judgment entries,
+        /// - `M` is the sum of all action_justification lengths (inside OracleJudgment),
+        /// - `Z` is rationale length
         /// - db:
         ///    - `O(N)`
         /// # </weight>
@@ -1393,11 +1394,13 @@ decl_module! {
 
             // Judgments triage.
             for (entry_id, work_entry_judgment) in judgment.iter() {
+
+                let entry = Self::ensure_work_entry_exists(&bounty_id, entry_id)?;
+
                 // Update work entries for winners.
                 match *work_entry_judgment{
                     OracleWorkEntryJudgment::Winner{ reward } => {
 
-                        let entry = Self::ensure_work_entry_exists(&bounty_id, entry_id)?;
                         // Unstake the full work entry state.
                         let worker_account_id = T::Membership::controller_account_id(entry.member_id)?;
 
@@ -1420,7 +1423,7 @@ decl_module! {
                         slashing_share,
                         ..
                     } => {
-                        let entry = Self::ensure_work_entry_exists(&bounty_id, entry_id)?;
+
                         let slashing_amount = slashing_share * bounty.creation_params.entrant_stake;
 
                         if slashing_amount > Zero::zero() {
@@ -1435,7 +1438,8 @@ decl_module! {
                         Self::deposit_event(RawEvent::WorkEntrantStakeSlashed(
                             bounty_id,
                             *entry_id,
-                            entry.staking_account_id
+                            entry.staking_account_id,
+                            slashing_amount
                         ));
                     }
                 }
@@ -1580,7 +1584,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg
+        /// - `N` is msg length
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1610,7 +1614,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg
+        /// - `N` is msg length
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1647,7 +1651,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg
+        /// - `N` is msg length
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1682,7 +1686,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg
+        /// - `N` is msg length
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1820,6 +1824,20 @@ impl<T: Config> Module<T> {
             ensure!(
                 member_ids.len() <= T::ClosedContractSizeLimit::get().saturated_into(),
                 Error::<T>::ClosedContractMemberListIsTooLarge
+            );
+
+            for member_id in member_ids {
+                ensure!(
+                    T::Membership::controller_account_id(*member_id).is_ok(),
+                    Error::<T>::ClosedContractMemberNotFound
+                );
+            }
+        }
+
+        if let BountyActor::Member(member_id) = params.oracle {
+            ensure!(
+                T::Membership::controller_account_id(member_id).is_ok(),
+                Error::<T>::InvalidOracleMemberId
             );
         }
 
@@ -2106,15 +2124,6 @@ impl<T: Config> Module<T> {
         bounty_id: &T::BountyId,
         entry_id: &T::EntryId,
     ) -> Result<Entry<T>, DispatchError> {
-        // ensure!(
-        //     <Entries<T>>::contains_key(bounty_id, entry_id),
-        //     Error::<T>::WorkEntryDoesntExist
-        // );
-
-        // let entry = Self::entries(bounty_id, entry_id);
-
-        // Ok(entry)
-
         match Self::entries(bounty_id, entry_id) {
             Some(entry) => Ok(entry),
             None => Err(Error::<T>::WorkEntryDoesntExist.into()),
@@ -2291,8 +2300,8 @@ impl<T: Config> Module<T> {
         .max(
             WeightInfoBounty::<T>::submit_oracle_judgment_by_council_all_rejected(
                 collection_length,
-                justification_length,
                 rationale,
+                justification_length,
             ),
         )
         .max(
@@ -2304,8 +2313,8 @@ impl<T: Config> Module<T> {
         .max(
             WeightInfoBounty::<T>::submit_oracle_judgment_by_member_all_rejected(
                 collection_length,
-                justification_length,
                 rationale,
+                justification_length,
             ),
         )
     }

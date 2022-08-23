@@ -568,7 +568,7 @@ impl SubmitWorkFixture {
 
         let new_entry = Bounty::entries(self.bounty_id, self.entry_id);
 
-        if actual_result.is_ok() && new_entry.is_some() {
+        if actual_result.is_ok() {
             assert!(new_entry.unwrap().work_submitted);
         } else {
             assert_eq!(new_entry, old_entry);

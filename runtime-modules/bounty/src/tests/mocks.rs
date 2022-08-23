@@ -24,9 +24,9 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        System: frame_system,
         Membership: membership::{Pallet, Call, Storage, Event<T>},
-        Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Balances: balances,
         Bounty: crate::{Pallet, Call, Storage, Event<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>},
