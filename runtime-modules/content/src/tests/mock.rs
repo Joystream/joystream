@@ -7,7 +7,7 @@ use frame_support::traits::{
 };
 use frame_support::{parameter_types, PalletId};
 pub use membership::WeightInfo;
-use sp_core::H256;
+use sp_core::{H256, U256};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Convert, IdentityLookup},
@@ -34,20 +34,20 @@ pub type TransferId = <Test as Config>::TransferId;
 pub type StorageBucketId = <Test as storage::Config>::StorageBucketId;
 
 /// Account Ids
-pub const DEFAULT_MEMBER_ACCOUNT_ID: u128 = 101;
-pub const DEFAULT_MEMBER_ALT_ACCOUNT_ID: u128 = 1001;
-pub const DEFAULT_CURATOR_ACCOUNT_ID: u128 = 102;
-pub const LEAD_ACCOUNT_ID: u128 = 103;
-pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = 104;
-pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u128 = 111;
-pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u128 = 112;
-pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = 113;
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = 114;
-pub const SECOND_MEMBER_ACCOUNT_ID: u128 = 116;
-pub const THIRD_MEMBER_ACCOUNT_ID: u128 = 117;
-pub const LEAD_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 120;
-pub const DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 121;
-pub const UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 122;
+pub const DEFAULT_MEMBER_ACCOUNT_ID: U256 = U256([101, 0, 0, 0]);
+pub const DEFAULT_MEMBER_ALT_ACCOUNT_ID: U256 = U256([1001, 0, 0, 0]);
+pub const DEFAULT_CURATOR_ACCOUNT_ID: U256 = U256([102, 0, 0, 0]);
+pub const LEAD_ACCOUNT_ID: U256 = U256([103, 0, 0, 0]);
+pub const COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = U256([104, 0, 0, 0]);
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: U256 = U256([111, 0, 0, 0]);
+pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: U256 = U256([112, 0, 0, 0]);
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: U256 = U256([113, 0, 0, 0]);
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = U256([114, 0, 0, 0]);
+pub const SECOND_MEMBER_ACCOUNT_ID: U256 = U256([116, 0, 0, 0]);
+pub const THIRD_MEMBER_ACCOUNT_ID: U256 = U256([117, 0, 0, 0]);
+pub const LEAD_MEMBER_CONTROLLER_ACCOUNT_ID: U256 = U256([120, 0, 0, 0]);
+pub const DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: U256 = U256([121, 0, 0, 0]);
+pub const UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: U256 = U256([122, 0, 0, 0]);
 
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: u64 = 201;
@@ -137,7 +137,7 @@ impl frame_system::Config for Test {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u128;
+    type AccountId = U256;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
@@ -310,10 +310,10 @@ parameter_types! {
     pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
 }
 
-pub const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001;
-pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u128 = 100002;
-pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u128 = 100003;
-pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004;
+pub const STORAGE_WG_LEADER_ACCOUNT_ID: U256 = U256([100001, 0, 0, 0]);
+pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: U256 = U256([100002, 0, 0, 0]);
+pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: U256 = U256([100003, 0, 0, 0]);
+pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: U256 = U256([100004, 0, 0, 0]);
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
@@ -434,9 +434,9 @@ impl Config for Test {
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
-pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
+pub const COUNCIL_BUDGET_ACCOUNT_ID: U256 = U256([90000000, 0, 0, 0]);
 pub struct CouncilBudgetManager;
-impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
+impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
         balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
     }
@@ -457,7 +457,7 @@ impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
         }
     }
 
-    fn try_withdraw(account_id: &u128, amount: u64) -> DispatchResult {
+    fn try_withdraw(account_id: &U256, amount: u64) -> DispatchResult {
         ensure!(
             Self::get_budget() >= amount,
             DispatchError::Other("CouncilBudgetManager: try_withdraw - not enough balance.")
@@ -478,7 +478,7 @@ thread_local! {
 }
 
 pub struct ContentWG;
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for ContentWG {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for ContentWG {
     fn get_budget() -> u64 {
         CONTENT_WG_BUDGET.with(|val| *val.borrow())
     }
@@ -489,7 +489,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for ContentWG {
         });
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }
@@ -704,7 +704,7 @@ thread_local! {
 }
 
 pub struct Wg;
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for Wg {
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -715,7 +715,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
         });
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }
@@ -774,7 +774,7 @@ impl LockComparator<u64> for Test {
     }
 }
 
-impl LockComparator<u128> for Test {
+impl LockComparator<U256> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         if *new_lock == InvitedMemberLockId::get() {
             existing_locks.contains(new_lock)
@@ -807,11 +807,11 @@ impl MembershipInfoProvider<Test> for TestMemberships {
 }
 
 // Mock MemberOriginValidator impl.
-impl MemberOriginValidator<Origin, u64, u128> for TestMemberships {
+impl MemberOriginValidator<Origin, u64, U256> for TestMemberships {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u64,
-    ) -> Result<u128, DispatchError> {
+    ) -> Result<U256, DispatchError> {
         let sender = ensure_signed(origin)?;
         ensure!(
             Self::is_member_controller_account(&member_id, &sender),
@@ -820,7 +820,7 @@ impl MemberOriginValidator<Origin, u64, u128> for TestMemberships {
         Ok(sender)
     }
 
-    fn is_member_controller_account(member_id: &u64, account_id: &u128) -> bool {
+    fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
         match *member_id {
             DEFAULT_MEMBER_ID => {
                 *account_id == DEFAULT_MEMBER_ACCOUNT_ID
@@ -971,7 +971,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for StorageWG {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for StorageWG {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -980,12 +980,12 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for StorageWG {
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for DistributionWG {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for DistributionWG {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -994,7 +994,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Distributio
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }

@@ -14,6 +14,7 @@ use project_token::types::TransferPolicyParamsOf;
 use project_token::types::{
     PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
 };
+use sp_core::U256;
 use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
@@ -277,13 +278,18 @@ impl CreateChannelFixture {
                         )
                     },
                     self.params.clone(),
-                    channel_account
+                    channel_account.clone()
                 ))
             );
 
             assert_eq!(
                 balance_pre.saturating_sub(balance_post),
                 Content::channel_state_bloat_bond_value() + storage_fees,
+            );
+
+            assert_eq!(
+                Balances::<Test>::usable_balance(channel_account),
+                self.params.expected_channel_state_bloat_bond
             );
 
             if self.params.assets.is_some() {
@@ -422,6 +428,10 @@ impl CreateVideoFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender);
         let balance_pre = self.get_balance();
+        let module_balance_pre = ContentTreasury::<Test>::usable_balance();
+        let channel_balance_pre = Balances::<Test>::usable_balance(
+            ContentTreasury::<Test>::account_for_channel(self.channel_id),
+        );
         let channel_bag_id = Content::bag_id_for_channel(&self.channel_id);
         let video_id = Content::next_video_id();
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
@@ -430,6 +440,10 @@ impl CreateVideoFixture {
             Content::create_video(origin, self.actor, self.channel_id, self.params.clone());
 
         let balance_post = self.get_balance();
+        let module_balance_post = ContentTreasury::<Test>::usable_balance();
+        let channel_balance_post = Balances::<Test>::usable_balance(
+            ContentTreasury::<Test>::account_for_channel(self.channel_id),
+        );
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
 
         assert_eq!(actual_result, expected_result);
@@ -468,6 +482,13 @@ impl CreateVideoFixture {
                     balance_pre.saturating_sub(balance_post),
                     objects_state_bloat_bond + data_size_fee + video_bloat_bond
                 );
+
+                assert_eq!(
+                    module_balance_post.saturating_sub(module_balance_pre),
+                    video_bloat_bond
+                );
+
+                assert_eq!(channel_balance_pre, channel_balance_post);
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
                     storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
@@ -2919,7 +2940,7 @@ impl DeissueCreatorTokenFixture {
 }
 
 pub struct CancelChannelTransferFixture {
-    origin: RawOrigin<u128>,
+    origin: RawOrigin<U256>,
     channel_id: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
 }
@@ -2960,7 +2981,7 @@ impl CancelChannelTransferFixture {
 }
 
 pub struct InitializeChannelTransferFixture {
-    origin: RawOrigin<u128>,
+    origin: RawOrigin<U256>,
     channel_id: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     transfer_params: InitTransferParametersOf<Test>,
@@ -2987,7 +3008,7 @@ impl InitializeChannelTransferFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<U256>) -> Self {
         Self { origin, ..self }
     }
 
@@ -3055,7 +3076,7 @@ impl InitializeChannelTransferFixture {
 }
 
 pub struct AcceptChannelTransferFixture {
-    origin: RawOrigin<u128>,
+    origin: RawOrigin<U256>,
     channel_id: u64,
     params: TransferCommitmentParameters<MemberId, BalanceOf<Test>, TransferId>,
 }
@@ -3073,7 +3094,7 @@ impl AcceptChannelTransferFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<U256>) -> Self {
         Self { origin, ..self }
     }
 
@@ -4601,11 +4622,11 @@ pub fn assert_group_has_permissions_for_actions(
     }
 }
 
-pub fn increase_account_balance_helper(account_id: u128, balance: u64) {
+pub fn increase_account_balance_helper(account_id: U256, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance);
 }
 
-pub fn slash_account_balance_helper(account_id: u128) {
+pub fn slash_account_balance_helper(account_id: U256) {
     let _ = Balances::<Test>::slash(&account_id, Balances::<Test>::total_balance(&account_id));
 }
 
@@ -5494,7 +5515,7 @@ pub fn run_all_fixtures_with_contexts(
 #[derive(Fixture, new)]
 pub struct UpdateGlobalNftLimitFixture {
     #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
-    origin: RawOrigin<u128>,
+    origin: RawOrigin<U256>,
 
     #[new(default)]
     period: NftLimitPeriod,
@@ -5541,7 +5562,7 @@ impl UpdateGlobalNftLimitFixture {
 #[derive(Fixture, new)]
 pub struct UpdateChannelNftLimitFixture {
     #[new(value = "RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID)")]
-    origin: RawOrigin<u128>,
+    origin: RawOrigin<U256>,
 
     #[new(value = "default_curator_actor()")]
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,

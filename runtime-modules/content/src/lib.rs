@@ -529,7 +529,7 @@ decl_module! {
 
             // pay bloat bond into the channel account and get RepayableBloatBond object
             let repayable_bloat_bond =
-                Self::pay_bloat_bond(channel_id, &sender, channel_state_bloat_bond)?;
+                Self::pay_channel_bloat_bond(channel_id, &sender, channel_state_bloat_bond)?;
 
             // Only increment next channel id if adding content was successful
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
@@ -895,7 +895,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let repayable_bloat_bond = Self::pay_bloat_bond(channel_id, &sender, video_state_bloat_bond)?;
+            let repayable_bloat_bond = Self::pay_video_bloat_bond(&sender, video_state_bloat_bond)?;
 
             // create the video struct
             let video: Video<T> = VideoRecord {
@@ -3215,10 +3215,10 @@ impl<T: Config> Module<T> {
         });
 
         // Repay video state bloat bond
-        let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
+        let module_account = ContentTreasury::<T>::module_account_id();
         video
             .video_state_bloat_bond
-            .repay::<T>(&channel_account, sender, false)?;
+            .repay::<T>(&module_account, sender, false)?;
 
         Ok(())
     }
@@ -3664,7 +3664,8 @@ impl<T: Config> Module<T> {
         usable_balance.saturating_sub(bloat_bond_value)
     }
 
-    fn pay_bloat_bond(
+    // Channel bloat bonds are paid into the channel account and serve as an existential deposit
+    fn pay_channel_bloat_bond(
         channel_id: T::ChannelId,
         from: &T::AccountId,
         amount: JoyBalanceOf<T>,
@@ -3672,6 +3673,22 @@ impl<T: Config> Module<T> {
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
 
         let locked_balance_used = pay_fee::<T>(from, Some(&channel_account), amount)?;
+
+        // construct RepayableBloatBond based on pay_fee result
+        Ok(match locked_balance_used.is_zero() {
+            true => RepayableBloatBond::new(amount, None),
+            false => RepayableBloatBond::new(amount, Some(from.clone())),
+        })
+    }
+
+    // Video bloat bonds are paid into the content module account
+    // to avoid affecting channel account's balance
+    fn pay_video_bloat_bond(
+        from: &T::AccountId,
+        amount: JoyBalanceOf<T>,
+    ) -> Result<RepayableBloatBondOf<T>, DispatchError> {
+        let module_account = ContentTreasury::<T>::module_account_id();
+        let locked_balance_used = pay_fee::<T>(from, Some(&module_account), amount)?;
 
         // construct RepayableBloatBond based on pay_fee result
         Ok(match locked_balance_used.is_zero() {
