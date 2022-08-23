@@ -4,7 +4,7 @@ use frame_support::{
     traits::{
         fungible::{Inspect, Mutate},
         tokens::WithdrawConsequence,
-        Currency, Get, Imbalance, SignedImbalance, StoredMap,
+        Currency, Get, Imbalance, SignedImbalance,
     },
 };
 use sp_arithmetic::traits::{CheckedSub, Saturating};
@@ -59,16 +59,19 @@ pub fn pay_fee<T: frame_system::Config + balances::Config>(
         return Ok(Zero::zero());
     }
 
-    let account = T::AccountStore::get(payer);
+    let free_balance = balances::Pallet::<T>::free_balance(payer);
+    let usable_balance = balances::Pallet::<T>::usable_balance(payer);
 
     ensure!(
         has_sufficient_balance_for_fees::<T>(payer, amount),
         DispatchError::Other("pay_fee: Insufficient balance")
     );
 
+    // Get the amount of locked balance that will be consumed
+    let locked_balance_consumed = amount.saturating_sub(usable_balance);
+
     // Calculate payer's new free balance
-    let new_free_balance = account
-        .free
+    let new_free_balance = free_balance
         .checked_sub(&amount)
         .ok_or(DispatchError::Other("pay_fee: Free balance underflow"))?;
 
@@ -100,14 +103,7 @@ pub fn pay_fee<T: frame_system::Config + balances::Config>(
         );
     }
 
-    // locked_balance_used = min(account.frozen(Reasons::All).saturating_sub(new_free_balance), amount)
-    let locked_balance_used = account
-        .misc_frozen
-        .max(account.fee_frozen)
-        .saturating_sub(new_free_balance)
-        .min(amount);
-
-    Ok(locked_balance_used)
+    Ok(locked_balance_consumed)
 }
 
 pub fn burn_from_usable<T: frame_system::Config + balances::Config>(
