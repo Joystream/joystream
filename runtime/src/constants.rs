@@ -172,8 +172,13 @@ pub mod currency {
 
     /// Genesis balance for each endowed account
     pub const ENDOWMENT: Balance = DOLLARS.saturating_mul(1_000_000);
-    /// Genesis balance for each initial validator stash account
-    pub const STASH: Balance = DOLLARS.saturating_mul(10_000);
+
+    /// Minium Validator Bond to be set at genesis
+    pub const MIN_VALIDATOR_BOND: Balance = DOLLARS.saturating_mul(1_000);
+    /// Minium Nominator Bond to be set at genesis
+    pub const MIN_NOMINATOR_BOND: Balance = DOLLARS.saturating_mul(100);
+    /// Genesis balance for initial validator and nominator stash accounts
+    pub const STASH: Balance = MIN_VALIDATOR_BOND.saturating_mul(2);
 
     /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
