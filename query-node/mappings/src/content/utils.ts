@@ -219,8 +219,9 @@ export async function processVideoMetadata(
   }
 
   // prepare subtitles if needed
-  if (isSet(meta.subtitles) || isSet(meta.clearSubtitles)) {
-    await processVideoSubtitles(ctx, video, assets, meta.subtitles || [], meta.clearSubtitles)
+  const subtitles = meta.clearSubtitles ? [] : meta.subtitles
+  if (isSet(subtitles)) {
+    await processVideoSubtitles(ctx, video, assets, subtitles)
   }
 
   if (isSet(meta.publishedBeforeJoystream)) {
@@ -504,32 +505,29 @@ async function processVideoSubtitles(
   ctx: EventContext & StoreContext,
   video: Video,
   assets: StorageDataObject[],
-  subtitlesMeta: ISubtitleMetadata[],
-  clearSubtitles: boolean | undefined | null
+  subtitlesMeta: ISubtitleMetadata[]
 ) {
   const { store } = ctx
 
   const subtitlesToRemove = await store.getMany(VideoSubtitle, { where: { video: { id: video.id } } })
 
-  if (!clearSubtitles) {
-    for (const subtitleMeta of subtitlesMeta) {
-      const subtitleId = `${video.id}-${subtitleMeta.type}-${subtitleMeta.language}`
+  for (const subtitleMeta of subtitlesMeta) {
+    const subtitleId = `${video.id}-${subtitleMeta.type}-${subtitleMeta.language}`
 
-      _.remove(subtitlesToRemove, (sub) => sub.id === subtitleId)
+    _.remove(subtitlesToRemove, (sub) => sub.id === subtitleId)
 
-      const subtitle = new VideoSubtitle({
-        id: subtitleId,
-        type: subtitleMeta.type,
-        video,
-        language: await processLanguage(ctx, undefined, subtitleMeta.language),
-        mimeType: subtitleMeta.mimeType,
-      })
+    const subtitle = new VideoSubtitle({
+      id: subtitleId,
+      type: subtitleMeta.type,
+      video,
+      language: await processLanguage(ctx, undefined, subtitleMeta.language),
+      mimeType: subtitleMeta.mimeType,
+    })
 
-      // process subtitle assets
-      await processVideoSubtitleAssets(ctx, assets, subtitle, subtitleMeta)
+    // process subtitle assets
+    await processVideoSubtitleAssets(ctx, assets, subtitle, subtitleMeta)
 
-      await store.save<VideoSubtitle>(subtitle)
-    }
+    await store.save<VideoSubtitle>(subtitle)
   }
 
   // Remove all subtitles which are not part of update

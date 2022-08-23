@@ -78,7 +78,7 @@ export default async function addAndUpdateVideoSubtitles({ api, query }: FlowPro
   updateVideoInput.clearSubtitles = true
   await joystreamCli.updateVideo(videoId, updateVideoInput)
 
-  // Assert video subtitles after creation
+  // Assert video subtitles after deletion
   await query.tryQueryWithTimeout(
     () => query.videoById(videoId.toString()),
     (video) => {
