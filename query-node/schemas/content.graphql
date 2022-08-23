@@ -238,7 +238,7 @@ type VideoSubtitle @entity {
   type: String!
 
   "Subtitle's language"
-  language: Language!
+  language: Language
 
   "MIME type description of format used for this subtitle"
   mimeType: String!
