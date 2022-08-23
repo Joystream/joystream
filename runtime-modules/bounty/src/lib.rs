@@ -1295,7 +1295,7 @@ decl_module! {
 
             // Update entry
             <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
-                entry.as_mut().map(|e| { e.work_submitted = true; });
+                if let Some(e) = entry.as_mut() { e.work_submitted = true; };
             });
 
             Self::deposit_event(RawEvent::WorkSubmitted(bounty_id, entry_id, member_id, work_data));
@@ -1999,7 +1999,6 @@ impl<T: Config> Module<T> {
         ));
 
         <Bounties<T>>::remove(bounty_id);
-        <BountyContributions<T>>::remove_prefix(bounty_id, None);
 
         Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));
     }

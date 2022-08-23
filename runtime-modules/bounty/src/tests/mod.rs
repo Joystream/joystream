@@ -4,8 +4,9 @@ pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
 use crate::{
-    Bounties, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage,
-    Entries, Error, FundingType, OracleJudgment, OracleWorkEntryJudgment, RawEvent,
+    Bounties, BountyActor, BountyContributions, BountyCreationParameters, BountyMilestone,
+    BountyRecord, BountyStage, Entries, Error, FundingType, OracleJudgment,
+    OracleWorkEntryJudgment, RawEvent,
 };
 use fixtures::{
     get_council_budget, get_creator_state_bloat_bond_amount, get_funder_state_bloat_bond_amount,
@@ -523,6 +524,11 @@ fn terminate_bounty_by_creator_succeeds() {
 
         EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
 
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Member(member_id)
+        ));
+
         assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
 }
@@ -616,6 +622,11 @@ fn terminate_bounty_wo_oracle_reward_funding_expired_succeeds() {
         ));
 
         EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Council
+        ));
 
         assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
@@ -714,6 +725,11 @@ fn terminate_bounty_wo_oracle_reward_wo_funds_funding_succeeds() {
         ));
 
         EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Council
+        ));
 
         assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
@@ -2241,6 +2257,13 @@ fn withdraw_funding_member_with_failed_bounty_with_removal() {
         ));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Member(member_id)
+        ));
+
+        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
 }
 
@@ -2849,6 +2872,16 @@ fn withdraw_funding_state_bloat_bond_with_successful_bounty_removal() {
         ));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Member(funder_member_id)
+        ));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Council
+        ));
 
         assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
@@ -5622,6 +5655,13 @@ fn withdraw_oracle_reward_cancelled_bounty_succeeds() {
         ));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Council
+        ));
+
+        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
 }
 
@@ -5716,6 +5756,13 @@ fn withdraw_oracle_reward_successful_bounty_succeeds() {
         ));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Council
+        ));
+
+        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
 }
 
@@ -5773,6 +5820,13 @@ fn withdraw_oracle_reward_failed_bounty_succeeds() {
         ));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+
+        assert!(!<BountyContributions<Test>>::contains_key(
+            &bounty_id,
+            BountyActor::Council
+        ));
+
+        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
     });
 }
 
