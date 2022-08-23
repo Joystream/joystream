@@ -974,10 +974,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (A + B + C)` where:
+        /// `O (A + B + C + D)` where:
         /// - `A` is the number of items in `params.assets.object_creation_list`
         /// - `B` is `params.storage_buckets_num_witness`
         /// - `C` is the length of open auction / english auction whitelist (if provided)
+        /// - `D` is the length of `params.meta` (if provided)
         /// - DB:
         ///    - `O(A + B + C)` - from the the generated weights
         /// # </weight>
@@ -1098,11 +1099,12 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (A + B + C + D)` where:
+        /// `O (A + B + C + D + E)` where:
         /// - `A` is params.assets_to_upload.object_creation_list.len() (if provided)
         /// - `B` is params.assets_to_remove.len()
         /// - `C` is `params.storage_buckets_num_witness` (if provided)
         /// - `D` is the length of open auction / english auction whitelist (if provided)
+        /// - `E` is the length of `params.new_meta` (if provided)
         /// - DB:
         ///    - `O(A + B + C + D)` - from the the generated weights
         /// # </weight>
@@ -4091,10 +4093,12 @@ impl<T: Config> Module<T> {
 
         if let Some(nft_params) = params.auto_issue_nft.as_ref() {
             let c = Self::extract_nft_auction_whitelist_size_len(nft_params);
-            return WeightInfoContent::<T>::create_video_with_nft(a, b, c);
+            let d = params.meta.as_ref().map_or(0, |m| m.len() as u32);
+            WeightInfoContent::<T>::create_video_with_nft(a, b, c, d)
+        } else {
+            let c = params.meta.as_ref().map_or(0, |m| m.len() as u32);
+            WeightInfoContent::<T>::create_video_without_nft(a, b, c)
         }
-
-        WeightInfoContent::<T>::create_video_without_nft(a, b)
     }
 
     // Calculates weight for update_video extrinsic.
@@ -4103,10 +4107,14 @@ impl<T: Config> Module<T> {
             !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some();
 
         match (assets_touched, params.auto_issue_nft.as_ref()) {
-            (false, None) => WeightInfoContent::<T>::update_video_without_assets_without_nft(),
+            (false, None) => {
+                let a = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                WeightInfoContent::<T>::update_video_without_assets_without_nft(a)
+            }
             (false, Some(nft_params)) => {
                 let a = Self::extract_nft_auction_whitelist_size_len(nft_params);
-                WeightInfoContent::<T>::update_video_without_assets_with_nft(a)
+                let b = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                WeightInfoContent::<T>::update_video_without_assets_with_nft(a, b)
             }
             (true, nft_params) => {
                 let a = params
@@ -4117,9 +4125,11 @@ impl<T: Config> Module<T> {
                 let c = params.storage_buckets_num_witness.unwrap_or(0u32);
                 if let Some(nft_params) = nft_params {
                     let d = Self::extract_nft_auction_whitelist_size_len(nft_params);
-                    WeightInfoContent::<T>::update_video_with_assets_with_nft(a, b, c, d)
+                    let e = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                    WeightInfoContent::<T>::update_video_with_assets_with_nft(a, b, c, d, e)
                 } else {
-                    WeightInfoContent::<T>::update_video_with_assets_without_nft(a, b, c)
+                    let d = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                    WeightInfoContent::<T>::update_video_with_assets_without_nft(a, b, c, d)
                 }
             }
         }

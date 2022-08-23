@@ -167,7 +167,7 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
-        let new_meta = Some(vec![1u8].repeat(d as usize));
+        let new_meta = Some(vec![0xff].repeat(d as usize));
 
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: Some(assets_to_upload),
@@ -232,7 +232,7 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
-        let new_meta = Some(vec![1u8].repeat(b as usize));
+        let new_meta = Some(vec![0xff].repeat(b as usize));
 
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: None,
@@ -410,16 +410,17 @@ benchmarks! {
     ===============================================================================================
     */
     create_video_without_nft {
-        // TODO: Metadata param
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in
             (T::StorageBucketsPerBagValueConstraint::get().min as u32)
             ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in 1..MAX_BYTES_METADATA;
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
             Some(a),
             b,
-            None
+            None,
+            c
         )?;
         let expected_video_id = Pallet::<T>::next_video_id();
         let expected_asset_ids: BTreeSet<T::DataObjectId> = (
@@ -449,17 +450,18 @@ benchmarks! {
 
     // Worst case scenario: initial state - EnglishAuction
     create_video_with_nft {
-        // TODO: Metadata param
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in
             (T::StorageBucketsPerBagValueConstraint::get().min as u32)
             ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
         let c in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let d in 1..MAX_BYTES_METADATA;
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
             Some(a),
             b,
-            Some(c)
+            Some(c),
+            d
         )?;
         let expected_video_id = Pallet::<T>::next_video_id();
         let expected_asset_ids: BTreeSet<T::DataObjectId> = (
@@ -500,7 +502,7 @@ benchmarks! {
     }
 
     update_video_without_assets_without_nft {
-        // TODO: Metadata param
+        let a in 1..MAX_BYTES_METADATA;
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
@@ -514,7 +516,7 @@ benchmarks! {
             auto_issue_nft: None,
             expected_data_object_state_bloat_bond:
                 storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: None,
+            new_meta: Some(vec![0xff].repeat(a as usize)),
             storage_buckets_num_witness: None
         };
         let existing_asset_ids: BTreeSet<T::DataObjectId> = (
@@ -541,12 +543,12 @@ benchmarks! {
     }
 
     update_video_with_assets_without_nft {
-        // TODO: Metadata param
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in 1..T::MaxNumberOfAssetsPerVideo::get();
         let c in
             (T::StorageBucketsPerBagValueConstraint::get().min as u32)
             ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let d in 1..MAX_BYTES_METADATA;
 
         // As many assets as possible, but leaving room for "a" additional assets,
         // provided that "b" assets will be removed
@@ -574,7 +576,7 @@ benchmarks! {
             auto_issue_nft: None,
             expected_data_object_state_bloat_bond:
                 storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: None,
+            new_meta: Some(vec![0xff].repeat(d as usize)),
             storage_buckets_num_witness:
                 Some(storage_buckets_num_witness::<T>(channel_id)).transpose()?
         };
@@ -601,8 +603,8 @@ benchmarks! {
     }
 
     update_video_without_assets_with_nft {
-        // TODO: Metadata param
         let a in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let b in 1..MAX_BYTES_METADATA;
 
         let (
             video_id,
@@ -617,7 +619,7 @@ benchmarks! {
             auto_issue_nft: Some(worst_case_scenario_video_nft_issuance_params::<T>(a)),
             expected_data_object_state_bloat_bond:
                 storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: None,
+            new_meta: Some(vec![0xff].repeat(b as usize)),
             storage_buckets_num_witness: None
         };
         let existing_asset_ids: BTreeSet<T::DataObjectId> = (
@@ -655,13 +657,13 @@ benchmarks! {
     }
 
     update_video_with_assets_with_nft {
-        // TODO: Metadata param
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in 1..T::MaxNumberOfAssetsPerVideo::get();
         let c in
             (T::StorageBucketsPerBagValueConstraint::get().min as u32)
             ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
         let d in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let e in 1..MAX_BYTES_METADATA;
 
         // As many assets as possible, but leaving room for "a" additional assets,
         // provided that "b" assets will be removed
@@ -689,7 +691,7 @@ benchmarks! {
             auto_issue_nft: Some(worst_case_scenario_video_nft_issuance_params::<T>(d)),
             expected_data_object_state_bloat_bond:
                 storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: None,
+            new_meta: Some(vec![0xff].repeat(e as usize)),
             storage_buckets_num_witness:
                 Some(storage_buckets_num_witness::<T>(channel_id)).transpose()?
         };

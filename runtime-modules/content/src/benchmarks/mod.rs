@@ -686,7 +686,7 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
-    let meta = Some(vec![0u8].repeat(max_bytes_metadata as usize));
+    let meta = Some(vec![0xff].repeat(max_bytes_metadata as usize));
 
     ChannelCreationParameters::<T> {
         assets,
@@ -1001,6 +1001,7 @@ fn prepare_worst_case_scenario_video_creation_parameters<T>(
     assets_num: Option<u32>,
     storage_buckets_num: u32,
     nft_auction_whitelist_size: Option<u32>,
+    metadata_length: u32,
 ) -> Result<VideoCreationInputParameters<T>, DispatchError>
 where
     T: RuntimeConfig,
@@ -1025,7 +1026,7 @@ where
         channel_id,
         VideoCreationParameters::<T> {
             assets,
-            meta: None,
+            meta: Some(vec![0xff].repeat(metadata_length as usize)),
             auto_issue_nft,
             expected_video_state_bloat_bond: video_state_bloat_bond,
             expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
@@ -1046,6 +1047,7 @@ where
         assets_num,
         storage_buckets_num,
         None,
+        MAX_BYTES_METADATA,
     )?;
     let video_id = Pallet::<T>::next_video_id();
     Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
