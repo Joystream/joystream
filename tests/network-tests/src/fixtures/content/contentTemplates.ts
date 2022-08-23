@@ -40,6 +40,7 @@ export function getVideoDefaults(cliExamplesFolderPath: string, addSubtitles?: b
           },
         ]
       : undefined,
+    clearSubtitles: false,
   }
 }
 

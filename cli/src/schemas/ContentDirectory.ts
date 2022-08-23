@@ -185,6 +185,7 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
         },
       },
     },
+    clearSubtitles: { type: 'boolean' },
     thumbnailPhotoPath: { type: 'string' },
     title: { type: 'string' },
     videoPath: { type: 'string' },

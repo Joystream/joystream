@@ -95,9 +95,15 @@ message VideoMetadata {
 
     // Video subtitles
     repeated SubtitleMetadata subtitles = 17;
-
+    
     // Enable/Disable the comment section
     optional bool enable_comments = 18;
+
+    // Remove all subtitles; since protobuf doesn't distinguish b/w 
+    // empty array and null field, simply removing all subtitles by 
+    // overriding list with an empty array wont work
+    optional bool clear_subtitles = 19;
+
 }
 
 message ContentMetadata {

@@ -74,5 +74,21 @@ export default async function addAndUpdateVideoSubtitles({ api, query }: FlowPro
     }
   )
 
+  // override subtitles list; remove all subtitles
+  updateVideoInput.clearSubtitles = true
+  await joystreamCli.updateVideo(videoId, updateVideoInput)
+
+  // Assert video subtitles after creation
+  await query.tryQueryWithTimeout(
+    () => query.videoById(videoId.toString()),
+    (video) => {
+      Utils.assert(video, 'Video not found')
+      assert.equal(video.title, updateVideoInput.title)
+      assert.equal(video.description, updateVideoInput.description)
+      assert.equal(video.isPublic, updateVideoInput.isPublic)
+      assert.equal(video.subtitles.length, 0)
+    }
+  )
+
   debug('Done')
 }
