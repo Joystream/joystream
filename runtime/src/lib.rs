@@ -452,8 +452,8 @@ pub struct DealWithFees;
 impl OnUnbalanced<NegativeImbalance> for DealWithFees {
     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
         if let Some(fees) = fees_then_tips.next() {
-            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
-            let mut split = fees.ration(80, 20);
+            // for fees, we burn them all
+            let mut split = fees.ration(100, 0);
             if let Some(tips) = fees_then_tips.next() {
                 // For tips %100 are for the author
                 tips.ration_merge_into(0, 100, &mut split);
