@@ -243,14 +243,6 @@ fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) 
             ..
         }) => false,
         Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
-            general_proposal_parameters: _,
-            proposal_details,
-        }) => !matches!(
-            proposal_details,
-            proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
-                | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
-        ),
         _ => true, // Enable all other calls
     }
 }
