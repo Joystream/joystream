@@ -621,7 +621,7 @@ benchmarks! {
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
         set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![crate::PausableChannelFeature::CreatorCashout]);
