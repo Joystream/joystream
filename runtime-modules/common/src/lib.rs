@@ -123,10 +123,18 @@ pub trait BudgetManager<AccountId, Balance: Saturating> {
         let _ = Self::try_withdraw(account_id, amount);
     }
 
-    /// Increase the current budget value up to specified amount.
+    /// Increase the current budget value by a specified amount.
     fn increase_budget(amount: Balance) {
         let current_budget = Self::get_budget();
         let new_budget = current_budget.saturating_add(amount);
+
+        Self::set_budget(new_budget);
+    }
+
+    /// Decrease the current budget value by a specified amount.
+    fn decrease_budget(amount: Balance) {
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
 
         Self::set_budget(new_budget);
     }

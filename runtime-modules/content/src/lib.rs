@@ -57,9 +57,7 @@ use sp_arithmetic::{
     traits::{BaseArithmetic, One, Saturating, Zero},
     Perbill,
 };
-use sp_runtime::traits::{
-    AccountIdConversion, CheckedSub, Hash, MaybeSerializeDeserialize, Member,
-};
+use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 /// Module configuration trait for Content Directory Module
@@ -3399,12 +3397,9 @@ impl<T: Config> Module<T> {
                 let old_owner_controller_acc =
                     T::MemberAuthenticator::controller_account_id(*old_owner_id)?;
                 // Decrease working group budget.
-                let new_budget = T::ContentWorkingGroup::get_budget()
-                    .checked_sub(&price)
-                    .ok_or(DispatchError::Other(
-                        "pay_for_channel_swap: Unexpected working group budget underflow",
-                    ))?;
-                T::ContentWorkingGroup::set_budget(new_budget);
+                // Infallible, because we already ensured the budget is sufficient with
+                // `ensure_sufficient_balance_for_channel_transfer`
+                T::ContentWorkingGroup::decrease_budget(price);
                 // Deposit funds to old owner
                 let _ = Balances::<T>::deposit_creating(&old_owner_controller_acc, price);
             }
@@ -3414,8 +3409,7 @@ impl<T: Config> Module<T> {
                 // Burn funds from new owner's usable balance
                 burn_from_usable::<T>(&new_owner_controller_acc, price)?;
                 // Increase content working group budget
-                let new_budget = T::ContentWorkingGroup::get_budget().saturating_add(price);
-                T::ContentWorkingGroup::set_budget(new_budget);
+                T::ContentWorkingGroup::increase_budget(price);
             }
             (ChannelOwner::CuratorGroup(_), ChannelOwner::CuratorGroup(_)) => {
                 // No-op since budget would be decreased and then increased by `price`
