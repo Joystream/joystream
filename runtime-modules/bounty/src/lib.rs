@@ -1343,7 +1343,7 @@ decl_module! {
         /// # <weight>
         ///
         /// ## weight
-        /// `O (N + M + Z)`
+        /// `O (N x M + Z)`
         /// - `N` is number of judgment entries,
         /// - `M` is the sum of all action_justification lengths (inside OracleJudgment),
         /// - `Z` is rationale length
@@ -2188,7 +2188,7 @@ impl<T: Config> Module<T> {
                     entry.work_submitted,
                     Error::<T>::WinnerShouldHasWorkSubmission
                 );
-                reward_sum_from_judgment += *reward;
+                reward_sum_from_judgment = reward_sum_from_judgment.saturating_add(*reward);
             }
         }
 
