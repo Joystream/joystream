@@ -8,6 +8,8 @@ import bmp from 'bmp-js'
 import nodeCleanup from 'node-cleanup'
 import { debuggingCli } from '../consts'
 
+const jsonIndent = 4
+
 export class TmpFileManager {
   tmpDataDir: string
 
@@ -27,7 +29,12 @@ export class TmpFileManager {
 
   public jsonFile(value: unknown): string {
     const tmpFilePath = path.join(this.tmpDataDir, `${uuid()}.json`)
-    fs.writeFileSync(tmpFilePath, JSON.stringify(value))
+    fs.writeFileSync(tmpFilePath, JSON.stringify(value, null, jsonIndent))
+
+    if (debuggingCli) {
+      console.log('Saving CLI temporary file', tmpFilePath)
+    }
+
     return tmpFilePath
   }
 
@@ -36,6 +43,11 @@ export class TmpFileManager {
     const rawBmp = bmp.encode({ width, height, data })
     const tmpFilePath = path.join(this.tmpDataDir, `${uuid()}.bmp`)
     fs.writeFileSync(tmpFilePath, rawBmp.data)
+
+    if (debuggingCli) {
+      console.log('Saving CLI temporary image file', tmpFilePath)
+    }
+
     return tmpFilePath
   }
 }

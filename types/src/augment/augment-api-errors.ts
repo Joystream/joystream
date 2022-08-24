@@ -223,6 +223,14 @@ declare module '@polkadot/api-base/types/errors' {
       ChannelNftDailyLimitExceeded: AugmentedError<ApiType>;
       ChannelNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Provided channel owner (curator group) does not exist
+       **/
+      ChannelOwnerCuratorGroupDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Provided channel owner (member) does not exist
+       **/
+      ChannelOwnerMemberDoesNotExist: AugmentedError<ApiType>;
+      /**
        * Invalid extrinsic call: Channel state bloat bond changed.
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
@@ -430,6 +438,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NftIsNotIdle: AugmentedError<ApiType>;
       /**
+       * Non-channel owner specified during nft issuance does not exist
+       **/
+      NftNonChannelOwnerDoesNotExist: AugmentedError<ApiType>;
+      /**
        * Given video nft is not in buy now state
        **/
       NftNotInBuyNowState: AugmentedError<ApiType>;
@@ -513,6 +525,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Invalid extrinsic call: video state bloat bond changed.
        **/
       VideoStateBloatBondChanged: AugmentedError<ApiType>;
+      /**
+       * At least one of the whitelisted members does not exist
+       **/
+      WhitelistedMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * Auction whitelist has only one member
        **/
@@ -940,10 +956,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AccountDoesNotMatchThreadAuthor: AugmentedError<ApiType>;
       /**
-       * Forum user has already voted.
-       **/
-      AlreadyVotedOnPoll: AugmentedError<ApiType>;
-      /**
        * Ancestor category immutable, i.e. deleted or archived
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
@@ -971,10 +983,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category still contains some threads.
        **/
       CategoryNotEmptyThreads: AugmentedError<ApiType>;
-      /**
-       * data migration not done yet.
-       **/
-      DataMigrationNotDone: AugmentedError<ApiType>;
       /**
        * Forum user id not match its account.
        **/
@@ -1023,26 +1031,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category path len should be greater than zero
        **/
       PathLengthShouldBeGreaterThanZero: AugmentedError<ApiType>;
-      /**
-       * Poll items number too short.
-       **/
-      PollAlternativesTooShort: AugmentedError<ApiType>;
-      /**
-       * Poll data committed after poll expired.
-       **/
-      PollCommitExpired: AugmentedError<ApiType>;
-      /**
-       * Poll data committed is wrong.
-       **/
-      PollData: AugmentedError<ApiType>;
-      /**
-       * Poll not exist.
-       **/
-      PollNotExist: AugmentedError<ApiType>;
-      /**
-       * Poll date setting is wrong.
-       **/
-      PollTimeSetting: AugmentedError<ApiType>;
       /**
        * Post does not exist.
        **/
@@ -1394,6 +1382,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ControllerAccountRequired: AugmentedError<ApiType>;
       /**
+       * Locked amount is greater than credit amount
+       **/
+      GifLockExceedsCredit: AugmentedError<ApiType>;
+      /**
        * Handle already registered.
        **/
       HandleAlreadyRegistered: AugmentedError<ApiType>;
@@ -1405,6 +1397,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient balance to cover stake.
        **/
       InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
+      /**
+       * Gifter doesn't have sufficient balance to credit
+       **/
+      InsufficientBalanceToGift: AugmentedError<ApiType>;
       /**
        * Member profile not found (invalid member id).
        **/
@@ -1438,7 +1434,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       StakingAccountIsAlreadyRegistered: AugmentedError<ApiType>;
       /**
-       * Invalid origin.
+       * Unsigned origin.
        **/
       UnsignedOrigin: AugmentedError<ApiType>;
       /**
@@ -1576,6 +1572,64 @@ declare module '@polkadot/api-base/types/errors' {
        * Trying to fund with zero tokens
        **/
       ZeroTokensFunding: AugmentedError<ApiType>;
+    };
+    multisig: {
+      /**
+       * Call is already approved by this signatory.
+       **/
+      AlreadyApproved: AugmentedError<ApiType>;
+      /**
+       * The data to be stored is already stored.
+       **/
+      AlreadyStored: AugmentedError<ApiType>;
+      /**
+       * The maximum weight information provided was too low.
+       **/
+      MaxWeightTooLow: AugmentedError<ApiType>;
+      /**
+       * Threshold must be 2 or greater.
+       **/
+      MinimumThreshold: AugmentedError<ApiType>;
+      /**
+       * Call doesn't need any (more) approvals.
+       **/
+      NoApprovalsNeeded: AugmentedError<ApiType>;
+      /**
+       * Multisig operation not found when attempting to cancel.
+       **/
+      NotFound: AugmentedError<ApiType>;
+      /**
+       * No timepoint was given, yet the multisig operation is already underway.
+       **/
+      NoTimepoint: AugmentedError<ApiType>;
+      /**
+       * Only the account that originally created the multisig is able to cancel it.
+       **/
+      NotOwner: AugmentedError<ApiType>;
+      /**
+       * The sender was contained in the other signatories; it shouldn't be.
+       **/
+      SenderInSignatories: AugmentedError<ApiType>;
+      /**
+       * The signatories were provided out of order; they should be ordered.
+       **/
+      SignatoriesOutOfOrder: AugmentedError<ApiType>;
+      /**
+       * There are too few signatories in the list.
+       **/
+      TooFewSignatories: AugmentedError<ApiType>;
+      /**
+       * There are too many signatories in the list.
+       **/
+      TooManySignatories: AugmentedError<ApiType>;
+      /**
+       * A timepoint was given, yet no multisig operation is underway.
+       **/
+      UnexpectedTimepoint: AugmentedError<ApiType>;
+      /**
+       * A different timepoint was given to the multisig operation that is underway.
+       **/
+      WrongTimepoint: AugmentedError<ApiType>;
     };
     operationsWorkingGroupAlpha: {
       /**
@@ -2001,6 +2055,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CannotParticipateInSplitWithZeroAmount: AugmentedError<ApiType>;
       /**
+       * At least one of the members provided as part of InitialAllocation does not exist
+       **/
+      InitialAllocationToNonExistingMember: AugmentedError<ApiType>;
+      /**
        * User does not posses enough balance to participate in the revenue split
        **/
       InsufficientBalanceForSplitParticipation: AugmentedError<ApiType>;
@@ -2157,6 +2215,9 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient funds for 'Update Working Group Budget' proposal execution
        **/
       InsufficientFundsForBudgetUpdate: AugmentedError<ApiType>;
+      /**
+       * The specified min channel cashout is greater than the specified max channel cashout in `Update Channel Payouts` proposal.
+       **/
       InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout: AugmentedError<ApiType>;
       /**
        * Invalid council election parameter - announcing_period
@@ -2202,6 +2263,22 @@ declare module '@polkadot/api-base/types/errors' {
        * Repeated account in 'Funding Request' proposal.
        **/
       InvalidFundingRequestProposalRepeatedAccount: AugmentedError<ApiType>;
+      /**
+       * Provided lead application id is not valid
+       **/
+      InvalidLeadApplicationId: AugmentedError<ApiType>;
+      /**
+       * Provided lead opening id is not valid
+       **/
+      InvalidLeadOpeningId: AugmentedError<ApiType>;
+      /**
+       * Provided lead worker id is not valid
+       **/
+      InvalidLeadWorkerId: AugmentedError<ApiType>;
+      /**
+       * Provided proposal id is not valid
+       **/
+      InvalidProposalId: AugmentedError<ApiType>;
       /**
        * Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
        **/
@@ -2264,6 +2341,11 @@ declare module '@polkadot/api-base/types/errors' {
        * Thread doesn't exist
        **/
       ThreadDoesntExist: AugmentedError<ApiType>;
+      /**
+       * At least one of the member ids provided as part of closed thread whitelist belongs
+       * to a non-existing member.
+       **/
+      WhitelistedMemberDoesNotExist: AugmentedError<ApiType>;
     };
     proposalsEngine: {
       /**
@@ -2538,6 +2620,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Blacklist size limit exceeded.
        **/
       BlacklistSizeLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Call Disabled
+       **/
+      CallDisabled: AugmentedError<ApiType>;
       /**
        * Cannot delete non empty dynamic bag.
        **/

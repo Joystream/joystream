@@ -40,10 +40,6 @@ export async function content_CuratorGroupCreated({ store, event }: EventContext
     id: curatorGroupId.toString(),
     curators: [],
     isActive: false, // runtime creates inactive curator groups by default
-
-    // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
   })
 
   // save curator group
@@ -69,9 +65,6 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
 
   // update curator group
   curatorGroup.isActive = isActive.isTrue
-
-  // set last update time
-  curatorGroup.updatedAt = new Date(event.blockTimestamp)
 
   // save curator group
   await store.save<CuratorGroup>(curatorGroup)
@@ -101,9 +94,6 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
   // update curator group
   curatorGroup.curators.push(curator)
 
-  // set last update time
-  curatorGroup.updatedAt = new Date(event.blockTimestamp)
-
   // save curator group
   await store.save<CuratorGroup>(curatorGroup)
 
@@ -113,7 +103,7 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
 
 export async function content_CuratorRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId] = new Content.CuratorAddedEvent(event).params
+  const [curatorGroupId, curatorId] = new Content.CuratorRemovedEvent(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
@@ -126,14 +116,7 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
     return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
-  // load curator
-  const curator = await getCurator(store, curatorId.toString())
-
-  if (!curator) {
-    return inconsistentState('Non-existing curator removal from curator group requested', curatorGroupId)
-  }
-
-  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curator.toString())
+  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curatorId.toString())
 
   // ensure curator group exists
   if (curatorIndex < 0) {

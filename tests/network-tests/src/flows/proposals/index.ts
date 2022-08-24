@@ -6,7 +6,7 @@ import { Utils } from '../../utils'
 import {
   ApplyOnOpeningsHappyCaseFixture,
   CreateOpeningsFixture,
-  DEFAULT_OPENING_PARAMS,
+  createDefaultOpeningParams,
 } from '../../fixtures/workingGroups'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
 import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals'
@@ -22,7 +22,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
     api,
     query,
     'membershipWorkingGroup',
-    [DEFAULT_OPENING_PARAMS, DEFAULT_OPENING_PARAMS],
+    [createDefaultOpeningParams(api), createDefaultOpeningParams(api)],
     true
   )
   await new FixtureRunner(createLeadOpeningsFixture).run()
@@ -34,7 +34,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   const [applicantMemberId] = buyMembershipFixture.getCreatedMembers()
 
   const addStakingAccountsFixture = new AddStakingAccountsHappyCaseFixture(api, query, [
-    { asMember: applicantMemberId, account: applicantStakingAcc, stakeAmount: DEFAULT_OPENING_PARAMS.stake },
+    { asMember: applicantMemberId, account: applicantStakingAcc, stakeAmount: createDefaultOpeningParams(api).stake },
   ])
   await new FixtureRunner(addStakingAccountsFixture).run()
 
@@ -49,7 +49,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
           rewardAccount: applicantControllerAcc,
         },
       ],
-      openingMetadata: DEFAULT_OPENING_PARAMS.metadata,
+      openingMetadata: createDefaultOpeningParams(api).metadata,
     },
   ])
 
@@ -83,11 +83,11 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
     {
       details: createType('PalletProposalsCodexProposalDetails', {
         CreateWorkingGroupLeadOpening: {
-          description: Utils.metadataToBytes(OpeningMetadata, DEFAULT_OPENING_PARAMS.metadata),
-          rewardPerBlock: DEFAULT_OPENING_PARAMS.reward,
+          description: Utils.metadataToBytes(OpeningMetadata, createDefaultOpeningParams(api).metadata),
+          rewardPerBlock: createDefaultOpeningParams(api).reward,
           stakePolicy: {
-            leavingUnstakingPeriod: DEFAULT_OPENING_PARAMS.unstakingPeriod,
-            stakeAmount: DEFAULT_OPENING_PARAMS.stake,
+            leavingUnstakingPeriod: createDefaultOpeningParams(api).unstakingPeriod,
+            stakeAmount: createDefaultOpeningParams(api).stake,
           },
           group: 'Membership',
         },

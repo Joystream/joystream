@@ -100,6 +100,7 @@ mod benches {
         [pallet_timestamp, Timestamp]
         [substrate_utility, Utility]
         [pallet_vesting, Vesting]
+        [pallet_multisig, Multisig]
         [proposals_discussion, ProposalsDiscussion]
         [proposals_codex, ProposalsCodex]
         [proposals_engine, ProposalsEngine]
@@ -112,6 +113,7 @@ mod benches {
         // [bounty, Bounty]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
+        [project_token, ProjectToken]
     );
 }
 
@@ -355,6 +357,7 @@ impl_runtime_apis! {
             use pallet_election_provider_support_benchmarking::Pallet as EPSBench;
             use frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
+            use frame_support::StorageValue;
 
             use frame_system::RawOrigin;
 
@@ -366,7 +369,25 @@ impl_runtime_apis! {
 
             impl referendum::OptionCreator<<Runtime as frame_system::Config>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
                 fn create_option(account_id: <Runtime as frame_system::Config>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {
-                    crate::council::Module::<Runtime>::announce_candidacy(
+                    match council::Stage::<Runtime>::get().stage {
+                        council::CouncilStage::Announcing(_) => { /* Do nothing */ },
+                        _ => {
+                            // Force announcing stage
+                            let block_number = frame_system::Pallet::<Runtime>::block_number();
+                            let ends_at = block_number.saturating_add(<Runtime as council::Config>::AnnouncingPeriodDuration::get());
+                            let stage_data = council::CouncilStageAnnouncing {
+                                candidates_count: 0,
+                                ends_at,
+                            };
+                            council::Stage::<Runtime>::put(council::CouncilStageUpdate {
+                                stage: council::CouncilStage::Announcing(stage_data),
+                                changed_at: block_number,
+                            });
+                            council::AnnouncementPeriodNr::mutate(|value| *value += 1);
+                        }
+                    }
+                    // Announce candidacy
+                    council::Module::<Runtime>::announce_candidacy(
                         RawOrigin::Signed(account_id.clone()).into(),
                         member_id,
                         account_id.clone(),

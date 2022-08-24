@@ -777,7 +777,7 @@ fn upload_succeeded() {
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsUploaded(
-            vec![data_object_id],
+            BTreeSet::from_iter(vec![data_object_id]),
             upload_params,
             data_object_state_bloat_bond,
         ));
@@ -2517,18 +2517,17 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params)
+            .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
-        EventFixture::contains_crate_event(RawEvent::BagObjectsChanged(
-            bag_id.clone(),
-            object_creation_list[0].size,
-            1,
-        ));
-
         let data_object_id = 0; // just uploaded data object
-
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        EventFixture::contains_crate_event(RawEvent::DataObjectsUploaded(
+            data_object_ids.clone(),
+            upload_params.clone(),
+            Storage::data_object_state_bloat_bond_value(),
+        ));
 
         //// Pre-check voucher
         let bucket = Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
@@ -2538,7 +2537,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         DeleteDataObjectsFixture::new()
             .with_bag_id(bag_id.clone())
-            .with_data_object_ids(data_object_ids)
+            .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
 
         assert!(!<crate::DataObjectsById<Test>>::contains_key(
@@ -2552,7 +2551,11 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         assert_eq!(bucket.voucher.objects_used, 0);
         assert_eq!(bucket.voucher.size_used, 0);
 
-        EventFixture::contains_crate_event(RawEvent::BagObjectsChanged(bag_id, 0, 0));
+        EventFixture::contains_crate_event(RawEvent::DataObjectsDeleted(
+            DEFAULT_ACCOUNT_ID,
+            bag_id,
+            data_object_ids,
+        ));
     });
 }
 
@@ -3676,6 +3679,10 @@ fn create_dynamic_bag_fails_with_invalid_data_object_state_bloat_bond() {
         let invalid_data_object_state_bloat_bond_value = 55;
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id)
+            .with_objects(vec![DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            }])
             .with_expected_data_object_state_bloat_bond(invalid_data_object_state_bloat_bond_value)
             .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DataObjectStateBloatBondChanged.into()));
@@ -5553,7 +5560,7 @@ fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
 }
 
 #[test]
-fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available() {
+fn unsuccessful_dyn_bag_creation_with_bucket_objects_size_limit_reached() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
@@ -5566,22 +5573,24 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available
                 ipfs_content_id: vec![1],
             }])
             .with_storage_buckets(storage_buckets)
-            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+            .call_and_assert(Err(
+                Error::<Test>::StorageBucketObjectSizeLimitReached.into()
+            ));
     })
 }
 
 #[test]
-fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_objects_available() {
+fn unsuccessful_dyn_bag_creation_with_bucket_objects_number_limit_reached() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
         let storage_buckets = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let objects: Vec<DataObjectCreationParameters> = (1..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT
+        let objects: Vec<DataObjectCreationParameters> = (0..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT
             + 1))
             .map(|idx| DataObjectCreationParameters {
-                size: DEFAULT_DATA_OBJECTS_SIZE,
+                size: 1,
                 ipfs_content_id: vec![idx.try_into().unwrap()],
             })
             .collect();
@@ -5589,7 +5598,9 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_objects_availa
         CreateDynamicBagFixture::default()
             .with_objects(objects)
             .with_storage_buckets(storage_buckets)
-            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+            .call_and_assert(Err(
+                Error::<Test>::StorageBucketObjectNumberLimitReached.into()
+            ));
     })
 }
 

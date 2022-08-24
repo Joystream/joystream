@@ -7,8 +7,8 @@ use frame_support::{
     dispatch::DispatchError,
     parameter_types,
     traits::{
-        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnFinalize,
-        OnInitialize, OnUnbalanced, OneSessionHandler,
+        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnUnbalanced,
+        OneSessionHandler,
     },
     weights::constants::RocksDbWeight,
     PalletId,
@@ -27,9 +27,16 @@ use sp_staking::{EraIndex, SessionIndex};
 use staking_handler::{LockComparator, StakingManager};
 
 use crate as proposals_codex;
-use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
+use crate::{
+    ContentWorkingGroupInstance, DistributionWorkingGroupInstance, ForumWorkingGroupInstance,
+    GatewayWorkingGroupInstance, MembershipWorkingGroupInstance,
+    OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
+    OperationsWorkingGroupInstanceGamma, ProposalDetailsOf, ProposalEncoder, ProposalParameters,
+    StorageWorkingGroupInstance,
+};
 use proposals_engine::VotersParameters;
 
+use super::run_to_block;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::{TryFrom, TryInto};
 use std::cell::RefCell;
@@ -92,8 +99,13 @@ frame_support::construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
+        ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Pallet, Call, Storage, Event<T>},
+        GatewayWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
         MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -314,6 +326,9 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     }
 }
 
+pub const LEADER_MEMBER_ID: u64 = 100;
+pub const LEADER_ACCOUNT_ID: u64 = 100;
+
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Config>::Origin,
@@ -419,6 +434,12 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
+impl common::membership::MembershipInfoProvider<Test> for () {
+    fn controller_account_id(member_id: u64) -> Result<u64, DispatchError> {
+        Ok(member_id)
+    }
+}
+
 impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
@@ -439,6 +460,7 @@ parameter_types! {
 impl proposals_discussion::Config for Test {
     type Event = Event;
     type AuthorOriginValidator = ();
+    type MembershipInfoProvider = ();
     type CouncilOriginValidator = ();
     type ThreadId = u64;
     type PostId = u64;
@@ -456,27 +478,22 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
-// The forum working group instance alias.
-pub type ForumWorkingGroupInstance = working_group::Instance1;
-
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
-
-// The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance6;
-
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const LockId1: [u8; 8] = [1; 8];
     pub const LockId2: [u8; 8] = [2; 8];
+    pub const LockId3: [u8; 8] = [3; 8];
+    pub const LockId4: [u8; 8] = [4; 8];
+    pub const LockId5: [u8; 8] = [5; 8];
+    pub const LockId6: [u8; 8] = [6; 8];
+    pub const LockId7: [u8; 8] = [7; 8];
+    pub const LockId8: [u8; 8] = [8; 8];
+    pub const LockId9: [u8; 8] = [9; 8];
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
 }
 
-impl working_group::Config<ContentDirectoryWorkingGroupInstance> for Test {
+impl working_group::Config<ForumWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
@@ -502,10 +519,36 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Config<ForumWorkingGroupInstance> for Test {
+impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingHandler = StakingManager<Self, LockId3>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId4>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Config<GatewayWorkingGroupInstance> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId5>;
     type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
@@ -518,7 +561,46 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
 impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
+    type StakingHandler = StakingManager<Self, LockId6>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId7>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId8>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl working_group::Config<DistributionWorkingGroupInstance> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId9>;
     type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
@@ -573,6 +655,9 @@ impl crate::Config for Test {
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
+    type FundingRequestProposalMaxAmount = FundingRequestProposalMaxAmount;
+    type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
+    type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
 }
 
 parameter_types! {
@@ -587,6 +672,9 @@ parameter_types! {
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
+    pub const FundingRequestProposalMaxAmount: Balance = 10_000_000_000_000;
+    pub const FundingRequestProposalMaxAccounts: u32 = 100;
+    pub const SetMaxValidatorCountProposalMaxValidators: u32 = 300;
 }
 
 pub type ReferendumInstance = referendum::Instance1;
@@ -704,8 +792,12 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = frame_system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
+        .unwrap();
+
+    council::GenesisConfig::<Test>::default()
+        .assimilate_storage(&mut t)
         .unwrap();
 
     let mut result = Into::<sp_io::TestExternalities>::into(t);
@@ -713,11 +805,7 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
     // Make sure we are not in block 1 where no events are emitted
     // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
-        let mut block_number = frame_system::Pallet::<Test>::block_number();
-        <System as OnFinalize<u64>>::on_finalize(block_number);
-        block_number += 1;
-        System::set_block_number(block_number);
-        <System as OnInitialize<u64>>::on_initialize(block_number);
+        run_to_block(1);
     });
 
     result

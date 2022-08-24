@@ -225,6 +225,8 @@ impl CreateChannelFixture {
             // dynamic bag for channel is created
             assert_ok!(Storage::<Test>::ensure_bag_exists(&channel_bag_id));
 
+            let channel_account = ContentTreasury::<Test>::account_for_channel(channel_id);
+
             // event correctly deposited
             assert_eq!(
                 System::events().last().unwrap().event,
@@ -247,6 +249,7 @@ impl CreateChannelFixture {
                         channel_state_bloat_bond: self.params.expected_channel_state_bloat_bond
                     },
                     self.params.clone(),
+                    channel_account
                 ))
             );
 

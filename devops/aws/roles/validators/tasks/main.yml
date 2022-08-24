@@ -9,7 +9,7 @@
     keystore_path: "{{ chain_path }}/keystore/"
 
 - set_fact:
-    secret_path: "{{ network_path }}/secret"
+    node_secret_path: "{{ network_path }}/secret"
 
 - name: Creating chains directory
   file:
@@ -20,8 +20,8 @@
 
 - name: Copy node key to remote host
   copy:
-    dest: "{{ secret_path }}"
-    content: "{{ subkey_output.stdout }}"
+    dest: "{{ node_secret_path }}"
+    content: "{{ generate_node_keys_output.stdout }}"
 
 - name: Copy auth directory to remote host
   copy:
@@ -34,7 +34,7 @@
     dest: /etc/systemd/system/joystream-node.service
   vars:
     template_keystore_path: "{{ keystore_path }}"
-    template_secret_path: "{{ secret_path }}"
+    template_node_secret_path: "{{ node_secret_path }}"
     template_remote_chain_spec_path: "{{ remote_chain_spec_path }}"
   become: yes
 

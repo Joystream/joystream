@@ -9,8 +9,8 @@ import {
   Network,
   WorkingGroup as WGEntity,
   MetaprotocolTransactionStatusEvent,
-  MetaprotocolTransactionStatus,
   MetaprotocolTransactionErrored,
+  MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
@@ -68,11 +68,8 @@ export function newMetaprotocolEntityId(substrateEvent: SubstrateEvent): string 
 }
 
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
-  const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
-  const eventTime = new Date(blockTimestamp)
+  const { blockNumber, indexInBlock, extrinsic } = substrateEvent
   return {
-    createdAt: eventTime,
-    updatedAt: eventTime,
     id: `${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`,
     inBlock: blockNumber,
     network: CURRENT_NETWORK,
@@ -210,7 +207,7 @@ export async function getWorkingGroupByName(
 ): Promise<WGEntity> {
   const group = await store.get(WGEntity, { where: { name }, relations })
   if (!group) {
-    throw new Error(`Working group ${name} not found!`)
+    return inconsistentState(`Working group ${name} not found!`)
   }
   return group
 }
@@ -224,7 +221,7 @@ export async function getWorker(
   const workerDbId = `${groupName}-${runtimeId}`
   const worker = await store.get(Worker, { where: { id: workerDbId }, relations })
   if (!worker) {
-    inconsistentState(`Expected worker not found by id ${workerDbId}`)
+    return inconsistentState(`Expected worker not found by id ${workerDbId}`)
   }
 
   return worker
@@ -281,19 +278,34 @@ export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number 
   }
 }
 
-export async function updateMetaprotocolTransactionStatus(
+export async function saveMetaprotocolTransactionSuccessful(
   store: DatabaseManager,
-  txStatusEventId: string,
-  newStatus: typeof MetaprotocolTransactionStatus,
-  errorMessage?: unknown
+  event: SubstrateEvent,
+  info: Partial<MetaprotocolTransactionSuccessful>
 ): Promise<void> {
-  if (errorMessage && newStatus instanceof MetaprotocolTransactionErrored) {
-    newStatus.message = errorMessage instanceof Error ? errorMessage.message : (errorMessage as string)
-  }
+  const status = new MetaprotocolTransactionSuccessful()
+  Object.assign(status, info)
 
-  const metaprotocolTxStatusEvent = await getById(store, MetaprotocolTransactionStatusEvent, txStatusEventId)
-  metaprotocolTxStatusEvent.status = newStatus
+  const metaprotocolTransaction = new MetaprotocolTransactionStatusEvent({
+    ...genericEventFields(event),
+    status,
+  })
 
-  // save metaprotocol tx status event
-  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
+  await store.save(metaprotocolTransaction)
+}
+
+export async function saveMetaprotocolTransactionErrored(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  message: string
+): Promise<void> {
+  const status = new MetaprotocolTransactionErrored()
+  status.message = message
+
+  const metaprotocolTransaction = new MetaprotocolTransactionStatusEvent({
+    ...genericEventFields(event),
+    status,
+  })
+
+  await store.save(metaprotocolTransaction)
 }

@@ -21,7 +21,6 @@ import {
   // asset
   Membership,
   VideoMediaEncoding,
-  ChannelCategory,
   StorageDataObject,
   DataObjectTypeChannelAvatar,
   DataObjectTypeChannelCoverPhoto,
@@ -71,7 +70,7 @@ const ASSET_TYPES = {
 } as const
 
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = ['channel', 'channel.category', 'category', 'thumbnailPhoto', 'media']
+export const videoRelationsForCounters = ['channel', 'category', 'thumbnailPhoto', 'media']
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
@@ -141,11 +140,6 @@ export async function processChannelMetadata(
 
   await processChannelAssets(ctx, assets, channel, meta)
 
-  // prepare channel category if needed
-  if (isSet(meta.category)) {
-    channel.category = await processChannelCategory(ctx, channel.category, parseInt(meta.category))
-  }
-
   // prepare language if needed
   if (isSet(meta.language)) {
     channel.language = await processLanguage(ctx, channel.language, meta.language)
@@ -168,7 +162,7 @@ export async function processVideoMetadata(
 
   // prepare video category if needed
   if (meta.category) {
-    video.category = await processVideoCategory(ctx, video.category, parseInt(meta.category))
+    video.category = await processVideoCategory(ctx, video.category, meta.category)
   }
 
   // prepare media meta information if needed
@@ -225,11 +219,9 @@ async function processVideoMediaEncoding(
     existingVideoMediaEncoding ||
     new VideoMediaEncoding({
       id: deterministicEntityId(event),
-      createdAt: new Date(event.blockTimestamp),
     })
   // integrate media encoding-related data
   integrateMeta(encoding, metadata, ['codecName', 'container', 'mimeMediaType'])
-  encoding.updatedAt = new Date(event.blockTimestamp)
   await store.save<VideoMediaEncoding>(encoding)
 
   return encoding
@@ -247,7 +239,6 @@ async function processVideoMediaMetadata(
     new VideoMediaMetadata({
       id: deterministicEntityId(event),
       createdInBlock: event.blockNumber,
-      createdAt: new Date(event.blockTimestamp),
     })
 
   // integrate media-related data
@@ -257,7 +248,6 @@ async function processVideoMediaMetadata(
     pixelHeight: metadata.mediaPixelHeight,
   }
   integrateMeta(videoMedia, mediaMetadata, ['pixelWidth', 'pixelHeight', 'size'])
-  videoMedia.updatedAt = new Date(event.blockTimestamp)
   videoMedia.encoding = await processVideoMediaEncoding(ctx, videoMedia.encoding, metadata.mediaType || {})
   await store.save<VideoMediaMetadata>(videoMedia)
 
@@ -462,8 +452,6 @@ async function processLanguage(
     id: deterministicEntityId(event),
     iso: languageIso,
     createdInBlock: event.blockNumber,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
   })
 
   await store.save<Language>(newLanguage)
@@ -491,9 +479,7 @@ async function updateVideoLicense(
       previousLicense ||
       new License({
         id: deterministicEntityId(event),
-        createdAt: new Date(event.blockTimestamp),
       })
-    license.updatedAt = new Date(event.blockTimestamp)
     integrateMeta(license, licenseMetadata, ['attribution', 'code', 'customText'])
     await store.save<License>(license)
   }
@@ -502,7 +488,6 @@ async function updateVideoLicense(
   // FIXME: Note that we MUST to provide "null" here in order to unset a relation,
   // See: https://github.com/Joystream/hydra/issues/435
   video.license = license as License | undefined
-  video.updatedAt = new Date(ctx.event.blockTimestamp)
   await store.save<Video>(video)
 
   // Safely remove previous license if needed
@@ -524,7 +509,7 @@ function isLicenseEmpty(licenseObject: ILicense): boolean {
 async function processVideoCategory(
   ctx: EventContext & StoreContext,
   currentCategory: VideoCategory | undefined,
-  categoryId: number
+  categoryId: string
 ): Promise<VideoCategory | undefined> {
   const { store } = ctx
 
@@ -533,31 +518,17 @@ async function processVideoCategory(
     where: { id: categoryId.toString() },
   })
 
-  // ensure video category exists
+  // if category is not found, create new one
   if (!category) {
-    invalidMetadata('Non-existing video category association with video requested', categoryId)
-    return currentCategory
-  }
-
-  return category
-}
-
-async function processChannelCategory(
-  ctx: EventContext & StoreContext,
-  currentCategory: ChannelCategory | undefined,
-  categoryId: number
-): Promise<ChannelCategory | undefined> {
-  const { store } = ctx
-
-  // load video category
-  const category = await store.get(ChannelCategory, {
-    where: { id: categoryId.toString() },
-  })
-
-  // ensure video category exists
-  if (!category) {
-    invalidMetadata('Non-existing channel category association with channel requested', categoryId)
-    return currentCategory
+    logger.info('Creating unknown video category', { categoryId })
+    const newCategory = new VideoCategory({
+      id: categoryId,
+      videos: [],
+      createdInBlock: ctx.event.blockNumber,
+      activeVideosCounter: 0,
+    })
+    await store.save<VideoCategory>(newCategory)
+    return newCategory
   }
 
   return category

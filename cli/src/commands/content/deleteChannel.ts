@@ -1,15 +1,16 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
-import { createType } from '@joystream/types'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the channel and optionally all associated data objects.'
 
   static flags = {
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
     channelId: flags.integer({
       char: 'c',
       required: true,
@@ -23,54 +24,36 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     ...ContentDirectoryCommandBase.flags,
   }
 
-  async getDataObjectsInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {
-    const dataObjects = await this.getQNApi().dataObjectsByBagId(`dynamic:channel:${channelId}`)
-
-    if (dataObjects.length) {
-      this.log('Following data objects are still associated with the channel:')
-      dataObjects.forEach((o) => {
-        let parentStr = ''
-        if ('video' in o.type && o.type.video) {
-          parentStr = ` (video: ${o.type.video.id})`
-        }
-        this.log(`- ${o.id} - ${o.type.__typename}${parentStr}`)
-      })
-    }
-
-    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
-  }
-
-  async getDataObjectsInfoFromChain(channelId: number): Promise<[string, BN][]> {
-    const dataObjects = await this.getApi().dataObjectsInBag(
-      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
-    )
-
-    if (dataObjects.length) {
-      const dataObjectIds = dataObjects.map(([id]) => id.toString())
-      this.log(`Following data objects are still associated with the channel: ${dataObjectIds.join(', ')}`)
-    }
-
-    return dataObjects.map(([id, o]) => [id.toString(), o.stateBloatBond])
-  }
-
   async run(): Promise<void> {
-    const {
-      flags: { channelId, force },
-    } = this.parse(DeleteChannelCommand)
+    const { context, channelId, force } = this.parse(DeleteChannelCommand).flags
     // Context
     const channel = await this.getApi().channelById(channelId)
-    const [actor, address] = await this.getChannelOwnerActor(channel)
-
-    if (channel.numVideos.toNumber()) {
-      this.error(
-        `This channel still has ${channel.numVideos.toNumber()} associated video(s)!\n` +
-          `Delete the videos first using ${chalk.magentaBright('content:deleteVideo')} command`
-      )
-    }
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
 
     const dataObjectsInfo = this.isQueryNodeUriSet()
       ? await this.getDataObjectsInfoFromQueryNode(channelId)
       : await this.getDataObjectsInfoFromChain(channelId)
+
+    // Ensure actor is authorized to perform channel deletion
+    const requiredPermissions: ChannelActionPermission['type'][] = dataObjectsInfo.length
+      ? ['DeleteChannel', 'ManageNonVideoChannelAssets']
+      : ['DeleteChannel']
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channelOwner or collaborator with ${requiredPermissions} permissions can perform this deletion!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
+
+    if (channel.numVideos.toNumber()) {
+      this.error(
+        `This channel still has 
+        ${channel.numVideos.toNumber()} associated video(s)!\n` +
+          `Delete the videos first using ${chalk.magentaBright('content:deleteVideo')} command`
+      )
+    }
 
     if (dataObjectsInfo.length) {
       if (!force) {
@@ -78,11 +61,14 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
+      const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects state bloat bond of ${chalk.cyanBright(
-          formatBalance(stateBloatBond)
-        )} will be transferred to ${chalk.magentaBright(address)}`
+        `Channel state bloat bond of ${chalk.cyanBright(
+          formatBalance(channel.channelStateBloatBond)
+        )} will be transferred to ${chalk.magentaBright(address)}\n` +
+          `Data objects state bloat bond of ${chalk.cyanBright(
+            formatBalance(dataObjectsStateBloatBond)
+          )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }
 

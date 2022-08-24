@@ -1,13 +1,10 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { assertNftOwner, assertAuctionAndBids } from './utils'
 import BN from 'bn.js'
-
-// settings
-const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
 export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
   private videoId: number

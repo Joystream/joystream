@@ -13,6 +13,13 @@ else
   source $1
 fi
 
+ACCOUNT_ID=$(aws sts get-caller-identity --profile $CLI_PROFILE --query Account --output text)
+
+if [ $ACCOUNT_ID == None ]; then
+    echo "Couldn't find Account ID, please check if AWS Profile $CLI_PROFILE is set"
+    exit 1
+fi
+
 if [ ! -f "$KEY_PATH" ]; then
     echo "Key file not found at $KEY_PATH"
     exit 1

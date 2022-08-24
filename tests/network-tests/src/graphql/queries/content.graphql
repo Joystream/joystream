@@ -51,9 +51,6 @@ fragment ChannelFields on Channel {
   ownerCuratorGroup {
     id
   }
-  category {
-    name
-  }
   avatarPhoto {
     ...StorageDataObjectFields
   }
@@ -64,15 +61,12 @@ fragment ChannelFields on Channel {
   bannedMembers {
     id
   }
-}
-
-fragment ChannelCategoryFields on ChannelCategory {
-  id
-  activeVideosCounter
+  rewardAccount
 }
 
 fragment VideoCategoryFields on VideoCategory {
   id
+  name
   activeVideosCounter
 }
 
@@ -240,14 +234,14 @@ query getChannelsByIds($ids: [ID!]) {
   }
 }
 
-query getChannelCategoryById($id: ID!) {
-  channelCategoryByUniqueInput(where: { id: $id }) {
-    ...ChannelCategoryFields
+query getVideoCategoryById($id: ID!) {
+  videoCategoryByUniqueInput(where: { id: $id }) {
+    ...VideoCategoryFields
   }
 }
 
-query getVideoCategoryById($id: ID!) {
-  videoCategoryByUniqueInput(where: { id: $id }) {
+query getVideoCategories($order: [VideoCategoryOrderByInput!] = [createdAt_DESC]) {
+  videoCategories(orderBy: $order) {
     ...VideoCategoryFields
   }
 }
@@ -279,5 +273,11 @@ query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
 query getChannelNftCollectors {
   channelNftCollectors {
     ...ChannelNftCollectorFields
+  }
+}
+
+query getDataObjectsByVideoId($videoId: ID) {
+  storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...StorageDataObjectFields
   }
 }

@@ -49,8 +49,8 @@ frame_support::construct_runtime!(
         Balances: balances,
         CollectiveFlip: randomness_collective_flip,
         Timestamp: pallet_timestamp,
-        Membership: membership::{Pallet, Call, Storage, Config<T>, Event<T>},
-        Storage: crate::{Pallet, Call, Storage, Config, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Storage: crate::{Pallet, Call, Storage, Config<T>, Event<T>},
         // Need to be added for benchmarks to work
         Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
         Wg9: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
@@ -350,8 +350,8 @@ pub fn build_test_externalities_with_genesis() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    crate::GenesisConfig::default()
-        .assimilate_storage::<Test>(&mut t)
+    crate::GenesisConfig::<Test>::default()
+        .assimilate_storage(&mut t)
         .unwrap();
 
     t.into()

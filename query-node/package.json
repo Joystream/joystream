@@ -36,7 +36,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@joystream/hydra-processor": "^4.0.0-alpha.0",
+    "@joystream/hydra-processor": "^4.0.0-alpha.6",
     "@types/bn.js": "^5.1.0",
     "bn.js": "^5.2.1",
     "tslib": "^2.0.0"

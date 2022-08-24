@@ -41,6 +41,7 @@ import {
   distributionBucketId,
   distributionOperatorId,
   distributionBucketIdByFamilyAndIndex,
+  deleteDataObjects,
 } from './utils'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 
@@ -210,6 +211,16 @@ export async function storage_DynamicBagCreated({ event, store }: EventContext &
 
 export async function storage_DynamicBagDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bagId] = new Storage.DynamicBagDeletedEvent(event).params
+
+  // first remove all the data objects in storage bucket
+  const bagDataObjects = await store.getMany(StorageDataObject, {
+    where: { storageBag: { id: getDynamicBagId(bagId) } },
+  })
+
+  for (const dataObject of bagDataObjects) {
+    await unsetAssetRelations(store, dataObject)
+  }
+
   const storageBag = await getDynamicBag(store, bagId, ['objects'])
   await store.remove<StorageBag>(storageBag)
 }
@@ -219,7 +230,31 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
   const [objectIds, { bagId, objectCreationList }, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
-  await createDataObjects(store, { storageBagOrId: bagId, objectCreationList, stateBloatBond, objectIds })
+  await createDataObjects(store, {
+    storageBagOrId: bagId,
+    objectCreationList,
+    stateBloatBond,
+    objectIds: [...objectIds.values()],
+  })
+}
+
+export async function storage_DataObjectsUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [
+    { bagId, objectCreationList, expectedDataObjectStateBloatBond: stateBloatBond },
+    uploadedObjectIds,
+    objectsToRemove,
+  ] = new Storage.DataObjectsUpdatedEvent(event).params
+
+  // create new objects
+  await createDataObjects(store, {
+    storageBagOrId: bagId,
+    objectCreationList,
+    stateBloatBond,
+    objectIds: [...uploadedObjectIds.values()],
+  })
+
+  // remove objects
+  await deleteDataObjects(store, bagId, objectsToRemove)
 }
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -300,19 +335,8 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bagId, dataObjectIds] = new Storage.DataObjectsDeletedEvent(event).params
-  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
-    'videoThumbnail',
-    ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
-    'videoMedia',
-    ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
-  ])
 
-  for (const dataObject of dataObjects) {
-    // update video active counters
-    await getAllManagers(store).storageDataObjects.onMainEntityDeletion(dataObject)
-
-    await unsetAssetRelations(store, dataObject)
-  }
+  await deleteDataObjects(store, bagId, dataObjectIds)
 }
 
 // DISTRIBUTION FAMILY
@@ -590,6 +614,17 @@ export async function storage_DataObjectPerMegabyteFeeUpdated({
   const storageSystem = await getStorageSystem(store)
 
   storageSystem.dataObjectFeePerMb = newFee
+
+  await store.save<StorageSystemParameters>(storageSystem)
+}
+
+export async function storage_DataObjectStateBloatBondValueUpdated({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  const [newStateBloatBondValue] = new Storage.DataObjectStateBloatBondValueUpdatedEvent(event).params
+  const storageSystem = await getStorageSystem(store)
+  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue
 
   await store.save<StorageSystemParameters>(storageSystem)
 }

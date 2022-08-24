@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::mock::*;
-use frame_support::assert_err;
 use frame_support::traits::Currency;
 
 /// test cases are arranged as two layers.
@@ -369,7 +368,6 @@ fn update_category_archival_status_lock_works() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -400,7 +398,6 @@ fn update_category_archival_status_lock_works() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
         );
 
@@ -764,7 +761,6 @@ fn delete_category_non_empty_threads() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -912,7 +908,6 @@ fn create_thread_origin() {
                 category_id,
                 good_thread_metadata(),
                 good_thread_text(),
-                None,
                 results[index],
             );
         });
@@ -945,7 +940,6 @@ fn create_thread_balance() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -956,7 +950,6 @@ fn create_thread_balance() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -970,46 +963,6 @@ fn create_thread_balance() {
             second_state_cleanup_treasury_account
         );
     });
-}
-
-#[test]
-// test if timestamp of poll start time and end time are valid
-fn create_thread_poll_timestamp() {
-    let expiration_diff = 10;
-    let results = vec![Ok(()), Err(Error::<Runtime>::PollTimeSetting.into())];
-
-    for index in 0..results.len() {
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let initial_balance = 10_000_000;
-        let origin = OriginType::Signed(forum_lead);
-
-        with_test_externalities(|| {
-            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-            change_current_time(1);
-            let poll = generate_poll_input_timestamp_cases(index, expiration_diff);
-            change_current_time(index as u64 * expiration_diff + 1);
-
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                good_thread_metadata(),
-                good_thread_text(),
-                Some(poll),
-                results[index],
-            );
-        });
-    }
 }
 
 #[test]
@@ -1047,7 +1000,6 @@ fn edit_thread_metadata() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -1093,7 +1045,6 @@ fn create_thread_fails_on_non_existing_category() {
             invalid_category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Err(Error::<Runtime>::CategoryDoesNotExist.into()),
         );
     });
@@ -1138,7 +1089,6 @@ fn delete_thread() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            Some(generate_poll_input(10)),
             Ok(()),
         );
 
@@ -1168,18 +1118,6 @@ fn delete_thread() {
             balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
-
-        vote_on_poll_mock(
-            FORUM_LEAD_ORIGIN.clone(),
-            forum_lead,
-            thread_id,
-            category_id,
-            1,
-            Ok(()),
-        );
-
-        // check poll votes exist.
-        assert!(<PollVotes<Runtime>>::contains_key(thread_id, forum_lead));
 
         update_category_membership_of_moderator_mock(
             origin.clone(),
@@ -1255,8 +1193,6 @@ fn delete_thread() {
             Ok(()),
         );
 
-        // check poll voting data was deleted
-        assert!(!<PollVotes<Runtime>>::contains_key(thread_id, forum_lead));
         current_balance += <Runtime as Config>::ThreadDeposit::get();
 
         assert_eq!(
@@ -1296,7 +1232,6 @@ fn delete_thread_fails_with_outstanding_posts() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -1348,7 +1283,6 @@ fn move_thread_moderator_permissions() {
             category_id_1,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -1476,7 +1410,6 @@ fn category_updated_successfully_on_thread_moving() {
             category_id_1,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -1587,7 +1520,6 @@ fn move_thread_invalid_move() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -1607,178 +1539,6 @@ fn move_thread_invalid_move() {
             thread_id,
             category_id,
             Err(Error::<Runtime>::ThreadMoveInvalid.into()),
-        );
-    });
-}
-
-/*
- ** vote_on_poll
- */
-#[test]
-// test if poll submitter is a forum user
-fn vote_on_poll_origin() {
-    let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_MEMBER_ORIGIN];
-    let results = vec![
-        Ok(()),
-        Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
-    ];
-    let expiration_diff = 10;
-
-    for index in 0..origins.len() {
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = OriginType::Signed(forum_lead);
-        let initial_balance = 10_000_000;
-        with_test_externalities(|| {
-            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                good_thread_metadata(),
-                good_thread_text(),
-                Some(generate_poll_input(expiration_diff)),
-                Ok(()),
-            );
-
-            vote_on_poll_mock(
-                origins[index].clone(),
-                forum_lead,
-                thread_id,
-                category_id,
-                1,
-                results[index],
-            );
-        });
-    }
-}
-
-#[test]
-fn vote_on_poll_fails_on_double_voting() {
-    let expiration_diff = 10;
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let initial_balance = 10_000_000;
-
-    with_test_externalities(|| {
-        Balances::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            FORUM_LEAD_ORIGIN.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            FORUM_LEAD_ORIGIN.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_metadata(),
-            good_thread_text(),
-            Some(generate_poll_input(expiration_diff)),
-            Ok(()),
-        );
-
-        vote_on_poll_mock(
-            FORUM_LEAD_ORIGIN.clone(),
-            forum_lead,
-            thread_id,
-            category_id,
-            1,
-            Ok(()),
-        );
-
-        vote_on_poll_mock(
-            FORUM_LEAD_ORIGIN.clone(),
-            forum_lead,
-            thread_id,
-            category_id,
-            1,
-            Err(Error::<Runtime>::AlreadyVotedOnPoll.into()),
-        );
-    });
-}
-
-#[test]
-// test if poll metadata created
-fn vote_on_poll_exists() {
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let initial_balance = 10_000_000;
-    with_test_externalities(|| {
-        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_metadata(),
-            good_thread_text(),
-            None,
-            Ok(()),
-        );
-        vote_on_poll_mock(
-            origin.clone(),
-            forum_lead,
-            thread_id,
-            category_id,
-            1,
-            Err(Error::<Runtime>::PollNotExist.into()),
-        );
-    });
-}
-
-#[test]
-// test if forum reject poll submit after expiration
-fn vote_on_poll_expired() {
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    let expiration_diff = 10;
-    let initial_balance = 10_000_000;
-    with_test_externalities(|| {
-        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-
-        let category_id = create_category_mock(
-            origin.clone(),
-            None,
-            good_category_title(),
-            good_category_description(),
-            Ok(()),
-        );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_metadata(),
-            good_thread_text(),
-            Some(generate_poll_input(expiration_diff)),
-            Ok(()),
-        );
-        change_current_time(expiration_diff + 1);
-        vote_on_poll_mock(
-            origin.clone(),
-            forum_lead,
-            category_id,
-            thread_id,
-            1,
-            Err(Error::<Runtime>::PollCommitExpired.into()),
         );
     });
 }
@@ -1818,7 +1578,6 @@ fn moderate_thread_origin_ok() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
         // Delete original post first to allow thread deletion
@@ -1873,7 +1632,6 @@ fn moderate_thread_fails_with_outstanding_posts() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
         moderate_thread_mock(
@@ -1925,7 +1683,6 @@ fn add_post_origin() {
                 category_id,
                 good_thread_metadata(),
                 good_thread_text(),
-                None,
                 Ok(()),
             );
             create_post_mock(
@@ -1973,7 +1730,6 @@ fn add_post_balance() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -2049,7 +1805,6 @@ fn edit_post_text() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -2118,7 +1873,6 @@ fn edit_non_editable_post_text() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -2177,7 +1931,6 @@ fn react_post() {
                 category_id,
                 good_thread_metadata(),
                 good_thread_text(),
-                None,
                 Ok(()),
             );
             let post_id = create_post_mock(
@@ -2245,7 +1998,6 @@ fn moderate_post_origin() {
                 category_id,
                 good_thread_metadata(),
                 good_thread_text(),
-                None,
                 Ok(()),
             );
             let post_id = create_post_mock(
@@ -2303,7 +2055,6 @@ fn moderate_post_fails_when_insufficient_permissions_or_invalid_post_path() {
                 i,
                 good_thread_metadata(),
                 good_thread_text(),
-                None,
                 Ok(()),
             );
         }
@@ -2378,7 +2129,6 @@ fn delete_post_creator() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
 
@@ -2524,7 +2274,6 @@ fn delete_post_fails_for_non_existing_posts() {
                 i,
                 good_thread_metadata(),
                 good_thread_text(),
-                None,
                 Ok(()),
             );
         }
@@ -2587,7 +2336,6 @@ fn set_stickied_threads_ok() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
         set_stickied_threads_mock(
@@ -2605,7 +2353,6 @@ fn set_stickied_threads_ok() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
         // Delete original post first to allow thread deletion
@@ -2669,7 +2416,6 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
         set_stickied_threads_mock(
@@ -2706,7 +2452,6 @@ fn set_stickied_threads_wrong_moderator() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
         set_stickied_threads_mock(
@@ -2749,7 +2494,6 @@ fn set_stickied_threads_thread_not_exists() {
             category_id,
             good_thread_metadata(),
             good_thread_text(),
-            None,
             Ok(()),
         );
         let wrong_thread_id = thread_id + 1;
@@ -2759,77 +2503,6 @@ fn set_stickied_threads_thread_not_exists() {
             category_id,
             vec![wrong_thread_id],
             Err(Error::<Runtime>::ThreadDoesNotExist.into()),
-        );
-    });
-}
-
-#[test]
-fn test_migration_not_done() {
-    let config = migration_not_done_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        let forum_user_id = 1;
-        let moderator_id = 1;
-        let category_id = 1;
-        let thread_id = 1;
-        let post_id = 1;
-
-        assert_err!(
-            TestForumModule::create_category(
-                mock_origin(origin.clone()),
-                None,
-                good_category_title(),
-                good_category_description()
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::create_thread(
-                mock_origin(origin.clone()),
-                forum_user_id,
-                category_id,
-                good_thread_metadata(),
-                good_thread_text(),
-                None,
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::add_post(
-                mock_origin(origin.clone()),
-                forum_user_id,
-                category_id,
-                thread_id,
-                good_post_text(),
-                true,
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::moderate_thread(
-                mock_origin(origin.clone()),
-                PrivilegedActor::Moderator(moderator_id),
-                category_id,
-                thread_id,
-                good_moderation_rationale(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::moderate_post(
-                mock_origin(origin.clone()),
-                PrivilegedActor::Moderator(moderator_id),
-                category_id,
-                thread_id,
-                post_id,
-                good_moderation_rationale(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
         );
     });
 }

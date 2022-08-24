@@ -6,8 +6,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # Prevent interactive prompts that would interrup the installation
     export DEBIAN_FRONTEND=noninteractive
     # code build tools
-    sudo apt-get update
-    sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python
+    sudo apt-get update -y
+    sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python3
     # docker
     sudo apt-get install -y docker.io containerd runc
     # docker-compose
@@ -41,7 +41,7 @@ rustup component add rustfmt
 
 # Install substrate keychain tool
 # You can use docker instead https://github.com/paritytech/substrate/tree/master/bin/utils/subkey#run-in-a-container
-cargo install --force subkey --git https://github.com/paritytech/substrate --version ^2.0.2 --locked
+# cargo install --force subkey --git https://github.com/paritytech/substrate --version ^2.0.2 --locked
 
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash

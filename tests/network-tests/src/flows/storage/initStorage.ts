@@ -9,13 +9,14 @@ import {
 import _ from 'lodash'
 import { Utils } from '../../utils'
 import BN from 'bn.js'
+import { FixtureRunner } from '../../Fixture'
+import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
 
 type StorageBucketConfig = {
   metadata: IStorageBucketOperatorMetadata
   staticBags?: CreateInterface<StaticBagId>[]
   storageLimit: BN
   objectsLimit: number
-  operatorId: number
   transactorUri: string
   transactorBalance: BN
 }
@@ -47,11 +48,10 @@ export const singleBucketConfig: InitStorageConfig = {
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
       staticBags: allStaticBags,
-      operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-      transactorBalance: new BN(10_000_000_000),
+      transactorBalance: new BN(9_000_000_000_000_000),
     },
   ],
 }
@@ -65,26 +65,24 @@ export const doubleBucketConfig: InitStorageConfig = {
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
       staticBags: allStaticBags,
-      operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-      transactorBalance: new BN(10_000_000_000),
+      transactorBalance: new BN(9_000_000_000_000_000),
     },
     {
-      metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
+      metadata: { endpoint: process.env.COLOSSUS_2_URL || 'http://localhost:3335' },
       staticBags: allStaticBags,
-      operatorId: parseInt(process.env.STORAGE_2_WORKER_ID || '1'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_2_TRANSACTOR_URI || '//Colossus2',
-      transactorBalance: new BN(10_000_000_000),
+      transactorBalance: new BN(9_000_000_000_000_000),
     },
   ],
 }
 
 export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageConfig) {
-  return async function initStorage({ api }: FlowProps): Promise<void> {
+  return async function initStorage({ api, query }: FlowProps): Promise<void> {
     const debug = extendDebug('flow:initStorage')
     api.enableDebugTxLogs()
     debug('Started')
@@ -96,7 +94,10 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     const maxStorageLimit = buckets.sort((a, b) => b.storageLimit.cmp(a.storageLimit))[0].storageLimit
     const maxObjectsLimit = Math.max(...buckets.map((b) => b.objectsLimit))
 
-    const operatorIds = buckets.map((b) => api.createType('u64', b.operatorId))
+    const hireWorkersFixture = new HireWorkersFixture(api, query, 'storageWorkingGroup', buckets.length)
+    await new FixtureRunner(hireWorkersFixture).run()
+    const operatorIds = hireWorkersFixture.getCreatedWorkerIds()
+
     const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, 'storageWorkingGroup')
 
     // Set global limits and policies

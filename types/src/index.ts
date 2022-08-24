@@ -26,7 +26,7 @@ import { AugmentedQuery } from '@polkadot/api/types'
 // Tweaked version of https://stackoverflow.com/a/62163715 for handling enum variants
 // Based on type (T) like: { a: string; b: number; c: Null; }
 // will create a type like: { a: string } | { b: number } | { c: Null } | "c"
-type EnumVariant<T> = keyof T extends infer K
+export type EnumVariant<T> = keyof T extends infer K
   ? K extends keyof T
     ? T[K] extends Null | null
       ? K | { [I in K]: T[I] }

@@ -75,6 +75,8 @@ impl<T: Config> Module<T> {
 
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
+        Self::ensure_whitelist_members_exist(&auction_params.whitelist)?;
+
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
@@ -94,6 +96,8 @@ impl<T: Config> Module<T> {
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
 
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
+
+        Self::ensure_whitelist_members_exist(&auction_params.whitelist)?;
 
         // validate forward start limits
         if let Some(starts_at) = auction_params.starts_at {
@@ -171,6 +175,18 @@ impl<T: Config> Module<T> {
                 Ok(())
             }
         }
+    }
+
+    pub(crate) fn ensure_whitelist_members_exist(
+        whitelist: &BTreeSet<T::MemberId>,
+    ) -> DispatchResult {
+        for member_id in whitelist {
+            ensure!(
+                T::MemberAuthenticator::controller_account_id(*member_id).is_ok(),
+                Error::<T>::WhitelistedMemberDoesNotExist
+            );
+        }
+        Ok(())
     }
 
     /// Ensure auction duration bounds satisfied

@@ -10,9 +10,9 @@
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@apollo/client": "^3.3.13",
-    "@ffprobe-installer/ffprobe": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^1.4.1",
     "@joystream/metadata-protobuf": "^2.2.0",
-    "@joystream/types": "^0.20.1",
+    "@joystream/types": "^0.20.2",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",

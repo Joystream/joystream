@@ -1,13 +1,13 @@
 ---
 # Variables applicable to all hosts
 
-branch_name: sumer
+branch_name: carthage
 git_repo: "https://github.com/Joystream/joystream.git"
 
 local_dir: ~/Joystream/joystream
 
 # Generates random number between 1000..9999
-network_suffix: "{{ 10000 | random(1000) }}"
+network_name: "joystream_staging_{{ 10000 | random(1000) }}"
 
 remote_data_path: ./data
 chain_spec_path: "{{ remote_data_path }}/chainspec.json"
