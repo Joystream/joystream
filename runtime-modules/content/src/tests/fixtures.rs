@@ -6,7 +6,7 @@ use super::curators;
 pub use super::mock::Event as MetaEvent;
 use super::mock::*;
 use crate::*;
-use common::{council::CouncilBudgetManager, Side};
+use common::{council::CouncilBudgetManager, generate_merkle_root_helper, build_merkle_path_helper};
 use frame_support::traits::Currency;
 use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
@@ -4847,101 +4847,6 @@ pub fn pause_channel_feature(channel_id: ChannelId, feature: PausableChannelFeat
         .with_channel_id(channel_id)
         .with_new_paused_features(BTreeSet::from_iter(vec![feature]))
         .call_and_assert(Ok(()));
-}
-
-#[derive(Debug)]
-struct IndexItem {
-    index: usize,
-    side: Side,
-}
-
-fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
-    // used as a helper function to generate the correct sequence of indexes used to
-    // construct the merkle path necessary for membership proof
-    let mut idx = index;
-    assert!(idx > 0); // index starting at 1
-    let floor_2 = |x: usize| (x >> 1) + (x % 2);
-    let mut path = Vec::new();
-    let mut prev_len: usize = 0;
-    let mut el = len;
-    while el != 1 {
-        if idx % 2 == 1 && idx == el {
-            path.push(IndexItem {
-                index: prev_len + idx,
-                side: Side::Left,
-            });
-        } else {
-            match idx % 2 {
-                1 => path.push(IndexItem {
-                    index: prev_len + idx + 1,
-                    side: Side::Right,
-                }),
-                _ => path.push(IndexItem {
-                    index: prev_len + idx - 1,
-                    side: Side::Left,
-                }),
-            };
-        }
-        prev_len += el;
-        idx = floor_2(idx);
-        el = floor_2(el);
-    }
-    path
-}
-
-pub fn generate_merkle_root_helper<T: Config, E: Encode>(collection: &[E]) -> Vec<T::Hash> {
-    // generates merkle root from the ordered sequence collection.
-    // The resulting vector is structured as follows: elements in range
-    // [0..collection.len()) will be the tree leaves (layer 0), elements in range
-    // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
-    // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
-    assert!(!collection.is_empty());
-    let mut out = Vec::new();
-    for e in collection.iter() {
-        out.push(T::Hashing::hash(&e.encode()));
-    }
-
-    let mut start: usize = 0;
-    let mut last_len = out.len();
-    //let mut new_len = out.len();
-    let mut max_len = last_len >> 1;
-    let mut rem = last_len % 2;
-
-    // range [last..(maxlen >> 1) + (maxlen % 2)]
-    while max_len != 0 {
-        last_len = out.len();
-        for i in 0..max_len {
-            out.push(T::Hashing::hash(
-                &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
-            ));
-        }
-        if rem == 1 {
-            out.push(T::Hashing::hash(
-                &[out[last_len - 1], out[last_len - 1]].encode(),
-            ));
-        }
-        let new_len: usize = out.len() - last_len;
-        rem = new_len % 2;
-        max_len = new_len >> 1;
-        start = last_len;
-    }
-    out
-}
-
-pub(crate) fn build_merkle_path_helper<T: Config, E: Encode + Clone>(
-    collection: &[E],
-    idx: usize,
-) -> Vec<ProofElement<T>> {
-    let merkle_tree = generate_merkle_root_helper::<T, _>(collection);
-    // builds the actual merkle path with the hashes needed for the proof
-    let index_path = index_path_helper(collection.len(), idx + 1);
-    index_path
-        .iter()
-        .map(|idx_item| ProofElement::<T> {
-            hash: merkle_tree[idx_item.index - 1],
-            side: idx_item.side,
-        })
-        .collect()
 }
 
 // generate some payments claims
