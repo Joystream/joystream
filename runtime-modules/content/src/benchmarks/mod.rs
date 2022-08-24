@@ -800,11 +800,9 @@ where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-
     let (_, lead_account_id) = insert_content_leader::<T>();
 
-    let _ =
-        setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
+    let _ = setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
 
     let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
 
@@ -940,6 +938,21 @@ where
     T::AccountId: CreateAccountId,
 {
     setup_worst_case_scenario_curator_channel::<T>(
+        T::MaxNumberOfAssetsPerChannel::get(),
+        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        with_transfer,
+    )
+}
+
+fn setup_worst_case_scenario_member_channel_all_max<T>(
+    with_transfer: bool,
+) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    setup_worst_case_scenario_member_channel::<T>(
         T::MaxNumberOfAssetsPerChannel::get(),
         T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         T::DistributionBucketsPerBagValueConstraint::get().max() as u32,

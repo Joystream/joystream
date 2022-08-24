@@ -547,35 +547,35 @@ benchmarks! {
     // WORST CASE SCENARIO:
     // - curator channel belonging to a group with max number curator and max curator permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    // withdraw_from_channel_balance {
-    //     let (channel_id, group_id, lead_account_id, _, _) =
-    //         setup_worst_case_scenario_curator_channel::<T>(0,T::StorageBucketsPerBagValueConstraint::get().min as u32,T::DistributionBucketsPerBagValueConstraint::get().min as u32, false)?;
-    //     let origin= RawOrigin::Signed(lead_account_id.clone());
+    withdraw_from_curator_channel_balance {
+        let (channel_id, group_id, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin= RawOrigin::Signed(lead_account_id.clone());
 
-    //     set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+        set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
 
-    //     let amount = <T as balances::Config>::Balance::from(100u32);
-    //     let _ = Balances::<T>::deposit_creating(
-    //         &ContentTreasury::<T>::account_for_channel(channel_id),
-    //         amount + T::ExistentialDeposit::get(),
-    //     );
+        let amount = <T as balances::Config>::Balance::from(100u32);
+        let _ = Balances::<T>::deposit_creating(
+            &ContentTreasury::<T>::account_for_channel(channel_id),
+            amount + T::ExistentialDeposit::get(),
+        );
 
-    //     let actor = crate::ContentActor::Lead;
-    //     let origin = RawOrigin::Signed(lead_account_id.clone());
-    // }: _ (origin, actor, channel_id, amount)
-    //     verify {
-    //         assert_eq!(
-    //             T::CouncilBudgetManager::get_budget(),
-    //             amount,
-    //         );
+        let actor = crate::ContentActor::Lead;
+        let origin = RawOrigin::Signed(lead_account_id.clone());
+    }: withdraw_from_channel_balance(origin, actor, channel_id, amount)
+        verify {
+            assert_eq!(
+                T::CouncilBudgetManager::get_budget(),
+                amount,
+            );
 
-    //         assert_eq!(
-    //             Balances::<T>::usable_balance(ContentTreasury::<T>::account_for_channel(channel_id)),
-    //             T::ExistentialDeposit::get(),
-    //         );
-    //     }
+            assert_eq!(
+                Balances::<T>::usable_balance(ContentTreasury::<T>::account_for_channel(channel_id)),
+                T::ExistentialDeposit::get(),
+            );
+        }
 
-    withdraw_from_channel_balance {
+    withdraw_from_member_channel_balance {
         let (channel_id, member_id, member_account_id, lead_account_id) =
             setup_worst_case_scenario_member_channel::<T>(
                 T::MaxNumberOfAssetsPerChannel::get(),
@@ -597,7 +597,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(member_account_id.clone());
         let actor = crate::ContentActor::Member(member_id);
         let owner_balance_pre = Balances::<T>::usable_balance(member_account_id.clone());
-    }: _ (origin, actor, channel_id, amount)
+    }: withdraw_from_channel_balance(origin, actor, channel_id, amount)
         verify {
             assert_eq!(
                 Balances::<T>::usable_balance(member_account_id),
@@ -649,7 +649,7 @@ benchmarks! {
     // Worst case scenario:
     // - curator channel belonging to a group with max number curator and max curator permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    claim_and_withdraw_channel_reward {
+    claim_and_withdraw_curator_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 
         let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
@@ -673,7 +673,7 @@ benchmarks! {
         let actor = crate::ContentActor::Lead;
         let item = payments[0].clone();
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
-    }: _ (origin, actor, proof, item)
+    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
         verify {
             assert_eq!(
                 Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
@@ -682,6 +682,47 @@ benchmarks! {
             assert_eq!(
                 T::CouncilBudgetManager::get_budget(),
                 cumulative_reward_claimed + T::ExistentialDeposit::get(),
+            );
+        }
+
+    // Worst case scenario:
+    // - curator channel belonging to a member with max number of collaborators and max agent permissions
+    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
+    claim_and_withdraw_member_channel_reward {
+        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
+
+        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
+        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
+        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
+        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
+        let (channel_id, member_id, member_account_id, lead_account_id) =
+            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
+        let lead_origin = RawOrigin::Signed(lead_account_id.clone());
+        let origin = RawOrigin::Signed(member_account_id.clone());
+
+        set_all_channel_paused_features_except::<T>(lead_origin.clone(), channel_id, vec![
+                crate::PausableChannelFeature::CreatorCashout,
+                crate::PausableChannelFeature::ChannelFundsTransfer,
+            ]);
+
+        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
+           commitment: Some(commitment),
+            ..Default::default()
+        })?;
+
+        let actor = crate::ContentActor::Member(member_id);
+        let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
+        let item = payments[0].clone();
+        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
+    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
+        verify {
+            assert_eq!(
+                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
+                item.cumulative_reward_earned
+            );
+            assert_eq!(
+                Balances::<T>::usable_balance(member_account_id),
+                cumulative_reward_claimed + balances_pre,
             );
         }
 }
@@ -783,9 +824,16 @@ pub mod tests {
     }
 
     #[test]
-    fn withdraw_from_channel_balance() {
+    fn withdraw_from_member_channel_balance() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_withdraw_from_channel_balance());
+            assert_ok!(Content::test_benchmark_withdraw_from_member_channel_balance());
+        })
+    }
+
+    #[test]
+    fn withdraw_from_curator_channel_balance() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_withdraw_from_curator_channel_balance());
         })
     }
 
@@ -797,9 +845,16 @@ pub mod tests {
     }
 
     #[test]
-    fn claim_channel_and_withdraw_reward() {
+    fn claim_channel_and_withdraw_member_channel_reward() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_claim_and_withdraw_channel_reward());
+            assert_ok!(Content::test_benchmark_claim_and_withdraw_member_channel_reward());
+        })
+    }
+
+    #[test]
+    fn claim_channel_and_withdraw_curator_channel_reward() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_claim_and_withdraw_curator_channel_reward());
         })
     }
 }

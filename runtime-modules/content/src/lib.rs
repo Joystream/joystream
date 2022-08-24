@@ -1455,7 +1455,8 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::withdraw_from_channel_balance()]
+        #[weight = 10_000_000]
+        // #[weight = WeightInfoContent::<T>::withdraw_from_member_channel_balance().max(WeightInfoContent::<T>::withdraw_from_curator_channel_balance())]
         pub fn withdraw_from_channel_balance(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1556,7 +1557,7 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::claim_and_withdraw_channel_reward(proof.len() as u32)]
+        #[weight = 10_000_000]
         pub fn claim_and_withdraw_channel_reward(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
