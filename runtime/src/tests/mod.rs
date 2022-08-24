@@ -3,10 +3,9 @@
 
 #[macro_use]
 mod proposals_integration;
-
-mod locks;
-
 mod fee_tests;
+mod handle_fees;
+mod locks;
 
 use crate::primitives::{Balance, MemberId};
 use crate::{BlockNumber, ReferendumInstance, Runtime};

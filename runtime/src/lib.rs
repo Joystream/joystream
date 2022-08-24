@@ -437,7 +437,7 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+pub(crate) type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 
 pub struct Author;
 impl OnUnbalanced<NegativeImbalance> for Author {
@@ -448,8 +448,10 @@ impl OnUnbalanced<NegativeImbalance> for Author {
     }
 }
 
-pub struct DealWithFees;
-impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+pub struct DealWithFees<R> {
+    _r: R,
+}
+impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFees<R> {
     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
         if let Some(fees) = fees_then_tips.next() {
             // for fees, we burn them all
@@ -458,7 +460,7 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
                 // For tips %100 are for the author
                 tips.ration_merge_into(0, 100, &mut split);
             }
-            Author::on_unbalanced(split.1);
+            R::on_unbalanced(split.1);
         }
     }
 }
@@ -471,7 +473,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Author>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
