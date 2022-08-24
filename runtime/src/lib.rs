@@ -78,6 +78,7 @@ use sp_runtime::{
 
 use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
+use sp_std::marker::PhantomData;
 use sp_std::{vec, vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -448,9 +449,7 @@ impl OnUnbalanced<NegativeImbalance> for Author {
     }
 }
 
-pub struct DealWithFees<R> {
-    _r: R,
-}
+pub struct DealWithFees<R>(PhantomData<R>);
 impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFees<R> {
     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
         if let Some(fees) = fees_then_tips.next() {
