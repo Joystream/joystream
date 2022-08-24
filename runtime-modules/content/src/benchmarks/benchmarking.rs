@@ -278,7 +278,7 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
-        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
+        let channel_bag_witness = Some(channel_bag_witness::<T>(channel_id)?);
 
     }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
     verify {
@@ -392,7 +392,7 @@ benchmarks! {
 
         let rationale = vec![1u8].repeat(c as usize);
         let storage_buckets_num_witness =
-            Some(storage_buckets_num_witness::<T>(channel_id)?);
+            storage_buckets_num_witness::<T>(channel_id)?;
 
     }: _ (
         origin,
@@ -519,7 +519,7 @@ benchmarks! {
 
         let rationale = vec![1u8].repeat(c as usize);
         let storage_buckets_num_witness =
-            Some(storage_buckets_num_witness::<T>(channel_id)?);
+            storage_buckets_num_witness::<T>(channel_id)?;
 
         let assets_to_remove_start = T::MaxNumberOfAssetsPerChannel::get();
         let assets_to_remove_end = T::MaxNumberOfAssetsPerChannel::get() + a;

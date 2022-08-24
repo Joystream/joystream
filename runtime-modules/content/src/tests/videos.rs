@@ -2004,7 +2004,7 @@ fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_inva
         DeleteVideoAssetsAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_storage_buckets_num_witness(Some(0))
+            .with_storage_buckets_num_witness(0)
             .call_and_assert(Err(
                 Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
             ));
@@ -2012,7 +2012,7 @@ fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_inva
 }
 
 #[test]
-fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_missing_storage_buckets_num_witness(
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_zero_number_of_assets_to_delete(
 ) {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().with_video_nft().setup();
@@ -2028,8 +2028,8 @@ fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_miss
         DeleteVideoAssetsAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_storage_buckets_num_witness(None)
-            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
+            .with_assets_to_remove(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::NumberOfAssetsToRemoveIsZero.into()));
     })
 }
 

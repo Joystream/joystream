@@ -926,7 +926,7 @@ pub struct DeleteChannelAssetsAsModeratorFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
-    storage_buckets_num_witness: Option<u32>,
+    storage_buckets_num_witness: u32,
     rationale: Vec<u8>,
 }
 
@@ -937,7 +937,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
             assets_to_remove: BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER),
-            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
+            storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             rationale: b"rationale".to_vec(),
         }
     }
@@ -961,10 +961,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
         }
     }
 
-    pub fn with_storage_buckets_num_witness(
-        self,
-        storage_buckets_num_witness: Option<u32>,
-    ) -> Self {
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
         Self {
             storage_buckets_num_witness,
             ..self
@@ -993,7 +990,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             self.actor,
             self.channel_id,
             self.assets_to_remove.clone(),
-            self.storage_buckets_num_witness.clone(),
+            self.storage_buckets_num_witness,
             self.rationale.clone(),
         );
 
@@ -1115,7 +1112,7 @@ pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    channel_bag_witness: ChannelBagWitness,
+    channel_bag_witness: Option<ChannelBagWitness>,
     num_objects_to_delete: u64,
 }
 
@@ -1125,7 +1122,7 @@ impl DeleteChannelFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
-            channel_bag_witness: channel_bag_witness(ChannelId::one()),
+            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
         }
     }
@@ -1149,7 +1146,7 @@ impl DeleteChannelFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
         Self {
             channel_bag_witness,
             ..self
@@ -1453,7 +1450,7 @@ pub struct DeleteVideoAssetsAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
-    storage_buckets_num_witness: Option<u32>,
+    storage_buckets_num_witness: u32,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
     rationale: Vec<u8>,
 }
@@ -1464,7 +1461,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
-            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
+            storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             assets_to_remove: BTreeSet::from_iter(DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)),
             rationale: b"rationale".to_vec(),
         }
@@ -1489,10 +1486,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
         }
     }
 
-    pub fn with_storage_buckets_num_witness(
-        self,
-        storage_buckets_num_witness: Option<u32>,
-    ) -> Self {
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
         Self {
             storage_buckets_num_witness,
             ..self
@@ -1520,7 +1514,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             origin,
             self.actor,
             self.video_id,
-            self.storage_buckets_num_witness.clone(),
+            self.storage_buckets_num_witness,
             self.assets_to_remove.clone(),
             self.rationale.clone(),
         );

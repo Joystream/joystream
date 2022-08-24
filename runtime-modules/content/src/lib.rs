@@ -832,7 +832,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            channel_bag_witness: ChannelBagWitness,
+            channel_bag_witness: Option<ChannelBagWitness>,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
@@ -840,8 +840,13 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            // verify channel bag witness
-            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
+            if num_objects_to_delete > 0 {
+                // verify channel buckets witness
+                match &channel_bag_witness {
+                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
+                    None => Err(Error::<T>::MissingChannelBagWitness.into())
+                }?;
+            }
 
             // ensure no creator token is issued for the channel
             channel.ensure_creator_token_not_issued::<T>()?;
@@ -887,9 +892,10 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
-            storage_buckets_num_witness: Option<u32>,
+            storage_buckets_num_witness: u32,
             rationale: Vec<u8>,
         ) {
+
             let sender = ensure_signed(origin)?;
 
             // check that channel exists
@@ -898,6 +904,11 @@ decl_module! {
             // permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteNonVideoChannelAssets];
             ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
+
+            ensure!(
+                !assets_to_remove.is_empty(),
+                Error::<T>::NumberOfAssetsToRemoveIsZero
+            );
 
             // ensure provided assets belong to the channel
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &channel.data_objects)?;
@@ -908,25 +919,18 @@ decl_module! {
                 &assets_to_remove
             )?;
 
+            // verify storage buckets witness
+            Self::verify_storage_buckets_num_witness(channel_id, storage_buckets_num_witness)?;
+
             //
             // == MUTATION SAFE ==
             //
 
-            // remove the assets
-            if !assets_to_remove.is_empty() {
-
-                // verify storage buckets witness
-                match storage_buckets_num_witness {
-                    Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
-                    None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
-                }?;
-
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone(),
-                )?;
-            }
+            Storage::<T>::delete_data_objects(
+                sender,
+                Self::bag_id_for_channel(&channel_id),
+                assets_to_remove.clone(),
+            )?;
 
             // update channel's data_objects set
             ChannelById::<T>::mutate(channel_id, |channel| {
@@ -1281,7 +1285,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            storage_buckets_num_witness: Option<u32>,
+            storage_buckets_num_witness: u32,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
             rationale: Vec<u8>,
         ) {
@@ -1299,6 +1303,11 @@ decl_module! {
             let actions_to_perform = vec![ContentModerationAction::DeleteVideoAssets(is_nft)];
             ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
+            ensure!(
+                !assets_to_remove.is_empty(),
+                Error::<T>::NumberOfAssetsToRemoveIsZero
+            );
+
             // ensure provided assets belong to the video
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &video.data_objects)?;
 
@@ -1308,25 +1317,19 @@ decl_module! {
                 &assets_to_remove
             )?;
 
+            // verify storage buckets witness
+            Self::verify_storage_buckets_num_witness(channel_id, storage_buckets_num_witness)?;
+
             //
             // == MUTATION SAFE ==
             //
 
             // remove the assets
-            if !assets_to_remove.is_empty() {
-
-                // verify storage buckets witness
-                match storage_buckets_num_witness {
-                    Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
-                    None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
-                }?;
-
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone(),
-                )?;
-            }
+            Storage::<T>::delete_data_objects(
+                sender,
+                Self::bag_id_for_channel(&channel_id),
+                assets_to_remove.clone(),
+            )?;
 
             // update video's data_objects set
             VideoById::<T>::mutate(video_id, |video| {
@@ -4101,17 +4104,16 @@ impl<T: Config> Module<T> {
 
     // Calculates weight for delete_channel extrinsic.
     fn delete_channel_weight(
-        channel_bag_witness: &ChannelBagWitness,
+        channel_bag_witness: &Option<ChannelBagWitness>,
         num_objects_to_delete: &u64,
     ) -> Weight {
         //num_objects_to_delete
         let a = (*num_objects_to_delete) as u32;
 
-        //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
-
-        //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
+        //storage_buckets_num, distribution_buckets_num
+        let (b, c) = channel_bag_witness.as_ref().map_or((0, 0), |v| {
+            (v.storage_buckets_num, v.distribution_buckets_num)
+        });
 
         WeightInfoContent::<T>::delete_channel(a, b, c)
     }
@@ -4126,13 +4128,13 @@ impl<T: Config> Module<T> {
     // Calculates weight for delete_channel_assets_as_moderator extrinsic.
     fn delete_channel_assets_as_moderator_weight(
         assets_to_remove: &BTreeSet<DataObjectId<T>>,
-        storage_buckets_num_witness: &Option<u32>,
+        storage_buckets_num_witness: &u32,
         rationale: &Vec<u8>,
     ) -> Weight {
         //assets_to_remove
         let a = (*assets_to_remove).len() as u32;
         //storage_buckets_num_witness storage_buckets_num
-        let b = storage_buckets_num_witness.map_or(0, |v| v);
+        let b = *storage_buckets_num_witness;
         //rationale
         let c = (*rationale).len() as u32;
         WeightInfoContent::<T>::delete_channel_assets_as_moderator(a, b, c)
@@ -4152,6 +4154,7 @@ impl<T: Config> Module<T> {
 
         //channel_bag_witness distribution_buckets_num
         let c = (*channel_bag_witness).distribution_buckets_num;
+
         //rationale
         let d = (*rationale).len() as u32;
         WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c, d)
@@ -4167,14 +4170,14 @@ impl<T: Config> Module<T> {
     // Calculates weight for delete_video_assets_as_moderator extrinsic.
     fn delete_video_assets_as_moderator_weight(
         assets_to_remove: &BTreeSet<DataObjectId<T>>,
-        storage_buckets_num_witness: &Option<u32>,
+        storage_buckets_num_witness: &u32,
         rationale: &Vec<u8>,
     ) -> Weight {
         //assets_to_remove
         let a = (*assets_to_remove).len() as u32;
 
         //storage_buckets_num_witness storage_buckets_num
-        let b = storage_buckets_num_witness.map_or(0, |v| v);
+        let b = *storage_buckets_num_witness;
 
         //rationale
         let c = (*rationale).len() as u32;
