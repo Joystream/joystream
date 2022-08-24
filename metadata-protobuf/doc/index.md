@@ -30,16 +30,13 @@
     - [CreateComment](#.CreateComment)
     - [CreateVideoCategory](#.CreateVideoCategory)
     - [DeleteComment](#.DeleteComment)
-    - [DeleteVideoCategory](#.DeleteVideoCategory)
     - [EditComment](#.EditComment)
     - [MemberRemarked](#.MemberRemarked)
     - [ModerateComment](#.ModerateComment)
     - [PinOrUnpinComment](#.PinOrUnpinComment)
     - [ReactComment](#.ReactComment)
     - [ReactVideo](#.ReactVideo)
-    - [UpdateVideoCategory](#.UpdateVideoCategory)
     - [VideoReactionsPreference](#.VideoReactionsPreference)
-    - [WorkerGroupLeadRemarked](#.WorkerGroupLeadRemarked)
   
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
     - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
@@ -48,9 +45,6 @@
   
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
-  
-- [proto/Playlist.proto](#proto/Playlist.proto)
-    - [PlaylistMetadata](#.PlaylistMetadata)
   
 - [proto/ProposalsDiscussion.proto](#proto/ProposalsDiscussion.proto)
     - [ProposalsDiscussionPostMetadata](#.ProposalsDiscussionPostMetadata)
@@ -70,9 +64,11 @@
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
 - [proto/Video.proto](#proto/Video.proto)
+    - [ContentMetadata](#.ContentMetadata)
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
+    - [SubtitleMetadata](#.SubtitleMetadata)
     - [VideoMetadata](#.VideoMetadata)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
@@ -398,6 +394,8 @@ create comment
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) | required |  |
+| description | [string](#string) | optional |  |
+| parent_category_id | [string](#string) | optional |  |
 
 
 
@@ -413,21 +411,6 @@ delete comment by author
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | comment_id | [string](#string) | required | ID of the comment which will be deleted |
-
-
-
-
-
-
-<a name=".DeleteVideoCategory"></a>
-
-### DeleteVideoCategory
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_category_id | [string](#string) | required |  |
 
 
 
@@ -463,6 +446,7 @@ edit comment by author
 | create_comment | [CreateComment](#CreateComment) | optional |  |
 | edit_comment | [EditComment](#EditComment) | optional |  |
 | delete_comment | [DeleteComment](#DeleteComment) | optional |  |
+| create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
 
 
 
@@ -534,22 +518,6 @@ reacting, unreacting, and changing reaction to video
 
 
 
-<a name=".UpdateVideoCategory"></a>
-
-### UpdateVideoCategory
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_category_id | [string](#string) | required |  |
-| name | [string](#string) | required |  |
-
-
-
-
-
-
 <a name=".VideoReactionsPreference"></a>
 
 ### VideoReactionsPreference
@@ -560,23 +528,6 @@ Enable or disable reactions on a single video
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
 | option | [VideoReactionsPreference.Option](#VideoReactionsPreference.Option) | required | Selected option to enable or disable comment section |
-
-
-
-
-
-
-<a name=".WorkerGroupLeadRemarked"></a>
-
-### WorkerGroupLeadRemarked
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
-| update_video_category | [UpdateVideoCategory](#UpdateVideoCategory) | optional |  |
-| delete_video_category | [DeleteVideoCategory](#DeleteVideoCategory) | optional |  |
 
 
 
@@ -662,38 +613,6 @@ Reacting again with the same message option will cancel the previous reaction
 | about | [string](#string) | optional |  |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="proto/Playlist.proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## proto/Playlist.proto
-
-
-
-<a name=".PlaylistMetadata"></a>
-
-### PlaylistMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional |  |
-| videos | [uint64](#uint64) | repeated | Videos in the playlist |
 
 
 
@@ -935,6 +854,21 @@ Reacting again with the same message option will cancel the previous reaction
 
 
 
+<a name=".ContentMetadata"></a>
+
+### ContentMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_metadata | [VideoMetadata](#VideoMetadata) | optional | ... Other possible metadata standards, e.g. `PlaylistMetadata` |
+
+
+
+
+
+
 <a name=".License"></a>
 
 ### License
@@ -985,6 +919,24 @@ Publication status before joystream
 
 
 
+<a name=".SubtitleMetadata"></a>
+
+### SubtitleMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) | required |  |
+| new_asset | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| language | [string](#string) | required | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
+| mimeType | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".VideoMetadata"></a>
 
 ### VideoMetadata
@@ -1009,7 +961,9 @@ Publication status before joystream
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
 | category | [string](#string) | optional | Video Category Id |
+| subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
 | enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
+| clear_subtitles | [bool](#bool) | optional | Remove all subtitles; since protobuf doesn&#39;t distinguish b/w empty array and null field, simply removing all subtitles by overriding list with an empty array wont work |
 
 
 

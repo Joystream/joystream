@@ -39,16 +39,21 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     // prepare accounts for working group leads
 
     this.debug('Loading working group leaders')
-    const { contentLeader, storageLeader } = await this.retrieveWorkingGroupLeaders()
+    const { contentLeader } = await this.retrieveWorkingGroupLeaders()
 
     // switch to lead and create category structure as lead
 
-    this.debug(`Choosing content working group lead's account`)
-    const contentLeaderKeyPair = this.api.getKeypair(contentLeader.roleAccountId.toString())
-    await this.cli.importAccount(contentLeaderKeyPair)
+    // CLI expects the keypair to belong to a member, so we cannot assume the role account id
+    // is also the worker member account id.
+    this.debug(`Choosing content working group lead's member controller account`)
+    const memberId = contentLeader.memberId
+    const workerMemberControllerAccount = await this.api.getMemberControllerAccount(memberId.toNumber())
+
+    const contentLeaderMemberKeyPair = this.api.getKeypair(workerMemberControllerAccount!)
+    await this.cli.importAccount(contentLeaderMemberKeyPair)
 
     this.debug('Top-uping accounts')
-    await this.api.treasuryTransferBalanceToAccounts([contentLeaderKeyPair.address], sufficientTopupAmount)
+    await this.api.treasuryTransferBalanceToAccounts([workerMemberControllerAccount!], sufficientTopupAmount)
 
     this.debug('Creating video categories')
     this.createdItems.videoCategoryIds = await this.createVideoCategories(this.videoCategoryCount)

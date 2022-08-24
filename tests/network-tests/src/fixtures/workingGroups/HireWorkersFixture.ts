@@ -82,6 +82,7 @@ export class HireWorkersFixture extends BaseQueryNodeFixture {
     await fillOpeningRunner.run()
 
     this.createdWorkerIds = fillOpeningFixture.getCreatedWorkerIdsByOpeningId(openingId)
+    await Promise.all(this.createdWorkerIds.map((id) => this.api.assignWorkerWellknownAccount(this.group, id)))
   }
 
   public async runQueryNodeChecks(): Promise<void> {

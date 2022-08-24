@@ -5,6 +5,7 @@ import {
   ILicense,
   IMediaType,
   IChannelMetadata,
+  ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { invalidMetadata, inconsistentState, logger, deterministicEntityId, EntityType } from '../common'
@@ -31,6 +32,8 @@ import {
   ContentActorMember,
   ContentActor as ContentActorVariant,
   Curator,
+  DataObjectTypeVideoSubtitle,
+  VideoSubtitle,
 } from 'query-node/dist/model'
 // Joystream types
 import {
@@ -40,6 +43,7 @@ import {
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
+import _ from 'lodash'
 import { createDataObjects, getMostRecentlyCreatedDataObjects, StorageDataObjectParams } from '../storage/utils'
 
 const ASSET_TYPES = {
@@ -67,6 +71,11 @@ const ASSET_TYPES = {
       schemaFieldName: 'thumbnailPhoto',
     },
   ],
+  subtitle: {
+    DataObjectTypeConstructor: DataObjectTypeVideoSubtitle,
+    metaFieldName: 'newAsset',
+    schemaFieldName: 'asset',
+  },
 } as const
 
 // all relations that need to be loaded for full evalution of video active status to work
@@ -128,6 +137,33 @@ async function processVideoAssets(
   )
 }
 
+async function processVideoSubtitleAssets(
+  { event, store }: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  subtitle: VideoSubtitle,
+  meta: DecodedMetadataObject<ISubtitleMetadata>
+) {
+  const { metaFieldName, schemaFieldName, DataObjectTypeConstructor } = ASSET_TYPES.subtitle
+  const newAssetIndex = meta[metaFieldName]
+  const currentAsset = subtitle[schemaFieldName]
+
+  if (isSet(newAssetIndex)) {
+    const asset = findAssetByIndex(assets, newAssetIndex)
+    if (asset) {
+      if (currentAsset) {
+        currentAsset.unsetAt = new Date(event.blockTimestamp)
+        await store.save<StorageDataObject>(currentAsset)
+      }
+      const dataObjectType = new DataObjectTypeConstructor()
+      dataObjectType.subtitleId = subtitle.id
+      dataObjectType.videoId = subtitle.video.id
+      asset.type = dataObjectType
+      subtitle[schemaFieldName] = asset
+      await store.save<StorageDataObject>(asset)
+    }
+  }
+}
+
 export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
@@ -180,6 +216,12 @@ export async function processVideoMetadata(
   // prepare language if needed
   if (isSet(meta.language)) {
     video.language = await processLanguage(ctx, video.language, meta.language)
+  }
+
+  // prepare subtitles if needed
+  const subtitles = meta.clearSubtitles ? [] : meta.subtitles
+  if (isSet(subtitles)) {
+    await processVideoSubtitles(ctx, video, assets, subtitles)
   }
 
   if (isSet(meta.publishedBeforeJoystream)) {
@@ -459,6 +501,42 @@ async function processLanguage(
   return newLanguage
 }
 
+async function processVideoSubtitles(
+  ctx: EventContext & StoreContext,
+  video: Video,
+  assets: StorageDataObject[],
+  subtitlesMeta: ISubtitleMetadata[]
+) {
+  const { store } = ctx
+
+  const subtitlesToRemove = await store.getMany(VideoSubtitle, { where: { video: { id: video.id } } })
+
+  for (const subtitleMeta of subtitlesMeta) {
+    const subtitleId = `${video.id}-${subtitleMeta.type}-${subtitleMeta.language}`
+
+    _.remove(subtitlesToRemove, (sub) => sub.id === subtitleId)
+
+    const subtitle = new VideoSubtitle({
+      id: subtitleId,
+      type: subtitleMeta.type,
+      video,
+      language: await processLanguage(ctx, undefined, subtitleMeta.language),
+      mimeType: subtitleMeta.mimeType,
+    })
+
+    // process subtitle assets
+    await processVideoSubtitleAssets(ctx, assets, subtitle, subtitleMeta)
+
+    await store.save<VideoSubtitle>(subtitle)
+  }
+
+  // Remove all subtitles which are not part of update
+  // metadata, since we are overriding subtitles list
+  for (const subToRemove of subtitlesToRemove) {
+    await store.remove<VideoSubtitle>(subToRemove)
+  }
+}
+
 async function updateVideoLicense(
   ctx: StoreContext & EventContext,
   video: Video,
@@ -538,11 +616,12 @@ async function processVideoCategory(
 export async function unsetAssetRelations(store: DatabaseManager, dataObject: StorageDataObject): Promise<void> {
   const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
   const videoAssets = ['thumbnailPhoto', 'media'] as const
+  const subtitleAssets = ['asset'] as const
 
-  async function unconnectAsset<T extends EntityType<Channel | Video>>(
+  async function unconnectAsset<T extends EntityType<Channel | Video | VideoSubtitle>>(
     entity: T,
     targetAsset: string,
-    relations: typeof channelAssets | typeof videoAssets
+    relations: typeof channelAssets | typeof videoAssets | typeof subtitleAssets
   ) {
     // load video/channel
     const result = await store.get(entity, {
@@ -569,13 +648,19 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
     // log event
     if (result instanceof Video) {
-      logger.info('Content has been disconnected from Video', {
+      logger.info('Asset has been disconnected from Video', {
         videoId: result.id.toString(),
         dataObjectId: dataObject.id,
       })
-    } else {
-      logger.info('Content has been disconnected from Channel', {
+    } else if (result instanceof Channel) {
+      logger.info('Asset has been disconnected from Channel', {
         channelId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    } else {
+      // asset belongs to Video Subtitle
+      logger.info('Asset has been disconnected from Video Subtitle', {
+        subtitleId: result.id.toString(),
         dataObjectId: dataObject.id,
       })
     }
@@ -590,6 +675,10 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
   for (const videoAsset of videoAssets) {
     await unconnectAsset(Video, videoAsset, videoAssets)
+  }
+
+  for (const subtitleAsset of subtitleAssets) {
+    await unconnectAsset(VideoSubtitle, subtitleAsset, subtitleAssets)
   }
 
   // remove data object

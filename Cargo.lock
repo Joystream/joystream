@@ -2628,7 +2628,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "7.0.1"
+version = "7.2.0"
 dependencies = [
  "assert_cmd",
  "async-std",
@@ -2716,7 +2716,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "11.0.0"
+version = "11.2.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
