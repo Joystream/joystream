@@ -1019,7 +1019,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::slash_thread_account(thread_id, thread.cleanup_pay_off.amount, true)?;
+            Self::slash_thread_account(thread_id, thread.cleanup_pay_off.amount)?;
 
             // Delete thread
             Self::delete_thread_inner(thread.category_id, thread_id);
@@ -1218,7 +1218,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::slash_thread_account(thread_id, post.cleanup_pay_off.amount, false)?;
+            Self::slash_thread_account(thread_id, post.cleanup_pay_off.amount)?;
 
             Self::delete_post_inner(category_id, thread_id, post_id);
 
@@ -1339,13 +1339,9 @@ impl<T: Config> Module<T> {
         T::ModuleId::get().into_sub_account_truncating(thread_id)
     }
 
-    fn slash_thread_account(
-        thread_id: T::ThreadId,
-        amount: BalanceOf<T>,
-        allow_death: bool,
-    ) -> DispatchResult {
+    fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) -> DispatchResult {
         let thread_account_id = Self::thread_account(thread_id);
-        burn_from_usable::<T>(&thread_account_id, amount, allow_death)
+        burn_from_usable::<T>(&thread_account_id, amount).map(|_| ())
     }
 
     fn pay_post_deposit(

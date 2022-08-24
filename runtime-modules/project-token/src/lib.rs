@@ -559,7 +559,7 @@ decl_module! {
             }
 
             if !burn_amount.is_zero() {
-                burn_from_usable::<T>(&sender, burn_amount, false)?;
+                burn_from_usable::<T>(&sender, burn_amount)?;
             }
 
             if account_data.is_some() {

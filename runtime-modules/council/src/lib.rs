@@ -908,7 +908,7 @@ decl_module! {
             //
 
             // Account is allowed to die when funding the council
-            burn_from_usable::<T>(&account_id, amount, true)?;
+            burn_from_usable::<T>(&account_id, amount)?;
 
             Mutations::<T>::set_budget(budget.saturating_add(amount));
 

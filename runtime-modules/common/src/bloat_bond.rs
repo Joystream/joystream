@@ -13,6 +13,9 @@ use sp_std::fmt::Debug;
 #[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 pub struct RepayableBloatBond<AccountId, Balance> {
     /// Account where the bloat should be repaid (if restricted).
+    /// This restriction only applies if an account with an invitation lock is used to pay
+    /// the bloat bond, provided that the lock amount would block the transaction
+    /// if it was any other type of lock.
     pub repayment_restricted_to: Option<AccountId>,
     /// Repayable amount
     pub amount: Balance,

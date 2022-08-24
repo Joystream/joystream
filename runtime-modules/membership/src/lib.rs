@@ -478,7 +478,7 @@ decl_module! {
             );
 
             // Collect membership fee (just burn it).
-            burn_from_usable::<T>(&who, fee, false)?;
+            burn_from_usable::<T>(&who, fee)?;
 
             // Reward the referring member.
             if let Some(referrer) = referrer {
@@ -871,7 +871,7 @@ decl_module! {
             )?;
 
             // burn membership fee
-            burn_from_usable::<T>(&gifter, membership_fee, false)?;
+            burn_from_usable::<T>(&gifter, membership_fee)?;
 
             if params.root_account != params.controller_account {
                 // Lock credited balance. Allow only transaction payments.

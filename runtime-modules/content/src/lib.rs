@@ -3412,7 +3412,7 @@ impl<T: Config> Module<T> {
                 let new_owner_controller_acc =
                     T::MemberAuthenticator::controller_account_id(*new_owner_id)?;
                 // Burn funds from new owner's usable balance
-                burn_from_usable::<T>(&new_owner_controller_acc, price, false)?;
+                burn_from_usable::<T>(&new_owner_controller_acc, price)?;
                 // Increase content working group budget
                 let new_budget = T::ContentWorkingGroup::get_budget().saturating_add(price);
                 T::ContentWorkingGroup::set_budget(new_budget);
@@ -3600,7 +3600,7 @@ impl<T: Config> Module<T> {
                 )
             }
             ChannelFundsDestination::CouncilBudget => {
-                burn_from_usable::<T>(reward_account, amount, false)?;
+                burn_from_usable::<T>(reward_account, amount)?;
                 T::CouncilBudgetManager::increase_budget(amount);
                 Ok(())
             }

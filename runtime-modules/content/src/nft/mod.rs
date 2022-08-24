@@ -369,7 +369,7 @@ impl<T: Config> Module<T> {
         receiver_account_id: Option<T::AccountId>,
     ) -> DispatchResult {
         // burn sender full amount
-        burn_from_usable::<T>(&sender_account_id, amount, false)?;
+        burn_from_usable::<T>(&sender_account_id, amount)?;
 
         // compute platform fee
         let platform_fee_pct = Self::platform_fee_percentage();

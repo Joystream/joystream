@@ -1202,7 +1202,7 @@ decl_module! {
             //
 
             // An account is allowed to die when funding working group budget
-            burn_from_usable::<T>(&account_id, amount, true)?;
+            burn_from_usable::<T>(&account_id, amount)?;
 
             Self::set_working_group_budget(wg_budget.saturating_add(amount));
 
