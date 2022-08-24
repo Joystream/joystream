@@ -1446,7 +1446,7 @@ decl_module! {
             Ok(())
         }
 
-        /// Claim reward in JOY from channel account
+        /// Withdraw JOY from channel account
         ///
         /// <weight>
         ///
