@@ -209,6 +209,20 @@ pub fn testnet_genesis(
         }))
         .collect::<Vec<_>>();
 
+    // staking benchmakrs is not sensitive to actual value of min bonds so
+    // accounts are not funded with sufficient funds and fail with InsufficientBond err
+    // so for benchmarks we set the min bonds to zero.
+    let min_nominator_bond = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_NOMINATOR_BOND
+    };
+    let min_validator_bond = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_VALIDATOR_BOND
+    };
+
     GenesisConfig {
         system: SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
@@ -243,8 +257,8 @@ pub fn testnet_genesis(
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
             stakers,
-            min_nominator_bond: MIN_NOMINATOR_BOND,
-            min_validator_bond: MIN_VALIDATOR_BOND,
+            min_nominator_bond,
+            min_validator_bond,
             ..Default::default()
         },
         sudo: SudoConfig {

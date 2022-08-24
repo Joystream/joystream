@@ -3,10 +3,9 @@ use super::{
 };
 use crate::{
     currency, BoundStakingAccountStakingManager, ContentWorkingGroupStakingManager,
-    GatewayWorkingGroupStakingManager, Runtime, Staking,
+    GatewayWorkingGroupStakingManager,
 };
 
-use sp_staking::StakingInterface;
 use staking_handler::StakingHandler;
 
 #[test]
@@ -66,8 +65,14 @@ fn incompatible_stakes_check_passed_successfully() {
     });
 }
 
+// We do not apply hack on free_balance when building for benchmarking so this test
+// so we disable it.
+#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn validate_fails_when_stash_has_rivalrous_lock() {
+    use crate::{Runtime, Staking};
+    use sp_staking::StakingInterface;
+
     initial_test_ext().execute_with(|| {
         // First Validator - Bonding with account free of locks
         let validator_1 = account_from_member_id(0);
@@ -147,7 +152,7 @@ fn validate_fails_when_stash_has_rivalrous_lock() {
         );
 
         // trying to increase bond, will fail because the new active stake will still be 0
-        // which is less than existential deposit
+        // which is less than existential deposit.
         assert_eq!(
             <Staking as StakingInterface>::bond_extra(validator_2.clone(), stake_amount,),
             Err(pallet_staking::Error::<Runtime>::InsufficientBond.into())

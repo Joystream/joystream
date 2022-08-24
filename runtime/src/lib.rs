@@ -1614,12 +1614,14 @@ impl Currency<AccountId> for BalancesProxyForStakingPallet {
     fn pair(amount: Self::Balance) -> (Self::PositiveImbalance, Self::NegativeImbalance) {
         Balances::pair(amount)
     }
+
     // Return a balance of 0 if there is a rivalrous lock on the account.
     // This will not prevent stash account from bond()'ing,
     // but the staking ledger will record the total and active bonded amount to be zero.
-    // Same if the account attempts to bond_extra(). This will in turn prevent the account from
-    // nominating or validating, unless ED is set to zero and MinValidatorBond/MinNominatorBond are also
-    // set to zero.
+    // Trying to bond_extra() will result in dispatch error (unless ED is zero).
+    // This hack prevents the stash account from nominating or validating, provided
+    // MinValidatorBond and MinNominatorBond are not set to zero.
+    #[cfg(not(feature = "runtime-benchmarks"))]
     fn free_balance(who: &AccountId) -> Self::Balance {
         let existing_locks = Balances::locks(who);
         let existing_lock_ids: Vec<LockIdentifier> =
@@ -1631,6 +1633,15 @@ impl Currency<AccountId> for BalancesProxyForStakingPallet {
             Balances::free_balance(who)
         }
     }
+
+    // Benchmarks have an assertion in validation section for bond_extra that ensures
+    // 'original_bonded < new_bonded' However with our hack this assertion doesn't hold. So
+    // for purpose of benchmarks only we do not override free_balance.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn free_balance(who: &AccountId) -> Self::Balance {
+        Balances::free_balance(who)
+    }
+
     fn ensure_can_withdraw(
         who: &AccountId,
         amount: Self::Balance,
