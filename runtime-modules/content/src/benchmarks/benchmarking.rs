@@ -578,7 +578,7 @@ benchmarks! {
     withdraw_from_channel_balance {
         let (channel_id, member_id, member_account_id, lead_account_id) =
             setup_worst_case_scenario_member_channel::<T>(
-                0,
+                T::MaxNumberOfAssetsPerChannel::get(),
                 T::StorageBucketsPerBagValueConstraint::get().min as u32,
                 T::DistributionBucketsPerBagValueConstraint::get().min as u32,
                 false,
