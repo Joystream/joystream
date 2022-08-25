@@ -1901,7 +1901,6 @@ fn edit_non_editable_post_text() {
     });
 }
 
-
 /*
  ** moderate_post
  */
