@@ -96,6 +96,7 @@ pub fn create_extrinsic(
         )),
         frame_system::CheckNonce::<node_runtime::Runtime>::from(nonce),
         frame_system::CheckWeight::<node_runtime::Runtime>::new(),
+        node_runtime::CheckCallAllowed::new(),
         pallet_transaction_payment::ChargeTransactionPayment::<node_runtime::Runtime>::from(tip),
     );
 
@@ -108,6 +109,7 @@ pub fn create_extrinsic(
             node_runtime::VERSION.transaction_version,
             genesis_hash,
             best_hash,
+            (),
             (),
             (),
             (),
@@ -590,6 +592,7 @@ pub fn new_full(
 mod tests {
     use crate::service::{new_full_base, NewFullBase};
     use codec::Encode;
+    use node_runtime::SignedPayload;
     use node_runtime::{
         constants::{currency::CENTS, SLOT_DURATION},
         Address, BalancesCall, Call, UncheckedExtrinsic,
@@ -608,7 +611,7 @@ mod tests {
     use sp_keyring::AccountKeyring;
     use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
     use sp_runtime::{
-        generic::{BlockId, Digest, Era, SignedPayload},
+        generic::{BlockId, Digest, Era},
         key_types::BABE,
         traits::{Block as BlockT, Header as HeaderT, IdentifyAccount, Verify},
         RuntimeAppPublic,
@@ -812,6 +815,7 @@ mod tests {
                 let check_era = frame_system::CheckEra::from(Era::Immortal);
                 let check_nonce = frame_system::CheckNonce::from(index);
                 let check_weight = frame_system::CheckWeight::new();
+                let check_call_allowed = node_runtime::CheckCallAllowed::new();
                 let tx_payment = pallet_transaction_payment::ChargeTransactionPayment::from(0);
                 let extra = (
                     check_non_zero_sender,
@@ -821,6 +825,7 @@ mod tests {
                     check_era,
                     check_nonce,
                     check_weight,
+                    check_call_allowed,
                     tx_payment,
                 );
                 let raw_payload = SignedPayload::from_raw(
@@ -832,6 +837,7 @@ mod tests {
                         transaction_version,
                         genesis_hash,
                         genesis_hash,
+                        (),
                         (),
                         (),
                         (),

@@ -5316,10 +5316,13 @@ declare module '@polkadot/types/lookup' {
   /** @name FrameSystemExtensionsCheckWeight (594) */
   export type FrameSystemExtensionsCheckWeight = Null;
 
-  /** @name PalletTransactionPaymentChargeTransactionPayment (595) */
+  /** @name JoystreamNodeRuntimeSignedExtensionsCheckCallAllowed (595) */
+  export type JoystreamNodeRuntimeSignedExtensionsCheckCallAllowed = Null;
+
+  /** @name PalletTransactionPaymentChargeTransactionPayment (596) */
   export interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-  /** @name JoystreamNodeRuntimeRuntime (596) */
+  /** @name JoystreamNodeRuntimeRuntime (597) */
   export type JoystreamNodeRuntimeRuntime = Null;
 
 } // declare module

@@ -34,11 +34,13 @@ mod integration;
 pub mod primitives;
 mod proposals_configuration;
 mod runtime_api;
+mod signed_extensions;
 mod tests;
 /// Generated voter bag information.
 mod voter_bags;
 /// Weights for pallets used in the runtime.
 mod weights;
+pub type CheckCallAllowed = signed_extensions::CheckCallAllowed<Runtime>;
 
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
@@ -550,7 +552,7 @@ impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
 
 impl pallet_staking::Config for Runtime {
     type MaxNominations = MaxNominations;
-    type Currency = BalancesProxyForStakingPallet;
+    type Currency = Balances;
     type CurrencyBalance = Balance;
     type UnixTime = Timestamp;
     type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote; // U128CurrencyToVote;

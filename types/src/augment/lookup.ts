@@ -4363,11 +4363,15 @@ export default {
    **/
   FrameSystemExtensionsCheckWeight: 'Null',
   /**
-   * Lookup595: pallet_transaction_payment::ChargeTransactionPayment<T>
+   * Lookup595: joystream_node_runtime::signed_extensions::check_call_allowed::CheckCallAllowed<T>
+   **/
+  JoystreamNodeRuntimeSignedExtensionsCheckCallAllowed: 'Null',
+  /**
+   * Lookup596: pallet_transaction_payment::ChargeTransactionPayment<T>
    **/
   PalletTransactionPaymentChargeTransactionPayment: 'Compact<u128>',
   /**
-   * Lookup596: joystream_node_runtime::Runtime
+   * Lookup597: joystream_node_runtime::Runtime
    **/
   JoystreamNodeRuntimeRuntime: 'Null'
 };

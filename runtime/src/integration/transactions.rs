@@ -42,6 +42,7 @@ pub(crate) fn create_transaction<
         frame_system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
         frame_system::CheckNonce::<Runtime>::from(nonce),
         frame_system::CheckWeight::<Runtime>::new(),
+        crate::CheckCallAllowed::new(),
         pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
     );
     let raw_payload = SignedPayload::new(call, extra)
