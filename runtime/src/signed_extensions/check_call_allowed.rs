@@ -63,7 +63,7 @@ impl CheckCallAllowed<Runtime> {
         for call in calls.into_iter() {
             all_calls_valid = all_calls_valid
                 && match call {
-                    // Calls that can contain other Calls and must be checked recursivly..
+                    // Calls that can contain other Calls and must be checked recursively..
                     Call::Utility(substrate_utility::Call::<Runtime>::batch { calls }) => {
                         Self::has_no_invalid_bonding_calls(who, calls.to_vec())
                     }
