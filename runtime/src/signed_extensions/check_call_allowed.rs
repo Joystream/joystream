@@ -13,12 +13,14 @@ use sp_runtime::{
 use sp_std::{vec, vec::Vec};
 use staking_handler::LockComparator;
 
+const BONDING_NOT_ALLOWED: u8 = 1;
+
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 pub struct CheckCallAllowed<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>);
 
 impl CheckCallAllowed<Runtime> {
-    /// Create new `SignedExtension` to check runtime version.
+    /// Create new `SignedExtension` to check allowed calls in transaction
     pub fn new() -> Self {
         Self(sp_std::marker::PhantomData)
     }
@@ -42,6 +44,57 @@ impl Default for CheckCallAllowed<Runtime> {
     }
 }
 
+impl CheckCallAllowed<Runtime> {
+    // Checks to see if the account has any rivalrous locks that would conflict
+    // with the FRAME staking pallet lock
+    fn has_no_conflicting_locks(who: &AccountId) -> bool {
+        let existing_locks = Balances::locks(who);
+        let existing_lock_ids: Vec<LockIdentifier> =
+            existing_locks.iter().map(|lock| lock.id).collect();
+
+        !Runtime::are_locks_conflicting(&STAKING_LOCK_ID, existing_lock_ids.as_slice())
+    }
+
+    // Recursively checks calls until one invalid bonding call is detected and returns false,
+    // otherwise returns true.
+    fn has_no_invalid_bonding_calls(who: &AccountId, calls: Vec<Call>) -> bool {
+        let mut all_calls_valid = true;
+
+        for call in calls.into_iter() {
+            all_calls_valid = all_calls_valid
+                && match call {
+                    // Calls that can contain other Calls and must be checked recursivly..
+                    Call::Utility(substrate_utility::Call::<Runtime>::batch { calls }) => {
+                        Self::has_no_invalid_bonding_calls(who, calls.to_vec())
+                    }
+                    Call::Utility(substrate_utility::Call::<Runtime>::as_derivative {
+                        call,
+                        ..
+                    }) => Self::has_no_invalid_bonding_calls(who, vec![*call]),
+
+                    // Bonding
+                    Call::Staking(pallet_staking::Call::<Runtime>::bond { .. }) => {
+                        Self::has_no_conflicting_locks(who)
+                    }
+
+                    // should we prevent Sudo from bypassing these checks?
+                    // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo { call }) => ...
+                    // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_as { who, call }) => ...
+                    // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_unchecked_weight { call }) => ...
+                    // Call::Utility(substrate_utility::Call::<Runtime>::batch_all { calls }) => ...
+                    // Call::Utility(substrate_utility::Call::<Runtime>::force_batch { calls }) => ...
+                    // Call::Utility(substrate_utility::Call::<Runtime>::dispatch_as { calls }) => ...
+                    _ => true,
+                };
+
+            if !all_calls_valid {
+                return false;
+            }
+        }
+
+        all_calls_valid
+    }
+}
 impl SignedExtension for CheckCallAllowed<Runtime> {
     type AccountId = AccountId;
     type Call = Call;
@@ -70,34 +123,16 @@ impl SignedExtension for CheckCallAllowed<Runtime> {
         _info: &DispatchInfoOf<Self::Call>,
         _len: usize,
     ) -> TransactionValidity {
-        // check call
-        match call {
-            // Prevent pallet_staking bonding if stash account has existing rivalrous lock
-            Call::Staking(pallet_staking::Call::<Runtime>::bond { .. }) => {
-                // check Locks
-                let existing_locks = Balances::locks(who);
-                let existing_lock_ids: Vec<LockIdentifier> =
-                    existing_locks.iter().map(|lock| lock.id).collect();
-
-                if Runtime::are_locks_conflicting(&STAKING_LOCK_ID, existing_lock_ids.as_slice()) {
-                    return InvalidTransaction::Call.into();
-                }
-
-                Ok(ValidTransaction {
-                    priority: 0,
-                    requires: vec![],
-                    provides: vec![],
-                    longevity: TransactionLongevity::max_value(),
-                    propagate: true,
-                })
-            }
-            _ => Ok(ValidTransaction {
+        if Self::has_no_invalid_bonding_calls(who, vec![call.clone()]) {
+            Ok(ValidTransaction {
                 priority: 0,
                 requires: vec![],
                 provides: vec![],
                 longevity: TransactionLongevity::max_value(),
                 propagate: true,
-            }),
+            })
+        } else {
+            InvalidTransaction::Custom(BONDING_NOT_ALLOWED).into()
         }
     }
 }
