@@ -16,7 +16,7 @@ substrate_pallet_benchmark() {
       --chain=dev \
       --steps=$STEPS \
       --repeat=$REPEAT \
-      --execution=native \
+      --execution=wasm \
       --template=$SCRIPT_DIR/../devops/frame-weight-template.hbs \
       --output=. 2>&1 > /dev/null)
 
@@ -90,7 +90,7 @@ joystream_pallet_benchmark referendum referendum
 joystream_pallet_benchmark forum forum
 joystream_pallet_benchmark membership membership
 # Disabled until we merge new bounty module
-joystream_pallet_benchmark bounty bounty
+# joystream_pallet_benchmark bounty bounty
 joystream_pallet_benchmark joystream_utility utility
 joystream_pallet_benchmark storage storage
 joystream_pallet_benchmark content content

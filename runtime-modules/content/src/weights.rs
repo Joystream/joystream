@@ -386,6 +386,9 @@ impl WeightInfo for () {
 	fn withdraw_from_member_channel_balance() -> Weight {
 		0
 	}
+	fn claim_channel_reward(h: u32, ) -> Weight {
+		0
+	}
 	fn claim_and_withdraw_curator_channel_reward(h: u32, ) -> Weight {
 		0
 	}
