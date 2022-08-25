@@ -7,8 +7,12 @@ pub use super::mock::Event as MetaEvent;
 use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
-use frame_support::traits::{Currency, StoredMap, WithdrawReasons};
 use frame_support::{assert_noop, assert_ok};
+use frame_support::{
+    storage_root,
+    traits::{Currency, StoredMap, WithdrawReasons},
+    StateVersion,
+};
 use frame_system::RawOrigin;
 use project_token::types::TransferPolicyParamsOf;
 use project_token::types::{
@@ -1060,7 +1064,17 @@ pub trait ChannelDeletion {
     fn execute_call(&self) -> DispatchResult;
     fn expected_event_on_success(&self) -> MetaEvent;
 
+    fn on_success_extra(
+        &self,
+        _channel_pre: Channel<Test>,
+        _bloat_bond_reciever_balance_pre: BalanceOf<Test>,
+        _bloat_bond_reciever_balance_post: BalanceOf<Test>,
+        _data_obj_state_bloat_bond: BalanceOf<Test>,
+    ) {
+    }
+
     fn call_and_assert(&self, expected_result: DispatchResult) {
+        let storage_root_pre = storage_root(StateVersion::V1);
         let channel = ChannelById::<Test>::get(self.get_channel_id());
         let channel_bloat_bond_reciever = channel
             .channel_state_bloat_bond
@@ -1089,6 +1103,8 @@ pub trait ChannelDeletion {
 
         let bloat_bond_recipient_balance_post =
             Balances::<Test>::free_balance(channel_bloat_bond_reciever);
+        let storage_root_post = storage_root(StateVersion::V1);
+
         assert_eq!(actual_result, expected_result);
 
         match actual_result {
@@ -1098,30 +1114,22 @@ pub trait ChannelDeletion {
                     self.expected_event_on_success()
                 );
 
-                assert_eq!(
-                    bloat_bond_recipient_balance_post
-                        .saturating_sub(bloat_bond_recipient_balance_pre),
-                    objects_state_bloat_bond + Content::channel_state_bloat_bond_value(),
-                );
                 assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
                 assert!(!channel_objects_ids.iter().any(|id| {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                 }));
                 assert!(!storage::Bags::<Test>::contains_key(&bag_id_for_channel));
+
+                self.on_success_extra(
+                    channel,
+                    bloat_bond_recipient_balance_pre,
+                    bloat_bond_recipient_balance_post,
+                    objects_state_bloat_bond,
+                );
             }
 
-            Err(err) => {
-                assert_eq!(
-                    bloat_bond_recipient_balance_pre,
-                    bloat_bond_recipient_balance_post
-                );
-                if err != Error::<Test>::ChannelDoesNotExist.into() {
-                    assert!(ChannelById::<Test>::contains_key(&self.get_channel_id()));
-                    assert!(channel_objects_ids.iter().all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
-                    }));
-                    assert!(storage::Bags::<Test>::contains_key(&bag_id_for_channel));
-                }
+            Err(_) => {
+                assert_eq!(storage_root_post, storage_root_pre);
             }
         }
     }
@@ -1190,6 +1198,19 @@ impl ChannelDeletion for DeleteChannelFixture {
     fn expected_event_on_success(&self) -> MetaEvent {
         MetaEvent::Content(RawEvent::ChannelDeleted(self.actor, self.channel_id))
     }
+
+    fn on_success_extra(
+        &self,
+        _channel_pre: Channel<Test>,
+        bloat_bond_reciever_balance_pre: BalanceOf<Test>,
+        bloat_bond_reciever_balance_post: BalanceOf<Test>,
+        data_obj_state_bloat_bond: BalanceOf<Test>,
+    ) {
+        assert_eq!(
+            bloat_bond_reciever_balance_post.saturating_sub(bloat_bond_reciever_balance_pre),
+            data_obj_state_bloat_bond + Content::channel_state_bloat_bond_value()
+        );
+    }
 }
 
 pub struct DeleteChannelAsModeratorFixture {
@@ -1257,6 +1278,19 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
             self.channel_id,
             self.rationale.clone(),
         ))
+    }
+
+    fn on_success_extra(
+        &self,
+        _channel_pre: Channel<Test>,
+        bloat_bond_reciever_balance_pre: BalanceOf<Test>,
+        bloat_bond_reciever_balance_post: BalanceOf<Test>,
+        _data_obj_state_bloat_bond: BalanceOf<Test>,
+    ) {
+        assert_eq!(
+            bloat_bond_reciever_balance_post,
+            bloat_bond_reciever_balance_pre
+        );
     }
 }
 
@@ -1566,7 +1600,17 @@ pub trait VideoDeletion {
     fn execute_call(&self) -> DispatchResult;
     fn expected_event_on_success(&self) -> MetaEvent;
 
+    fn on_success_extra(
+        &self,
+        _video_pre: Video<Test>,
+        _bloat_bond_reciever_balance_pre: BalanceOf<Test>,
+        _bloat_bond_reciever_balance_post: BalanceOf<Test>,
+        _data_obj_state_bloat_bond: BalanceOf<Test>,
+    ) {
+    }
+
     fn call_and_assert(&self, expected_result: DispatchResult) {
+        let storage_root_pre = storage_root(StateVersion::V1);
         let video_pre = <VideoById<Test>>::get(&self.get_video_id());
         let video_bloat_bond_reciever = video_pre
             .video_state_bloat_bond
@@ -1589,12 +1633,12 @@ pub trait VideoDeletion {
                 });
 
         let actual_result = self.execute_call();
-
         let bloat_bond_reciever_balance_post: BalanceOf<Test> = Balances::<Test>::free_balance(
             video_pre
                 .video_state_bloat_bond
                 .get_recipient(self.get_sender()),
         );
+        let storage_root_post = storage_root(StateVersion::V1);
 
         assert_eq!(actual_result, expected_result);
 
@@ -1605,40 +1649,21 @@ pub trait VideoDeletion {
                     self.expected_event_on_success()
                 );
 
-                assert_eq!(
-                    bloat_bond_reciever_balance_post
-                        .saturating_sub(bloat_bond_reciever_balance_pre),
-                    data_obj_state_bloat_bond + Content::video_state_bloat_bond_value()
-                );
-
                 assert!(!video_pre.data_objects.iter().any(|obj_id| {
                     storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, obj_id)
                 }));
 
                 assert!(!<VideoById<Test>>::contains_key(self.get_video_id()));
-            }
-            Err(err) => {
-                assert_eq!(
-                    bloat_bond_reciever_balance_pre,
-                    bloat_bond_reciever_balance_post
-                );
 
-                if err == storage::Error::<Test>::DataObjectDoesntExist.into() {
-                    let video_post = <VideoById<Test>>::get(self.get_video_id());
-                    assert_eq!(video_pre, video_post);
-                    assert!(VideoById::<Test>::contains_key(&self.get_video_id()));
-                } else if err == Error::<Test>::VideoDoesNotExist.into() {
-                    assert!(video_pre.data_objects.iter().all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                    }));
-                } else {
-                    let video_post = <VideoById<Test>>::get(self.get_video_id());
-                    assert_eq!(video_pre, video_post);
-                    assert!(VideoById::<Test>::contains_key(self.get_video_id()));
-                    assert!(video_pre.data_objects.iter().all(|id| {
-                        storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
-                    }));
-                }
+                self.on_success_extra(
+                    video_pre,
+                    bloat_bond_reciever_balance_pre,
+                    bloat_bond_reciever_balance_post,
+                    data_obj_state_bloat_bond,
+                );
+            }
+            Err(_) => {
+                assert_eq!(storage_root_post, storage_root_pre);
             }
         }
     }
@@ -1704,6 +1729,19 @@ impl VideoDeletion for DeleteVideoFixture {
     fn expected_event_on_success(&self) -> MetaEvent {
         MetaEvent::Content(RawEvent::VideoDeleted(self.actor, self.video_id))
     }
+
+    fn on_success_extra(
+        &self,
+        _video_pre: Video<Test>,
+        bloat_bond_reciever_balance_pre: BalanceOf<Test>,
+        bloat_bond_reciever_balance_post: BalanceOf<Test>,
+        data_obj_state_bloat_bond: BalanceOf<Test>,
+    ) {
+        assert_eq!(
+            bloat_bond_reciever_balance_post.saturating_sub(bloat_bond_reciever_balance_pre),
+            data_obj_state_bloat_bond + Content::video_state_bloat_bond_value()
+        );
+    }
 }
 
 pub struct DeleteVideoAsModeratorFixture {
@@ -1761,6 +1799,19 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
             self.video_id,
             self.rationale.clone(),
         ))
+    }
+
+    fn on_success_extra(
+        &self,
+        _video_pre: Video<Test>,
+        bloat_bond_reciever_balance_pre: BalanceOf<Test>,
+        bloat_bond_reciever_balance_post: BalanceOf<Test>,
+        _data_obj_state_bloat_bond: BalanceOf<Test>,
+    ) {
+        assert_eq!(
+            bloat_bond_reciever_balance_post,
+            bloat_bond_reciever_balance_pre
+        );
     }
 }
 

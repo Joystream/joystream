@@ -177,11 +177,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
         let _ = Balances::deposit_creating(account_id, amount);
 
-        let current_budget = Self::get_budget();
-        let new_budget = current_budget.saturating_sub(amount);
-        <Self as common::working_group::WorkingGroupBudgetHandler<u64, u64>>::set_budget(
-            new_budget,
-        );
+        Self::decrease_budget(amount);
 
         Ok(())
     }

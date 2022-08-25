@@ -4153,10 +4153,8 @@ impl<T: Config> Module<T> {
 
         // state bloat bond request creating objects: no-op if state bloat bond requested is 0
         let objects_to_insert = if !state_bloat_bond_request.is_zero() {
-            let repaybale_bloat_bonds =
-                Self::pay_data_object_bloat_bonds(&account_id, upload_objs_num)?;
             let objects_to_insert =
-                Self::prepare_data_objects_to_insert(object_creation_list, repaybale_bloat_bonds)?;
+                Self::pay_data_object_bloat_bonds(&account_id, object_creation_list)?;
             Self::pay_storage_fee(&account_id, storage_fee)?;
             objects_to_insert
         } else {
@@ -4232,10 +4230,8 @@ impl<T: Config> Module<T> {
 
         //state bloat bond request creating objects: no-op if state bloat bond requested is 0
         let objects_to_insert = if !state_bloat_bond_request.is_zero() {
-            let repayable_bloat_bonds =
-                Self::pay_data_object_bloat_bonds(&account_id, upload_objs_num)?;
             let objects_to_insert =
-                Self::prepare_data_objects_to_insert(object_creation_list, repayable_bloat_bonds)?;
+                Self::pay_data_object_bloat_bonds(&account_id, object_creation_list)?;
             Self::pay_storage_fee(&account_id, storage_fee)?;
             objects_to_insert
         } else {
@@ -4394,31 +4390,6 @@ impl<T: Config> Module<T> {
             .and_then(|x| x)
     }
 
-    fn prepare_data_objects_to_insert(
-        objects: Vec<DataObjectOf<T>>,
-        bloat_bonds: Vec<RepayableBloatBondOf<T>>,
-    ) -> Result<Vec<DataObjectOf<T>>, DispatchError> {
-        let mut i = 0u64;
-        objects
-            .iter()
-            .map(|o| {
-                let state_bloat_bond = bloat_bonds
-                    .get(i as usize)
-                    .ok_or(
-                        // Should never happen, but in any case we don't want the runtime to panic
-                        DispatchError::Other("repayable_bloat_bonds: Index out of bounds"),
-                    )
-                    .map(|bb| bb.clone())?;
-                let prepared_obj = DataObject {
-                    state_bloat_bond,
-                    ..o.clone()
-                };
-                i += 1;
-                Ok(prepared_obj)
-            })
-            .collect()
-    }
-
     fn validate_objects_to_remove(
         bag_id: &BagId<T>,
         specific_objects: Option<&BTreeSet<T::DataObjectId>>,
@@ -4512,23 +4483,30 @@ impl<T: Config> Module<T> {
 
     fn pay_data_object_bloat_bonds(
         source: &T::AccountId,
-        number_of_bonds: u64,
-    ) -> Result<Vec<RepayableBloatBondOf<T>>, DispatchError> {
+        objects: Vec<DataObjectOf<T>>,
+    ) -> Result<Vec<DataObjectOf<T>>, DispatchError> {
         let data_object_bloat_bond = Self::data_object_state_bloat_bond_value();
         let treasury = <StorageTreasury<T>>::module_account_id();
         let locked_balance_used = pay_fee::<T>(
             source,
             Some(&treasury),
-            data_object_bloat_bond.saturating_mul(number_of_bonds.saturated_into()),
+            data_object_bloat_bond.saturating_mul((objects.len() as u32).into()),
         )?;
 
-        Ok((0..number_of_bonds)
-            .map(|i| {
-                match locked_balance_used
+        Ok(objects
+            .iter()
+            .enumerate()
+            .map(|(i, obj)| {
+                let repayable_bloat_bond = match locked_balance_used
                     <= data_object_bloat_bond.saturating_mul(i.saturated_into())
                 {
                     true => RepayableBloatBond::new(data_object_bloat_bond, None),
                     false => RepayableBloatBond::new(data_object_bloat_bond, Some(source.clone())),
+                };
+
+                DataObject {
+                    state_bloat_bond: repayable_bloat_bond,
+                    ..obj.clone()
                 }
             })
             .collect())

@@ -867,7 +867,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(current_budget.saturating_sub(funding_total));
+            Mutations::<T>::decrease_budget(funding_total);
 
             for funding_request in funding_requests {
                 let amount = funding_request.amount;
@@ -895,8 +895,6 @@ decl_module! {
             let account_id =
                 T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
-            let budget = Self::budget();
-
             ensure!(amount > Zero::zero(), Error::<T>::ZeroTokensFunding);
             ensure!(
                 balances::Pallet::<T>::usable_balance(&account_id) >= amount,
@@ -910,7 +908,7 @@ decl_module! {
             // Account is allowed to die when funding the council
             burn_from_usable::<T>(&account_id, amount)?;
 
-            Mutations::<T>::set_budget(budget.saturating_add(amount));
+            Mutations::<T>::increase_budget(amount);
 
             Self::deposit_event(
                 RawEvent::CouncilBudgetFunded(
@@ -1112,7 +1110,7 @@ impl<T: Config> Module<T> {
         let refill_amount = Self::budget_increment();
 
         // refill budget
-        Mutations::<T>::refill_budget(refill_amount);
+        Mutations::<T>::increase_budget(refill_amount);
 
         // calculate next refill block number
         let refill_period = T::BudgetRefillPeriod::get();
@@ -1517,9 +1515,14 @@ impl<T: Config> Mutations<T> {
         Budget::<T>::put(balance);
     }
 
-    // Refill budget's balance.
-    fn refill_budget(refill_amount: Balance<T>) {
-        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(refill_amount));
+    // Increase budget's balance.
+    fn increase_budget(amount: Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(amount));
+    }
+
+    // Decrease budget's balance.
+    fn decrease_budget(amount: Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_sub(amount));
     }
 
     // Plan next budget refill.
@@ -1776,11 +1779,7 @@ impl<T: Config + balances::Config> common::council::CouncilBudgetManager<T::Acco
 
         let _ = Balances::<T>::deposit_creating(account_id, amount);
 
-        let current_budget = Self::get_budget();
-        let new_budget = current_budget.saturating_sub(amount);
-        <Self as common::council::CouncilBudgetManager<T::AccountId, Balance<T>>>::set_budget(
-            new_budget,
-        );
+        Self::decrease_budget(amount);
 
         Ok(())
     }

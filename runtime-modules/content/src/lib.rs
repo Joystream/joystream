@@ -696,8 +696,8 @@ decl_module! {
             // ensure channel bag exists and num_objects_to_delete is valid
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
-            // try to remove the channel
-            Self::try_to_perform_channel_deletion(&sender, channel_id, channel)?;
+            // try to remove the channel, repay the bloat bond
+            Self::try_to_perform_channel_deletion(&sender, channel_id, channel, false)?;
 
             //
             // == MUTATION SAFE ==
@@ -776,8 +776,8 @@ decl_module! {
             // ensure channel bag exists and num_objects_to_delete is valid
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
-            // try to remove the channel
-            Self::try_to_perform_channel_deletion(&sender, channel_id, channel)?;
+            // try to remove the channel, slash the bloat bond
+            Self::try_to_perform_channel_deletion(&sender, channel_id, channel, true)?;
 
             //
             // == MUTATION SAFE ==
@@ -1037,8 +1037,8 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
-            // Try removing the video
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video)?;
+            // Try removing the video, repay the bloat bond
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, false)?;
 
             //
             // == MUTATION SAFE ==
@@ -1121,8 +1121,8 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
-            // Try removing the video
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video)?;
+            // Try removing the video, slash the bloat bond
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, true)?;
 
             //
             // == MUTATION SAFE ==
@@ -3189,6 +3189,7 @@ impl<T: Config> Module<T> {
         channel_id: T::ChannelId,
         video_id: T::VideoId,
         video: &Video<T>,
+        slash_bloat_bond: bool,
     ) -> DispatchResult {
         // delete assets from storage with upload and rollback semantics
         if !video.data_objects.is_empty() {
@@ -3212,11 +3213,15 @@ impl<T: Config> Module<T> {
             channel.num_videos = channel.num_videos.saturating_sub(1)
         });
 
-        // Repay video state bloat bond
+        // Repay/slash video state bloat bond
         let module_account = ContentTreasury::<T>::module_account_id();
-        video
-            .video_state_bloat_bond
-            .repay::<T>(&module_account, sender, false)?;
+        if slash_bloat_bond {
+            burn_from_usable::<T>(&module_account, video.video_state_bloat_bond.amount)?;
+        } else {
+            video
+                .video_state_bloat_bond
+                .repay::<T>(&module_account, sender, false)?;
+        }
 
         Ok(())
     }
@@ -3247,6 +3252,7 @@ impl<T: Config> Module<T> {
         sender: &T::AccountId,
         channel_id: T::ChannelId,
         channel: Channel<T>,
+        slash_bloat_bond: bool,
     ) -> DispatchResult {
         let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
 
@@ -3260,11 +3266,15 @@ impl<T: Config> Module<T> {
         // remove channel from on chain state
         ChannelById::<T>::remove(channel_id);
 
-        // Repay channel state bloat bond
+        // Slash or repay channel state bloat bond
         let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
-        channel
-            .channel_state_bloat_bond
-            .repay::<T>(&channel_account, sender, true)?;
+        if slash_bloat_bond {
+            burn_from_usable::<T>(&channel_account, channel.channel_state_bloat_bond.amount)?;
+        } else {
+            channel
+                .channel_state_bloat_bond
+                .repay::<T>(&channel_account, sender, true)?;
+        }
 
         Ok(())
     }
@@ -3333,7 +3343,7 @@ impl<T: Config> Module<T> {
         owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         transfer_cost: BalanceOf<T>,
     ) -> DispatchResult {
-        let funds_are_sufficient = match owner {
+        let is_funding_sufficient = match owner {
             ChannelOwner::Member(member_id) => {
                 let controller_account_id =
                     T::MemberAuthenticator::controller_account_id(*member_id)?;
@@ -3345,7 +3355,7 @@ impl<T: Config> Module<T> {
         };
 
         ensure!(
-            funds_are_sufficient,
+            is_funding_sufficient,
             Error::<T>::InsufficientBalanceForTransfer
         );
         Ok(())

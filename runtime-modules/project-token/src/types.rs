@@ -24,7 +24,7 @@ use sp_std::{
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
-use crate::{errors::Error, Config};
+use crate::{errors::Error, Config, RepayableBloatBondOf};
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
@@ -800,6 +800,17 @@ pub enum Validated<MemberId: Ord + Eq + Clone> {
     NonExisting(MemberId),
 }
 
+/// Utility wrapper around existing/non existing accounts to be updated/inserted due to
+/// toknes transfer
+#[derive(Encode, Decode, PartialEq, Eq, Debug, PartialOrd, Ord, Clone, TypeInfo)]
+pub enum ValidatedWithBloatBond<MemberId, RepayableBloatBond> {
+    /// Existing account
+    Existing(MemberId),
+
+    /// Non Existing account
+    NonExisting(MemberId, RepayableBloatBond),
+}
+
 // implementation
 
 /// Default trait for OfferingState
@@ -1442,3 +1453,11 @@ pub type RevenueSplitStateOf<T> =
 /// Alias for ValidatedTransfers
 pub(crate) type ValidatedTransfersOf<T> =
     Transfers<Validated<<T as MembershipTypes>::MemberId>, ValidatedPaymentOf<T>>;
+
+/// Alias for ValidatedWithBloatBond
+pub(crate) type ValidatedWithBloatBondOf<T> =
+    ValidatedWithBloatBond<<T as MembershipTypes>::MemberId, RepayableBloatBondOf<T>>;
+
+/// Alias for complex type BTreeMap<MemberId, (TokenAllocation, RepayableBloatBond)>
+pub(crate) type AllocationWithBloatBondsOf<T> =
+    BTreeMap<<T as MembershipTypes>::MemberId, (TokenAllocationOf<T>, RepayableBloatBondOf<T>)>;

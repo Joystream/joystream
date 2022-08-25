@@ -465,9 +465,7 @@ impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
 
         let _ = Balances::deposit_creating(account_id, amount);
 
-        let current_budget = Self::get_budget();
-        let new_budget = current_budget.saturating_sub(amount);
-        Self::set_budget(new_budget);
+        Self::decrease_budget(amount);
 
         Ok(())
     }
