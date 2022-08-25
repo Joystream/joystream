@@ -686,7 +686,7 @@ benchmarks! {
         }
 
     // Worst case scenario:
-    // - curator channel belonging to a member with max number of collaborators and max agent permissions
+    // - channel belonging to a member with max number of collaborators and max agent permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     claim_and_withdraw_member_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
