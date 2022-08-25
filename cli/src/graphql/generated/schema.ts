@@ -8800,6 +8800,7 @@ export type DataObjectType =
   | DataObjectTypeChannelCoverPhoto
   | DataObjectTypeVideoMedia
   | DataObjectTypeVideoThumbnail
+  | DataObjectTypeVideoSubtitle
   | DataObjectTypeUnknown
 
 export type DataObjectTypeChannelAvatar = {
@@ -8817,6 +8818,13 @@ export type DataObjectTypeUnknown = {
 }
 
 export type DataObjectTypeVideoMedia = {
+  /** Related video entity */
+  video?: Maybe<Video>
+}
+
+export type DataObjectTypeVideoSubtitle = {
+  /** Related subtitle entity */
+  subtitle?: Maybe<VideoSubtitle>
   /** Related video entity */
   video?: Maybe<Video>
 }
@@ -11719,6 +11727,7 @@ export type Language = BaseGraphQlObject & {
   createdInBlock: Scalars['Int']
   channellanguage?: Maybe<Array<Channel>>
   videolanguage?: Maybe<Array<Video>>
+  videosubtitlelanguage?: Maybe<Array<VideoSubtitle>>
 }
 
 export type LanguageConnection = {
@@ -11797,6 +11806,9 @@ export type LanguageWhereInput = {
   videolanguage_none?: Maybe<VideoWhereInput>
   videolanguage_some?: Maybe<VideoWhereInput>
   videolanguage_every?: Maybe<VideoWhereInput>
+  videosubtitlelanguage_none?: Maybe<VideoSubtitleWhereInput>
+  videosubtitlelanguage_some?: Maybe<VideoSubtitleWhereInput>
+  videosubtitlelanguage_every?: Maybe<VideoSubtitleWhereInput>
   AND?: Maybe<Array<LanguageWhereInput>>
   OR?: Maybe<Array<LanguageWhereInput>>
   NOT?: Maybe<Array<LanguageWhereInput>>
@@ -20673,6 +20685,9 @@ export type Query = {
   videoReactionsPreferenceEvents: Array<VideoReactionsPreferenceEvent>
   videoReactionsPreferenceEventByUniqueInput?: Maybe<VideoReactionsPreferenceEvent>
   videoReactionsPreferenceEventsConnection: VideoReactionsPreferenceEventConnection
+  videoSubtitles: Array<VideoSubtitle>
+  videoSubtitleByUniqueInput?: Maybe<VideoSubtitle>
+  videoSubtitlesConnection: VideoSubtitleConnection
   videoVisibilitySetByModeratorEvents: Array<VideoVisibilitySetByModeratorEvent>
   videoVisibilitySetByModeratorEventByUniqueInput?: Maybe<VideoVisibilitySetByModeratorEvent>
   videoVisibilitySetByModeratorEventsConnection: VideoVisibilitySetByModeratorEventConnection
@@ -24415,6 +24430,26 @@ export type QueryVideoReactionsPreferenceEventsConnectionArgs = {
   orderBy?: Maybe<Array<VideoReactionsPreferenceEventOrderByInput>>
 }
 
+export type QueryVideoSubtitlesArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<VideoSubtitleWhereInput>
+  orderBy?: Maybe<Array<VideoSubtitleOrderByInput>>
+}
+
+export type QueryVideoSubtitleByUniqueInputArgs = {
+  where: VideoSubtitleWhereUniqueInput
+}
+
+export type QueryVideoSubtitlesConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<VideoSubtitleWhereInput>
+  orderBy?: Maybe<Array<VideoSubtitleOrderByInput>>
+}
+
 export type QueryVideoVisibilitySetByModeratorEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -27844,6 +27879,7 @@ export type StorageDataObject = BaseGraphQlObject & {
   unsetAt?: Maybe<Scalars['DateTime']>
   videoThumbnail?: Maybe<Video>
   videoMedia?: Maybe<Video>
+  videoSubtitle?: Maybe<VideoSubtitle>
   channelcoverPhoto?: Maybe<Array<Channel>>
   channelavatarPhoto?: Maybe<Array<Channel>>
 }
@@ -27953,6 +27989,7 @@ export type StorageDataObjectWhereInput = {
   storageBag?: Maybe<StorageBagWhereInput>
   videoThumbnail?: Maybe<VideoWhereInput>
   videoMedia?: Maybe<VideoWhereInput>
+  videoSubtitle?: Maybe<VideoSubtitleWhereInput>
   channelcoverPhoto_none?: Maybe<ChannelWhereInput>
   channelcoverPhoto_some?: Maybe<ChannelWhereInput>
   channelcoverPhoto_every?: Maybe<ChannelWhereInput>
@@ -29500,6 +29537,7 @@ export type Video = BaseGraphQlObject & {
   createdInBlock: Scalars['Int']
   /** Is video featured or not */
   isFeatured: Scalars['Boolean']
+  subtitles: Array<VideoSubtitle>
   /** Is comment section enabled (true if enabled) */
   isCommentSectionEnabled: Scalars['Boolean']
   pinnedComment?: Maybe<Comment>
@@ -30922,6 +30960,120 @@ export type VideoReactionsPreferenceEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type VideoSubtitle = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  video: Video
+  videoId: Scalars['String']
+  /** Subtitle's type */
+  type: Scalars['String']
+  language: Language
+  languageId: Scalars['String']
+  /** MIME type description of format used for this subtitle */
+  mimeType: Scalars['String']
+  asset?: Maybe<StorageDataObject>
+  assetId?: Maybe<Scalars['String']>
+}
+
+export type VideoSubtitleConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<VideoSubtitleEdge>
+  pageInfo: PageInfo
+}
+
+export type VideoSubtitleCreateInput = {
+  video: Scalars['ID']
+  type: Scalars['String']
+  language: Scalars['ID']
+  mimeType: Scalars['String']
+  asset?: Maybe<Scalars['ID']>
+}
+
+export type VideoSubtitleEdge = {
+  node: VideoSubtitle
+  cursor: Scalars['String']
+}
+
+export enum VideoSubtitleOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
+  TypeAsc = 'type_ASC',
+  TypeDesc = 'type_DESC',
+  LanguageAsc = 'language_ASC',
+  LanguageDesc = 'language_DESC',
+  MimeTypeAsc = 'mimeType_ASC',
+  MimeTypeDesc = 'mimeType_DESC',
+  AssetAsc = 'asset_ASC',
+  AssetDesc = 'asset_DESC',
+}
+
+export type VideoSubtitleUpdateInput = {
+  video?: Maybe<Scalars['ID']>
+  type?: Maybe<Scalars['String']>
+  language?: Maybe<Scalars['ID']>
+  mimeType?: Maybe<Scalars['String']>
+  asset?: Maybe<Scalars['ID']>
+}
+
+export type VideoSubtitleWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  type_eq?: Maybe<Scalars['String']>
+  type_contains?: Maybe<Scalars['String']>
+  type_startsWith?: Maybe<Scalars['String']>
+  type_endsWith?: Maybe<Scalars['String']>
+  type_in?: Maybe<Array<Scalars['String']>>
+  mimeType_eq?: Maybe<Scalars['String']>
+  mimeType_contains?: Maybe<Scalars['String']>
+  mimeType_startsWith?: Maybe<Scalars['String']>
+  mimeType_endsWith?: Maybe<Scalars['String']>
+  mimeType_in?: Maybe<Array<Scalars['String']>>
+  video?: Maybe<VideoWhereInput>
+  language?: Maybe<LanguageWhereInput>
+  asset?: Maybe<StorageDataObjectWhereInput>
+  AND?: Maybe<Array<VideoSubtitleWhereInput>>
+  OR?: Maybe<Array<VideoSubtitleWhereInput>>
+  NOT?: Maybe<Array<VideoSubtitleWhereInput>>
+}
+
+export type VideoSubtitleWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type VideoUpdateInput = {
   channel?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
@@ -31190,6 +31342,9 @@ export type VideoWhereInput = {
   license?: Maybe<LicenseWhereInput>
   media?: Maybe<StorageDataObjectWhereInput>
   mediaMetadata?: Maybe<VideoMediaMetadataWhereInput>
+  subtitles_none?: Maybe<VideoSubtitleWhereInput>
+  subtitles_some?: Maybe<VideoSubtitleWhereInput>
+  subtitles_every?: Maybe<VideoSubtitleWhereInput>
   pinnedComment?: Maybe<CommentWhereInput>
   comments_none?: Maybe<CommentWhereInput>
   comments_some?: Maybe<CommentWhereInput>

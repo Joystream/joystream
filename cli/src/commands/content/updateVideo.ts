@@ -9,7 +9,7 @@ import {
   PalletContentChannelActionPermission as ChannelActionPermission,
 } from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
-import { VideoMetadata } from '@joystream/metadata-protobuf'
+import { ContentMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
@@ -83,21 +83,39 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const meta = asValidatedMetadata(VideoMetadata, videoInput)
     const { enableComments } = videoInput
 
-    const { videoPath, thumbnailPhotoPath } = videoInput
-    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
+    // Video assets
+    const { videoPath, thumbnailPhotoPath, subtitles } = videoInput
+    const [resolvedVideoAssets, videoAssetIndices] = await this.resolveAndValidateAssets(
+      { videoPath, thumbnailPhotoPath },
+      input
+    )
     // Set assets indices in the metadata
     // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
-    meta.video = assetIndices.videoPath
-    meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
+    meta.video = videoAssetIndices.videoPath
+    meta.thumbnailPhoto = videoAssetIndices.thumbnailPhotoPath
+
+    // Subtitle assets
+    const resolvedSubtitleAssets = await Promise.all(
+      (subtitles || []).map(async (subtitleInputParameters, i) => {
+        const { subtitleAssetPath } = subtitleInputParameters
+        const [[resolvedAsset], assetIndices] = await this.resolveAndValidateAssets({ subtitleAssetPath }, input)
+        // Set assets indices in the metadata
+        if (meta.subtitles) {
+          meta.subtitles[i].newAsset =
+            assetIndices.subtitleAssetPath || 0 + Object.entries(videoAssetIndices).length + i
+        }
+        return resolvedAsset
+      })
+    )
 
     // Prepare and send the extrinsic
     const serializedMeta = metadataToBytes(VideoMetadata, meta)
     const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
-    const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const assetsToUpload = await this.prepareAssetsForExtrinsic([...resolvedVideoAssets, ...resolvedSubtitleAssets])
     const assetsToRemove = await this.getAssetsToRemove(
       videoId,
-      assetIndices.videoPath,
-      assetIndices.thumbnailPhotoPath
+      videoAssetIndices.videoPath,
+      videoAssetIndices.thumbnailPhotoPath
     )
 
     // Ensure actor is authorized to perform video update
@@ -121,7 +139,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       expectedDataObjectStateBloatBond,
       autoIssueNft: null,
       assetsToUpload,
-      newMeta: metadataToBytes(VideoMetadata, meta),
+      newMeta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
       assetsToRemove,
     }
 
@@ -141,7 +159,10 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       const [, objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
         `dynamic:channel:${video.inChannel.toString()}`,
-        [...objectIds.values()].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...objectIds.values()].map((id, index) => ({
+          dataObjectId: id,
+          path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
+        })),
         input
       )
     }

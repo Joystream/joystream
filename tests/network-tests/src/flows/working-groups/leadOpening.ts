@@ -73,6 +73,9 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         const fillOpeningFixture = new FillOpeningsFixture(api, query, group, [openingId], [[applicationId]], true)
         await new FixtureRunner(fillOpeningFixture).runWithQueryNodeChecks()
 
+        const workerIds = fillOpeningFixture.getCreatedWorkerIdsByOpeningId(openingId)
+        await api.assignWorkerWellknownAccount(group, workerIds[0])
+
         debug('Done')
       })
     )

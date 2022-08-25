@@ -13,6 +13,7 @@ const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 
 type Modify<T, R> = Omit<T, keyof R> & R
 
+// ICreatedContentData
 export interface ICreatedVideoData {
   videoId: number
   assetContentIds: string[]
@@ -110,7 +111,7 @@ export class JoystreamCLI extends CLI {
   */
   async createVideo(
     channelId: number,
-    video: Modify<VideoInputParameters, { category: string }>,
+    video: Modify<VideoInputParameters, { category?: string }>,
     canOmitUpload = true
   ): Promise<ICreatedVideoData> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
@@ -151,18 +152,14 @@ export class JoystreamCLI extends CLI {
   /**
     Updates an existing video.
   */
-  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category: string }>): Promise<void> {
+  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category?: string }>): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
-    const { stdout, stderr, exitCode } = await this.run('content:updateVideo', [
-      '--input',
-      jsonFile,
-      videoId.toString(),
-    ])
+    const { stderr, exitCode } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
 
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       // ignore warnings
-      throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+      throw new Error(`Unexpected CLI failure on updating video: "${stderr}"`)
     }
   }
 
@@ -183,11 +180,7 @@ export class JoystreamCLI extends CLI {
   ): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
-    const { stdout, stderr, exitCode } = await this.run('content:updateChannel', [
-      '--input',
-      jsonFile,
-      channelId.toString(),
-    ])
+    const { stderr, exitCode } = await this.run('content:updateChannel', ['--input', jsonFile, channelId.toString()])
 
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       // ignore warnings

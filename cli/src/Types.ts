@@ -26,6 +26,7 @@ import {
   ICreateVideoCategory,
   IOpeningMetadata,
   IWorkingGroupMetadata,
+  ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import {
   MembershipFieldsFragment,
@@ -198,10 +199,15 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
   mimeType: string
 }
 
-export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
+export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto' | 'subtitles'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
   enableComments?: boolean
+  subtitles?: VideoSubtitleInputParameters[]
+}
+
+export type VideoSubtitleInputParameters = Omit<ISubtitleMetadata, 'newAsset'> & {
+  subtitleAssetPath?: string
 }
 
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {

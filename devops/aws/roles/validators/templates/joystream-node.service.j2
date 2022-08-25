@@ -9,7 +9,7 @@ WorkingDirectory=/home/ubuntu/joystream/
 ExecStart=/home/ubuntu/joystream/target/release/joystream-node \
         --chain {{ template_remote_chain_spec_path }} \
         --pruning archive \
-        --node-key-file {{ template_secret_path }} \
+        --node-key-file {{ template_node_secret_path }} \
         --keystore-path {{ template_keystore_path }} \
         --validator
 Restart=on-failure

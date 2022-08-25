@@ -15,8 +15,11 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   const faucetSuri = env.INVITER_KEY || '//Faucet'
   const faucetAccount = api.createCustomKeyPair(faucetSuri, true).address
 
-  await api.treasuryTransferBalanceToAccounts([faucetAccount], funds)
+  // Attempt to fund the faucet account, but we allow graceful failure
+  // incase the treasury account is not funded
+  await api.treasuryTransferBalanceToAccounts([faucetAccount], funds).catch()
 
+  // We still set the faucet key specified
   api.setFaucetInfo({ suri: faucetSuri })
 
   debug('Done')

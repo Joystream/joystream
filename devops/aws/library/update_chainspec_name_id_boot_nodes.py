@@ -8,11 +8,11 @@ def main():
     fields = {
         "chain_spec_path": {"required": True, "type": "str"},
         "file_content": {"required": False, "type": "str" },
-        "prefix": {"required": False, "type": "str" },
+        "network_name": {"required": False, "type": "str" },
         "all_nodes": {"required": False, "type": "dict" }
     }
     module = AnsibleModule(argument_spec=fields)
-    prefix = module.params["prefix"]
+    network_name = module.params["network_name"]
     chain_spec_path = module.params["chain_spec_path"]
     all_nodes = module.params["all_nodes"]
 
@@ -20,15 +20,15 @@ def main():
         data = json.load(f)
 
     response = {
-        "name": f'{data["name"]} {prefix}',
-        "id": f'{data["id"]}_{prefix}',
-        "protocolId": f'{data["protocolId"]}{prefix}'
+        "name": f'{network_name}',
+        "id": f'{network_name}',
+        "protocolId": f'{network_name}'
     }
 
     boot_node_list = data["bootNodes"]
     for key in all_nodes:
         if "validators" in all_nodes[key]["group_names"]:
-            public_key = all_nodes[key]["subkey_output"]["stderr"]
+            public_key = all_nodes[key]["generate_node_keys_output"]["stderr"]
             boot_node_list.append(f"/ip4/{key}/tcp/30333/p2p/{public_key}")
 
     telemetry_endpoints = data["telemetryEndpoints"]

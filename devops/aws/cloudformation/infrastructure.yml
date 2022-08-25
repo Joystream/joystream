@@ -9,19 +9,21 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   EC2InstanceType:
     Type: String
-    Default: t2.micro
+    Default: t2.xlarge
   ValidatorEC2InstanceType:
     Type: String
-    Default: t2.micro
+    Default: t2.xlarge
   RPCEC2InstanceType:
     Type: String
-    Default: t2.micro
+    Default: t2.xlarge
   BuildEC2InstanceType:
     Type: String
-    Default: t2.micro
-  EC2AMI:
+    Default: c4.2xlarge
+  StorageEc2InstanceType:
     Type: String
-    Default: 'ami-0a8273bdc1bfaedf7'
+    Default: t2.xlarge
+  JoystreamAmi:
+    Type: String
   DefaultAMI:
     Type: String
     Default: 'ami-0a8273bdc1bfaedf7'
@@ -34,37 +36,29 @@ Parameters:
     Description: Number of validator instances to launch
     Type: Number
     Default: 2
+  NumberOfStorageNodes:
+    Description: Number of storage node instances to launch
+    Type: Number
+    Default: 0
+  NumberOfDistributorNodes:
+    Description: Number of distributor node instances to launch
+    Type: Number
+    Default: 0
+  TotalNumberOfInstancesInGroups:
+    Description: Sum of NumberOfValidators,NumberOfStorageNodes,NumberOfDistributorNodes
+    Type: Number
+    Default: 2
   VolumeSize:
-    Description: Validator and Build instance volume size in GB
+    Description: volume size in GB for all instances
     Type: Number
-    Default: 120
-  RPCVolumeSize:
-    Description: RPC Instance volume size in GB
-    Type: Number
-    Default: 120
+    Default: 200
 
 Conditions:
-  HasAMIId: !Not [!Equals [!Ref EC2AMI, '']]
+  HasAMIId: !Not [!Equals [!Ref JoystreamAmi, '']]
 
 Resources:
+  # Common security group for all instances
   SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 30333
-          ToPort: 30333
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}_validator'
-
-  RPCSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: !Sub 'Internal Security group for RPC nodes ${AWS::StackName}'
@@ -109,7 +103,7 @@ Resources:
     Properties:
       LaunchTemplateName: !Sub 'LaunchTemplate_${AWS::StackName}'
       LaunchTemplateData:
-        ImageId: !If [HasAMIId, !Ref EC2AMI, !Ref DefaultAMI]
+        ImageId: !If [HasAMIId, !Ref JoystreamAmi, !Ref DefaultAMI]
         InstanceType: !Ref EC2InstanceType
         KeyName: !Ref KeyName
         SecurityGroupIds:
@@ -139,11 +133,11 @@ Resources:
 
             /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
 
-  AutoScalingGroup:
+  ValidatorsGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      MinSize: '0'
-      MaxSize: '10'
+      MinSize: '1'
+      MaxSize: '4'
       DesiredCapacity: !Ref NumberOfValidators
       AvailabilityZones:
         Fn::GetAZs:
@@ -160,11 +154,53 @@ Resources:
           Value: !Sub '${AWS::StackName}'
           PropagateAtLaunch: 'true'
 
+  StorageNodesGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: '0'
+      MaxSize: '4'
+      DesiredCapacity: !Ref NumberOfStorageNodes
+      AvailabilityZones:
+        Fn::GetAZs:
+          Ref: 'AWS::Region'
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref InstanceLaunchTemplate
+            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref RPCEC2InstanceType
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}'
+          PropagateAtLaunch: 'true'
+
+  DistributorNodesGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: '0'
+      MaxSize: '4'
+      DesiredCapacity: !Ref NumberOfDistributorNodes
+      AvailabilityZones:
+        Fn::GetAZs:
+          Ref: 'AWS::Region'
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref InstanceLaunchTemplate
+            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref RPCEC2InstanceType
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}'
+          PropagateAtLaunch: 'true'
+
   RPCInstance:
     Type: AWS::EC2::Instance
     Properties:
       SecurityGroupIds:
-        - !GetAtt RPCSecurityGroup.GroupId
+        - !GetAtt SecurityGroup.GroupId
       InstanceType: !Ref RPCEC2InstanceType
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
@@ -172,7 +208,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: !Ref RPCVolumeSize
+            VolumeSize: !Ref VolumeSize
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}_rpc'
@@ -196,14 +232,26 @@ Resources:
     Properties:
       Handle: !Ref 'WaitHandle'
       Timeout: '1000'
-      Count: !Ref NumberOfValidators
+      Count: !Ref TotalNumberOfInstancesInGroups
 
 Outputs:
-  AutoScalingId:
+  ValidatorsAutoScalingId:
     Description: The Auto Scaling ID
-    Value: !Ref AutoScalingGroup
+    Value: !Ref ValidatorsGroup
     Export:
-      Name: !Sub '${AWS::StackName}AutoScalingGroup'
+      Name: !Sub '${AWS::StackName}ValidatorsGroup'
+
+  StorageNodesAutoScalingId:
+    Description: The Auto Scaling ID
+    Value: !Ref StorageNodesGroup
+    Export:
+      Name: !Sub '${AWS::StackName}StorageNodesGroup'
+
+  DistributorNodesAutoScalingId:
+    Description: The Auto Scaling ID
+    Value: !Ref DistributorNodesGroup
+    Export:
+      Name: !Sub '${AWS::StackName}DistributorNodesGroup'
 
   RPCPublicIp:
     Description: The DNS name for the created instance

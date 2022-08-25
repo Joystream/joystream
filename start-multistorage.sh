@@ -4,7 +4,7 @@ set -e
 # Run a complete joystream development network on your machine using docker
 export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(./scripts/runtime-code-shasum.sh)}
 
-INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setupNewChain}
+INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setupNewChainMultiStorage}
 
 if [ "${PERSIST}" == true ]
 then
@@ -40,6 +40,8 @@ if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
   HOST_IP=$(tests/network-tests/get-host-ip.sh)
   export COLOSSUS_1_URL=${COLOSSUS_1_URL:="http://${HOST_IP}:3333"}
   export DISTRIBUTOR_1_URL=${DISTRIBUTOR_1_URL:="http://${HOST_IP}:3334"}
+  export COLOSSUS_2_URL=${COLOSSUS_2_URL:="http://${HOST_IP}:3335"}
+  export DISTRIBUTOR_2_URL=${DISTRIBUTOR_2_URL:="http://${HOST_IP}:3336"}
   ./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 
   ## Member faucet
@@ -49,6 +51,8 @@ if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
   ## Storage Infrastructure Nodes
   docker-compose up -d colossus-1
   docker-compose up -d distributor-1
+  docker-compose up -d colossus-2
+  docker-compose up -d distributor-2
 fi
 
 if [ "${PERSIST}" == true ]
