@@ -1,15 +1,8 @@
-#![cfg(feature = "runtime-benchmarks")]
-
 mod benchmarking;
 
 use crate::{
-    permissions::*,
-    types::{
-        ChannelActionPermission, ChannelAgentPermissions, ChannelBagWitness,
-        ChannelCreationParameters, ChannelOwner, StorageAssets,
-    },
-    Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
-    Module as Pallet,
+    permissions::*, types::*, Config, ContentModerationAction, InitTransferParametersOf,
+    ModerationPermissionsByLevel, Module as Pallet,
 };
 use balances::Pallet as Balances;
 use common::MembershipTypes;
@@ -22,15 +15,8 @@ use frame_support::{
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
 use sp_arithmetic::traits::One;
+use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
-use sp_std::{
-    cmp::min,
-    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    convert::TryInto,
-    iter::FromIterator,
-    vec,
-    vec::Vec,
-};
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
     Module as Storage,
@@ -39,6 +25,16 @@ use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
+
+use sp_std::{
+    cmp::min,
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
+    iter::FromIterator,
+    vec,
+    vec::Vec,
+};
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -59,6 +55,7 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
 
     res
 }
+pub const DEFAULT_MEMBER_ID: u128 = 500;
 
 pub const CURATOR_IDS_INIT: u128 = 600;
 pub const MAX_CURATOR_IDS: usize = 100;
@@ -71,6 +68,8 @@ pub const MAX_COLABORATOR_IDS: usize = 100;
 
 pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
     gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
+
+pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
@@ -783,6 +782,34 @@ where
     Ok(channel_id)
 }
 
+fn setup_worst_case_scenario_member_channel<T: Config>(
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+    // benchmarks should always use "true" if possible (ie. the benchmarked tx
+    // is allowed during active transfer, for example - delete_channel)
+    with_transfer: bool,
+) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (_, lead_account_id) = insert_content_leader::<T>();
+
+    let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+
+    let channel_id = setup_worst_case_scenario_channel::<T>(
+        member_account_id.clone(),
+        ChannelOwner::Member(member_id),
+        objects_num,
+        storage_buckets_num,
+        distribution_buckets_num,
+        with_transfer,
+    )?;
+
+    Ok((channel_id, member_id, member_account_id, lead_account_id))
+}
+
 fn setup_worst_case_curator_group_with_curators<T>(
     curators_len: u32,
 ) -> Result<T::CuratorGroupId, DispatchError>
@@ -910,6 +937,21 @@ where
     )
 }
 
+fn setup_worst_case_scenario_member_channel_all_max<T>(
+    with_transfer: bool,
+) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    setup_worst_case_scenario_member_channel::<T>(
+        T::MaxNumberOfAssetsPerChannel::get(),
+        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        with_transfer,
+    )
+}
+
 fn clone_curator_group<T>(group_id: T::CuratorGroupId) -> Result<T::CuratorGroupId, DispatchError>
 where
     T: RuntimeConfig,
@@ -937,6 +979,39 @@ where
     Ok(new_group_id)
 }
 
+pub fn all_channel_pausable_features_except(
+    except: BTreeSet<crate::PausableChannelFeature>,
+) -> BTreeSet<crate::PausableChannelFeature> {
+    [
+        crate::PausableChannelFeature::ChannelFundsTransfer,
+        crate::PausableChannelFeature::CreatorCashout,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::VideoNftIssuance,
+        crate::PausableChannelFeature::VideoCreation,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::CreatorTokenIssuance,
+    ]
+    .iter()
+    .filter(|&&x| !except.contains(&x))
+    .map(|&x| x)
+    .collect::<BTreeSet<_>>()
+}
+
+pub fn create_pull_payments_with_reward<T: Config>(
+    payments_number: u32,
+    cumulative_reward_earned: BalanceOf<T>,
+) -> Vec<PullPayment<T>> {
+    let mut payments = Vec::new();
+    for i in 1..=payments_number {
+        payments.push(PullPayment::<T> {
+            channel_id: (i as u64).into(),
+            cumulative_reward_earned,
+            reason: T::Hashing::hash_of(&b"reason".to_vec()),
+        });
+    }
+    payments
+}
+
 fn channel_bag_witness<T: Config>(
     channel_id: T::ChannelId,
 ) -> Result<ChannelBagWitness, DispatchError> {
@@ -959,4 +1034,19 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
         <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
         T::MaxNumberOfCuratorsPerGroup::get(),
     )
+}
+
+fn set_all_channel_paused_features_except<T: Config>(
+    origin: RawOrigin<T::AccountId>,
+    channel_id: T::ChannelId,
+    exceptions: Vec<crate::PausableChannelFeature>,
+) {
+    Pallet::<T>::set_channel_paused_features_as_moderator(
+        origin.into(),
+        crate::ContentActor::Lead,
+        channel_id,
+        all_channel_pausable_features_except(BTreeSet::from_iter(exceptions)),
+        b"reason".to_vec(),
+    )
+    .unwrap();
 }
