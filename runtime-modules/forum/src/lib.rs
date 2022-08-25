@@ -1400,12 +1400,12 @@ impl<T: Config> Module<T> {
             };
 
             <PostById<T>>::insert(thread_id, new_post_id, new_post);
+
+            <ThreadById<T>>::mutate(category_id, thread_id, |thread| {
+                // non editable post should leave the counter untouched
+                thread.number_of_posts = thread.number_of_posts.saturating_add(1);
+            });
         }
-
-        let mut thread = <ThreadById<T>>::get(category_id, thread_id);
-        thread.number_of_posts = thread.number_of_posts.saturating_add(1);
-
-        <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
 
         new_post_id
     }
