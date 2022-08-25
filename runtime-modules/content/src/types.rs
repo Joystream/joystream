@@ -1,4 +1,5 @@
 use crate::*;
+use common::{ProofElementRecord, Side};
 use frame_support::storage::{
     bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet,
 };
@@ -644,30 +645,6 @@ pub type Video<T> =
     VideoRecord<<T as storage::Config>::ChannelId, Nft<T>, BalanceOf<T>, VideoAssetsSet<T>>;
 
 pub type DataObjectId<T> = <T as storage::Config>::DataObjectId;
-
-/// Side used to construct hash values during merkle proof verification
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo)]
-pub enum Side {
-    Left,
-    Right,
-}
-
-impl Default for Side {
-    fn default() -> Self {
-        Side::Right
-    }
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-/// Element used in for channel payout
-pub struct ProofElementRecord<Hash, Side> {
-    // Node hash
-    pub hash: Hash,
-    // side in which *self* must be adjoined during proof verification
-    pub side: Side,
-}
 
 // alias for the proof element
 pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Config>::Hash, Side>;
