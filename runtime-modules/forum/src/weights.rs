@@ -63,7 +63,6 @@ pub trait WeightInfo {
 	fn moderate_thread_lead(_i: u32, _k: u32, ) -> Weight;
 	fn moderate_thread_moderator(_i: u32, _k: u32, ) -> Weight;
 	fn add_post(_i: u32, _j: u32, ) -> Weight;
-	fn react_post(_i: u32, ) -> Weight;
 	fn edit_post_text(_i: u32, _j: u32, ) -> Weight;
 	fn moderate_post_lead(_i: u32, _j: u32, ) -> Weight;
 	fn moderate_post_moderator(_i: u32, _j: u32, ) -> Weight;
@@ -343,17 +342,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4ae9a89efc0484a3fd689fc946cbd894ccf] (r:1 w:0)
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:0)
 	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4aedfeb47efcb121b0e718a654f15a6806f] (r:1 w:0)
-	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4aeed3df8e914a685c674c34bfdc6475340] (r:1 w:0)
-	fn react_post(i: u32, ) -> Weight {
-		(24_233_000 as Weight)
-			// Standard Error: 173_000
-			.saturating_add((4_633_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-	}
-	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4ae9a89efc0484a3fd689fc946cbd894ccf] (r:1 w:0)
-	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:1 w:0)
-	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4aedfeb47efcb121b0e718a654f15a6806f] (r:1 w:0)
 	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4aec50c142a64f2c4bb5f5a5506f78ade7e] (r:1 w:1)
 	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4aeed3df8e914a685c674c34bfdc6475340] (r:1 w:0)
 	fn edit_post_text(i: u32, j: u32, ) -> Weight {
@@ -507,9 +495,6 @@ impl WeightInfo for () {
 		0
 	}
 	fn add_post(i: u32, j: u32, ) -> Weight {
-		0
-	}
-	fn react_post(i: u32, ) -> Weight {
 		0
 	}
 	fn edit_post_text(i: u32, j: u32, ) -> Weight {

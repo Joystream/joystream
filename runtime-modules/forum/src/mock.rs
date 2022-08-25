@@ -194,7 +194,6 @@ impl Config for Runtime {
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
-    type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
     type PostLifeTime = PostLifeTime;
 
@@ -1035,41 +1034,6 @@ pub fn set_stickied_threads_mock(
         );
     };
     category_id
-}
-
-/// Create react post mock
-pub fn react_post_mock(
-    origin: OriginType,
-    forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Config>::CategoryId,
-    thread_id: <Runtime as Config>::ThreadId,
-    post_id: <Runtime as Config>::PostId,
-    post_reaction_id: <Runtime as Config>::PostReactionId,
-    result: DispatchResult,
-) {
-    assert_eq!(
-        TestForumModule::react_post(
-            mock_origin(origin),
-            forum_user_id,
-            category_id,
-            thread_id,
-            post_id,
-            post_reaction_id,
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            Event::TestForumModule(RawEvent::PostReacted(
-                forum_user_id,
-                post_id,
-                post_reaction_id,
-                category_id,
-                thread_id
-            ))
-        );
-    };
 }
 
 /// Create default genesis config
