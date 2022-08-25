@@ -7,17 +7,17 @@ import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { EventDetails, EventType } from '../../types'
-import { MembershipBoughtEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
+import { FoundingMemberCreatedEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
 import { SubmittableResult } from '@polkadot/api'
 
-type MembershipBoughtEventDetails = EventDetails<EventType<'members', 'MembershipBought'>>
+type FoundingMemberCreatedEventDetails = EventDetails<EventType<'members', 'FoundingMemberCreated'>>
 
-export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
+export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
   protected accounts: string[]
   protected memberIds: MemberId[] = []
-  protected events: MembershipBoughtEventDetails[] = []
+  protected events: FoundingMemberCreatedEventDetails[] = []
   protected members: Membership[] = []
   protected defaultInviteCount!: number
 
@@ -27,15 +27,18 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
-    return this.accounts
+    const root = (await this.api.query.sudo.key()).toString()
+    return this.accounts.map(() => root)
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.accounts.map((a) => this.api.tx.members.buyMembership(generateParamsFromAccountId(a)))
+    return this.accounts.map((a) => {
+      return this.api.tx.sudo.sudo(this.api.tx.members.createFoundingMember(generateParamsFromAccountId(a)))
+    })
   }
 
-  protected async getEventFromResult(result: SubmittableResult): Promise<MembershipBoughtEventDetails> {
-    return this.api.getEventDetails(result, 'members', 'MembershipBought')
+  protected async getEventFromResult(result: SubmittableResult): Promise<FoundingMemberCreatedEventDetails> {
+    return this.api.getEventDetails(result, 'members', 'FoundingMemberCreated')
   }
 
   public getCreatedMembers(): MemberId[] {
@@ -44,7 +47,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
 
   protected assertQueriedMembersAreValid(
     qMembers: MembershipFieldsFragment[],
-    qEvents: MembershipBoughtEventFieldsFragment[]
+    qEvents: FoundingMemberCreatedEventFieldsFragment[]
   ): void {
     this.events.forEach((e, i) => {
       const account = this.accounts[i]
@@ -75,14 +78,17 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
         metadata.externalResources?.map(asMembershipExternalResource) ?? []
       )
       assert.equal(isVerified, false)
-      assert.equal(isFoundingMember, false)
-      Utils.assert(entry.__typename === 'MembershipEntryPaid', 'Query node: Invalid membership entry method')
-      Utils.assert(entry.membershipBoughtEvent)
-      assert.equal(entry.membershipBoughtEvent.id, qEvent.id)
+      assert.equal(isFoundingMember, true)
+      Utils.assert(
+        entry.__typename === 'MembershipEntryFoundingMemberCreated',
+        'Query node: Invalid membership entry method'
+      )
+      Utils.assert(entry.foundingMemberCreatedEvent)
+      assert.equal(entry.foundingMemberCreatedEvent.id, qEvent.id)
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: MembershipBoughtEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: FoundingMemberCreatedEventFieldsFragment, i: number): void {
     const account = this.accounts[i]
     const eventDetails = this.events[i]
     const txParams = generateParamsFromAccountId(account)
@@ -117,8 +123,8 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
     await super.runQueryNodeChecks()
 
     const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getMembershipBoughtEvents(this.events),
-      (r) => this.assertQueryNodeEventsAreValid(r)
+      () => this.query.getFoundingMemberCreatedEvents(this.events),
+      (res) => this.assertQueryNodeEventsAreValid(res)
     )
 
     const qMembers = await this.query.getMembersByIds(this.events.map((e) => e.event.data[0]))
