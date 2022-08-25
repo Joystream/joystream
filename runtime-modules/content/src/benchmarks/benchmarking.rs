@@ -416,6 +416,11 @@ benchmarks! {
             T::MaxNumberOfAssetsPerChannel::get().saturated_into()
             ..(T::MaxNumberOfAssetsPerChannel::get()+a).saturated_into()
         ).collect();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoCreation]
+        );
     }: create_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -458,6 +463,11 @@ benchmarks! {
             ..(T::MaxNumberOfAssetsPerChannel::get()+a).saturated_into()
         ).collect();
         let expected_auction_start_block = frame_system::Pallet::<T>::block_number() + T::BlockNumber::one();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoCreation, PausableChannelFeature::VideoNftIssuance]
+        );
     }: create_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -513,6 +523,11 @@ benchmarks! {
             (T::MaxNumberOfAssetsPerChannel::get() + T::MaxNumberOfAssetsPerVideo::get())
                 .saturated_into()
         ).collect();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate]
+        );
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -573,6 +588,11 @@ benchmarks! {
             max_channel_assets + num_preexisting_assets.saturated_into()..
             max_channel_assets + num_preexisting_assets.saturated_into() + a.saturated_into()
         ).collect();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate]
+        );
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -617,6 +637,11 @@ benchmarks! {
                 .saturated_into()
         ).collect();
         let expected_auction_start_block = frame_system::Pallet::<T>::block_number() + T::BlockNumber::one();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
+        );
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -689,6 +714,11 @@ benchmarks! {
             max_channel_assets + num_preexisting_assets.saturated_into() + a.saturated_into()
         ).collect();
         let expected_auction_start_block = frame_system::Pallet::<T>::block_number() + T::BlockNumber::one();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
+        );
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -894,9 +924,9 @@ benchmarks! {
         let origin = RawOrigin::Root;
         let (account_id, _) = member_funded_account::<T>(1);
         let hash = <<T as frame_system::Config>::Hashing as Hash>::hash(&"test".encode());
-        let params = crate::UpdateChannelPayoutsParameters::<T> {
+        let params = UpdateChannelPayoutsParameters::<T> {
             commitment: Some(hash.clone()),
-                        payload: Some(crate::ChannelPayoutsPayloadParameters::<T>{
+                        payload: Some(ChannelPayoutsPayloadParameters::<T>{
                 uploader_account: account_id,
                 object_creation_params: storage::DataObjectCreationParameters {
                     size: 1u64,
@@ -925,7 +955,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin= RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -933,7 +963,7 @@ benchmarks! {
             amount + T::ExistentialDeposit::get(),
         );
 
-        let actor = crate::ContentActor::Lead;
+        let actor = ContentActor::Lead;
         let origin = RawOrigin::Signed(lead_account_id.clone());
     }: withdraw_from_channel_balance(origin, actor, channel_id, amount)
         verify {
@@ -959,7 +989,7 @@ benchmarks! {
 
         let lead_origin = RawOrigin::Signed(lead_account_id);
 
-        set_all_channel_paused_features_except::<T>(lead_origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -968,7 +998,7 @@ benchmarks! {
         );
 
         let origin = RawOrigin::Signed(member_account_id.clone());
-        let actor = crate::ContentActor::Member(member_id);
+        let actor = ContentActor::Member(member_id);
         let owner_balance_pre = Balances::<T>::usable_balance(member_account_id.clone());
     }: withdraw_from_channel_balance(origin, actor, channel_id, amount)
         verify {
@@ -997,14 +1027,14 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![crate::PausableChannelFeature::CreatorCashout]);
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorCashout]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
             ..Default::default()
         })?;
 
-        let actor = crate::ContentActor::Lead;
+        let actor = ContentActor::Lead;
         let item = payments[0].clone();
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: _ (origin, actor, proof, item)
@@ -1033,9 +1063,9 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![
-                crate::PausableChannelFeature::CreatorCashout,
-                crate::PausableChannelFeature::ChannelFundsTransfer,
+        set_all_channel_paused_features_except::<T>(channel_id, vec![
+                PausableChannelFeature::CreatorCashout,
+                PausableChannelFeature::ChannelFundsTransfer,
             ]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
@@ -1043,7 +1073,7 @@ benchmarks! {
             ..Default::default()
         })?;
 
-        let actor = crate::ContentActor::Lead;
+        let actor = ContentActor::Lead;
         let item = payments[0].clone();
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
@@ -1073,9 +1103,9 @@ benchmarks! {
         let lead_origin = RawOrigin::Signed(lead_account_id.clone());
         let origin = RawOrigin::Signed(member_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(lead_origin.clone(), channel_id, vec![
-                crate::PausableChannelFeature::CreatorCashout,
-                crate::PausableChannelFeature::ChannelFundsTransfer,
+        set_all_channel_paused_features_except::<T>(channel_id, vec![
+                PausableChannelFeature::CreatorCashout,
+                PausableChannelFeature::ChannelFundsTransfer,
             ]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
@@ -1083,7 +1113,7 @@ benchmarks! {
             ..Default::default()
         })?;
 
-        let actor = crate::ContentActor::Member(member_id);
+        let actor = ContentActor::Member(member_id);
         let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
         let item = payments[0].clone();
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());

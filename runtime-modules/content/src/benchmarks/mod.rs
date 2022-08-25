@@ -1145,13 +1145,17 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
 }
 
 fn set_all_channel_paused_features_except<T: Config>(
-    origin: RawOrigin<T::AccountId>,
     channel_id: T::ChannelId,
     exceptions: Vec<crate::PausableChannelFeature>,
-) {
+) where
+    T::AccountId: CreateAccountId,
+{
     Pallet::<T>::set_channel_paused_features_as_moderator(
-        origin.into(),
-        crate::ContentActor::Lead,
+        RawOrigin::Signed(T::AccountId::create_account_id(
+            CONTENT_WG_LEADER_ACCOUNT_ID,
+        ))
+        .into(),
+        ContentActor::Lead,
         channel_id,
         all_channel_pausable_features_except(BTreeSet::from_iter(exceptions)),
         b"reason".to_vec(),
