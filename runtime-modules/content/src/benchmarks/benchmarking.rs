@@ -1,27 +1,30 @@
 #![cfg(feature = "runtime-benchmarks")]
 
+use super::*;
 use crate::permissions::*;
 use crate::types::*;
-
-use crate::Module as Pallet;
-use crate::{Call, ChannelById, Config, ContentTreasury, Event, UpdateChannelPayoutsParameters};
+use crate::{
+    nft::{NftOwner, TransactionalStatus},
+    Call, ChannelById, Config, ContentActor, Event, Module as Pallet,
+};
 use balances::Pallet as Balances;
 use common::{build_merkle_path_helper, generate_merkle_root_helper, BudgetManager};
-use frame_benchmarking::benchmarks;
-use frame_support::storage::StorageMap;
-use frame_support::traits::{Currency, Get};
+use frame_benchmarking::{benchmarks, Zero};
+use frame_support::{
+    storage::StorageMap,
+    traits::{Currency, Get},
+};
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
 use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use sp_std::{
+    cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
     convert::TryInto,
     vec,
 };
-use storage::Pallet as Storage;
-
-use super::*;
+use storage::Module as Storage;
 
 benchmarks! {
     where_clause {
@@ -153,7 +156,7 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
-        let new_meta = Some(vec![1u8].repeat(d as usize));
+        let new_meta = Some(vec![0xff].repeat(d as usize));
 
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: Some(assets_to_upload),
@@ -218,7 +221,7 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
-        let new_meta = Some(vec![1u8].repeat(b as usize));
+        let new_meta = Some(vec![0xff].repeat(b as usize));
 
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: None,
@@ -392,6 +395,406 @@ benchmarks! {
 
     /*
     ===============================================================================================
+    ============================================ VIDEOS ===========================================
+    ===============================================================================================
+    */
+    create_video_without_nft {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in 1..MAX_BYTES_METADATA;
+
+        let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
+            Some(a),
+            b,
+            None,
+            c
+        )?;
+        let expected_video_id = Pallet::<T>::next_video_id();
+        let expected_asset_ids: BTreeSet<T::DataObjectId> = (
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into()
+            ..(T::MaxNumberOfAssetsPerChannel::get()+a).saturated_into()
+        ).collect();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoCreation]
+        );
+    }: create_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        channel_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(expected_video_id);
+        assert_eq!(video.in_channel, channel_id);
+        assert_eq!(video.nft_status, None);
+        assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
+        assert_eq!(video.video_state_bloat_bond, Pallet::<T>::video_state_bloat_bond_value());
+        assert_last_event::<T>(Event::<T>::VideoCreated(
+            actor,
+            channel_id,
+            expected_video_id,
+            params,
+            expected_asset_ids
+        ).into());
+    }
+
+    // Worst case scenario: initial state - EnglishAuction
+    create_video_with_nft {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let d in 1..MAX_BYTES_METADATA;
+
+        let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
+            Some(a),
+            b,
+            Some(c),
+            d
+        )?;
+        let expected_video_id = Pallet::<T>::next_video_id();
+        let expected_asset_ids: BTreeSet<T::DataObjectId> = (
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into()
+            ..(T::MaxNumberOfAssetsPerChannel::get()+a).saturated_into()
+        ).collect();
+        let expected_auction_start_block = frame_system::Pallet::<T>::block_number() + T::BlockNumber::one();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoCreation, PausableChannelFeature::VideoNftIssuance]
+        );
+    }: create_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        channel_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(expected_video_id);
+        let nft_params = params.auto_issue_nft.as_ref().unwrap();
+        assert_eq!(video.in_channel, channel_id);
+        assert_eq!(video.nft_status.as_ref().unwrap().owner, NftOwner::<T::MemberId>::Member(T::MemberId::zero()));
+        assert_eq!(video.nft_status.as_ref().unwrap().creator_royalty, nft_params.royalty);
+        match &video.nft_status.as_ref().unwrap().transactional_status {
+            TransactionalStatus::<T>::EnglishAuction(params) => {
+                assert_eq!(params.whitelist.len(), c as usize);
+                assert!(params.buy_now_price.is_some());
+                assert_eq!(params.start, expected_auction_start_block)
+            },
+            _ => panic!("Unexpected video nft transactional status")
+        }
+
+        assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
+        assert_eq!(video.video_state_bloat_bond, Pallet::<T>::video_state_bloat_bond_value());
+        assert_last_event::<T>(Event::<T>::VideoCreated(
+            actor,
+            channel_id,
+            expected_video_id,
+            params,
+            expected_asset_ids
+        ).into());
+    }
+
+    update_video_without_assets_without_nft {
+        let a in 1..MAX_BYTES_METADATA;
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+        let params = VideoUpdateParameters::<T> {
+            assets_to_upload: None,
+            assets_to_remove: BTreeSet::new(),
+            auto_issue_nft: None,
+            expected_data_object_state_bloat_bond:
+                storage::Pallet::<T>::data_object_state_bloat_bond_value(),
+            new_meta: Some(vec![0xff].repeat(a as usize)),
+            storage_buckets_num_witness: None
+        };
+        let existing_asset_ids: BTreeSet<T::DataObjectId> = (
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into()..
+            (T::MaxNumberOfAssetsPerChannel::get() + T::MaxNumberOfAssetsPerVideo::get())
+                .saturated_into()
+        ).collect();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate]
+        );
+    }: update_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(video_id);
+        assert_eq!(BTreeSet::from(video.data_objects), existing_asset_ids);
+        assert!(video.nft_status.is_none());
+        assert_last_event::<T>(Event::<T>::VideoUpdated(
+            actor,
+            video_id,
+            params,
+            BTreeSet::new()
+        ).into());
+    }
+
+    update_video_with_assets_without_nft {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let c in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let d in 1..MAX_BYTES_METADATA;
+
+        // As many assets as possible, but leaving room for "a" additional assets,
+        // provided that "b" assets will be removed
+        let num_preexisting_assets = min(
+            T::MaxNumberOfAssetsPerVideo::get() - a + b,
+            T::MaxNumberOfAssetsPerVideo::get()
+        );
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(Some(num_preexisting_assets), c)?;
+
+        let max_channel_assets: T::DataObjectId =
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into();
+        let max_video_assets: T::DataObjectId =
+            T::MaxNumberOfAssetsPerVideo::get().saturated_into();
+        let assets_to_upload = worst_case_scenario_assets::<T>(a);
+        let assets_to_remove: BTreeSet<T::DataObjectId> = (
+            max_channel_assets
+            ..max_channel_assets + b.saturated_into()
+        ).collect();
+        let params = VideoUpdateParameters::<T> {
+            assets_to_upload: Some(assets_to_upload),
+            assets_to_remove,
+            auto_issue_nft: None,
+            expected_data_object_state_bloat_bond:
+                storage::Pallet::<T>::data_object_state_bloat_bond_value(),
+            new_meta: Some(vec![0xff].repeat(d as usize)),
+            storage_buckets_num_witness:
+                Some(storage_buckets_num_witness::<T>(channel_id)).transpose()?
+        };
+        let expected_asset_ids: BTreeSet<T::DataObjectId> = (
+            max_channel_assets + num_preexisting_assets.saturated_into()..
+            max_channel_assets + num_preexisting_assets.saturated_into() + a.saturated_into()
+        ).collect();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate]
+        );
+    }: update_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(video_id);
+        assert!(video.nft_status.is_none());
+        assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
+        assert_last_event::<T>(Event::<T>::VideoUpdated(
+            actor,
+            video_id,
+            params,
+            expected_asset_ids
+        ).into());
+    }
+
+    update_video_without_assets_with_nft {
+        let a in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let b in 1..MAX_BYTES_METADATA;
+
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+        let params = VideoUpdateParameters::<T> {
+            assets_to_upload: None,
+            assets_to_remove: BTreeSet::new(),
+            auto_issue_nft: Some(worst_case_scenario_video_nft_issuance_params::<T>(a)),
+            expected_data_object_state_bloat_bond:
+                storage::Pallet::<T>::data_object_state_bloat_bond_value(),
+            new_meta: Some(vec![0xff].repeat(b as usize)),
+            storage_buckets_num_witness: None
+        };
+        let existing_asset_ids: BTreeSet<T::DataObjectId> = (
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into()..
+            (T::MaxNumberOfAssetsPerChannel::get() + T::MaxNumberOfAssetsPerVideo::get())
+                .saturated_into()
+        ).collect();
+        let expected_auction_start_block = frame_system::Pallet::<T>::block_number() + T::BlockNumber::one();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
+        );
+    }: update_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(video_id);
+        assert_eq!(BTreeSet::from(video.data_objects), existing_asset_ids);
+        let nft_params = params.auto_issue_nft.as_ref().unwrap();
+        assert_eq!(video.nft_status.as_ref().unwrap().owner, NftOwner::<T::MemberId>::Member(T::MemberId::zero()));
+        assert_eq!(video.nft_status.as_ref().unwrap().creator_royalty, nft_params.royalty);
+        match &video.nft_status.as_ref().unwrap().transactional_status {
+            TransactionalStatus::<T>::EnglishAuction(params) => {
+                assert_eq!(params.whitelist.len(), a as usize);
+                assert!(params.buy_now_price.is_some());
+                assert_eq!(params.start, expected_auction_start_block)
+            },
+            _ => panic!("Unexpected video nft transactional status")
+        }
+        assert_last_event::<T>(Event::<T>::VideoUpdated(
+            actor,
+            video_id,
+            params,
+            BTreeSet::new()
+        ).into());
+    }
+
+    update_video_with_assets_with_nft {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let c in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let d in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let e in 1..MAX_BYTES_METADATA;
+
+        // As many assets as possible, but leaving room for "a" additional assets,
+        // provided that "b" assets will be removed
+        let num_preexisting_assets = min(
+            T::MaxNumberOfAssetsPerVideo::get() - a + b,
+            T::MaxNumberOfAssetsPerVideo::get()
+        );
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(Some(num_preexisting_assets), c)?;
+
+        let max_channel_assets: T::DataObjectId =
+            T::MaxNumberOfAssetsPerChannel::get().saturated_into();
+        let max_video_assets: T::DataObjectId =
+            T::MaxNumberOfAssetsPerVideo::get().saturated_into();
+        let assets_to_upload = worst_case_scenario_assets::<T>(a);
+        let assets_to_remove: BTreeSet<T::DataObjectId> = (
+            max_channel_assets
+            ..max_channel_assets + b.saturated_into()
+        ).collect();
+        let params = VideoUpdateParameters::<T> {
+            assets_to_upload: Some(assets_to_upload),
+            assets_to_remove,
+            auto_issue_nft: Some(worst_case_scenario_video_nft_issuance_params::<T>(d)),
+            expected_data_object_state_bloat_bond:
+                storage::Pallet::<T>::data_object_state_bloat_bond_value(),
+            new_meta: Some(vec![0xff].repeat(e as usize)),
+            storage_buckets_num_witness:
+                Some(storage_buckets_num_witness::<T>(channel_id)).transpose()?
+        };
+        let expected_asset_ids: BTreeSet<T::DataObjectId> = (
+            max_channel_assets + num_preexisting_assets.saturated_into()..
+            max_channel_assets + num_preexisting_assets.saturated_into() + a.saturated_into()
+        ).collect();
+        let expected_auction_start_block = frame_system::Pallet::<T>::block_number() + T::BlockNumber::one();
+
+        set_all_channel_paused_features_except::<T>(
+            channel_id,
+            vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
+        );
+    }: update_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        params.clone()
+    )
+    verify {
+        let video = Pallet::<T>::video_by_id(video_id);
+        assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
+        let nft_params = params.auto_issue_nft.as_ref().unwrap();
+        assert_eq!(video.nft_status.as_ref().unwrap().owner, NftOwner::<T::MemberId>::Member(T::MemberId::zero()));
+        assert_eq!(video.nft_status.as_ref().unwrap().creator_royalty, nft_params.royalty);
+        match &video.nft_status.as_ref().unwrap().transactional_status {
+            TransactionalStatus::<T>::EnglishAuction(params) => {
+                assert_eq!(params.whitelist.len(), d as usize);
+                assert!(params.buy_now_price.is_some());
+                assert_eq!(params.start, expected_auction_start_block)
+            },
+            _ => panic!("Unexpected video nft transactional status")
+        }
+        assert_last_event::<T>(Event::<T>::VideoUpdated(
+            actor,
+            video_id,
+            params,
+            expected_asset_ids
+        ).into());
+    }
+
+    delete_video_without_assets {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            None,
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+    }: delete_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        0,
+        None
+    ) verify {
+        assert!(Pallet::<T>::ensure_video_exists(&video_id).is_err());
+        assert_last_event::<T>(Event::<T>::VideoDeleted(
+            actor,
+            video_id
+        ).into());
+    }
+
+    delete_video_with_assets {
+        let a in 1..T::MaxNumberOfAssetsPerVideo::get();
+        let b in
+            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
+            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
+        let witness = storage_buckets_num_witness::<T>(channel_id)?;
+    }: delete_video (
+        RawOrigin::Signed(curator_account_id.clone()),
+        actor,
+        video_id,
+        a as u64,
+        Some(witness)
+    ) verify {
+        assert!(Pallet::<T>::ensure_video_exists(&video_id).is_err());
+        assert_last_event::<T>(Event::<T>::VideoDeleted(
+            actor,
+            video_id
+        ).into());
+    }
+
+    /*
+    ===============================================================================================
     ====================================== CHANNEL TRANSFERS ======================================
     ===============================================================================================
      */
@@ -521,9 +924,9 @@ benchmarks! {
         let origin = RawOrigin::Root;
         let (account_id, _) = member_funded_account::<T>(1);
         let hash = <<T as frame_system::Config>::Hashing as Hash>::hash(&"test".encode());
-        let params = crate::UpdateChannelPayoutsParameters::<T> {
+        let params = UpdateChannelPayoutsParameters::<T> {
             commitment: Some(hash.clone()),
-                        payload: Some(crate::ChannelPayoutsPayloadParameters::<T>{
+                        payload: Some(ChannelPayoutsPayloadParameters::<T>{
                 uploader_account: account_id,
                 object_creation_params: storage::DataObjectCreationParameters {
                     size: 1u64,
@@ -552,7 +955,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin= RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -560,7 +963,7 @@ benchmarks! {
             amount + T::ExistentialDeposit::get(),
         );
 
-        let actor = crate::ContentActor::Lead;
+        let actor = ContentActor::Lead;
         let origin = RawOrigin::Signed(lead_account_id.clone());
     }: withdraw_from_channel_balance(origin, actor, channel_id, amount)
         verify {
@@ -586,7 +989,7 @@ benchmarks! {
 
         let lead_origin = RawOrigin::Signed(lead_account_id);
 
-        set_all_channel_paused_features_except::<T>(lead_origin, channel_id, vec![crate::PausableChannelFeature::ChannelFundsTransfer]);
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelFundsTransfer]);
 
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
@@ -595,7 +998,7 @@ benchmarks! {
         );
 
         let origin = RawOrigin::Signed(member_account_id.clone());
-        let actor = crate::ContentActor::Member(member_id);
+        let actor = ContentActor::Member(member_id);
         let owner_balance_pre = Balances::<T>::usable_balance(member_account_id.clone());
     }: withdraw_from_channel_balance(origin, actor, channel_id, amount)
         verify {
@@ -624,14 +1027,14 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![crate::PausableChannelFeature::CreatorCashout]);
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorCashout]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
            commitment: Some(commitment),
             ..Default::default()
         })?;
 
-        let actor = crate::ContentActor::Lead;
+        let actor = ContentActor::Lead;
         let item = payments[0].clone();
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: _ (origin, actor, proof, item)
@@ -660,9 +1063,9 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(lead_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(origin.clone(), channel_id, vec![
-                crate::PausableChannelFeature::CreatorCashout,
-                crate::PausableChannelFeature::ChannelFundsTransfer,
+        set_all_channel_paused_features_except::<T>(channel_id, vec![
+                PausableChannelFeature::CreatorCashout,
+                PausableChannelFeature::ChannelFundsTransfer,
             ]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
@@ -670,7 +1073,7 @@ benchmarks! {
             ..Default::default()
         })?;
 
-        let actor = crate::ContentActor::Lead;
+        let actor = ContentActor::Lead;
         let item = payments[0].clone();
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
@@ -700,9 +1103,9 @@ benchmarks! {
         let lead_origin = RawOrigin::Signed(lead_account_id.clone());
         let origin = RawOrigin::Signed(member_account_id.clone());
 
-        set_all_channel_paused_features_except::<T>(lead_origin.clone(), channel_id, vec![
-                crate::PausableChannelFeature::CreatorCashout,
-                crate::PausableChannelFeature::ChannelFundsTransfer,
+        set_all_channel_paused_features_except::<T>(channel_id, vec![
+                PausableChannelFeature::CreatorCashout,
+                PausableChannelFeature::ChannelFundsTransfer,
             ]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
@@ -710,7 +1113,7 @@ benchmarks! {
             ..Default::default()
         })?;
 
-        let actor = crate::ContentActor::Member(member_id);
+        let actor = ContentActor::Member(member_id);
         let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
         let item = payments[0].clone();
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
@@ -799,6 +1202,62 @@ pub mod tests {
     fn initialize_channel_transfer() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_initialize_channel_transfer());
+        });
+    }
+
+    #[test]
+    fn create_video_without_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_create_video_without_nft());
+        });
+    }
+
+    #[test]
+    fn create_video_with_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_create_video_with_nft());
+        });
+    }
+
+    #[test]
+    fn update_video_without_assets_without_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_video_without_assets_without_nft());
+        });
+    }
+
+    #[test]
+    fn update_video_with_assets_without_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_video_with_assets_without_nft());
+        });
+    }
+
+    #[test]
+    fn update_video_without_assets_with_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_video_without_assets_with_nft());
+        });
+    }
+
+    #[test]
+    fn update_video_with_assets_with_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_video_with_assets_with_nft());
+        });
+    }
+
+    #[test]
+    fn delete_video_without_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_without_assets());
+        });
+    }
+
+    #[test]
+    fn delete_video_with_assets() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_delete_video_with_assets());
         });
     }
 

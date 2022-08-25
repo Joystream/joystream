@@ -578,6 +578,8 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub expected_video_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    pub storage_buckets_num_witness: u32,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -611,6 +613,9 @@ pub struct VideoUpdateParametersRecord<
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    /// Required if assets_to_upload or assets_to_remove are provided.
+    pub storage_buckets_num_witness: Option<u32>,
 }
 
 pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<

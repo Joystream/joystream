@@ -319,8 +319,19 @@ impl CreateVideoFixture {
                 auto_issue_nft: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
                 expected_video_state_bloat_bond: DEFAULT_VIDEO_STATE_BLOAT_BOND,
+                storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             },
             channel_id: ChannelId::one(), // channel index starts at 1
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                storage_buckets_num_witness,
+                ..self.params
+            },
+            ..self
         }
     }
 
@@ -367,7 +378,14 @@ impl CreateVideoFixture {
     }
 
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
+        Self {
+            channel_id,
+            params: VideoCreationParameters::<Test> {
+                storage_buckets_num_witness: storage_buckets_num_witness(channel_id),
+                ..self.params
+            },
+            ..self
+        }
     }
 
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
@@ -765,6 +783,7 @@ impl UpdateVideoFixture {
                 new_meta: None,
                 auto_issue_nft: Default::default(),
                 expected_data_object_state_bloat_bond: Default::default(),
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             },
         }
     }
@@ -811,7 +830,28 @@ impl UpdateVideoFixture {
     }
 
     pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
+        let video = Content::video_by_id(video_id);
+        Self {
+            video_id,
+            params: VideoUpdateParameters::<Test> {
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(video.in_channel)),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                storage_buckets_num_witness,
+                ..self.params
+            },
+            ..self
+        }
     }
 
     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
@@ -1617,6 +1657,7 @@ pub struct DeleteVideoFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
     num_objects_to_delete: u64,
+    storage_buckets_num_witness: Option<u32>,
 }
 
 impl DeleteVideoFixture {
@@ -1626,6 +1667,7 @@ impl DeleteVideoFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
             num_objects_to_delete: DATA_OBJECTS_NUMBER,
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
         }
     }
 
@@ -1645,7 +1687,22 @@ impl DeleteVideoFixture {
     }
 
     pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
+        let video = Content::video_by_id(video_id);
+        Self {
+            video_id,
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(video.in_channel)),
+            ..self
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
+        Self {
+            storage_buckets_num_witness,
+            ..self
+        }
     }
 }
 
@@ -1666,6 +1723,7 @@ impl VideoDeletion for DeleteVideoFixture {
             self.actor,
             self.video_id,
             self.num_objects_to_delete,
+            self.storage_buckets_num_witness,
         )
     }
 

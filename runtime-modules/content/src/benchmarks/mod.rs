@@ -1,8 +1,11 @@
 mod benchmarking;
 
 use crate::{
-    permissions::*, types::*, Config, ContentModerationAction, InitTransferParametersOf,
-    ModerationPermissionsByLevel, Module as Pallet,
+    nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters},
+    permissions::*,
+    types::*,
+    Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
+    Module as Pallet,
 };
 use balances::Pallet as Balances;
 use common::MembershipTypes;
@@ -14,9 +17,8 @@ use frame_support::{
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
-use sp_arithmetic::traits::One;
-use sp_runtime::traits::Hash;
-use sp_runtime::SaturatedConversion;
+use sp_arithmetic::traits::{One, Zero};
+use sp_runtime::{traits::Hash, SaturatedConversion};
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
     Module as Storage,
@@ -74,7 +76,12 @@ pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES_METADATA: u32 = 5000;
+/**
+ * FIXME: Since we have no bounds for this in the runtime, as this value relies solely on the
+ * genesis config, we use this arbitrary constant for benchmarking purposes
+ */
+const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to max blockspace available for standard extrinsics
 
 const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
     ChannelActionPermission::AddVideo,
@@ -679,7 +686,7 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
-    let meta = Some(vec![0u8].repeat(max_bytes_metadata as usize));
+    let meta = Some(vec![0xff].repeat(max_bytes_metadata as usize));
 
     ChannelCreationParameters::<T> {
         assets,
@@ -863,7 +870,14 @@ where
     Ok(group_id)
 }
 
-#[allow(clippy::type_complexity)]
+type CuratorChannelData<T> = (
+    <T as storage::Config>::ChannelId,                // channel id
+    <T as ContentActorAuthenticator>::CuratorGroupId, // curator group id
+    <T as frame_system::Config>::AccountId,           // lead_account_id
+    <T as ContentActorAuthenticator>::CuratorId,      // curator_id
+    <T as frame_system::Config>::AccountId,           // curator_account_id
+);
+
 fn setup_worst_case_scenario_curator_channel<T>(
     objects_num: u32,
     storage_buckets_num: u32,
@@ -871,16 +885,7 @@ fn setup_worst_case_scenario_curator_channel<T>(
     // benchmarks should always use "true" unless initializing a transfer
     // is part of the benchmarks itself
     with_transfer: bool,
-) -> Result<
-    (
-        T::ChannelId,
-        T::CuratorGroupId,
-        T::AccountId,
-        T::CuratorId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<CuratorChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -912,19 +917,19 @@ where
     ))
 }
 
-#[allow(clippy::type_complexity)]
+fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
+    StorageAssets::<T> {
+        expected_data_size_fee: storage::Pallet::<T>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_object_candidates_helper(
+            num,                         // number of objects
+            T::MaxDataObjectSize::get(), // object size
+        ),
+    }
+}
+
 fn setup_worst_case_scenario_curator_channel_all_max<T>(
     with_transfer: bool,
-) -> Result<
-    (
-        T::ChannelId,
-        T::CuratorGroupId,
-        T::AccountId,
-        T::CuratorId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<CuratorChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -1023,6 +1028,109 @@ fn channel_bag_witness<T: Config>(
     })
 }
 
+fn worst_case_scenario_video_nft_issuance_params<T>(whitelist_size: u32) -> NftIssuanceParameters<T>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let mut next_member_id = membership::Pallet::<T>::members_created();
+    NftIssuanceParameters::<T> {
+        nft_metadata: Vec::new(),
+        non_channel_owner: Some(T::MemberId::zero()),
+        royalty: Some(Pallet::<T>::max_creator_royalty()),
+        // most complex InitTransactionalStatus is EnglishAuction
+        init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
+            EnglishAuctionParams::<T> {
+                buy_now_price: Some(
+                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
+                ),
+                duration: Pallet::<T>::min_auction_duration(),
+                extension_period: Pallet::<T>::min_auction_extension_period(),
+                min_bid_step: Pallet::<T>::min_bid_step(),
+                starting_price: Pallet::<T>::min_starting_price(),
+                starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+                whitelist: (0..whitelist_size)
+                    .map(|_| {
+                        let (_, member_id) =
+                            member_funded_account::<T>(next_member_id.saturated_into());
+                        next_member_id += T::MemberId::one();
+                        member_id
+                    })
+                    .collect(),
+            },
+        ),
+    }
+}
+
+type VideoCreationInputParameters<T> = (
+    <T as frame_system::Config>::AccountId,
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >,
+    <T as storage::Config>::ChannelId,
+    VideoCreationParameters<T>,
+);
+
+fn prepare_worst_case_scenario_video_creation_parameters<T>(
+    assets_num: Option<u32>,
+    storage_buckets_num: u32,
+    nft_auction_whitelist_size: Option<u32>,
+    metadata_length: u32,
+) -> Result<VideoCreationInputParameters<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (channel_id, group_id, _, curator_id, curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            storage_buckets_num,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false,
+        )?;
+    let actor = ContentActor::Curator(group_id, curator_id);
+    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
+    let assets = assets_num.map(|n| worst_case_scenario_assets::<T>(n));
+    let auto_issue_nft =
+        nft_auction_whitelist_size.map(|s| worst_case_scenario_video_nft_issuance_params::<T>(s));
+
+    Ok((
+        curator_account_id,
+        actor,
+        channel_id,
+        VideoCreationParameters::<T> {
+            assets,
+            meta: Some(vec![0xff].repeat(metadata_length as usize)),
+            auto_issue_nft,
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
+        },
+    ))
+}
+
+fn setup_worst_case_scenario_mutable_video<T>(
+    assets_num: Option<u32>,
+    storage_buckets_num: u32,
+) -> Result<(T::VideoId, VideoCreationInputParameters<T>), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let p = prepare_worst_case_scenario_video_creation_parameters::<T>(
+        assets_num,
+        storage_buckets_num,
+        None,
+        MAX_BYTES_METADATA,
+    )?;
+    let video_id = Pallet::<T>::next_video_id();
+    Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
+
+    Ok((video_id, p))
+}
+
 fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u32, DispatchError> {
     let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
     let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
@@ -1037,13 +1145,17 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
 }
 
 fn set_all_channel_paused_features_except<T: Config>(
-    origin: RawOrigin<T::AccountId>,
     channel_id: T::ChannelId,
     exceptions: Vec<crate::PausableChannelFeature>,
-) {
+) where
+    T::AccountId: CreateAccountId,
+{
     Pallet::<T>::set_channel_paused_features_as_moderator(
-        origin.into(),
-        crate::ContentActor::Lead,
+        RawOrigin::Signed(T::AccountId::create_account_id(
+            CONTENT_WG_LEADER_ACCOUNT_ID,
+        ))
+        .into(),
+        ContentActor::Lead,
         channel_id,
         all_channel_pausable_features_except(BTreeSet::from_iter(exceptions)),
         b"reason".to_vec(),
