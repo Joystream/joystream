@@ -1557,7 +1557,11 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::claim_and_withdraw_member_channel_reward(proof.len() as u32).max(WeightInfoContent::<T>::claim_and_withdraw_curator_channel_reward(proof.len() as u32))]
+        #[weight =
+            WeightInfoContent::<T>::claim_and_withdraw_member_channel_reward(proof.len() as u32)
+                .max(WeightInfoContent::<T>::claim_and_withdraw_curator_channel_reward(
+                    proof.len() as u32
+                ))]
         pub fn claim_and_withdraw_channel_reward(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
