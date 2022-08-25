@@ -1455,7 +1455,8 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::withdraw_from_member_channel_balance().max(WeightInfoContent::<T>::withdraw_from_curator_channel_balance())]
+        #[weight = WeightInfoContent::<T>::withdraw_from_member_channel_balance()
+            .max(WeightInfoContent::<T>::withdraw_from_curator_channel_balance())]
         pub fn withdraw_from_channel_balance(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
