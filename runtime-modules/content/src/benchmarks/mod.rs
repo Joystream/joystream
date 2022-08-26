@@ -12,13 +12,14 @@ use common::MembershipTypes;
 use frame_benchmarking::account;
 use frame_support::{
     dispatch::DispatchError,
-    storage::{StorageMap, StorageValue},
-    traits::{Currency, Get, Instance},
+    storage::{IterableStorageMap, StorageDoubleMap, StorageMap, StorageValue},
+    traits::{Currency, Get, Instance, OnFinalize, OnInitialize},
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
+use project_token::{types::*, AccountInfoByTokenAndMember};
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::{traits::Hash, SaturatedConversion};
+use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
     Module as Storage,
@@ -81,22 +82,41 @@ const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
  * genesis config, we use this arbitrary constant for benchmarking purposes
  */
 const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
-const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to max blockspace available for standard extrinsics
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksize available for regular extrinsics
 
-const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
+// Creator tokens
+const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
+const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
+const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
+const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
+const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
+const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
+const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
+const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
+const DEFAULT_CRT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
+
+const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
+    ChannelActionPermission::UpdateChannelMetadata,
+    ChannelActionPermission::ManageNonVideoChannelAssets,
+    ChannelActionPermission::ManageChannelCollaborators,
+    ChannelActionPermission::UpdateVideoMetadata,
     ChannelActionPermission::AddVideo,
-    ChannelActionPermission::AgentRemark,
-    ChannelActionPermission::ClaimChannelReward,
+    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::DeleteChannel,
     ChannelActionPermission::DeleteVideo,
-    ChannelActionPermission::ManageChannelCollaborators,
-    ChannelActionPermission::ManageNonVideoChannelAssets,
-    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::ManageVideoNfts,
+    ChannelActionPermission::AgentRemark,
     ChannelActionPermission::TransferChannel,
-    ChannelActionPermission::UpdateChannelMetadata,
-    ChannelActionPermission::UpdateVideoMetadata,
+    ChannelActionPermission::ClaimChannelReward,
     ChannelActionPermission::WithdrawFromChannelBalance,
+    ChannelActionPermission::IssueCreatorToken,
+    ChannelActionPermission::ClaimCreatorTokenPatronage,
+    ChannelActionPermission::InitAndManageCreatorTokenSale,
+    ChannelActionPermission::CreatorTokenIssuerTransfer,
+    ChannelActionPermission::MakeCreatorTokenPermissionless,
+    ChannelActionPermission::ReduceCreatorTokenPatronageRate,
+    ChannelActionPermission::ManageRevenueSplits,
+    ChannelActionPermission::DeissueCreatorToken,
 ];
 
 const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
@@ -120,6 +140,13 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::DeleteNonVideoChannelAssets,
     ContentModerationAction::UpdateChannelNftLimits,
 ];
+
+#[macro_export]
+macro_rules! assert_lt {
+    ($a:expr, $b:expr) => {
+        assert!($a < $b, "Expected {:?} to be lower than {:?}", $a, $b);
+    };
+}
 
 fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
     (T::MaxNumberOfAssetsPerChannel::get() as u64) * 100
@@ -183,12 +210,18 @@ where
     RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
+    assert_past_event::<T>(expected_event, 0);
+}
+
+fn assert_past_event<T: Config>(
+    expected_event: <T as frame_system::Config>::Event,
+    index_from_last: u32,
+) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
+    let EventRecord { event, .. } = &events[events.len() - 1 - index_from_last as usize];
+    assert_eq!(event, &expected_event);
 }
 
 fn get_byte(num: u128, byte_number: u8) -> u8 {
@@ -585,9 +618,13 @@ type BloatBonds<T> = (
 
 fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
 where
-    T: Config,
+    T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
+    // Setup lead if not already setup
+    if working_group::Pallet::<T, ContentWorkingGroupInstance>::current_lead().is_none() {
+        insert_content_leader::<T>();
+    }
     let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
     let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
     // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
@@ -789,6 +826,13 @@ where
     Ok(channel_id)
 }
 
+type MemberChannelData<T> = (
+    <T as storage::Config>::ChannelId,      // channel id
+    <T as MembershipTypes>::MemberId,       // member id
+    <T as frame_system::Config>::AccountId, // member_account_id
+    <T as frame_system::Config>::AccountId, // content_lead_account_id
+);
+
 fn setup_worst_case_scenario_member_channel<T: Config>(
     objects_num: u32,
     storage_buckets_num: u32,
@@ -796,7 +840,7 @@ fn setup_worst_case_scenario_member_channel<T: Config>(
     // benchmarks should always use "true" if possible (ie. the benchmarked tx
     // is allowed during active transfer, for example - delete_channel)
     with_transfer: bool,
-) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+) -> Result<MemberChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -842,14 +886,15 @@ where
         permissions_by_level,
     )?;
 
-    // We substract 1 from `next_worker_id`, because we're not counting the lead
+    // We substract 1 from the number of curators because we're not counting the lead
     let already_existing_curators_num =
-        working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
+        working_group::WorkerById::<T, ContentWorkingGroupInstance>::iter()
+            .count()
             .saturated_into::<u32>()
             .saturating_sub(1);
 
     assert!(
-        already_existing_curators_num + curators_len <= MAX_COLABORATOR_IDS as u32,
+        already_existing_curators_num + curators_len <= MAX_CURATOR_IDS as u32,
         "Too many curators created"
     );
 
@@ -944,7 +989,7 @@ where
 
 fn setup_worst_case_scenario_member_channel_all_max<T>(
     with_transfer: bool,
-) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+) -> Result<MemberChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -998,7 +1043,7 @@ pub fn all_channel_pausable_features_except(
     ]
     .iter()
     .filter(|&&x| !except.contains(&x))
-    .map(|&x| x)
+    .copied()
     .collect::<BTreeSet<_>>()
 }
 
@@ -1144,6 +1189,183 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
     )
 }
 
+fn create_token_issuance_params<T: Config>(
+    initial_allocation: BTreeMap<T::MemberId, TokenAllocationOf<T>>,
+) -> TokenIssuanceParametersOf<T> {
+    let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
+    let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
+    TokenIssuanceParametersOf::<T> {
+        initial_allocation,
+        symbol: token_symbol,
+        transfer_policy: TransferPolicyParamsOf::<T>::Permissioned(WhitelistParamsOf::<T> {
+            commitment: transfer_policy_commit,
+            payload: Some(SingleDataObjectUploadParams {
+                object_creation_params: DataObjectCreationParameters {
+                    ipfs_content_id: vec![0],
+                    size: T::MaxDataObjectSize::get(),
+                },
+                expected_data_object_state_bloat_bond:
+                    Storage::<T>::data_object_state_bloat_bond_value(),
+                expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+            }),
+        }),
+        patronage_rate: DEFAULT_CRT_PATRONAGE_RATE,
+        revenue_split_rate: DEFAULT_CRT_REVENUE_SPLIT_RATE,
+    }
+}
+
+fn default_vesting_schedule_params<T: Config>() -> VestingScheduleParamsOf<T> {
+    VestingScheduleParamsOf::<T> {
+        linear_vesting_duration: 100u32.into(),
+        blocks_before_cliff: 100u32.into(),
+        cliff_amount_percentage: Permill::from_percent(10),
+    }
+}
+
+fn worst_case_scenario_initial_allocation<T: RuntimeConfig>(
+    members_num: u32,
+) -> BTreeMap<T::MemberId, TokenAllocationOf<T>>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    (0..members_num)
+        .map(|i| {
+            let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+            let allocation = TokenAllocationOf::<T> {
+                amount: 100u32.into(),
+                vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+            };
+            (member_id, allocation)
+        })
+        .collect()
+}
+
+fn setup_account_with_max_number_of_locks<T: Config>(
+    token_id: T::TokenId,
+    member_id: &T::MemberId,
+) {
+    AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
+        (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
+            a.add_or_update_vesting_schedule(
+                VestingSource::Sale(i),
+                VestingSchedule::from_params(
+                    frame_system::Pallet::<T>::block_number(),
+                    TokenBalanceOf::<T>::one(),
+                    VestingScheduleParamsOf::<T> {
+                        linear_vesting_duration: 0u32.into(),
+                        blocks_before_cliff: u32::MAX.into(),
+                        cliff_amount_percentage: Permill::from_percent(100),
+                    },
+                ),
+                None,
+            );
+        });
+        a.stake(0u32, TokenBalanceOf::<T>::one());
+    });
+}
+
+fn curator_member_id<T: Config + working_group::Config<ContentWorkingGroupInstance>>(
+    curator_id: T::CuratorId,
+) -> T::MemberId {
+    working_group::Pallet::<T, ContentWorkingGroupInstance>::worker_by_id::<T::ActorId>(
+        curator_id.saturated_into::<u64>().saturated_into(),
+    )
+    .unwrap()
+    .member_id
+}
+
+fn issue_creator_token_with_worst_case_scenario_owner<T: Config>(
+    sender: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    owner_member_id: T::MemberId,
+) -> Result<T::TokenId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+{
+    let initial_allocation = BTreeMap::<T::MemberId, TokenAllocationOf<T>>::from_iter(vec![(
+        owner_member_id,
+        TokenAllocationOf::<T> {
+            amount: DEFAULT_CRT_OWNER_ISSUANCE.into(),
+            vesting_schedule_params: None,
+        },
+    )]);
+    let issuance_params = create_token_issuance_params::<T>(initial_allocation);
+    let token_id = project_token::Pallet::<T>::next_token_id();
+    Pallet::<T>::issue_creator_token(
+        RawOrigin::Signed(sender).into(),
+        actor,
+        channel_id,
+        issuance_params,
+    )?;
+    setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id);
+    Ok(token_id)
+}
+
+fn worst_case_scenario_token_sale_params<T: Config>(
+    metatada_len: u32,
+    starts_at: Option<T::BlockNumber>,
+) -> TokenSaleParamsOf<T> {
+    TokenSaleParamsOf::<T> {
+        cap_per_member: Some(1_000_000u32.into()),
+        duration: DEFAULT_CRT_SALE_DURATION.into(),
+        starts_at,
+        unit_price: DEFAULT_CRT_SALE_PRICE.into(),
+        upper_bound_quantity: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
+        vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+        metadata: Some(vec![0xf].repeat(metatada_len as usize)),
+    }
+}
+
+fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
+    num: u32,
+) -> TransfersWithVestingOf<T>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    Transfers(
+        (0..num)
+            .map(|i| {
+                let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+                let payment = PaymentWithVestingOf::<T> {
+                    amount: 100u32.into(),
+                    vesting_schedule: Some(default_vesting_schedule_params::<T>()),
+                };
+                (member_id, payment)
+            })
+            .collect(),
+    )
+}
+
+pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
+    let mut current_block = System::<T>::block_number();
+    while current_block < target_block {
+        // Other on_finalize calls if needed...
+        System::<T>::on_finalize(current_block);
+
+        current_block += One::one();
+        System::<T>::set_block_number(current_block);
+
+        System::<T>::on_initialize(current_block);
+        // Other on_initialize calls if needed...
+    }
+}
+
+pub fn fastforward_by_blocks<T: Config>(blocks: T::BlockNumber) {
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(current_block + blocks);
+}
+
+pub fn transferrable_crt_balance<T: Config>(
+    token_id: T::TokenId,
+    member_id: T::MemberId,
+) -> TokenBalanceOf<T> {
+    project_token::Pallet::<T>::account_info_by_token_and_member(token_id, member_id)
+        .transferrable::<T>(System::<T>::block_number())
+}
+
 fn set_all_channel_paused_features_except<T: Config>(
     channel_id: T::ChannelId,
     exceptions: Vec<crate::PausableChannelFeature>,
@@ -1161,4 +1383,11 @@ fn set_all_channel_paused_features_except<T: Config>(
         b"reason".to_vec(),
     )
     .unwrap();
+}
+
+fn set_all_channel_paused_features<T: Config>(channel_id: T::ChannelId)
+where
+    T::AccountId: CreateAccountId,
+{
+    set_all_channel_paused_features_except::<T>(channel_id, vec![]);
 }
