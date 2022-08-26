@@ -3302,6 +3302,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Postconditions:
        * - Account information for `token_id` x `member_id` removed from storage
        * - bloat bond refunded to `member_id` controller account
+       * (or `bloat_bond.repayment_restricted_to` account)
        * 
        * <weight>
        * 

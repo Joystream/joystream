@@ -1079,7 +1079,7 @@ parameter_types! {
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 40;
-    pub const ThreadDeposit: Balance = 25 * currency::CENTS;
+    pub const ThreadDeposit: Balance = ExistentialDeposit::get() + 25 * currency::CENTS; // Must be higher than ExistentialDeposit!
     pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
@@ -1569,7 +1569,7 @@ construct_runtime!(
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
-        ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>, Config},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         // --- Working groups
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},

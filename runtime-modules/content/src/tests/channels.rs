@@ -8,6 +8,7 @@ use super::curators;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
+use storage::ModuleAccount as StorageModuleAccount;
 
 ///////////////////////////////////////////////////////////////////
 ////////////////////// Channel creation tests /////////////////////
@@ -21,7 +22,7 @@ fn successful_channel_creation_with_member_context() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = ed();
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
@@ -39,8 +40,8 @@ fn successful_channel_creation_with_member_context() {
 fn successful_curator_group_channel_creation_with_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
-
         set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND);
 
         create_initial_storage_buckets_helper();
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
@@ -80,11 +81,13 @@ fn successful_channel_creation_with_storage_upload_and_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
-        //1 channel SBB + 1 data obj SBB * 10 objs = 11 SBB
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, 11);
 
-        let channel_state_bloat_bond = 1;
+        let channel_state_bloat_bond = ed() + 1;
         let data_state_bloat_bond = 1;
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + channel_state_bloat_bond + data_state_bloat_bond * 10,
+        );
 
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
@@ -114,7 +117,7 @@ fn successful_curator_group_channel_creation_with_storage_upload_and_lead_contex
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = ed();
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
@@ -140,7 +143,7 @@ fn unsuccessful_channel_creation_with_invalid_expected_channel_state_bloat_bond(
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = DEFAULT_CHANNEL_STATE_BLOAT_BOND + 1;
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
@@ -149,6 +152,7 @@ fn unsuccessful_channel_creation_with_invalid_expected_channel_state_bloat_bond(
             .with_default_storage_buckets()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
+            .with_expected_channel_state_bloat_bond(DEFAULT_CHANNEL_STATE_BLOAT_BOND)
             .call_and_assert(Err(Error::<Test>::ChannelStateBloatBondChanged.into()));
     })
 }
@@ -230,7 +234,9 @@ fn unsuccessful_channel_creation_with_bucket_objects_number_limit_reached() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
+            DEFAULT_CHANNEL_STATE_BLOAT_BOND
+                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+                + ed(),
         );
 
         set_dynamic_bag_creation_policy_for_storage_numbers(1);
@@ -284,6 +290,11 @@ fn successful_channel_creation_with_collaborators_set() {
 
         set_dynamic_bag_creation_policy_for_storage_numbers(0);
         create_initial_storage_buckets_helper();
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+        );
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND);
 
         CreateChannelFixture::default()
             .with_default_storage_buckets()
@@ -336,6 +347,132 @@ fn unsuccessful_channel_creation_with_invalid_owner() {
             .with_channel_owner(ChannelOwner::CuratorGroup(invalid_curator_group_id))
             .call_and_assert(Err(
                 Error::<Test>::ChannelOwnerCuratorGroupDoesNotExist.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_creation_with_invitation_lock() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            0,
+        );
+        let to_be_paid =
+            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + channel_state_bloat_bond;
+
+        let member_balance = ed() + to_be_paid;
+
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        create_initial_storage_buckets_helper();
+
+        CreateChannelFixture::default()
+            .with_default_storage_buckets()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+
+        let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
+        let channel_acc = ContentTreasury::<Test>::account_for_channel(ChannelId::one());
+
+        assert_eq!(
+            Balances::<Test>::usable_balance(channel_acc),
+            channel_state_bloat_bond
+        );
+        assert_eq!(
+            Balances::<Test>::usable_balance(storage_module_acc),
+            ed() + data_obj_bloat_bond * DATA_OBJECTS_NUMBER
+        );
+        assert_eq!(
+            System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
+            balances::AccountData {
+                free: ed(),
+                reserved: 0,
+                misc_frozen: ed() + to_be_paid,
+                fee_frozen: 0
+            }
+        )
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_locks_and_insufficient_balance() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            0,
+        );
+        let to_be_paid =
+            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + channel_state_bloat_bond;
+
+        let member_balance = ed() + to_be_paid - 1;
+
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        create_initial_storage_buckets_helper();
+
+        CreateChannelFixture::default()
+            .with_default_storage_buckets()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::InsufficientBalanceForChannelCreation.into()
+            ));
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, 1);
+        set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, ed() + 1);
+
+        CreateChannelFixture::default()
+            .with_default_storage_buckets()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::InsufficientBalanceForChannelCreation.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_not_allowed_lock() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            0,
+        );
+
+        let to_be_paid =
+            data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER + channel_state_bloat_bond;
+        let member_balance = ed() + to_be_paid;
+
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        create_initial_storage_buckets_helper();
+
+        CreateChannelFixture::default()
+            .with_default_storage_buckets()
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::InsufficientBalanceForChannelCreation.into()
             ));
     })
 }
@@ -532,7 +669,8 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
             // balance necessary to create channel + video with specified no. of assets
             DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
                 + DEFAULT_CHANNEL_STATE_BLOAT_BOND
-                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER,
+                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER
+                + ed(),
         );
 
         create_default_member_owned_channel();
@@ -552,6 +690,105 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
             .call_and_assert(Err(
                 storage::Error::<Test>::StorageBucketObjectNumberLimitReached.into(),
             ));
+    })
+}
+
+#[test]
+fn successful_channel_update_with_invitation_lock() {
+    with_default_mock_builder(|| {
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            0,
+        );
+
+        ContentTest::with_member_channel().setup();
+
+        let update_fees = data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER;
+        let member_balance = ed() + update_fees;
+
+        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+
+        let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
+
+        assert_eq!(
+            Balances::<Test>::usable_balance(storage_module_acc),
+            ed() + data_obj_bloat_bond * DATA_OBJECTS_NUMBER * 2
+        );
+        assert_eq!(
+            System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
+            balances::AccountData {
+                free: ed(),
+                reserved: 0,
+                misc_frozen: ed() + update_fees,
+                fee_frozen: 0
+            }
+        )
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_locks_and_insufficient_balance() {
+    with_default_mock_builder(|| {
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            0,
+        );
+
+        ContentTest::with_member_channel().setup();
+
+        let update_fees = data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER;
+        let member_balance = ed() + update_fees - 1;
+
+        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(create_default_assets_helper())
+            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, 1);
+        set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, ed() + 1);
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(create_default_assets_helper())
+            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_not_allowed_lock() {
+    with_default_mock_builder(|| {
+        let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
+        set_fees(
+            data_size_fee,
+            data_obj_bloat_bond,
+            channel_state_bloat_bond,
+            0,
+        );
+
+        ContentTest::with_member_channel().setup();
+
+        let update_fees = data_size_fee + data_obj_bloat_bond * DATA_OBJECTS_NUMBER;
+        let member_balance = ed() + update_fees;
+
+        Balances::<Test>::make_free_balance_be(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+        set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(create_default_assets_helper())
+            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
     })
 }
 
@@ -646,13 +883,140 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
 #[test]
 fn unsuccessful_channel_deletion_with_creator_token_issued() {
     with_default_mock_builder(|| {
-        run_to_block(1);
         ContentTest::with_member_channel().setup();
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
 
         DeleteChannelFixture::default()
             .call_and_assert(Err(Error::<Test>::CreatorTokenAlreadyIssued.into()));
     })
+}
+
+#[test]
+fn successful_channel_deletion_with_bloat_bonds_repaid_to_correct_accounts() {
+    let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
+
+    let test_cases = [
+        (
+            ed(), // locked balance
+            (
+                ed(), // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10 + channel_state_bloat_bond, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond, // locked balance
+            (
+                ed() + channel_state_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee, // locked balance
+            (
+                ed() + channel_state_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 10, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 9, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 9, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond * 2, // creator account post-removal balance
+                ed() + data_obj_bloat_bond * 8, // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond * 9 + 1, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond * 10, // creator account post-removal balance
+                ed(), // remover account post-removal balance
+            ),
+        ),
+        (
+            ed() + channel_state_bloat_bond + data_size_fee + data_obj_bloat_bond * 10, // locked balance
+            (
+                ed() + channel_state_bloat_bond + data_obj_bloat_bond * 10, // creator account post-removal balance
+                ed(), // remover account post-removal balance
+            ),
+        ),
+    ];
+
+    for case in test_cases {
+        let (locked_balance, (expected_creator_balance, expected_remover_balance)) = case;
+        with_default_mock_builder(|| {
+            run_to_block(1);
+            set_fees(
+                data_size_fee,
+                data_obj_bloat_bond,
+                channel_state_bloat_bond,
+                0,
+            );
+            let to_be_paid = data_size_fee
+                + data_obj_bloat_bond * DATA_OBJECTS_NUMBER
+                + channel_state_bloat_bond;
+
+            let member_balance = ed() + to_be_paid;
+
+            increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
+            increase_account_balance_helper(DEFAULT_MEMBER_ALT_ACCOUNT_ID, ed());
+            set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, locked_balance);
+
+            set_dynamic_bag_creation_policy_for_storage_numbers(0);
+            create_initial_storage_buckets_helper();
+
+            CreateChannelFixture::default()
+                .with_default_storage_buckets()
+                .with_assets(create_default_assets_helper())
+                .call_and_assert(Ok(()));
+
+            // Delete channel using different (alternative) controller account
+            DeleteChannelFixture::default()
+                .with_sender(DEFAULT_MEMBER_ALT_ACCOUNT_ID)
+                .call_and_assert(Ok(()));
+
+            let storage_module_acc = storage::StorageTreasury::<Test>::module_account_id();
+            let channel_acc = ContentTreasury::<Test>::account_for_channel(ChannelId::one());
+
+            // Verify that all bloat bonds were returned to correct accounts
+            assert_eq!(Balances::<Test>::total_balance(&channel_acc), 0);
+            assert_eq!(Balances::<Test>::usable_balance(storage_module_acc), ed());
+            println!(
+                "Creator: {:?}\nRemover: {:?}\nExpected creator free: {:?}\nExpected remover free: {:?}",
+                System::account(DEFAULT_MEMBER_ACCOUNT_ID).data,
+                System::account(DEFAULT_MEMBER_ALT_ACCOUNT_ID).data,
+                expected_creator_balance,
+                expected_remover_balance
+            );
+            assert_eq!(
+                Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+                expected_creator_balance
+            );
+            assert_eq!(
+                Balances::<Test>::free_balance(DEFAULT_MEMBER_ALT_ACCOUNT_ID),
+                expected_remover_balance
+            );
+        });
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -829,7 +1193,7 @@ fn successful_moderation_action_channel_deletion_by_curator() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let channel_state_bloat_bond = 10;
+        let channel_state_bloat_bond = ed();
         UpdateChannelStateBloatBondFixture::default()
             .with_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
