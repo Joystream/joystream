@@ -343,6 +343,10 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
 fn unsuccessful_channel_creation_with_number_of_assets_exceeded() {
     with_default_mock_builder(|| {
         run_to_block(1);
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+        );
         CreateChannelFixture::default()
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
@@ -388,7 +392,7 @@ fn successful_channel_creation_with_invitation_lock() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
         set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()
@@ -423,6 +427,10 @@ fn successful_channel_creation_with_invitation_lock() {
 fn unsuccessful_channel_creation_with_number_of_collaborators_exceeded() {
     with_default_mock_builder(|| {
         run_to_block(1);
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+        );
         CreateChannelFixture::default()
             .with_collaborators(
                 (0..(<Test as Config>::MaxNumberOfCollaboratorsPerChannel::get() + 1) as usize)
@@ -455,7 +463,7 @@ fn unsuccessful_channel_creation_with_locks_and_insufficient_balance() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
         set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()
@@ -498,7 +506,7 @@ fn unsuccessful_channel_creation_with_not_allowed_lock() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
         set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()
@@ -1107,7 +1115,7 @@ fn successful_channel_deletion_with_bloat_bonds_repaid_to_correct_accounts() {
             increase_account_balance_helper(DEFAULT_MEMBER_ALT_ACCOUNT_ID, ed());
             set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, locked_balance);
 
-            set_dynamic_bag_creation_policy_for_storage_numbers(0);
+            set_dynamic_bag_creation_policy_for_storage_numbers(1);
             create_initial_storage_buckets_helper();
 
             CreateChannelFixture::default()

@@ -8,17 +8,17 @@ use crate::{
     Module as Pallet,
 };
 use balances::Pallet as Balances;
-use common::MembershipTypes;
+use common::{working_group::WorkingGroupAuthenticator, MembershipTypes};
 use frame_benchmarking::account;
 use frame_support::{
     dispatch::DispatchError,
-    storage::{IterableStorageMap, StorageDoubleMap, StorageMap, StorageValue},
+    storage::{StorageDoubleMap, StorageMap, StorageValue},
     traits::{Currency, Get, Instance, OnFinalize, OnInitialize},
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
 use project_token::{types::*, AccountInfoByTokenAndMember};
-use sp_arithmetic::traits::{One, Zero};
+use sp_arithmetic::traits::One;
 use sp_core::U256;
 use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use sp_std::{
@@ -35,7 +35,7 @@ use storage::{
 };
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    StakeParameters, StakePolicy, WorkerById, WorkerId,
+    StakeParameters, StakePolicy, WorkerById,
 };
 
 // The storage working group instance alias.
@@ -46,30 +46,6 @@ pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 // Content working group instance alias.
 pub type ContentWorkingGroupInstance = working_group::Instance3;
-
-const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
-    let mut res = [0; N];
-
-    let mut i = 0;
-    while i < N as u64 {
-        res[i as usize] = init + i;
-        i += 1;
-    }
-
-    res
-}
-pub const DEFAULT_MEMBER_ID: u64 = 500;
-
-pub const CURATOR_IDS_INIT: u64 = 600;
-pub const MAX_CURATOR_IDS: usize = 100;
-
-pub const CURATOR_IDS: [u64; MAX_CURATOR_IDS] = gen_array_u64::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
-
-pub const COLABORATOR_IDS_INIT: u64 = 700;
-pub const MAX_COLABORATOR_IDS: usize = 100;
-
-pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
-    gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
 pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
@@ -311,10 +287,7 @@ fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
     opening_id
 }
 
-fn insert_worker<T, I>(
-    leader_acc: T::AccountId,
-    id: u64,
-) -> (<T as MembershipTypes>::ActorId, T::AccountId)
+fn insert_worker<T, I>(leader_acc: T::AccountId) -> (<T as MembershipTypes>::ActorId, T::AccountId)
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig + working_group::Config<I>,
@@ -322,10 +295,9 @@ where
 {
     // let worker_id = working_group::NextWorkerId::<T, I>::get();
 
-    let (account_id, member_id) = member_funded_account::<T>(id);
+    let (account_id, member_id) = member_funded_account::<T>();
 
-    let worker_id: WorkerId<T> = WorkerId::<T>::saturated_from(id);
-    working_group::NextWorkerId::<T, I>::put(worker_id);
+    let worker_id = working_group::NextWorkerId::<T, I>::get();
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         &T::Origin::from(RawOrigin::Signed(leader_acc.clone())),
@@ -348,13 +320,24 @@ where
     (worker_id, account_id)
 }
 
-fn insert_leader<T, I>(id: u64) -> (<T as MembershipTypes>::ActorId, T::AccountId)
+fn insert_leader<T, I>(acc_id: u64) -> (<T as MembershipTypes>::ActorId, T::AccountId)
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig + working_group::Config<I>,
     I: Instance,
 {
-    let (account_id, member_id) = member_funded_account::<T>(id.saturated_into());
+    // If lead already inserted - return current lead
+    if let Some(lead_id) = working_group::Pallet::<T, I>::current_lead() {
+        let account_id = T::AccountId::create_account_id(
+            working_group::Pallet::<T, I>::get_worker_member_id(&lead_id)
+                .unwrap()
+                .saturated_into(),
+        );
+        return (lead_id, account_id);
+    }
+
+    let (_, member_id) = member_funded_account::<T>();
+    let account_id = change_member_account::<T>(member_id, acc_id);
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         &T::Origin::from(RawOrigin::Root),
@@ -402,14 +385,13 @@ where
     insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID)
 }
 
-fn insert_curator<T>(id: u64) -> (T::CuratorId, T::AccountId)
+fn insert_curator<T>() -> (T::CuratorId, T::AccountId)
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
     let (actor_id, account_id) = insert_worker::<T, ContentWorkingGroupInstance>(
         T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID),
-        id,
     );
 
     (
@@ -420,20 +402,19 @@ where
 
 //defines initial balance
 fn initial_balance<T: balances::Config>() -> T::Balance {
-    1000000u32.into()
+    // 1 million JOY
+    (1_000_000_u64 * 10_000_000_000_u64).saturated_into()
 }
 
-fn member_funded_account<T: RuntimeConfig>(id: u64) -> (T::AccountId, T::MemberId)
+fn member_funded_account<T: RuntimeConfig>() -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
 {
-    if membership::MembershipById::<T>::contains_key::<T::MemberId>(id.saturated_into()) {
-        panic!("Member {:?} already exists!", id)
-    }
+    let member_id = membership::NextMemberId::<T>::get();
 
-    let account_id = T::AccountId::create_account_id(id);
+    let account_id = T::AccountId::create_account_id(member_id.saturated_into());
 
-    let handle = handle_from_id::<T>(id);
+    let handle = handle_from_id::<T>(member_id.saturated_into());
 
     // Give balance for buying membership
     let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
@@ -446,28 +427,51 @@ where
         referrer_id: None,
     };
 
-    let member_id: T::MemberId = T::MemberId::saturated_from(id);
-    <membership::NextMemberId<T>>::put(member_id);
-    let new_member_id = Membership::<T>::members_created();
-
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        new_member_id,
+        member_id,
     )
     .unwrap();
 
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        new_member_id,
+        member_id,
         account_id.clone(),
     )
     .unwrap();
 
-    (account_id, new_member_id)
+    (account_id, member_id)
+}
+
+fn change_member_account<T: RuntimeConfig>(member_id: T::MemberId, acc_id: u64) -> T::AccountId
+where
+    T::AccountId: CreateAccountId,
+{
+    let account_id = T::AccountId::create_account_id(acc_id);
+    let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
+    membership::MembershipById::<T>::mutate(member_id, |m| {
+        if let Some(m) = m {
+            m.root_account = account_id.clone();
+            m.controller_account = account_id.clone();
+        }
+    });
+    Membership::<T>::add_staking_account_candidate(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+    )
+    .unwrap();
+    Membership::<T>::confirm_staking_account(
+        RawOrigin::Signed(account_id.clone()).into(),
+        member_id,
+        account_id.clone(),
+    )
+    .unwrap();
+
+    account_id
 }
 
 fn set_dyn_bag_creation_storage_bucket_numbers<T>(
@@ -615,16 +619,13 @@ where
     T::AccountId: CreateAccountId,
 {
     // Setup lead if not already setup
-    if working_group::Pallet::<T, ContentWorkingGroupInstance>::current_lead().is_none() {
-        insert_content_leader::<T>();
-    }
+    insert_content_leader::<T>();
+
     let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
     let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
-    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
-    let channel_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
-    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
+    let channel_state_bloat_bond: <T as balances::Config>::Balance =
+        <T as balances::Config>::ExistentialDeposit::get() + 100u32.into();
     let video_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
-    // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
     let data_object_state_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
     let data_size_fee = <T as balances::Config>::Balance::one();
     // Set non-zero channel bloat bond
@@ -664,8 +665,7 @@ fn generate_channel_creation_params<T>(
     storage_bucket_num: u32,
     distribution_bucket_num: u32,
     objects_num: u32,
-    max_bytes_metadata: u32,
-    max_obj_size: u64,
+    metadata_length: u32,
 ) -> ChannelCreationParameters<T>
 where
     T: RuntimeConfig,
@@ -684,12 +684,9 @@ where
 
     setup_bloat_bonds::<T>().unwrap();
 
-    let assets = Some(StorageAssets::<T> {
-        expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
-        object_creation_list: create_data_object_candidates_helper(objects_num, max_obj_size),
-    });
+    let assets = Some(worst_case_scenario_assets::<T>(objects_num));
 
-    let collaborators = worst_case_scenario_collaborators::<T>(0, colaborator_num);
+    let collaborators = worst_case_scenario_collaborators::<T>(colaborator_num);
 
     let storage_buckets = (0..storage_bucket_num)
         .map(|id| {
@@ -716,7 +713,7 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
-    let meta = Some(vec![0xff].repeat(max_bytes_metadata as usize));
+    let meta = Some(vec![0xff].repeat(metadata_length as usize));
 
     ChannelCreationParameters::<T> {
         assets,
@@ -738,20 +735,14 @@ fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
 }
 
 fn worst_case_scenario_collaborators<T: RuntimeConfig>(
-    start_id: u32,
     num: u32,
 ) -> BTreeMap<T::MemberId, ChannelAgentPermissions>
 where
     T::AccountId: CreateAccountId,
 {
-    assert!(
-        start_id + num <= MAX_COLABORATOR_IDS as u32,
-        "Too many collaborators created"
-    );
     (0..num)
-        .map(|i| {
-            let (_, collaborator_id) =
-                member_funded_account::<T>(COLABORATOR_IDS[(start_id + i) as usize]);
+        .map(|_| {
+            let (_, collaborator_id) = member_funded_account::<T>();
             (collaborator_id, worst_case_channel_agent_permissions())
         })
         .collect()
@@ -783,7 +774,6 @@ where
         distribution_buckets_num,
         objects_num,
         MAX_BYTES_METADATA,
-        T::MaxDataObjectSize::get(),
     );
 
     let channel_id = Pallet::<T>::next_channel_id();
@@ -792,10 +782,9 @@ where
 
     // initialize worst-case-scenario transfer
     if with_transfer {
-        let (_, new_owner_id) = member_funded_account::<T>(0);
+        let (_, new_owner_id) = member_funded_account::<T>();
         let new_owner = ChannelOwner::Member(new_owner_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
-            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
             T::MaxNumberOfCollaboratorsPerChannel::get(), // number of collaborators
         );
         let price = <T as balances::Config>::Balance::one();
@@ -815,6 +804,14 @@ where
             transfer_params,
         )?;
     }
+
+    // setup worst-case scenario repayable bloat bond for channel assets
+    // (each bloat bond goes to different reciever)
+    let channel = Pallet::<T>::channel_by_id(channel_id);
+    set_unique_bloat_bond_recievers::<T>(
+        channel_id,
+        &Vec::from_iter(channel.data_objects.iter().cloned()),
+    );
 
     Ok(channel_id)
 }
@@ -840,7 +837,7 @@ where
 {
     let (_, lead_account_id) = insert_content_leader::<T>();
 
-    let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+    let (member_account_id, member_id) = member_funded_account::<T>();
 
     let channel_id = setup_worst_case_scenario_channel::<T>(
         member_account_id.clone(),
@@ -879,24 +876,8 @@ where
         permissions_by_level,
     )?;
 
-    // We substract 1 from the number of curators because we're not counting the lead
-    let already_existing_curators_num =
-        working_group::WorkerById::<T, ContentWorkingGroupInstance>::iter()
-            .count()
-            .saturated_into::<u32>()
-            .saturating_sub(1);
-
-    assert!(
-        already_existing_curators_num + curators_len <= MAX_CURATOR_IDS as u32,
-        "Too many curators created"
-    );
-
-    for c in CURATOR_IDS
-        .iter()
-        .skip(already_existing_curators_num as usize)
-        .take(curators_len as usize)
-    {
-        let (curator_id, _) = insert_curator::<T>(*c);
+    for _ in 0..curators_len {
+        let (curator_id, _) = insert_curator::<T>();
 
         Pallet::<T>::add_curator_to_group(
             get_signed_account_id::<T>(CONTENT_WG_LEADER_ACCOUNT_ID),
@@ -944,7 +925,15 @@ where
 
     let group = Pallet::<T>::curator_group_by_id(group_id);
     let curator_id: T::CuratorId = *group.get_curators().keys().next().unwrap();
-    let curator_account_id = T::AccountId::create_account_id(CURATOR_IDS[0]);
+    let curator_worker_id: <T as MembershipTypes>::ActorId =
+        curator_id.saturated_into::<u64>().saturated_into();
+    let curator_account_id = T::AccountId::create_account_id(
+        working_group::Pallet::<T, ContentWorkingGroupInstance>::get_worker_member_id(
+            &curator_worker_id,
+        )
+        .unwrap()
+        .saturated_into(),
+    );
 
     Ok((
         channel_id,
@@ -962,6 +951,22 @@ fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
             num,                         // number of objects
             T::MaxDataObjectSize::get(), // object size
         ),
+    }
+}
+
+fn set_unique_bloat_bond_recievers<T: RuntimeConfig>(
+    channel_id: T::ChannelId,
+    assets: &[DataObjectId<T>],
+) where
+    T::AccountId: CreateAccountId,
+{
+    for object_id in assets.iter() {
+        let (account_id, _) = member_funded_account::<T>();
+        storage::DataObjectsById::<T>::mutate(
+            Pallet::<T>::bag_id_for_channel(&channel_id),
+            object_id,
+            |obj| obj.state_bloat_bond.repayment_restricted_to = Some(account_id),
+        );
     }
 }
 
@@ -1071,10 +1076,10 @@ where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let mut next_member_id = membership::Pallet::<T>::members_created();
+    let (_, non_channel_owner_member_id) = member_funded_account::<T>();
     NftIssuanceParameters::<T> {
         nft_metadata: Vec::new(),
-        non_channel_owner: Some(T::MemberId::zero()),
+        non_channel_owner: Some(non_channel_owner_member_id),
         royalty: Some(Pallet::<T>::max_creator_royalty()),
         // most complex InitTransactionalStatus is EnglishAuction
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
@@ -1089,9 +1094,7 @@ where
                 starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
                 whitelist: (0..whitelist_size)
                     .map(|_| {
-                        let (_, member_id) =
-                            member_funded_account::<T>(next_member_id.saturated_into());
-                        next_member_id += T::MemberId::one();
+                        let (_, member_id) = member_funded_account::<T>();
                         member_id
                     })
                     .collect(),
@@ -1166,6 +1169,11 @@ where
     let video_id = Pallet::<T>::next_video_id();
     Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
 
+    // setup worst-case scenario repayable bloat bond for video assets
+    // (each bloat bond goes to different reciever)
+    let video = Pallet::<T>::video_by_id(video_id);
+    set_unique_bloat_bond_recievers::<T>(p.2, &Vec::from_iter(video.data_objects.iter().cloned()));
+
     Ok((video_id, p))
 }
 
@@ -1177,7 +1185,8 @@ fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u3
 
 fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
     min(
-        <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
+        // substract one to leave space for the lead
+        <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get() - 1,
         T::MaxNumberOfCuratorsPerGroup::get(),
     )
 }
@@ -1221,10 +1230,9 @@ fn worst_case_scenario_initial_allocation<T: RuntimeConfig>(
 where
     T::AccountId: CreateAccountId,
 {
-    let start_member_id: u64 = membership::Module::<T>::members_created().saturated_into();
     (0..members_num)
-        .map(|i| {
-            let (_, member_id) = member_funded_account::<T>(start_member_id + i as u64);
+        .map(|_| {
+            let (_, member_id) = member_funded_account::<T>();
             let allocation = TokenAllocationOf::<T> {
                 amount: 100u32.into(),
                 vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
@@ -1317,11 +1325,10 @@ fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
 where
     T::AccountId: CreateAccountId,
 {
-    let start_member_id: u64 = membership::Module::<T>::members_created().saturated_into();
     Transfers(
         (0..num)
-            .map(|i| {
-                let (_, member_id) = member_funded_account::<T>(start_member_id + i as u64);
+            .map(|_| {
+                let (_, member_id) = member_funded_account::<T>();
                 let payment = PaymentWithVestingOf::<T> {
                     amount: 100u32.into(),
                     vesting_schedule: Some(default_vesting_schedule_params::<T>()),
