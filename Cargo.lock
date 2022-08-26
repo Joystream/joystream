@@ -2726,7 +2726,6 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "getrandom 0.2.7",
- "hashbrown 0.12.3",
  "hex-literal",
  "lazy_static",
  "lite-json",
