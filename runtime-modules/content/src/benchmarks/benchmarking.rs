@@ -1380,16 +1380,8 @@ benchmarks! {
     }
 
     issue_revenue_split_as_collaborator {
-        let (owner_acc, owner_member_id) = member_funded_account::<T>(1);
-        let channel_owner = ChannelOwner::<T::MemberId, T::CuratorGroupId>::Member(owner_member_id);
-        let channel_id = setup_worst_case_scenario_channel::<T>(
-            owner_acc.clone(),
-            channel_owner,
-            T::MaxNumberOfAssetsPerChannel::get(),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            false
-        )?;
+        let (channel_id, owner_member_id, owner_acc, lead_account_id) =
+            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
         let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
         let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
         let origin = RawOrigin::Signed(collaborator_account_id.clone());
@@ -1568,17 +1560,8 @@ benchmarks! {
     }
 
     claim_creator_token_patronage_credit {
-        let (owner_acc, owner_member_id) = member_funded_account::<T>(1);
-        // Only member channels can claim patronage
-        let channel_owner = ChannelOwner::<T::MemberId, T::CuratorGroupId>::Member(owner_member_id);
-        let channel_id = setup_worst_case_scenario_channel::<T>(
-            owner_acc,
-            channel_owner,
-            T::MaxNumberOfAssetsPerChannel::get(),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            false
-        )?;
+        let (channel_id, owner_member_id, owner_acc, lead_account_id) =
+            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
         let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
         let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
         let origin = RawOrigin::Signed(collaborator_account_id.clone());
