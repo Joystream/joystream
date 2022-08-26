@@ -1,5 +1,6 @@
-use crate::{AccountId, Balances, Call, Runtime, STAKING_LOCK_ID};
+use crate::{AccountId, Balances, Call, Runtime};
 use codec::{Decode, Encode};
+use common::locks::STAKING_LOCK_ID;
 use frame_support::traits::LockIdentifier;
 use frame_system::Config;
 use scale_info::TypeInfo;

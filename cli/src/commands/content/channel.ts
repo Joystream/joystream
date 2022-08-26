@@ -40,7 +40,7 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': channelId.toString(),
         'Owner': JSON.stringify(channel.owner.toJSON()),
-        'ChannelStateBloatBond': formatBalance(channel.channelStateBloatBond),
+        'ChannelStateBloatBond': formatBalance(channel.channelStateBloatBond.amount),
         'DataObjects': channel.dataObjects.toString(),
         'PrivilegeLevel': channel.privilegeLevel.toString(),
       })

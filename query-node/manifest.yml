@@ -723,11 +723,11 @@ mappings:
     - event: content.ChannelAssetsRemoved
       handler: content_ChannelAssetsRemoved
     - event: content.VideoCreated
-      handler: content_VideoCreated
+      handler: content_ContentCreated
     - event: content.VideoUpdated
-      handler: content_VideoUpdated
+      handler: content_ContentUpdated
     - event: content.VideoDeleted
-      handler: content_VideoDeleted
+      handler: content_ContentDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
     - event: content.ChannelDeletedByModerator

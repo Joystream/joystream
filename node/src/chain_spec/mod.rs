@@ -281,6 +281,7 @@ pub fn testnet_genesis(
         storage: storage_cfg,
         referendum: council_config::create_referendum_config(),
         project_token: Default::default(),
+        proposals_discussion: Default::default(),
     }
 }
 

@@ -61,11 +61,13 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
       const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
         `Channel state bloat bond of ${chalk.cyanBright(
-          formatBalance(channel.channelStateBloatBond)
-        )} will be transferred to ${chalk.magentaBright(address)}\n` +
+          formatBalance(channel.channelStateBloatBond.amount)
+        )} will be transferred to ${chalk.magentaBright(
+          channel.channelStateBloatBond.repaymentRestrictedTo.unwrapOr(address).toString()
+        )}\n` +
           `Data objects state bloat bond of ${chalk.cyanBright(
             formatBalance(stateBloatBond)
-          )} will be transferred to ${chalk.magentaBright(address)}`
+          )} will be repaid with accordance to the bloat bond policy.`
       )
     }
 
