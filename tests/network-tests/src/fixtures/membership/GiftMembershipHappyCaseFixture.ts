@@ -7,35 +7,37 @@ import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { EventDetails, EventType } from '../../types'
-import { MembershipBoughtEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
+import { MembershipGiftedEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
 import { SubmittableResult } from '@polkadot/api'
 
-type MembershipBoughtEventDetails = EventDetails<EventType<'members', 'MembershipBought'>>
+type MembershipGiftedEventDetails = EventDetails<EventType<'members', 'MembershipGifted'>>
 
-export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
+export class GiftMembershipHappyCaseFixture extends StandardizedFixture {
+  protected gifterAccount: string
   protected accounts: string[]
   protected memberIds: MemberId[] = []
-  protected events: MembershipBoughtEventDetails[] = []
+  protected events: MembershipGiftedEventDetails[] = []
   protected members: Membership[] = []
   protected defaultInviteCount!: number
 
-  public constructor(api: Api, query: QueryNodeApi, accounts: string[]) {
+  public constructor(api: Api, query: QueryNodeApi, gifterAccount: string, accounts: string[]) {
     super(api, query)
+    this.gifterAccount = gifterAccount
     this.accounts = accounts
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
-    return this.accounts
+    return this.accounts.map(() => this.gifterAccount)
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.accounts.map((a) => this.api.tx.members.buyMembership(generateParamsFromAccountId(a)))
+    return this.accounts.map((a) => this.api.tx.members.giftMembership(generateParamsFromAccountId(a)))
   }
 
-  protected async getEventFromResult(result: SubmittableResult): Promise<MembershipBoughtEventDetails> {
-    return this.api.getEventDetails(result, 'members', 'MembershipBought')
+  protected async getEventFromResult(result: SubmittableResult): Promise<MembershipGiftedEventDetails> {
+    return this.api.getEventDetails(result, 'members', 'MembershipGifted')
   }
 
   public getCreatedMembers(): MemberId[] {
@@ -44,7 +46,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
 
   protected assertQueriedMembersAreValid(
     qMembers: MembershipFieldsFragment[],
-    qEvents: MembershipBoughtEventFieldsFragment[]
+    qEvents: MembershipGiftedEventFieldsFragment[]
   ): void {
     this.events.forEach((e, i) => {
       const account = this.accounts[i]
@@ -68,7 +70,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
       assert.equal(controllerAccount, params.controller_account)
       assert.equal(name, metadata.name)
       assert.equal(about, metadata.about)
-      assert.equal(inviteCount, this.defaultInviteCount)
+      assert.equal(inviteCount, 0)
       assert.equal(avatar?.avatarUri, metadata.avatarUri || undefined)
       assert.includeDeepMembers(
         externalResources ?? [],
@@ -76,13 +78,13 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
       )
       assert.equal(isVerified, false)
       assert.equal(isFoundingMember, false)
-      Utils.assert(entry.__typename === 'MembershipEntryPaid', 'Query node: Invalid membership entry method')
-      Utils.assert(entry.membershipBoughtEvent)
-      assert.equal(entry.membershipBoughtEvent.id, qEvent.id)
+      Utils.assert(entry.__typename === 'MembershipEntryGifted', 'Query node: Invalid membership entry method')
+      Utils.assert(entry.membershipGiftedEvent)
+      assert.equal(entry.membershipGiftedEvent.id, qEvent.id)
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: MembershipBoughtEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: MembershipGiftedEventFieldsFragment, i: number): void {
     const account = this.accounts[i]
     const eventDetails = this.events[i]
     const txParams = generateParamsFromAccountId(account)
@@ -101,15 +103,9 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
     )
   }
 
-  protected async loadDefaultInviteCount(): Promise<void> {
-    this.defaultInviteCount = (await this.api.query.members.initialInvitationCount()).toNumber()
-  }
-
   async execute(): Promise<void> {
-    await this.loadDefaultInviteCount()
-    // Add membership-price funds to accounts
     const membershipFee = await this.api.getMembershipFee()
-    await Promise.all(this.accounts.map((a) => this.api.treasuryTransferBalance(a, membershipFee)))
+    await this.api.treasuryTransferBalance(this.gifterAccount, membershipFee.muln(this.accounts.length))
     await super.execute()
   }
 
@@ -117,8 +113,8 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
     await super.runQueryNodeChecks()
 
     const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getMembershipBoughtEvents(this.events),
-      (r) => this.assertQueryNodeEventsAreValid(r)
+      () => this.query.getMembershipGiftedEvents(this.events),
+      (res) => this.assertQueryNodeEventsAreValid(res)
     )
 
     const qMembers = await this.query.getMembersByIds(this.events.map((e) => e.event.data[0]))
