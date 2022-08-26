@@ -16,7 +16,7 @@ substrate_pallet_benchmark() {
       --chain=dev \
       --steps=$STEPS \
       --repeat=$REPEAT \
-      --execution=native \
+      --execution=wasm \
       --template=$SCRIPT_DIR/../devops/frame-weight-template.hbs \
       --output=. 2>&1 > /dev/null)
 
@@ -44,7 +44,7 @@ joystream_pallet_benchmark() {
       --chain=dev \
       --steps=$STEPS \
       --repeat=$REPEAT \
-      --execution=native \
+      --execution=wasm \
       --template=$SCRIPT_DIR/../devops/joystream-pallet-weight-template.hbs \
       --output=. 2>&1 > /dev/null)
 

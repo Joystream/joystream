@@ -260,7 +260,9 @@ impl ContentActorAuthenticator for Test {
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let controller_account_id = (*member_id) as u128;
-        if MEMBER_IDS.contains(member_id) {
+        if Membership::is_member_controller_account(member_id, account_id) {
+            true
+        } else if MEMBER_IDS.contains(member_id) {
             *account_id == controller_account_id
         } else if COLABORATOR_IDS.contains(member_id) {
             *account_id == controller_account_id
@@ -437,27 +439,22 @@ impl Config for Test {
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
-pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
+pub const COUNCIL_INITIAL_BUDGET: u64 = 0;
+
+thread_local! {
+    pub static COUNCIL_BUDGET: RefCell<u64> = RefCell::new(COUNCIL_INITIAL_BUDGET);
+}
+
 pub struct CouncilBudgetManager;
 impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
-        balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+        COUNCIL_BUDGET.with(|val| *val.borrow())
     }
 
     fn set_budget(budget: u64) {
-        let old_budget = Self::get_budget();
-
-        if budget > old_budget {
-            let _ = balances::Pallet::<Test>::deposit_creating(
-                &COUNCIL_BUDGET_ACCOUNT_ID,
-                budget - old_budget,
-            );
-        }
-
-        if budget < old_budget {
-            let _ =
-                balances::Pallet::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
-        }
+        COUNCIL_BUDGET.with(|val| {
+            *val.borrow_mut() = budget;
+        });
     }
 
     fn try_withdraw(account_id: &u128, amount: u64) -> DispatchResult {
@@ -716,7 +713,7 @@ impl Default for ExtBuilder {
             max_bid_step: 100,
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
-            max_auction_whitelist_length: 4,
+            max_auction_whitelist_length: 100,
             nft_limits_enabled: true,
         }
     }
@@ -745,6 +742,10 @@ impl ExtBuilder {
             .unwrap();
 
         balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
+        project_token::GenesisConfig::<Test>::default()
             .assimilate_storage(&mut t)
             .unwrap();
 
@@ -952,16 +953,18 @@ impl MembershipInfoProvider<Test> for TestMemberships {
     fn controller_account_id(
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
-        let account_id = member_id as u128;
-        if MEMBER_IDS.contains(&member_id) {
-            Ok(account_id)
-        } else if COLABORATOR_IDS.contains(&member_id) {
-            Ok(account_id)
-        } else if CURATOR_IDS.contains(&member_id) {
-            Ok(account_id)
-        } else {
-            Err(DispatchError::Other("no account found"))
-        }
+        Membership::controller_account_id(member_id).or_else(|_| {
+            let account_id = member_id as u128;
+            if MEMBER_IDS.contains(&member_id) {
+                Ok(account_id)
+            } else if COLABORATOR_IDS.contains(&member_id) {
+                Ok(account_id)
+            } else if CURATOR_IDS.contains(&member_id) {
+                Ok(account_id)
+            } else {
+                Err(DispatchError::Other("no account found"))
+            }
+        })
     }
 }
 

@@ -851,7 +851,8 @@ export default {
     meta: 'Option<Bytes>',
     autoIssueNft: 'Option<PalletContentNftTypesNftIssuanceParametersRecord>',
     expectedVideoStateBloatBond: 'u128',
-    expectedDataObjectStateBloatBond: 'u128'
+    expectedDataObjectStateBloatBond: 'u128',
+    storageBucketsNumWitness: 'u32'
   },
   /**
    * Lookup124: pallet_content::types::VideoUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>
@@ -861,7 +862,8 @@ export default {
     newMeta: 'Option<Bytes>',
     assetsToRemove: 'BTreeSet<u64>',
     autoIssueNft: 'Option<PalletContentNftTypesNftIssuanceParametersRecord>',
-    expectedDataObjectStateBloatBond: 'u128'
+    expectedDataObjectStateBloatBond: 'u128',
+    storageBucketsNumWitness: 'Option<u32>'
   },
   /**
    * Lookup127: pallet_content::permissions::curator_group::ContentModerationAction
@@ -2711,6 +2713,7 @@ export default {
         actor: 'PalletContentPermissionsContentActor',
         videoId: 'u64',
         numObjectsToDelete: 'u64',
+        storageBucketsNumWitness: 'Option<u32>',
       },
       delete_video_assets_as_moderator: {
         actor: 'PalletContentPermissionsContentActor',

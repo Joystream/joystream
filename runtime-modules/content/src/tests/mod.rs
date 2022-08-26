@@ -3,7 +3,7 @@
 mod channels;
 mod creator_tokens;
 mod curators;
-pub(crate) mod fixtures;
+mod fixtures;
 mod merkle;
 mod metaprotocol;
 pub(crate) mod mock;

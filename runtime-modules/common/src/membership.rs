@@ -36,7 +36,7 @@ pub trait MembershipTypes: frame_system::Config {
         + MaybeSerializeDeserialize
         + Ord
         + PartialEq
-        + Into<u64>;
+        + Into<u128>;
 }
 
 /// Validates staking account ownership for a member.
