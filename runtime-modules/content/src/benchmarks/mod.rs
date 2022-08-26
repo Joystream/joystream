@@ -826,6 +826,13 @@ where
     Ok(channel_id)
 }
 
+type MemberChannelData<T> = (
+    <T as storage::Config>::ChannelId,      // channel id
+    <T as MembershipTypes>::MemberId,       // member id
+    <T as frame_system::Config>::AccountId, // member_account_id
+    <T as frame_system::Config>::AccountId, // content_lead_account_id
+);
+
 fn setup_worst_case_scenario_member_channel<T: Config>(
     objects_num: u32,
     storage_buckets_num: u32,
@@ -833,7 +840,7 @@ fn setup_worst_case_scenario_member_channel<T: Config>(
     // benchmarks should always use "true" if possible (ie. the benchmarked tx
     // is allowed during active transfer, for example - delete_channel)
     with_transfer: bool,
-) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+) -> Result<MemberChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -982,7 +989,7 @@ where
 
 fn setup_worst_case_scenario_member_channel_all_max<T>(
     with_transfer: bool,
-) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+) -> Result<MemberChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -1036,7 +1043,7 @@ pub fn all_channel_pausable_features_except(
     ]
     .iter()
     .filter(|&&x| !except.contains(&x))
-    .map(|&x| x)
+    .copied()
     .collect::<BTreeSet<_>>()
 }
 
@@ -1189,9 +1196,9 @@ fn create_token_issuance_params<T: Config>(
     let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
     TokenIssuanceParametersOf::<T> {
         initial_allocation,
-        symbol: token_symbol.clone(),
+        symbol: token_symbol,
         transfer_policy: TransferPolicyParamsOf::<T>::Permissioned(WhitelistParamsOf::<T> {
-            commitment: transfer_policy_commit.clone(),
+            commitment: transfer_policy_commit,
             payload: Some(SingleDataObjectUploadParams {
                 object_creation_params: DataObjectCreationParameters {
                     ipfs_content_id: vec![0],

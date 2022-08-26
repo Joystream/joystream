@@ -1115,7 +1115,7 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                curator_acc_id.clone(),
+                curator_acc_id,
                 actor,
                 channel_id,
                 curator_member_id
@@ -1143,7 +1143,7 @@ benchmarks! {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let curator_member_id = curator_member_id::<T>(curator_id);
-        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let origin = RawOrigin::Signed(curator_acc_id);
         let actor = ContentActor::Curator(group_id, curator_id);
         let token_params = create_token_issuance_params::<T>(BTreeMap::new());
         let token_id = project_token::Pallet::<T>::next_token_id();
@@ -1331,7 +1331,7 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                curator_acc_id.clone(),
+                curator_acc_id,
                 actor,
                 channel_id,
                 curator_member_id
@@ -1393,10 +1393,10 @@ benchmarks! {
         let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
         let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
         let origin = RawOrigin::Signed(collaborator_account_id.clone());
-        let actor = ContentActor::Member(collaborator_member_id.clone());
+        let actor = ContentActor::Member(collaborator_member_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                collaborator_account_id.clone(),
+                collaborator_account_id,
                 actor,
                 channel_id,
                 collaborator_member_id
@@ -1485,7 +1485,7 @@ benchmarks! {
             curator_member_id,
             (DEFAULT_CRT_OWNER_ISSUANCE / 2).into()
         )?;
-        let curator_balance_post = balances::Pallet::<T>::usable_balance(curator_acc_id.clone());
+        let curator_balance_post = balances::Pallet::<T>::usable_balance(curator_acc_id);
         let token = project_token::Pallet::<T>::token_info_by_id(token_id);
         let allocation = DEFAULT_CRT_REVENUE_SPLIT_RATE * reward_amount;
         let dividends_paid = allocation / 2u32.into();
@@ -1532,7 +1532,7 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                curator_acc_id.clone(),
+                curator_acc_id,
                 actor,
                 channel_id,
                 curator_member_id
@@ -1572,7 +1572,7 @@ benchmarks! {
         // Only member channels can claim patronage
         let channel_owner = ChannelOwner::<T::MemberId, T::CuratorGroupId>::Member(owner_member_id);
         let channel_id = setup_worst_case_scenario_channel::<T>(
-            owner_acc.clone(),
+            owner_acc,
             channel_owner,
             T::MaxNumberOfAssetsPerChannel::get(),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
@@ -1582,10 +1582,10 @@ benchmarks! {
         let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
         let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
         let origin = RawOrigin::Signed(collaborator_account_id.clone());
-        let actor = ContentActor::Member(collaborator_member_id.clone());
+        let actor = ContentActor::Member(collaborator_member_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                collaborator_account_id.clone(),
+                collaborator_account_id,
                 actor,
                 channel_id,
                 collaborator_member_id
@@ -1634,7 +1634,7 @@ benchmarks! {
         let (account_id, _) = member_funded_account::<T>(1);
         let hash = <<T as frame_system::Config>::Hashing as Hash>::hash(&"test".encode());
         let params = UpdateChannelPayoutsParameters::<T> {
-            commitment: Some(hash.clone()),
+            commitment: Some(hash),
                         payload: Some(ChannelPayoutsPayloadParameters::<T>{
                 uploader_account: account_id,
                 object_creation_params: storage::DataObjectCreationParameters {
@@ -1673,7 +1673,7 @@ benchmarks! {
         );
 
         let actor = ContentActor::Lead;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
+        let origin = RawOrigin::Signed(lead_account_id);
     }: withdraw_from_channel_balance(origin, actor, channel_id, amount)
         verify {
             assert_eq!(
@@ -1734,7 +1734,7 @@ benchmarks! {
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
+        let origin = RawOrigin::Signed(lead_account_id);
 
         set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorCashout]);
 
@@ -1744,7 +1744,7 @@ benchmarks! {
         })?;
 
         let actor = ContentActor::Lead;
-        let item = payments[0].clone();
+        let item = payments[0];
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: _ (origin, actor, proof, item)
         verify {
@@ -1770,7 +1770,7 @@ benchmarks! {
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
+        let origin = RawOrigin::Signed(lead_account_id);
 
         set_all_channel_paused_features_except::<T>(channel_id, vec![
                 PausableChannelFeature::CreatorCashout,
@@ -1783,7 +1783,7 @@ benchmarks! {
         })?;
 
         let actor = ContentActor::Lead;
-        let item = payments[0].clone();
+        let item = payments[0];
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
         verify {
@@ -1809,7 +1809,7 @@ benchmarks! {
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, member_id, member_account_id, lead_account_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
-        let lead_origin = RawOrigin::Signed(lead_account_id.clone());
+        let lead_origin = RawOrigin::Signed(lead_account_id);
         let origin = RawOrigin::Signed(member_account_id.clone());
 
         set_all_channel_paused_features_except::<T>(channel_id, vec![
@@ -1824,7 +1824,7 @@ benchmarks! {
 
         let actor = ContentActor::Member(member_id);
         let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
-        let item = payments[0].clone();
+        let item = payments[0];
         T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
     }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
         verify {
