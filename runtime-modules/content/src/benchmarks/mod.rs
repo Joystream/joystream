@@ -1409,15 +1409,17 @@ where
     ))
 }
 
-fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>() -> NftIssuanceParameters<T>
+fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
+    whitelist_size: u32,
+    metadata_size: u32,
+) -> NftIssuanceParameters<T>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     NftIssuanceParameters::<T> {
         royalty: Some(Pallet::<T>::max_creator_royalty()),
-        nft_metadata: Vec::new(),
+        nft_metadata: vec![0xff].repeat(metadata_size as usize),
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
@@ -1464,7 +1466,10 @@ where
         },
     )?;
     set_nft_limits_helper::<T>(channel_id);
-    let params = worst_case_nft_issuance_params_helper::<T>();
+    let params = worst_case_nft_issuance_params_helper::<T>(
+        Pallet::<T>::max_auction_whitelist_length() as u32,
+        MAX_BYTES_METADATA,
+    );
     Pallet::<T>::issue_nft(origin, actor, video_id, params)?;
     Ok(video_id)
 }

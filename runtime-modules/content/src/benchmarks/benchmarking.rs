@@ -1628,13 +1628,13 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB read cost already maxed out due to `payload` being a struct of `Option`s
     // - `payload` fields `Some(..)` in order to maximize the number of storage mutation performed
     update_channel_payouts {
@@ -1731,7 +1731,7 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
@@ -1814,7 +1814,7 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
@@ -1822,12 +1822,13 @@ benchmarks! {
     // - channel has max assets
     // - English Auction with max whitelisted member & some royalty
     // - nft limits are set
-    // DB OPERATIONS:
-    // - DB Read : channel
-    // - DB Read : video
-    // - DB Write: video
-    // - DB Write: channel
+    // INPUT COMPLEXITY
+    // - auction member whitelist size: w
+    // - metadata bytelength: b
     issue_nft {
+        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+        let b in 1..MAX_BYTES_METADATA;
+
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
@@ -1844,21 +1845,21 @@ benchmarks! {
             storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
         })?;
 
-        let params = worst_case_nft_issuance_params_helper::<T>();
+        let params = worst_case_nft_issuance_params_helper::<T>(w,b);
     }: _ (origin, actor, video_id, params)
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_some());
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel, case ensure_actor_authorized_to_manage_nft
     // - DB Read: NFT
@@ -1876,14 +1877,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel, case ensure_actor_authorized_to_manage_nft
     // - DB Read: NFT
@@ -1906,14 +1907,14 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -1936,14 +1937,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Write: Video
     cancel_offer {
@@ -1965,12 +1966,12 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2002,14 +2003,14 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2030,14 +2031,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2058,14 +2059,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2087,7 +2088,7 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
@@ -2095,7 +2096,7 @@ benchmarks! {
     // - channel has max assets
     // - NFT owner == channel owner
     // - NFT royalty is some
-    // DB OPERATIONS:
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2124,9 +2125,7 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO:
-    // DB OPERATIONS:
-    // - DB Read: bool
-    // - DB Write: bool
+    // INPUT COMPLEXITY
     toggle_nft_limits {
         let origin = RawOrigin::Root;
         let enabled = false;
@@ -2135,10 +2134,8 @@ benchmarks! {
             assert!(!Pallet::<T>::nft_limits_enabled());
         }
 
-    // COMPLEXITY
-    // DB OPERATIONS:
-    // - DB Read: LimitPerPeriod
-    // - DB Write: LimitPerPeriod
+    // STATE COMPLEXITY
+    // INPUT COMPLEXITY
     update_global_nft_limit {
         let origin = RawOrigin::Root;
         let nft_limit_period = NftLimitPeriod::Daily;
@@ -2148,7 +2145,7 @@ benchmarks! {
             assert_eq!(Pallet::<T>::global_daily_nft_limit().limit, 10u64);
         }
 
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
@@ -2156,9 +2153,7 @@ benchmarks! {
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS:
-    // - DB Read: Channel
-    // - DB Write: Channel
+    // INPUT COMPLEXITY
     update_channel_nft_limit {
         let nft_limit_period = NftLimitPeriod::Daily;
         let limit = 10u64;
@@ -2176,7 +2171,7 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
@@ -2184,12 +2179,11 @@ benchmarks! {
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // - Member whitelist at max capacity
-    // DB OPERATIONS
-    // - DB Read: Video
-    // - DB Read: Channel
-    // - DB Write: Video
+    // INPUT COMPLEXITY
+    // - Member whitelist : w
     start_english_auction {
+        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
@@ -2208,7 +2202,7 @@ benchmarks! {
             min_bid_step: Pallet::<T>::min_bid_step(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-            whitelist: (0..(Pallet::<T>::max_auction_whitelist_length() as usize))
+            whitelist: (0..(w as usize))
                 .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
                 .collect(),
         };
@@ -2221,14 +2215,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - channel has max collaborators
-    // DB OPERATIONS
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2257,7 +2251,7 @@ benchmarks! {
     // - previous bid already exists
     // - bid amount triggers buy now (TESTED against non buy now case)
     // - nft royalty is some
-    // DB OPERATIONS
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2290,7 +2284,7 @@ benchmarks! {
     // - channel has max assets
     // - channel has max collaborators
     // - nft royalty is some
-    // DB OPERATIONS
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2321,7 +2315,7 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
@@ -2329,12 +2323,11 @@ benchmarks! {
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // - open auction params Member whitelist at max capacity
-    // DB OPERATIONS
-    // - DB Read: Video
-    // - DB Read: Channel
-    // - DB Write: Video
+    // INPUT COMPLEXITY
+    // - open auction params Member whitelist : w
     start_open_auction {
+        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id.clone());
@@ -2351,7 +2344,7 @@ benchmarks! {
             bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
-            whitelist: (0..(Pallet::<T>::max_auction_whitelist_length() as usize))
+            whitelist: (0..(w as usize))
                 .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
                 .collect(),
 
@@ -2365,12 +2358,12 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - channel has max collaborators
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2393,12 +2386,12 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - channel has max collaborators
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2424,12 +2417,12 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - channel has max collaborators
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
-    // DB OPERATIONS
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
@@ -2461,14 +2454,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
+    // STATE COMPLEXITY
     // - channel has max collaborators
     // - channel has all features paused except necessary ones
     // - channel has max assets
     // - NFT owner == channel owner
     // - bid for open auction already exists
     // - bid amount triggers buy now (TESTED to be heavier than the non buy now case)
-    // DB OPERATIONS
+    // INPUT COMPLEXITY
     // - DB Read: Video
     // - DB Read: Channel
     // - DB Write: Video
