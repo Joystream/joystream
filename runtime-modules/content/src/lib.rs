@@ -1672,9 +1672,11 @@ decl_module! {
         /// ## Weight
         /// `O (1)`
         /// - DB:
-        ///    - O(1)
+        ///    - O(W + B) where:
+        ///    - W : member whitelist length in case nft initial status is auction
+        ///    - B : bytelength of metadata parameter
         /// # </weight>//
-        #[weight = WeightInfoContent::<T>::issue_nft()]
+        #[weight = Module::<T>::create_issue_nft_weight(params)]
         pub fn issue_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1773,11 +1775,12 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (W)` where:
+        /// - W : member whitelist length
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::start_open_auction()]
+        #[weight = WeightInfoContent::<T>::start_open_auction(auction_params.whitelist.len() as u32)]
         pub fn start_open_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1836,11 +1839,12 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (W)` where:
+        /// - W : whitelist member list length
         /// - DB:
         ///    - O(1)
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::start_english_auction()]
+        #[weight = WeightInfoContent::<T>::start_english_auction(auction_params.whitelist.len() as u32)]
         pub fn start_english_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -4454,6 +4458,17 @@ impl<T: Config> Module<T> {
         } else {
             WeightInfoContent::<T>::delete_video_without_assets()
         }
+    }
+
+    // calculates nft issuance weights
+    fn create_issue_nft_weight(params: &NftIssuanceParameters<T>) -> Weight{
+        let whitelist_size = match &params.init_transactional_status {
+            InitTransactionalStatus::<T>::EnglishAuction(params) => params.whitelist.len() as u32,
+            InitTransactionalStatus::<T>::OpenAuction(params) => params.whitelist.len() as u32,
+            _ => 0u32
+        };
+        let metadata_size = params.nft_metadata.len() as u32;
+        WeightInfoContent::<T>::issue_nft(whitelist_size, metadata_size)
     }
 }
 
