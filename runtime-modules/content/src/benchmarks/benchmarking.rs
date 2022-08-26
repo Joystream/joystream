@@ -1001,6 +1001,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let params = create_token_issuance_params::<T>(worst_case_scenario_initial_allocation::<T>(a));
         let actor = ContentActor::Curator(group_id, curator_id);
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorTokenIssuance]);
     }: _ (
         RawOrigin::Signed(curator_acc_id),
         actor,
@@ -1062,6 +1063,8 @@ benchmarks! {
         let balance_pre = balances::Pallet::<T>::usable_balance(&curator_acc_id);
         let metadata = vec![0xf].repeat(b as usize);
         TokenAccountBloatBond::<T>::set(100u32.into());
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin, actor, channel_id, outputs.clone(), metadata.clone()
     )
@@ -1117,6 +1120,8 @@ benchmarks! {
                 channel_id,
                 curator_member_id
             )?;
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin, actor, channel_id
     )
@@ -1143,6 +1148,8 @@ benchmarks! {
         let token_params = create_token_issuance_params::<T>(BTreeMap::new());
         let token_id = project_token::Pallet::<T>::next_token_id();
         Pallet::<T>::issue_creator_token(origin.clone().into(), actor, channel_id, token_params)?;
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin, actor, channel_id
     )
@@ -1174,6 +1181,8 @@ benchmarks! {
                 curator_member_id
             )?;
         let params = worst_case_scenario_token_sale_params::<T>(a, None);
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin, actor, channel_id, params
     )
@@ -1236,6 +1245,8 @@ benchmarks! {
         )?;
         let new_start_block: Option<T::BlockNumber> = Some(200u32.into());
         let new_duration: Option<T::BlockNumber> = Some(200u32.into());
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id, new_start_block, new_duration)
     verify {
         assert!(TokenInfoById::<T>::contains_key(token_id));
@@ -1288,6 +1299,8 @@ benchmarks! {
         )?;
         let council_budget_pre = T::CouncilBudgetManager::get_budget();
         fastforward_by_blocks::<T>(DEFAULT_CRT_SALE_DURATION.into());
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id)
     verify {
         assert!(TokenInfoById::<T>::contains_key(token_id));
@@ -1334,6 +1347,8 @@ benchmarks! {
             T::JoyExistentialDeposit::get() + reward_amount
         );
         let council_budget_pre = T::CouncilBudgetManager::get_budget();
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id, Some(start), duration)
     verify {
         let allocation = DEFAULT_CRT_REVENUE_SPLIT_RATE * reward_amount;
@@ -1397,6 +1412,8 @@ benchmarks! {
             T::JoyExistentialDeposit::get() + reward_amount
         );
         let owner_acc_balance_pre = balances::Pallet::<T>::usable_balance(owner_acc.clone());
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: issue_revenue_split(origin, actor, channel_id, Some(start), duration)
     verify {
         let allocation = DEFAULT_CRT_REVENUE_SPLIT_RATE * reward_amount;
@@ -1485,6 +1502,8 @@ benchmarks! {
         };
         fastforward_by_blocks::<T>(duration);
         let channel_balance_pre = balances::Pallet::<T>::usable_balance(channel_acc.clone());
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id)
     verify {
         assert!(TokenInfoById::<T>::contains_key(token_id));
@@ -1522,6 +1541,8 @@ benchmarks! {
         fastforward_by_blocks::<T>(T::BlocksPerYear::get().into());
         let expected_unclaimed_tally: TokenBalanceOf<T> =
             (DEFAULT_CRT_PATRONAGE_RATE.0.mul_floor(DEFAULT_CRT_OWNER_ISSUANCE)).into();
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id, target_rate)
     verify {
         let current_block = frame_system::Pallet::<T>::block_number();
@@ -1574,6 +1595,8 @@ benchmarks! {
             transferrable_crt_balance::<T>(token_id, collaborator_member_id);
         let expected_claim: TokenBalanceOf<T> =
             (DEFAULT_CRT_PATRONAGE_RATE.0.mul_floor(DEFAULT_CRT_OWNER_ISSUANCE)).into();
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id)
     verify {
         assert!(TokenInfoById::<T>::contains_key(token_id));

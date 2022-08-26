@@ -1377,3 +1377,10 @@ fn set_all_channel_paused_features_except<T: Config>(
     )
     .unwrap();
 }
+
+fn set_all_channel_paused_features<T: Config>(channel_id: T::ChannelId)
+where
+    T::AccountId: CreateAccountId,
+{
+    set_all_channel_paused_features_except::<T>(channel_id, vec![]);
+}
