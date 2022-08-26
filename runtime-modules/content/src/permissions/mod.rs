@@ -49,7 +49,8 @@ pub trait ContentActorAuthenticator: frame_system::Config + common::MembershipTy
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
-        + Ord;
+        + Ord
+        + From<u64>;
 
     /// Curator group identifier
     type CuratorGroupId: Parameter

@@ -995,6 +995,7 @@ declare module '@polkadot/types/lookup' {
     readonly autoIssueNft: Option<PalletContentNftTypesNftIssuanceParametersRecord>;
     readonly expectedVideoStateBloatBond: u128;
     readonly expectedDataObjectStateBloatBond: u128;
+    readonly storageBucketsNumWitness: u32;
   }
 
   /** @name PalletContentVideoUpdateParametersRecord (124) */
@@ -1004,6 +1005,7 @@ declare module '@polkadot/types/lookup' {
     readonly assetsToRemove: BTreeSet<u64>;
     readonly autoIssueNft: Option<PalletContentNftTypesNftIssuanceParametersRecord>;
     readonly expectedDataObjectStateBloatBond: u128;
+    readonly storageBucketsNumWitness: Option<u32>;
   }
 
   /** @name PalletContentPermissionsCuratorGroupContentModerationAction (127) */
@@ -3160,6 +3162,7 @@ declare module '@polkadot/types/lookup' {
       readonly actor: PalletContentPermissionsContentActor;
       readonly videoId: u64;
       readonly numObjectsToDelete: u64;
+      readonly storageBucketsNumWitness: Option<u32>;
     } & Struct;
     readonly isDeleteVideoAssetsAsModerator: boolean;
     readonly asDeleteVideoAssetsAsModerator: {
