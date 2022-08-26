@@ -9,11 +9,7 @@ use crate::{
     Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
     Module as Pallet,
 };
-use crate::{
-    permissions::*, types::*, ContentModerationAction, InitTransferParametersOf,
-    ModerationPermissionsByLevel,
-};
-use crate::{BalanceOf, Config, Module as Pallet};
+
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
@@ -66,7 +62,13 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
 
     res
 }
-pub const DEFAULT_MEMBER_ID: u128 = 500;
+
+pub const MEMBER_IDS_INIT: u128 = 500;
+pub const MAX_MEMBER_IDS: usize = 100;
+pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] =
+    gen_array_u128::<MAX_CURATOR_IDS>(MEMBER_IDS_INIT);
+
+pub const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[0];
 
 pub const CURATOR_IDS_INIT: u128 = 600;
 pub const MAX_CURATOR_IDS: usize = 100;
@@ -1458,6 +1460,7 @@ where
             assets: None,
             auto_issue_nft: None,
             meta: None,
+            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
         },
     )?;
     set_nft_limits_helper::<T>(channel_id);
@@ -1613,6 +1616,7 @@ where
             assets: None,
             auto_issue_nft: None,
             meta: None,
+            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
         },
     )?;
     set_nft_limits_helper::<T>(channel_id);

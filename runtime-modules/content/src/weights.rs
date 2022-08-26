@@ -79,7 +79,7 @@ pub trait WeightInfo {
 	fn update_channel_payouts() -> Weight;
 	fn withdraw_from_curator_channel_balance() -> Weight;
 	fn withdraw_from_member_channel_balance() -> Weight;
-	fn claim_and_withdraw_channel_reward(_h: u32, ) -> Weight;
+	fn claim_channel_reward(_h: u32, ) -> Weight;
 	fn issue_nft() -> Weight;
 	fn destroy_nft() -> Weight;
 	fn sling_nft_back() -> Weight;

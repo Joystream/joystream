@@ -8,7 +8,7 @@ use crate::{
     nft::{NftOwner, TransactionalStatus, OpenAuctionParams, Nft},
     Call, ChannelById, Config, ContentActor, Event, Module as Pallet,
 };
-use crate::{Call, ChannelById, Config, ContentTreasury, Event, UpdateChannelPayoutsParameters};
+use crate::{ContentTreasury, UpdateChannelPayoutsParameters};
 use balances::Pallet as Balances;
 use common::{build_merkle_path_helper, generate_merkle_root_helper, BudgetManager};
 use frame_benchmarking::{benchmarks, Zero};
@@ -1841,6 +1841,7 @@ benchmarks! {
             assets: None,
             auto_issue_nft: None,
             meta: None,
+            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
         })?;
 
         let params = worst_case_nft_issuance_params_helper::<T>();
