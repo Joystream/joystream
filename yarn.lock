@@ -1349,7 +1349,7 @@
   resolved "https://registry.yarnpkg.com/@ffprobe-installer/darwin-x64/-/darwin-x64-5.0.0.tgz#66116b642cb1759939f4f4b3b18b0aea5d7814b0"
   integrity sha512-Zl0UkZ+wW/eyMKBPLTUCcNQch2VDnZz/cBn1DXv3YtCBVbYd9aYzGj4MImdxgWcoE0+GpbfbO6mKGwMq5HCm6A==
 
-"@ffprobe-installer/ffprobe@^1.1.0":
+"@ffprobe-installer/ffprobe@^1.4.1":
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/@ffprobe-installer/ffprobe/-/ffprobe-1.4.1.tgz#64e46bb21580e3383b86ec79606222117acfac90"
   integrity sha512-3WJvxU0f4d7IOZdzoVCAj9fYtiQNC6E0521FJFe9iP5Ej8auTXU7TsrUzIAG1CydeQI+BnM3vGog92SCcF9KtA==
@@ -2117,32 +2117,32 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-common@^4.0.0-alpha.4":
-  version "4.0.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-common/-/hydra-common-4.0.0-alpha.4.tgz#ca92405e36d586060e8cc2e89a590af469f7d727"
-  integrity sha512-eN7und4Ut1YqnQ+IzhtnRqElutudFc4hDSgwGrsJ9XFrfubivOArR1AVVCFocUbW3k0vLuee6hEj/zVNwl3kxQ==
+"@joystream/hydra-common@^4.0.0-alpha.6":
+  version "4.0.0-alpha.6"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-common/-/hydra-common-4.0.0-alpha.6.tgz#1532a88efb92aa4e803e317f87174829919dea9c"
+  integrity sha512-TIT3WNuoHcucXC1nPpept8R5eRlP5o6VZiZBg6Sb5mTIMmqzGMSGhFxa1l79sT2+H+JOW7kLnAiq2o6YjpGBlA==
   dependencies:
     bn.js "^5.2.1"
 
-"@joystream/hydra-db-utils@^4.0.0-alpha.4":
-  version "4.0.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-db-utils/-/hydra-db-utils-4.0.0-alpha.4.tgz#24c44090dd4836b8d48fcca4a7ad8b00ee50321b"
-  integrity sha512-C2hS9nzBZnBfcu+QymwxOslnoE/it7LS6t/k90R0bsjSxy+ckmZ0qKl6zN2t3HM9zBn4Sad6sKeH2LkO4oyBIw==
+"@joystream/hydra-db-utils@^4.0.0-alpha.6":
+  version "4.0.0-alpha.6"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-db-utils/-/hydra-db-utils-4.0.0-alpha.6.tgz#c93c94a66dc45f0729c6a1e1b8f6fe5fc86c22ac"
+  integrity sha512-+paHRUfYltETUzelXixhDQm1EZb1alFh4ZcsYH1N90khd1tyee1NvbxE3LJgjL8RLEL3cUVkAiwTzC58O1+EkQ==
   dependencies:
-    "@joystream/hydra-common" "^4.0.0-alpha.4"
+    "@joystream/hydra-common" "^4.0.0-alpha.6"
     "@types/ioredis" "^4.17.4"
     bn.js "^5.2.1"
     ioredis "^4.17.3"
     lodash "^4.17.20"
     typeorm "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz"
 
-"@joystream/hydra-processor@^4.0.0-alpha.4":
-  version "4.0.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-processor/-/hydra-processor-4.0.0-alpha.4.tgz#d428bd799b766df7ff515942912511d6dfc08850"
-  integrity sha512-MLuHt4FEP4cG+w/dAqXeY/DQnPDkxTFMfBPIMJoZSzh13LGoLaPnMDWCZQZXFDPdH3B4EOeFyu6eJ3DqWUNe+g==
+"@joystream/hydra-processor@^4.0.0-alpha.6":
+  version "4.0.0-alpha.6"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-processor/-/hydra-processor-4.0.0-alpha.6.tgz#c0250f022985bf70211e02a58ab6e8c3bcce9001"
+  integrity sha512-oq3i2do2KCxt/7Bqx8YFUUebMYJpCbrx2e5Zt23AmxKHI6nns0oQiUCO40ZA9jFJdtiriSuoFKb4/4yJZYOO8g==
   dependencies:
-    "@joystream/hydra-common" "^4.0.0-alpha.4"
-    "@joystream/hydra-db-utils" "^4.0.0-alpha.4"
+    "@joystream/hydra-common" "^4.0.0-alpha.6"
+    "@joystream/hydra-db-utils" "^4.0.0-alpha.6"
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"

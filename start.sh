@@ -36,7 +36,6 @@ docker-compose up -d orion
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
-  export SKIP_MOCK_CONTENT=true
   export SKIP_QUERY_NODE_CHECKS=true
   HOST_IP=$(tests/network-tests/get-host-ip.sh)
   export COLOSSUS_1_URL=${COLOSSUS_1_URL:="http://${HOST_IP}:3333"}
@@ -44,8 +43,7 @@ if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
   ./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 
   ## Member faucet
-  export SCREENING_AUTHORITY_SEED=$(cat ./tests/network-tests/output.json | jq -r .faucet.suri)
-  export INVITING_MEMBER_ID=$(cat ./tests/network-tests/output.json | jq -r .faucet.memberId)
+  export INVITER_KEY=$(cat ./tests/network-tests/output.json | jq -r .faucet.suri)
   docker-compose up -d faucet
 
   ## Storage Infrastructure Nodes

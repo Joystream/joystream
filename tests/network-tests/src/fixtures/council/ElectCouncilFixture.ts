@@ -3,7 +3,6 @@ import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } fro
 import { assertCouncilMembersRuntimeQnMatch } from './common'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { GenericAccountId } from '@polkadot/types'
-import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
 import { assert } from 'chai'
 import { createType, registry } from '@joystream/types'
 
@@ -37,7 +36,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     await new FixtureRunner(addStakingAccountsFixture).run()
 
     const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
-    await api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake.addn(MINIMUM_STAKING_ACCOUNT_BALANCE))
+    await api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake)
 
     // Announcing stage
     await this.api.untilCouncilStage('Announcing')

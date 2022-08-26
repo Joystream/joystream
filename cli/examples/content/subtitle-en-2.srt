@@ -1,0 +1,4 @@
+1
+00:05:16,400 --> 00:05:25,300
+Ceci est un exemple de
+un sous-titre - 2ème sous-titre.

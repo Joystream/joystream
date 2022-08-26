@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::mock::*;
-use frame_support::assert_err;
 use frame_support::traits::Currency;
 
 /// test cases are arranged as two layers.
@@ -955,15 +954,457 @@ fn create_thread_balance() {
         );
 
         let first_state_cleanup_treasury_account: <Runtime as frame_system::Config>::AccountId =
-            <Runtime as Config>::ModuleId::get().into_sub_account_truncating(first_thread_id);
+            TestForumModule::thread_account(first_thread_id);
         let second_state_cleanup_treasury_account: <Runtime as frame_system::Config>::AccountId =
-            <Runtime as Config>::ModuleId::get().into_sub_account_truncating(second_thread_id);
+            TestForumModule::thread_account(second_thread_id);
 
         assert_ne!(
             first_state_cleanup_treasury_account,
             second_state_cleanup_treasury_account
         );
     });
+}
+
+#[test]
+fn create_thread_succeedes_with_invitation_locked_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+
+    let thread_deposit = <Runtime as Config>::ThreadDeposit::get();
+    let post_deposit = <Runtime as Config>::PostDeposit::get();
+
+    let test_cases = [
+        (
+            ed() + thread_deposit + post_deposit, // locked balance
+            (Some(forum_lead), Some(forum_lead)), // expected bloat bond `restricted_to` values (thread, post)
+        ),
+        (
+            ed() + thread_deposit + 1,            // locked balance
+            (Some(forum_lead), Some(forum_lead)), // expected bloat bond `restricted_to` values (thread, post)
+        ),
+        (
+            ed() + thread_deposit,    // locked balance
+            (Some(forum_lead), None), // expected bloat bond `restricted_to` values (thread, post)
+        ),
+        (
+            ed() + 1,                 // locked balance
+            (Some(forum_lead), None), // expected bloat bond `restricted_to` values (thread, post)
+        ),
+        (
+            ed(),
+            (None, None), // expected bloat bond `restricted_to` values (thread, post)
+        ),
+    ];
+
+    for case in test_cases {
+        let (locked_balance, bloat_bond_restricted_to) = case;
+        with_test_externalities(|| {
+            let required_balance = ed() + thread_deposit + post_deposit;
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, required_balance);
+            set_invitation_lock(&forum_lead, locked_balance);
+
+            let category_id = create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            let post_id = TestForumModule::next_post_id();
+            let thread_id = create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                forum_lead,
+                category_id,
+                good_thread_metadata(),
+                good_thread_text(),
+                Ok(()),
+            );
+
+            let thread_account_id = TestForumModule::thread_account(thread_id);
+
+            assert_eq!(
+                Balances::usable_balance(thread_account_id),
+                thread_deposit + post_deposit
+            );
+            assert_eq!(
+                System::account(forum_lead).data,
+                balances::AccountData {
+                    free: ed(),
+                    reserved: 0,
+                    misc_frozen: locked_balance,
+                    fee_frozen: 0
+                }
+            );
+            assert_eq!(
+                TestForumModule::thread_by_id(category_id, thread_id).cleanup_pay_off,
+                RepayableBloatBond::new(
+                    <Runtime as Config>::ThreadDeposit::get(),
+                    bloat_bond_restricted_to.0
+                )
+            );
+            assert_eq!(
+                TestForumModule::post_by_id(thread_id, post_id).cleanup_pay_off,
+                RepayableBloatBond::new(
+                    <Runtime as Config>::PostDeposit::get(),
+                    bloat_bond_restricted_to.1
+                )
+            );
+        });
+    }
+}
+
+#[test]
+fn create_thread_fails_with_insufficient_locked_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let fees =
+            <Runtime as Config>::ThreadDeposit::get() + <Runtime as Config>::PostDeposit::get();
+        let lead_balance = ed() + fees - 1;
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, lead_balance);
+        set_invitation_lock(&forum_lead, lead_balance);
+
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            Err(Error::<Runtime>::InsufficientBalanceForThreadCreation.into()),
+        );
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        let _ = Balances::deposit_creating(&forum_lead, 1);
+        set_staking_candidate_lock(&forum_lead, ed() + 1);
+
+        create_thread_mock(
+            origin,
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            Err(Error::<Runtime>::InsufficientBalanceForThreadCreation.into()),
+        );
+    });
+}
+
+#[test]
+fn create_thread_fails_with_incompatible_locked_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let fees =
+            <Runtime as Config>::ThreadDeposit::get() + <Runtime as Config>::PostDeposit::get();
+        let required_balance = ed() + fees;
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, required_balance);
+        set_staking_candidate_lock(&forum_lead, required_balance);
+
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        create_thread_mock(
+            origin,
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            Err(Error::<Runtime>::InsufficientBalanceForThreadCreation.into()),
+        );
+    });
+}
+
+#[test]
+fn add_post_succeeds_with_invitation_locked_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let forum_user = NOT_FORUM_LEAD_ORIGIN_ID;
+    let lead_origin = OriginType::Signed(forum_lead);
+    let user_origin = OriginType::Signed(forum_user);
+    let post_deposit = <Runtime as Config>::PostDeposit::get();
+
+    let test_cases = [
+        (
+            ed() + post_deposit, // locked balance
+            Some(forum_user),    // expected bloat bond `restricted_to` value
+        ),
+        (
+            ed() + 1,         // locked balance
+            Some(forum_user), // expected bloat bond `restricted_to` values (thread, post)
+        ),
+        (
+            ed(), // locked balance
+            None, // expected bloat bond `restricted_to` values (thread, post)
+        ),
+    ];
+
+    for case in test_cases {
+        let (locked_balance, bloat_bond_restricted_to) = case;
+        with_test_externalities(|| {
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, u64::MAX);
+            let user_balance = ed() + post_deposit;
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_user, user_balance);
+            set_invitation_lock(&forum_user, locked_balance);
+
+            let category_id = create_category_mock(
+                lead_origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                lead_origin.clone(),
+                forum_lead,
+                forum_lead,
+                category_id,
+                good_thread_metadata(),
+                good_thread_text(),
+                Ok(()),
+            );
+
+            let post_id = create_post_mock(
+                user_origin.clone(),
+                forum_user,
+                forum_user,
+                category_id,
+                thread_id,
+                good_post_text(),
+                true,
+                Ok(()),
+            );
+
+            let thread_account_id = TestForumModule::thread_account(thread_id);
+
+            assert_eq!(
+                Balances::usable_balance(thread_account_id),
+                <Runtime as Config>::ThreadDeposit::get() + post_deposit * 2
+            );
+            assert_eq!(
+                System::account(forum_user).data,
+                balances::AccountData {
+                    free: ed(),
+                    reserved: 0,
+                    misc_frozen: locked_balance,
+                    fee_frozen: 0
+                }
+            );
+            assert_eq!(
+                TestForumModule::post_by_id(thread_id, post_id).cleanup_pay_off,
+                RepayableBloatBond::new(post_deposit, bloat_bond_restricted_to)
+            );
+        });
+    }
+}
+
+#[test]
+fn add_post_fails_with_insufficient_locked_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let forum_user = NOT_FORUM_LEAD_ORIGIN_ID;
+    let lead_origin = OriginType::Signed(forum_lead);
+    let user_origin = OriginType::Signed(forum_user);
+    with_test_externalities(|| {
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, u64::MAX);
+        let user_balance = ed() + <Runtime as Config>::PostDeposit::get() - 1;
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_user, user_balance);
+        set_invitation_lock(&forum_user, user_balance);
+
+        let category_id = create_category_mock(
+            lead_origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            lead_origin,
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            Ok(()),
+        );
+
+        create_post_mock(
+            user_origin.clone(),
+            forum_user,
+            forum_user,
+            category_id,
+            thread_id,
+            good_post_text(),
+            true,
+            Err(Error::<Runtime>::InsufficientBalanceForPost.into()),
+        );
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        let _ = Balances::deposit_creating(&forum_lead, 1);
+        set_staking_candidate_lock(&forum_user, ed() + 1);
+
+        create_post_mock(
+            user_origin,
+            forum_user,
+            forum_user,
+            category_id,
+            thread_id,
+            good_post_text(),
+            true,
+            Err(Error::<Runtime>::InsufficientBalanceForPost.into()),
+        );
+    });
+}
+
+#[test]
+fn add_post_fails_with_incompatible_locked_balance() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let forum_user = NOT_FORUM_LEAD_ORIGIN_ID;
+    let lead_origin = OriginType::Signed(forum_lead);
+    let user_origin = OriginType::Signed(forum_user);
+    with_test_externalities(|| {
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, u64::MAX);
+        let user_balance = ed() + <Runtime as Config>::PostDeposit::get();
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_user, user_balance);
+        set_staking_candidate_lock(&forum_user, user_balance);
+
+        let category_id = create_category_mock(
+            lead_origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            lead_origin,
+            forum_lead,
+            forum_lead,
+            category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            Ok(()),
+        );
+
+        create_post_mock(
+            user_origin,
+            forum_user,
+            forum_user,
+            category_id,
+            thread_id,
+            good_post_text(),
+            true,
+            Err(Error::<Runtime>::InsufficientBalanceForPost.into()),
+        );
+    });
+}
+
+#[test]
+fn delete_post_and_thread_succeeds_with_bloat_bond_repaid_to_correct_account() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let forum_user = NOT_FORUM_LEAD_ORIGIN_ID;
+    let lead_origin = OriginType::Signed(forum_lead);
+    let user_origin = OriginType::Signed(forum_user);
+    let user_different_account = NOT_FORUM_LEAD_ALT_ORIGIN_ID;
+
+    let thread_deposit = <Runtime as Config>::ThreadDeposit::get();
+    let post_deposit = <Runtime as Config>::PostDeposit::get();
+
+    let test_cases = [
+        (
+            ed() + thread_deposit + post_deposit, // Locked balance
+            (
+                ed() + thread_deposit + post_deposit, // Post-removal creator balance
+                ed(),                                 // Post-removal remover balance
+            ),
+        ),
+        (
+            ed() + thread_deposit, // Locked balance
+            (
+                ed() + thread_deposit, // Post-removal creator balance
+                ed() + post_deposit,   // Post-removal remover balance
+            ),
+        ),
+        (
+            ed(), // Locked balance
+            (
+                ed(),                                 // Post-removal creator balance
+                ed() + thread_deposit + post_deposit, // Post-removal remover balance
+            ),
+        ),
+    ];
+
+    for case in test_cases {
+        let (locked_balance, (expected_creator_balance, expected_remover_balance)) = case;
+        with_test_externalities(|| {
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, u64::MAX);
+            let required_balance = ed() + thread_deposit + post_deposit;
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_user, required_balance);
+            balances::Pallet::<Runtime>::make_free_balance_be(&user_different_account, ed());
+            set_invitation_lock(&forum_user, locked_balance);
+
+            let category_id = create_category_mock(
+                lead_origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
+                Ok(()),
+            );
+
+            let thread_id = create_thread_mock(
+                user_origin.clone(),
+                forum_user,
+                forum_user,
+                category_id,
+                good_thread_metadata(),
+                good_thread_text(),
+                Ok(()),
+            );
+
+            // We use different (alternative) controller acc to delete the initial post
+            delete_post_mock(
+                &user_different_account,
+                forum_user,
+                category_id,
+                thread_id,
+                <Runtime as Config>::PostId::one(),
+                Ok(()),
+                true,
+            );
+
+            // We use different (alternative) controller acc to delete the thread
+            delete_thread_mock(
+                &user_different_account,
+                forum_user,
+                category_id,
+                thread_id,
+                Ok(()),
+            );
+
+            // Verify that the bloat bonds was refunded to the correct accounts
+            assert_eq!(Balances::free_balance(forum_user), expected_creator_balance);
+            assert_eq!(
+                Balances::free_balance(user_different_account),
+                expected_remover_balance
+            );
+        });
+    }
 }
 
 #[test]
@@ -1103,8 +1544,7 @@ fn delete_thread() {
 
         // Delete original post first to allow thread deletion
         delete_post_mock(
-            NOT_FORUM_LEAD_ORIGIN.clone(),
-            NOT_FORUM_LEAD_ORIGIN_ID,
+            &NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
             thread_id,
@@ -1136,8 +1576,7 @@ fn delete_thread() {
 
         // regular user will fail to delete the thread
         delete_thread_mock(
-            NOT_FORUM_MODERATOR_ORIGIN.clone(),
-            NOT_FORUM_MODERATOR_ORIGIN_ID,
+            &NOT_FORUM_MODERATOR_ORIGIN_ID,
             NOT_FORUM_MODERATOR_ORIGIN_ID,
             category_id,
             thread_id,
@@ -1146,8 +1585,7 @@ fn delete_thread() {
 
         // moderator not associated with thread will fail to delete it
         delete_thread_mock(
-            FORUM_MODERATOR_2_ORIGIN.clone(),
-            FORUM_MODERATOR_2_ORIGIN_ID,
+            &FORUM_MODERATOR_2_ORIGIN_ID,
             FORUM_MODERATOR_2_ORIGIN_ID,
             category_id,
             thread_id,
@@ -1156,8 +1594,7 @@ fn delete_thread() {
 
         // moderator will not delete thread
         delete_thread_mock(
-            FORUM_MODERATOR_ORIGIN.clone(),
-            FORUM_MODERATOR_ORIGIN_ID,
+            &FORUM_MODERATOR_ORIGIN_ID,
             FORUM_MODERATOR_ORIGIN_ID,
             category_id,
             thread_id,
@@ -1166,8 +1603,7 @@ fn delete_thread() {
 
         // forum lead will not delete thread
         delete_thread_mock(
-            origin.clone(),
-            forum_lead,
+            &forum_lead,
             forum_lead,
             category_id,
             thread_id,
@@ -1176,8 +1612,7 @@ fn delete_thread() {
 
         // another user will not delete thread
         delete_thread_mock(
-            NOT_FORUM_LEAD_2_ORIGIN.clone(),
-            NOT_FORUM_LEAD_2_ORIGIN_ID,
+            &NOT_FORUM_LEAD_2_ORIGIN_ID,
             NOT_FORUM_LEAD_2_ORIGIN_ID,
             category_id,
             thread_id,
@@ -1186,8 +1621,7 @@ fn delete_thread() {
 
         // thread creator will delete thread
         delete_thread_mock(
-            NOT_FORUM_LEAD_ORIGIN.clone(),
-            NOT_FORUM_LEAD_ORIGIN_ID,
+            &NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
             thread_id,
@@ -1237,8 +1671,7 @@ fn delete_thread_fails_with_outstanding_posts() {
         );
 
         delete_thread_mock(
-            NOT_FORUM_LEAD_ORIGIN.clone(),
-            NOT_FORUM_LEAD_ORIGIN_ID,
+            &NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
             thread_id,
@@ -1583,8 +2016,7 @@ fn moderate_thread_origin_ok() {
         );
         // Delete original post first to allow thread deletion
         delete_post_mock(
-            origin.clone(),
-            forum_lead,
+            &forum_lead,
             forum_lead,
             category_id,
             thread_id,
@@ -2169,8 +2601,7 @@ fn delete_post_creator() {
 
         // regular user will fail to delete the thread
         delete_post_mock(
-            NOT_FORUM_MODERATOR_ORIGIN.clone(),
-            NOT_FORUM_MODERATOR_ORIGIN_ID,
+            &NOT_FORUM_MODERATOR_ORIGIN_ID,
             NOT_FORUM_MODERATOR_ORIGIN_ID,
             category_id,
             thread_id,
@@ -2181,8 +2612,7 @@ fn delete_post_creator() {
 
         // moderator not associated with thread will fail to delete it
         delete_post_mock(
-            FORUM_MODERATOR_2_ORIGIN.clone(),
-            FORUM_MODERATOR_2_ORIGIN_ID,
+            &FORUM_MODERATOR_2_ORIGIN_ID,
             FORUM_MODERATOR_2_ORIGIN_ID,
             category_id,
             thread_id,
@@ -2193,8 +2623,7 @@ fn delete_post_creator() {
 
         // moderator will not delete thread
         delete_post_mock(
-            FORUM_MODERATOR_ORIGIN.clone(),
-            FORUM_MODERATOR_ORIGIN_ID,
+            &FORUM_MODERATOR_ORIGIN_ID,
             FORUM_MODERATOR_ORIGIN_ID,
             category_id,
             thread_id,
@@ -2205,8 +2634,7 @@ fn delete_post_creator() {
 
         // forum lead will not delete thread
         delete_post_mock(
-            origin.clone(),
-            forum_lead,
+            &forum_lead,
             forum_lead,
             category_id,
             thread_id,
@@ -2217,8 +2645,7 @@ fn delete_post_creator() {
 
         // another user will not delete thread
         delete_post_mock(
-            NOT_FORUM_LEAD_2_ORIGIN.clone(),
-            NOT_FORUM_LEAD_2_ORIGIN_ID,
+            &NOT_FORUM_LEAD_2_ORIGIN_ID,
             NOT_FORUM_LEAD_2_ORIGIN_ID,
             category_id,
             thread_id,
@@ -2229,8 +2656,7 @@ fn delete_post_creator() {
 
         // post creator will delete thread
         delete_post_mock(
-            NOT_FORUM_LEAD_ORIGIN.clone(),
-            NOT_FORUM_LEAD_ORIGIN_ID,
+            &NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
             thread_id,
@@ -2292,8 +2718,7 @@ fn delete_post_fails_for_non_existing_posts() {
                         continue;
                     }
                     delete_post_mock(
-                        NOT_FORUM_LEAD_ORIGIN.clone(),
-                        NOT_FORUM_LEAD_ORIGIN_ID,
+                        &NOT_FORUM_LEAD_ORIGIN_ID,
                         NOT_FORUM_LEAD_ORIGIN_ID,
                         category_id,
                         thread_id,
@@ -2358,8 +2783,7 @@ fn set_stickied_threads_ok() {
         );
         // Delete original post first to allow thread deletion
         delete_post_mock(
-            origin.clone(),
-            forum_lead,
+            &forum_lead,
             forum_lead,
             category_id,
             thread_id_deleted,
@@ -2393,7 +2817,7 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
     let initial_balance = 10_000_000;
 
     with_test_externalities(|| {
-        Balances::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        Balances::make_free_balance_be(&forum_lead, initial_balance);
 
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
@@ -2504,76 +2928,6 @@ fn set_stickied_threads_thread_not_exists() {
             category_id,
             vec![wrong_thread_id],
             Err(Error::<Runtime>::ThreadDoesNotExist.into()),
-        );
-    });
-}
-
-#[test]
-fn test_migration_not_done() {
-    let config = migration_not_done_config();
-    let forum_lead = FORUM_LEAD_ORIGIN_ID;
-    let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
-        let forum_user_id = 1;
-        let moderator_id = 1;
-        let category_id = 1;
-        let thread_id = 1;
-        let post_id = 1;
-
-        assert_err!(
-            TestForumModule::create_category(
-                mock_origin(origin.clone()),
-                None,
-                good_category_title(),
-                good_category_description()
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::create_thread(
-                mock_origin(origin.clone()),
-                forum_user_id,
-                category_id,
-                good_thread_metadata(),
-                good_thread_text(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::add_post(
-                mock_origin(origin.clone()),
-                forum_user_id,
-                category_id,
-                thread_id,
-                good_post_text(),
-                true,
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::moderate_thread(
-                mock_origin(origin.clone()),
-                PrivilegedActor::Moderator(moderator_id),
-                category_id,
-                thread_id,
-                good_moderation_rationale(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
-        );
-
-        assert_err!(
-            TestForumModule::moderate_post(
-                mock_origin(origin.clone()),
-                PrivilegedActor::Moderator(moderator_id),
-                category_id,
-                thread_id,
-                post_id,
-                good_moderation_rationale(),
-            ),
-            Error::<Runtime>::DataMigrationNotDone,
         );
     });
 }

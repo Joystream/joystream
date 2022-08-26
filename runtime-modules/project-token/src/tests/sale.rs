@@ -875,6 +875,37 @@ fn succesful_sale_purchase_not_auto_finalizing_the_sale() {
     })
 }
 
+#[test]
+fn unsuccesful_sale_purchase_with_invitation_locked_funds() {
+    let bloat_bond = joy!(100);
+    let sale_platform_fee = Permill::from_percent(30);
+    let configs = vec![
+        // Platform fee case
+        GenesisConfigBuilder::new_empty()
+            .with_bloat_bond(bloat_bond)
+            .with_sale_platform_fee(sale_platform_fee)
+            .build(),
+        // No platform fee case
+        GenesisConfigBuilder::new_empty()
+            .with_bloat_bond(bloat_bond)
+            .build(),
+    ];
+    for config in configs {
+        build_test_externalities(config).execute_with(|| {
+            increase_account_balance(&member!(1).1, ed() + bloat_bond);
+            IssueTokenFixture::default().call_and_assert(Ok(()));
+            InitTokenSaleFixture::default().call_and_assert(Ok(()));
+            increase_account_balance(
+                &member!(2).1,
+                ed() + bloat_bond + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            );
+            set_invitation_lock(&member!(2).1, ed() + 1);
+            PurchaseTokensOnSaleFixture::default()
+                .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
+        });
+    }
+}
+
 /////////////////////////////////////////////////////////
 ////////////////// FINALIZE TOKEN SALE //////////////////
 /////////////////////////////////////////////////////////

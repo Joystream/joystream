@@ -469,7 +469,7 @@ benchmarks! {
         assert_eq!(video.in_channel, channel_id);
         assert_eq!(video.nft_status, None);
         assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
-        assert_eq!(video.video_state_bloat_bond, Pallet::<T>::video_state_bloat_bond_value());
+        assert_eq!(video.video_state_bloat_bond.amount, Pallet::<T>::video_state_bloat_bond_value());
         assert_last_event::<T>(
             <T as Config>::Event::from(
                 Event::<T>::VideoCreated(
@@ -531,7 +531,7 @@ benchmarks! {
         }
 
         assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
-        assert_eq!(video.video_state_bloat_bond, Pallet::<T>::video_state_bloat_bond_value());
+        assert_eq!(video.video_state_bloat_bond.amount, Pallet::<T>::video_state_bloat_bond_value());
         assert_last_event::<T>(
             <T as Config>::Event::from(
                 Event::<T>::VideoCreated(

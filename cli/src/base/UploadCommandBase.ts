@@ -253,8 +253,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   }
 
   async uploadAsset(
-    account: KeyringPair,
-    memberId: number,
     objectId: BN,
     bagId: string,
     filePath: string,
@@ -308,8 +306,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   }
 
   async uploadAssets(
-    account: KeyringPair,
-    memberId: number,
     bagId: string,
     assets: AssetToUpload[],
     inputFilePath: string,
@@ -333,7 +329,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     const results = await Promise.all(
       assets.map(async (a) => {
         try {
-          await this.uploadAsset(account, memberId, a.dataObjectId, bagId, a.path, storageNodeInfo, multiBar)
+          await this.uploadAsset(a.dataObjectId, bagId, a.path, storageNodeInfo, multiBar)
           return true
         } catch (e) {
           errors.push([a.dataObjectId.toString(), e instanceof Error ? e.message : 'Unknown error'])
@@ -346,9 +342,24 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     multiBar.stop()
   }
 
-  async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<StorageAssets | undefined> {
+  async prepareAssetsForExtrinsic(
+    resolvedAssets: ResolvedAsset[],
+    extrinsic?: 'createChannel' | 'createVideo'
+  ): Promise<StorageAssets | undefined> {
     const feePerMB = await this.getOriginalApi().query.storage.dataObjectPerMegabyteFee()
-    const dataObjectStateBloatBond = await this.getOriginalApi().query.storage.dataObjectStateBloatBondValue()
+    const dataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
+
+    const displayChannelOrVideoStateBloatBond = async (extrinsic?: 'createChannel' | 'createVideo') => {
+      const channelStateBloatBond = chalk.cyan(formatBalance(await this.getApi().channelStateBloatBond()))
+      const videoStateBloatBond = chalk.cyan(formatBalance(await this.getApi().videoStateBloatBond()))
+
+      return extrinsic === 'createChannel'
+        ? `Channel state bloat bond: ${channelStateBloatBond} (recoverable on channel deletion)`
+        : extrinsic === 'createVideo'
+        ? `Video state bloat bond: ${videoStateBloatBond} (recoverable on video deletion)`
+        : ''
+    }
+
     if (resolvedAssets.length) {
       const totalBytes = resolvedAssets
         .reduce((a, b) => {
@@ -363,6 +374,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
           `Total state bloat bond: ${chalk.cyan(
             formatBalance(totalStateBloatBond)
           )} (recoverable on data object(s) removal)\n` +
+          `${await displayChannelOrVideoStateBloatBond(extrinsic)}\n` +
           `Are you sure you want to continue?`
       )
       return createType('PalletContentStorageAssetsRecord', {

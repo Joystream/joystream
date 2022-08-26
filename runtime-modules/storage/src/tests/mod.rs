@@ -17,20 +17,20 @@ use common::working_group::WorkingGroup;
 use crate::{
     BagId, DataObject, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
     DistributionBucketId, DynamicBagId, DynamicBagType, Error, ModuleAccount, RawEvent,
-    StaticBagId, StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
+    RepayableBloatBond, StaticBagId, StorageBucketOperatorStatus, StorageTreasury,
+    UploadParameters, Voucher,
 };
 
 use mocks::{
-    build_test_externalities, build_test_externalities_with_genesis, create_cid, Balances,
-    BlacklistSizeLimit, DefaultChannelDynamicBagNumberOfStorageBuckets,
-    DefaultMemberDynamicBagNumberOfStorageBuckets, ExistentialDeposit, MaxDataObjectSize,
-    MaxDistributionBucketFamilyNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
-    ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
-    DEFAULT_DISTRIBUTION_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
-    DEFAULT_STORAGE_BUCKETS_NUMBER, DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT,
-    DEFAULT_STORAGE_BUCKET_SIZE_LIMIT, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
-    DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, ONE_MB,
-    STORAGE_WG_LEADER_ACCOUNT_ID,
+    build_test_externalities, create_cid, Balances, BlacklistSizeLimit,
+    DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
+    ExistentialDeposit, MaxDataObjectSize, MaxDistributionBucketFamilyNumber, Storage, Test,
+    ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
+    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
+    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, ONE_MB, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -761,7 +761,7 @@ fn upload_succeeded() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: data_object_state_bloat_bond,
+                state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
         );
@@ -773,7 +773,7 @@ fn upload_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            data_object_state_bloat_bond
+            init_module_acc_balance() + data_object_state_bloat_bond
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsUploaded(
@@ -857,7 +857,7 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_state_bloat_bond
+            init_module_acc_balance() + 2 * data_object_state_bloat_bond
         );
 
         let upload_params2 = UploadParameters::<Test> {
@@ -895,7 +895,7 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            4 * data_object_state_bloat_bond
+            init_module_acc_balance() + 4 * data_object_state_bloat_bond
         );
     });
 }
@@ -971,7 +971,7 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_state_bloat_bond
+            init_module_acc_balance() + 2 * data_object_state_bloat_bond
         );
 
         let upload_params2 = UploadParameters::<Test> {
@@ -1009,7 +1009,7 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            4 * data_object_state_bloat_bond
+            init_module_acc_balance() + 4 * data_object_state_bloat_bond
         );
     });
 }
@@ -1159,7 +1159,7 @@ fn upload_succeeded_with_dynamic_bag() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: data_object_state_bloat_bond,
+                state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
         );
@@ -2439,7 +2439,7 @@ fn delete_data_objects_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            data_object_state_bloat_bond
+            init_module_acc_balance() + data_object_state_bloat_bond
         );
 
         DeleteDataObjectsFixture::new()
@@ -2460,7 +2460,7 @@ fn delete_data_objects_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
@@ -2618,7 +2618,7 @@ fn delete_data_objects_succeeds_with_original_obj_state_bloat_bond() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_state_bloat_bond
+            init_module_acc_balance() + 2 * data_object_state_bloat_bond
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
@@ -2957,7 +2957,7 @@ fn delete_dynamic_bags_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         DeleteDynamicBagFixture::new()
@@ -2968,17 +2968,14 @@ fn delete_dynamic_bags_succeeded() {
         // post-check balances
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
             initial_balance
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeleted(
-            DEFAULT_MEMBER_ACCOUNT_ID,
-            dynamic_bag_id,
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeleted(dynamic_bag_id));
     });
 }
 
@@ -3607,7 +3604,7 @@ fn create_dynamic_bag_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         CreateDynamicBagFixture::default()
@@ -3656,7 +3653,7 @@ fn create_dynamic_bag_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
@@ -3679,6 +3676,10 @@ fn create_dynamic_bag_fails_with_invalid_data_object_state_bloat_bond() {
         let invalid_data_object_state_bloat_bond_value = 55;
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id)
+            .with_objects(vec![DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            }])
             .with_expected_data_object_state_bloat_bond(invalid_data_object_state_bloat_bond_value)
             .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DataObjectStateBloatBondChanged.into()));
@@ -6112,7 +6113,7 @@ fn distribution_operator_remark_unsuccessful_with_invalid_origin() {
 
 #[test]
 fn initial_module_account_balance_set() {
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         run_to_block(1);
 
         assert_eq!(
@@ -6123,9 +6124,9 @@ fn initial_module_account_balance_set() {
 }
 
 #[test]
-fn funds_needed_for_upload_succeeds() {
+fn get_upload_costs_succeeds() {
     //Module == 0 -> 0
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(0);
         set_data_object_state_bloat_bond_value(0);
 
@@ -6140,7 +6141,7 @@ fn funds_needed_for_upload_succeeds() {
     });
 
     //Module > 0 round_up((ONE_MB - 1) % ONE_MB) -> 1
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
         set_data_object_state_bloat_bond_value(0);
 
@@ -6155,7 +6156,7 @@ fn funds_needed_for_upload_succeeds() {
     });
 
     //Module == 0 ONE_MB % ONE_MB -> 1
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
         set_data_object_state_bloat_bond_value(0);
 
@@ -6170,7 +6171,7 @@ fn funds_needed_for_upload_succeeds() {
     });
 
     //Module =! 0 round_up((ONE_MB + 1 ) % ONE_MB) -> 2
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
         set_data_object_state_bloat_bond_value(0);
 
@@ -6186,8 +6187,8 @@ fn funds_needed_for_upload_succeeds() {
 }
 
 #[test]
-fn funds_needed_for_upload_succeeds_overflow_sat() {
-    build_test_externalities_with_genesis().execute_with(|| {
+fn get_upload_costs_succeeds_overflow_sat() {
+    build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(0);
         set_data_object_state_bloat_bond_value(5);
@@ -6205,7 +6206,7 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
         assert_eq!(funds_needed_saturated, u64::MAX);
     });
 
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(3689348814741910323);
         set_data_object_state_bloat_bond_value(0);
@@ -6223,7 +6224,7 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
         assert_eq!(funds_needed_saturated, u64::MAX);
     });
 
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(3689348814741910303);
         set_data_object_state_bloat_bond_value(5);

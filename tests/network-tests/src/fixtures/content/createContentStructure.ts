@@ -3,32 +3,27 @@ import { JoystreamCLI } from '../../cli/joystream'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 import { PalletWorkingGroupGroupWorker as Worker } from '@polkadot/types/lookup'
-import { getVideoCategoryDefaults, getChannelCategoryDefaults } from './contentTemplates'
+import { getVideoCategoryDefaults } from './contentTemplates'
 import { WorkingGroupModuleName } from '../../types'
+import { assert } from 'chai'
+import BN from 'bn.js'
+
+// settings
+const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
 export class CreateContentStructureFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
-  private channelCategoryCount: number
   private videoCategoryCount: number
   private createdItems: {
-    channelCategoryIds: number[]
-    videoCategoryIds: number[]
+    videoCategoryIds: string[]
   }
 
-  constructor(
-    api: Api,
-    query: QueryNodeApi,
-    cli: JoystreamCLI,
-    channelCategoryCount: number,
-    videoCategoryCount: number
-  ) {
+  constructor(api: Api, query: QueryNodeApi, cli: JoystreamCLI, videoCategoryCount: number) {
     super(api, query)
     this.cli = cli
-    this.channelCategoryCount = channelCategoryCount
     this.videoCategoryCount = videoCategoryCount
 
     this.createdItems = {
-      channelCategoryIds: [],
       videoCategoryIds: [],
     }
   }
@@ -44,13 +39,24 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     // prepare accounts for working group leads
 
     this.debug('Loading working group leaders')
-    const { contentLeader, storageLeader } = await this.retrieveWorkingGroupLeaders()
+    const { contentLeader } = await this.retrieveWorkingGroupLeaders()
 
     // switch to lead and create category structure as lead
 
-    this.debug(`Choosing content working group lead's account`)
-    const contentLeaderKeyPair = this.api.getKeypair(contentLeader.roleAccountId.toString())
-    await this.cli.importAccount(contentLeaderKeyPair)
+    // CLI expects the keypair to belong to a member, so we cannot assume the role account id
+    // is also the worker member account id.
+    this.debug(`Choosing content working group lead's member controller account`)
+    const memberId = contentLeader.memberId
+    const workerMemberControllerAccount = await this.api.getMemberControllerAccount(memberId.toNumber())
+
+    const contentLeaderMemberKeyPair = this.api.getKeypair(workerMemberControllerAccount!)
+    await this.cli.importAccount(contentLeaderMemberKeyPair)
+
+    this.debug('Top-uping accounts')
+    await this.api.treasuryTransferBalanceToAccounts([workerMemberControllerAccount!], sufficientTopupAmount)
+
+    this.debug('Creating video categories')
+    this.createdItems.videoCategoryIds = await this.createVideoCategories(this.videoCategoryCount)
   }
 
   /**
@@ -72,27 +78,30 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
   }
 
   /**
-    Creates a new channel category. Can only be executed as content group leader.
-  */
-  private async createChannelCategories(count: number): Promise<number[]> {
-    const createdIds = await this.createCommonEntities(count, (index) =>
-      this.cli.createChannelCategory({
-        ...getChannelCategoryDefaults(index),
-      })
-    )
-
-    return createdIds
-  }
-
-  /**
     Creates a new video category. Can only be executed as content group leader.
   */
-  private async createVideoCategories(count: number): Promise<number[]> {
-    const createdIds = await this.createCommonEntities(count, (index) =>
-      this.cli.createVideoCategory({
-        ...getVideoCategoryDefaults(index),
-      })
+  private async createVideoCategories(count: number): Promise<string[]> {
+    // remember initial video categories count
+    const initialVideoCategories = await this.query.tryQueryWithTimeout(
+      () => this.query.getVideoCategories(),
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      (initialVideoCategories) => {}
     )
+    const initialCategoryCount = initialVideoCategories.length
+
+    // create new categories and remember their ids
+    const createdIds = await this.createCommonEntities(count, async (index) => {
+      const categoryName = getVideoCategoryDefaults(index).name
+      await this.cli.createVideoCategory(categoryName)
+
+      const qEvents = await this.query.tryQueryWithTimeout(
+        () => this.query.getVideoCategories(),
+        (qEvents) => assert.equal(qEvents.length, initialCategoryCount + index + 1)
+      )
+      const id = qEvents[0].id
+
+      return id
+    })
 
     return createdIds
   }

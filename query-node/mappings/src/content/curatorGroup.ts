@@ -103,7 +103,7 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
 
 export async function content_CuratorRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId] = new Content.CuratorAddedEvent(event).params
+  const [curatorGroupId, curatorId] = new Content.CuratorRemovedEvent(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
@@ -116,14 +116,7 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
     return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
-  // load curator
-  const curator = await getCurator(store, curatorId.toString())
-
-  if (!curator) {
-    return inconsistentState('Non-existing curator removal from curator group requested', curatorGroupId)
-  }
-
-  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curator.toString())
+  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curatorId.toString())
 
   // ensure curator group exists
   if (curatorIndex < 0) {

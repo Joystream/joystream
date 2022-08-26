@@ -210,7 +210,7 @@ export async function storage_DynamicBagCreated({ event, store }: EventContext &
 }
 
 export async function storage_DynamicBagDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [, bagId] = new Storage.DynamicBagDeletedEvent(event).params
+  const [bagId] = new Storage.DynamicBagDeletedEvent(event).params
 
   // first remove all the data objects in storage bucket
   const bagDataObjects = await store.getMany(StorageDataObject, {
@@ -624,7 +624,7 @@ export async function storage_DataObjectStateBloatBondValueUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [newStateBloatBondValue] = new Storage.DataObjectStateBloatBondValueUpdatedEvent(event).params
   const storageSystem = await getStorageSystem(store)
-  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue.toNumber()
+  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue
 
   await store.save<StorageSystemParameters>(storageSystem)
 }

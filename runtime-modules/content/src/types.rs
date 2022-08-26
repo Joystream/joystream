@@ -1,5 +1,5 @@
 use crate::*;
-use common::{ProofElementRecord, Side};
+use common::{bloat_bond::RepayableBloatBondOf, ProofElementRecord, Side};
 use frame_support::storage::{
     bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet,
 };
@@ -237,6 +237,7 @@ pub struct ChannelRecord<
     TransferId: PartialEq + Copy,
     ChannelAssetsSet,
     ChannelCollaboratorsMap: PartialEq,
+    RepayableBloatBond,
 > {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
@@ -270,8 +271,8 @@ pub struct ChannelRecord<
     pub weekly_nft_counter: NftCounter<BlockNumber>,
     /// Id of the channel's creator token (if issued)
     pub creator_token_id: Option<TokenId>,
-    /// State bloat bond needed to store a channel
-    pub channel_state_bloat_bond: Balance,
+    /// State bloat bond paid for storing the channel
+    pub channel_state_bloat_bond: RepayableBloatBond,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -390,6 +391,7 @@ impl<
         TransferId: PartialEq + Copy,
         DataObjectsSet,
         CollaboratorsMap: PartialEq,
+        RepayableBloatBond,
     >
     ChannelRecord<
         MemberId,
@@ -401,6 +403,7 @@ impl<
         TransferId,
         DataObjectsSet,
         CollaboratorsMap,
+        RepayableBloatBond,
     >
 {
     pub fn ensure_feature_not_paused<T: Config>(
@@ -472,6 +475,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Config>::TransferId,
     ChannelAssetsSet<T>,
     ChannelCollaboratorsMap<T>,
+    RepayableBloatBondOf<T>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -628,21 +632,25 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoRecord<ChannelId, OwnedNft, Balance: PartialEq + Zero, VideoAssetsSet> {
+pub struct VideoRecord<ChannelId, OwnedNft, VideoAssetsSet, RepayableBloatBond> {
     pub in_channel: ChannelId,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNft>,
     /// Set of associated data objects
     pub data_objects: VideoAssetsSet,
-    /// State bloat bond needed to store a video
-    pub video_state_bloat_bond: Balance,
+    /// State bloat bond paid for storing the video
+    pub video_state_bloat_bond: RepayableBloatBond,
 }
 
 pub type VideoAssetsSet<T> =
     BoundedBTreeSet<DataObjectId<T>, <T as Config>::MaxNumberOfAssetsPerVideo>;
 
-pub type Video<T> =
-    VideoRecord<<T as storage::Config>::ChannelId, Nft<T>, BalanceOf<T>, VideoAssetsSet<T>>;
+pub type Video<T> = VideoRecord<
+    <T as storage::Config>::ChannelId,
+    Nft<T>,
+    VideoAssetsSet<T>,
+    RepayableBloatBondOf<T>,
+>;
 
 pub type DataObjectId<T> = <T as storage::Config>::DataObjectId;
 
@@ -664,8 +672,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Config>::Hash,
 >;
 
-impl<ChannelId: Clone, OwnedNft: Clone, Balance: PartialEq + Zero, VideoAssetsSet>
-    VideoRecord<ChannelId, OwnedNft, Balance, VideoAssetsSet>
+impl<ChannelId: Clone, OwnedNft: Clone, VideoAssetsSet, RepayableBloatBond>
+    VideoRecord<ChannelId, OwnedNft, VideoAssetsSet, RepayableBloatBond>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Config>(&self) -> DispatchResult {
@@ -757,7 +765,7 @@ pub trait ModuleAccount<T: Config> {
             &Self::module_account_id(),
             dest_account_id,
             amount,
-            ExistenceRequirement::AllowDeath,
+            ExistenceRequirement::KeepAlive,
         )
     }
 
@@ -767,16 +775,8 @@ pub trait ModuleAccount<T: Config> {
             src_account_id,
             &Self::module_account_id(),
             amount,
-            ExistenceRequirement::AllowDeath,
+            ExistenceRequirement::KeepAlive,
         )
-    }
-
-    /// Deposit amount to internal creator account: infallible
-    fn deposit_to_channel_account(channel_id: T::ChannelId, amount: BalanceOf<T>) {
-        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(
-            &Self::account_for_channel(channel_id),
-            amount,
-        );
     }
 
     /// Displays usable balance for the module account.

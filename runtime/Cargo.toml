@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '11.0.0'
+version = '11.2.0'
 
 [dependencies]
 # Third-party dependencies
@@ -63,6 +63,7 @@ pallet-balances = { package = 'pallet-balances', default-features = false, git =
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+pallet-multisig = { package = 'pallet-multisig', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', default-features = false, optional = true }
@@ -147,6 +148,7 @@ std = [
     'pallet-im-online/std',
     'pallet-offences/std',
     'pallet-vesting/std',
+    'pallet-multisig/std',
     'substrate-utility/std',
     'pallet-bags-list/std',
     'pallet-election-provider-multi-phase/std',
@@ -182,6 +184,7 @@ runtime-benchmarks = [
     # Substrate pallets
     "pallet-offences-benchmarking",
     "pallet-vesting/runtime-benchmarks",
+    "pallet-multisig/runtime-benchmarks",
     "pallet-session-benchmarking",
     "pallet-balances/runtime-benchmarks",
     "pallet-im-online/runtime-benchmarks",

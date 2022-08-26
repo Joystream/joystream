@@ -9,7 +9,14 @@ import {
   PalletMembershipInviteMembershipParameters as InviteMembershipParameters,
   PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
 } from '@polkadot/types/lookup'
-import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
+import { Bytes } from '@polkadot/types'
+import {
+  MembershipMetadata,
+  MemberRemarked,
+  ICreateVideoCategory,
+  IMembershipMetadata,
+} from '@joystream/metadata-protobuf'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 import {
   bytesToString,
   deserializeMetadata,
@@ -17,7 +24,9 @@ import {
   getWorker,
   inconsistentState,
   toNumber,
-  updateMetaprotocolTransactionStatus,
+  logger,
+  saveMetaprotocolTransactionSuccessful,
+  saveMetaprotocolTransactionErrored,
 } from './common'
 import {
   Membership,
@@ -44,9 +53,8 @@ import {
   MembershipEntryGifted,
   AvatarUri,
   WorkingGroup,
-  MetaprotocolTransactionStatusEvent,
-  MetaprotocolTransactionPending,
-  MetaprotocolTransactionErrored,
+  MembershipExternalResource,
+  MembershipExternalResourceType,
   MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import {
@@ -56,10 +64,11 @@ import {
   processEditCommentMessage,
   processDeleteCommentMessage,
 } from './content'
-import { BaseModel } from '@joystream/warthog'
+import { createVideoCategory } from './content/videoCategory'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
-async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
-  const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
+async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
+  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
   if (!member) {
     throw new Error(`Member(${id}) not found`)
   }
@@ -89,6 +98,80 @@ async function getOrCreateMembershipSnapshot({ store, event }: EventContext & St
       })
 }
 
+async function saveMembershipExternalResources(
+  store: DatabaseManager,
+  member: Membership,
+  externalResources: Pick<MembershipExternalResource, 'type' | 'value'>[] = [],
+  memberMetadata: MemberMetadata = member.metadata
+): Promise<MembershipExternalResource[] | undefined> {
+  const newExternalResources = externalResources.map(
+    ({ type, value }) =>
+      new MembershipExternalResource({
+        id: `${memberMetadata.id}-${type}`,
+        type,
+        value,
+        memberMetadata,
+        member: member.metadata.externalResources ? undefined : member,
+      })
+  )
+  for (const resource of newExternalResources) {
+    await store.save<MembershipExternalResource>(resource)
+  }
+
+  return newExternalResources
+}
+
+function asMembershipExternalResource(
+  resource: MembershipMetadata.IExternalResource
+): Pick<MembershipExternalResource, 'type' | 'value'>[] {
+  const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]
+
+  if (!typeKey || !(typeKey in MembershipExternalResourceType)) {
+    throw new Error(`Invalid ResourceType: ${typeKey}`)
+  }
+
+  const type = MembershipExternalResourceType[typeKey]
+  const value = resource.value
+  return type && value ? [{ type, value }] : []
+}
+
+async function saveMembershipMetadata(
+  store: DatabaseManager,
+  member?: Membership,
+  metadata?: DecodedMetadataObject<IMembershipMetadata> | null
+): Promise<MemberMetadata> {
+  const avatarUri =
+    member?.metadata?.avatar && 'avatarUri' in member?.metadata.avatar
+      ? member?.metadata.avatar.avatarUri
+      : metadata?.avatarUri || ''
+  const avatar = avatarUri ? new AvatarUri() : undefined
+  if (avatar) {
+    avatar.avatarUri = avatarUri
+  }
+
+  const metadataEntity = new MemberMetadata({
+    name: metadata?.name || undefined,
+    about: metadata?.about || undefined,
+    ...member?.metadata,
+    id: undefined,
+    avatar,
+    externalResources: undefined,
+  })
+
+  await store.save<MemberMetadata>(metadataEntity)
+
+  if (member) {
+    metadataEntity.externalResources = await saveMembershipExternalResources(
+      store,
+      member,
+      member.metadata.externalResources,
+      metadataEntity
+    )
+  }
+
+  return metadataEntity
+}
+
 async function createNewMemberFromParams(
   store: DatabaseManager,
   event: SubstrateEvent,
@@ -100,21 +183,12 @@ async function createNewMemberFromParams(
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
   const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
 
-  const avatar = new AvatarUri()
-  avatar.avatarUri = metadata?.avatarUri ?? ''
-
-  const metadataEntity = new MemberMetadata({
-    name: metadata?.name || undefined,
-    about: metadata?.about || undefined,
-    avatar,
-  })
-
   const member = new Membership({
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
     handle: handle.unwrap().toHuman()?.toString(),
-    metadata: metadataEntity,
+    metadata: await saveMembershipMetadata(store, undefined, metadata),
     entry: entryMethod,
     referredBy:
       entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrerId.isSome
@@ -136,8 +210,13 @@ async function createNewMemberFromParams(
     councilMembers: [],
   })
 
-  await store.save<MemberMetadata>(member.metadata)
   await store.save<Membership>(member)
+
+  member.metadata.externalResources = await saveMembershipExternalResources(
+    store,
+    member,
+    metadata?.externalResources?.flatMap(asMembershipExternalResource)
+  )
 
   return member
 }
@@ -200,14 +279,10 @@ export async function members_MembershipBought({ store, event }: EventContext & 
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: new MemberMetadata({
-      ...member.metadata,
-      id: undefined,
-    }),
+    metadata: await saveMembershipMetadata(store, member),
     referrer: member.referredBy,
   })
 
-  await store.save<MemberMetadata>(membershipBoughtEvent.metadata)
   await store.save<MembershipBoughtEvent>(membershipBoughtEvent)
 
   // Update the other side of event<->membership relation
@@ -227,13 +302,9 @@ export async function members_MembershipGifted({ store, event }: EventContext & 
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: new MemberMetadata({
-      ...member.metadata,
-      id: undefined,
-    }),
+    metadata: await saveMembershipMetadata(store, member),
   })
 
-  await store.save<MemberMetadata>(membershipGiftedEvent.metadata)
   await store.save<MembershipGiftedEvent>(membershipGiftedEvent)
 
   // Update the other side of event<->membership relation
@@ -244,7 +315,7 @@ export async function members_MembershipGifted({ store, event }: EventContext & 
 export async function members_MemberProfileUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, newHandle, newMetadata] = new Members.MemberProfileUpdatedEvent(event).params
   const metadata = newMetadata.isSome ? deserializeMetadata(MembershipMetadata, newMetadata.unwrap()) : undefined
-  const member = await getMemberById(store, memberId)
+  const member = await getMemberById(store, memberId, ['metadata', 'metadata.externalResources'])
 
   // FIXME: https://github.com/Joystream/hydra/issues/435
   if (typeof metadata?.name === 'string') {
@@ -255,8 +326,10 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   }
 
   if (typeof metadata?.avatarUri === 'string') {
-    member.metadata.avatar = new AvatarUri()
-    member.metadata.avatar.avatarUri = metadata.avatarUri
+    member.metadata.avatar = (metadata.avatarUri ? new AvatarUri() : null) as AvatarUri | undefined
+    if (member.metadata.avatar) {
+      member.metadata.avatar.avatarUri = metadata.avatarUri
+    }
   }
 
   if (newHandle.isSome) {
@@ -266,17 +339,28 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   await store.save<MemberMetadata>(member.metadata)
   await store.save<Membership>(member)
 
+  if (metadata?.externalResources) {
+    // Remove previously set external resources
+    for (const prevResource of member.metadata.externalResources ?? []) {
+      await store.remove(prevResource)
+    }
+    member.metadata.externalResources = undefined
+
+    // Save new external resources
+    member.metadata.externalResources = await saveMembershipExternalResources(
+      store,
+      member,
+      metadata?.externalResources?.flatMap(asMembershipExternalResource)
+    )
+  }
+
   const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
     ...genericEventFields(event),
     member: member,
     newHandle: member.handle,
-    newMetadata: new MemberMetadata({
-      ...member.metadata,
-      id: undefined,
-    }),
+    newMetadata: await saveMembershipMetadata(store, member),
   })
 
-  await store.save<MemberMetadata>(memberProfileUpdatedEvent.newMetadata)
   await store.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
 }
 
@@ -363,14 +447,11 @@ export async function members_MemberInvited({ store, event }: EventContext & Sto
     handle: invitedMember.handle,
     rootAccount: invitedMember.rootAccount,
     controllerAccount: invitedMember.controllerAccount,
-    metadata: new MemberMetadata({
-      ...invitedMember.metadata,
-      id: undefined,
-    }),
+    metadata: await saveMembershipMetadata(store, invitedMember),
   })
 
-  await store.save<MemberMetadata>(memberInvitedEvent.metadata)
   await store.save<MemberInvitedEvent>(memberInvitedEvent)
+
   // Update the other side of event<->member relationship
   entryMethod.memberInvitedEventId = memberInvitedEvent.id
   await store.save<Membership>(invitedMember)
@@ -526,46 +607,68 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   const { event, store } = ctx
   const [memberId, message] = new Members.MemberRemarkedEvent(event).params
 
-  const genericFields = genericEventFields(event)
-  // unique identifier for metaprotocol tx
-  const { id: metaprotocolTxIdentifier } = genericFields as BaseModel
-
-  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
-    ...genericFields,
-    status: new MetaprotocolTransactionPending(),
-  })
-
-  // save metaprotocol tx status event
-  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
-
   try {
     const decodedMessage = MemberRemarked.decode(message.toU8a(true))
-    const messageType = decodedMessage.memberRemarked
 
-    // update MetaprotocolTransactionStatusEvent
-    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+    const metaTransactionInfo = await processMemberRemark(store, event, memberId, decodedMessage)
 
-    if (!messageType) {
-      inconsistentState('Unsupported message type in member_remark action')
-    } else if (messageType === 'reactVideo') {
-      await processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
-    } else if (messageType === 'reactComment') {
-      await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
-    } else if (messageType === 'createComment') {
-      const comment = await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
-      statusSuccessful.commentCreatedId = comment.id
-    } else if (messageType === 'editComment') {
-      const comment = await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
-      statusSuccessful.commentEditedId = comment.id
-    } else if (messageType === 'deleteComment') {
-      const comment = await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
-      statusSuccessful.commentDeletedId = comment.id
-    }
+    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
-    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+    // emit log event
+    logger.info('Member remarked', { decodedMessage })
   } catch (e) {
-    // update MetaprotocolTransactionStatusEvent
-    const statusErrored = new MetaprotocolTransactionErrored()
-    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
+    // emit log event
+    logger.info(`Bad metadata for member's remark`, { e })
+
+    // save metaprotocol info
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for member's remark`)
   }
+}
+
+async function processMemberRemark(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  memberId: MemberId,
+  decodedMessage: MemberRemarked
+): Promise<Partial<MetaprotocolTransactionSuccessful>> {
+  const messageType = decodedMessage.memberRemarked
+
+  if (messageType === 'reactVideo') {
+    await processReactVideoMessage(store, event, memberId, decodedMessage.reactVideo!)
+
+    return {}
+  }
+
+  if (messageType === 'reactComment') {
+    await processReactCommentMessage(store, event, memberId, decodedMessage.reactComment!)
+
+    return {}
+  }
+
+  if (messageType === 'createComment') {
+    const comment = await processCreateCommentMessage(store, event, memberId, decodedMessage.createComment!)
+
+    return { commentCreatedId: comment.id }
+  }
+
+  if (messageType === 'editComment') {
+    const comment = await processEditCommentMessage(store, event, memberId, decodedMessage.editComment!)
+    return { commentEditedId: comment.id }
+  }
+
+  if (messageType === 'deleteComment') {
+    const comment = await processDeleteCommentMessage(store, event, memberId, decodedMessage.deleteComment!)
+    return { commentDeletedId: comment.id }
+  }
+
+  if (messageType === 'createVideoCategory') {
+    const createParams = decodedMessage.createVideoCategory as ICreateVideoCategory
+
+    const videoCategory = await createVideoCategory(store, event, createParams)
+
+    return { videoCategoryCreatedId: videoCategory.id }
+  }
+
+  // unknown message type
+  return inconsistentState('Unsupported message type in member_remark action', messageType)
 }

@@ -19,16 +19,8 @@ use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
 use project_token::{types::*, AccountInfoByTokenAndMember};
 use sp_arithmetic::traits::{One, Zero};
+use sp_core::U256;
 use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
-use storage::{
-    DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
-    Module as Storage,
-};
-use working_group::{
-    ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    StakeParameters, StakePolicy, WorkerById, WorkerId,
-};
-
 use sp_std::{
     cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -36,6 +28,14 @@ use sp_std::{
     iter::FromIterator,
     vec,
     vec::Vec,
+};
+use storage::{
+    DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
+    Module as Storage,
+};
+use working_group::{
+    ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
+    StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
 
 // The storage working group instance alias.
@@ -47,36 +47,35 @@ pub type DistributionWorkingGroupInstance = working_group::Instance9;
 // Content working group instance alias.
 pub type ContentWorkingGroupInstance = working_group::Instance3;
 
-const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
+const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
     let mut res = [0; N];
 
     let mut i = 0;
-    while i < N as u128 {
+    while i < N as u64 {
         res[i as usize] = init + i;
         i += 1;
     }
 
     res
 }
-pub const DEFAULT_MEMBER_ID: u128 = 500;
+pub const DEFAULT_MEMBER_ID: u64 = 500;
 
-pub const CURATOR_IDS_INIT: u128 = 600;
+pub const CURATOR_IDS_INIT: u64 = 600;
 pub const MAX_CURATOR_IDS: usize = 100;
 
-pub const CURATOR_IDS: [u128; MAX_CURATOR_IDS] =
-    gen_array_u128::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
+pub const CURATOR_IDS: [u64; MAX_CURATOR_IDS] = gen_array_u64::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
 
-pub const COLABORATOR_IDS_INIT: u128 = 700;
+pub const COLABORATOR_IDS_INIT: u64 = 700;
 pub const MAX_COLABORATOR_IDS: usize = 100;
 
-pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
-    gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
+pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
+    gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
 pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 
-const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
-const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
-const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
+const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001; // must match the mocks
+const CONTENT_WG_LEADER_ACCOUNT_ID: u64 = 100005; // must match the mocks LEAD_ACCOUNT_ID
+const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004; // must match the mocks
 /**
  * FIXME: Since we have no bounds for this in the runtime, as this value relies solely on the
  * genesis config, we use this arbitrary constant for benchmarking purposes
@@ -157,25 +156,19 @@ fn storage_bucket_objs_size_limit<T: Config>() -> u64 {
 }
 
 pub trait CreateAccountId {
-    fn create_account_id(id: u128) -> Self;
+    fn create_account_id(id: u64) -> Self;
 }
 
-impl CreateAccountId for u128 {
-    fn create_account_id(id: u128) -> Self {
-        id
-    }
-}
-
-impl CreateAccountId for u64 {
-    fn create_account_id(id: u128) -> Self {
-        id.try_into().unwrap()
+impl CreateAccountId for U256 {
+    fn create_account_id(id: u64) -> Self {
+        U256([id, 0, 0, 0])
     }
 }
 
 const SEED: u32 = 0;
 
 impl CreateAccountId for sp_core::crypto::AccountId32 {
-    fn create_account_id(id: u128) -> Self {
+    fn create_account_id(id: u64) -> Self {
         account::<Self>("default", id.try_into().unwrap(), SEED)
     }
 }
@@ -202,7 +195,7 @@ impl<T> RuntimeConfig for T where
 {
 }
 
-fn get_signed_account_id<T>(account_id: u128) -> T::Origin
+fn get_signed_account_id<T>(account_id: u64) -> T::Origin
 where
     T::AccountId: CreateAccountId,
     T: Config,
@@ -224,13 +217,13 @@ fn assert_past_event<T: Config>(
     assert_eq!(event, &expected_event);
 }
 
-fn get_byte(num: u128, byte_number: u8) -> u8 {
+fn get_byte(num: u64, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Config>(id: u128) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u64) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -320,7 +313,7 @@ fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
 
 fn insert_worker<T, I>(
     leader_acc: T::AccountId,
-    id: u128,
+    id: u64,
 ) -> (<T as MembershipTypes>::ActorId, T::AccountId)
 where
     T::AccountId: CreateAccountId,
@@ -355,7 +348,7 @@ where
     (worker_id, account_id)
 }
 
-fn insert_leader<T, I>(id: u128) -> (<T as MembershipTypes>::ActorId, T::AccountId)
+fn insert_leader<T, I>(id: u64) -> (<T as MembershipTypes>::ActorId, T::AccountId)
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig + working_group::Config<I>,
@@ -409,7 +402,7 @@ where
     insert_leader::<T, ContentWorkingGroupInstance>(CONTENT_WG_LEADER_ACCOUNT_ID)
 }
 
-fn insert_curator<T>(id: u128) -> (T::CuratorId, T::AccountId)
+fn insert_curator<T>(id: u64) -> (T::CuratorId, T::AccountId)
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
@@ -430,7 +423,7 @@ fn initial_balance<T: balances::Config>() -> T::Balance {
     1000000u32.into()
 }
 
-fn member_funded_account<T: RuntimeConfig>(id: u128) -> (T::AccountId, T::MemberId)
+fn member_funded_account<T: RuntimeConfig>(id: u64) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
 {
@@ -1228,10 +1221,10 @@ fn worst_case_scenario_initial_allocation<T: RuntimeConfig>(
 where
     T::AccountId: CreateAccountId,
 {
-    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    let start_member_id: u64 = membership::Module::<T>::members_created().saturated_into();
     (0..members_num)
         .map(|i| {
-            let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+            let (_, member_id) = member_funded_account::<T>(start_member_id + i as u64);
             let allocation = TokenAllocationOf::<T> {
                 amount: 100u32.into(),
                 vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
@@ -1324,11 +1317,11 @@ fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
 where
     T::AccountId: CreateAccountId,
 {
-    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    let start_member_id: u64 = membership::Module::<T>::members_created().saturated_into();
     Transfers(
         (0..num)
             .map(|i| {
-                let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+                let (_, member_id) = member_funded_account::<T>(start_member_id + i as u64);
                 let payment = PaymentWithVestingOf::<T> {
                     amount: 100u32.into(),
                     vesting_schedule: Some(default_vesting_schedule_params::<T>()),

@@ -1,3 +1,4 @@
+use crate::BalanceOf;
 use derive_fixture::Fixture;
 use derive_new::new;
 use frame_support::dispatch::DispatchResult;
@@ -129,6 +130,10 @@ pub fn set_default_update_storage_buckets_per_bag_limit() {
     let new_limit = 7;
 
     set_update_storage_buckets_per_bag_limit(new_limit);
+}
+
+pub fn init_module_acc_balance() -> BalanceOf<Test> {
+    <Test as crate::Config>::ModuleAccountInitialBalance::get() as u64
 }
 
 pub struct EventFixture;
@@ -691,7 +696,11 @@ impl DeleteDataObjectsFixture {
             .collect::<Vec<_>>();
 
         let state_bloat_bond = self.data_object_ids.iter().fold(0u64, |acc, id| {
-            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).state_bloat_bond)
+            acc.saturating_add(
+                Storage::data_object_by_id(&self.bag_id, id)
+                    .state_bloat_bond
+                    .amount,
+            )
         });
 
         let total_size_removed = self.data_object_ids.iter().fold(0u64, |acc, id| {
@@ -854,14 +863,14 @@ impl DeleteDynamicBagFixture {
 
         let state_bloat_bond = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
             .fold(0, |acc: u64, (_, obj)| {
-                acc.saturating_add(obj.state_bloat_bond)
+                acc.saturating_add(obj.state_bloat_bond.amount)
             });
 
         let total_size_removed = bag.objects_total_size;
         let total_number_removed = bag.objects_number;
 
         let actual_result =
-            Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
+            Storage::delete_dynamic_bag(&self.deletion_account_id, self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
 
@@ -1125,6 +1134,9 @@ impl CreateDynamicBagFixture {
             params: DynBagCreationParameters::<Test> {
                 bag_id: DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID),
                 state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(
+                ),
+                expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
                 ..Default::default()
             },
         }

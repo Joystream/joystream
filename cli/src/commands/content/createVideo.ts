@@ -5,13 +5,15 @@ import { VideoInputParameters, VideoFileMetadata } from '../../Types'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
 import { VideoId } from '@joystream/types/primitives'
-import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
+import { ContentMetadata, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
+import ExitCodes from '../../ExitCodes'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class CreateVideoCommand extends UploadCommandBase {
-  static description = 'Create video under specific channel inside content directory.'
+  static description = 'Create video (non nft) under specific channel inside content directory.'
   static flags = {
     input: flags.string({
       char: 'i',
@@ -47,35 +49,65 @@ export default class CreateVideoCommand extends UploadCommandBase {
     // Get context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
+
+    // Ensure actor is authorized to create video
+    const requiredPermissions: ChannelActionPermission['type'][] = ['AddVideo']
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channel owner or collaborator with ${requiredPermissions} permissions can add video to channel ${channelId}!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
 
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
 
-    // Assets
-    const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
-    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
+    // Video assets
+    const { videoPath, thumbnailPhotoPath, subtitles } = videoCreationParametersInput
+    const [resolvedVideoAssets, videoAssetIndices] = await this.resolveAndValidateAssets(
+      { videoPath, thumbnailPhotoPath },
+      input
+    )
     // Set assets indices in the metadata
-    meta.video = assetIndices.videoPath
-    meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
+    meta.video = videoAssetIndices.videoPath
+    meta.thumbnailPhoto = videoAssetIndices.thumbnailPhotoPath
+
+    // Subtitle assets
+    const resolvedSubtitleAssets = await Promise.all(
+      (subtitles || []).map(async (subtitleInputParameters, i) => {
+        const { subtitleAssetPath } = subtitleInputParameters
+        const [[resolvedAsset], assetIndices] = await this.resolveAndValidateAssets({ subtitleAssetPath }, input)
+        // Set assets indices in the metadata
+        if (meta.subtitles) {
+          meta.subtitles[i].newAsset =
+            assetIndices.subtitleAssetPath || 0 + Object.entries(videoAssetIndices).length + i
+        }
+        return resolvedAsset
+      })
+    )
 
     // Try to get video file metadata
-    if (assetIndices.videoPath !== undefined) {
-      const videoFileMetadata = await this.getVideoFileMetadata(resolvedAssets[assetIndices.videoPath].path)
+    if (videoAssetIndices.videoPath !== undefined) {
+      const videoFileMetadata = await this.getVideoFileMetadata(resolvedVideoAssets[videoAssetIndices.videoPath].path)
       this.log('Video media file parameters established:', videoFileMetadata)
       meta = this.setVideoMetadataDefaults(meta, videoFileMetadata)
     }
 
-    // Preare and send the extrinsic
-    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    // Prepare and send the extrinsic
+    const assets = await this.prepareAssetsForExtrinsic(
+      [...resolvedVideoAssets, ...resolvedSubtitleAssets],
+      'createVideo'
+    )
     const expectedVideoStateBloatBond = await this.getApi().videoStateBloatBond()
     const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
 
     const videoCreationParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets,
-      meta: metadataToBytes(VideoMetadata, meta),
+      meta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
       expectedVideoStateBloatBond,
       expectedDataObjectStateBloatBond,
       autoIssueNft: null,
@@ -99,10 +131,11 @@ export default class CreateVideoCommand extends UploadCommandBase {
     if (dataObjectsUploadedEvent) {
       const [objectIds] = dataObjectsUploadedEvent.data
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        [...objectIds.values()].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...objectIds.values()].map((id, index) => ({
+          dataObjectId: id,
+          path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
+        })),
         input
       )
     }

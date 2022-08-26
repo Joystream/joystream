@@ -39,7 +39,7 @@ yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 ../../query-node/start.sh
 
 # Start storage and distribution services
-REUSE_KEYS=true ./start-storage.sh
+./start-storage.sh
 
 # Run full tests reusing the existing keys
 REUSE_KEYS=true IGNORE_HIRED_LEADS=true ./run-test-scenario.sh $SCENARIO

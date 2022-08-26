@@ -1,6 +1,6 @@
 #![cfg(test)]
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, WithdrawReasons};
 use frame_support::StorageMap;
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
@@ -12,9 +12,21 @@ use super::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    Application, ApplyOnOpeningParameters, Config, DefaultInstance, Opening, OpeningType, RawEvent,
-    StakePolicy, Worker,
+    Application, ApplyOnOpeningParameters, BalanceOf, Config, DefaultInstance, Opening,
+    OpeningType, RawEvent, StakePolicy, Worker,
 };
+use staking_handler::StakingHandler;
+
+pub fn set_invitation_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
 
 pub struct EventFixture;
 impl EventFixture {

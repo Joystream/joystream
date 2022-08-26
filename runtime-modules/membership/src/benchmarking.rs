@@ -517,10 +517,10 @@ benchmarks! {
             controller_account: controller_account.clone(),
             handle: Some(handle.clone()),
             metadata,
-            credit_controller_account: (1000 as u32).saturated_into::<BalanceOf<T>>(),
-            apply_controller_account_invitation_lock: Some((500 as u32).saturated_into()),
-            credit_root_account: (2000 as u32).saturated_into::<BalanceOf<T>>(),
-            apply_root_account_invitation_lock: Some((1000 as u32).saturated_into()),
+            credit_controller_account: (5_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            apply_controller_account_invitation_lock: Some((3_000_000 as u32).saturated_into()),
+            credit_root_account: (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            apply_root_account_invitation_lock: Some((1_000_000 as u32).saturated_into()),
         };
 
         let member_id = <NextMemberId<T>>::get();
@@ -547,22 +547,22 @@ benchmarks! {
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(controller_account.clone()),
-            (1000 as u32).saturated_into::<BalanceOf<T>>(),
+            (5_000_000 as u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(root_account.clone()),
-            (2000 as u32).saturated_into::<BalanceOf<T>>(),
+            (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(controller_account),
-            (500 as u32).saturated_into::<BalanceOf<T>>(),
+            (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(root_account),
-            (1000 as u32).saturated_into::<BalanceOf<T>>(),
+            (1_000_000 as u32).saturated_into::<BalanceOf<T>>(),
         );
     }
 
@@ -802,7 +802,7 @@ benchmarks! {
     // impl_benchmark_test_suite!(Module, tests::mock::build_test_externalities(), tests::mock::Test)
     impl_benchmark_test_suite!(
         Module,
-        tests::mock::TestExternalitiesBuilder::<tests::mock::Test>::default().with_lead().build(),
+        tests::mock::TestExternalitiesBuilder::default().with_lead().build(),
         tests::mock::Test
     )
 }

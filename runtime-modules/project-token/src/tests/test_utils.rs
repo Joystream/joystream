@@ -207,13 +207,13 @@ pub fn default_vesting_schedule() -> VestingScheduleOf<Test> {
 impl<
         BlockNumber: From<u32> + Clone,
         Balance: Zero + From<u32> + Saturating + Clone,
-        ReserveBalance: Zero + Clone,
+        RepayableBloatBond: Default + Clone,
     >
     AccountData<
         VestingSchedule<BlockNumber, Balance>,
         Balance,
         StakingStatus<Balance>,
-        ReserveBalance,
+        RepayableBloatBond,
     >
 {
     pub fn new_with_amount(amount: Balance) -> Self {

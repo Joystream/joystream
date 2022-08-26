@@ -306,14 +306,13 @@ import {
   GetChannelsByIds,
   GetChannelsByIdsQuery,
   GetChannelsByIdsQueryVariables,
-  ChannelCategoryFieldsFragment,
-  GetChannelCategoryByIdQuery,
-  GetChannelCategoryByIdQueryVariables,
-  GetChannelCategoryById,
   VideoCategoryFieldsFragment,
   GetVideoCategoryByIdQuery,
   GetVideoCategoryByIdQueryVariables,
   GetVideoCategoryById,
+  GetVideoCategoriesQuery,
+  GetVideoCategoriesQueryVariables,
+  GetVideoCategories,
   OwnedNftFieldsFragment,
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
@@ -419,6 +418,9 @@ import {
   GetDistributionFamiliesAdndBucketsQuery,
   GetDistributionFamiliesAdndBucketsQueryVariables,
   GetDistributionFamiliesAdndBuckets,
+  GetVideoByIdQuery,
+  GetVideoByIdQueryVariables,
+  GetVideoById,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1202,19 +1204,19 @@ export class QueryNodeApi {
     )
   }
 
-  public async channelCategoryById(id: string): Promise<Maybe<ChannelCategoryFieldsFragment>> {
-    return this.uniqueEntityQuery<GetChannelCategoryByIdQuery, GetChannelCategoryByIdQueryVariables>(
-      GetChannelCategoryById,
-      { id },
-      'channelCategoryByUniqueInput'
-    )
-  }
-
   public async videoCategoryById(id: string): Promise<Maybe<VideoCategoryFieldsFragment>> {
     return this.uniqueEntityQuery<GetVideoCategoryByIdQuery, GetVideoCategoryByIdQueryVariables>(
       GetVideoCategoryById,
       { id },
       'videoCategoryByUniqueInput'
+    )
+  }
+
+  public async getVideoCategories(): Promise<VideoCategoryFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideoCategoriesQuery, GetVideoCategoriesQueryVariables>(
+      GetVideoCategories,
+      {},
+      'videoCategories'
     )
   }
 
@@ -1258,6 +1260,14 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async videoById(videoId: string): Promise<VideoFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetVideoByIdQuery, GetVideoByIdQueryVariables>(
+      GetVideoById,
+      { videoId },
+      'videoByUniqueInput'
+    )
   }
 
   public async getVideosByIds(ids: string[]): Promise<VideoFieldsFragment[]> {

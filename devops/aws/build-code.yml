@@ -1,7 +1,7 @@
 ---
 
 - name: Get latest Joystream code and run setup on all hosts
-  hosts: build,rpc
+  hosts: build,rpc,storage,distributors
   gather_facts: no
   tasks:
     - name: Get code from local or git repo

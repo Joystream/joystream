@@ -2,10 +2,10 @@
 /* eslint-disable */
 
 import type { ApiTypes } from '@polkadot/api-base/types';
-import type { BTreeMap, BTreeSet, Bytes, Compact, Option, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
+import type { BTreeMap, BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, WrapperKeepOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
+import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonProofElementRecord, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -233,10 +233,42 @@ declare module '@polkadot/api-base/types/submittable' {
        * Channel owner remark
        **/
       channelOwnerRemark: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
-      claimChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
+      /**
+       * Claim and withdraw reward in JOY from channel account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (H)` where:
+       * - `H` is the lenght of the provided merkle `proof`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
+      claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletCommonProofElementRecord> | (PalletCommonProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletCommonProofElementRecord>, PalletContentPullPaymentElement]>;
+      /**
+       * Claim reward in JOY from channel account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (H)` where:
+       * - `H` is the lenght of the provided merkle `proof`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
+      claimChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletCommonProofElementRecord> | (PalletCommonProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletCommonProofElementRecord>, PalletContentPullPaymentElement]>;
       /**
        * Claim channel's creator token patronage credit
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       claimCreatorTokenPatronageCredit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
@@ -271,10 +303,11 @@ declare module '@polkadot/api-base/types/submittable' {
        * <weight>
        * 
        * ## Weight
-       * `O (A + B + C)` where:
+       * `O (A + B + C + D)` where:
        * - `A` is the number of items in `params.assets.object_creation_list`
        * - `B` is `params.storage_buckets_num_witness`
        * - `C` is the length of open auction / english auction whitelist (if provided)
+       * - `D` is the length of `params.meta` (if provided)
        * - DB:
        * - `O(A + B + C)` - from the the generated weights
        * # </weight>
@@ -282,10 +315,28 @@ declare module '@polkadot/api-base/types/submittable' {
       createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedVideoStateBloatBond?: any; expectedDataObjectStateBloatBond?: any; storageBucketsNumWitness?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
       /**
        * Perform transfer of tokens as creator token issuer
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B)` where:
+       * - `A` is the number of entries in `outputs`
+       * - `B` is the length of the `metadata`
+       * - DB:
+       * - `O(A)` - from the the generated weights
+       * # </weight>
        **/
-      creatorTokenIssuerTransfer: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPaymentWithVesting) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting]>;
+      creatorTokenIssuerTransfer: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPaymentWithVesting, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting, Bytes]>;
       /**
        * Deissue channel's creator token
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       deissueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
@@ -323,14 +374,39 @@ declare module '@polkadot/api-base/types/submittable' {
       destroyNft: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Finalize an ended creator token sale
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       finalizeCreatorTokenSale: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Finalize an ended revenue split
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       finalizeRevenueSplit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Initialize creator token sale
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `params.metadata` (or 0 if not provided)
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       initCreatorTokenSale: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenSaleParams | { unitPrice?: any; upperBoundQuantity?: any; startsAt?: any; duration?: any; vestingScheduleParams?: any; capPerMember?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenSaleParams]>;
       /**
@@ -348,6 +424,15 @@ declare module '@polkadot/api-base/types/submittable' {
       initializeChannelTransfer: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, transferParams: PalletContentInitTransferParameters | { newCollaborators?: any; price?: any; newOwner?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor, PalletContentInitTransferParameters]>;
       /**
        * Issue creator token
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the number of entries in `params.initial_allocation` map
+       * - DB:
+       * - `O(A)` - from the the generated weights
+       * # </weight>
        **/
       issueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenIssuanceParameters | { initialAllocation?: any; symbol?: any; transferPolicy?: any; patronageRate?: any; revenueSplitRate?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenIssuanceParameters]>;
       /**
@@ -356,10 +441,26 @@ declare module '@polkadot/api-base/types/submittable' {
       issueNft: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, params: PalletContentNftTypesNftIssuanceParametersRecord | { royalty?: any; nftMetadata?: any; nonChannelOwner?: any; initTransactionalStatus?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesNftIssuanceParametersRecord]>;
       /**
        * Issue revenue split for a channel
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       issueRevenueSplit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, start: Option<u32> | null | object | string | Uint8Array, duration: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Option<u32>, u32]>;
       /**
        * Make channel's creator token permissionless
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       makeCreatorTokenPermissionless: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
@@ -385,6 +486,14 @@ declare module '@polkadot/api-base/types/submittable' {
       pickOpenAuctionWinner: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, winnerId: u64 | AnyNumber | Uint8Array, commit: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64, u128]>;
       /**
        * Reduce channel's creator token patronage rate to given value
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       reduceCreatorTokenPatronageRateTo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, targetRate: Permill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Permill]>;
       /**
@@ -462,6 +571,17 @@ declare module '@polkadot/api-base/types/submittable' {
        * Updates channel's NFT limit.
        **/
       updateChannelNftLimit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, nftLimitPeriod: PalletContentNftLimitPeriod | 'Daily' | 'Weekly' | number | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, limit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, PalletContentNftLimitPeriod, u64, u64]>;
+      /**
+       * Update channel payouts
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)` where:
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
       updateChannelPayouts: AugmentedSubmittable<(params: PalletContentUpdateChannelPayoutsParametersRecord | { commitment?: any; payload?: any; minCashoutAllowed?: any; maxCashoutAllowed?: any; channelCashoutsEnabled?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentUpdateChannelPayoutsParametersRecord]>;
       updateChannelPrivilegeLevel: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, newPrivilegeLevel: u8 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u8]>;
       /**
@@ -488,17 +608,26 @@ declare module '@polkadot/api-base/types/submittable' {
       updateGlobalNftLimit: AugmentedSubmittable<(nftLimitPeriod: PalletContentNftLimitPeriod | 'Daily' | 'Weekly' | number | Uint8Array, limit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentNftLimitPeriod, u64]>;
       /**
        * Update upcoming creator token sale
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateUpcomingCreatorTokenSale: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, newStartBlock: Option<u32> | null | object | string | Uint8Array, newDuration: Option<u32> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Option<u32>, Option<u32>]>;
       /**
        * <weight>
        * 
        * ## Weight
-       * `O (A + B + C + D)` where:
+       * `O (A + B + C + D + E)` where:
        * - `A` is params.assets_to_upload.object_creation_list.len() (if provided)
        * - `B` is params.assets_to_remove.len()
        * - `C` is `params.storage_buckets_num_witness` (if provided)
        * - `D` is the length of open auction / english auction whitelist (if provided)
+       * - `E` is the length of `params.new_meta` (if provided)
        * - DB:
        * - `O(A + B + C + D)` - from the the generated weights
        * # </weight>
@@ -509,6 +638,17 @@ declare module '@polkadot/api-base/types/submittable' {
        * Only lead can upload this value
        **/
       updateVideoStateBloatBond: AugmentedSubmittable<(newVideoStateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
+      /**
+       * Withdraw JOY from channel account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
       withdrawFromChannelBalance: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128]>;
     };
     contentWorkingGroup: {
@@ -2513,6 +2653,142 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       workerRemark: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
     };
+    multisig: {
+      /**
+       * Register approval for a dispatch to be made from a deterministic composite account if
+       * approved by a total of `threshold - 1` of `other_signatories`.
+       * 
+       * Payment: `DepositBase` will be reserved if this is the first approval, plus
+       * `threshold` times `DepositFactor`. It is returned once this dispatch happens or
+       * is cancelled.
+       * 
+       * The dispatch origin for this call must be _Signed_.
+       * 
+       * - `threshold`: The total number of approvals for this dispatch before it is executed.
+       * - `other_signatories`: The accounts (other than the sender) who can approve this
+       * dispatch. May not be empty.
+       * - `maybe_timepoint`: If this is the first approval, then this must be `None`. If it is
+       * not the first approval, then it must be `Some`, with the timepoint (block number and
+       * transaction index) of the first approval transaction.
+       * - `call_hash`: The hash of the call to be executed.
+       * 
+       * NOTE: If this is the final approval, you will want to use `as_multi` instead.
+       * 
+       * # <weight>
+       * - `O(S)`.
+       * - Up to one balance-reserve or unreserve operation.
+       * - One passthrough operation, one insert, both `O(S)` where `S` is the number of
+       * signatories. `S` is capped by `MaxSignatories`, with weight being proportional.
+       * - One encode & hash, both of complexity `O(S)`.
+       * - Up to one binary search and insert (`O(logS + S)`).
+       * - I/O: 1 read `O(S)`, up to 1 mutate `O(S)`. Up to one remove.
+       * - One event.
+       * - Storage: inserts one item, value size bounded by `MaxSignatories`, with a deposit
+       * taken for its lifetime of `DepositBase + threshold * DepositFactor`.
+       * ----------------------------------
+       * - DB Weight:
+       * - Read: Multisig Storage, [Caller Account]
+       * - Write: Multisig Storage, [Caller Account]
+       * # </weight>
+       **/
+      approveAsMulti: AugmentedSubmittable<(threshold: u16 | AnyNumber | Uint8Array, otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[], maybeTimepoint: Option<PalletMultisigTimepoint> | null | object | string | Uint8Array, callHash: U8aFixed | string | Uint8Array, maxWeight: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u16, Vec<AccountId32>, Option<PalletMultisigTimepoint>, U8aFixed, u64]>;
+      /**
+       * Register approval for a dispatch to be made from a deterministic composite account if
+       * approved by a total of `threshold - 1` of `other_signatories`.
+       * 
+       * If there are enough, then dispatch the call.
+       * 
+       * Payment: `DepositBase` will be reserved if this is the first approval, plus
+       * `threshold` times `DepositFactor`. It is returned once this dispatch happens or
+       * is cancelled.
+       * 
+       * The dispatch origin for this call must be _Signed_.
+       * 
+       * - `threshold`: The total number of approvals for this dispatch before it is executed.
+       * - `other_signatories`: The accounts (other than the sender) who can approve this
+       * dispatch. May not be empty.
+       * - `maybe_timepoint`: If this is the first approval, then this must be `None`. If it is
+       * not the first approval, then it must be `Some`, with the timepoint (block number and
+       * transaction index) of the first approval transaction.
+       * - `call`: The call to be executed.
+       * 
+       * NOTE: Unless this is the final approval, you will generally want to use
+       * `approve_as_multi` instead, since it only requires a hash of the call.
+       * 
+       * Result is equivalent to the dispatched result if `threshold` is exactly `1`. Otherwise
+       * on success, result is `Ok` and the result from the interior call, if it was executed,
+       * may be found in the deposited `MultisigExecuted` event.
+       * 
+       * # <weight>
+       * - `O(S + Z + Call)`.
+       * - Up to one balance-reserve or unreserve operation.
+       * - One passthrough operation, one insert, both `O(S)` where `S` is the number of
+       * signatories. `S` is capped by `MaxSignatories`, with weight being proportional.
+       * - One call encode & hash, both of complexity `O(Z)` where `Z` is tx-len.
+       * - One encode & hash, both of complexity `O(S)`.
+       * - Up to one binary search and insert (`O(logS + S)`).
+       * - I/O: 1 read `O(S)`, up to 1 mutate `O(S)`. Up to one remove.
+       * - One event.
+       * - The weight of the `call`.
+       * - Storage: inserts one item, value size bounded by `MaxSignatories`, with a deposit
+       * taken for its lifetime of `DepositBase + threshold * DepositFactor`.
+       * -------------------------------
+       * - DB Weight:
+       * - Reads: Multisig Storage, [Caller Account], Calls (if `store_call`)
+       * - Writes: Multisig Storage, [Caller Account], Calls (if `store_call`)
+       * - Plus Call Weight
+       * # </weight>
+       **/
+      asMulti: AugmentedSubmittable<(threshold: u16 | AnyNumber | Uint8Array, otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[], maybeTimepoint: Option<PalletMultisigTimepoint> | null | object | string | Uint8Array, call: WrapperKeepOpaque<Call> | object | string | Uint8Array, storeCall: bool | boolean | Uint8Array, maxWeight: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u16, Vec<AccountId32>, Option<PalletMultisigTimepoint>, WrapperKeepOpaque<Call>, bool, u64]>;
+      /**
+       * Immediately dispatch a multi-signature call using a single approval from the caller.
+       * 
+       * The dispatch origin for this call must be _Signed_.
+       * 
+       * - `other_signatories`: The accounts (other than the sender) who are part of the
+       * multi-signature, but do not participate in the approval process.
+       * - `call`: The call to be executed.
+       * 
+       * Result is equivalent to the dispatched result.
+       * 
+       * # <weight>
+       * O(Z + C) where Z is the length of the call and C its execution weight.
+       * -------------------------------
+       * - DB Weight: None
+       * - Plus Call Weight
+       * # </weight>
+       **/
+      asMultiThreshold1: AugmentedSubmittable<(otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[], call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Vec<AccountId32>, Call]>;
+      /**
+       * Cancel a pre-existing, on-going multisig transaction. Any deposit reserved previously
+       * for this operation will be unreserved on success.
+       * 
+       * The dispatch origin for this call must be _Signed_.
+       * 
+       * - `threshold`: The total number of approvals for this dispatch before it is executed.
+       * - `other_signatories`: The accounts (other than the sender) who can approve this
+       * dispatch. May not be empty.
+       * - `timepoint`: The timepoint (block number and transaction index) of the first approval
+       * transaction for this dispatch.
+       * - `call_hash`: The hash of the call to be executed.
+       * 
+       * # <weight>
+       * - `O(S)`.
+       * - Up to one balance-reserve or unreserve operation.
+       * - One passthrough operation, one insert, both `O(S)` where `S` is the number of
+       * signatories. `S` is capped by `MaxSignatories`, with weight being proportional.
+       * - One encode & hash, both of complexity `O(S)`.
+       * - One event.
+       * - I/O: 1 read `O(S)`, one remove.
+       * - Storage: removes one item.
+       * ----------------------------------
+       * - DB Weight:
+       * - Read: Multisig Storage, [Caller Account], Refund Account, Calls
+       * - Write: Multisig Storage, [Caller Account], Refund Account, Calls
+       * # </weight>
+       **/
+      cancelAsMulti: AugmentedSubmittable<(threshold: u16 | AnyNumber | Uint8Array, otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[], timepoint: PalletMultisigTimepoint | { height?: any; index?: any } | string | Uint8Array, callHash: U8aFixed | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u16, Vec<AccountId32>, PalletMultisigTimepoint, U8aFixed]>;
+    };
     operationsWorkingGroupAlpha: {
       /**
        * Add a job opening for a regular worker/lead role.
@@ -3310,6 +3586,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Postconditions:
        * - Account information for `token_id` x `member_id` removed from storage
        * - bloat bond refunded to `member_id` controller account
+       * (or `bloat_bond.repayment_restricted_to` account)
        * 
        * <weight>
        * 
@@ -3475,13 +3752,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * <weight>
        * 
        * ## Weight
-       * `O (T)` where:
+       * `O (T + M)` where:
        * - `T` is the length of `outputs`
+       * - `M` is the length of `metadata`
        * - DB:
        * - `O(T)` - from the the generated weights
        * # </weight>
        **/
-      transfer: AugmentedSubmittable<(srcMemberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPayment) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenTransfersPayment]>;
+      transfer: AugmentedSubmittable<(srcMemberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPayment, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenTransfersPayment, Bytes]>;
     };
     proposalsCodex: {
       /**
@@ -4322,10 +4600,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       storageOperatorRemark: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storageBucketId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, Bytes]>;
-      /**
-       * Create a dynamic bag. Development mode.
-       **/
-      sudoCreateDynamicBag: AugmentedSubmittable<(params: PalletStorageDynBagCreationParametersRecord | { bagId?: any; objectCreationList?: any; stateBloatBondSourceAccountId?: any; expectedDataSizeFee?: any; expectedDataObjectStateBloatBond?: any; storageBuckets?: any; distributionBuckets?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletStorageDynBagCreationParametersRecord]>;
       /**
        * Upload new data objects. Development mode.
        **/

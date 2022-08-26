@@ -6,9 +6,6 @@ import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { assertNftOwner, assertAuctionAndBids } from './utils'
 import BN from 'bn.js'
 
-// settings
-const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
-
 export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
   private videoId: number
   private author: IMember

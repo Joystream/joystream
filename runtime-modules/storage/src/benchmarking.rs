@@ -22,7 +22,7 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters,
+    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters, DataObjectStorage,
     DistributionBucketByFamilyIdById, DistributionBucketFamilyById, DistributionBucketId,
     DynamicBagType, Module, Module as Pallet, RawEvent, StaticBagId, StorageBucketById,
     StorageBucketOperatorStatus, UploadParameters,
@@ -947,13 +947,12 @@ benchmarks! {
         let upload_parameters = UploadParameters::<T>{
             bag_id: bag_id.clone(),
             state_bloat_bond_source_account_id: worker_account_id.clone(),
-            expected_data_size_fee: Default::default(),
-            expected_data_object_state_bloat_bond: Default::default(),
+            expected_data_size_fee: Module::<T>::data_object_per_mega_byte_fee(),
+            expected_data_object_state_bloat_bond: Module::<T>::data_object_state_bloat_bond_value(),
             object_creation_list: object_parameters
         };
 
-        Module::<T>::sudo_upload_data_objects(
-            RawOrigin::Root.into(),
+        <Module::<T> as DataObjectStorage::<T>>::upload_data_objects(
             upload_parameters,
         )
         .unwrap();

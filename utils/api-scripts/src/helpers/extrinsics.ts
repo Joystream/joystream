@@ -6,6 +6,7 @@ import { DispatchError } from '@polkadot/types/interfaces/system'
 import { TypeRegistry } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
+import { sortAddresses } from '@polkadot/util-crypto'
 
 // TODO: Move to @joystream/js soon
 
@@ -40,17 +41,122 @@ export class ExtrinsicsHelper {
     return nonce
   }
 
+  async sendAndCheckSudo(
+    tx: SubmittableExtrinsic<'promise'>,
+    errorMsg?: string,
+    wrap = true
+  ): Promise<ISubmittableResult> {
+    const sudoUri = process.env.SUDO_URI || '//Alice'
+    const sudoMultiKeys = (process.env.SUDO_MULTISIG_KEYS || '').split(',').filter((v) => v)
+    const sudoMultiUris = (process.env.SUDO_MULTISIG_URIS || '').split(',').filter((v) => v)
+    tx = wrap ? this.api.tx.sudo.sudo(tx) : tx
+
+    if (sudoMultiKeys.length && sudoMultiUris.length) {
+      const sudoSigners = sudoMultiUris.map((u) => getKeyFromSuri(u))
+      console.log(`Using multisig sudo`)
+      console.log('Multisig keys:', sudoMultiKeys)
+      console.log('Multisig threshold', sudoSigners.length)
+      console.log(
+        'Signers:',
+        sudoSigners.map((s) => s.address)
+      )
+      return this.sendAndCheckMulisig(sudoSigners, sudoMultiKeys, tx, errorMsg)
+    } else {
+      const sudoKey = getKeyFromSuri(sudoUri)
+      console.log(`Using sudo key: ${sudoKey.address}`)
+      return (await this.sendAndCheck(sudoKey, [tx], errorMsg))[0]
+    }
+  }
+
+  async sendAndCheckMulisig(
+    signers: KeyringPair[],
+    keys: string[],
+    tx: SubmittableExtrinsic<'promise'>,
+    errorMsg?: string
+  ): Promise<ISubmittableResult> {
+    if (!signers.length || !keys.length) {
+      throw new Error('sendAndCheckMulisig: signers.length and keys.length must be > 0')
+    }
+    const otherKeys = (s: KeyringPair) =>
+      sortAddresses(
+        keys.filter((k) => k !== s.address),
+        JOYSTREAM_ADDRESS_PREFIX
+      )
+    if (signers.length === 1) {
+      const multiTx = this.api.tx.multisig.asMultiThreshold1(otherKeys(signers[0]), tx)
+      return (await this.sendAndCheck(signers[0], [multiTx], errorMsg))[0]
+    }
+    const maxWeight = 1_000_000_000_000
+    const baseTx = this.api.tx.multisig.approveAsMulti(
+      signers.length,
+      otherKeys(signers[0]),
+      null,
+      tx.unwrap().hash,
+      maxWeight
+    )
+    const [result] = await this.sendAndCheck(signers[0], [baseTx], errorMsg)
+    const inBlockHash = result.status.asInBlock
+    const inBlockBlock = (await this.api.rpc.chain.getBlock(inBlockHash)).block
+    const inBlockNumber = inBlockBlock.header.number.toNumber()
+    const inBlockIndex = inBlockBlock.extrinsics.findIndex((tx) => tx.hash.eq(baseTx.hash))
+    const otherTxs = await Promise.all(
+      signers.slice(1).map(async (s, i) => {
+        const nonce = await this.nextNonce(s.address)
+        if (i === signers.length - 2) {
+          return this.api.tx.multisig
+            .asMulti(
+              signers.length,
+              otherKeys(s),
+              { height: inBlockNumber, index: inBlockIndex },
+              tx.unwrap().toHex(),
+              false,
+              maxWeight
+            )
+            .signAsync(s, { nonce })
+        } else {
+          return this.api.tx.multisig
+            .approveAsMulti(
+              signers.length,
+              otherKeys(s),
+              { height: inBlockNumber, index: inBlockIndex },
+              tx.unwrap().hash,
+              maxWeight
+            )
+            .signAsync(s, { nonce })
+        }
+      })
+    )
+    const results = await this.sendAndCheckSigned(otherTxs, errorMsg)
+    return results[results.length - 1]
+  }
+
   async sendAndCheck(
     sender: KeyringPair,
     extrinsics: SubmittableExtrinsic<'promise'>[],
-    errorMessage: string
+    errorMessage?: string
   ): Promise<ISubmittableResult[]> {
+    const signedExtrinsics = await Promise.all(
+      extrinsics.map(async (tx) => {
+        const nonce = await this.nextNonce(sender.address)
+        return tx.signAsync(sender, { nonce })
+      })
+    )
+    return this.sendAndCheckSigned(signedExtrinsics, errorMessage)
+  }
+
+  async sendAndCheckSigned(
+    extrinsics: SubmittableExtrinsic<'promise'>[],
+    errorMessage?: string
+  ): Promise<ISubmittableResult[]> {
+    errorMessage = errorMessage || 'sendAndCheckSigned'
     const promises: Promise<ISubmittableResult>[] = []
     for (const tx of extrinsics) {
-      const nonce = await this.nextNonce(sender.address)
+      if (!tx.isSigned) {
+        throw new Error(`${errorMessage}: Extrinsic not signed!`)
+      }
       promises.push(
         new Promise<ISubmittableResult>((resolve, reject) => {
-          tx.signAndSend(sender, { nonce }, (result) => {
+          tx.send((result) => {
             let txError: string | null = null
             if (result.isError) {
               txError = `Transaction failed with status: ${result.status.type}`
@@ -81,7 +187,7 @@ export class ExtrinsicsHelper {
                   }
                 })
             }
-          })
+          }).catch((e: Error) => reject(new Error(`${errorMessage}: ${e.message}`)))
         })
       )
     }
