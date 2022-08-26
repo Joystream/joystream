@@ -4461,11 +4461,11 @@ impl<T: Config> Module<T> {
     }
 
     // calculates nft issuance weights
-    fn create_issue_nft_weight(params: &NftIssuanceParameters<T>) -> Weight{
+    fn create_issue_nft_weight(params: &NftIssuanceParameters<T>) -> Weight {
         let whitelist_size = match &params.init_transactional_status {
             InitTransactionalStatus::<T>::EnglishAuction(params) => params.whitelist.len() as u32,
             InitTransactionalStatus::<T>::OpenAuction(params) => params.whitelist.len() as u32,
-            _ => 0u32
+            _ => 0u32,
         };
         let metadata_size = params.nft_metadata.len() as u32;
         WeightInfoContent::<T>::issue_nft(whitelist_size, metadata_size)

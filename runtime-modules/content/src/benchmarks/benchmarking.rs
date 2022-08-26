@@ -5,7 +5,7 @@ use crate::permissions::*;
 use crate::types::*;
 use crate::{
     assert_lt,
-    nft::{NftOwner, TransactionalStatus, OpenAuctionParams, Nft},
+    nft::{Nft, NftOwner, OpenAuctionParams, TransactionalStatus},
     Call, ChannelById, Config, ContentActor, Event, Module as Pallet,
 };
 use crate::{ContentTreasury, UpdateChannelPayoutsParameters};
