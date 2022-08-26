@@ -1067,6 +1067,7 @@ fn transfer_ok_with_invitation_locked_funds() {
                 src_member_id,
                 token_id,
                 outputs![(dst1, amount), (dst2, amount), (dst3, amount)],
+                vec![]
             ));
 
             assert_eq!(
@@ -1125,7 +1126,8 @@ fn transfer_fails_with_insufficient_locked_funds() {
                 origin!(src_acc),
                 src_member_id,
                 token_id,
-                outputs![(dst, amount)]
+                outputs![(dst, amount)],
+                vec![]
             ),
             Error::<Test>::InsufficientJoyBalance
         );
@@ -1139,7 +1141,8 @@ fn transfer_fails_with_insufficient_locked_funds() {
                 origin!(src_acc),
                 src_member_id,
                 token_id,
-                outputs![(dst, amount)]
+                outputs![(dst, amount)],
+                vec![]
             ),
             Error::<Test>::InsufficientJoyBalance
         );
@@ -1172,7 +1175,8 @@ fn transfer_fails_with_incompatible_locked_funds() {
                 origin!(src_acc),
                 src_member_id,
                 token_id,
-                outputs![(dst, amount)]
+                outputs![(dst, amount)],
+                vec![]
             ),
             Error::<Test>::InsufficientJoyBalance
         );
@@ -1710,6 +1714,7 @@ fn issuer_transfer_ok_with_invitation_locked_funds() {
                     (dst2, amount, None),
                     (dst3, amount, None)
                 ],
+                vec![]
             ));
 
             assert_eq!(
@@ -1768,7 +1773,8 @@ fn issuer_transfer_fails_with_insufficient_locked_funds() {
                 token_id,
                 src_member_id,
                 src_acc,
-                issuer_outputs![(dst, amount, None)]
+                issuer_outputs![(dst, amount, None)],
+                vec![]
             ),
             Error::<Test>::InsufficientJoyBalance
         );
@@ -1782,7 +1788,8 @@ fn issuer_transfer_fails_with_insufficient_locked_funds() {
                 token_id,
                 src_member_id,
                 src_acc,
-                issuer_outputs![(dst, amount, None)]
+                issuer_outputs![(dst, amount, None)],
+                vec![]
             ),
             Error::<Test>::InsufficientJoyBalance
         );
@@ -1815,7 +1822,8 @@ fn issuer_transfer_fails_with_incompatible_locked_funds() {
                 token_id,
                 src_member_id,
                 src_acc,
-                issuer_outputs![(dst, amount, None)]
+                issuer_outputs![(dst, amount, None)],
+                vec![]
             ),
             Error::<Test>::InsufficientJoyBalance
         );

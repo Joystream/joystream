@@ -231,9 +231,11 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        if MEMBER_IDS.contains(member_id)
+        if Membership::membership(member_id).is_some()
+            || MEMBER_IDS.contains(member_id)
             || COLABORATOR_IDS.contains(member_id)
             || CURATOR_IDS.contains(member_id)
+            || LEAD_MEMBER_ID == *member_id
         {
             true
         } else {
@@ -246,11 +248,11 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId> {
-        match *curator_id {
+        ContentWorkingGroup::get_worker_member_id(curator_id).or_else(|| match *curator_id {
             DEFAULT_CURATOR_ID => Some(DEFAULT_CURATOR_MEMBER_ID),
             UNAUTHORIZED_CURATOR_ID => Some(UNAUTHORIZED_CURATOR_MEMBER_ID),
             _ => None,
-        }
+        })
     }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
@@ -266,14 +268,15 @@ impl ContentActorAuthenticator for Test {
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
         let controller_account_id = account(*member_id);
-        if Membership::is_member_controller_account(member_id, account_id) {
+        if Membership::is_member_controller_account(member_id, account_id)
+            || (*account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID && *member_id == DEFAULT_MEMBER_ID)
+        {
             true
-        } else if MEMBER_IDS.contains(member_id) {
-            *account_id == controller_account_id
-                || (*account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID && *member_id == DEFAULT_MEMBER_ID)
-        } else if COLABORATOR_IDS.contains(member_id) {
-            *account_id == controller_account_id
-        } else if CURATOR_IDS.contains(member_id) {
+        } else if MEMBER_IDS.contains(member_id)
+            || COLABORATOR_IDS.contains(member_id)
+            || CURATOR_IDS.contains(member_id)
+            || LEAD_MEMBER_ID == *member_id
+        {
             *account_id == controller_account_id
         } else {
             false
@@ -484,7 +487,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -499,7 +502,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -515,7 +518,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -541,109 +544,7 @@ impl common::membership::MemberOriginValidator<Origin, u64, U256> for () {
 thread_local! {
     pub static CONTENT_WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
 }
-// Weights info stub
-pub struct Weights;
-impl working_group::WeightInfo for Weights {
-    fn on_initialize_leaving(_: u32) -> u64 {
-        unimplemented!()
-    }
 
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn apply_on_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_lead() -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_role_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn cancel_opening() -> u64 {
-        unimplemented!()
-    }
-
-    fn withdraw_application() -> u64 {
-        unimplemented!()
-    }
-
-    fn slash_stake(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_lead(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn increase_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn decrease_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn spend_from_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_amount() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_status_text(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn add_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn lead_remark() -> u64 {
-        unimplemented!()
-    }
-
-    fn worker_remark() -> u64 {
-        unimplemented!()
-    }
-
-    fn fund_working_group_budget() -> u64 {
-        unimplemented!()
-    }
-}
 pub struct ContentWG;
 impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for ContentWG {
     fn get_budget() -> u64 {
@@ -842,7 +743,7 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 30;
+    pub const MaxWorkerNumberLimit: u32 = 10;
     pub const LockId: LockIdentifier = [9; 8];
     pub const LockId2: LockIdentifier = [10; 8];
     pub const LockId3: LockIdentifier = [11; 8];
@@ -963,11 +864,11 @@ impl MembershipInfoProvider<Test> for TestMemberships {
     ) -> Result<AccountId, DispatchError> {
         Membership::controller_account_id(member_id).or_else(|_| {
             let account_id = account(member_id);
-            if MEMBER_IDS.contains(&member_id) {
-                Ok(account_id)
-            } else if COLABORATOR_IDS.contains(&member_id) {
-                Ok(account_id)
-            } else if CURATOR_IDS.contains(&member_id) {
+            if MEMBER_IDS.contains(&member_id)
+                || COLABORATOR_IDS.contains(&member_id)
+                || CURATOR_IDS.contains(&member_id)
+                || member_id == LEAD_MEMBER_ID
+            {
                 Ok(account_id)
             } else {
                 Err(DispatchError::Other("no account found"))
@@ -990,15 +891,12 @@ impl MemberOriginValidator<Origin, u64, U256> for TestMemberships {
         Ok(sender)
     }
 
-    fn is_member_controller_account(member_id: &u64, _account_id: &U256) -> bool {
-        if MEMBER_IDS.contains(&member_id)
+    fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
+        Membership::is_member_controller_account(member_id, account_id)
+            || MEMBER_IDS.contains(&member_id)
             || COLABORATOR_IDS.contains(&member_id)
             || CURATOR_IDS.contains(&member_id)
-        {
-            true
-        } else {
-            false
-        }
+            || LEAD_MEMBER_ID == *member_id
     }
 }
 
