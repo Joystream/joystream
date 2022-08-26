@@ -1,37 +1,25 @@
-#![cfg(feature = "runtime-benchmarks")]
-
 mod benchmarking;
 
 use crate::{
+    nft::{EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters},
     permissions::*,
-    types::{
-        ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, ChannelOwner,
-        StorageAssets, VideoCreationParameters,
-    },
-    ChannelBagWitness, Config, ContentActor, ContentModerationAction, EnglishAuctionParams,
-    InitTransactionalStatus, InitTransferParametersOf, ModerationPermissionsByLevel,
-    Module as Pallet, NextVideoId, NftIssuanceParameters,
+    types::*,
+    Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
+    Module as Pallet, NextVideoId,
 };
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
 use frame_support::{
     dispatch::DispatchError,
-    storage::{StorageMap, StorageValue},
-    traits::{Currency, Get, Instance},
+    storage::{IterableStorageMap, StorageDoubleMap, StorageMap, StorageValue},
+    traits::{Currency, Get, Instance, OnFinalize, OnInitialize},
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
-use sp_arithmetic::traits::One;
-use sp_runtime::SaturatedConversion;
-use sp_std::{
-    cmp::min,
-    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    convert::TryInto,
-    iter::FromIterator,
-    vec,
-    vec::Vec,
-};
+use project_token::{types::*, AccountInfoByTokenAndMember};
+use sp_arithmetic::traits::{One, Zero};
+use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
     Module as Storage,
@@ -40,6 +28,16 @@ use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
+
+use sp_std::{
+    cmp::min,
+    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    convert::TryInto,
+    iter::FromIterator,
+    vec,
+    vec::Vec,
+};
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -60,6 +58,7 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
 
     res
 }
+pub const DEFAULT_MEMBER_ID: u128 = 500;
 
 pub const CURATOR_IDS_INIT: u128 = 600;
 pub const MAX_CURATOR_IDS: usize = 100;
@@ -73,25 +72,51 @@ pub const MAX_COLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u128; MAX_COLABORATOR_IDS] =
     gen_array_u128::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
+pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
+
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024;
+/**
+ * FIXME: Since we have no bounds for this in the runtime, as this value relies solely on the
+ * genesis config, we use this arbitrary constant for benchmarking purposes
+ */
+const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksize available for regular extrinsics
 
-const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
+// Creator tokens
+const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
+const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
+const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
+const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
+const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
+const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
+const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
+const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
+const DEFAULT_CRT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
+
+const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
+    ChannelActionPermission::UpdateChannelMetadata,
+    ChannelActionPermission::ManageNonVideoChannelAssets,
+    ChannelActionPermission::ManageChannelCollaborators,
+    ChannelActionPermission::UpdateVideoMetadata,
     ChannelActionPermission::AddVideo,
-    ChannelActionPermission::AgentRemark,
-    ChannelActionPermission::ClaimChannelReward,
+    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::DeleteChannel,
     ChannelActionPermission::DeleteVideo,
-    ChannelActionPermission::ManageChannelCollaborators,
-    ChannelActionPermission::ManageNonVideoChannelAssets,
-    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::ManageVideoNfts,
+    ChannelActionPermission::AgentRemark,
     ChannelActionPermission::TransferChannel,
-    ChannelActionPermission::UpdateChannelMetadata,
-    ChannelActionPermission::UpdateVideoMetadata,
+    ChannelActionPermission::ClaimChannelReward,
     ChannelActionPermission::WithdrawFromChannelBalance,
+    ChannelActionPermission::IssueCreatorToken,
+    ChannelActionPermission::ClaimCreatorTokenPatronage,
+    ChannelActionPermission::InitAndManageCreatorTokenSale,
+    ChannelActionPermission::CreatorTokenIssuerTransfer,
+    ChannelActionPermission::MakeCreatorTokenPermissionless,
+    ChannelActionPermission::ReduceCreatorTokenPatronageRate,
+    ChannelActionPermission::ManageRevenueSplits,
+    ChannelActionPermission::DeissueCreatorToken,
 ];
 
 const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
@@ -115,6 +140,13 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::DeleteNonVideoChannelAssets,
     ContentModerationAction::UpdateChannelNftLimits,
 ];
+
+#[macro_export]
+macro_rules! assert_lt {
+    ($a:expr, $b:expr) => {
+        assert!($a < $b, "Expected {:?} to be lower than {:?}", $a, $b);
+    };
+}
 
 const CONTENT_PAUSABLE_CHANNEL_FEATURE: [PausableChannelFeature; 7] = [
     PausableChannelFeature::ChannelFundsTransfer,
@@ -188,12 +220,18 @@ where
     RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
+    assert_past_event::<T>(expected_event, 0);
+}
+
+fn assert_past_event<T: Config>(
+    expected_event: <T as frame_system::Config>::Event,
+    index_from_last: u32,
+) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
+    let EventRecord { event, .. } = &events[events.len() - 1 - index_from_last as usize];
+    assert_eq!(event, &expected_event);
 }
 
 fn get_byte(num: u128, byte_number: u8) -> u8 {
@@ -590,9 +628,13 @@ type BloatBonds<T> = (
 
 fn setup_bloat_bonds<T>() -> Result<BloatBonds<T>, DispatchError>
 where
-    T: Config,
+    T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
+    // Setup lead if not already setup
+    if working_group::Pallet::<T, ContentWorkingGroupInstance>::current_lead().is_none() {
+        insert_content_leader::<T>();
+    }
     let content_lead_acc = T::AccountId::create_account_id(CONTENT_WG_LEADER_ACCOUNT_ID);
     let storage_lead_acc = T::AccountId::create_account_id(STORAGE_WG_LEADER_ACCOUNT_ID);
     // FIXME: Must be higher than existential deposit due to https://github.com/Joystream/joystream/issues/4033
@@ -691,7 +733,7 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
-    let meta = Some(vec![0u8].repeat(max_bytes_metadata as usize));
+    let meta = Some(vec![0xff].repeat(max_bytes_metadata as usize));
 
     ChannelCreationParameters::<T> {
         assets,
@@ -798,6 +840,41 @@ where
     Ok(channel_id)
 }
 
+type MemberChannelData<T> = (
+    <T as storage::Config>::ChannelId,      // channel id
+    <T as MembershipTypes>::MemberId,       // member id
+    <T as frame_system::Config>::AccountId, // member_account_id
+    <T as frame_system::Config>::AccountId, // content_lead_account_id
+);
+
+fn setup_worst_case_scenario_member_channel<T: Config>(
+    objects_num: u32,
+    storage_buckets_num: u32,
+    distribution_buckets_num: u32,
+    // benchmarks should always use "true" if possible (ie. the benchmarked tx
+    // is allowed during active transfer, for example - delete_channel)
+    with_transfer: bool,
+) -> Result<MemberChannelData<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (_, lead_account_id) = insert_content_leader::<T>();
+
+    let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+
+    let channel_id = setup_worst_case_scenario_channel::<T>(
+        member_account_id.clone(),
+        ChannelOwner::Member(member_id),
+        objects_num,
+        storage_buckets_num,
+        distribution_buckets_num,
+        with_transfer,
+    )?;
+
+    Ok((channel_id, member_id, member_account_id, lead_account_id))
+}
+
 fn setup_worst_case_curator_group_with_curators<T>(
     curators_len: u32,
 ) -> Result<T::CuratorGroupId, DispatchError>
@@ -823,14 +900,15 @@ where
         permissions_by_level,
     )?;
 
-    // We substract 1 from `next_worker_id`, because we're not counting the lead
+    // We substract 1 from the number of curators because we're not counting the lead
     let already_existing_curators_num =
-        working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
+        working_group::WorkerById::<T, ContentWorkingGroupInstance>::iter()
+            .count()
             .saturated_into::<u32>()
             .saturating_sub(1);
 
     assert!(
-        already_existing_curators_num + curators_len <= MAX_COLABORATOR_IDS as u32,
+        already_existing_curators_num + curators_len <= MAX_CURATOR_IDS as u32,
         "Too many curators created"
     );
 
@@ -851,7 +929,14 @@ where
     Ok(group_id)
 }
 
-#[allow(clippy::type_complexity)]
+type CuratorChannelData<T> = (
+    <T as storage::Config>::ChannelId,                // channel id
+    <T as ContentActorAuthenticator>::CuratorGroupId, // curator group id
+    <T as frame_system::Config>::AccountId,           // lead_account_id
+    <T as ContentActorAuthenticator>::CuratorId,      // curator_id
+    <T as frame_system::Config>::AccountId,           // curator_account_id
+);
+
 fn setup_worst_case_scenario_curator_channel<T>(
     objects_num: u32,
     storage_buckets_num: u32,
@@ -859,16 +944,7 @@ fn setup_worst_case_scenario_curator_channel<T>(
     // benchmarks should always use "true" unless initializing a transfer
     // is part of the benchmarks itself
     with_transfer: bool,
-) -> Result<
-    (
-        T::ChannelId,
-        T::CuratorGroupId,
-        T::AccountId,
-        T::CuratorId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<CuratorChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -900,24 +976,39 @@ where
     ))
 }
 
-#[allow(clippy::type_complexity)]
+fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
+    StorageAssets::<T> {
+        expected_data_size_fee: storage::Pallet::<T>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_object_candidates_helper(
+            num,                         // number of objects
+            T::MaxDataObjectSize::get(), // object size
+        ),
+    }
+}
+
 fn setup_worst_case_scenario_curator_channel_all_max<T>(
     with_transfer: bool,
-) -> Result<
-    (
-        T::ChannelId,
-        T::CuratorGroupId,
-        T::AccountId,
-        T::CuratorId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<CuratorChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
     setup_worst_case_scenario_curator_channel::<T>(
+        T::MaxNumberOfAssetsPerChannel::get(),
+        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        with_transfer,
+    )
+}
+
+fn setup_worst_case_scenario_member_channel_all_max<T>(
+    with_transfer: bool,
+) -> Result<MemberChannelData<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    setup_worst_case_scenario_member_channel::<T>(
         T::MaxNumberOfAssetsPerChannel::get(),
         T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
@@ -952,6 +1043,39 @@ where
     Ok(new_group_id)
 }
 
+pub fn all_channel_pausable_features_except(
+    except: BTreeSet<crate::PausableChannelFeature>,
+) -> BTreeSet<crate::PausableChannelFeature> {
+    [
+        crate::PausableChannelFeature::ChannelFundsTransfer,
+        crate::PausableChannelFeature::CreatorCashout,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::VideoNftIssuance,
+        crate::PausableChannelFeature::VideoCreation,
+        crate::PausableChannelFeature::ChannelUpdate,
+        crate::PausableChannelFeature::CreatorTokenIssuance,
+    ]
+    .iter()
+    .filter(|&&x| !except.contains(&x))
+    .copied()
+    .collect::<BTreeSet<_>>()
+}
+
+pub fn create_pull_payments_with_reward<T: Config>(
+    payments_number: u32,
+    cumulative_reward_earned: BalanceOf<T>,
+) -> Vec<PullPayment<T>> {
+    let mut payments = Vec::new();
+    for i in 1..=payments_number {
+        payments.push(PullPayment::<T> {
+            channel_id: (i as u64).into(),
+            cumulative_reward_earned,
+            reason: T::Hashing::hash_of(&b"reason".to_vec()),
+        });
+    }
+    payments
+}
+
 fn setup_video<T>(
     origin: T::Origin,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -979,6 +1103,7 @@ where
 
     let expected_video_state_bloat_bond = Pallet::<T>::video_state_bloat_bond_value();
     let meta = Some(vec![1u8].repeat(meta as usize));
+    let storage_buckets_num_witness = storage_buckets_num_witness::<T>(channel_id).unwrap();
 
     let params = VideoCreationParameters::<T> {
         assets,
@@ -986,6 +1111,7 @@ where
         auto_issue_nft,
         expected_data_object_state_bloat_bond,
         expected_video_state_bloat_bond,
+        storage_buckets_num_witness,
     };
 
     let video_id = NextVideoId::<T>::get();
@@ -1046,6 +1172,109 @@ fn channel_bag_witness<T: Config>(
     })
 }
 
+fn worst_case_scenario_video_nft_issuance_params<T>(whitelist_size: u32) -> NftIssuanceParameters<T>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let mut next_member_id = membership::Pallet::<T>::members_created();
+    NftIssuanceParameters::<T> {
+        nft_metadata: Vec::new(),
+        non_channel_owner: Some(T::MemberId::zero()),
+        royalty: Some(Pallet::<T>::max_creator_royalty()),
+        // most complex InitTransactionalStatus is EnglishAuction
+        init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
+            EnglishAuctionParams::<T> {
+                buy_now_price: Some(
+                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
+                ),
+                duration: Pallet::<T>::min_auction_duration(),
+                extension_period: Pallet::<T>::min_auction_extension_period(),
+                min_bid_step: Pallet::<T>::min_bid_step(),
+                starting_price: Pallet::<T>::min_starting_price(),
+                starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+                whitelist: (0..whitelist_size)
+                    .map(|_| {
+                        let (_, member_id) =
+                            member_funded_account::<T>(next_member_id.saturated_into());
+                        next_member_id += T::MemberId::one();
+                        member_id
+                    })
+                    .collect(),
+            },
+        ),
+    }
+}
+
+type VideoCreationInputParameters<T> = (
+    <T as frame_system::Config>::AccountId,
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >,
+    <T as storage::Config>::ChannelId,
+    VideoCreationParameters<T>,
+);
+
+fn prepare_worst_case_scenario_video_creation_parameters<T>(
+    assets_num: Option<u32>,
+    storage_buckets_num: u32,
+    nft_auction_whitelist_size: Option<u32>,
+    metadata_length: u32,
+) -> Result<VideoCreationInputParameters<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (channel_id, group_id, _, curator_id, curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            storage_buckets_num,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false,
+        )?;
+    let actor = ContentActor::Curator(group_id, curator_id);
+    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
+    let assets = assets_num.map(|n| worst_case_scenario_assets::<T>(n));
+    let auto_issue_nft =
+        nft_auction_whitelist_size.map(|s| worst_case_scenario_video_nft_issuance_params::<T>(s));
+
+    Ok((
+        curator_account_id,
+        actor,
+        channel_id,
+        VideoCreationParameters::<T> {
+            assets,
+            meta: Some(vec![0xff].repeat(metadata_length as usize)),
+            auto_issue_nft,
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
+        },
+    ))
+}
+
+fn setup_worst_case_scenario_mutable_video<T>(
+    assets_num: Option<u32>,
+    storage_buckets_num: u32,
+) -> Result<(T::VideoId, VideoCreationInputParameters<T>), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let p = prepare_worst_case_scenario_video_creation_parameters::<T>(
+        assets_num,
+        storage_buckets_num,
+        None,
+        MAX_BYTES_METADATA,
+    )?;
+    let video_id = Pallet::<T>::next_video_id();
+    Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
+
+    Ok((video_id, p))
+}
+
 fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u32, DispatchError> {
     let bag_id = Pallet::<T>::bag_id_for_channel(&channel_id);
     let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
@@ -1057,4 +1286,207 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
         <T as working_group::Config<ContentWorkingGroupInstance>>::MaxWorkerNumberLimit::get(),
         T::MaxNumberOfCuratorsPerGroup::get(),
     )
+}
+
+fn create_token_issuance_params<T: Config>(
+    initial_allocation: BTreeMap<T::MemberId, TokenAllocationOf<T>>,
+) -> TokenIssuanceParametersOf<T> {
+    let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
+    let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
+    TokenIssuanceParametersOf::<T> {
+        initial_allocation,
+        symbol: token_symbol,
+        transfer_policy: TransferPolicyParamsOf::<T>::Permissioned(WhitelistParamsOf::<T> {
+            commitment: transfer_policy_commit,
+            payload: Some(SingleDataObjectUploadParams {
+                object_creation_params: DataObjectCreationParameters {
+                    ipfs_content_id: vec![0],
+                    size: T::MaxDataObjectSize::get(),
+                },
+                expected_data_object_state_bloat_bond:
+                    Storage::<T>::data_object_state_bloat_bond_value(),
+                expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+            }),
+        }),
+        patronage_rate: DEFAULT_CRT_PATRONAGE_RATE,
+        revenue_split_rate: DEFAULT_CRT_REVENUE_SPLIT_RATE,
+    }
+}
+
+fn default_vesting_schedule_params<T: Config>() -> VestingScheduleParamsOf<T> {
+    VestingScheduleParamsOf::<T> {
+        linear_vesting_duration: 100u32.into(),
+        blocks_before_cliff: 100u32.into(),
+        cliff_amount_percentage: Permill::from_percent(10),
+    }
+}
+
+fn worst_case_scenario_initial_allocation<T: RuntimeConfig>(
+    members_num: u32,
+) -> BTreeMap<T::MemberId, TokenAllocationOf<T>>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    (0..members_num)
+        .map(|i| {
+            let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+            let allocation = TokenAllocationOf::<T> {
+                amount: 100u32.into(),
+                vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+            };
+            (member_id, allocation)
+        })
+        .collect()
+}
+
+fn setup_account_with_max_number_of_locks<T: Config>(
+    token_id: T::TokenId,
+    member_id: &T::MemberId,
+) {
+    AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
+        (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
+            a.add_or_update_vesting_schedule(
+                VestingSource::Sale(i),
+                VestingSchedule::from_params(
+                    frame_system::Pallet::<T>::block_number(),
+                    TokenBalanceOf::<T>::one(),
+                    VestingScheduleParamsOf::<T> {
+                        linear_vesting_duration: 0u32.into(),
+                        blocks_before_cliff: u32::MAX.into(),
+                        cliff_amount_percentage: Permill::from_percent(100),
+                    },
+                ),
+                None,
+            );
+        });
+        a.stake(0u32, TokenBalanceOf::<T>::one());
+    });
+}
+
+fn curator_member_id<T: Config + working_group::Config<ContentWorkingGroupInstance>>(
+    curator_id: T::CuratorId,
+) -> T::MemberId {
+    working_group::Pallet::<T, ContentWorkingGroupInstance>::worker_by_id::<T::ActorId>(
+        curator_id.saturated_into::<u64>().saturated_into(),
+    )
+    .unwrap()
+    .member_id
+}
+
+fn issue_creator_token_with_worst_case_scenario_owner<T: Config>(
+    sender: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    owner_member_id: T::MemberId,
+) -> Result<T::TokenId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+{
+    let initial_allocation = BTreeMap::<T::MemberId, TokenAllocationOf<T>>::from_iter(vec![(
+        owner_member_id,
+        TokenAllocationOf::<T> {
+            amount: DEFAULT_CRT_OWNER_ISSUANCE.into(),
+            vesting_schedule_params: None,
+        },
+    )]);
+    let issuance_params = create_token_issuance_params::<T>(initial_allocation);
+    let token_id = project_token::Pallet::<T>::next_token_id();
+    Pallet::<T>::issue_creator_token(
+        RawOrigin::Signed(sender).into(),
+        actor,
+        channel_id,
+        issuance_params,
+    )?;
+    setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id);
+    Ok(token_id)
+}
+
+fn worst_case_scenario_token_sale_params<T: Config>(
+    metatada_len: u32,
+    starts_at: Option<T::BlockNumber>,
+) -> TokenSaleParamsOf<T> {
+    TokenSaleParamsOf::<T> {
+        cap_per_member: Some(1_000_000u32.into()),
+        duration: DEFAULT_CRT_SALE_DURATION.into(),
+        starts_at,
+        unit_price: DEFAULT_CRT_SALE_PRICE.into(),
+        upper_bound_quantity: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
+        vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+        metadata: Some(vec![0xf].repeat(metatada_len as usize)),
+    }
+}
+
+fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
+    num: u32,
+) -> TransfersWithVestingOf<T>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    Transfers(
+        (0..num)
+            .map(|i| {
+                let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+                let payment = PaymentWithVestingOf::<T> {
+                    amount: 100u32.into(),
+                    vesting_schedule: Some(default_vesting_schedule_params::<T>()),
+                };
+                (member_id, payment)
+            })
+            .collect(),
+    )
+}
+
+pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
+    let mut current_block = System::<T>::block_number();
+    while current_block < target_block {
+        // Other on_finalize calls if needed...
+        System::<T>::on_finalize(current_block);
+
+        current_block += One::one();
+        System::<T>::set_block_number(current_block);
+
+        System::<T>::on_initialize(current_block);
+        // Other on_initialize calls if needed...
+    }
+}
+
+pub fn fastforward_by_blocks<T: Config>(blocks: T::BlockNumber) {
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(current_block + blocks);
+}
+
+pub fn transferrable_crt_balance<T: Config>(
+    token_id: T::TokenId,
+    member_id: T::MemberId,
+) -> TokenBalanceOf<T> {
+    project_token::Pallet::<T>::account_info_by_token_and_member(token_id, member_id)
+        .transferrable::<T>(System::<T>::block_number())
+}
+
+fn set_all_channel_paused_features_except<T: Config>(
+    channel_id: T::ChannelId,
+    exceptions: Vec<crate::PausableChannelFeature>,
+) where
+    T::AccountId: CreateAccountId,
+{
+    Pallet::<T>::set_channel_paused_features_as_moderator(
+        RawOrigin::Signed(T::AccountId::create_account_id(
+            CONTENT_WG_LEADER_ACCOUNT_ID,
+        ))
+        .into(),
+        ContentActor::Lead,
+        channel_id,
+        all_channel_pausable_features_except(BTreeSet::from_iter(exceptions)),
+        b"reason".to_vec(),
+    )
+    .unwrap();
+}
+
+fn set_all_channel_paused_features<T: Config>(channel_id: T::ChannelId)
+where
+    T::AccountId: CreateAccountId,
+{
+    set_all_channel_paused_features_except::<T>(channel_id, vec![]);
 }

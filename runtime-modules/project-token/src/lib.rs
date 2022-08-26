@@ -190,17 +190,19 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (T)` where:
+        /// `O (T + M)` where:
         /// - `T` is the length of `outputs`
+        /// - `M` is the length of `metadata`
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32)]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, metadata.len() as u32)]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
             token_id: T::TokenId,
             outputs: TransfersOf<T>,
+            metadata: Vec<u8>
         ) -> DispatchResult {
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -219,6 +221,7 @@ decl_module! {
                 token_id,
                 src_member_id,
                 validated_transfers,
+                metadata
             ));
             Ok(())
         }
@@ -637,7 +640,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::participate_in_split()]
-        fn participate_in_split(
+        pub fn participate_in_split(
             origin,
             token_id: T::TokenId,
             member_id: T::MemberId,
@@ -726,7 +729,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::exit_revenue_split()]
-        fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        pub fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -979,6 +982,7 @@ impl<T: Config>
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
         outputs: TransfersWithVestingOf<T>,
+        metadata: Vec<u8>,
     ) -> DispatchResult {
         let treasury = Self::module_treasury_account();
 
@@ -1006,6 +1010,7 @@ impl<T: Config>
             token_id,
             src_member_id,
             validated_transfers,
+            metadata,
         ));
         Ok(())
     }

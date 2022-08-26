@@ -140,13 +140,13 @@ fn unsuccessful_curator_channel_creator_token_issuer_transfer_during_transfer() 
                         PaymentWithVestingOf::<Test> {
                             amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
                             vesting_schedule: None,
-                            remark: Vec::new(),
                         },
                     )]
                     .iter()
                     .cloned()
                     .collect(),
                 ),
+                vec![]
             ),
             Error::<Test>::InvalidChannelTransferStatus,
         );

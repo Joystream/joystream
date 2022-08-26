@@ -2,7 +2,7 @@
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use common::council::CouncilBudgetManager;
+use common::{council::CouncilBudgetManager, generate_merkle_root_helper};
 use sp_runtime::DispatchError;
 
 #[test]
@@ -1057,7 +1057,9 @@ fn successful_channel_payouts_update() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         let payments = create_some_pull_payments_helper();
-        let merkle_root = generate_merkle_root_helper(&payments).pop().unwrap();
+        let merkle_root = generate_merkle_root_helper::<Test, _>(&payments)
+            .pop()
+            .unwrap();
         let payload_params = ChannelPayoutsPayloadParameters::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond:

@@ -1,5 +1,6 @@
 use frame_support::dispatch::DispatchResult;
 use sp_runtime::DispatchError;
+use sp_std::vec::Vec;
 
 use crate::types::YearlyRate;
 
@@ -29,6 +30,7 @@ pub trait PalletToken<
         src_member_id: MemberId,
         bloat_bond_payer: AccountId,
         outputs: TransfersWithVesting,
+        metadata: Vec<u8>,
     ) -> DispatchResult;
 
     /// Update existing, upcoming token sale
