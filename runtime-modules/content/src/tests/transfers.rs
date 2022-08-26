@@ -89,13 +89,10 @@ fn initialize_channel_transfer_ok_with_transfer_id_updated_correctly() {
 fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default()
@@ -114,13 +111,10 @@ fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
 fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default()
@@ -141,13 +135,10 @@ fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
 fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default()
@@ -388,6 +379,33 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
+        increase_account_balance_helper(
+            SECOND_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE - 1,
+        );
+
+        AcceptChannelTransferFixture::default()
+            .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+            .call_and_assert(Err(Error::<Test>::InsufficientBalanceForTransfer.into()))
+    })
+}
+
+#[test]
+fn accept_transfer_status_fails_with_locked_balance_for_members() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance_helper(
+            SECOND_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE,
+        );
+        set_invitation_lock(&SECOND_MEMBER_ACCOUNT_ID, ed() + 1);
+
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
@@ -406,7 +424,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
-        <Test as Config>::ContentWorkingGroup::set_budget(0u64);
+        <Test as Config>::ContentWorkingGroup::set_budget(DEFAULT_CHANNEL_TRANSFER_PRICE - 1);
 
         AcceptChannelTransferFixture::default()
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
@@ -420,7 +438,7 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
     ExtBuilder::default()
         .build_with_balances(vec![(
             SECOND_MEMBER_ACCOUNT_ID,
-            DEFAULT_CHANNEL_TRANSFER_PRICE,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE,
         )])
         .execute_with(|| {
             ContentTest::with_member_channel().setup();
@@ -442,7 +460,7 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
                 ),
                 (
                     balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE),
-                    BalanceOf::<Test>::zero(),
+                    ed(),
                 )
             );
         })
@@ -453,7 +471,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
     ExtBuilder::default()
         .build_with_balances(vec![(
             SECOND_MEMBER_ACCOUNT_ID,
-            DEFAULT_CHANNEL_TRANSFER_PRICE,
+            ed() + DEFAULT_CHANNEL_TRANSFER_PRICE,
         )])
         .execute_with(|| {
             ContentTest::with_curator_channel().setup();
@@ -477,7 +495,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
                 ),
                 (
                     group_balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE),
-                    BalanceOf::<Test>::zero()
+                    ed()
                 ),
             );
         })

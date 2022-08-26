@@ -1,7 +1,10 @@
 #![cfg(test)]
 
+use common::locks::{
+    BoundStakingAccountLockId, DistributionWorkingGroupLockId, InvitedMemberLockId,
+    StorageWorkingGroupLockId,
+};
 pub use frame_support::traits::LockIdentifier;
-
 use frame_support::{
     ensure, parameter_types,
     traits::{ConstU16, ConstU32, ConstU64},
@@ -185,9 +188,6 @@ impl common::MembershipTypes for Test {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
-    pub const LockId: [u8; 8] = [9; 8];
-    pub const LockId2: [u8; 8] = [10; 8];
-    pub const LockId3: [u8; 8] = [11; 8];
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
 }
@@ -197,7 +197,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingHandler = staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -211,7 +211,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId3>;
+    type StakingHandler = staking_handler::StakingManager<Self, DistributionWorkingGroupLockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -320,10 +320,10 @@ impl membership::Config for Test {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = MembershipWG;
     type WeightInfo = ();
-    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
 }
 
@@ -331,21 +331,11 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const PostDeposit: u64 = 10;
     pub const CandidateStake: u64 = 100;
-    pub const StakingCandidateLockId: [u8; 8] = [10; 8];
-    pub const InviteMemberLockId: [u8; 8] = [9; 8];
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let t = frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
-        .unwrap();
-
-    t.into()
-}
-
-pub fn build_test_externalities_with_genesis() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();

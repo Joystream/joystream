@@ -1890,9 +1890,10 @@ fn fund_council_budget_succeeded() {
         let member_id = 1;
         let amount = 100;
         let initial_budget = 1000;
+        let initial_funder_balance = 1000;
         let rationale = b"text".to_vec();
 
-        let _ = Balances::<Runtime>::deposit_creating(&account_id, initial_budget);
+        let _ = Balances::<Runtime>::deposit_creating(&account_id, initial_funder_balance);
 
         <Council as CouncilBudgetManager<u64, u64>>::set_budget(initial_budget);
 
@@ -1905,8 +1906,41 @@ fn fund_council_budget_succeeded() {
 
         assert_eq!(
             Balances::<Runtime>::usable_balance(&account_id),
-            initial_budget - amount
+            initial_funder_balance - amount
         );
+
+        EventFixture::assert_last_crate_event(crate::RawEvent::CouncilBudgetFunded(
+            member_id, amount, rationale,
+        ));
+    });
+}
+
+#[test]
+fn fund_council_budget_succeeded_with_funder_dying() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        run_to_block(1);
+
+        let account_id = 1;
+        let member_id = 1;
+        let amount = 100;
+        let initial_budget = 1000;
+        let initial_funder_balance = amount;
+        let rationale = b"text".to_vec();
+
+        let _ = Balances::<Runtime>::deposit_creating(&account_id, initial_funder_balance);
+
+        <Council as CouncilBudgetManager<u64, u64>>::set_budget(initial_budget);
+
+        FundCouncilBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .with_rationale(rationale.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::<Runtime>::total_balance(&account_id), 0);
 
         EventFixture::assert_last_crate_event(crate::RawEvent::CouncilBudgetFunded(
             member_id, amount, rationale,
@@ -1933,6 +1967,28 @@ fn fund_council_budget_fails_with_insufficient_balance() {
         let account_id = 2;
         let member_id = 2;
         let amount = 100;
+
+        let _ = Balances::<Runtime>::deposit_creating(&account_id, amount - 1);
+
+        FundCouncilBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Runtime>::InsufficientTokensForFunding.into()));
+    });
+}
+
+#[test]
+fn fund_council_budget_fails_with_locked_balance() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let amount = 100;
+
+        let _ = Balances::<Runtime>::deposit_creating(&account_id, amount);
+        set_invitation_lock(&account_id, 1);
 
         FundCouncilBudgetFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
