@@ -201,7 +201,7 @@ async function createNewMemberFromParams(
       entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrerId.isSome
         ? new Membership({ id: (params as BuyMembershipParameters).referrerId.unwrap().toString() })
         : undefined,
-    isVerified: false,
+    isVerified: entryMethod.isTypeOf === 'MembershipEntryFoundingMemberCreated',
     inviteCount: ['MembershipEntryPaid', 'MembershipEntryFoundingMemberCreated'].includes(entryMethod.isTypeOf)
       ? defaultInviteCount
       : 0,

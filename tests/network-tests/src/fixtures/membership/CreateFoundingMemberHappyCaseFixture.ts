@@ -77,7 +77,7 @@ export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
         externalResources ?? [],
         metadata.externalResources?.map(asMembershipExternalResource) ?? []
       )
-      assert.equal(isVerified, false)
+      assert.equal(isVerified, true)
       assert.equal(isFoundingMember, true)
       Utils.assert(
         entry.__typename === 'MembershipEntryFoundingMemberCreated',
