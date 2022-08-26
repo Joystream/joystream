@@ -761,19 +761,8 @@ fn unsuccessful_channel_deletion_with_invalid_channel_bag_witness() {
         };
 
         DeleteChannelFixture::default()
-            .with_channel_bag_witness(Some(invalid_witness))
+            .with_channel_bag_witness(invalid_witness)
             .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_deletion_with_and_missing_channel_bag_witness() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-
-        DeleteChannelFixture::default()
-            .with_channel_bag_witness(None)
-            .call_and_assert(Err(Error::<Test>::MissingChannelBagWitness.into()));
     })
 }
 
@@ -1528,10 +1517,7 @@ fn unsuccessful_moderation_action_channel_assets_deletion_and_invalid_storage_bu
 #[test]
 fn unsuccessful_moderation_action_channel_assets_deletion_with_zero_number_of_assets_to_delete() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
 
         DeleteChannelAssetsAsModeratorFixture::default()
             .with_assets_to_remove(BTreeSet::new())

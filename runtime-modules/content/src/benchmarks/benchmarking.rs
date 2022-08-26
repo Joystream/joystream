@@ -278,7 +278,7 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
-        let channel_bag_witness = Some(channel_bag_witness::<T>(channel_id)?);
+        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
 
     }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
     verify {

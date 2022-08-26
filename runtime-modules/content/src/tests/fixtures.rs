@@ -1112,7 +1112,7 @@ pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    channel_bag_witness: Option<ChannelBagWitness>,
+    channel_bag_witness: ChannelBagWitness,
     num_objects_to_delete: u64,
 }
 
@@ -1122,7 +1122,7 @@ impl DeleteChannelFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
-            channel_bag_witness: Some(channel_bag_witness(ChannelId::one())),
+            channel_bag_witness: channel_bag_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
         }
     }
@@ -1146,7 +1146,7 @@ impl DeleteChannelFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_channel_bag_witness(self, channel_bag_witness: Option<ChannelBagWitness>) -> Self {
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
         Self {
             channel_bag_witness,
             ..self

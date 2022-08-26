@@ -36,9 +36,6 @@ decl_error! {
         /// are being updated.
         MissingStorageBucketsNumWitness,
 
-        /// Channel bag witness parameter must be provided when deleting channel
-        MissingChannelBagWitness,
-
         ///Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
         NumberOfAssetsToRemoveIsZero,
 

@@ -832,7 +832,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            channel_bag_witness: Option<ChannelBagWitness>,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
@@ -840,13 +840,8 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            if num_objects_to_delete > 0 {
-                // verify channel buckets witness
-                match &channel_bag_witness {
-                    Some(witness) => Self::verify_channel_bag_witness(channel_id, witness),
-                    None => Err(Error::<T>::MissingChannelBagWitness.into())
-                }?;
-            }
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // ensure no creator token is issued for the channel
             channel.ensure_creator_token_not_issued::<T>()?;
@@ -4104,16 +4099,17 @@ impl<T: Config> Module<T> {
 
     // Calculates weight for delete_channel extrinsic.
     fn delete_channel_weight(
-        channel_bag_witness: &Option<ChannelBagWitness>,
+        channel_bag_witness: &ChannelBagWitness,
         num_objects_to_delete: &u64,
     ) -> Weight {
         //num_objects_to_delete
         let a = (*num_objects_to_delete) as u32;
 
-        //storage_buckets_num, distribution_buckets_num
-        let (b, c) = channel_bag_witness.as_ref().map_or((0, 0), |v| {
-            (v.storage_buckets_num, v.distribution_buckets_num)
-        });
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
+
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
 
         WeightInfoContent::<T>::delete_channel(a, b, c)
     }
