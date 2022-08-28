@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full', 'setupNewChainMultiStorage']
+        scenario: ['full', 'setupNewChainMultiStorage', 'bonding']
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
