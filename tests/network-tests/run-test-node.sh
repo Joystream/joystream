@@ -10,13 +10,19 @@ DATA_PATH=./data
 
 # Initial account balance for Alice
 # Alice is the source of funds for all new accounts that are created in the tests.
-ALICE_INITIAL_BALANCE=1000000000000000000
+INITIAL_BALANCE=1000000000000000000
+ALICE="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+BOB="5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
 
 mkdir -p ${DATA_PATH}
 
 echo "{
   \"balances\":[
-    [\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\", ${ALICE_INITIAL_BALANCE}]
+    [\"${ALICE}\", ${INITIAL_BALANCE}],
+    [\"${BOB}\", ${INITIAL_BALANCE}]
+  ],
+  \"vesting\":[
+    [\"${BOB}\", 0, 25, 100000000000]
   ]
 }" > ${DATA_PATH}/initial-balances.json
 
@@ -31,7 +37,7 @@ trap cleanup EXIT
   --chain-spec-path ${DATA_PATH}/chain-spec.json \
   --initial-balances-path ${DATA_PATH}/initial-balances.json \
   --deployment dev \
-  --sudo-account 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+  --sudo-account ${ALICE}
 
 ../../target/release/joystream-node --base-path ${DATA_PATH}/alice \
   --validator --chain ${DATA_PATH}/chain-spec.json --alice --unsafe-ws-external --rpc-cors all --pruning=archive

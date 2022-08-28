@@ -32,6 +32,7 @@ use node_runtime::{
     wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
     GrandpaConfig, ImOnlineConfig, MaxNominations, SessionConfig, SessionKeys, StakerStatus,
     StakingConfig, StorageConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
+    VestingConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -48,7 +49,7 @@ use sp_runtime::{
 };
 
 pub use node_runtime::constants::JOY_ADDRESS_PREFIX;
-pub use node_runtime::primitives::{AccountId, Balance, Signature};
+pub use node_runtime::primitives::{AccountId, Balance, BlockNumber, Signature};
 pub use node_runtime::GenesisConfig;
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -171,6 +172,7 @@ pub fn testnet_genesis(
     root_key: AccountId,
     mut endowed_accounts: Vec<AccountId>,
     genesis_balances: Vec<(AccountId, Balance)>,
+    vesting_accounts: Vec<(AccountId, BlockNumber, BlockNumber, Balance)>,
     content_cfg: ContentConfig,
     storage_cfg: StorageConfig,
 ) -> GenesisConfig {
@@ -258,7 +260,9 @@ pub fn testnet_genesis(
             authorities: vec![],
         },
         transaction_payment: TransactionPaymentConfig {},
-        vesting: Default::default(),
+        vesting: VestingConfig {
+            vesting: vesting_accounts,
+        },
         council: council_config::create_council_config(),
         forum: forum_config::empty(),
         content: content_cfg,
@@ -278,6 +282,7 @@ fn development_config_genesis() -> GenesisConfig {
         ],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
+        vec![],
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
@@ -309,6 +314,7 @@ fn local_testnet_genesis() -> GenesisConfig {
         vec![],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
+        vec![],
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
@@ -344,6 +350,7 @@ pub(crate) mod tests {
             vec![],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             development_endowed_accounts(),
+            vec![],
             vec![],
             content_config::testing_config(),
             storage_config::testing_config(),

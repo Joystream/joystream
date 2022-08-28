@@ -32,7 +32,8 @@ echo "{
   \"balances\":[
     [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
     [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
-  ]
+  ],
+  \"vesting\":[]
 }" > ${DATA_PATH}/initial-balances.json
 
 # Create a chain spec file
