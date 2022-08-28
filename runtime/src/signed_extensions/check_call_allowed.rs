@@ -50,6 +50,15 @@ impl CheckCallAllowed<Runtime> {
     // with the FRAME staking pallet lock
     fn has_no_conflicting_locks(who: &AccountId) -> bool {
         let existing_locks = Balances::locks(who);
+
+        if existing_locks.len() == 0 {
+            return true;
+        }
+
+        if existing_locks.len() == 1 && existing_locks[0].id == STAKING_LOCK_ID {
+            return true;
+        }
+
         let existing_lock_ids: Vec<LockIdentifier> =
             existing_locks.iter().map(|lock| lock.id).collect();
 
