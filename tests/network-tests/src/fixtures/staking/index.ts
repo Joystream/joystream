@@ -1,0 +1,1 @@
+export { BondingNotAllowedFixture } from './BondingNotAllowed'

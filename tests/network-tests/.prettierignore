@@ -1,3 +1,4 @@
 .nyc_output/
 .tmp/
 data/
+output.json
