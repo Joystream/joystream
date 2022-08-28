@@ -80,6 +80,7 @@ use sp_runtime::{
 
 use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
+use sp_std::marker::PhantomData;
 use sp_std::{vec, vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -439,7 +440,7 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+pub(crate) type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 
 pub struct Author;
 impl OnUnbalanced<NegativeImbalance> for Author {
@@ -450,17 +451,17 @@ impl OnUnbalanced<NegativeImbalance> for Author {
     }
 }
 
-pub struct DealWithFees;
-impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+pub struct DealWithFees<R>(PhantomData<R>);
+impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFees<R> {
     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
         if let Some(fees) = fees_then_tips.next() {
-            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
-            let mut split = fees.ration(80, 20);
+            // for fees, we burn them all
+            let mut split = fees.ration(100, 0);
             if let Some(tips) = fees_then_tips.next() {
                 // For tips %100 are for the author
                 tips.ration_merge_into(0, 100, &mut split);
             }
-            Author::on_unbalanced(split.1);
+            R::on_unbalanced(split.1);
         }
     }
 }
@@ -473,7 +474,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Author>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
