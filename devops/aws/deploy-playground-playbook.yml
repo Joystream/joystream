@@ -65,7 +65,7 @@
       delay: 100
 
     - name: Start Playground Services
-      shell: . ~/.bash_profile && ./tests/network-tests/start-test-node-docker.sh && ./start-multistorage.sh
+      shell: . ~/.bash_profile && ./tests/network-tests/run-test-node-docker.sh && ./start-multistorage.sh
       args:
         chdir: '{{ remote_code_path }}'
       environment:
