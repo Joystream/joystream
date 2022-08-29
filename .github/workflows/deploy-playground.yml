@@ -18,10 +18,6 @@ on:
       sshPubKey:
         description: 'SSH pubkey eg. `ssh-rsa AAAAB3NzaC1yc2EA....0hc3GND8IR mysshkey`'
         required: false
-      instanceType:
-        description: 'AWS EC2 instance type (t2.micro, t2.large)'
-        required: false
-        default: 't2.xlarge'
       stackNamePrefix:
         description: 'Additional identifier to include in stack name'
         required: false
@@ -87,7 +83,7 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: devops/aws/cloudformation/single-instance.yml
           no-fail-on-empty-changeset: '1'
-          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=${{ github.event.inputs.instanceType }}'
+          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=t2.xlarge'
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
