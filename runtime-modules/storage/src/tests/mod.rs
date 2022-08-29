@@ -6242,3 +6242,98 @@ fn get_upload_costs_succeeds_overflow_sat() {
         assert_eq!(funds_needed_saturated, u64::MAX);
     });
 }
+
+#[test]
+fn uploading_objects_with_invalid_cid_length_should_fail() {
+    build_test_externalities().execute_with(|| {
+                let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
+
+        let object_creation_list = vec![
+            DataObjectCreationParameters {
+            size: DEFAULT_DATA_OBJECTS_SIZE,
+            ipfs_content_id: b"test".to_vec(),
+        }];
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: BagId::<Test>::Static(StaticBagId::Council),
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list,
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
+            ..Default::default()
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Err(Error::<Test>::InvalidCidLength.into()));
+
+    })
+}
+
+#[test]
+fn creating_dynamic_bag_with_objects_having_invalid_cid_length_should_fail() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let family_policy_number1 = 2u32;
+        let family_policy_number2 = 3u32;
+
+        let storage_bucket_ids = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+        let (family1, distribution_bucket_ids1) =
+            create_distribution_bucket_family_with_buckets(family_policy_number1.into());
+        let (family2, distribution_bucket_ids2) =
+            create_distribution_bucket_family_with_buckets(family_policy_number2.into());
+
+        let family_policy = BTreeMap::from_iter(vec![
+            (family1, family_policy_number1),
+            (family2, family_policy_number2),
+        ]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(family_policy)
+            .call_and_assert(Ok(()));
+
+        let state_bloat_bond_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
+        let initial_balance = 10000;
+        increase_account_balance(&state_bloat_bond_account_id, initial_balance);
+
+        // pre-check balances
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance
+        );
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            init_module_acc_balance()
+        );
+
+        let object_creation_list = vec![
+            DataObjectCreationParameters {
+            size: DEFAULT_DATA_OBJECTS_SIZE,
+            ipfs_content_id: b"test".to_vec(),
+        }];
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_storage_buckets(storage_bucket_ids.clone())
+            .with_distribution_buckets(
+                distribution_bucket_ids1
+                    .iter()
+                    .chain(distribution_bucket_ids2.iter())
+                    .cloned()
+                    .collect(),
+            )
+            .with_objects(object_creation_list)
+            .call_and_assert(Err(Error::<Test>::InvalidCidLength.into()));
+    })
+}
