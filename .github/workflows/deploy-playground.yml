@@ -35,17 +35,14 @@ on:
         required: false
         default: 'setupNewChainMultiStorage'
       sudoSuri:
-        description: 'SURI of sudo account'
-        required: false
-        default: '//Alice'
-      treasurySuri:
-        description: 'SURI of treasury account'
+        description: 'SURI of sudo account also used as treasury account'
         required: false
         default: '//Alice'
       initialBalances: 
-        description: 'JSON string or http URL to override initial balances and vesting config'
+        description: 'optional JSON string or http URL to override initial balances and vesting config'
         default: ''
         required: false
+
 defaults:
   run:
     working-directory: devops/aws
@@ -107,7 +104,7 @@ jobs:
                           runtime_profile=${{ github.event.inputs.runtimeProfile }} \
                           ssh_pub_key='${{ github.event.inputs.sshPubKey }}' \
                           sudo_suri='${{ github.event.inputs.sudoSuri }}' \
-                          treasury_suri='${{ github.event.inputs.treasurySuri }}' \
+                          treasury_suri='${{ github.event.inputs.sudoSuri }}' \
                           initial_balances='${{ github.event.inputs.initialBalances }}' \
                           init_chain_scenario='${{ github.event.inputs.chainSetupScenario }}'"
             --verbose
