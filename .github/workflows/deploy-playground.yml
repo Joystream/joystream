@@ -31,13 +31,13 @@ on:
         required: false
         default: 'setupNewChainMultiStorage'
       sudoSuri:
-        description: 'SURI of sudo account'
+        description: 'SURI of sudo account - must be different than treasury'
         required: false
         default: '//Alice'
       treasurySuri:
-        description: 'SURI of treasury account'
+        description: 'SURI of treasury account - must be different than sudo'
         required: false
-        default: '//Alice'
+        default: '//Bob'
       initialBalances: 
         description: 'JSON string or http URL to override initial balances and vesting config'
         default: ''
