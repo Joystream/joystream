@@ -65,7 +65,7 @@
       delay: 100
 
     - name: Start Playground Services
-      shell: . ~/.bash_profile && ./tests/network-tests/run-test-node-docker.sh && ./start-multistorage.sh
+      shell: . ~/.bash_profile && ./tests/network-tests/run-node-docker.sh && ./start-multistorage.sh
       args:
         chdir: '{{ remote_code_path }}'
       environment:
@@ -77,8 +77,8 @@
         DISTRIBUTOR_2_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-2/'
         SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
         INIT_CHAIN_SCENARIO: '{{ init_chain_scenario }}'
-        BALANCE_CREDIT: 50000000000000
-        BALANCE_LOCKED: 50000000000000
+        BALANCE_CREDIT: 1000000000000000
+        BALANCE_LOCKED: 1000000000000000
         SUDO_ACCOUNT_URI: '{{ sudo_suri }}'
         TREASURY_ACCOUNT_URI: '{{ treasury_suri }}'
         INITIAL_BALANCES: '{{ initial_balances }}'
