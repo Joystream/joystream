@@ -16,18 +16,19 @@ mkdir -p ${DATA_PATH}
 RUNTIME=${RUNTIME:=$(RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh)}
 
 # Initial account balance for sudo account
-SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=1000000000000000000}
+SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="1000000000000000000"}
 SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
 SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # Source of funds for all new accounts that are created in the tests.
-TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=1000000000000000000}
+TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="1000000000000000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
 TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 >&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
 
+# Default initial balances
 echo "{
   \"balances\":[
     [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
@@ -35,6 +36,22 @@ echo "{
   ],
   \"vesting\":[]
 }" > ${DATA_PATH}/initial-balances.json
+
+# Override initial balances from external source
+if [[ $INITIAL_BALANCES == http* ]];
+then
+  >&2 echo "fetching ${INITIAL_BALANCES}"
+  wget -O ${DATA_PATH}/initial-balances.json ${INITIAL_BALANCES}
+else
+  if [ ! -z "$INITIAL_BALANCES" ]; then
+    if jq -e . >/dev/null 2>&1 <<<"$INITIAL_BALANCES"; then
+      >&2 echo "Detected some valid JSON in INITIAL_BALANCES"
+      echo $INITIAL_BALANCES > ${DATA_PATH}/initial-balances.json
+    else
+      >&2 echo "Failed to parse INITIAL_BALANCES as JSON, or got false/null"
+    fi
+  fi
+fi
 
 # Create a chain spec file
 docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \

@@ -10,7 +10,7 @@ DATA_PATH=./data
 
 # Initial account balance for Alice
 # Alice is the source of funds for all new accounts that are created in the tests.
-INITIAL_BALANCE=1000000000000000000
+INITIAL_BALANCE="1000000000000000000"
 ALICE="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 BOB="5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
 
@@ -22,9 +22,25 @@ echo "{
     [\"${BOB}\", ${INITIAL_BALANCE}]
   ],
   \"vesting\":[
-    [\"${BOB}\", 0, 25, 100000000000]
+    [\"${BOB}\", "0", "25", "100000000000"]
   ]
 }" > ${DATA_PATH}/initial-balances.json
+
+# Override initial balances from external source
+if [[ $INITIAL_BALANCES == http* ]];
+then
+  >&2 echo "fetching ${INITIAL_BALANCES}"
+  wget -O ${DATA_PATH}/initial-balances.json ${INITIAL_BALANCES}
+else
+  if [ ! -z "$INITIAL_BALANCES" ]; then
+    if jq -e . >/dev/null 2>&1 <<<"$INITIAL_BALANCES"; then
+      >&2 echo "Detected some valid JSON in INITIAL_BALANCES"
+      echo $INITIAL_BALANCES > ${DATA_PATH}/initial-balances.json
+    else
+      >&2 echo "Failed to parse INITIAL_BALANCES as JSON, or got false/null"
+    fi
+  fi
+fi
 
 function cleanup() {
     rm -Rf ${DATA_PATH}/alice
