@@ -1,12 +1,12 @@
-use crate::{AccountId, Balances, Call, Multisig, Runtime};
+use crate::{AccountId, Balances, Call, Multisig, OriginCaller, Runtime};
 use codec::{Decode, Encode};
 use common::locks::STAKING_LOCK_ID;
-use frame_support::ensure;
-use frame_support::traits::LockIdentifier;
+use frame_support::{dispatch::RawOrigin, ensure, traits::LockIdentifier};
 use frame_system::Config;
 use scale_info::TypeInfo;
+use sp_io::hashing::blake2_256;
 use sp_runtime::{
-    traits::{DispatchInfoOf, SignedExtension},
+    traits::{DispatchInfoOf, SignedExtension, TrailingZeroInput},
     transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError},
 };
 use sp_std::{vec, vec::Vec};
@@ -73,10 +73,16 @@ impl CheckCallAllowed<Runtime> {
                     Self::has_no_invalid_bonding_calls(who, calls.to_vec())
                 }
                 Call::Utility(substrate_utility::Call::<Runtime>::as_derivative {
-                    call, ..
+                    call,
+                    index,
+                    ..
                 }) => {
-                    // the `who` we should check for is not tx origin, but the derived account
-                    Self::has_no_invalid_bonding_calls(who, vec![*call])
+                    if let Some(who) = derivative_account_id(who, index) {
+                        Self::has_no_invalid_bonding_calls(&who, vec![*call])
+                    } else {
+                        // decoding derivative account failed, let it be handled by utility pallet
+                        true
+                    }
                 }
                 Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi {
                     call,
@@ -84,7 +90,6 @@ impl CheckCallAllowed<Runtime> {
                     threshold,
                     ..
                 }) => {
-                    // the `who` we should check is the multisig address not this tx origin
                     let signatories = ensure_sorted_and_insert(other_signatories, who.clone()).ok();
                     if let Some(signatories) = signatories {
                         let id = Multisig::multi_account_id(&signatories, threshold);
@@ -102,7 +107,6 @@ impl CheckCallAllowed<Runtime> {
                     other_signatories,
                     ..
                 }) => {
-                    // the `who` we should check is the multisig address not this tx origin
                     let signatories = ensure_sorted_and_insert(other_signatories, who.clone()).ok();
                     if let Some(signatories) = signatories {
                         let id = Multisig::multi_account_id(&signatories, 1);
@@ -129,17 +133,19 @@ impl CheckCallAllowed<Runtime> {
                 Call::Utility(substrate_utility::Call::<Runtime>::force_batch { calls }) => {
                     Self::has_no_invalid_bonding_calls(who, calls)
                 }
-                #[allow(unused_variables)]
                 Call::Utility(substrate_utility::Call::<Runtime>::dispatch_as {
                     call,
                     as_origin,
                     ..
-                }) => {
-                    // we can deal with a signed origin, but what about if it is root origin?
-                    // Should we filter out this call with system BaseCallFilter?
-                    // Self::has_no_invalid_bonding_calls(who, vec![*call])
-                    true
-                }
+                }) => match *as_origin {
+                    OriginCaller::system(origin) => match origin {
+                        RawOrigin::Signed(signer) => {
+                            Self::has_no_invalid_bonding_calls(&signer, vec![*call])
+                        }
+                        _ => Self::has_no_invalid_bonding_calls(who, vec![*call]),
+                    },
+                    OriginCaller::Void(_) => true,
+                },
 
                 // Bonding
                 Call::Staking(pallet_staking::Call::<Runtime>::bond { .. }) => {
@@ -219,4 +225,10 @@ fn ensure_sorted_and_insert(
     }
     signatories.insert(index, who);
     Ok(signatories)
+}
+
+/// Derive a derivative account ID from the owner account and the sub-account index.
+pub fn derivative_account_id(who: &AccountId, index: u16) -> Option<AccountId> {
+    let entropy = (b"modlpy/utilisuba", who, index).using_encoded(blake2_256);
+    Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref())).ok()
 }
