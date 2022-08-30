@@ -1801,8 +1801,8 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
     // - channel has max assets
+    // - video has max assets
     // - English Auction with max whitelisted member & some royalty
     // - nft limits are set
     // - video has max. number of assets
@@ -1813,22 +1813,15 @@ benchmarks! {
         let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
         let b in 1..MAX_BYTES_METADATA;
 
-        let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(curator_account_id.clone());
-        let actor = ContentActor::Curator(group_id, curator_id);
-        let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
-        let video_id = Pallet::<T>::next_video_id();
-        set_nft_limits_helper::<T>(channel_id);
-        Pallet::<T>::create_video(origin.clone().into(), actor.clone(), channel_id, VideoCreationParameters::<T> {
-            expected_video_state_bloat_bond: video_state_bloat_bond,
-            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
-            assets: None,
-            auto_issue_nft: None,
-            meta: None,
-            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
-        })?;
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
 
+        let origin = RawOrigin::Signed(curator_account_id.clone());
         let params = worst_case_nft_issuance_params_helper::<T>(w,b);
     }: _ (origin, actor, video_id, params)
         verify {
@@ -1842,6 +1835,7 @@ benchmarks! {
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
+    // - video has max assets
     // - NFT owner == channel owner
     // INPUT COMPLEXITY
     destroy_nft {
@@ -1863,6 +1857,7 @@ benchmarks! {
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
+    // - video has max assets
     // - NFT owner == channel owner
     // INPUT COMPLEXITY
     sling_nft_back {
@@ -1889,6 +1884,7 @@ benchmarks! {
     // - curator has max number of permissions
     // - channel has all features paused except necessary ones
     // - channel has max assets
+    // - video has max assets
     // - NFT owner == channel owner
     // INPUT COMPLEXITY
     offer_nft {
