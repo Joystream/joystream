@@ -1618,7 +1618,7 @@ where
         VideoCreationParameters::<T> {
             expected_video_state_bloat_bond: video_state_bloat_bond,
             expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
-            assets: None,
+            assets: worst_case_scenario_assets::<T>(T::MaxNumberOfAssetsPerVideo::get()),
             auto_issue_nft: None,
             meta: None,
             storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
