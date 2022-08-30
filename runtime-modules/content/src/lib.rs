@@ -1315,16 +1315,8 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
-            // Verify storage buckets num witness
-            if !num_objects_to_delete.is_zero() {
-                match storage_buckets_num_witness {
-                    Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
-                    None => Err(Error::<T>::MissingStorageBucketsNumWitness.into()),
-                }?;
-            }
-
             // Try removing the video
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video)?;
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, storage_buckets_num_witness)?;
 
             //
             // == MUTATION SAFE ==
@@ -1445,7 +1437,7 @@ decl_module! {
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
             // Try removing the video
-            Self::try_to_perform_video_deletion_as_moderator(&sender, channel_id, video_id, &video, storage_buckets_num_witness)?;
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, storage_buckets_num_witness)?;
 
             //
             // == MUTATION SAFE ==
@@ -3683,36 +3675,6 @@ impl<T: Config> Module<T> {
     }
 
     fn try_to_perform_video_deletion(
-        sender: &T::AccountId,
-        channel_id: T::ChannelId,
-        video_id: T::VideoId,
-        video: &Video<T>,
-    ) -> DispatchResult {
-        // delete assets from storage with upload and rollback semantics
-        if !video.data_objects.is_empty() {
-            Storage::<T>::delete_data_objects(
-                sender.clone(),
-                Self::bag_id_for_channel(&channel_id),
-                video.data_objects.clone().into(),
-            )?;
-        }
-
-        // Remove video
-        VideoById::<T>::remove(video_id);
-
-        // Update corresponding channel
-        // Remove recently deleted video from the channel
-        ChannelById::<T>::mutate(channel_id, |channel| {
-            channel.num_videos = channel.num_videos.saturating_sub(1)
-        });
-
-        Ok(())
-    }
-
-    //TODO When implementing video benchmark group we should use only the
-    //try_to_perform_video_deletion with (storage_buckets_num_witness)
-    //this function will be removed
-    fn try_to_perform_video_deletion_as_moderator(
         sender: &T::AccountId,
         channel_id: T::ChannelId,
         video_id: T::VideoId,
