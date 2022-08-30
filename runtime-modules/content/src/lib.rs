@@ -2001,7 +2001,7 @@ decl_module! {
         /// `O (1)`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::cancel_offer()]
         pub fn cancel_offer(
             origin,
