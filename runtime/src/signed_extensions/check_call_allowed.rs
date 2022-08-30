@@ -6,10 +6,7 @@ use frame_system::Config;
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{DispatchInfoOf, SignedExtension},
-    transaction_validity::{
-        InvalidTransaction, TransactionLongevity, TransactionValidity, TransactionValidityError,
-        ValidTransaction,
-    },
+    transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError},
 };
 use sp_std::{vec, vec::Vec};
 use staking_handler::LockComparator;
@@ -68,41 +65,40 @@ impl CheckCallAllowed<Runtime> {
     // Recursively checks calls until one invalid bonding call is detected and returns false,
     // otherwise returns true.
     fn has_no_invalid_bonding_calls(who: &AccountId, calls: Vec<Call>) -> bool {
-        let mut all_calls_valid = true;
-
         for call in calls.into_iter() {
-            all_calls_valid = all_calls_valid
-                && match call {
-                    // Calls that can contain other Calls and must be checked recursively..
-                    Call::Utility(substrate_utility::Call::<Runtime>::batch { calls }) => {
-                        Self::has_no_invalid_bonding_calls(who, calls.to_vec())
-                    }
-                    Call::Utility(substrate_utility::Call::<Runtime>::as_derivative {
-                        call,
-                        ..
-                    }) => Self::has_no_invalid_bonding_calls(who, vec![*call]),
+            let valid = match call {
+                // Calls that can contain other Calls and must be checked recursively..
+                Call::Utility(substrate_utility::Call::<Runtime>::batch { calls }) => {
+                    Self::has_no_invalid_bonding_calls(who, calls.to_vec())
+                }
+                Call::Utility(substrate_utility::Call::<Runtime>::as_derivative {
+                    call, ..
+                }) => Self::has_no_invalid_bonding_calls(who, vec![*call]),
 
-                    // Bonding
-                    Call::Staking(pallet_staking::Call::<Runtime>::bond { .. }) => {
-                        Self::has_no_conflicting_locks(who)
-                    }
+                // Bonding
+                Call::Staking(pallet_staking::Call::<Runtime>::bond { .. }) => {
+                    Self::has_no_conflicting_locks(who)
+                }
 
-                    // should we prevent Sudo from bypassing these checks?
-                    // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo { call }) => ...
-                    // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_as { who, call }) => ...
-                    // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_unchecked_weight { call }) => ...
-                    // Call::Utility(substrate_utility::Call::<Runtime>::batch_all { calls }) => ...
-                    // Call::Utility(substrate_utility::Call::<Runtime>::force_batch { calls }) => ...
-                    // Call::Utility(substrate_utility::Call::<Runtime>::dispatch_as { calls }) => ...
-                    _ => true,
-                };
+                // Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi )
+                // Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi_threshold_1 )
 
-            if !all_calls_valid {
+                // should we prevent Sudo from bypassing these checks?
+                // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo { call }) => ...
+                // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_as { who, call }) => ...
+                // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_unchecked_weight { call }) => ...
+                // Call::Utility(substrate_utility::Call::<Runtime>::batch_all { calls }) => ...
+                // Call::Utility(substrate_utility::Call::<Runtime>::force_batch { calls }) => ...
+                // Call::Utility(substrate_utility::Call::<Runtime>::dispatch_as { calls }) => ...
+                _ => true,
+            };
+
+            if !valid {
                 return false;
             }
         }
 
-        all_calls_valid
+        true
     }
 }
 impl SignedExtension for CheckCallAllowed<Runtime> {
@@ -134,13 +130,7 @@ impl SignedExtension for CheckCallAllowed<Runtime> {
         _len: usize,
     ) -> TransactionValidity {
         if Self::has_no_invalid_bonding_calls(who, vec![call.clone()]) {
-            Ok(ValidTransaction {
-                priority: 0,
-                requires: vec![],
-                provides: vec![],
-                longevity: TransactionLongevity::max_value(),
-                propagate: true,
-            })
+            Ok(Default::default())
         } else {
             InvalidTransaction::Custom(BONDING_NOT_ALLOWED).into()
         }
