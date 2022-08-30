@@ -2610,7 +2610,7 @@ decl_module! {
         /// `O (1)`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::sling_nft_back()]
         pub fn sling_nft_back(
             origin,
