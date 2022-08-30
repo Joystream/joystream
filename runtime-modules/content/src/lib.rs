@@ -2663,7 +2663,7 @@ decl_module! {
         /// `O (1)`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::accept_incoming_offer()]
         pub fn accept_incoming_offer(
             origin,
