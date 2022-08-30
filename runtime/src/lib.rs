@@ -52,7 +52,7 @@ use frame_election_provider_support::{
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
     ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
-    LockIdentifier, OnUnbalanced,
+    LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -1479,6 +1479,7 @@ pub type CategoryId = u64;
 
 parameter_types! {
     pub const MinVestedTransfer: Balance = 100 * currency::CENTS; // TODO: adjust value
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons = WithdrawReasons::empty();
 }
 
 impl pallet_vesting::Config for Runtime {
@@ -1487,6 +1488,7 @@ impl pallet_vesting::Config for Runtime {
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
     type WeightInfo = weights::pallet_vesting::SubstrateWeight<Runtime>;
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
     // `VestingInfo` encode length is 36bytes. 28 schedules gets encoded as 1009 bytes, which is the
     // highest number of schedules that encodes less than 2^10.
     const MAX_VESTING_SCHEDULES: u32 = 28;
