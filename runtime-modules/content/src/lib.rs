@@ -1946,7 +1946,7 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
         }
 
-        /// Cancel video nft english auction
+        /// Cancel video nft open auction
         /// <weight>
         ///
         /// ## Weight
