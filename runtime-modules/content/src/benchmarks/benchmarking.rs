@@ -1805,6 +1805,7 @@ benchmarks! {
     // - channel has max assets
     // - English Auction with max whitelisted member & some royalty
     // - nft limits are set
+    // - video has max. number of assets
     // INPUT COMPLEXITY
     // - auction member whitelist size: w
     // - metadata bytelength: b
