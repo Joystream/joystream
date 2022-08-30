@@ -2106,7 +2106,7 @@ benchmarks! {
     // - curator number is max
     // - curator has max number of permissions
     // - channel has max collaborators
-    // - channel has all features paused except necessary ones
+    // - channel has all features paused
     // - channel has max assets
     // - NFT owner == channel owner
     // INPUT COMPLEXITY
