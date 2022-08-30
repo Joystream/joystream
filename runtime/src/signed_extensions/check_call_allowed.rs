@@ -74,14 +74,22 @@ impl CheckCallAllowed<Runtime> {
                 Call::Utility(substrate_utility::Call::<Runtime>::as_derivative {
                     call, ..
                 }) => Self::has_no_invalid_bonding_calls(who, vec![*call]),
+                Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi { call, .. }) => {
+                    // If the opaque call cannot be decoded we return true, it is not
+                    // possible to process further.
+                    call.try_decode().map_or(true, |decoded_call| {
+                        Self::has_no_invalid_bonding_calls(who, vec![decoded_call])
+                    })
+                }
+                Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi_threshold_1 {
+                    call,
+                    ..
+                }) => Self::has_no_invalid_bonding_calls(who, vec![*call]),
 
                 // Bonding
                 Call::Staking(pallet_staking::Call::<Runtime>::bond { .. }) => {
                     Self::has_no_conflicting_locks(who)
                 }
-
-                // Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi )
-                // Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi_threshold_1 )
 
                 // should we prevent Sudo from bypassing these checks?
                 // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo { call }) => ...
