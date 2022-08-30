@@ -5,7 +5,7 @@ use crate::{
     permissions::*,
     types::*,
     Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
-    Module as Pallet,
+    Module as Pallet, NextVideoId,
 };
 use balances::Pallet as Balances;
 use common::MembershipTypes;
@@ -147,6 +147,16 @@ macro_rules! assert_lt {
         assert!($a < $b, "Expected {:?} to be lower than {:?}", $a, $b);
     };
 }
+
+const CONTENT_PAUSABLE_CHANNEL_FEATURE: [PausableChannelFeature; 7] = [
+    PausableChannelFeature::ChannelFundsTransfer,
+    PausableChannelFeature::CreatorCashout,
+    PausableChannelFeature::VideoNftIssuance,
+    PausableChannelFeature::VideoCreation,
+    PausableChannelFeature::VideoUpdate,
+    PausableChannelFeature::ChannelUpdate,
+    PausableChannelFeature::CreatorTokenIssuance,
+];
 
 fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
     (T::MaxNumberOfAssetsPerChannel::get() as u64) * 100
@@ -744,6 +754,10 @@ fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
     CHANNEL_AGENT_PERMISSIONS.iter().cloned().collect()
 }
 
+fn worst_case_pausable_channel_feature() -> BTreeSet<PausableChannelFeature> {
+    CONTENT_PAUSABLE_CHANNEL_FEATURE.iter().cloned().collect()
+}
+
 fn worst_case_scenario_collaborators<T: RuntimeConfig>(
     start_id: u32,
     num: u32,
@@ -1060,6 +1074,91 @@ pub fn create_pull_payments_with_reward<T: Config>(
         });
     }
     payments
+}
+
+fn setup_video<T>(
+    origin: T::Origin,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    assets_num: u32,
+    auto_issue_nft: Option<NftIssuanceParameters<T>>,
+    meta: u32,
+) -> T::VideoId
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let max_obj_size: u64 = T::MaxDataObjectSize::get();
+
+    let assets = if assets_num > 0 {
+        Some(StorageAssets::<T> {
+            expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_object_candidates_helper(assets_num, max_obj_size),
+        })
+    } else {
+        None
+    };
+
+    let expected_data_object_state_bloat_bond = Storage::<T>::data_object_state_bloat_bond_value();
+
+    let expected_video_state_bloat_bond = Pallet::<T>::video_state_bloat_bond_value();
+    let meta = Some(vec![1u8].repeat(meta as usize));
+    let storage_buckets_num_witness = storage_buckets_num_witness::<T>(channel_id).unwrap();
+
+    let params = VideoCreationParameters::<T> {
+        assets,
+        meta,
+        auto_issue_nft,
+        expected_data_object_state_bloat_bond,
+        expected_video_state_bloat_bond,
+        storage_buckets_num_witness,
+    };
+
+    let video_id = NextVideoId::<T>::get();
+
+    Pallet::<T>::create_video(origin, actor, channel_id, params).unwrap();
+
+    video_id
+}
+
+fn setup_worst_case_nft_video<T>(
+    origin: T::Origin,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    assets_num: u32,
+    meta: u32,
+) -> T::VideoId
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let whitelist = (0..Pallet::<T>::max_auction_whitelist_length())
+        .into_iter()
+        .map(|i| {
+            let (_, member_id) = member_funded_account::<T>((1000 + i) as u128);
+            member_id
+        })
+        .collect::<BTreeSet<_>>();
+
+    let init_transactional_status =
+        InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
+            starting_price: Pallet::<T>::min_starting_price(),
+            buy_now_price: None,
+            extension_period: Pallet::<T>::min_auction_extension_period(),
+            duration: Pallet::<T>::min_auction_duration(),
+            min_bid_step: Pallet::<T>::min_bid_step(),
+            starts_at: None,
+            whitelist,
+        });
+
+    let auto_issue_nft = Some(NftIssuanceParameters::<T> {
+        royalty: None,
+        nft_metadata: vec![0u8].repeat(meta as usize),
+        non_channel_owner: None,
+        init_transactional_status,
+    });
+
+    setup_video::<T>(origin, actor, channel_id, assets_num, auto_issue_nft, meta)
 }
 
 fn channel_bag_witness<T: Config>(
