@@ -1,6 +1,7 @@
-use crate::{AccountId, Balances, Call, Runtime};
+use crate::{AccountId, Balances, Call, Multisig, Runtime};
 use codec::{Decode, Encode};
 use common::locks::STAKING_LOCK_ID;
+use frame_support::ensure;
 use frame_support::traits::LockIdentifier;
 use frame_system::Config;
 use scale_info::TypeInfo;
@@ -73,31 +74,78 @@ impl CheckCallAllowed<Runtime> {
                 }
                 Call::Utility(substrate_utility::Call::<Runtime>::as_derivative {
                     call, ..
-                }) => Self::has_no_invalid_bonding_calls(who, vec![*call]),
-                Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi { call, .. }) => {
-                    // If the opaque call cannot be decoded we return true, it is not
-                    // possible to process further.
-                    call.try_decode().map_or(true, |decoded_call| {
-                        Self::has_no_invalid_bonding_calls(who, vec![decoded_call])
-                    })
+                }) => {
+                    // the `who` we should check for is not tx origin, but the derived account
+                    Self::has_no_invalid_bonding_calls(who, vec![*call])
+                }
+                Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi {
+                    call,
+                    other_signatories,
+                    threshold,
+                    ..
+                }) => {
+                    // the `who` we should check is the multisig address not this tx origin
+                    let signatories = ensure_sorted_and_insert(other_signatories, who.clone()).ok();
+                    if let Some(signatories) = signatories {
+                        let id = Multisig::multi_account_id(&signatories, threshold);
+                        // If the opaque call cannot be decoded we return true, it is not
+                        // possible to process further.
+                        call.try_decode().map_or(true, |decoded_call| {
+                            Self::has_no_invalid_bonding_calls(&id, vec![decoded_call])
+                        })
+                    } else {
+                        true
+                    }
                 }
                 Call::Multisig(pallet_multisig::Call::<Runtime>::as_multi_threshold_1 {
                     call,
+                    other_signatories,
                     ..
+                }) => {
+                    // the `who` we should check is the multisig address not this tx origin
+                    let signatories = ensure_sorted_and_insert(other_signatories, who.clone()).ok();
+                    if let Some(signatories) = signatories {
+                        let id = Multisig::multi_account_id(&signatories, 1);
+                        Self::has_no_invalid_bonding_calls(&id, vec![*call])
+                    } else {
+                        true
+                    }
+                }
+
+                // Calls that only root origin can invoke
+                Call::Sudo(pallet_sudo::Call::<Runtime>::sudo { call }) => {
+                    Self::has_no_invalid_bonding_calls(who, vec![*call])
+                }
+                Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_as { who, call }) => {
+                    // note local scoped `who` is what should be checked
+                    Self::has_no_invalid_bonding_calls(&who, vec![*call])
+                }
+                Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_unchecked_weight {
+                    call, ..
                 }) => Self::has_no_invalid_bonding_calls(who, vec![*call]),
+                Call::Utility(substrate_utility::Call::<Runtime>::batch_all { calls }) => {
+                    Self::has_no_invalid_bonding_calls(who, calls)
+                }
+                Call::Utility(substrate_utility::Call::<Runtime>::force_batch { calls }) => {
+                    Self::has_no_invalid_bonding_calls(who, calls)
+                }
+                #[allow(unused_variables)]
+                Call::Utility(substrate_utility::Call::<Runtime>::dispatch_as {
+                    call,
+                    as_origin,
+                    ..
+                }) => {
+                    // we can deal with a signed origin, but what about if it is root origin?
+                    // Should we filter out this call with system BaseCallFilter?
+                    // Self::has_no_invalid_bonding_calls(who, vec![*call])
+                    true
+                }
 
                 // Bonding
                 Call::Staking(pallet_staking::Call::<Runtime>::bond { .. }) => {
                     Self::has_no_conflicting_locks(who)
                 }
 
-                // should we prevent Sudo from bypassing these checks?
-                // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo { call }) => ...
-                // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_as { who, call }) => ...
-                // Call::Sudo(pallet_sudo::Call::<Runtime>::sudo_unchecked_weight { call }) => ...
-                // Call::Utility(substrate_utility::Call::<Runtime>::batch_all { calls }) => ...
-                // Call::Utility(substrate_utility::Call::<Runtime>::force_batch { calls }) => ...
-                // Call::Utility(substrate_utility::Call::<Runtime>::dispatch_as { calls }) => ...
                 _ => true,
             };
 
@@ -143,4 +191,32 @@ impl SignedExtension for CheckCallAllowed<Runtime> {
             InvalidTransaction::Custom(BONDING_NOT_ALLOWED).into()
         }
     }
+}
+
+// Helper function from multisig pallet
+fn ensure_sorted_and_insert(
+    other_signatories: Vec<AccountId>,
+    who: AccountId,
+) -> Result<Vec<AccountId>, pallet_multisig::Error<Runtime>> {
+    let mut signatories = other_signatories;
+    let mut maybe_last = None;
+    let mut index = 0;
+    for item in signatories.iter() {
+        if let Some(last) = maybe_last {
+            ensure!(
+                last < item,
+                pallet_multisig::Error::<Runtime>::SignatoriesOutOfOrder
+            );
+        }
+        if item <= &who {
+            ensure!(
+                item != &who,
+                pallet_multisig::Error::<Runtime>::SenderInSignatories
+            );
+            index += 1;
+        }
+        maybe_last = Some(item);
+    }
+    signatories.insert(index, who);
+    Ok(signatories)
 }
