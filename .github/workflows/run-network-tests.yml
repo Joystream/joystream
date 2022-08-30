@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full', 'setupNewChainMultiStorage']
+        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage']
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
@@ -114,5 +114,4 @@ jobs:
       - name: Execute network tests
         run: |
           export RUNTIME=latest
-          export SCENARIO=${{ matrix.scenario }}
-          tests/network-tests/run-full-tests.sh
+          tests/network-tests/run-tests.sh ${{ matrix.scenario }}
