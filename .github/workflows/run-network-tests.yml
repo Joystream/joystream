@@ -90,6 +90,11 @@ jobs:
     strategy:
       matrix:
         scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage']
+        include:
+          - scenario: 'setupNewChain'
+            no_storage: 'true'
+          - scenario: 'setupNewChainMultiStorage'
+            no_storage: 'true'
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
@@ -114,4 +119,5 @@ jobs:
       - name: Execute network tests
         run: |
           export RUNTIME=latest
+          export NO_STORAGE=${{ matrix.no_storage }}
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}

@@ -8,7 +8,7 @@ import { scenario } from '../Scenario'
 scenario('Setup new chain', async ({ job }) => {
   job('Initialize Faucet', initFaucet)
 
-  const leads = job('Set WorkingGroup Leads', leaderSetup())
+  const leads = job('Set WorkingGroup Leads', leaderSetup(true))
 
   if (!process.env.SKIP_STORAGE_AND_DISTRIBUTION) {
     job('initialize storage system', initStorage(doubleStorageConfig)).requires(leads)
