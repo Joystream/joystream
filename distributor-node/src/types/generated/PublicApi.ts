@@ -109,7 +109,7 @@ export interface operations {
           'video/*': string
         }
       }
-      /** Data object does not exist. */
+      /** Data object does not exist or has not been uploaded yet. */
       404: {
         content: {
           'application/json': components['schemas']['ErrorResponse']
@@ -136,7 +136,7 @@ export interface operations {
     responses: {
       /** Object is supported and should be send on GET request. */
       200: unknown
-      /** Data object does not exist. */
+      /** Data object does not exist or has not been uploaded yet. */
       404: unknown
       /** Misdirected request. Data object not supported by the node. */
       421: unknown

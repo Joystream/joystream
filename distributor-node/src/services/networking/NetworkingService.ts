@@ -140,9 +140,11 @@ export class NetworkingService {
     const details = await this.queryNodeApi.getDataObjectDetails(objectId)
     let exists = false
     let isSupported = false
+    let isAccepted = false
     let data: DataObjectData | undefined
     if (details) {
       exists = true
+      isAccepted = details.isAccepted
       if (!this.config.buckets) {
         const distributors = this.getDataObjectActiveDistributorsSet(details)
         isSupported = typeof this.config.workerId === 'number' ? distributors.has(this.config.workerId) : false
@@ -159,7 +161,7 @@ export class NetworkingService {
       }
     }
 
-    return { exists, isSupported, data }
+    return { exists, isSupported, data, isAccepted }
   }
 
   private sortEndpointsByMeanResponseTime(endpoints: string[]) {

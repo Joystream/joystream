@@ -240,6 +240,7 @@ export class PublicApiController {
         res.setHeader('content-length', objectStatus.pendingDownload.getObjectSize())
         break
       case ObjectStatusType.NotFound:
+      case ObjectStatusType.NotUploadedYet:
         res.status(404)
         break
       case ObjectStatusType.NotSupported:
@@ -282,6 +283,9 @@ export class PublicApiController {
         return
       case ObjectStatusType.NotSupported:
         res.status(421).json(this.createErrorResponse('Data object not served by this node'))
+        return
+      case ObjectStatusType.NotUploadedYet:
+        res.status(404).json(this.createErrorResponse('Data object has not been uploaded yet'))
         return
       case ObjectStatusType.Missing:
         return this.serveMissingAsset(req, res, next, objectStatus.objectData)

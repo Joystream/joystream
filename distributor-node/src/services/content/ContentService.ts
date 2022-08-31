@@ -326,6 +326,10 @@ export class ContentService {
       return { type: ObjectStatusType.NotSupported }
     }
 
+    if (!objectInfo.isAccepted) {
+      return { type: ObjectStatusType.NotUploadedYet }
+    }
+
     const { data: objectData } = objectInfo
     if (!objectData) {
       throw new Error('Missing data object data')
