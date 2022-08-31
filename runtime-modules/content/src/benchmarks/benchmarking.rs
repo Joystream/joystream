@@ -1754,6 +1754,47 @@ benchmarks! {
         }
 
     // Worst case scenario:
+    // - channel belonging to a member with max number of collaborators and max agent permissions
+    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
+    claim_and_withdraw_member_channel_reward {
+        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
+
+        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
+        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
+        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
+        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
+        let (channel_id, member_id, member_account_id, lead_account_id) =
+            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
+        let lead_origin = RawOrigin::Signed(lead_account_id);
+        let origin = RawOrigin::Signed(member_account_id.clone());
+
+        set_all_channel_paused_features_except::<T>(channel_id, vec![
+                PausableChannelFeature::CreatorCashout,
+                PausableChannelFeature::ChannelFundsTransfer,
+            ]);
+
+        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
+           commitment: Some(commitment),
+            ..Default::default()
+        })?;
+
+        let actor = ContentActor::Member(member_id);
+        let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
+        let item = payments[0];
+        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
+    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
+        verify {
+            assert_eq!(
+                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
+                item.cumulative_reward_earned
+            );
+            assert_eq!(
+                Balances::<T>::usable_balance(member_account_id),
+                cumulative_reward_claimed + balances_pre,
+            );
+        }
+
+    // Worst case scenario:
     // - curator channel belonging to a group with max number curator and max curator permissions
     // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
     claim_and_withdraw_curator_channel_reward {
@@ -1800,19 +1841,21 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has max assets
-    // - video has max assets
-    // - English Auction with:
-    //   - max whitelisted member
-    //   - some royalty
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // INPUT COMPLEXITY
+    // - params of type EnglishAuctionParameters with:
+    //   - member whitelist size : w
+    //   - metadata bytelength : b
+    //   - royalty is some
     //   - buy now price is some
     //   - starts at is some
-    // - nft limits are set
-    // - video has max. number of assets
-    // INPUT COMPLEXITY
-    // - auction member whitelist size: w
-    // - metadata bytelength: b
     issue_nft {
         let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
         let b in 1..MAX_BYTES_METADATA;
@@ -1825,6 +1868,8 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::VideoNftIssuance]);
+
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let params = worst_case_nft_issuance_params_helper::<T>(w,b);
     }: _ (origin, actor, video_id, params)
@@ -1836,13 +1881,17 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - video has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
-    destroy_channel_owned_nft {
+    destroy_nft {
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
@@ -1858,7 +1907,9 @@ benchmarks! {
             video_id,
             false,
         )?;
-    }: destroy_nft (origin, actor, video_id)
+
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _ (origin, actor, video_id)
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_none());
         }
@@ -1867,42 +1918,15 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - video has max assets
-    // - NFT owner == channel owner
-    // INPUT COMPLEXITY
-    destroy_member_owned_nft {
-        let (
-            video_id,
-            (curator_account_id, actor, channel_id, _)
-        ) = setup_worst_case_scenario_mutable_video::<T>(
-            Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-        )?;
-
-        let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
-            curator_account_id.clone(),
-            actor,
-            video_id,
-            true,
-        ).unwrap();
-        let origin = RawOrigin::Signed(owner_account);
-    }: destroy_nft (origin, nft_owner_actor, video_id)
-        verify {
-            assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_none());
-        }
-
-    // WORST CASE SCENARIO:
-    // STATE COMPLEXITY
-    // - curator owned channel
-    // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - video has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     sling_nft_back {
         let (
@@ -1920,6 +1944,7 @@ benchmarks! {
             false,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id.clone());
     }: _ (origin, video_id, actor)
         verify {
@@ -1935,11 +1960,15 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - video has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     offer_nft {
         let (
@@ -1956,6 +1985,8 @@ benchmarks! {
             video_id,
             false,
         )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
 
         let origin = RawOrigin::Signed(curator_account_id.clone());
 
@@ -1974,11 +2005,15 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - video has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_offer {
         let (
@@ -1992,7 +2027,6 @@ benchmarks! {
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
         let price = Some(BUY_NOW_PRICE.into());
 
-
         let _ = setup_offered_nft::<T>(
             curator_account_id.clone(),
             actor,
@@ -2002,6 +2036,7 @@ benchmarks! {
             price,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id.clone());
 
     }: _ (origin, actor, video_id)
@@ -2016,14 +2051,18 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused
-    // - channel has max number of assets
-    // - video has max number of assets
-    // - nft offer price is_some
-    // - nft owner is `Member`
-    // - royalty is non-zero
-    // - `price - royalty` is non-zero
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
     // INPUT COMPLEXITY
     accept_incoming_offer {
         let (
@@ -2037,7 +2076,6 @@ benchmarks! {
         let (to_member_account, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
         let price = Some(BUY_NOW_PRICE.into());
 
-
         let (nft_owner_actor, owner_account) = setup_offered_nft::<T>(
             curator_account_id.clone(),
             actor,
@@ -2047,6 +2085,7 @@ benchmarks! {
             price,
         ).unwrap();
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(to_member_account.clone());
         let balance_pre = Balances::<T>::usable_balance(&to_member_account);
 
@@ -2070,11 +2109,15 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - video has max assets
-    // - NFT owner is a separate member
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     sell_nft {
         let (
@@ -2094,6 +2137,7 @@ benchmarks! {
             false,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id.clone());
 
     }: _ (origin, video_id, actor, price)
@@ -2133,6 +2177,7 @@ benchmarks! {
             price,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id.clone());
     }: _ (origin, actor, video_id)
         verify {
@@ -2170,6 +2215,7 @@ benchmarks! {
             price,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let new_price = (BUY_NOW_PRICE + 1).into();
     }: _ (origin, actor, video_id, new_price)
@@ -2211,6 +2257,7 @@ benchmarks! {
             price,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(buyer_account_id.clone());
 
         let balance_pre = Balances::<T>::usable_balance(buyer_account_id.clone());
@@ -2269,18 +2316,22 @@ benchmarks! {
         }
 
     // ================================================================================
-    // ========================= NFT - ENGLISH AUCTION ================================
+    // =========================== NFT - ENGLISH AUCTION ==============================
     // ================================================================================
 
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     // - Member whitelist : w
     start_english_auction {
@@ -2313,6 +2364,7 @@ benchmarks! {
                 .collect(),
         };
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(owner_account.clone());
 
     }: _(origin, nft_owner_actor, video_id, auction_params)
@@ -2327,10 +2379,15 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - channel has max collaborators
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_english_auction {
         let (
@@ -2349,6 +2406,7 @@ benchmarks! {
             true,
         ).unwrap();
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(owner_account);
 
     }: _(origin, nft_owner_actor, video_id)
@@ -2360,12 +2418,23 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - previous bid already exists
-    // - bid amount triggers buy now (TESTED against non buy now case)
-    // - nft royalty is some
+    // STATE COMPLEXITY:
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - bid triggers buy now
+    // - bid already exists
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
     // INPUT COMPLEXITY
     make_english_auction_bid {
         let (
@@ -2382,6 +2451,8 @@ benchmarks! {
             video_id,
             true,
         )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
 
         fastforward_by_blocks::<T>(2u32.into());
         let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
@@ -2402,10 +2473,20 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO:
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - channel has max collaborators
-    // - nft royalty is some
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
     // INPUT COMPLEXITY
     settle_english_auction {
         let (
@@ -2423,6 +2504,7 @@ benchmarks! {
             true,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(owner_account.clone());
 
         fastforward_by_blocks::<T>(2u32.into());
@@ -2443,14 +2525,18 @@ benchmarks! {
 
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
-    // - curator owned channel
+        // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
     // INPUT COMPLEXITY
+    // - nft owner is channel owner
     // - open auction params Member whitelist : w
     start_open_auction {
         let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
@@ -2476,6 +2562,8 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(curator_account_id.clone());
 
+        set_all_channel_paused_features::<T>(channel_id);
+
         let auction_params = OpenAuctionParams::<T> {
             buy_now_price: Some(buy_now_price),
             bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
@@ -2496,10 +2584,17 @@ benchmarks! {
 
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_open_auction {
         let (
@@ -2517,6 +2612,8 @@ benchmarks! {
             false,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
+
         let origin = RawOrigin::Signed(owner_account);
 
     }: _(origin, nft_owner_actor, video_id)
@@ -2529,10 +2626,17 @@ benchmarks! {
 
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_open_auction_bid {
         let (
@@ -2553,7 +2657,9 @@ benchmarks! {
             false,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(participant_account_id.clone());
+
         fastforward_by_blocks::<T>(2u32.into());
 
         let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
@@ -2566,10 +2672,20 @@ benchmarks! {
 
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
     // INPUT COMPLEXITY
     pick_open_auction_winner {
         let (
@@ -2587,6 +2703,7 @@ benchmarks! {
             true,
         ).unwrap();
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(owner_account.clone());
 
         fastforward_by_blocks::<T>(2u32.into());
@@ -2607,13 +2724,22 @@ benchmarks! {
 
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
-    // - bid for open auction already exists
-    // - bid amount triggers buy now (TESTED to be heavier than the non buy now case)
-    // - auction has max whitelisted members
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - bid triggers buy now
+    // - bid already exists
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
     // INPUT COMPLEXITY
     make_open_auction_bid {
         let (
@@ -2630,6 +2756,8 @@ benchmarks! {
             video_id,
             true,
         )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(participant_account_id.clone());
 
         fastforward_by_blocks::<T>(2u32.into());
@@ -2650,47 +2778,6 @@ benchmarks! {
                 transactional_status: TransactionalStatus::<T>::Idle,
                 ..
             })));
-        }
-
-    // Worst case scenario:
-    // - channel belonging to a member with max number of collaborators and max agent permissions
-    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    claim_and_withdraw_member_channel_reward {
-        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
-
-        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
-        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
-        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
-        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
-        let (channel_id, member_id, member_account_id, lead_account_id) =
-            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
-        let lead_origin = RawOrigin::Signed(lead_account_id);
-        let origin = RawOrigin::Signed(member_account_id.clone());
-
-        set_all_channel_paused_features_except::<T>(channel_id, vec![
-                PausableChannelFeature::CreatorCashout,
-                PausableChannelFeature::ChannelFundsTransfer,
-            ]);
-
-        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-           commitment: Some(commitment),
-            ..Default::default()
-        })?;
-
-        let actor = ContentActor::Member(member_id);
-        let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
-        let item = payments[0];
-        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
-    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
-        verify {
-            assert_eq!(
-                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
-                item.cumulative_reward_earned
-            );
-            assert_eq!(
-                Balances::<T>::usable_balance(member_account_id),
-                cumulative_reward_claimed + balances_pre,
-            );
         }
 }
 
@@ -2903,16 +2990,9 @@ pub mod tests {
     }
 
     #[test]
-    fn destroy_channel_owned_nft() {
+    fn destroy_nft() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_destroy_channel_owned_nft());
-        })
-    }
-
-    #[test]
-    fn destroy_member_owned_nft() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_destroy_member_owned_nft());
+            assert_ok!(Content::test_benchmark_destroy_nft());
         })
     }
 

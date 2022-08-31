@@ -1842,7 +1842,7 @@ decl_module! {
         /// `O (W)` where:
         /// - W : whitelist member list length
         /// - DB:
-        ///    - O(1)
+        ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoContent::<T>::start_english_auction(auction_params.whitelist.len() as u32)]
         pub fn start_english_auction(
@@ -2013,7 +2013,6 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
-
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
