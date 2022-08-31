@@ -46,6 +46,9 @@ decl_error! {
         /// because it must secure the channel module account against dusting
         ChannelStateBloatBondBelowExistentialDeposit,
 
+        ///Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
+        NumberOfAssetsToRemoveIsZero,
+
         // Curator Management Errors
         // -------------------------
 

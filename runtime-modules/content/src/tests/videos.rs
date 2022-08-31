@@ -1845,6 +1845,52 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_lead() {
 }
 
 #[test]
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_storage_buckets_num_witness(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_missing_storage_buckets_num_witness(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
+    })
+}
+
+#[test]
 fn successful_moderation_action_video_deletion_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -2182,6 +2228,52 @@ fn unsuccessful_moderation_action_non_existing_video_assets_deletion() {
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
             .with_video_id(2)
             .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_invalid_storage_buckets_num_witness(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video_nft().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(0)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_zero_number_of_assets_to_delete(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video_nft().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_assets_to_remove(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::NumberOfAssetsToRemoveIsZero.into()));
     })
 }
 
