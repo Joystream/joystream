@@ -933,6 +933,30 @@ fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_d
 }
 
 #[test]
+fn unsuccessful_moderation_action_channel_deletion_and_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
+            )]),
+        );
+
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
+    })
+}
+
+#[test]
 fn successful_moderation_action_channel_deletion_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1463,6 +1487,41 @@ fn unsuccessful_moderation_action_non_existing_channel_assets_deletion() {
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
             .with_channel_id(2)
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_and_invalid_storage_buckets_num_witness()
+{
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
+            )]),
+        );
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(0)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_with_zero_number_of_assets_to_delete() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_assets_to_remove(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::NumberOfAssetsToRemoveIsZero.into()));
     })
 }
 

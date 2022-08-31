@@ -36,6 +36,9 @@ decl_error! {
         /// are being updated.
         MissingStorageBucketsNumWitness,
 
+        ///Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
+        NumberOfAssetsToRemoveIsZero,
+
         // Curator Management Errors
         // -------------------------
 
