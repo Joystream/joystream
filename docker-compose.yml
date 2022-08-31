@@ -259,7 +259,7 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:carthage-2.0
+    image: joystream/faucet:carthage
     restart: unless-stopped
     container_name: faucet
     env_file:
@@ -269,6 +269,7 @@ services:
       - PORT=3002
       - PROVIDER=${JOYSTREAM_NODE_WS}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - HCAPTCHA_SECRET=${HCAPTCHA_SECRET}
       - ALERT_TO_EMAIL=${ALERT_TO_EMAIL}
       - ALERT_FROM_EMAIL=${ALERT_FROM_EMAIL}
       - BALANCE_CREDIT=${BALANCE_CREDIT}
