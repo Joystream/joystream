@@ -34,7 +34,7 @@ import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
-import videoCategories from '../flows/content/videoCategories'
+import { testVideoCategories } from '../flows/content/videoCategories'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -96,7 +96,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', videoCategories).requires(sudoHireLead)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
   const createChannelJob = job('create channel via CLI', createChannel).requires(videoCategoriesJob)
   const subtitlesJob = job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(createChannelJob)
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(createChannelJob)
