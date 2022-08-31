@@ -1670,7 +1670,7 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (W)`
         /// - DB:
         ///    - O(W + B) where:
         ///    - W : member whitelist length in case nft initial status is auction
@@ -1778,7 +1778,7 @@ decl_module! {
         /// `O (W)` where:
         /// - W : member whitelist length
         /// - DB:
-        ///    - O(1)
+        ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoContent::<T>::start_open_auction(auction_params.whitelist.len() as u32)]
         pub fn start_open_auction(
