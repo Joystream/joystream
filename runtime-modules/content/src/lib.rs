@@ -1736,7 +1736,7 @@ decl_module! {
         /// `O (1)`
         /// - DB:
         ///    - O(1)
-        /// # </weight>//
+        /// # </weight>
         #[weight = WeightInfoContent::<T>::destroy_nft()]
         pub fn destroy_nft(
             origin,
