@@ -1803,7 +1803,11 @@ benchmarks! {
     // - curator has max number of permissions
     // - channel has max assets
     // - video has max assets
-    // - English Auction with max whitelisted member & some royalty
+    // - English Auction with:
+    //   - max whitelisted member
+    //   - some royalty
+    //   - buy now price is some
+    //   - starts at is some
     // - nft limits are set
     // - video has max. number of assets
     // INPUT COMPLEXITY
@@ -1956,7 +1960,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id.clone());
 
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = Some(BalanceOf::<T>::one());
+        let price = Some(BUY_NOW_PRICE.into());
 
     }: _ (origin, video_id, actor, to_member, price)
         verify {
@@ -1986,7 +1990,8 @@ benchmarks! {
         )?;
 
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = Some(BalanceOf::<T>::one());
+        let price = Some(BUY_NOW_PRICE.into());
+
 
         let _ = setup_offered_nft::<T>(
             curator_account_id.clone(),
@@ -2024,7 +2029,8 @@ benchmarks! {
         ).unwrap();
 
         let (to_member_account, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = Some(BalanceOf::<T>::one());
+        let price = Some(BUY_NOW_PRICE.into());
+
 
         let (nft_owner_actor, owner_account) = setup_offered_nft::<T>(
             curator_account_id.clone(),
@@ -2073,8 +2079,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = BalanceOf::<T>::one();
+        let price = BUY_NOW_PRICE.into();
 
         let _ = setup_idle_nft::<T>(
             curator_account_id.clone(),
@@ -2112,7 +2117,7 @@ benchmarks! {
         )?;
 
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = BalanceOf::<T>::one();
+        let price = BUY_NOW_PRICE.into();
 
         let _ = setup_nft_in_buy_now::<T>(
             curator_account_id.clone(),
@@ -2149,8 +2154,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = BalanceOf::<T>::one();
+        let price = BUY_NOW_PRICE.into();
 
         let _ = setup_nft_in_buy_now::<T>(
             curator_account_id.clone(),
@@ -2161,7 +2165,7 @@ benchmarks! {
         )?;
 
         let origin = RawOrigin::Signed(curator_account_id.clone());
-        let new_price = BalanceOf::<T>::from(2u32);
+        let new_price = (BUY_NOW_PRICE + 1).into();
     }: _ (origin, actor, video_id, new_price)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -2191,7 +2195,7 @@ benchmarks! {
         )?;
 
         let (buyer_account_id, buyer_id) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = BalanceOf::<T>::one();
+        let price = BUY_NOW_PRICE.into();
 
         let (nft_owner_actor, owner_account) = setup_nft_in_buy_now::<T>(
             curator_account_id.clone(),
@@ -2285,9 +2289,6 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = Some(BalanceOf::<T>::one());
-
         let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
             curator_account_id.clone(),
             actor,
@@ -2296,9 +2297,7 @@ benchmarks! {
         )?;
 
         let auction_params = EnglishAuctionParams::<T> {
-            buy_now_price: Some(
-                Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
-            ),
+            buy_now_price: Some(BUY_NOW_PRICE.into()),
             duration: Pallet::<T>::min_auction_duration(),
             extension_period: Pallet::<T>::min_auction_extension_period(),
             min_bid_step: Pallet::<T>::min_bid_step(),
