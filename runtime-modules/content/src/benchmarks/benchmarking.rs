@@ -2255,7 +2255,6 @@ benchmarks! {
     // - channel has max collaborators
     // - channel has all features paused
     // - channel has max assets
-    // - NFT owner == channel owner
     // INPUT COMPLEXITY
     update_channel_nft_limit {
         let nft_limit_period = NftLimitPeriod::Daily;
