@@ -1462,8 +1462,17 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
 
-        // extrinsics for video visibility status (hidden/visible) setting by moderator
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Extrinsic for video visibility status (hidden/visible) setting by moderator
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T>::set_video_visibility_as_moderator_weight(rationale)]
         pub fn set_video_visibility_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -4510,6 +4519,13 @@ impl<T: Config> Module<T> {
         let a = (*rationale).len() as u32;
 
         WeightInfoContent::<T>::set_channel_visibility_as_moderator(a)
+    }
+
+    // Calculates weight for set_video_visibility_as_moderator extrinsic.
+    fn set_video_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
+        let a = (*rationale).len() as u32;
+
+        WeightInfoContent::<T>::set_video_visibility_as_moderator(a)
     }
 
     // Calculates weight for delete_video_assets_as_moderator extrinsic.
