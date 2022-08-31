@@ -1937,16 +1937,16 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let _ = setup_idle_nft::<T>(
+        let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
             curator_account_id.clone(),
             actor,
             video_id,
-            false,
+            true,
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(curator_account_id.clone());
-    }: _ (origin, video_id, actor)
+        let origin = RawOrigin::Signed(owner_account);
+    }: _ (origin, video_id, nft_owner_actor)
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.unwrap().owner == NftOwner::ChannelOwner);
         }
@@ -2431,6 +2431,7 @@ benchmarks! {
     // - nft limits are set
     // - bid triggers buy now
     // - bid already exists
+    // - whitelist has max size
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
     //   - royalty is non-zero
@@ -2736,6 +2737,7 @@ benchmarks! {
     // - nft limits are set
     // - bid triggers buy now
     // - bid already exists
+    // - whitelist has max size
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
     //   - royalty is non-zero
