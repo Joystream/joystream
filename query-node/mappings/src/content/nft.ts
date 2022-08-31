@@ -173,6 +173,7 @@ async function resetNftTransactionalStatusFromVideo(
   if (newOwner) {
     nft.ownerMember = newOwner
     nft.ownerCuratorGroup = undefined
+    nft.isOwnedByChannel = false
   }
 
   // reset transactional status
@@ -421,8 +422,8 @@ export async function createNft(
     : undefined
   const decodedMetadata = nftIssuanceParameters.nftMetadata.toString()
 
-  // Is NFT owned by channel or some member
-  const isOwnedByChannel = !ownerMember
+  // Newly minted NFT is always owned by a channel unless nonChannelOwner was set
+  const isOwnedByChannel = !nftIssuanceParameters.nonChannelOwner.isSome
 
   // channel ownerCuratorGroup (if any)
   const ownerCuratorGroup = isOwnedByChannel ? video.channel.ownerCuratorGroup : undefined
