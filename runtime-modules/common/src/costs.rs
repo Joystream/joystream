@@ -1,10 +1,9 @@
-use crate::locks::InvitedMemberLockId;
-use frame_support::traits::StoredMap;
 use frame_support::traits::{
     fungible::{Inspect, Mutate},
     tokens::WithdrawConsequence,
     Currency, Get,
 };
+use frame_support::traits::{ExistenceRequirement, Imbalance, StoredMap, WithdrawReasons};
 use sp_arithmetic::traits::Saturating;
 use sp_runtime::{traits::Zero, DispatchError};
 
@@ -22,9 +21,9 @@ pub fn has_sufficient_balance_for_payment<T: frame_system::Config + balances::Co
 
 // Check whether an account has sufficient balance to cover fees related to transaction processing
 // or storage costs. For example: bloat bonds, data size fee.
-// Those fees are coverable with invitation-locked balance.
+// Those fees are coverable with usable and misc_frozen balance (but not fee_frozen).
 // The balance is sufficient if:
-// `free_balance(account) - greatest_value_lock_excluding_invitation_lock >= amount + existential_deposit`
+// `account.free - account.fee_frozen >= amount && account.total() >= amount + existential_deposit`
 pub fn has_sufficient_balance_for_fees<T: frame_system::Config + balances::Config>(
     account: &T::AccountId,
     amount: T::Balance,
@@ -33,26 +32,11 @@ pub fn has_sufficient_balance_for_fees<T: frame_system::Config + balances::Confi
         return true;
     }
 
-    let locks = balances::Pallet::<T>::locks(account);
-    let free_balance = balances::Pallet::<T>::free_balance(account);
-    let total_balance = balances::Pallet::<T>::total_balance(account);
+    let account_data = T::AccountStore::get(account);
 
-    // Balance suitable for covering fees is equal to free_balnce
-    // minus the highest lock excluding the invitation lock
-    let unusable_free_balance = locks
-        .iter()
-        .map(|lock| {
-            if lock.id == InvitedMemberLockId::get() {
-                Zero::zero()
-            } else {
-                lock.amount
-            }
-        })
-        .max()
-        .unwrap_or_else(Zero::zero);
-    let usable_funds = free_balance.saturating_sub(unusable_free_balance);
-
-    usable_funds >= amount && total_balance >= amount.saturating_add(T::ExistentialDeposit::get())
+    account_data.free.saturating_sub(account_data.fee_frozen) >= amount
+        && account_data.free.saturating_add(account_data.reserved)
+            >= amount.saturating_add(T::ExistentialDeposit::get())
 }
 
 // Pay a certain fee associated with a transaction (for example: a bloat bond, data size fee).
@@ -81,16 +65,24 @@ pub fn pay_fee<T: frame_system::Config + balances::Config>(
     // Get the amount of locked balance that will be consumed
     let locked_balance_consumed = amount.saturating_sub(usable_balance);
 
-    // Slash the amount from payer's account
-    let (_, not_slashed) = <balances::Pallet<T> as Currency<T::AccountId>>::slash(payer, amount);
+    // Withdraw the amount from payer's account with WithdrawReasons::TRANSACTION_PAYMENT
+    let withdrawn = balances::Pallet::<T>::withdraw(
+        payer,
+        amount,
+        WithdrawReasons::TRANSACTION_PAYMENT,
+        ExistenceRequirement::KeepAlive,
+    )?;
 
     debug_assert!(
-        not_slashed == Zero::zero(),
-        "pay_fee: Unexpected value of not_slashed: {:?}",
-        not_slashed
+        withdrawn.peek() == amount,
+        "pay_fee: Unexpected withdrawn value! Expected: {:?}, Got: {:?}.",
+        amount,
+        withdrawn.peek()
     );
 
     // If there's a reciever - deposit the funds into reciever's account
+    // Note: This will be a no-op if reciever's account doesn't exist
+    // and `amount < existential_deposit`!
     if let Some(reciever) = reciever {
         let _ = balances::Pallet::<T>::deposit_creating(reciever, amount);
     }

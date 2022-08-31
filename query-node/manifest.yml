@@ -942,8 +942,8 @@ mappings:
     # ExtrinsicSuccess event handler - we're using an empty handler just for the purpose of triggering
     # preBlock/postBlock hooks for each block (instead of "catching-up" after some event/tx recognized by processor is fired)
     # ExtrinsicSuccess is emitted at least once per block due to timestamp.set extrinsic
-    - event: system.ExtrinsicSuccess
-      handler: system_ExtrinsicSuccess
+    # - event: system.ExtrinsicSuccess
+    #   handler: system_ExtrinsicSuccess
     # Utility
     - event: joystreamUtility.UpdatedWorkingGroupBudget
       handler: joystreamUtility_UpdatedWorkingGroupBudget
@@ -956,5 +956,5 @@ mappings:
     - handler: bootstrapData
       filter:
         height: '[0,0]' # will be executed only at genesis
-  postBlockHooks:
-    - handler: runScheduler
+  # postBlockHooks:
+  #   - handler: runScheduler
