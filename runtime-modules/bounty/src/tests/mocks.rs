@@ -2,8 +2,8 @@
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{ConstU32, Currency, EnsureOneOf, LockIdentifier};
-use frame_support::{parameter_types, PalletId};
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_support::{ensure, parameter_types, PalletId};
+use frame_system::{ensure_signed, EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -96,6 +96,9 @@ impl common::StakingAccountValidator<Test> for () {
     }
 }
 pub const MAX_MEMBERS: u32 = 150;
+pub const INVALID_MEMBER_ID: u64 = (MAX_MEMBERS + 1) as u64;
+pub const INVALID_ACCOUNT_ID: u128 = (MAX_MEMBERS + 1) as u128;
+
 impl common::membership::MembershipInfoProvider<Test> for () {
     fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
         if member_id < MAX_MEMBERS.into() {
@@ -148,15 +151,18 @@ impl common::membership::MembershipTypes for Test {
 impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
-        _member_id: u64,
+        member_id: u64,
     ) -> Result<u128, DispatchError> {
-        let signed_account_id = frame_system::ensure_signed(origin)?;
-
-        Ok(signed_account_id)
+        let sender = ensure_signed(origin)?;
+        ensure!(
+            Self::is_member_controller_account(&member_id, &sender),
+            DispatchError::Other("origin signer not a member controller account"),
+        );
+        Ok(sender)
     }
 
-    fn is_member_controller_account(_member_id: &u64, _account_id: &u128) -> bool {
-        true
+    fn is_member_controller_account(member_id: &u64, account_id: &u128) -> bool {
+        *member_id < MAX_MEMBERS.into() && (*member_id) as u128 == *account_id
     }
 }
 

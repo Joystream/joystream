@@ -22,6 +22,7 @@ frame-benchmarking = { package = 'frame-benchmarking', default-features = false,
 council = { package = 'pallet-council', default-features = false, path = '../council'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../referendum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 
 [dev-dependencies]
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}

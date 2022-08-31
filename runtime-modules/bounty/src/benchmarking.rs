@@ -16,7 +16,7 @@ use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use membership::Module as Membership;
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::{Perbill, SaturatedConversion};
+use sp_runtime::Perbill;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -51,15 +51,37 @@ fn assert_was_fired<T: Config>(generic_event: <T as Config>::Event) {
     assert!(events.iter().any(|ev| ev.event == system_event));
 }
 
-fn get_byte(num: u32, byte_number: u8) -> u8 {
+fn get_byte(num: u128, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number) as u8)
         .try_into()
         .unwrap()
 }
 
+pub trait CreateAccountId {
+    fn create_account_id(id: u128) -> Self;
+}
+
+impl CreateAccountId for u128 {
+    fn create_account_id(id: u128) -> Self {
+        id
+    }
+}
+
+impl CreateAccountId for u64 {
+    fn create_account_id(id: u128) -> Self {
+        id.try_into().unwrap()
+    }
+}
+
+impl CreateAccountId for sp_core::crypto::AccountId32 {
+    fn create_account_id(id: u128) -> Self {
+        account::<Self>("default", id.try_into().unwrap(), SEED)
+    }
+}
+
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Config + membership::Config>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u128) -> Vec<u8> {
     let mut handle = vec![];
 
     for i in 0..4 {
@@ -79,11 +101,12 @@ fn initial_balance<T: Config + membership::Config>() -> T::Balance {
         + 1000000u32.into()
 }
 
-fn member_funded_account<T: Config + membership::Config>(
-    name: &'static str,
-    id: u32,
-) -> (T::AccountId, T::MemberId) {
-    let account_id = account::<T::AccountId>(name, id, SEED);
+fn member_funded_account<T>(id: u128) -> (T::AccountId, T::MemberId)
+where
+    T: Config + membership::Config,
+    T::AccountId: CreateAccountId,
+{
+    let account_id = T::AccountId::create_account_id(id);
     let handle = handle_from_id::<T>(id);
 
     // Give balance for buying membership
@@ -117,12 +140,12 @@ fn member_funded_account<T: Config + membership::Config>(
     (account_id, new_member_id)
 }
 
-fn announce_entry_and_submit_work<T: Config + membership::Config>(
-    bounty_id: &T::BountyId,
-    index: u32,
-) -> T::EntryId {
-    let membership_index = 1000 + index;
-    let (account_id, member_id) = member_funded_account::<T>("work entrants", membership_index);
+fn announce_entry_and_submit_work<T>(bounty_id: &T::BountyId, index: u128) -> T::EntryId
+where
+    T: Config + membership::Config,
+    T::AccountId: CreateAccountId,
+{
+    let (account_id, member_id) = member_funded_account::<T>(index);
 
     Bounty::<T>::announce_work_entry(
         RawOrigin::Signed(account_id.clone()).into(),
@@ -190,6 +213,7 @@ benchmarks! {
               T: balances::Config,
               T: membership::Config,
               T: Config,
+              T::AccountId: CreateAccountId
     }
 
     create_bounty_by_council {
@@ -208,7 +232,10 @@ benchmarks! {
             + T::CreatorStateBloatBondAmount::get());
 
         let members = (1..=j)
-            .map(|id| id.saturated_into())
+            .map(|id| {
+                let (_, member_id) = member_funded_account::<T>(id.into());
+                member_id
+            })
             .collect::<BTreeSet<_>>();
 
         let params = BountyCreationParameters::<T>{
@@ -241,14 +268,17 @@ benchmarks! {
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
         let max_amount: BalanceOf<T> = 1000u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         T::CouncilBudgetManager::set_budget(
             cherry
             + T::CreatorStateBloatBondAmount::get());
 
         let members = (1..=j)
-            .map(|id| id.saturated_into())
+            .map(|id| {
+                let (_, member_id) = member_funded_account::<T>(id.into());
+                member_id
+            })
             .collect::<BTreeSet<_>>();
 
         let params = BountyCreationParameters::<T>{
@@ -301,7 +331,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -348,7 +378,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -392,7 +422,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -438,7 +468,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -481,7 +511,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -536,7 +566,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -587,7 +617,7 @@ benchmarks! {
             entrant_stake,
             ..Default::default()
         };
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -642,7 +672,7 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
     }: fund_bounty (
         RawOrigin::Signed(account_id.clone()),
@@ -650,7 +680,6 @@ benchmarks! {
         bounty_id, amount)
 
     verify {
-        // println!("4 {:?}", Balances::<T>::usable_balance(&account_id));
 
         assert_eq!(
             Balances::<T>::usable_balance(&account_id),
@@ -726,7 +755,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -826,10 +855,14 @@ benchmarks! {
         let funding_amount: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        let member_ids = (0..j)
-            .into_iter()
-            .map(|id| id.saturated_into())
-            .collect::<BTreeSet<T::MemberId>>();
+        let members = (0..j)
+            .map(|id| {
+                member_funded_account::<T>(id.into())
+            })
+            .collect::<BTreeMap<_,_>>();
+
+        let member_ids = members.values().cloned().collect::<BTreeSet<_>>();
+        let (account_id, member_id) = members.into_iter().next().unwrap();
 
         let contract_type = AssuranceContractType::Closed(member_ids);
 
@@ -844,7 +877,7 @@ benchmarks! {
 
         let bounty_id = create_funded_bounty::<T>(params);
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 1);
+
 
     }: _(
         RawOrigin::Signed(account_id.clone()),
@@ -899,7 +932,7 @@ benchmarks! {
             bounty.milestone,
             BountyMilestone::BountyMaxFundingReached));
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 1);
+        let (account_id, member_id) = member_funded_account::<T>(0);
         let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(account_id.clone()).into(),
@@ -952,7 +985,7 @@ benchmarks! {
 
         let entry_ids = (0..i)
             .into_iter()
-            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
+            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i.into())})
             .collect::<Vec<_>>();
         Bounty::<T>::end_working_period(
             RawOrigin::Root.into(), bounty_id).unwrap();
@@ -1025,7 +1058,7 @@ benchmarks! {
 
         let judgment = (0..i).into_iter().map(|i|{
 
-            let entry_id = announce_entry_and_submit_work::<T>(&bounty_id, i);
+            let entry_id = announce_entry_and_submit_work::<T>(&bounty_id, i.into());
 
             let judgment = OracleWorkEntryJudgment::Rejected {
                 slashing_share: Perbill::from_percent(50),
@@ -1059,7 +1092,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 10000000u32.into();
         let (oracle_account_id, oracle_member_id) =
-            member_funded_account::<T>("oracle", 0);
+            member_funded_account::<T>(0);
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
@@ -1075,9 +1108,9 @@ benchmarks! {
 
         let bounty_id = create_funded_bounty::<T>(params);
 
-        let entry_ids = (0..i)
+        let entry_ids = (1..=i)
             .into_iter()
-            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
+            .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i.into())})
             .collect::<Vec<_>>();
 
         Bounty::<T>::end_working_period(
@@ -1137,7 +1170,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let (oracle_account_id, oracle_member_id) =
-            member_funded_account::<T>("oracle", 1);
+            member_funded_account::<T>(0);
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake = T::MinWorkEntrantStake::get();
 
@@ -1153,9 +1186,9 @@ benchmarks! {
 
         let bounty_id = create_funded_bounty::<T>(params);
 
-        let judgment = (0..i).into_iter().map(|i|{
+        let judgment = (1..=i).into_iter().map(|i|{
 
-            let entry_id = announce_entry_and_submit_work::<T>(&bounty_id, i);
+            let entry_id = announce_entry_and_submit_work::<T>(&bounty_id, i.into());
 
             let judgment = OracleWorkEntryJudgment::Rejected {
                 slashing_share: Perbill::from_percent(50),
@@ -1191,7 +1224,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
 
         let (current_oracle_account_id, current_oracle_member_id) =
-            member_funded_account::<T>("current_oracle", 1);
+            member_funded_account::<T>(1);
 
         let oracle = BountyActor::Member(current_oracle_member_id);
         let new_oracle = BountyActor::Council;
@@ -1241,7 +1274,7 @@ benchmarks! {
         let oracle = BountyActor::Council;
 
         let (new_oracle_account_id, new_oracle_member_id) =
-            member_funded_account::<T>("new_oracle", 2);
+            member_funded_account::<T>(2);
 
         let new_oracle = BountyActor::Member(new_oracle_member_id);
 
@@ -1287,10 +1320,10 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
 
         let (current_oracle_account_id, current_oracle_member_id) =
-            member_funded_account::<T>("current_oracle", 1);
+            member_funded_account::<T>(1);
 
         let (new_oracle_account_id, new_oracle_member_id) =
-            member_funded_account::<T>("new_oracle", 2);
+            member_funded_account::<T>(2);
 
         let oracle = BountyActor::Member(current_oracle_member_id);
         let new_oracle = BountyActor::Member(new_oracle_member_id);
@@ -1337,12 +1370,12 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
 
         let (current_oracle_account_id, current_oracle_member_id) =
-            member_funded_account::<T>("current_oracle", 1);
+            member_funded_account::<T>(0);
 
         let oracle = BountyActor::Member(current_oracle_member_id);
 
         let (new_oracle_account_id, new_oracle_member_id) =
-            member_funded_account::<T>("new_oracle", 2);
+            member_funded_account::<T>(1);
         let new_oracle = BountyActor::Member(new_oracle_member_id);
 
         let creator = BountyActor::Council;
@@ -1389,7 +1422,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
 
         let (current_oracle_account_id, current_oracle_member_id) =
-            member_funded_account::<T>("current_oracle", 1);
+            member_funded_account::<T>(0);
 
         let oracle = BountyActor::Member(current_oracle_member_id);
 
@@ -1438,7 +1471,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let (oracle_account_id, oracle_member_id) =
-            member_funded_account::<T>("oracle", 1);
+            member_funded_account::<T>(0);
         let oracle = BountyActor::Member(oracle_member_id);
         let stake = T::MinWorkEntrantStake::get();
         let creator = BountyActor::Council;
@@ -1456,7 +1489,8 @@ benchmarks! {
         let bounty_id = create_funded_bounty::<T>(params);
 
         let (work_account_id, work_member_id) =
-            member_funded_account::<T>("work entrants", 0);
+            member_funded_account::<T>(1);
+
         let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(work_account_id.clone()).into(),
@@ -1501,7 +1535,7 @@ benchmarks! {
         let entrant_stake = T::MinWorkEntrantStake::get();
         let creator = BountyActor::Council;
         let (account_id, member_id) =
-            member_funded_account::<T>("work entrant", 0);
+            member_funded_account::<T>(0);
         let params = BountyCreationParameters::<T> {
             creator,
             cherry,
@@ -1557,7 +1591,7 @@ benchmarks! {
         let funding_amount: BalanceOf<T> = 100u32.into();
 
         let (oracle_account_id, oracle_member_id) =
-            member_funded_account::<T>("oracle", 1);
+            member_funded_account::<T>(0);
 
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake = T::MinWorkEntrantStake::get();
@@ -1577,7 +1611,7 @@ benchmarks! {
         let bounty_id = create_funded_bounty::<T>(params);
 
         let (work_account_id, work_member_id) =
-            member_funded_account::<T>("work entrants", 0);
+            member_funded_account::<T>(1);
 
         let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
@@ -1635,7 +1669,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let (oracle_account_id, oracle_member_id) =
-        member_funded_account::<T>("oracle", 0);
+            member_funded_account::<T>(0);
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake = T::MinWorkEntrantStake::get();
         let creator = BountyActor::Council;
@@ -1658,7 +1692,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("funder", 1);
+        let (account_id, member_id) = member_funded_account::<T>(1);
         let funder = BountyActor::Member(member_id);
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();
@@ -1672,7 +1706,7 @@ benchmarks! {
             amount).unwrap();
 
         let (work_account_id, work_member_id) =
-            member_funded_account::<T>("work entrants", 2);
+            member_funded_account::<T>(2);
         let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(work_account_id.clone()).into(),
@@ -1779,7 +1813,7 @@ benchmarks! {
         let max_amount: BalanceOf<T> = 1000u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
         let (oracle_account_id, oracle_member_id) =
-        member_funded_account::<T>("oracle", 0);
+            member_funded_account::<T>(0);
         let oracle = BountyActor::Member(oracle_member_id);
 
         T::CouncilBudgetManager::set_budget(
@@ -1837,7 +1871,7 @@ benchmarks! {
 
         let bounty_id = create_funded_bounty::<T>(params);
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 1);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(account_id.clone()).into(),
@@ -1886,7 +1920,7 @@ benchmarks! {
         // should reach default max bounty funding amount
         let amount: BalanceOf<T> = 100u32.into();
 
-        let (account_id, member_id) = member_funded_account::<T>("member1", 0);
+        let (account_id, member_id) = member_funded_account::<T>(0);
 
         Bounty::<T>::create_bounty(
             RawOrigin::Root.into(), params, Vec::new()).unwrap();

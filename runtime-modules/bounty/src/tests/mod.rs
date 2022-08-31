@@ -21,9 +21,11 @@ use frame_support::{assert_err, assert_ok};
 use frame_system::RawOrigin;
 use mocks::{
     build_test_externalities, Balances, Bounty, ClosedContractSizeLimit, System, Test,
-    COUNCIL_BUDGET_ACCOUNT_ID, MAX_MEMBERS, STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
+    COUNCIL_BUDGET_ACCOUNT_ID, INVALID_ACCOUNT_ID, INVALID_MEMBER_ID, MAX_MEMBERS,
+    STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use sp_runtime::DispatchError;
+use sp_runtime::DispatchError::Other;
 use sp_runtime::Perbill;
 use sp_std::collections::btree_map::BTreeMap;
 
@@ -32,14 +34,14 @@ const DEFAULT_WINNER_REWARD: u64 = 10;
 #[macro_export]
 macro_rules! to_origin {
     ($x: tt) => {
-        RawOrigin::Signed($x as u128 + 100).into()
+        RawOrigin::Signed($x as u128).into()
     };
 }
 
 #[macro_export]
 macro_rules! to_account {
     ($x: tt) => {
-        $x as u128 + 100
+        $x as u128
     };
 }
 
@@ -414,6 +416,17 @@ fn create_bounty_fails_with_invalid_origin() {
             .with_origin(RawOrigin::Root)
             .with_creator_member_id(1)
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn create_bounty_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        // For a member bounty.
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(1))
+            .with_creator_member_id(INVALID_MEMBER_ID)
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
     });
 }
 
@@ -1050,6 +1063,27 @@ fn terminate_bounty_fails_with_invalid_origin() {
 }
 
 #[test]
+fn terminate_bounty_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let initial_balance = 500;
+
+        increase_account_balance(&account_id, initial_balance);
+        set_council_budget(initial_balance);
+
+        // Created by council - try to cancel with bad origin
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_creator_member_id(1)
+            .call_and_assert(Ok(()));
+
+        TerminateBountyFixture::default()
+            .with_origin(RawOrigin::Signed(INVALID_ACCOUNT_ID))
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
+    });
+}
+
+#[test]
 fn terminate_bounty_fails_with_invalid_stage() {
     //WorkSubmission (creator not council)
     build_test_externalities().execute_with(|| {
@@ -1486,6 +1520,25 @@ fn fund_bounty_fails_with_invalid_origin() {
 }
 
 #[test]
+fn fund_bounty_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(1))
+            .with_member_id(INVALID_MEMBER_ID)
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
+    });
+}
+
+#[test]
 fn fund_bounty_fails_with_insufficient_balance() {
     build_test_externalities().execute_with(|| {
         set_council_budget(500);
@@ -1903,6 +1956,7 @@ fn end_working_period_invalid_stage_fails() {
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
+
     //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -2054,6 +2108,56 @@ fn end_working_period_invalid_stage_fails() {
             .call_and_assert(Err(
                 Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
             ));
+    });
+}
+
+#[test]
+fn end_working_period_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default().call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(1))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::None)
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn end_working_period_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let oracle_member_id = 2;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_oracle_member_id(oracle_member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        EndWorkPeriodFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(INVALID_ACCOUNT_ID))
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
     });
 }
 
@@ -2428,6 +2532,25 @@ fn withdraw_funding_member_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn withdraw_funding_member_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        set_council_budget(500);
+
+        CreateBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        WithdrawFundingFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(1))
+            .with_member_id(INVALID_MEMBER_ID)
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
     });
 }
 
@@ -3020,6 +3143,18 @@ fn announce_work_entry_fails_with_invalid_origin() {
 }
 
 #[test]
+fn announce_work_entry_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let bounty_id = 1u64;
+        AnnounceWorkEntryFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(1))
+            .with_member_id(INVALID_MEMBER_ID)
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
+    });
+}
+
+#[test]
 fn announce_work_entry_fails_with_invalid_stage() {
     //Funding
     build_test_externalities().execute_with(|| {
@@ -3346,33 +3481,7 @@ fn submit_work_fails_with_invalid_origin() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = 500;
-        let target_funding = 100;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_limit_period_target_amount(target_funding)
-            .call_and_assert(Ok(()));
-
         let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(target_funding)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        increase_account_balance(&account_id, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
 
         let entry_id = 1;
 
@@ -3387,6 +3496,24 @@ fn submit_work_fails_with_invalid_origin() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn submit_work_fails_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let bounty_id = 1;
+        let entry_id = 1;
+
+        SubmitWorkFixture::default()
+            .with_entry_id(entry_id)
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(1))
+            .with_member_id(INVALID_MEMBER_ID)
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
     });
 }
 
@@ -4339,6 +4466,30 @@ fn submit_judgment_fails_with_invalid_origin() {
 }
 
 #[test]
+fn submit_judgment_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let member_id = 1;
+        let account_id = 1;
+        let initial_balance = 500;
+
+        increase_account_balance(&account_id, initial_balance);
+        set_council_budget(initial_balance);
+
+        // Oracle is set to a member - try to submit judgment with invalid member_id
+        CreateBountyFixture::default()
+            .with_oracle_member_id(member_id)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1u64;
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_origin(RawOrigin::Signed(INVALID_ACCOUNT_ID))
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
+    });
+}
+
+#[test]
 fn submit_judgment_fails_with_invalid_stage() {
     //Funding
     build_test_externalities().execute_with(|| {
@@ -4790,7 +4941,7 @@ fn switch_oracle_to_member_by_oracle_member_successful() {
 }
 
 #[test]
-fn switch_oracle_invalid_origin() {
+fn switch_oracle_fails_with_invalid_origin() {
     //By Member
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -4818,6 +4969,38 @@ fn switch_oracle_invalid_origin() {
             .with_origin(RawOrigin::None)
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn switch_oracle_fails_with_invalid_new_oracle_member_id() {
+    //By Member
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let current_oracle_member_id = 2;
+        let current_oracle_account_id = 2;
+
+        set_council_budget(initial_balance);
+
+        let create_bounty_fixture =
+            CreateBountyFixture::default().with_oracle_member_id(current_oracle_member_id);
+
+        create_bounty_fixture.call_and_assert(Ok(()));
+        let bounty_id = 1u64;
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
+            bounty_id,
+            create_bounty_fixture.get_bounty_creation_parameters(),
+            Vec::new(),
+        ));
+
+        SwitchOracleFixture::default()
+            .with_origin(RawOrigin::Signed(current_oracle_account_id))
+            .with_new_oracle_member_id(BountyActor::Member(INVALID_MEMBER_ID))
+            .call_and_assert(Err(membership::Error::<Test>::MemberProfileNotFound.into()));
     });
 }
 
@@ -5482,6 +5665,22 @@ fn withdraw_entrant_stake_fails_invalid_origin() {
 }
 
 #[test]
+fn withdraw_entrant_stake_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let worker_member_id_1 = 1;
+        let entry_id_1 = 1;
+
+        WithdrawEntrantStakeFixture::default()
+            .with_origin(RawOrigin::Signed(INVALID_ACCOUNT_ID))
+            .with_member_id(worker_member_id_1)
+            .with_entry_id(entry_id_1)
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
+    });
+}
+
+#[test]
 fn withdraw_entrant_stake_fails_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -6054,6 +6253,28 @@ fn withdraw_oracle_reward_fails_invalid_origin() {
     });
 }
 
+#[test]
+fn withdraw_oracle_reward_fails_with_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        let target_funding = 500;
+        let funding_period = 10;
+        let entrant_stake = 10;
+        let oracle_member_id = 5;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_limited_funding(target_funding, funding_period)
+            .with_entrant_stake(entrant_stake)
+            .with_oracle_member_id(oracle_member_id)
+            .call_and_assert(Ok(()));
+
+        WithdrawOracleRewardFixture::default()
+            .with_origin(RawOrigin::Signed(INVALID_ACCOUNT_ID))
+            .call_and_assert(Err(Other("origin signer not a member controller account")));
+    });
+}
+
 fn setup_bounty_environment(oracle_id: u64, creator_id: u64, contributor_id: u64, entrant_id: u64) {
     let initial_balance = 500;
     let target_amount = 100;
@@ -6157,6 +6378,55 @@ fn creator_remark_successful() {
 }
 
 #[test]
+fn creator_remark_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_err!(
+            Bounty::creator_remark(
+                RawOrigin::None.into(),
+                BountyActor::Council,
+                bounty_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn creator_remark_fails_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_err!(
+            Bounty::creator_remark(
+                to_origin!(creator_id),
+                BountyActor::Member(INVALID_MEMBER_ID),
+                bounty_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    });
+}
+
+#[test]
 fn invalid_bounty_oracle_cannot_remark() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -6225,6 +6495,55 @@ fn oracle_remark_successful() {
 }
 
 #[test]
+fn oracle_remark_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_err!(
+            Bounty::oracle_remark(
+                RawOrigin::None.into(),
+                BountyActor::Council,
+                bounty_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn oracle_remark_fails_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_err!(
+            Bounty::oracle_remark(
+                to_origin!(oracle_id),
+                BountyActor::Member(INVALID_MEMBER_ID),
+                bounty_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    });
+}
+
+#[test]
 fn invalid_bounty_contributor_cannot_remark() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -6290,6 +6609,55 @@ fn contributor_remark_successful() {
             b"test".to_vec(),
         ));
     })
+}
+
+#[test]
+fn contributor_remark_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_err!(
+            Bounty::contributor_remark(
+                RawOrigin::None.into(),
+                BountyActor::Council,
+                bounty_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn contributor_remark_fails_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+
+        assert_err!(
+            Bounty::contributor_remark(
+                to_origin!(contributor_id),
+                BountyActor::Member(INVALID_MEMBER_ID),
+                bounty_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    });
 }
 
 #[test]
@@ -6394,4 +6762,57 @@ fn entrant_remark_fails_with_invalid_entry_id() {
             crate::Error::<Test>::WorkEntryDoesntExist,
         );
     })
+}
+
+#[test]
+fn entrant_remark_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                RawOrigin::None.into(),
+                entrant_id,
+                bounty_id,
+                entry_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn entrant_remark_fails_invalid_member_controller_account() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let (oracle_id, creator_id, contributor_id, entrant_id) = (1, 2, 3, 4);
+        setup_bounty_environment(oracle_id, creator_id, contributor_id, entrant_id);
+        run_to_block(starting_block + 1);
+
+        let bounty_id = Bounty::bounty_count() as u64;
+        let entry_id = Bounty::entry_count() as u64;
+
+        assert_err!(
+            Bounty::entrant_remark(
+                to_origin!(entrant_id),
+                INVALID_MEMBER_ID,
+                bounty_id,
+                entry_id,
+                b"test".to_vec(),
+            ),
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    });
 }
