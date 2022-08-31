@@ -1675,7 +1675,7 @@ decl_module! {
         ///    - O(W + B) where:
         ///    - W : member whitelist length in case nft initial status is auction
         ///    - B : bytelength of metadata parameter
-        /// # </weight>//
+        /// # </weight>
         #[weight = Module::<T>::create_issue_nft_weight(params)]
         pub fn issue_nft(
             origin,
