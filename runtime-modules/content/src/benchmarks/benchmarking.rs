@@ -2017,7 +2017,13 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
-    // - NFT owner == channel owner
+    // - channel has all features paused
+    // - channel has max number of assets
+    // - video has max number of assets
+    // - nft offer price is_some
+    // - nft owner is `Member`
+    // - royalty is non-zero
+    // - `price - royalty` is non-zero
     // INPUT COMPLEXITY
     accept_incoming_offer {
         let (
