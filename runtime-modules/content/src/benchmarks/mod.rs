@@ -64,6 +64,8 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
     res
 }
 
+pub const BUY_NOW_PRICE: u32 = 100;
+
 pub const MEMBER_IDS_INIT: u128 = 500;
 pub const MAX_MEMBER_IDS: usize = 100;
 pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_CURATOR_IDS>(MEMBER_IDS_INIT);
@@ -1054,7 +1056,7 @@ where
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
                 buy_now_price: Some(
-                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
+                    BUY_NOW_PRICE.into()
                 ),
                 duration: Pallet::<T>::min_auction_duration(),
                 extension_period: Pallet::<T>::min_auction_extension_period(),
@@ -1428,9 +1430,7 @@ where
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
-                buy_now_price: Some(
-                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
-                ),
+                buy_now_price: Some(BUY_NOW_PRICE.into()),
                 duration: Pallet::<T>::min_auction_duration(),
                 extension_period: Pallet::<T>::min_auction_extension_period(),
                 min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1522,15 +1522,13 @@ where
 
     let (participant_account_id, participant_id) = whitelisted_members[1].clone();
 
-    let buy_now_price =
-        Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(10u32.into());
     let nft_data = setup_nft_with_transactional_status::<T>(
         account_id,
         actor,
         video_id,
         non_channel_owner,
         InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
-            buy_now_price: Some(buy_now_price),
+            buy_now_price: Some(BUY_NOW_PRICE.into()),
             duration: Pallet::<T>::min_auction_duration(),
             extension_period: Pallet::<T>::min_auction_extension_period(),
             min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1560,16 +1558,13 @@ where
 
     let (participant_account_id, participant_id) = whitelisted_members[0].clone();
 
-    let buy_now_price =
-        Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(10u32.into());
-
     let nft_data = setup_nft_with_transactional_status::<T>(
         account_id,
         actor,
         video_id,
         non_channel_owner,
         InitTransactionalStatus::<T>::OpenAuction(OpenAuctionParams::<T> {
-            buy_now_price: Some(buy_now_price),
+            buy_now_price: Some(BUY_NOW_PRICE.into()),
             bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
@@ -1616,7 +1611,7 @@ where
             },
             init_transactional_status: transactional_status,
         },
-    )?;
+    ).unwrap();
 
     Ok((nft_owner_actor, owner_account))
 }

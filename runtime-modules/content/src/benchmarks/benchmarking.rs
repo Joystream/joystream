@@ -2035,9 +2035,9 @@ benchmarks! {
             price,
         ).unwrap();
 
-        let origin = RawOrigin::Signed(owner_account.clone());
-
+        let origin = RawOrigin::Signed(to_member_account.clone());
         let balance_pre = Balances::<T>::usable_balance(&to_member_account);
+
     }: _ (origin, video_id, price)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -2288,17 +2288,12 @@ benchmarks! {
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
         let price = Some(BalanceOf::<T>::one());
 
-        let _ = setup_idle_nft::<T>(
+        let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
             curator_account_id.clone(),
             actor,
             video_id,
             false,
         )?;
-
-        let (owner_account, owner_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
-        let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
-
-        let origin = RawOrigin::Signed(curator_account_id.clone());
 
         let auction_params = EnglishAuctionParams::<T> {
             buy_now_price: Some(
@@ -2313,6 +2308,9 @@ benchmarks! {
                 .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
                 .collect(),
         };
+
+        let origin = RawOrigin::Signed(owner_account.clone());
+
     }: _(origin, nft_owner_actor, video_id, auction_params)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -2346,7 +2344,6 @@ benchmarks! {
             video_id,
             true,
         ).unwrap();
-
 
         let origin = RawOrigin::Signed(owner_account);
 
@@ -2383,18 +2380,21 @@ benchmarks! {
         )?;
 
         fastforward_by_blocks::<T>(2u32.into());
-        let old_bid_amount = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
-        let buy_now_amount = Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(11u32.into());
+        let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
+        let _ = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+        let buy_now_amount = BUY_NOW_PRICE.into();
 
         let origin = RawOrigin::Signed(participant_account_id.clone());
-        // let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
     }: _(origin, participant_id, video_id, buy_now_amount)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
                 transactional_status: TransactionalStatus::<T>::Idle,
                 ..
             })));
-
+            assert_eq!(
+                Balances::<T>::usable_balance(participant_account_id),
+                balance_pre - buy_now_amount,
+            )
         }
 
     // WORST CASE SCENARIO:
@@ -2423,6 +2423,8 @@ benchmarks! {
 
         fastforward_by_blocks::<T>(2u32.into());
         let _ = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+
+        fastforward_by_blocks::<T>(10u32.into());
     }: _(origin, video_id)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -2504,16 +2506,14 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (owner_account_id, owner_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
-        let origin = RawOrigin::Signed(owner_account_id.clone());
-        let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
-
-        let (_, participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
-            owner_account_id.clone(),
-            nft_owner_actor,
+        let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
+            curator_account_id.clone(),
+            actor,
             video_id,
             false,
         )?;
+
+        let origin = RawOrigin::Signed(owner_account);
 
     }: _(origin, nft_owner_actor, video_id)
         verify {
@@ -2576,17 +2576,14 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         ).unwrap();
 
-        let (owner_account, owner_id) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
-
-        let (_, participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
+        let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
             curator_account_id.clone(),
             actor,
             video_id,
-            false,
+            true,
         ).unwrap();
 
-        let origin = RawOrigin::Signed(participant_account_id.clone());
+        let origin = RawOrigin::Signed(owner_account.clone());
 
         fastforward_by_blocks::<T>(2u32.into());
 
@@ -2623,9 +2620,6 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (owner_account, owner_id) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
-
         let ((nft_owner_actor, account_id), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
             curator_account_id.clone(),
             actor,
@@ -2636,13 +2630,15 @@ benchmarks! {
 
         fastforward_by_blocks::<T>(2u32.into());
 
-        let bid = add_open_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
         let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
+        let _ = add_open_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+        let price = BUY_NOW_PRICE.into();
+        fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
 
-    }: _(origin, participant_id, video_id, bid.amount)
+    }: _(origin, participant_id, video_id, price)
         verify {
             assert_eq!(
-                balance_pre - bid.amount,
+                balance_pre - price,
                 Balances::<T>::usable_balance(participant_account_id)
             );
 
@@ -3003,7 +2999,7 @@ pub mod tests {
     #[test]
     fn cancel_english_auction() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_start_english_auction());
+            assert_ok!(Content::test_benchmark_cancel_english_auction());
         })
     }
 
