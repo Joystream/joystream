@@ -20,6 +20,7 @@ import http from 'http'
 import https from 'https'
 import { parseAxiosError } from '../parsers/errors'
 import { PendingDownload, PendingDownloadStatusType } from './PendingDownload'
+import Mime from 'mime/lite'
 
 // Concurrency limits
 export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_OBJECT = 10
@@ -127,6 +128,14 @@ export class NetworkingService {
     return activeDistributorsSet
   }
 
+  private parseUserProvidedMimeType(mimeType: string | undefined): string | undefined {
+    const parsed = mimeType && mimeType.startsWith('text/') && Mime.getExtension(mimeType) ? mimeType : undefined
+    if (mimeType && !parsed) {
+      this.logger.verbose('Invalid user-provided mime-type, discarding...', { mimeType })
+    }
+    return parsed
+  }
+
   public async dataObjectInfo(objectId: string): Promise<DataObjectInfo> {
     const details = await this.queryNodeApi.getDataObjectDetails(objectId)
     let exists = false
@@ -146,6 +155,7 @@ export class NetworkingService {
         accessPoints: this.parseDataObjectAccessPoints(details),
         contentHash: details.ipfsHash,
         size: parseInt(details.size),
+        fallbackMimeType: this.parseUserProvidedMimeType(details.type.subtitle?.mimeType),
       }
     }
 
@@ -253,7 +263,7 @@ export class NetworkingService {
     onFinished?: () => void
   ): Promise<void> {
     const {
-      objectData: { objectId, accessPoints },
+      objectData: { objectId, accessPoints, fallbackMimeType },
       startAt,
     } = downloadData
 
@@ -272,7 +282,9 @@ export class NetworkingService {
         pendingDownload.setStatus({
           type: PendingDownloadStatusType.Downloading,
           source: endpoint,
-          contentType: response.headers['content-type'],
+          // For pending downloads we trust the validated, user-provided fallbackMimeType more
+          // than the `content-type` header from the storage node
+          contentType: fallbackMimeType || response.headers['content-type'],
         })
         onSourceFound(response)
       }
@@ -364,8 +376,13 @@ export class NetworkingService {
     data.forEach((bucket) => {
       bucket.bags.forEach((bag) => {
         bag.objects.forEach((object) => {
-          const { ipfsHash, id, size } = object
-          objectsData.set(id, { contentHash: ipfsHash, objectId: id, size: parseInt(size) })
+          const { ipfsHash, id, size, type } = object
+          objectsData.set(id, {
+            contentHash: ipfsHash,
+            objectId: id,
+            size: parseInt(size),
+            fallbackMimeType: this.parseUserProvidedMimeType(type.subtitle?.mimeType),
+          })
         })
       })
     })

@@ -15,6 +15,7 @@ export type DataObjectData = {
   objectId: string
   size: number
   contentHash: string
+  fallbackMimeType?: string
   accessPoints?: DataObjectAccessPoints
 }
 
