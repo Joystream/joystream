@@ -10,8 +10,8 @@ export default async function initFaucet({ api, env, query }: FlowProps): Promis
   // Send the faucet account some funds
   const creditPerMember = parseInt(process.env.BALANCE_CREDIT || '50000000')
 
-  // Funds for 1000 members
-  const funds = new BN(creditPerMember).muln(1000)
+  // Funds for 100 members
+  const funds = new BN(creditPerMember).muln(100)
   const faucetSuri = env.INVITER_KEY || '//Faucet'
   const faucetAccount = api.createCustomKeyPair(faucetSuri, true).address
 

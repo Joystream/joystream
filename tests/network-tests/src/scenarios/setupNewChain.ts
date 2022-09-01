@@ -9,7 +9,7 @@ import { scenario } from '../Scenario'
 scenario('Setup new chain', async ({ job }) => {
   job('Initialize Faucet', initFaucet)
 
-  const leads = job('Set WorkingGroup Leads', leaderSetup())
+  const leads = job('Set WorkingGroup Leads', leaderSetup(true))
   job('Create video categories', populateVideoCategories).after(leads)
 
   if (!process.env.SKIP_STORAGE_AND_DISTRIBUTION) {

@@ -1,10 +1,13 @@
-use node_runtime::{AccountId, Balance};
+use node_runtime::{AccountId, Balance, BlockNumber};
 use serde::Deserialize;
 use std::{fs, path::Path};
 
 #[derive(Deserialize)]
 struct SerializedInitialBalances {
+    // (who, total balance)
     balances: Vec<(AccountId, Balance)>,
+    // (who, begin, length, liquid)
+    vesting: Vec<(AccountId, BlockNumber, BlockNumber, Balance)>,
 }
 
 fn parse_json(data_file: &Path) -> SerializedInitialBalances {
@@ -13,6 +16,11 @@ fn parse_json(data_file: &Path) -> SerializedInitialBalances {
 }
 
 /// Deserializes initial balances from json file
-pub fn from_json(data_file: &Path) -> Vec<(AccountId, Balance)> {
+pub fn balances_from_json(data_file: &Path) -> Vec<(AccountId, Balance)> {
     parse_json(data_file).balances
+}
+
+/// Deserializes initial vesting config from json file
+pub fn vesting_from_json(data_file: &Path) -> Vec<(AccountId, BlockNumber, BlockNumber, Balance)> {
+    parse_json(data_file).vesting
 }
