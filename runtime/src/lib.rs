@@ -231,20 +231,19 @@ fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool 
 // Filter out a subset of calls on content pallet and some specific proposals
 #[cfg(not(feature = "runtime-benchmarks"))]
 fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        // TODO: adjust after Carthage
-        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
-            ..
-        }) => false,
-        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-        _ => true, // Enable all other calls
-    }
+    // TODO: adjust after Carthage
+    !matches!(
+        Call::Content(content::Call::<Runtime>::destroy_nft { .. })
+            | Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. })
+            | Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. })
+            | Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. })
+            | Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. })
+            | Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. })
+            | Call::Content(
+                content::Call::<Runtime>::set_channel_paused_features_as_moderator { .. }
+            )
+            | Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. })
+    )
 }
 
 // Live Production config
