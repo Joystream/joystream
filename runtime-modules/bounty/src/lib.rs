@@ -1343,7 +1343,7 @@ decl_module! {
         /// # <weight>
         ///
         /// ## weight
-        /// `O (N x M + Z)`
+        /// `O (N + M + Z)`
         /// - `N` is number of judgment entries,
         /// - `M` is the sum of all action_justification lengths (inside OracleJudgment),
         /// - `Z` is rationale length
@@ -2281,40 +2281,27 @@ impl<T: Config> Module<T> {
 
     // Calculates weight for submit_oracle_Judgment extrinsic.
     fn submit_oracle_judgment_weight(judgment_map: &OracleJudgmentOf<T>, rationale: u32) -> Weight {
-        let collection_length: u32 = judgment_map.len().saturated_into();
-        let justification_length: u32 = judgment_map
-            .iter()
-            .map(|(_, judgment)| match judgment {
-                OracleWorkEntryJudgment::Winner { .. } => 0,
-                OracleWorkEntryJudgment::Rejected {
-                    action_justification,
-                    ..
-                } => action_justification.len().saturated_into(),
-            })
-            .sum();
-        WeightInfoBounty::<T>::submit_oracle_judgment_by_council_all_winners(
-            collection_length,
-            rationale,
-        )
-        .max(
-            WeightInfoBounty::<T>::submit_oracle_judgment_by_council_all_rejected(
-                collection_length,
-                rationale,
-                justification_length,
-            ),
-        )
-        .max(
-            WeightInfoBounty::<T>::submit_oracle_judgment_by_member_all_winners(
-                collection_length,
-                rationale,
-            ),
-        )
-        .max(
-            WeightInfoBounty::<T>::submit_oracle_judgment_by_member_all_rejected(
-                collection_length,
-                rationale,
-                justification_length,
-            ),
+        //j - rationale size,
+        //k - sum of each action_justification size
+        //w - total winner entries
+        //r - total rejected entries
+
+        let j = rationale;
+
+        let (w, r, k) =
+            judgment_map.iter().fold(
+                (0u32, 0u32, 0u32),
+                |(w, r, k), (_, judgment)| match judgment {
+                    OracleWorkEntryJudgment::Winner { .. } => (w + 1, r, k),
+                    OracleWorkEntryJudgment::Rejected {
+                        action_justification,
+                        ..
+                    } => (w, r + 1, k + action_justification.len() as u32),
+                },
+            );
+
+        WeightInfoBounty::<T>::submit_oracle_judgment_by_council(j, k, w, r).max(
+            WeightInfoBounty::<T>::submit_oracle_judgment_by_member(j, k, w, r),
         )
     }
 }
