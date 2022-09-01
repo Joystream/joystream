@@ -824,7 +824,9 @@ fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
         .build_with_balances(vec![(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE)])
         .execute_with(|| {
             ContentTest::default().with_video_nft().setup();
-            StartEnglishAuctionFixture::default().call_and_assert(Ok(()));
+            StartEnglishAuctionFixture::default()
+                .with_buy_now_price(DEFAULT_BUY_NOW_PRICE)
+                .call_and_assert(Ok(()));
 
             assert_ok!(Content::make_english_auction_bid(
                 Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
