@@ -3038,8 +3038,8 @@ fn add_non_editable_post_should_not_increase_thread_number_of_editable_posts() {
             Ok(()),
         );
 
-        let counter_pre = TestForumModule::thread_by_id(category_id, thread_id)
-            .number_of_editable_posts;
+        let counter_pre =
+            TestForumModule::thread_by_id(category_id, thread_id).number_of_editable_posts;
 
         create_post_mock(
             origin,
@@ -3054,8 +3054,7 @@ fn add_non_editable_post_should_not_increase_thread_number_of_editable_posts() {
 
         assert_eq!(
             counter_pre,
-            TestForumModule::thread_by_id(category_id, thread_id)
-                .number_of_editable_posts,
+            TestForumModule::thread_by_id(category_id, thread_id).number_of_editable_posts,
             "non editable posts should not increase thread post counter"
         )
     })
