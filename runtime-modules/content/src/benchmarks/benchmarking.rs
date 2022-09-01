@@ -2424,7 +2424,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id.clone());
 
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = Some(BUY_NOW_PRICE.into());
+        let price = Some(nft_buy_now_price::<T>());
 
     }: _ (origin, video_id, actor, to_member, price)
         verify {
@@ -2458,7 +2458,7 @@ benchmarks! {
         )?;
 
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = Some(BUY_NOW_PRICE.into());
+        let price = Some(nft_buy_now_price::<T>());
 
         let _ = setup_offered_nft::<T>(
             curator_account_id.clone(),
@@ -2507,7 +2507,7 @@ benchmarks! {
         ).unwrap();
 
         let (to_member_account, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = Some(BUY_NOW_PRICE.into());
+        let price = Some(nft_buy_now_price::<T>());
 
         let (nft_owner_actor, owner_account) = setup_offered_nft::<T>(
             curator_account_id.clone(),
@@ -2561,7 +2561,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let price = BUY_NOW_PRICE.into();
+        let price = nft_buy_now_price::<T>();
 
         let _ = setup_idle_nft::<T>(
             curator_account_id.clone(),
@@ -2600,7 +2600,7 @@ benchmarks! {
         )?;
 
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = BUY_NOW_PRICE.into();
+        let price = nft_buy_now_price::<T>();
 
         let _ = setup_nft_in_buy_now::<T>(
             curator_account_id.clone(),
@@ -2638,7 +2638,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let price = BUY_NOW_PRICE.into();
+        let price = nft_buy_now_price::<T>();
 
         let _ = setup_nft_in_buy_now::<T>(
             curator_account_id.clone(),
@@ -2650,7 +2650,7 @@ benchmarks! {
 
         set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id.clone());
-        let new_price = (BUY_NOW_PRICE + 1).into();
+        let new_price = nft_buy_now_price::<T>() + 1u32.into();
     }: _ (origin, actor, video_id, new_price)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -2680,7 +2680,7 @@ benchmarks! {
         )?;
 
         let (buyer_account_id, buyer_id) = member_funded_account::<T>(MEMBER_IDS[1]);
-        let price = BUY_NOW_PRICE.into();
+        let price = nft_buy_now_price::<T>();
 
         let (nft_owner_actor, owner_account) = setup_nft_in_buy_now::<T>(
             curator_account_id.clone(),
@@ -2787,7 +2787,7 @@ benchmarks! {
         )?;
 
         let auction_params = EnglishAuctionParams::<T> {
-            buy_now_price: Some(BUY_NOW_PRICE.into()),
+            buy_now_price: Some(nft_buy_now_price::<T>()),
             duration: Pallet::<T>::min_auction_duration(),
             extension_period: Pallet::<T>::min_auction_extension_period(),
             min_bid_step: Pallet::<T>::min_bid_step(),
@@ -2896,7 +2896,7 @@ benchmarks! {
 
         fastforward_by_blocks::<T>(2u32.into());
         let _ = add_english_auction_bid::<T>(first_bidder_account.clone(), first_bidder_id, video_id);
-        let buy_now_amount = BUY_NOW_PRICE.into();
+        let buy_now_amount = nft_buy_now_price::<T>();
 
         let origin = RawOrigin::Signed(second_bidder_account.clone());
         let balance_pre = Balances::<T>::usable_balance(second_bidder_account.clone());
@@ -3216,7 +3216,7 @@ benchmarks! {
 
         let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
         let _ = add_open_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
-        let price = BUY_NOW_PRICE.into();
+        let price = nft_buy_now_price::<T>();
         fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
 
     }: _(origin, participant_id, video_id, price)

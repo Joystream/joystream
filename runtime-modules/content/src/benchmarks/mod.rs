@@ -64,8 +64,9 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
     res
 }
 
-pub const BUY_NOW_PRICE: u32 = 100;
-
+fn nft_buy_now_price<T: Config>() -> BalanceOf<T>{
+    Pallet::<T>::min_starting_price() + 1000u32.into()
+}
 pub const MEMBER_IDS_INIT: u128 = 500;
 pub const MAX_MEMBER_IDS: usize = 100;
 pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_CURATOR_IDS>(MEMBER_IDS_INIT);
@@ -467,8 +468,6 @@ where
     let account_id = T::AccountId::create_account_id(id);
 
     let handle = handle_from_id::<T>(id);
-
-    //println!("account_id : handle :: {:?} : {:?}", account_id, handle);
 
     // Give balance for buying membership
     let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
@@ -1158,7 +1157,7 @@ where
         // most complex InitTransactionalStatus is EnglishAuction
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
-                buy_now_price: Some(BUY_NOW_PRICE.into()),
+                buy_now_price: Some(nft_buy_now_price::<T>()),
                 duration: Pallet::<T>::min_auction_duration(),
                 extension_period: Pallet::<T>::min_auction_extension_period(),
                 min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1531,7 +1530,7 @@ where
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
-                buy_now_price: Some(BUY_NOW_PRICE.into()),
+                buy_now_price: Some(nft_buy_now_price::<T>()),
                 duration: Pallet::<T>::min_auction_duration(),
                 extension_period: Pallet::<T>::min_auction_extension_period(),
                 min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1616,7 +1615,8 @@ where
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    let whitelisted_members = (1..=(whitelist_size as usize))
+    assert!(whitelist_size > 1);
+    let whitelisted_members = (1..(whitelist_size as usize))
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
@@ -1628,7 +1628,7 @@ where
         video_id,
         non_channel_owner,
         InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
-            buy_now_price: Some(BUY_NOW_PRICE.into()),
+            buy_now_price: Some(nft_buy_now_price::<T>()),
             duration: Pallet::<T>::min_auction_duration(),
             extension_period: Pallet::<T>::min_auction_extension_period(),
             min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1653,7 +1653,8 @@ where
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    let whitelisted_members = (1..=(whitelist_size as usize))
+    assert!(whitelist_size > 1);
+    let whitelisted_members = (1..(whitelist_size as usize))
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
@@ -1665,7 +1666,7 @@ where
         video_id,
         non_channel_owner,
         InitTransactionalStatus::<T>::OpenAuction(OpenAuctionParams::<T> {
-            buy_now_price: Some(BUY_NOW_PRICE.into()),
+            buy_now_price: Some(nft_buy_now_price::<T>()),
             bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
