@@ -2316,6 +2316,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2353,6 +2354,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2374,7 +2376,7 @@ benchmarks! {
             curator_account_id.clone(),
             actor,
             video_id,
-            true,
+            false,
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
@@ -2394,6 +2396,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2438,6 +2441,7 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
+    // - channel owning curator group has max number of permissions per level
     // - curator has max number of agent permissions
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
@@ -2485,6 +2489,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2542,6 +2547,7 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
+    // - channel owning curator group has max number of permissions per level
     // - curator has max number of agent permissions
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
@@ -2585,10 +2591,16 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_buy_now {
         let (
@@ -2624,10 +2636,17 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
+
     // INPUT COMPLEXITY
     update_buy_now_price {
         let (
@@ -2663,12 +2682,20 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
-    // - curator has max number of permissions
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - video has max assets
-    // - NFT owner == channel owner
-    // - NFT royalty is some
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // - nft owner is channel owner
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
     // INPUT COMPLEXITY
     buy_nft {
         let (
@@ -2742,6 +2769,7 @@ benchmarks! {
         let (channel_id, group_id, _, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let origin = RawOrigin::Signed(curator_account_id);
+        set_all_channel_paused_features::<T>(channel_id);
         let actor = ContentActor::Curator(group_id, curator_id);
     }: _(origin, actor, nft_limit_period, channel_id, limit)
         verify {
