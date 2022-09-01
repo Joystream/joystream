@@ -1737,9 +1737,10 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W)`
+        /// `O (W + B)`
         /// - DB:
-        ///    - O(W + B) where:
+        ///    - O(W)
+        /// where:
         ///    - W : member whitelist length in case nft initial status is auction
         ///    - B : bytelength of metadata parameter
         /// # </weight>

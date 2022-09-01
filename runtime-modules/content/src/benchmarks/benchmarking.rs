@@ -2273,6 +2273,7 @@ benchmarks! {
     // WORST CASE SCENARIO:
     // STATE COMPLEXITY
     // - curator owned channel
+    // - curator group has max number of permissions per level
     // - curator number is max
     // - curator has max number of agent permissions
     // - channel has max size:
@@ -2358,7 +2359,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     sling_nft_back {
@@ -2761,10 +2761,11 @@ benchmarks! {
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
     //   - max collaborators
-    // - video has max size
+    // - video has max size:
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
+    // - buy now price is some
+    // - starts at price is some
     // INPUT COMPLEXITY
     // - Member whitelist : w
     start_english_auction {
@@ -2813,6 +2814,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - member whitelist has max size
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2836,7 +2838,7 @@ benchmarks! {
             curator_account_id.clone(),
             actor,
             video_id,
-            true,
+            false,
         ).unwrap();
 
         set_all_channel_paused_features::<T>(channel_id);
@@ -2855,6 +2857,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2974,6 +2977,8 @@ benchmarks! {
     // - video has max size
     //   - max video assets
     // - nft limits are set
+    // - buy_now_price is some to trigger checks
+    // - starts_at is some to trigger checks
     // INPUT COMPLEXITY
     // - nft owner is channel owner
     // - open auction params Member whitelist : w
@@ -3025,6 +3030,7 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
+    // - channel-owning curator group has max number of permissions per level
     // - curator has max number of agent permissions
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
@@ -3033,6 +3039,7 @@ benchmarks! {
     // - video has max size
     //   - max video assets
     // - nft limits are set
+    // - auction has max number of whitelisted members
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_open_auction {
@@ -3055,7 +3062,7 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(owner_account);
 
-    }: _(origin, nft_owner_actor, video_id)
+     }: _(origin, nft_owner_actor, video_id)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
                 transactional_status: TransactionalStatus::<T>::Idle,
@@ -3067,6 +3074,7 @@ benchmarks! {
     // STATE COMPLEXITY
     // - curator owned channel
     // - curator number is max
+    // - channel-owning curator group has max number of permissions per level
     // - curator has max number of agent permissions
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
@@ -3075,6 +3083,7 @@ benchmarks! {
     // - video has max size
     //   - max video assets
     // - nft limits are set
+    // - auction has max number of whitelisted members
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_open_auction_bid {
@@ -3112,6 +3121,7 @@ benchmarks! {
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
     // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
     // - curator number is max
     // - curator has max number of agent permissions
     // - channel has max size:
@@ -3121,6 +3131,7 @@ benchmarks! {
     // - video has max size
     //   - max video assets
     // - nft limits are set
+    // - member whitelist has max size
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
     //   - royalty is non-zero
@@ -3164,6 +3175,7 @@ benchmarks! {
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
     // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
     // - curator number is max
     // - curator has max number of agent permissions
     // - channel has max size:
@@ -3175,7 +3187,7 @@ benchmarks! {
     // - nft limits are set
     // - bid triggers buy now
     // - bid already exists
-    // - whitelist has max size
+    // - auction whitelist has max size
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
     //   - royalty is non-zero
