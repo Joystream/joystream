@@ -10,9 +10,6 @@ if [ "${PERSIST}" == true ]
 then
   echo "Services starting up.."
 else
-  # Clean start!
-  docker-compose down -v
-
   function down()
   {
       # Stop containers and clear volumes
@@ -54,6 +51,7 @@ fi
 if [ "${PERSIST}" == true ]
 then
   echo "All services started in the background"
+  echo "Remember to run 'docker-compose down -v' to kill all docker services before starting new playground."
 else
   echo "use Ctrl+C to shutdown the development network."
   while true; do
