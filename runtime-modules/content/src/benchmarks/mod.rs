@@ -1610,7 +1610,7 @@ fn setup_nft_in_english_auction<T>(
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     video_id: T::VideoId,
     non_channel_owner: bool,
-) -> Result<(NftData<T>, T::MemberId, T::AccountId), DispatchError>
+) -> Result<(NftData<T>, Vec<(T::AccountId, T::MemberId)>), DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
@@ -1620,7 +1620,7 @@ where
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
-    let (participant_account_id, participant_id) = whitelisted_members[1].clone();
+    let bidders = whitelisted_members[0..=1].to_vec();
 
     let nft_data = setup_nft_with_transactional_status::<T>(
         account_id,
@@ -1639,7 +1639,7 @@ where
     )
     .unwrap();
 
-    Ok((nft_data, participant_id, participant_account_id))
+    Ok((nft_data, bidders))
 }
 
 fn setup_nft_in_open_auction<T>(

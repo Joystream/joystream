@@ -2832,7 +2832,7 @@ benchmarks! {
         ).unwrap();
 
         let ((nft_owner_actor, owner_account),
-             participant_id, participant_account_id) = setup_nft_in_english_auction::<T>(
+             _) = setup_nft_in_english_auction::<T>(
             curator_account_id.clone(),
             actor,
             video_id,
@@ -2863,7 +2863,7 @@ benchmarks! {
     //   - max video assets
     // - nft limits are set
     // - bid triggers buy now
-    // - bid already exists
+    // - bid already exists and made by a different member
     // - whitelist has max size
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
@@ -2879,29 +2879,32 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_english_auction::<T>(
+        let ((nft_owner_actor, owner_account), bidders) = setup_nft_in_english_auction::<T>(
             curator_account_id,
             actor,
             video_id,
             true,
         )?;
 
+        let (first_bidder_account, first_bidder_id) = bidders[0].clone();
+        let (second_bidder_account, second_bidder_id) = bidders[1].clone();
+
         set_all_channel_paused_features::<T>(channel_id);
 
         fastforward_by_blocks::<T>(2u32.into());
-        let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
-        let _ = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+        let _ = add_english_auction_bid::<T>(first_bidder_account.clone(), first_bidder_id, video_id);
         let buy_now_amount = BUY_NOW_PRICE.into();
 
-        let origin = RawOrigin::Signed(participant_account_id.clone());
-    }: _(origin, participant_id, video_id, buy_now_amount)
+        let origin = RawOrigin::Signed(second_bidder_account.clone());
+        let balance_pre = Balances::<T>::usable_balance(second_bidder_account.clone());
+    }: _(origin, second_bidder_id, video_id, buy_now_amount)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
                 transactional_status: TransactionalStatus::<T>::Idle,
                 ..
             })));
             assert_eq!(
-                Balances::<T>::usable_balance(participant_account_id),
+                Balances::<T>::usable_balance(second_bidder_account),
                 balance_pre - buy_now_amount,
             )
         }
@@ -2931,12 +2934,14 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_english_auction::<T>(
+        let ((nft_owner_actor, owner_account), bidders) = setup_nft_in_english_auction::<T>(
             curator_account_id.clone(),
             actor,
             video_id,
             true,
         )?;
+
+        let (participant_account_id, participant_id) = bidders[0].clone();
 
         set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(owner_account.clone());
