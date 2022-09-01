@@ -853,7 +853,7 @@ fn make_bid_ok_with_english_auction_completion_with_bid_below_min_step() {
 fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
     pub const BID_OFFER: u64 = DEFAULT_BUY_NOW_PRICE + 10;
     ExtBuilder::default()
-        .build_with_balances(vec![(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE)])
+        .build_with_balances(vec![(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE + ed())])
         .execute_with(|| {
             ContentTest::default().with_video_nft().setup();
             StartEnglishAuctionFixture::default()
@@ -869,7 +869,7 @@ fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
 
             assert_eq!(
                 Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
-                BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
+                ed() + BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
             );
         })
 }
