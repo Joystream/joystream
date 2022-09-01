@@ -951,31 +951,6 @@ export type GetMembersByIdsQueryVariables = Types.Exact<{
 
 export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment> }
 
-export type MembershipSystemSnapshotFieldsFragment = {
-  createdAt: any
-  snapshotBlock: number
-  referralCut: number
-  invitedInitialBalance: any
-  defaultInviteCount: number
-  membershipPrice: any
-}
-
-export type GetMembershipSystemSnapshotAtQueryVariables = Types.Exact<{
-  time: Types.Scalars['DateTime']
-}>
-
-export type GetMembershipSystemSnapshotAtQuery = {
-  membershipSystemSnapshots: Array<MembershipSystemSnapshotFieldsFragment>
-}
-
-export type GetMembershipSystemSnapshotBeforeQueryVariables = Types.Exact<{
-  time: Types.Scalars['DateTime']
-}>
-
-export type GetMembershipSystemSnapshotBeforeQuery = {
-  membershipSystemSnapshots: Array<MembershipSystemSnapshotFieldsFragment>
-}
-
 export type MembershipBoughtEventFieldsFragment = {
   id: string
   createdAt: any
@@ -3467,16 +3442,6 @@ export const MembershipFields = gql`
   }
   ${MemberMetadataFields}
 `
-export const MembershipSystemSnapshotFields = gql`
-  fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
-    createdAt
-    snapshotBlock
-    referralCut
-    invitedInitialBalance
-    defaultInviteCount
-    membershipPrice
-  }
-`
 export const MembershipBoughtEventFields = gql`
   fragment MembershipBoughtEventFields on MembershipBoughtEvent {
     id
@@ -5184,22 +5149,6 @@ export const GetMembersByIds = gql`
     }
   }
   ${MembershipFields}
-`
-export const GetMembershipSystemSnapshotAt = gql`
-  query getMembershipSystemSnapshotAt($time: DateTime!) {
-    membershipSystemSnapshots(where: { createdAt_eq: $time }, orderBy: createdAt_DESC, limit: 1) {
-      ...MembershipSystemSnapshotFields
-    }
-  }
-  ${MembershipSystemSnapshotFields}
-`
-export const GetMembershipSystemSnapshotBefore = gql`
-  query getMembershipSystemSnapshotBefore($time: DateTime!) {
-    membershipSystemSnapshots(where: { createdAt_lt: $time }, orderBy: createdAt_DESC, limit: 1) {
-      ...MembershipSystemSnapshotFields
-    }
-  }
-  ${MembershipSystemSnapshotFields}
 `
 export const GetMembershipBoughtEventsByEventIds = gql`
   query getMembershipBoughtEventsByEventIds($eventIds: [ID!]) {

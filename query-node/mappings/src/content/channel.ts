@@ -73,15 +73,8 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const storageDataObjectParams = {
-      storageBagOrId: storageBag,
-      objectCreationList: channelCreationParameters.assets.unwrapOr(undefined)?.objectCreationList || [],
-      stateBloatBond: channelCreationParameters.expectedDataObjectStateBloatBond,
-      objectIds: [...dataObjects],
-    }
-
     const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
-    await processChannelMetadata(ctx, channel, metadata, storageDataObjectParams)
+    await processChannelMetadata(ctx, channel, metadata, dataObjects)
   }
 
   // save entity
@@ -117,15 +110,8 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const storageDataObjectParams = {
-      storageBagOrId: storageBag,
-      objectCreationList: channelUpdateParameters.assetsToUpload.unwrapOr(undefined)?.objectCreationList || [],
-      stateBloatBond: channelUpdateParameters.expectedDataObjectStateBloatBond,
-      objectIds: [...newDataObjects],
-    }
-
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, storageDataObjectParams)
+    await processChannelMetadata(ctx, channel, newMetadata, newDataObjects)
   }
 
   const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
@@ -237,7 +223,6 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
 
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
-    const messageType = decodedMessage.channelOwnerRemarked
     const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
 
     const metaTransactionInfo = await processOwnerRemark(store, event, channelId, contentActor, decodedMessage)

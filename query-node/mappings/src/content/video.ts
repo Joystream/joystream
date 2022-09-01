@@ -2,8 +2,8 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { ContentMetadata, IContentMetadata, VideoMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
-import { ChannelId, VideoId } from '@joystream/types/primitives'
+import { ContentMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentVideoCreationParametersRecord as VideoCreationParameters,
@@ -47,18 +47,21 @@ import {
   unsetAssetRelations,
   videoRelationsForCounters,
 } from './utils'
+import { BTreeSet } from '@polkadot/types'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor
   channelId: ChannelId
   contentId: VideoId // eventually this would be generic `Content` type in runtime
   contentCreationParameters: VideoCreationParameters
+  newDataObjectIds: BTreeSet<DataObjectId>
 }
 
 interface ContentUpdatedEventData {
   contentActor: ContentActor
   contentId: VideoId // eventually this would be generic `Content` type in runtime
   contentUpdateParameters: VideoUpdateParameters
+  newDataObjectIds: BTreeSet<DataObjectId>
 }
 
 /// //////////////// Video //////////////////////////////////////////////////////
@@ -66,7 +69,8 @@ interface ContentUpdatedEventData {
 export async function content_ContentCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [contentActor, channelId, contentId, contentCreationParameters] = new Content.VideoCreatedEvent(event).params
+  const [contentActor, channelId, contentId, contentCreationParameters, newDataObjectIds] =
+    new Content.VideoCreatedEvent(event).params
   const { meta } = contentCreationParameters
 
   const contentCreatedEventData: ContentCreatedEventData = {
@@ -74,6 +78,7 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
     channelId,
     contentId,
     contentCreationParameters,
+    newDataObjectIds,
   }
 
   // load channel
@@ -104,7 +109,7 @@ export async function processCreateVideoMessage(
   contentCreatedEventData: ContentCreatedEventData
 ): Promise<void> {
   const { store, event } = ctx
-  const { contentActor, contentId, contentCreationParameters } = contentCreatedEventData
+  const { contentActor, contentId, contentCreationParameters, newDataObjectIds } = contentCreatedEventData
 
   const video = new Video({
     id: contentId.toString(),
@@ -120,7 +125,7 @@ export async function processCreateVideoMessage(
   })
 
   if (metadata) {
-    await processVideoMetadata(ctx, video, metadata, contentCreationParameters.assets.unwrapOr(undefined))
+    await processVideoMetadata(ctx, video, metadata, newDataObjectIds)
   }
 
   // save video
@@ -153,13 +158,15 @@ export async function processCreateVideoMessage(
 export async function content_ContentUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [contentActor, contentId, contentUpdateParameters] = new Content.VideoUpdatedEvent(event).params
+  const [contentActor, contentId, contentUpdateParameters, newDataObjectIds] = new Content.VideoUpdatedEvent(event)
+    .params
   const { newMeta } = contentUpdateParameters
 
   const contentUpdatedEventData: ContentUpdatedEventData = {
     contentActor,
     contentId,
     contentUpdateParameters,
+    newDataObjectIds,
   }
 
   // load video
@@ -185,10 +192,11 @@ export async function processUpdateVideoMessage(
   contentUpdatedEventData: ContentUpdatedEventData
 ): Promise<void> {
   const { store, event } = ctx
-  const { contentActor, contentId, contentUpdateParameters } = contentUpdatedEventData
+  const { contentActor, contentId, contentUpdateParameters, newDataObjectIds } = contentUpdatedEventData
 
-  if (metadata)
-    await processVideoMetadata(ctx, video, metadata, contentUpdateParameters.assetsToUpload.unwrapOr(undefined))
+  if (metadata) {
+    await processVideoMetadata(ctx, video, metadata, newDataObjectIds)
+  }
 
   // create nft if requested
   const issuanceParameters = contentUpdateParameters.autoIssueNft.unwrapOr(null)

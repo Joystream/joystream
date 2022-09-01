@@ -509,7 +509,7 @@ export default {
     _enum: {
       MemberInvited: '(u64,PalletMembershipInviteMembershipParameters)',
       MembershipGifted: '(u64,PalletMembershipGiftMembershipParameters)',
-      MembershipBought: '(u64,PalletMembershipBuyMembershipParameters)',
+      MembershipBought: '(u64,PalletMembershipBuyMembershipParameters,u32)',
       MemberProfileUpdated: '(u64,Option<Bytes>,Option<Bytes>)',
       MemberAccountsUpdated: '(u64,Option<AccountId32>,Option<AccountId32>)',
       MemberVerificationStatusUpdated: '(u64,bool,u64)',
@@ -523,7 +523,7 @@ export default {
       StakingAccountRemoved: '(AccountId32,u64)',
       StakingAccountConfirmed: '(AccountId32,u64)',
       MemberRemarked: '(u64,Bytes)',
-      FoundingMemberCreated: '(u64,PalletMembershipCreateFoundingMemberParameters)'
+      FoundingMemberCreated: '(u64,PalletMembershipCreateFoundingMemberParameters,u32)'
     }
   },
   /**

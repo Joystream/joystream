@@ -10,7 +10,6 @@ import {
   DataObjectTypeUnknown,
   StorageBag,
   StorageDataObject,
-  StorageSystemParameters,
   StorageBagOwner,
   StorageBagOwnerChannel,
   StorageBagOwnerCouncil,
@@ -40,7 +39,7 @@ export type StorageDataObjectParams = {
   storageBagOrId: StorageBag | BagId
   objectCreationList: DataObjectCreationParameters[]
   stateBloatBond: Balance
-  objectIds?: BN[]
+  objectIds: BN[]
 }
 
 export async function getDataObjectsInBag(
@@ -57,7 +56,7 @@ export async function getDataObjectsInBag(
     relations,
   })
   if (dataObjects.length !== Array.from(dataObjectIds).length) {
-    throw new Error(
+    inconsistentState(
       `Missing data objects: ${_.difference(
         Array.from(dataObjectIds).map((id) => id.toString()),
         dataObjects.map((o) => o.id)
@@ -65,6 +64,26 @@ export async function getDataObjectsInBag(
     )
   }
   return dataObjects
+}
+
+export async function getSortedDataObjectsByIds(
+  store: DatabaseManager,
+  dataObjectIds: BTreeSet<DataObjectId>
+): Promise<StorageDataObject[]> {
+  const dataObjects = await store.getMany(StorageDataObject, {
+    where: {
+      id: In(Array.from(dataObjectIds).map((id) => id.toString())),
+    },
+  })
+  if (dataObjects.length !== Array.from(dataObjectIds).length) {
+    inconsistentState(
+      `Missing data objects: ${_.difference(
+        Array.from(dataObjectIds).map((id) => id.toString()),
+        dataObjects.map((o) => o.id)
+      )}`
+    )
+  }
+  return dataObjects.sort((a, b) => parseInt(a.id) - parseInt(b.id))
 }
 
 export function getStaticBagOwner(bagId: StaticBagId): typeof StorageBagOwner {
@@ -193,24 +212,14 @@ export async function getDistributionBucketFamilyWithMetadata(
   return family
 }
 
-export async function getStorageSystem(store: DatabaseManager): Promise<StorageSystemParameters> {
-  const storageSystem = await store.get(StorageSystemParameters, {})
-  if (!storageSystem) {
-    throw new Error('Storage system entity is missing!')
-  }
-
-  return storageSystem
-}
-
 export async function createDataObjects(
   store: DatabaseManager,
   { storageBagOrId, objectCreationList, stateBloatBond, objectIds }: StorageDataObjectParams
 ): Promise<StorageDataObject[]> {
-  const storageSystem = await getStorageSystem(store)
   const storageBag = storageBagOrId instanceof StorageBag ? storageBagOrId : await getBag(store, storageBagOrId)
 
   const dataObjects = objectCreationList.map((objectParams, i) => {
-    const objectId = objectIds ? objectIds[i] : storageSystem.nextDataObjectId
+    const objectId = objectIds[i]
     const object = new StorageDataObject({
       id: objectId.toString(),
       isAccepted: false,
@@ -220,14 +229,10 @@ export async function createDataObjects(
       stateBloatBond,
       storageBag,
     })
-    if (objectId.gte(storageSystem.nextDataObjectId)) {
-      storageSystem.nextDataObjectId = objectId.addn(1)
-    }
     return object
   })
 
   await Promise.all(dataObjects.map((o) => store.save<StorageDataObject>(o)))
-  await store.save<StorageSystemParameters>(storageSystem)
 
   return dataObjects
 }
@@ -250,24 +255,6 @@ export async function deleteDataObjects(
 
     await unsetAssetRelations(store, dataObject)
   }
-}
-
-export async function getMostRecentlyCreatedDataObjects(
-  store: DatabaseManager,
-  numberOfObjects: number
-): Promise<StorageDataObject[]> {
-  const storageSystem = await getStorageSystem(store)
-  const objectIds = Array.from({ length: numberOfObjects }, (v, k) =>
-    storageSystem.nextDataObjectId.subn(k + 1).toString()
-  )
-  const objects = await store.getMany(StorageDataObject, { where: { id: In(objectIds) } })
-  if (objects.length < numberOfObjects) {
-    inconsistentState(`Could not get ${numberOfObjects} most recently created data objects`, {
-      expected: numberOfObjects,
-      got: objects.length,
-    })
-  }
-  return objects.sort((a, b) => new BN(a.id).cmp(new BN(b.id)))
 }
 
 export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {
