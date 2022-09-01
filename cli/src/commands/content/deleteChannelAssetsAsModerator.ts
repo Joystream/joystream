@@ -69,7 +69,7 @@ export default class DeleteChannelAssetsAsModeratorCommand extends ContentDirect
     this.log(
       `Data objects state bloat bond of ${chalk.cyanBright(
         formatBalance(stateBloatBond)
-      )} will be transferred to ${chalk.magentaBright(address)}`
+      )} will be repaid with accordance to the bloat bond policy.`
     )
 
     await this.requireConfirmation(

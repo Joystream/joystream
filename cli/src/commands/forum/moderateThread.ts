@@ -33,7 +33,7 @@ export default class ForumModerateThreadCommand extends ForumCommandBase {
     const [key, actor] = await this.getForumModerationContext([categoryId], context)
 
     this.jsonPrettyPrint(JSON.stringify({ categoryId, threadId, rationale }))
-    this.warn(`Thread stake of ${formatBalance(thread.cleanupPayOff)} will be slashed!`)
+    this.warn(`Thread stake of ${formatBalance(thread.cleanupPayOff.amount)} will be slashed!`)
     if (thread.numberOfPosts) {
       this.error(`Thread with existing posts cannot be deleted. Posts count - ${thread.numberOfPosts}`)
     }

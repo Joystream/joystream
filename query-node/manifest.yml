@@ -14,6 +14,7 @@ typegen:
     # Membership
     - members.MembershipBought
     - members.MembershipGifted
+    - members.FoundingMemberCreated
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
     - members.MemberVerificationStatusUpdated
@@ -221,6 +222,8 @@ mappings:
       handler: members_MembershipBought
     - event: members.MembershipGifted
       handler: members_MembershipGifted
+    - event: members.FoundingMemberCreated
+      handler: members_FoundingMemberCreated
     - event: members.MemberProfileUpdated
       handler: members_MemberProfileUpdated
     - event: members.MemberAccountsUpdated
@@ -723,11 +726,11 @@ mappings:
     - event: content.ChannelAssetsRemoved
       handler: content_ChannelAssetsRemoved
     - event: content.VideoCreated
-      handler: content_VideoCreated
+      handler: content_ContentCreated
     - event: content.VideoUpdated
-      handler: content_VideoUpdated
+      handler: content_ContentUpdated
     - event: content.VideoDeleted
-      handler: content_VideoDeleted
+      handler: content_ContentDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
     - event: content.ChannelDeletedByModerator
@@ -939,8 +942,8 @@ mappings:
     # ExtrinsicSuccess event handler - we're using an empty handler just for the purpose of triggering
     # preBlock/postBlock hooks for each block (instead of "catching-up" after some event/tx recognized by processor is fired)
     # ExtrinsicSuccess is emitted at least once per block due to timestamp.set extrinsic
-    - event: system.ExtrinsicSuccess
-      handler: system_ExtrinsicSuccess
+    # - event: system.ExtrinsicSuccess
+    #   handler: system_ExtrinsicSuccess
     # Utility
     - event: joystreamUtility.UpdatedWorkingGroupBudget
       handler: joystreamUtility_UpdatedWorkingGroupBudget
@@ -953,5 +956,5 @@ mappings:
     - handler: bootstrapData
       filter:
         height: '[0,0]' # will be executed only at genesis
-  postBlockHooks:
-    - handler: runScheduler
+  # postBlockHooks:
+  #   - handler: runScheduler

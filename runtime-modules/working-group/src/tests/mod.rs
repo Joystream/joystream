@@ -7,10 +7,11 @@ pub use mock::{build_test_externalities, Test, DEFAULT_WORKER_ACCOUNT_ID};
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
-    CancelOpeningFixture, DecreaseWorkerStakeFixture, FundWorkingGroupBudgetFixture,
-    IncreaseWorkerStakeFixture, SetBudgetFixture, SetStatusTextFixture, SlashWorkerStakeFixture,
-    SpendFromBudgetFixture, UpdateRewardAccountFixture, UpdateRewardAmountFixture,
-    UpdateWorkerStorageFixture, WithdrawApplicationFixture,
+    set_invitation_lock, CancelOpeningFixture, DecreaseWorkerStakeFixture,
+    FundWorkingGroupBudgetFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
+    SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
+    UpdateRewardAccountFixture, UpdateRewardAmountFixture, UpdateWorkerStorageFixture,
+    WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
@@ -2629,10 +2630,11 @@ fn fund_wg_budget_succeeded() {
         let member_id = 1;
         let amount = 100;
         let initial_budget = 1000;
+        let initial_funder_balance = 1000;
         let rationale = b"text".to_vec();
         run_to_block(1);
 
-        let _ = Balances::deposit_creating(&account_id, initial_budget);
+        let _ = Balances::deposit_creating(&account_id, initial_funder_balance);
 
         let set_budget_fixture = SetBudgetFixture::default().with_budget(initial_budget);
         assert_eq!(set_budget_fixture.call(), Ok(()));
@@ -2646,8 +2648,39 @@ fn fund_wg_budget_succeeded() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            initial_budget - amount
+            initial_funder_balance - amount
         );
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkingGroupBudgetFunded(
+            member_id, amount, rationale,
+        ));
+    });
+}
+
+#[test]
+fn fund_wg_budget_succeeded_with_funder_dying() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let member_id = 1;
+        let amount = 100;
+        let initial_budget = 1000;
+        let initial_funder_balance = amount;
+        let rationale = b"text".to_vec();
+        run_to_block(1);
+
+        let _ = Balances::deposit_creating(&account_id, initial_funder_balance);
+
+        let set_budget_fixture = SetBudgetFixture::default().with_budget(initial_budget);
+        assert_eq!(set_budget_fixture.call(), Ok(()));
+
+        FundWorkingGroupBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .with_rationale(rationale.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::total_balance(&account_id), 0);
 
         EventFixture::assert_last_crate_event(RawEvent::WorkingGroupBudgetFunded(
             member_id, amount, rationale,
@@ -2679,6 +2712,26 @@ fn fund_wg_budget_fails_with_insufficient_balance() {
                 Error::<Test, DefaultInstance>::InsufficientTokensForFunding.into(),
             ));
     });
+}
+
+#[test]
+fn fund_wg_budget_failed_with_locked_balance() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let amount = 100;
+
+        let _ = Balances::deposit_creating(&account_id, amount);
+        set_invitation_lock(&account_id, 1);
+
+        FundWorkingGroupBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(
+                Error::<Test, DefaultInstance>::InsufficientTokensForFunding.into(),
+            ));
+    })
 }
 
 #[test]

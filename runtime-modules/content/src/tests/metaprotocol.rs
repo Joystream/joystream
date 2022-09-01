@@ -196,14 +196,10 @@ fn unsuccessful_owner_remark_by_non_owner() {
 #[test]
 fn unsuccessful_curator_channel_owner_remark_by_unauthorized_curator() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AgentRemark])
+            .setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(
-            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::AgentRemark],
-        );
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
 
@@ -258,7 +254,7 @@ fn issue_and_sell_nft() {
     ));
 
     // deposit balance to second member
-    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+    increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
 
     // Sell nft
     assert_ok!(Content::sell_nft(

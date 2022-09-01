@@ -151,6 +151,8 @@ type Video @entity {
   "Is video featured or not"
   isFeatured: Boolean!
 
+  "List of video subtitles"
+  subtitles: [VideoSubtitle!] @derivedFrom(field: "video")
   ##########################
 
   "Is comment section enabled (true if enabled)"
@@ -222,6 +224,27 @@ type License @entity {
 
   "Custom license content"
   custom_text: String
+}
+
+type VideoSubtitle @entity {
+  "{type}-{language}"
+  id: ID!
+
+  "Subtitle's video"
+  video: Video!
+
+  # Atlas will use 'subtitles' | 'closed-captions' for now and possible other types in the future.
+  "Subtitle's type"
+  type: String!
+
+  "Subtitle's language"
+  language: Language
+
+  "MIME type description of format used for this subtitle"
+  mimeType: String!
+
+  "Storage object representing the subtitle file"
+  asset: StorageDataObject
 }
 
 type VideoReactionsCountByReactionType @entity {

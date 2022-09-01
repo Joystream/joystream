@@ -42,4 +42,4 @@ yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 ./start-storage.sh
 
 # Run full tests reusing the existing keys
-REUSE_KEYS=true IGNORE_HIRED_LEADS=true ./run-test-scenario.sh $SCENARIO
+REUSE_KEYS=true IGNORE_HIRED_LEADS=true SKIP_STORAGE_AND_DISTRIBUTION=true ./run-test-scenario.sh $SCENARIO

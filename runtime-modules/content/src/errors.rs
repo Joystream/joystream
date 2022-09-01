@@ -23,6 +23,10 @@ decl_error! {
         /// Provided channel owner (curator group) does not exist
         ChannelOwnerCuratorGroupDoesNotExist,
 
+        /// Channel state bloat bond cannot be lower than existential deposit,
+        /// because it must secure the channel module account against dusting
+        ChannelStateBloatBondBelowExistentialDeposit,
+
         // Curator Management Errors
         // -------------------------
 
@@ -270,8 +274,9 @@ decl_error! {
         CashoutAmountBelowMinimumAmount,
 
         /// An attempt to withdraw funds from channel account failed, because the specified amount
-        /// exceeds the account's balance minus ExistantialDeposit
-        WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit,
+        /// exceeds the withdrawable amount (channel account balance minus channel bloat bond)
+        WithdrawalAmountExceedsChannelAccountWithdrawableBalance,
+
         /// An attempt to withdraw funds from channel account failed, because the specified amount
         /// is zero
         WithdrawFromChannelAmountIsZero,
@@ -324,11 +329,11 @@ decl_error! {
         InsufficientBalanceForTransfer,
 
         /// Cannot create the channel: channel creator has insufficient balance
-        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
+        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees + existential deposit)
         InsufficientBalanceForChannelCreation,
 
         /// Cannot create the video: video creator has insufficient balance
-        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees + existential deposit)
         InsufficientBalanceForVideoCreation,
 
         // Insufficient council budget to cover channel reward claim

@@ -50,7 +50,7 @@ use frame_election_provider_support::{
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
     ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
-    LockIdentifier, OnUnbalanced,
+    LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -78,6 +78,7 @@ use sp_runtime::{
 
 use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
+use sp_std::marker::PhantomData;
 use sp_std::{vec, vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -437,7 +438,7 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+pub(crate) type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 
 pub struct Author;
 impl OnUnbalanced<NegativeImbalance> for Author {
@@ -448,17 +449,17 @@ impl OnUnbalanced<NegativeImbalance> for Author {
     }
 }
 
-pub struct DealWithFees;
-impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+pub struct DealWithFees<R>(PhantomData<R>);
+impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFees<R> {
     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
         if let Some(fees) = fees_then_tips.next() {
-            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
-            let mut split = fees.ration(80, 20);
+            // for fees, we burn them all
+            let mut split = fees.ration(100, 0);
             if let Some(tips) = fees_then_tips.next() {
                 // For tips %100 are for the author
                 tips.ration_merge_into(0, 100, &mut split);
             }
-            Author::on_unbalanced(split.1);
+            R::on_unbalanced(split.1);
         }
     }
 }
@@ -471,7 +472,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Author>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -1079,7 +1080,7 @@ parameter_types! {
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 20;
     pub const MaxCategories: u64 = 40;
-    pub const ThreadDeposit: Balance = 25 * currency::CENTS;
+    pub const ThreadDeposit: Balance = ExistentialDeposit::get() + 25 * currency::CENTS; // Must be higher than ExistentialDeposit!
     pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
@@ -1476,6 +1477,7 @@ pub type CategoryId = u64;
 
 parameter_types! {
     pub const MinVestedTransfer: Balance = 100 * currency::CENTS; // TODO: adjust value
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons = WithdrawReasons::empty();
 }
 
 impl pallet_vesting::Config for Runtime {
@@ -1484,6 +1486,7 @@ impl pallet_vesting::Config for Runtime {
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
     type WeightInfo = weights::pallet_vesting::SubstrateWeight<Runtime>;
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
     // `VestingInfo` encode length is 36bytes. 28 schedules gets encoded as 1009 bytes, which is the
     // highest number of schedules that encodes less than 2^10.
     const MAX_VESTING_SCHEDULES: u32 = 28;
@@ -1567,7 +1570,7 @@ construct_runtime!(
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
-        ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>, Config},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         // --- Working groups
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
