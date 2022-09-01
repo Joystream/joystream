@@ -2424,10 +2424,9 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Emits on deleting a dynamic bag.
        * Params
-       * - account ID for the state bloat bond
        * - dynamic bag ID
        **/
-      DynamicBagDeleted: AugmentedEvent<ApiType, [AccountId32, PalletStorageDynamicBagIdType]>;
+      DynamicBagDeleted: AugmentedEvent<ApiType, [PalletStorageDynamicBagIdType]>;
       /**
        * Emits on dynamic bag creation policy update (distribution bucket families).
        * Params

@@ -31,3 +31,10 @@ panic = "unwind"
 
 [patch.crates-io]
 ss58-registry = { package = 'ss58-registry', git = 'https://github.com/bwhm/ss58-registry', rev = 'a70121e7bbb56f983f6f17771cc79d8f19b481a0'}
+
+[patch."https://github.com/Lezek123/substrate"]
+frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', default-features = false, optional = true }
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}

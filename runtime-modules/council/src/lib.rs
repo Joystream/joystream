@@ -46,23 +46,23 @@
 
 // used dependencies
 use codec::{Decode, Encode};
+use common::costs::burn_from_usable;
+use common::council::CouncilOriginValidator;
+use common::membership::{MemberId, MemberOriginValidator};
+use common::{FundingRequestParameters, StakingAccountValidator};
 use core::marker::PhantomData;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 use frame_system::ensure_root;
+use referendum::{CastVote, OptionResult, ReferendumManager};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
-
-use common::council::CouncilOriginValidator;
-use common::membership::{MemberId, MemberOriginValidator};
-use common::{FundingRequestParameters, StakingAccountValidator};
-use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
 
 // declared modules
@@ -867,7 +867,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(current_budget.saturating_sub(funding_total));
+            Mutations::<T>::decrease_budget(funding_total);
 
             for funding_request in funding_requests {
                 let amount = funding_request.amount;
@@ -895,11 +895,9 @@ decl_module! {
             let account_id =
                 T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
-            let budget = Self::budget();
-
             ensure!(amount > Zero::zero(), Error::<T>::ZeroTokensFunding);
             ensure!(
-                Balances::<T>::can_slash(&account_id, amount),
+                balances::Pallet::<T>::usable_balance(&account_id) >= amount,
                 Error::<T>::InsufficientTokensForFunding
             );
 
@@ -907,9 +905,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::set_budget(budget.saturating_add(amount));
+            // Account is allowed to die when funding the council
+            burn_from_usable::<T>(&account_id, amount)?;
 
-            let _ = Balances::<T>::slash(&account_id, amount);
+            Mutations::<T>::increase_budget(amount);
 
             Self::deposit_event(
                 RawEvent::CouncilBudgetFunded(
@@ -1111,7 +1110,7 @@ impl<T: Config> Module<T> {
         let refill_amount = Self::budget_increment();
 
         // refill budget
-        Mutations::<T>::refill_budget(refill_amount);
+        Mutations::<T>::increase_budget(refill_amount);
 
         // calculate next refill block number
         let refill_period = T::BudgetRefillPeriod::get();
@@ -1516,9 +1515,14 @@ impl<T: Config> Mutations<T> {
         Budget::<T>::put(balance);
     }
 
-    // Refill budget's balance.
-    fn refill_budget(refill_amount: Balance<T>) {
-        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(refill_amount));
+    // Increase budget's balance.
+    fn increase_budget(amount: Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_add(amount));
+    }
+
+    // Decrease budget's balance.
+    fn decrease_budget(amount: Balance<T>) {
+        Budget::<T>::mutate(|balance| *balance = balance.saturating_sub(amount));
     }
 
     // Plan next budget refill.
@@ -1775,11 +1779,7 @@ impl<T: Config + balances::Config> common::council::CouncilBudgetManager<T::Acco
 
         let _ = Balances::<T>::deposit_creating(account_id, amount);
 
-        let current_budget = Self::get_budget();
-        let new_budget = current_budget.saturating_sub(amount);
-        <Self as common::council::CouncilBudgetManager<T::AccountId, Balance<T>>>::set_budget(
-            new_budget,
-        );
+        Self::decrease_budget(amount);
 
         Ok(())
     }

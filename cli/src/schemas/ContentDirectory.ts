@@ -9,7 +9,6 @@ import {
   ChannelUpdateInputParameters,
   VideoInputParameters,
   VideoCategoryInputParameters,
-  ChannelCategoryInputParameters,
   JsonSchema,
   ModerationPermissionsByLevelInputParameters,
   PropertySchema,
@@ -23,16 +22,21 @@ export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> 
     name: {
       type: 'string',
     },
+    description: {
+      type: 'string',
+      required: false,
+    },
+    parentCategoryId: {
+      type: 'string',
+      required: false,
+    },
   },
 }
-
-export const ChannelCategoryInputSchema: JsonSchema<ChannelCategoryInputParameters> = VideoCategoryInputSchema
 
 export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParameters> = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    category: { type: 'number' },
     description: { type: 'string' },
     isPublic: { type: 'boolean' },
     language: { type: 'string' },
@@ -107,7 +111,7 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    category: { type: 'number' },
+    category: { type: 'string' },
     description: { type: 'string' },
     duration: { type: 'number' },
     hasMarketing: { type: 'boolean' },
@@ -161,6 +165,27 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
         },
       },
     },
+    subtitles: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+          },
+          language: {
+            type: 'string',
+          },
+          mimeType: {
+            type: 'string',
+          },
+          subtitleAssetPath: {
+            type: 'string',
+          },
+        },
+      },
+    },
+    clearSubtitles: { type: 'boolean' },
     thumbnailPhotoPath: { type: 'string' },
     title: { type: 'string' },
     videoPath: { type: 'string' },

@@ -10,9 +10,6 @@ if [ "${PERSIST}" == true ]
 then
   echo "Services starting up.."
 else
-  # Clean start!
-  docker-compose down -v
-
   function down()
   {
       # Stop containers and clear volumes
@@ -36,7 +33,6 @@ docker-compose up -d orion
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
-  export SKIP_MOCK_CONTENT=true
   export SKIP_QUERY_NODE_CHECKS=true
   HOST_IP=$(tests/network-tests/get-host-ip.sh)
   export COLOSSUS_1_URL=${COLOSSUS_1_URL:="http://${HOST_IP}:3333"}
@@ -55,6 +51,7 @@ fi
 if [ "${PERSIST}" == true ]
 then
   echo "All services started in the background"
+  echo "Remember to run 'docker-compose down -v' to kill all docker services before starting new playground."
 else
   echo "use Ctrl+C to shutdown the development network."
   while true; do

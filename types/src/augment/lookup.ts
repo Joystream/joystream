@@ -642,7 +642,7 @@ export default {
     _enum: ['Positive', 'Negative']
   },
   /**
-   * Lookup87: pallet_content::RawEvent<pallet_content::permissions::ContentActor<CuratorGroupId, CuratorId, MemberId>, MemberId, CuratorGroupId, CuratorId, VideoId, ChannelId, pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, DataObjectId, BlockNumber, TokenId, TransferId>, DataObjectId, pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, OpenAuctionId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance, pallet_content::types::ChannelCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, MemberId, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, Balance>, pallet_content::types::ChannelUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, MemberId, Balance>, pallet_content::types::VideoCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, pallet_content::types::VideoUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, ChannelPrivilegeLevel, BTreeMap<K, BTreeSet<pallet_content::permissions::curator_group::ContentModerationAction>>, pallet_content::types::TransferCommitmentParameters<MemberId, Balance, TransferId>, pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId>, sp_core::crypto::AccountId32, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>, TokenId, pallet_content::types::ChannelFundsDestination<sp_core::crypto::AccountId32>>
+   * Lookup87: pallet_content::RawEvent<pallet_content::permissions::ContentActor<CuratorGroupId, CuratorId, MemberId>, MemberId, CuratorGroupId, CuratorId, VideoId, ChannelId, pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, DataObjectId, BlockNumber, TokenId, TransferId, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>, DataObjectId, pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, OpenAuctionId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance, pallet_content::types::ChannelCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, MemberId, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, Balance>, pallet_content::types::ChannelUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, MemberId, Balance>, pallet_content::types::VideoCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, pallet_content::types::VideoUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, ChannelPrivilegeLevel, BTreeMap<K, BTreeSet<pallet_content::permissions::curator_group::ContentModerationAction>>, pallet_content::types::TransferCommitmentParameters<MemberId, Balance, TransferId>, pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId>, sp_core::crypto::AccountId32, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>, TokenId, pallet_content::types::ChannelFundsDestination<sp_core::crypto::AccountId32>>
    **/
   PalletContentRawEvent: {
     _enum: {
@@ -714,7 +714,7 @@ export default {
     }
   },
   /**
-   * Lookup89: pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, DataObjectId, BlockNumber, TokenId, TransferId>
+   * Lookup89: pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, DataObjectId, BlockNumber, TokenId, TransferId, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletContentChannelRecord: {
     owner: 'PalletContentChannelOwner',
@@ -730,10 +730,17 @@ export default {
     dailyNftCounter: 'PalletContentNftCounter',
     weeklyNftCounter: 'PalletContentNftCounter',
     creatorTokenId: 'Option<u64>',
-    channelStateBloatBond: 'u128'
+    channelStateBloatBond: 'PalletCommonBloatBondRepayableBloatBond'
   },
   /**
-   * Lookup90: pallet_content::types::ChannelOwner<MemberId, CuratorGroupId>
+   * Lookup90: pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>
+   **/
+  PalletCommonBloatBondRepayableBloatBond: {
+    repaymentRestrictedTo: 'Option<AccountId32>',
+    amount: 'u128'
+  },
+  /**
+   * Lookup91: pallet_content::types::ChannelOwner<MemberId, CuratorGroupId>
    **/
   PalletContentChannelOwner: {
     _enum: {
@@ -742,19 +749,19 @@ export default {
     }
   },
   /**
-   * Lookup93: pallet_content::types::ChannelActionPermission
+   * Lookup94: pallet_content::types::ChannelActionPermission
    **/
   PalletContentChannelActionPermission: {
     _enum: ['UpdateChannelMetadata', 'ManageNonVideoChannelAssets', 'ManageChannelCollaborators', 'UpdateVideoMetadata', 'AddVideo', 'ManageVideoAssets', 'DeleteChannel', 'DeleteVideo', 'ManageVideoNfts', 'AgentRemark', 'TransferChannel', 'ClaimChannelReward', 'WithdrawFromChannelBalance', 'IssueCreatorToken', 'ClaimCreatorTokenPatronage', 'InitAndManageCreatorTokenSale', 'CreatorTokenIssuerTransfer', 'MakeCreatorTokenPermissionless', 'ReduceCreatorTokenPatronageRate', 'ManageRevenueSplits', 'DeissueCreatorToken']
   },
   /**
-   * Lookup98: pallet_content::permissions::curator_group::PausableChannelFeature
+   * Lookup99: pallet_content::permissions::curator_group::PausableChannelFeature
    **/
   PalletContentPermissionsCuratorGroupPausableChannelFeature: {
     _enum: ['ChannelFundsTransfer', 'CreatorCashout', 'VideoNftIssuance', 'VideoCreation', 'VideoUpdate', 'ChannelUpdate', 'CreatorTokenIssuance']
   },
   /**
-   * Lookup100: pallet_content::types::ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>
+   * Lookup101: pallet_content::types::ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>
    **/
   PalletContentChannelTransferStatus: {
     _enum: {
@@ -763,14 +770,14 @@ export default {
     }
   },
   /**
-   * Lookup101: pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId>
+   * Lookup102: pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId>
    **/
   PalletContentPendingTransfer: {
     newOwner: 'PalletContentChannelOwner',
     transferParams: 'PalletContentTransferCommitmentParameters'
   },
   /**
-   * Lookup102: pallet_content::types::TransferCommitmentParameters<MemberId, Balance, TransferId>
+   * Lookup103: pallet_content::types::TransferCommitmentParameters<MemberId, Balance, TransferId>
    **/
   PalletContentTransferCommitmentParameters: {
     newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
@@ -778,21 +785,21 @@ export default {
     transferId: 'u64'
   },
   /**
-   * Lookup104: pallet_content::types::LimitPerPeriod<BlockNumber>
+   * Lookup105: pallet_content::types::LimitPerPeriod<BlockNumber>
    **/
   PalletContentLimitPerPeriod: {
     limit: 'u64',
     blockNumberPeriod: 'u32'
   },
   /**
-   * Lookup105: pallet_content::types::NftCounter<BlockNumber>
+   * Lookup106: pallet_content::types::NftCounter<BlockNumber>
    **/
   PalletContentNftCounter: {
     counter: 'u64',
     lastUpdated: 'u32'
   },
   /**
-   * Lookup106: pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>
+   * Lookup107: pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>
    **/
   PalletContentNftTypesEnglishAuctionParamsRecord: {
     startingPrice: 'u128',
@@ -804,7 +811,7 @@ export default {
     minBidStep: 'u128'
   },
   /**
-   * Lookup108: pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>
+   * Lookup109: pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>
    **/
   PalletContentNftTypesOpenAuctionParamsRecord: {
     startingPrice: 'u128',
@@ -814,7 +821,7 @@ export default {
     bidLockDuration: 'u32'
   },
   /**
-   * Lookup109: pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>
+   * Lookup110: pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>
    **/
   PalletContentNftTypesNftIssuanceParametersRecord: {
     royalty: 'Option<Perbill>',
@@ -823,7 +830,7 @@ export default {
     initTransactionalStatus: 'PalletContentNftTypesInitTransactionalStatusRecord'
   },
   /**
-   * Lookup110: pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>
+   * Lookup111: pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>
    **/
   PalletContentNftTypesInitTransactionalStatusRecord: {
     _enum: {
@@ -835,7 +842,7 @@ export default {
     }
   },
   /**
-   * Lookup112: pallet_content::types::ChannelCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, MemberId, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, Balance>
+   * Lookup113: pallet_content::types::ChannelCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, MemberId, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, Balance>
    **/
   PalletContentChannelCreationParametersRecord: {
     assets: 'Option<PalletContentStorageAssetsRecord>',
@@ -847,14 +854,14 @@ export default {
     expectedDataObjectStateBloatBond: 'u128'
   },
   /**
-   * Lookup113: pallet_content::types::StorageAssetsRecord<Balance>
+   * Lookup114: pallet_content::types::StorageAssetsRecord<Balance>
    **/
   PalletContentStorageAssetsRecord: {
     objectCreationList: 'Vec<PalletStorageDataObjectCreationParameters>',
     expectedDataSizeFee: 'u128'
   },
   /**
-   * Lookup115: pallet_storage::DataObjectCreationParameters
+   * Lookup116: pallet_storage::DataObjectCreationParameters
    **/
   PalletStorageDataObjectCreationParameters: {
     _alias: {
@@ -864,14 +871,14 @@ export default {
     ipfsContentId: 'Bytes'
   },
   /**
-   * Lookup116: pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>
+   * Lookup117: pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>
    **/
   PalletStorageDistributionBucketIdRecord: {
     distributionBucketFamilyId: 'u64',
     distributionBucketIndex: 'u64'
   },
   /**
-   * Lookup120: pallet_content::types::ChannelUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, MemberId, Balance>
+   * Lookup121: pallet_content::types::ChannelUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, MemberId, Balance>
    **/
   PalletContentChannelUpdateParametersRecord: {
     assetsToUpload: 'Option<PalletContentStorageAssetsRecord>',
@@ -881,7 +888,7 @@ export default {
     expectedDataObjectStateBloatBond: 'u128'
   },
   /**
-   * Lookup122: pallet_content::types::VideoCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>
+   * Lookup123: pallet_content::types::VideoCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>
    **/
   PalletContentVideoCreationParametersRecord: {
     assets: 'Option<PalletContentStorageAssetsRecord>',
@@ -891,7 +898,7 @@ export default {
     expectedDataObjectStateBloatBond: 'u128'
   },
   /**
-   * Lookup124: pallet_content::types::VideoUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>
+   * Lookup125: pallet_content::types::VideoUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>
    **/
   PalletContentVideoUpdateParametersRecord: {
     assetsToUpload: 'Option<PalletContentStorageAssetsRecord>',
@@ -901,7 +908,7 @@ export default {
     expectedDataObjectStateBloatBond: 'u128'
   },
   /**
-   * Lookup127: pallet_content::permissions::curator_group::ContentModerationAction
+   * Lookup128: pallet_content::permissions::curator_group::ContentModerationAction
    **/
   PalletContentPermissionsCuratorGroupContentModerationAction: {
     _enum: {
@@ -916,7 +923,7 @@ export default {
     }
   },
   /**
-   * Lookup131: pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>
+   * Lookup132: pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>
    **/
   PalletContentUpdateChannelPayoutsParametersRecord: {
     commitment: 'Option<H256>',
@@ -926,7 +933,7 @@ export default {
     channelCashoutsEnabled: 'Option<bool>'
   },
   /**
-   * Lookup132: pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>
+   * Lookup133: pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>
    **/
   PalletContentChannelPayoutsPayloadParametersRecord: {
     uploaderAccount: 'AccountId32',
@@ -935,7 +942,7 @@ export default {
     expectedDataObjectStateBloatBond: 'u128'
   },
   /**
-   * Lookup136: pallet_content::types::ChannelFundsDestination<sp_core::crypto::AccountId32>
+   * Lookup137: pallet_content::types::ChannelFundsDestination<sp_core::crypto::AccountId32>
    **/
   PalletContentChannelFundsDestination: {
     _enum: {
@@ -944,13 +951,13 @@ export default {
     }
   },
   /**
-   * Lookup137: pallet_content::types::NftLimitPeriod
+   * Lookup138: pallet_content::types::NftLimitPeriod
    **/
   PalletContentNftLimitPeriod: {
     _enum: ['Daily', 'Weekly']
   },
   /**
-   * Lookup138: pallet_storage::RawEvent<StorageBucketId, WorkerId, DataObjectId, pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance>, pallet_storage::BagIdType<MemberId, ChannelId>, pallet_storage::DynamicBagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, DistributionBucketFamilyId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, DistributionBucketIndex>
+   * Lookup139: pallet_storage::RawEvent<StorageBucketId, WorkerId, DataObjectId, pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance>, pallet_storage::BagIdType<MemberId, ChannelId>, pallet_storage::DynamicBagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, DistributionBucketFamilyId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, DistributionBucketIndex>
    **/
   PalletStorageRawEvent: {
     _enum: {
@@ -972,7 +979,7 @@ export default {
       DataObjectsDeleted: '(AccountId32,PalletStorageBagIdType,BTreeSet<u64>)',
       StorageBucketStatusUpdated: '(u64,bool)',
       UpdateBlacklist: '(BTreeSet<Bytes>,BTreeSet<Bytes>)',
-      DynamicBagDeleted: '(AccountId32,PalletStorageDynamicBagIdType)',
+      DynamicBagDeleted: 'PalletStorageDynamicBagIdType',
       DynamicBagCreated: '(PalletStorageDynamicBagIdType,BTreeSet<u64>,BTreeSet<PalletStorageDistributionBucketIdRecord>)',
       VoucherChanged: '(u64,PalletStorageVoucher)',
       StorageBucketDeleted: 'u64',
@@ -999,7 +1006,7 @@ export default {
     }
   },
   /**
-   * Lookup139: pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance>
+   * Lookup140: pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance>
    **/
   PalletStorageUploadParametersRecord: {
     bagId: 'PalletStorageBagIdType',
@@ -1009,7 +1016,7 @@ export default {
     expectedDataObjectStateBloatBond: 'u128'
   },
   /**
-   * Lookup140: pallet_storage::BagIdType<MemberId, ChannelId>
+   * Lookup141: pallet_storage::BagIdType<MemberId, ChannelId>
    **/
   PalletStorageBagIdType: {
     _enum: {
@@ -1018,7 +1025,7 @@ export default {
     }
   },
   /**
-   * Lookup141: pallet_storage::StaticBagId
+   * Lookup142: pallet_storage::StaticBagId
    **/
   PalletStorageStaticBagId: {
     _enum: {
@@ -1027,7 +1034,7 @@ export default {
     }
   },
   /**
-   * Lookup142: pallet_storage::DynamicBagIdType<MemberId, ChannelId>
+   * Lookup143: pallet_storage::DynamicBagIdType<MemberId, ChannelId>
    **/
   PalletStorageDynamicBagIdType: {
     _enum: {
@@ -1036,7 +1043,7 @@ export default {
     }
   },
   /**
-   * Lookup145: pallet_storage::Voucher
+   * Lookup146: pallet_storage::Voucher
    **/
   PalletStorageVoucher: {
     sizeLimit: 'u64',
@@ -1045,13 +1052,13 @@ export default {
     objectsUsed: 'u64'
   },
   /**
-   * Lookup146: pallet_storage::DynamicBagType
+   * Lookup147: pallet_storage::DynamicBagType
    **/
   PalletStorageDynamicBagType: {
     _enum: ['Member', 'Channel']
   },
   /**
-   * Lookup150: pallet_project_token::events::RawEvent<Balance, JoyBalance, TokenId, sp_core::crypto::AccountId32, MemberId, BlockNumber, pallet_project_token::types::TransferPolicy<primitive_types::H256>, pallet_project_token::types::TokenIssuanceParameters<primitive_types::H256, pallet_project_token::types::TokenAllocation<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>, pallet_project_token::types::TransferPolicyParams<pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>>, MemberId>, pallet_project_token::types::Transfers<pallet_project_token::types::Validated<MemberId>, pallet_project_token::types::ValidatedPayment<pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>>>, pallet_project_token::types::TokenSale<JoyBalance, Balance, BlockNumber, pallet_project_token::types::VestingScheduleParams<BlockNumber>, MemberId, sp_core::crypto::AccountId32>>
+   * Lookup151: pallet_project_token::events::RawEvent<Balance, JoyBalance, TokenId, sp_core::crypto::AccountId32, MemberId, BlockNumber, pallet_project_token::types::TransferPolicy<primitive_types::H256>, pallet_project_token::types::TokenIssuanceParameters<primitive_types::H256, pallet_project_token::types::TokenAllocation<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>, pallet_project_token::types::TransferPolicyParams<pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>>, MemberId>, pallet_project_token::types::Transfers<pallet_project_token::types::Validated<MemberId>, pallet_project_token::types::ValidatedPayment<pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>>>, pallet_project_token::types::TokenSale<JoyBalance, Balance, BlockNumber, pallet_project_token::types::VestingScheduleParams<BlockNumber>, MemberId, sp_core::crypto::AccountId32>>
    **/
   PalletProjectTokenEventsRawEvent: {
     _enum: {
@@ -1076,7 +1083,7 @@ export default {
     }
   },
   /**
-   * Lookup151: pallet_project_token::types::TransferPolicy<primitive_types::H256>
+   * Lookup152: pallet_project_token::types::TransferPolicy<primitive_types::H256>
    **/
   PalletProjectTokenTransferPolicy: {
     _enum: {
@@ -1085,7 +1092,7 @@ export default {
     }
   },
   /**
-   * Lookup152: pallet_project_token::types::TokenIssuanceParameters<primitive_types::H256, pallet_project_token::types::TokenAllocation<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>, pallet_project_token::types::TransferPolicyParams<pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>>, MemberId>
+   * Lookup153: pallet_project_token::types::TokenIssuanceParameters<primitive_types::H256, pallet_project_token::types::TokenAllocation<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>, pallet_project_token::types::TransferPolicyParams<pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>>, MemberId>
    **/
   PalletProjectTokenTokenIssuanceParameters: {
     initialAllocation: 'BTreeMap<u64, PalletProjectTokenTokenAllocation>',
@@ -1095,14 +1102,14 @@ export default {
     revenueSplitRate: 'Permill'
   },
   /**
-   * Lookup153: pallet_project_token::types::TokenAllocation<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>
+   * Lookup154: pallet_project_token::types::TokenAllocation<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>
    **/
   PalletProjectTokenTokenAllocation: {
     amount: 'u128',
     vestingScheduleParams: 'Option<PalletProjectTokenVestingScheduleParams>'
   },
   /**
-   * Lookup154: pallet_project_token::types::VestingScheduleParams<BlockNumber>
+   * Lookup155: pallet_project_token::types::VestingScheduleParams<BlockNumber>
    **/
   PalletProjectTokenVestingScheduleParams: {
     linearVestingDuration: 'u32',
@@ -1110,7 +1117,7 @@ export default {
     cliffAmountPercentage: 'Permill'
   },
   /**
-   * Lookup157: pallet_project_token::types::TransferPolicyParams<pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>>
+   * Lookup158: pallet_project_token::types::TransferPolicyParams<pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>>
    **/
   PalletProjectTokenTransferPolicyParams: {
     _enum: {
@@ -1119,14 +1126,14 @@ export default {
     }
   },
   /**
-   * Lookup158: pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>
+   * Lookup159: pallet_project_token::types::WhitelistParams<primitive_types::H256, pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>>
    **/
   PalletProjectTokenWhitelistParams: {
     commitment: 'H256',
     payload: 'Option<PalletProjectTokenSingleDataObjectUploadParams>'
   },
   /**
-   * Lookup159: pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>
+   * Lookup160: pallet_project_token::types::SingleDataObjectUploadParams<JoyBalance>
    **/
   PalletProjectTokenSingleDataObjectUploadParams: {
     objectCreationParams: 'PalletStorageDataObjectCreationParameters',
@@ -1134,7 +1141,7 @@ export default {
     expectedDataObjectStateBloatBond: 'u128'
   },
   /**
-   * Lookup166: pallet_project_token::types::Validated<MemberId>
+   * Lookup167: pallet_project_token::types::Validated<MemberId>
    **/
   PalletProjectTokenValidated: {
     _enum: {
@@ -1143,14 +1150,14 @@ export default {
     }
   },
   /**
-   * Lookup167: pallet_project_token::types::ValidatedPayment<pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>>
+   * Lookup168: pallet_project_token::types::ValidatedPayment<pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>>
    **/
   PalletProjectTokenValidatedPayment: {
     payment: 'PalletProjectTokenPaymentWithVesting',
     vestingCleanupCandidate: 'Option<PalletProjectTokenVestingSource>'
   },
   /**
-   * Lookup168: pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>
+   * Lookup169: pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>
    **/
   PalletProjectTokenPaymentWithVesting: {
     remark: 'Bytes',
@@ -1158,7 +1165,7 @@ export default {
     vestingSchedule: 'Option<PalletProjectTokenVestingScheduleParams>'
   },
   /**
-   * Lookup170: pallet_project_token::types::VestingSource
+   * Lookup171: pallet_project_token::types::VestingSource
    **/
   PalletProjectTokenVestingSource: {
     _enum: {
@@ -1168,7 +1175,7 @@ export default {
     }
   },
   /**
-   * Lookup174: pallet_project_token::types::TokenSale<JoyBalance, Balance, BlockNumber, pallet_project_token::types::VestingScheduleParams<BlockNumber>, MemberId, sp_core::crypto::AccountId32>
+   * Lookup175: pallet_project_token::types::TokenSale<JoyBalance, Balance, BlockNumber, pallet_project_token::types::VestingScheduleParams<BlockNumber>, MemberId, sp_core::crypto::AccountId32>
    **/
   PalletProjectTokenTokenSale: {
     unitPrice: 'u128',
@@ -1183,7 +1190,7 @@ export default {
     autoFinalize: 'bool'
   },
   /**
-   * Lookup176: pallet_proposals_engine::RawEvent<ProposalId, MemberId, BlockNumber>
+   * Lookup177: pallet_proposals_engine::RawEvent<ProposalId, MemberId, BlockNumber>
    **/
   PalletProposalsEngineRawEvent: {
     _enum: {
@@ -1196,7 +1203,7 @@ export default {
     }
   },
   /**
-   * Lookup177: pallet_proposals_engine::types::proposal_statuses::ProposalStatus<BlockNumber>
+   * Lookup178: pallet_proposals_engine::types::proposal_statuses::ProposalStatus<BlockNumber>
    **/
   PalletProposalsEngineProposalStatusesProposalStatus: {
     _enum: {
@@ -1206,7 +1213,7 @@ export default {
     }
   },
   /**
-   * Lookup178: pallet_proposals_engine::types::proposal_statuses::ProposalDecision
+   * Lookup179: pallet_proposals_engine::types::proposal_statuses::ProposalDecision
    **/
   PalletProposalsEngineProposalStatusesProposalDecision: {
     _enum: {
@@ -1220,13 +1227,13 @@ export default {
     }
   },
   /**
-   * Lookup179: pallet_proposals_engine::types::proposal_statuses::ApprovedProposalDecision
+   * Lookup180: pallet_proposals_engine::types::proposal_statuses::ApprovedProposalDecision
    **/
   PalletProposalsEngineProposalStatusesApprovedProposalDecision: {
     _enum: ['PendingExecution', 'PendingConstitutionality']
   },
   /**
-   * Lookup180: pallet_proposals_engine::types::proposal_statuses::ExecutionStatus
+   * Lookup181: pallet_proposals_engine::types::proposal_statuses::ExecutionStatus
    **/
   PalletProposalsEngineProposalStatusesExecutionStatus: {
     _enum: {
@@ -1237,13 +1244,13 @@ export default {
     }
   },
   /**
-   * Lookup181: pallet_proposals_engine::types::VoteKind
+   * Lookup182: pallet_proposals_engine::types::VoteKind
    **/
   PalletProposalsEngineVoteKind: {
     _enum: ['Approve', 'Reject', 'Slash', 'Abstain']
   },
   /**
-   * Lookup182: pallet_proposals_discussion::RawEvent<ThreadId, MemberId, PostId>
+   * Lookup183: pallet_proposals_discussion::RawEvent<ThreadId, MemberId, PostId>
    **/
   PalletProposalsDiscussionRawEvent: {
     _enum: {
@@ -1255,7 +1262,7 @@ export default {
     }
   },
   /**
-   * Lookup183: pallet_proposals_discussion::types::ThreadMode<MemberId>
+   * Lookup184: pallet_proposals_discussion::types::ThreadMode<MemberId>
    **/
   PalletProposalsDiscussionThreadMode: {
     _enum: {
@@ -1264,7 +1271,7 @@ export default {
     }
   },
   /**
-   * Lookup184: pallet_proposals_codex::RawEvent<pallet_proposals_codex::types::GeneralProposalParams<MemberId, sp_core::crypto::AccountId32, BlockNumber>, pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, ProposalId, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>>, ProposalId, ThreadId>
+   * Lookup185: pallet_proposals_codex::RawEvent<pallet_proposals_codex::types::GeneralProposalParams<MemberId, sp_core::crypto::AccountId32, BlockNumber>, pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, ProposalId, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>>, ProposalId, ThreadId>
    **/
   PalletProposalsCodexRawEvent: {
     _enum: {
@@ -1272,7 +1279,7 @@ export default {
     }
   },
   /**
-   * Lookup185: pallet_proposals_codex::types::GeneralProposalParams<MemberId, sp_core::crypto::AccountId32, BlockNumber>
+   * Lookup186: pallet_proposals_codex::types::GeneralProposalParams<MemberId, sp_core::crypto::AccountId32, BlockNumber>
    **/
   PalletProposalsCodexGeneralProposalParams: {
     memberId: 'u64',
@@ -1282,7 +1289,7 @@ export default {
     exactExecutionBlock: 'Option<u32>'
   },
   /**
-   * Lookup186: pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, ProposalId, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>>
+   * Lookup187: pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, ProposalId, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>>
    **/
   PalletProposalsCodexProposalDetails: {
     _enum: {
@@ -1312,14 +1319,14 @@ export default {
     }
   },
   /**
-   * Lookup188: pallet_common::FundingRequestParameters<Balance, sp_core::crypto::AccountId32>
+   * Lookup189: pallet_common::FundingRequestParameters<Balance, sp_core::crypto::AccountId32>
    **/
   PalletCommonFundingRequestParameters: {
     account: 'AccountId32',
     amount: 'u128'
   },
   /**
-   * Lookup189: pallet_proposals_codex::types::CreateOpeningParameters<BlockNumber, Balance>
+   * Lookup190: pallet_proposals_codex::types::CreateOpeningParameters<BlockNumber, Balance>
    **/
   PalletProposalsCodexCreateOpeningParameters: {
     description: 'Bytes',
@@ -1328,14 +1335,14 @@ export default {
     group: 'PalletCommonWorkingGroup'
   },
   /**
-   * Lookup190: pallet_working_group::types::StakePolicy<BlockNumber, Balance>
+   * Lookup191: pallet_working_group::types::StakePolicy<BlockNumber, Balance>
    **/
   PalletWorkingGroupStakePolicy: {
     stakeAmount: 'u128',
     leavingUnstakingPeriod: 'u32'
   },
   /**
-   * Lookup191: pallet_proposals_codex::types::FillOpeningParameters
+   * Lookup192: pallet_proposals_codex::types::FillOpeningParameters
    **/
   PalletProposalsCodexFillOpeningParameters: {
     openingId: 'u64',
@@ -1343,7 +1350,7 @@ export default {
     workingGroup: 'PalletCommonWorkingGroup'
   },
   /**
-   * Lookup192: pallet_proposals_codex::types::TerminateRoleParameters<WorkerId, Balance>
+   * Lookup193: pallet_proposals_codex::types::TerminateRoleParameters<WorkerId, Balance>
    **/
   PalletProposalsCodexTerminateRoleParameters: {
     workerId: 'u64',
@@ -1351,7 +1358,7 @@ export default {
     group: 'PalletCommonWorkingGroup'
   },
   /**
-   * Lookup193: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance1>
+   * Lookup194: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance1>
    **/
   PalletWorkingGroupRawEventInstance1: {
     _enum: {
@@ -1384,13 +1391,13 @@ export default {
     }
   },
   /**
-   * Lookup197: pallet_working_group::types::OpeningType
+   * Lookup198: pallet_working_group::types::OpeningType
    **/
   PalletWorkingGroupOpeningType: {
     _enum: ['Leader', 'Regular']
   },
   /**
-   * Lookup198: pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>
+   * Lookup199: pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>
    **/
   PalletWorkingGroupApplyOnOpeningParams: {
     memberId: 'u64',
@@ -1401,24 +1408,24 @@ export default {
     stakeParameters: 'PalletWorkingGroupStakeParameters'
   },
   /**
-   * Lookup199: pallet_working_group::types::StakeParameters<sp_core::crypto::AccountId32, Balance>
+   * Lookup200: pallet_working_group::types::StakeParameters<sp_core::crypto::AccountId32, Balance>
    **/
   PalletWorkingGroupStakeParameters: {
     stake: 'u128',
     stakingAccountId: 'AccountId32'
   },
   /**
-   * Lookup200: pallet_working_group::Instance1
+   * Lookup201: pallet_working_group::Instance1
    **/
   PalletWorkingGroupInstance1: 'Null',
   /**
-   * Lookup201: pallet_working_group::types::RewardPaymentType
+   * Lookup202: pallet_working_group::types::RewardPaymentType
    **/
   PalletWorkingGroupRewardPaymentType: {
     _enum: ['MissedReward', 'RegularReward']
   },
   /**
-   * Lookup202: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance2>
+   * Lookup203: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance2>
    **/
   PalletWorkingGroupRawEventInstance2: {
     _enum: {
@@ -1451,11 +1458,11 @@ export default {
     }
   },
   /**
-   * Lookup203: pallet_working_group::Instance2
+   * Lookup204: pallet_working_group::Instance2
    **/
   PalletWorkingGroupInstance2: 'Null',
   /**
-   * Lookup204: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance3>
+   * Lookup205: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance3>
    **/
   PalletWorkingGroupRawEventInstance3: {
     _enum: {
@@ -1488,11 +1495,11 @@ export default {
     }
   },
   /**
-   * Lookup205: pallet_working_group::Instance3
+   * Lookup206: pallet_working_group::Instance3
    **/
   PalletWorkingGroupInstance3: 'Null',
   /**
-   * Lookup206: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance4>
+   * Lookup207: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance4>
    **/
   PalletWorkingGroupRawEventInstance4: {
     _enum: {
@@ -1525,11 +1532,11 @@ export default {
     }
   },
   /**
-   * Lookup207: pallet_working_group::Instance4
+   * Lookup208: pallet_working_group::Instance4
    **/
   PalletWorkingGroupInstance4: 'Null',
   /**
-   * Lookup208: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance5>
+   * Lookup209: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance5>
    **/
   PalletWorkingGroupRawEventInstance5: {
     _enum: {
@@ -1562,11 +1569,11 @@ export default {
     }
   },
   /**
-   * Lookup209: pallet_working_group::Instance5
+   * Lookup210: pallet_working_group::Instance5
    **/
   PalletWorkingGroupInstance5: 'Null',
   /**
-   * Lookup210: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance6>
+   * Lookup211: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance6>
    **/
   PalletWorkingGroupRawEventInstance6: {
     _enum: {
@@ -1599,11 +1606,11 @@ export default {
     }
   },
   /**
-   * Lookup211: pallet_working_group::Instance6
+   * Lookup212: pallet_working_group::Instance6
    **/
   PalletWorkingGroupInstance6: 'Null',
   /**
-   * Lookup212: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance7>
+   * Lookup213: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance7>
    **/
   PalletWorkingGroupRawEventInstance7: {
     _enum: {
@@ -1636,11 +1643,11 @@ export default {
     }
   },
   /**
-   * Lookup213: pallet_working_group::Instance7
+   * Lookup214: pallet_working_group::Instance7
    **/
   PalletWorkingGroupInstance7: 'Null',
   /**
-   * Lookup214: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance8>
+   * Lookup215: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance8>
    **/
   PalletWorkingGroupRawEventInstance8: {
     _enum: {
@@ -1673,11 +1680,11 @@ export default {
     }
   },
   /**
-   * Lookup215: pallet_working_group::Instance8
+   * Lookup216: pallet_working_group::Instance8
    **/
   PalletWorkingGroupInstance8: 'Null',
   /**
-   * Lookup216: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance9>
+   * Lookup217: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance9>
    **/
   PalletWorkingGroupRawEventInstance9: {
     _enum: {
@@ -1710,11 +1717,11 @@ export default {
     }
   },
   /**
-   * Lookup217: pallet_working_group::Instance9
+   * Lookup218: pallet_working_group::Instance9
    **/
   PalletWorkingGroupInstance9: 'Null',
   /**
-   * Lookup218: frame_system::Phase
+   * Lookup219: frame_system::Phase
    **/
   FrameSystemPhase: {
     _enum: {
@@ -1724,14 +1731,14 @@ export default {
     }
   },
   /**
-   * Lookup222: frame_system::LastRuntimeUpgradeInfo
+   * Lookup223: frame_system::LastRuntimeUpgradeInfo
    **/
   FrameSystemLastRuntimeUpgradeInfo: {
     specVersion: 'Compact<u32>',
     specName: 'Text'
   },
   /**
-   * Lookup225: frame_system::pallet::Call<T>
+   * Lookup226: frame_system::pallet::Call<T>
    **/
   FrameSystemCall: {
     _enum: {
@@ -1769,7 +1776,7 @@ export default {
     }
   },
   /**
-   * Lookup228: frame_system::limits::BlockWeights
+   * Lookup229: frame_system::limits::BlockWeights
    **/
   FrameSystemLimitsBlockWeights: {
     baseBlock: 'u64',
@@ -1777,7 +1784,7 @@ export default {
     perClass: 'FrameSupportWeightsPerDispatchClassWeightsPerClass'
   },
   /**
-   * Lookup229: frame_support::weights::PerDispatchClass<frame_system::limits::WeightsPerClass>
+   * Lookup230: frame_support::weights::PerDispatchClass<frame_system::limits::WeightsPerClass>
    **/
   FrameSupportWeightsPerDispatchClassWeightsPerClass: {
     normal: 'FrameSystemLimitsWeightsPerClass',
@@ -1785,7 +1792,7 @@ export default {
     mandatory: 'FrameSystemLimitsWeightsPerClass'
   },
   /**
-   * Lookup230: frame_system::limits::WeightsPerClass
+   * Lookup231: frame_system::limits::WeightsPerClass
    **/
   FrameSystemLimitsWeightsPerClass: {
     baseExtrinsic: 'u64',
@@ -1794,13 +1801,13 @@ export default {
     reserved: 'Option<u64>'
   },
   /**
-   * Lookup231: frame_system::limits::BlockLength
+   * Lookup232: frame_system::limits::BlockLength
    **/
   FrameSystemLimitsBlockLength: {
     max: 'FrameSupportWeightsPerDispatchClassU32'
   },
   /**
-   * Lookup232: frame_support::weights::PerDispatchClass<T>
+   * Lookup233: frame_support::weights::PerDispatchClass<T>
    **/
   FrameSupportWeightsPerDispatchClassU32: {
     normal: 'u32',
@@ -1808,14 +1815,14 @@ export default {
     mandatory: 'u32'
   },
   /**
-   * Lookup233: frame_support::weights::RuntimeDbWeight
+   * Lookup234: frame_support::weights::RuntimeDbWeight
    **/
   FrameSupportWeightsRuntimeDbWeight: {
     read: 'u64',
     write: 'u64'
   },
   /**
-   * Lookup234: sp_version::RuntimeVersion
+   * Lookup235: sp_version::RuntimeVersion
    **/
   SpVersionRuntimeVersion: {
     specName: 'Text',
@@ -1828,13 +1835,13 @@ export default {
     stateVersion: 'u8'
   },
   /**
-   * Lookup240: frame_system::pallet::Error<T>
+   * Lookup241: frame_system::pallet::Error<T>
    **/
   FrameSystemError: {
     _enum: ['InvalidSpecName', 'SpecVersionNeedsToIncrease', 'FailedToExtractRuntimeVersion', 'NonDefaultComposite', 'NonZeroRefCount', 'CallFiltered']
   },
   /**
-   * Lookup241: pallet_utility::pallet::Call<T>
+   * Lookup242: pallet_utility::pallet::Call<T>
    **/
   PalletUtilityCall: {
     _enum: {
@@ -1858,7 +1865,7 @@ export default {
     }
   },
   /**
-   * Lookup244: pallet_babe::pallet::Call<T>
+   * Lookup245: pallet_babe::pallet::Call<T>
    **/
   PalletBabeCall: {
     _enum: {
@@ -1876,7 +1883,7 @@ export default {
     }
   },
   /**
-   * Lookup245: sp_consensus_slots::EquivocationProof<sp_runtime::generic::header::Header<Number, sp_runtime::traits::BlakeTwo256>, sp_consensus_babe::app::Public>
+   * Lookup246: sp_consensus_slots::EquivocationProof<sp_runtime::generic::header::Header<Number, sp_runtime::traits::BlakeTwo256>, sp_consensus_babe::app::Public>
    **/
   SpConsensusSlotsEquivocationProof: {
     offender: 'SpConsensusBabeAppPublic',
@@ -1885,7 +1892,7 @@ export default {
     secondHeader: 'SpRuntimeHeader'
   },
   /**
-   * Lookup246: sp_runtime::generic::header::Header<Number, sp_runtime::traits::BlakeTwo256>
+   * Lookup247: sp_runtime::generic::header::Header<Number, sp_runtime::traits::BlakeTwo256>
    **/
   SpRuntimeHeader: {
     parentHash: 'H256',
@@ -1895,15 +1902,15 @@ export default {
     digest: 'SpRuntimeDigest'
   },
   /**
-   * Lookup247: sp_runtime::traits::BlakeTwo256
+   * Lookup248: sp_runtime::traits::BlakeTwo256
    **/
   SpRuntimeBlakeTwo256: 'Null',
   /**
-   * Lookup248: sp_consensus_babe::app::Public
+   * Lookup249: sp_consensus_babe::app::Public
    **/
   SpConsensusBabeAppPublic: 'SpCoreSr25519Public',
   /**
-   * Lookup250: sp_session::MembershipProof
+   * Lookup251: sp_session::MembershipProof
    **/
   SpSessionMembershipProof: {
     session: 'u32',
@@ -1911,7 +1918,7 @@ export default {
     validatorCount: 'u32'
   },
   /**
-   * Lookup251: sp_consensus_babe::digests::NextConfigDescriptor
+   * Lookup252: sp_consensus_babe::digests::NextConfigDescriptor
    **/
   SpConsensusBabeDigestsNextConfigDescriptor: {
     _enum: {
@@ -1923,13 +1930,13 @@ export default {
     }
   },
   /**
-   * Lookup252: sp_consensus_babe::AllowedSlots
+   * Lookup253: sp_consensus_babe::AllowedSlots
    **/
   SpConsensusBabeAllowedSlots: {
     _enum: ['PrimarySlots', 'PrimaryAndSecondaryPlainSlots', 'PrimaryAndSecondaryVRFSlots']
   },
   /**
-   * Lookup253: pallet_timestamp::pallet::Call<T>
+   * Lookup254: pallet_timestamp::pallet::Call<T>
    **/
   PalletTimestampCall: {
     _enum: {
@@ -1939,7 +1946,7 @@ export default {
     }
   },
   /**
-   * Lookup255: pallet_authorship::pallet::Call<T>
+   * Lookup256: pallet_authorship::pallet::Call<T>
    **/
   PalletAuthorshipCall: {
     _enum: {
@@ -1949,7 +1956,7 @@ export default {
     }
   },
   /**
-   * Lookup257: pallet_balances::pallet::Call<T, I>
+   * Lookup258: pallet_balances::pallet::Call<T, I>
    **/
   PalletBalancesCall: {
     _enum: {
@@ -1982,7 +1989,7 @@ export default {
     }
   },
   /**
-   * Lookup258: pallet_election_provider_multi_phase::pallet::Call<T>
+   * Lookup259: pallet_election_provider_multi_phase::pallet::Call<T>
    **/
   PalletElectionProviderMultiPhaseCall: {
     _enum: {
@@ -2006,7 +2013,7 @@ export default {
     }
   },
   /**
-   * Lookup259: pallet_election_provider_multi_phase::RawSolution<joystream_node_runtime::NposSolution16>
+   * Lookup260: pallet_election_provider_multi_phase::RawSolution<joystream_node_runtime::NposSolution16>
    **/
   PalletElectionProviderMultiPhaseRawSolution: {
     solution: 'JoystreamNodeRuntimeNposSolution16',
@@ -2014,7 +2021,7 @@ export default {
     round: 'u32'
   },
   /**
-   * Lookup260: joystream_node_runtime::NposSolution16
+   * Lookup261: joystream_node_runtime::NposSolution16
    **/
   JoystreamNodeRuntimeNposSolution16: {
     votes1: 'Vec<(Compact<u32>,Compact<u16>)>',
@@ -2035,7 +2042,7 @@ export default {
     votes16: 'Vec<(Compact<u32>,[(Compact<u16>,Compact<PerU16>);15],Compact<u16>)>'
   },
   /**
-   * Lookup311: sp_npos_elections::ElectionScore
+   * Lookup312: sp_npos_elections::ElectionScore
    **/
   SpNposElectionsElectionScore: {
     minimalStake: 'u128',
@@ -2043,21 +2050,21 @@ export default {
     sumStakeSquared: 'u128'
   },
   /**
-   * Lookup312: pallet_election_provider_multi_phase::SolutionOrSnapshotSize
+   * Lookup313: pallet_election_provider_multi_phase::SolutionOrSnapshotSize
    **/
   PalletElectionProviderMultiPhaseSolutionOrSnapshotSize: {
     voters: 'Compact<u32>',
     targets: 'Compact<u32>'
   },
   /**
-   * Lookup316: sp_npos_elections::Support<sp_core::crypto::AccountId32>
+   * Lookup317: sp_npos_elections::Support<sp_core::crypto::AccountId32>
    **/
   SpNposElectionsSupport: {
     total: 'u128',
     voters: 'Vec<(AccountId32,u128)>'
   },
   /**
-   * Lookup319: pallet_staking::pallet::pallet::Call<T>
+   * Lookup320: pallet_staking::pallet::pallet::Call<T>
    **/
   PalletStakingPalletCall: {
     _enum: {
@@ -2149,7 +2156,7 @@ export default {
     }
   },
   /**
-   * Lookup320: pallet_staking::RewardDestination<sp_core::crypto::AccountId32>
+   * Lookup321: pallet_staking::RewardDestination<sp_core::crypto::AccountId32>
    **/
   PalletStakingRewardDestination: {
     _enum: {
@@ -2161,7 +2168,7 @@ export default {
     }
   },
   /**
-   * Lookup324: pallet_staking::pallet::pallet::ConfigOp<T>
+   * Lookup325: pallet_staking::pallet::pallet::ConfigOp<T>
    **/
   PalletStakingPalletConfigOpU128: {
     _enum: {
@@ -2171,7 +2178,7 @@ export default {
     }
   },
   /**
-   * Lookup325: pallet_staking::pallet::pallet::ConfigOp<T>
+   * Lookup326: pallet_staking::pallet::pallet::ConfigOp<T>
    **/
   PalletStakingPalletConfigOpU32: {
     _enum: {
@@ -2181,7 +2188,7 @@ export default {
     }
   },
   /**
-   * Lookup326: pallet_staking::pallet::pallet::ConfigOp<sp_arithmetic::per_things::Percent>
+   * Lookup327: pallet_staking::pallet::pallet::ConfigOp<sp_arithmetic::per_things::Percent>
    **/
   PalletStakingPalletConfigOpPercent: {
     _enum: {
@@ -2191,7 +2198,7 @@ export default {
     }
   },
   /**
-   * Lookup327: pallet_staking::pallet::pallet::ConfigOp<sp_arithmetic::per_things::Perbill>
+   * Lookup328: pallet_staking::pallet::pallet::ConfigOp<sp_arithmetic::per_things::Perbill>
    **/
   PalletStakingPalletConfigOpPerbill: {
     _enum: {
@@ -2201,7 +2208,7 @@ export default {
     }
   },
   /**
-   * Lookup328: pallet_session::pallet::Call<T>
+   * Lookup329: pallet_session::pallet::Call<T>
    **/
   PalletSessionCall: {
     _enum: {
@@ -2216,7 +2223,7 @@ export default {
     }
   },
   /**
-   * Lookup329: joystream_node_runtime::SessionKeys
+   * Lookup330: joystream_node_runtime::SessionKeys
    **/
   JoystreamNodeRuntimeSessionKeys: {
     grandpa: 'SpFinalityGrandpaAppPublic',
@@ -2225,11 +2232,11 @@ export default {
     authorityDiscovery: 'SpAuthorityDiscoveryAppPublic'
   },
   /**
-   * Lookup330: sp_authority_discovery::app::Public
+   * Lookup331: sp_authority_discovery::app::Public
    **/
   SpAuthorityDiscoveryAppPublic: 'SpCoreSr25519Public',
   /**
-   * Lookup331: pallet_grandpa::pallet::Call<T>
+   * Lookup332: pallet_grandpa::pallet::Call<T>
    **/
   PalletGrandpaCall: {
     _enum: {
@@ -2248,14 +2255,14 @@ export default {
     }
   },
   /**
-   * Lookup332: sp_finality_grandpa::EquivocationProof<primitive_types::H256, N>
+   * Lookup333: sp_finality_grandpa::EquivocationProof<primitive_types::H256, N>
    **/
   SpFinalityGrandpaEquivocationProof: {
     setId: 'u64',
     equivocation: 'SpFinalityGrandpaEquivocation'
   },
   /**
-   * Lookup333: sp_finality_grandpa::Equivocation<primitive_types::H256, N>
+   * Lookup334: sp_finality_grandpa::Equivocation<primitive_types::H256, N>
    **/
   SpFinalityGrandpaEquivocation: {
     _enum: {
@@ -2264,7 +2271,7 @@ export default {
     }
   },
   /**
-   * Lookup334: finality_grandpa::Equivocation<sp_finality_grandpa::app::Public, finality_grandpa::Prevote<primitive_types::H256, N>, sp_finality_grandpa::app::Signature>
+   * Lookup335: finality_grandpa::Equivocation<sp_finality_grandpa::app::Public, finality_grandpa::Prevote<primitive_types::H256, N>, sp_finality_grandpa::app::Signature>
    **/
   FinalityGrandpaEquivocationPrevote: {
     roundNumber: 'u64',
@@ -2273,22 +2280,22 @@ export default {
     second: '(FinalityGrandpaPrevote,SpFinalityGrandpaAppSignature)'
   },
   /**
-   * Lookup335: finality_grandpa::Prevote<primitive_types::H256, N>
+   * Lookup336: finality_grandpa::Prevote<primitive_types::H256, N>
    **/
   FinalityGrandpaPrevote: {
     targetHash: 'H256',
     targetNumber: 'u32'
   },
   /**
-   * Lookup336: sp_finality_grandpa::app::Signature
+   * Lookup337: sp_finality_grandpa::app::Signature
    **/
   SpFinalityGrandpaAppSignature: 'SpCoreEd25519Signature',
   /**
-   * Lookup337: sp_core::ed25519::Signature
+   * Lookup338: sp_core::ed25519::Signature
    **/
   SpCoreEd25519Signature: '[u8;64]',
   /**
-   * Lookup340: finality_grandpa::Equivocation<sp_finality_grandpa::app::Public, finality_grandpa::Precommit<primitive_types::H256, N>, sp_finality_grandpa::app::Signature>
+   * Lookup341: finality_grandpa::Equivocation<sp_finality_grandpa::app::Public, finality_grandpa::Precommit<primitive_types::H256, N>, sp_finality_grandpa::app::Signature>
    **/
   FinalityGrandpaEquivocationPrecommit: {
     roundNumber: 'u64',
@@ -2297,14 +2304,14 @@ export default {
     second: '(FinalityGrandpaPrecommit,SpFinalityGrandpaAppSignature)'
   },
   /**
-   * Lookup341: finality_grandpa::Precommit<primitive_types::H256, N>
+   * Lookup342: finality_grandpa::Precommit<primitive_types::H256, N>
    **/
   FinalityGrandpaPrecommit: {
     targetHash: 'H256',
     targetNumber: 'u32'
   },
   /**
-   * Lookup343: pallet_im_online::pallet::Call<T>
+   * Lookup344: pallet_im_online::pallet::Call<T>
    **/
   PalletImOnlineCall: {
     _enum: {
@@ -2315,7 +2322,7 @@ export default {
     }
   },
   /**
-   * Lookup344: pallet_im_online::Heartbeat<BlockNumber>
+   * Lookup345: pallet_im_online::Heartbeat<BlockNumber>
    **/
   PalletImOnlineHeartbeat: {
     blockNumber: 'u32',
@@ -2325,22 +2332,22 @@ export default {
     validatorsLen: 'u32'
   },
   /**
-   * Lookup345: sp_core::offchain::OpaqueNetworkState
+   * Lookup346: sp_core::offchain::OpaqueNetworkState
    **/
   SpCoreOffchainOpaqueNetworkState: {
     peerId: 'Bytes',
     externalAddresses: 'Vec<Bytes>'
   },
   /**
-   * Lookup349: pallet_im_online::sr25519::app_sr25519::Signature
+   * Lookup350: pallet_im_online::sr25519::app_sr25519::Signature
    **/
   PalletImOnlineSr25519AppSr25519Signature: 'SpCoreSr25519Signature',
   /**
-   * Lookup350: sp_core::sr25519::Signature
+   * Lookup351: sp_core::sr25519::Signature
    **/
   SpCoreSr25519Signature: '[u8;64]',
   /**
-   * Lookup351: pallet_sudo::pallet::Call<T>
+   * Lookup352: pallet_sudo::pallet::Call<T>
    **/
   PalletSudoCall: {
     _enum: {
@@ -2364,7 +2371,7 @@ export default {
     }
   },
   /**
-   * Lookup352: pallet_bags_list::pallet::Call<T, I>
+   * Lookup353: pallet_bags_list::pallet::Call<T, I>
    **/
   PalletBagsListCall: {
     _enum: {
@@ -2377,7 +2384,7 @@ export default {
     }
   },
   /**
-   * Lookup353: pallet_vesting::pallet::Call<T>
+   * Lookup354: pallet_vesting::pallet::Call<T>
    **/
   PalletVestingCall: {
     _enum: {
@@ -2401,7 +2408,7 @@ export default {
     }
   },
   /**
-   * Lookup354: pallet_vesting::vesting_info::VestingInfo<Balance, BlockNumber>
+   * Lookup355: pallet_vesting::vesting_info::VestingInfo<Balance, BlockNumber>
    **/
   PalletVestingVestingInfo: {
     locked: 'u128',
@@ -2409,7 +2416,7 @@ export default {
     startingBlock: 'u32'
   },
   /**
-   * Lookup355: pallet_multisig::pallet::Call<T>
+   * Lookup356: pallet_multisig::pallet::Call<T>
    **/
   PalletMultisigCall: {
     _enum: {
@@ -2441,7 +2448,7 @@ export default {
     }
   },
   /**
-   * Lookup358: pallet_council::Call<T>
+   * Lookup359: pallet_council::Call<T>
    **/
   PalletCouncilCall: {
     _enum: {
@@ -2492,7 +2499,7 @@ export default {
     }
   },
   /**
-   * Lookup359: pallet_referendum::Call<T, I>
+   * Lookup360: pallet_referendum::Call<T, I>
    **/
   PalletReferendumCall: {
     _enum: {
@@ -2508,7 +2515,7 @@ export default {
     }
   },
   /**
-   * Lookup360: pallet_membership::Call<T>
+   * Lookup361: pallet_membership::Call<T>
    **/
   PalletMembershipCall: {
     _enum: {
@@ -2576,7 +2583,7 @@ export default {
     }
   },
   /**
-   * Lookup361: pallet_forum::Call<T>
+   * Lookup362: pallet_forum::Call<T>
    **/
   PalletForumCall: {
     _enum: {
@@ -2680,7 +2687,7 @@ export default {
     }
   },
   /**
-   * Lookup362: pallet_constitution::Call<T>
+   * Lookup363: pallet_constitution::Call<T>
    **/
   PalletConstitutionCall: {
     _enum: {
@@ -2690,7 +2697,7 @@ export default {
     }
   },
   /**
-   * Lookup364: pallet_content::Call<T>
+   * Lookup365: pallet_content::Call<T>
    **/
   PalletContentCall: {
     _enum: {
@@ -2996,7 +3003,7 @@ export default {
     }
   },
   /**
-   * Lookup366: pallet_content::types::ProofElementRecord<primitive_types::H256, pallet_content::types::Side>
+   * Lookup367: pallet_content::types::ProofElementRecord<primitive_types::H256, pallet_content::types::Side>
    **/
   PalletContentProofElementRecord: {
     _alias: {
@@ -3006,13 +3013,13 @@ export default {
     side: 'PalletContentSide'
   },
   /**
-   * Lookup367: pallet_content::types::Side
+   * Lookup368: pallet_content::types::Side
    **/
   PalletContentSide: {
     _enum: ['Left', 'Right']
   },
   /**
-   * Lookup368: pallet_content::types::PullPaymentElement<ChannelId, Balance, primitive_types::H256>
+   * Lookup369: pallet_content::types::PullPaymentElement<ChannelId, Balance, primitive_types::H256>
    **/
   PalletContentPullPaymentElement: {
     channelId: 'u64',
@@ -3020,7 +3027,7 @@ export default {
     reason: 'H256'
   },
   /**
-   * Lookup369: pallet_content::types::InitTransferParameters<MemberId, CuratorGroupId, Balance>
+   * Lookup370: pallet_content::types::InitTransferParameters<MemberId, CuratorGroupId, Balance>
    **/
   PalletContentInitTransferParameters: {
     newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
@@ -3028,7 +3035,7 @@ export default {
     newOwner: 'PalletContentChannelOwner'
   },
   /**
-   * Lookup370: pallet_project_token::types::TokenSaleParams<JoyBalance, Balance, BlockNumber, pallet_project_token::types::VestingScheduleParams<BlockNumber>>
+   * Lookup371: pallet_project_token::types::TokenSaleParams<JoyBalance, Balance, BlockNumber, pallet_project_token::types::VestingScheduleParams<BlockNumber>>
    **/
   PalletProjectTokenTokenSaleParams: {
     unitPrice: 'u128',
@@ -3040,11 +3047,11 @@ export default {
     metadata: 'Option<Bytes>'
   },
   /**
-   * Lookup371: pallet_project_token::types::Transfers<MemberId, pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>>
+   * Lookup372: pallet_project_token::types::Transfers<MemberId, pallet_project_token::types::PaymentWithVesting<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>>
    **/
   PalletProjectTokenTransfersPaymentWithVesting: 'BTreeMap<u64, PalletProjectTokenPaymentWithVesting>',
   /**
-   * Lookup375: pallet_storage::Call<T>
+   * Lookup376: pallet_storage::Call<T>
    **/
   PalletStorageCall: {
     _enum: {
@@ -3181,9 +3188,6 @@ export default {
       sudo_upload_data_objects: {
         params: 'PalletStorageUploadParametersRecord',
       },
-      sudo_create_dynamic_bag: {
-        params: 'PalletStorageDynBagCreationParametersRecord',
-      },
       storage_operator_remark: {
         workerId: 'u64',
         storageBucketId: 'u64',
@@ -3195,18 +3199,6 @@ export default {
         msg: 'Bytes'
       }
     }
-  },
-  /**
-   * Lookup376: pallet_storage::DynBagCreationParametersRecord<pallet_storage::DynamicBagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>>
-   **/
-  PalletStorageDynBagCreationParametersRecord: {
-    bagId: 'PalletStorageDynamicBagIdType',
-    objectCreationList: 'Vec<PalletStorageDataObjectCreationParameters>',
-    stateBloatBondSourceAccountId: 'AccountId32',
-    expectedDataSizeFee: 'u128',
-    expectedDataObjectStateBloatBond: 'u128',
-    storageBuckets: 'BTreeSet<u64>',
-    distributionBuckets: 'BTreeSet<PalletStorageDistributionBucketIdRecord>'
   },
   /**
    * Lookup377: pallet_project_token::Call<T>
@@ -3948,22 +3940,22 @@ export default {
     stickyThreadIds: 'Vec<u64>'
   },
   /**
-   * Lookup518: pallet_forum::Thread<ForumUserId, CategoryId, Balance>
+   * Lookup518: pallet_forum::Thread<ForumUserId, CategoryId, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletForumThread: {
     categoryId: 'u64',
     authorId: 'u64',
-    cleanupPayOff: 'u128',
+    cleanupPayOff: 'PalletCommonBloatBondRepayableBloatBond',
     numberOfPosts: 'u64'
   },
   /**
-   * Lookup519: pallet_forum::Post<ForumUserId, ThreadId, primitive_types::H256, Balance, BlockNumber>
+   * Lookup519: pallet_forum::Post<ForumUserId, ThreadId, primitive_types::H256, BlockNumber, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletForumPost: {
     threadId: 'u64',
     textHash: 'H256',
     authorId: 'u64',
-    cleanupPayOff: 'u128',
+    cleanupPayOff: 'PalletCommonBloatBondRepayableBloatBond',
     lastEdited: 'u32'
   },
   /**
@@ -3979,13 +3971,13 @@ export default {
     textHash: 'Bytes'
   },
   /**
-   * Lookup523: pallet_content::types::VideoRecord<ChannelId, pallet_content::nft::types::OwnedNft<pallet_content::nft::types::TransactionalStatusRecord<MemberId, Balance, pallet_content::nft::types::EnglishAuctionRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>>, MemberId, AuctionId>, DataObjectId, Balance>
+   * Lookup523: pallet_content::types::VideoRecord<ChannelId, pallet_content::nft::types::OwnedNft<pallet_content::nft::types::TransactionalStatusRecord<MemberId, Balance, pallet_content::nft::types::EnglishAuctionRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>>, MemberId, AuctionId>, DataObjectId, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletContentVideoRecord: {
     inChannel: 'u64',
     nftStatus: 'Option<PalletContentNftTypesOwnedNft>',
     dataObjects: 'BTreeSet<u64>',
-    videoStateBloatBond: 'u128'
+    videoStateBloatBond: 'PalletCommonBloatBondRepayableBloatBond'
   },
   /**
    * Lookup524: pallet_content::nft::types::OwnedNft<pallet_content::nft::types::TransactionalStatusRecord<MemberId, Balance, pallet_content::nft::types::EnglishAuctionRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>>, MemberId, AuctionId>
@@ -4068,7 +4060,7 @@ export default {
    * Lookup534: pallet_content::errors::Error<T>
    **/
   PalletContentErrorsError: {
-    _enum: ['ChannelStateBloatBondChanged', 'VideoStateBloatBondChanged', 'MinCashoutValueTooLow', 'MaxCashoutValueTooHigh', 'ChannelOwnerMemberDoesNotExist', 'ChannelOwnerCuratorGroupDoesNotExist', 'CuratorIsNotAMemberOfGivenCuratorGroup', 'CuratorIsAlreadyAMemberOfGivenCuratorGroup', 'CuratorGroupDoesNotExist', 'CuratorsPerGroupLimitReached', 'CuratorGroupIsNotActive', 'CuratorIdInvalid', 'LeadAuthFailed', 'MemberAuthFailed', 'CuratorAuthFailed', 'BadOrigin', 'ActorNotAuthorized', 'CategoryDoesNotExist', 'ChannelDoesNotExist', 'VideoDoesNotExist', 'VideoInSeason', 'ActorCannotBeLead', 'ActorCannotOwnChannel', 'NftAlreadyExists', 'NftDoesNotExist', 'OverflowOrUnderflowHappened', 'DoesNotOwnNft', 'RoyaltyUpperBoundExceeded', 'RoyaltyLowerBoundExceeded', 'AuctionDurationUpperBoundExceeded', 'AuctionDurationLowerBoundExceeded', 'ExtensionPeriodUpperBoundExceeded', 'ExtensionPeriodLowerBoundExceeded', 'BidLockDurationUpperBoundExceeded', 'BidLockDurationLowerBoundExceeded', 'StartingPriceUpperBoundExceeded', 'StartingPriceLowerBoundExceeded', 'AuctionBidStepUpperBoundExceeded', 'AuctionBidStepLowerBoundExceeded', 'InsufficientBalance', 'BidStepConstraintViolated', 'InvalidBidAmountSpecified', 'StartingPriceConstraintViolated', 'ActionHasBidsAlready', 'NftIsNotIdle', 'PendingOfferDoesNotExist', 'RewardAccountIsNotSet', 'ActorIsNotBidder', 'AuctionCannotBeCompleted', 'BidDoesNotExist', 'BidIsForPastAuction', 'StartsAtLowerBoundExceeded', 'StartsAtUpperBoundExceeded', 'AuctionDidNotStart', 'NotInAuctionState', 'MemberIsNotAllowedToParticipate', 'MemberProfileNotFound', 'NftNotInBuyNowState', 'InvalidBuyNowWitnessPriceProvided', 'IsNotOpenAuctionType', 'IsNotEnglishAuctionType', 'BidLockDurationIsNotExpired', 'NftAuctionIsAlreadyExpired', 'BuyNowIsLessThenStartingPrice', 'TargetMemberDoesNotExist', 'InvalidNftOfferWitnessPriceProvided', 'MaxAuctionWhiteListLengthUpperBoundExceeded', 'WhitelistHasOnlyOneMember', 'WhitelistedMemberDoesNotExist', 'NftNonChannelOwnerDoesNotExist', 'ExtensionPeriodIsGreaterThenAuctionDuration', 'NoAssetsSpecified', 'InvalidAssetsProvided', 'ChannelContainsVideos', 'ChannelContainsAssets', 'InvalidBagSizeSpecified', 'MigrationNotFinished', 'ReplyDoesNotExist', 'UnsufficientBalance', 'InsufficientTreasuryBalance', 'InvalidMemberProvided', 'ActorNotAMember', 'PaymentProofVerificationFailed', 'CashoutAmountExceedsMaximumAmount', 'CashoutAmountBelowMinimumAmount', 'WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit', 'WithdrawFromChannelAmountIsZero', 'ChannelCashoutsDisabled', 'MinCashoutAllowedExceedsMaxCashoutAllowed', 'CuratorModerationActionNotAllowed', 'CuratorGroupMaxPermissionsByLevelMapSizeExceeded', 'ChannelFeaturePaused', 'ChannelBagMissing', 'AssetsToRemoveBeyondEntityAssetsSet', 'InvalidVideoDataObjectsCountProvided', 'InvalidChannelTransferStatus', 'InvalidChannelTransferAcceptor', 'InvalidChannelTransferCommitmentParams', 'ChannelAgentInsufficientPermissions', 'InvalidChannelOwner', 'ZeroReward', 'InsufficientBalanceForTransfer', 'InsufficientBalanceForChannelCreation', 'InsufficientBalanceForVideoCreation', 'InsufficientCouncilBudget', 'GlobalNftDailyLimitExceeded', 'GlobalNftWeeklyLimitExceeded', 'ChannelNftDailyLimitExceeded', 'ChannelNftWeeklyLimitExceeded', 'CreatorTokenAlreadyIssued', 'CreatorTokenNotIssued', 'MemberIdCouldNotBeDerivedFromActor', 'CannotWithdrawFromChannelWithCreatorTokenIssued', 'PatronageCanOnlyBeClaimedForMemberOwnedChannels', 'ChannelTransfersBlockedDuringRevenueSplits', 'ChannelTransfersBlockedDuringTokenSales']
+    _enum: ['ChannelStateBloatBondChanged', 'VideoStateBloatBondChanged', 'MinCashoutValueTooLow', 'MaxCashoutValueTooHigh', 'ChannelOwnerMemberDoesNotExist', 'ChannelOwnerCuratorGroupDoesNotExist', 'ChannelStateBloatBondBelowExistentialDeposit', 'CuratorIsNotAMemberOfGivenCuratorGroup', 'CuratorIsAlreadyAMemberOfGivenCuratorGroup', 'CuratorGroupDoesNotExist', 'CuratorsPerGroupLimitReached', 'CuratorGroupIsNotActive', 'CuratorIdInvalid', 'LeadAuthFailed', 'MemberAuthFailed', 'CuratorAuthFailed', 'BadOrigin', 'ActorNotAuthorized', 'CategoryDoesNotExist', 'ChannelDoesNotExist', 'VideoDoesNotExist', 'VideoInSeason', 'ActorCannotBeLead', 'ActorCannotOwnChannel', 'NftAlreadyExists', 'NftDoesNotExist', 'OverflowOrUnderflowHappened', 'DoesNotOwnNft', 'RoyaltyUpperBoundExceeded', 'RoyaltyLowerBoundExceeded', 'AuctionDurationUpperBoundExceeded', 'AuctionDurationLowerBoundExceeded', 'ExtensionPeriodUpperBoundExceeded', 'ExtensionPeriodLowerBoundExceeded', 'BidLockDurationUpperBoundExceeded', 'BidLockDurationLowerBoundExceeded', 'StartingPriceUpperBoundExceeded', 'StartingPriceLowerBoundExceeded', 'AuctionBidStepUpperBoundExceeded', 'AuctionBidStepLowerBoundExceeded', 'InsufficientBalance', 'BidStepConstraintViolated', 'InvalidBidAmountSpecified', 'StartingPriceConstraintViolated', 'ActionHasBidsAlready', 'NftIsNotIdle', 'PendingOfferDoesNotExist', 'RewardAccountIsNotSet', 'ActorIsNotBidder', 'AuctionCannotBeCompleted', 'BidDoesNotExist', 'BidIsForPastAuction', 'StartsAtLowerBoundExceeded', 'StartsAtUpperBoundExceeded', 'AuctionDidNotStart', 'NotInAuctionState', 'MemberIsNotAllowedToParticipate', 'MemberProfileNotFound', 'NftNotInBuyNowState', 'InvalidBuyNowWitnessPriceProvided', 'IsNotOpenAuctionType', 'IsNotEnglishAuctionType', 'BidLockDurationIsNotExpired', 'NftAuctionIsAlreadyExpired', 'BuyNowIsLessThenStartingPrice', 'TargetMemberDoesNotExist', 'InvalidNftOfferWitnessPriceProvided', 'MaxAuctionWhiteListLengthUpperBoundExceeded', 'WhitelistHasOnlyOneMember', 'WhitelistedMemberDoesNotExist', 'NftNonChannelOwnerDoesNotExist', 'ExtensionPeriodIsGreaterThenAuctionDuration', 'NoAssetsSpecified', 'InvalidAssetsProvided', 'ChannelContainsVideos', 'ChannelContainsAssets', 'InvalidBagSizeSpecified', 'MigrationNotFinished', 'ReplyDoesNotExist', 'UnsufficientBalance', 'InsufficientTreasuryBalance', 'InvalidMemberProvided', 'ActorNotAMember', 'PaymentProofVerificationFailed', 'CashoutAmountExceedsMaximumAmount', 'CashoutAmountBelowMinimumAmount', 'WithdrawalAmountExceedsChannelAccountWithdrawableBalance', 'WithdrawFromChannelAmountIsZero', 'ChannelCashoutsDisabled', 'MinCashoutAllowedExceedsMaxCashoutAllowed', 'CuratorModerationActionNotAllowed', 'CuratorGroupMaxPermissionsByLevelMapSizeExceeded', 'ChannelFeaturePaused', 'ChannelBagMissing', 'AssetsToRemoveBeyondEntityAssetsSet', 'InvalidVideoDataObjectsCountProvided', 'InvalidChannelTransferStatus', 'InvalidChannelTransferAcceptor', 'InvalidChannelTransferCommitmentParams', 'ChannelAgentInsufficientPermissions', 'InvalidChannelOwner', 'ZeroReward', 'InsufficientBalanceForTransfer', 'InsufficientBalanceForChannelCreation', 'InsufficientBalanceForVideoCreation', 'InsufficientCouncilBudget', 'GlobalNftDailyLimitExceeded', 'GlobalNftWeeklyLimitExceeded', 'ChannelNftDailyLimitExceeded', 'ChannelNftWeeklyLimitExceeded', 'CreatorTokenAlreadyIssued', 'CreatorTokenNotIssued', 'MemberIdCouldNotBeDerivedFromActor', 'CannotWithdrawFromChannelWithCreatorTokenIssued', 'PatronageCanOnlyBeClaimedForMemberOwnedChannels', 'ChannelTransfersBlockedDuringRevenueSplits', 'ChannelTransfersBlockedDuringTokenSales']
   },
   /**
    * Lookup535: pallet_storage::BagRecord<StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>>
@@ -4106,14 +4098,14 @@ export default {
     families: 'BTreeMap<u64, u32>'
   },
   /**
-   * Lookup540: pallet_storage::DataObject<Balance>
+   * Lookup540: pallet_storage::DataObject<pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletStorageDataObject: {
     _alias: {
       size_: 'size'
     },
     accepted: 'bool',
-    stateBloatBond: 'u128',
+    stateBloatBond: 'PalletCommonBloatBondRepayableBloatBond',
     size_: 'u64',
     ipfsContentId: 'Bytes'
   },
@@ -4144,16 +4136,16 @@ export default {
    * Lookup544: pallet_storage::Error<T>
    **/
   PalletStorageError: {
-    _enum: ['ArithmeticError', 'InvalidCidLength', 'NoObjectsOnUpload', 'StorageBucketDoesntExist', 'StorageBucketIsNotBoundToBag', 'StorageBucketIsBoundToBag', 'NoStorageBucketInvitation', 'StorageProviderAlreadySet', 'StorageProviderMustBeSet', 'DifferentStorageProviderInvited', 'InvitedStorageProvider', 'StorageBucketIdCollectionsAreEmpty', 'StorageBucketsNumberViolatesDynamicBagCreationPolicy', 'DistributionBucketsViolatesDynamicBagCreationPolicy', 'EmptyContentId', 'ZeroObjectSize', 'InvalidStateBloatBondSourceAccount', 'InvalidStorageProvider', 'InsufficientBalance', 'DataObjectDoesntExist', 'UploadingBlocked', 'DataObjectIdCollectionIsEmpty', 'SourceAndDestinationBagsAreEqual', 'DataObjectBlacklisted', 'BlacklistSizeLimitExceeded', 'VoucherMaxObjectSizeLimitExceeded', 'VoucherMaxObjectNumberLimitExceeded', 'StorageBucketObjectNumberLimitReached', 'StorageBucketObjectSizeLimitReached', 'InsufficientTreasuryBalance', 'CannotDeleteNonEmptyStorageBucket', 'DataObjectIdParamsAreEmpty', 'StorageBucketsPerBagLimitTooLow', 'StorageBucketsPerBagLimitTooHigh', 'StorageBucketPerBagLimitExceeded', 'StorageBucketDoesntAcceptNewBags', 'DynamicBagExists', 'DynamicBagDoesntExist', 'StorageProviderOperatorDoesntExist', 'DataSizeFeeChanged', 'DataObjectStateBloatBondChanged', 'CannotDeleteNonEmptyDynamicBag', 'MaxDistributionBucketFamilyNumberLimitExceeded', 'DistributionBucketFamilyDoesntExist', 'DistributionBucketDoesntExist', 'DistributionBucketIdCollectionsAreEmpty', 'DistributionBucketDoesntAcceptNewBags', 'MaxDistributionBucketNumberPerBagLimitExceeded', 'DistributionBucketIsNotBoundToBag', 'DistributionBucketIsBoundToBag', 'DistributionBucketsPerBagLimitTooLow', 'DistributionBucketsPerBagLimitTooHigh', 'DistributionProviderOperatorDoesntExist', 'DistributionProviderOperatorAlreadyInvited', 'DistributionProviderOperatorSet', 'NoDistributionBucketInvitation', 'MustBeDistributionProviderOperatorForBucket', 'MaxNumberOfPendingInvitationsLimitForDistributionBucketReached', 'DistributionFamilyBoundToBagCreationPolicy', 'MaxDataObjectSizeExceeded', 'InvalidTransactorAccount', 'NumberOfStorageBucketsOutsideOfAllowedContraints', 'NumberOfDistributionBucketsOutsideOfAllowedContraints']
+    _enum: ['ArithmeticError', 'InvalidCidLength', 'NoObjectsOnUpload', 'StorageBucketDoesntExist', 'StorageBucketIsNotBoundToBag', 'StorageBucketIsBoundToBag', 'NoStorageBucketInvitation', 'StorageProviderAlreadySet', 'StorageProviderMustBeSet', 'DifferentStorageProviderInvited', 'InvitedStorageProvider', 'StorageBucketIdCollectionsAreEmpty', 'StorageBucketsNumberViolatesDynamicBagCreationPolicy', 'DistributionBucketsViolatesDynamicBagCreationPolicy', 'EmptyContentId', 'ZeroObjectSize', 'InvalidStateBloatBondSourceAccount', 'InvalidStorageProvider', 'InsufficientBalance', 'DataObjectDoesntExist', 'UploadingBlocked', 'DataObjectIdCollectionIsEmpty', 'SourceAndDestinationBagsAreEqual', 'DataObjectBlacklisted', 'BlacklistSizeLimitExceeded', 'VoucherMaxObjectSizeLimitExceeded', 'VoucherMaxObjectNumberLimitExceeded', 'StorageBucketObjectNumberLimitReached', 'StorageBucketObjectSizeLimitReached', 'InsufficientTreasuryBalance', 'CannotDeleteNonEmptyStorageBucket', 'DataObjectIdParamsAreEmpty', 'StorageBucketsPerBagLimitTooLow', 'StorageBucketsPerBagLimitTooHigh', 'StorageBucketPerBagLimitExceeded', 'StorageBucketDoesntAcceptNewBags', 'DynamicBagExists', 'DynamicBagDoesntExist', 'StorageProviderOperatorDoesntExist', 'DataSizeFeeChanged', 'DataObjectStateBloatBondChanged', 'CannotDeleteNonEmptyDynamicBag', 'MaxDistributionBucketFamilyNumberLimitExceeded', 'DistributionBucketFamilyDoesntExist', 'DistributionBucketDoesntExist', 'DistributionBucketIdCollectionsAreEmpty', 'DistributionBucketDoesntAcceptNewBags', 'MaxDistributionBucketNumberPerBagLimitExceeded', 'DistributionBucketIsNotBoundToBag', 'DistributionBucketIsBoundToBag', 'DistributionBucketsPerBagLimitTooLow', 'DistributionBucketsPerBagLimitTooHigh', 'DistributionProviderOperatorDoesntExist', 'DistributionProviderOperatorAlreadyInvited', 'DistributionProviderOperatorSet', 'NoDistributionBucketInvitation', 'MustBeDistributionProviderOperatorForBucket', 'MaxNumberOfPendingInvitationsLimitForDistributionBucketReached', 'DistributionFamilyBoundToBagCreationPolicy', 'MaxDataObjectSizeExceeded', 'InvalidTransactorAccount', 'NumberOfStorageBucketsOutsideOfAllowedContraints', 'NumberOfDistributionBucketsOutsideOfAllowedContraints', 'CallDisabled']
   },
   /**
-   * Lookup545: pallet_project_token::types::AccountData<pallet_project_token::types::VestingSchedule<BlockNumber, Balance>, Balance, pallet_project_token::types::StakingStatus<Balance>, JoyBalance>
+   * Lookup545: pallet_project_token::types::AccountData<pallet_project_token::types::VestingSchedule<BlockNumber, Balance>, Balance, pallet_project_token::types::StakingStatus<Balance>, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletProjectTokenAccountData: {
     vestingSchedules: 'BTreeMap<PalletProjectTokenVestingSource, PalletProjectTokenVestingSchedule>',
     amount: 'u128',
     splitStakingStatus: 'Option<PalletProjectTokenStakingStatus>',
-    bloatBond: 'u128',
+    bloatBond: 'PalletCommonBloatBondRepayableBloatBond',
     nextVestingTransferId: 'u64',
     lastSaleTotalPurchasedAmount: 'Option<(u32,u128)>'
   },
@@ -4270,7 +4262,7 @@ export default {
     _enum: ['EmptyTitleProvided', 'EmptyDescriptionProvided', 'TitleIsTooLong', 'DescriptionIsTooLong', 'ProposalNotFound', 'ProposalFinalized', 'AlreadyVoted', 'NotAuthor', 'MaxActiveProposalNumberExceeded', 'EmptyStake', 'StakeShouldBeEmpty', 'StakeDiffersFromRequired', 'InvalidParameterApprovalThreshold', 'InvalidParameterSlashingThreshold', 'RequireRootOrigin', 'ProposalHasVotes', 'ZeroExactExecutionBlock', 'InvalidExactExecutionBlock', 'InsufficientBalanceForStake', 'ConflictingStakes', 'InvalidStakingAccountForMember']
   },
   /**
-   * Lookup567: pallet_proposals_discussion::types::DiscussionThread<ThreadAuthorId, BlockNumber, MemberId>
+   * Lookup567: pallet_proposals_discussion::types::DiscussionThread<MemberId, BlockNumber>
    **/
   PalletProposalsDiscussionDiscussionThread: {
     activatedAt: 'u32',
@@ -4278,11 +4270,11 @@ export default {
     mode: 'PalletProposalsDiscussionThreadMode'
   },
   /**
-   * Lookup568: pallet_proposals_discussion::types::DiscussionPost<PostAuthorId, Balance, BlockNumber>
+   * Lookup568: pallet_proposals_discussion::types::DiscussionPost<MemberId, BlockNumber, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletProposalsDiscussionDiscussionPost: {
     authorId: 'u64',
-    cleanupPayOff: 'u128',
+    cleanupPayOff: 'PalletCommonBloatBondRepayableBloatBond',
     lastEdited: 'u32'
   },
   /**

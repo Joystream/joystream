@@ -195,7 +195,7 @@ export default class QueryNodeApi {
           .sub(new BN(y.dataObjectsSize))
           .cmp(new BN(x.dataObjectsSizeLimit).sub(new BN(x.dataObjectsSize))) ||
         new BN(y.dataObjectCountLimit)
-          .sub(y.dataObjectsCount)
+          .sub(new BN(y.dataObjectsCount))
           .cmp(new BN(x.dataObjectCountLimit).sub(new BN(x.dataObjectsCount)))
     )
   }

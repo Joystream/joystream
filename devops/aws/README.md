@@ -68,3 +68,5 @@ Pass the stack name and aws cli profile as environment variables and call the de
 ```
 STACK_NAME=my-stack-name CLI_PROFILE=my-new-profile ./destroy-stack.sh
 ```
+
+If you are using a shared AWS account with the rest of the team please be careful to not delete a stack you have not deployed yourself.

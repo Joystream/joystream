@@ -22,22 +22,15 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
   const videoCount = 2
   const videoCategoryCount = 2
   const channelCount = 2
-  const channelCategoryCount = 2
   const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // flow itself
 
   // create channel categories and video categories
-  const createContentStructureFixture = new CreateContentStructureFixture(
-    api,
-    query,
-    joystreamCli,
-    videoCategoryCount,
-    channelCategoryCount
-  )
+  const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
-  const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos
   const createMembersFixture = new CreateMembersFixture(api, query, 1, 0, sufficientTopupAmount)
@@ -51,7 +44,6 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
     joystreamCli,
     channelCount,
     videoCount,
-    channelCategoryIds[0],
     videoCategoryIds[0],
     author
   )
@@ -63,9 +55,8 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
     api,
     query,
     joystreamCli,
-    channelCategoryIds,
-    videosData,
     channelIds,
+    videosData,
     videoCategoryIds
   )
   await new FixtureRunner(activeVideoCountersFixture).run()
