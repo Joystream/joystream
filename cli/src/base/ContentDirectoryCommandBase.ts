@@ -478,7 +478,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       this.log(`Following data objects are still associated with the channel: ${dataObjectIds.join(', ')}`)
     }
 
-    return dataObjects.map(([id, o]) => [id.toString(), o.stateBloatBond])
+    return dataObjects.map(([id, o]) => [id.toString(), o.stateBloatBond.amount])
   }
 
   async getVideosInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {

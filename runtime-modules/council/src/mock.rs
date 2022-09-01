@@ -12,7 +12,7 @@ use crate::{
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{
     ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, Get, LockIdentifier, OnFinalize,
-    OnInitialize,
+    OnInitialize, WithdrawReasons,
 };
 
 use frame_support::{ensure, parameter_types, StorageMap, StorageValue};
@@ -28,7 +28,7 @@ use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Zero},
 };
-use staking_handler::{LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingHandler, StakingManager};
 use std::boxed::Box;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -1516,4 +1516,15 @@ impl EventFixture {
 
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
+}
+
+pub fn set_invitation_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: Balance<Runtime>,
+) {
+    <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
 }

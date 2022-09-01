@@ -19,7 +19,7 @@ export default class ChannelsCommand extends ContentDirectoryCommandBase {
           'ID': id.toString(),
           'Owner': JSON.stringify(c.owner.toJSON()),
           'Collaborators': c.collaborators.size,
-          'ChannelStateBloatBond': formatBalance(c.channelStateBloatBond),
+          'ChannelStateBloatBond': formatBalance(c.channelStateBloatBond.amount),
           'DataObjects': c.dataObjects.toString(),
           'PrivilegeLevel': c.privilegeLevel.toString(),
           'NumberOfVideos': c.numVideos.toNumber(),

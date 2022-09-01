@@ -32,8 +32,19 @@ fragment MembershipFields on Membership {
         id
       }
     }
+    ... on MembershipEntryGifted {
+      membershipGiftedEvent {
+        id
+      }
+    }
+    ... on MembershipEntryFoundingMemberCreated {
+      foundingMemberCreatedEvent {
+        id
+      }
+    }
   }
   isVerified
+  isFoundingMember
   inviteCount
   invitedBy {
     id

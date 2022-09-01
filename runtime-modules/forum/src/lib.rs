@@ -3,12 +3,13 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::unused_unit)]
 
+use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
+use common::costs::{burn_from_usable, has_sufficient_balance_for_fees, pay_fee};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
 pub use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, ExistenceRequirement};
 
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
@@ -17,7 +18,7 @@ use frame_system::ensure_signed;
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 pub use sp_io::storage::clear_prefix;
-use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
+use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member, Saturating};
 use sp_runtime::DispatchError;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
@@ -50,7 +51,16 @@ type WeightInfoForum<T> = <T as Config>::WeightInfo;
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Alias for the thread
-pub type ThreadOf<T> = Thread<ForumUserId<T>, <T as Config>::CategoryId, BalanceOf<T>>;
+pub type ThreadOf<T> = Thread<ForumUserId<T>, <T as Config>::CategoryId, RepayableBloatBondOf<T>>;
+
+/// Alias for the post
+pub type PostOf<T> = Post<
+    ForumUserId<T>,
+    <T as Config>::ThreadId,
+    <T as frame_system::Config>::Hash,
+    <T as frame_system::Config>::BlockNumber,
+    RepayableBloatBondOf<T>,
+>;
 
 /// Type alias for `ExtendedPostIdObject`
 pub type ExtendedPostId<T> =
@@ -64,8 +74,6 @@ pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
     pub thread_id: ThreadId,
     pub post_id: PostId,
 }
-
-type Balances<T> = balances::Pallet<T>;
 
 pub trait Config:
     frame_system::Config
@@ -171,7 +179,7 @@ pub trait StorageLimits {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
-pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
+pub struct Post<ForumUserId, ThreadId, Hash, BlockNumber, RepayableBloatBond> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
@@ -182,7 +190,7 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
     pub author_id: ForumUserId,
 
     /// Cleanup pay off
-    pub cleanup_pay_off: Balance,
+    pub cleanup_pay_off: RepayableBloatBond,
 
     /// When it was created or last edited
     pub last_edited: BlockNumber,
@@ -191,7 +199,7 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
-pub struct Thread<ForumUserId, CategoryId, Balance> {
+pub struct Thread<ForumUserId, CategoryId, RepayableBloatBond> {
     /// Category in which this thread lives
     pub category_id: CategoryId,
 
@@ -199,7 +207,7 @@ pub struct Thread<ForumUserId, CategoryId, Balance> {
     pub author_id: ForumUserId,
 
     /// Pay off by deleting
-    pub cleanup_pay_off: Balance,
+    pub cleanup_pay_off: RepayableBloatBond,
 
     /// Number of posts in the thread
     pub number_of_editable_posts: NumberOfPosts,
@@ -377,14 +385,7 @@ decl_storage! {
 
         /// Map post identifier to corresponding post.
         pub PostById get(fn post_by_id): double_map hasher(blake2_128_concat) T::ThreadId,
-            hasher(blake2_128_concat) T::PostId =>
-                                                Post<
-                                                    ForumUserId<T>,
-                                                    T::ThreadId,
-                                                    T::Hash,
-                                                    BalanceOf<T>,
-                                                    T::BlockNumber
-                                                >;
+            hasher(blake2_128_concat) T::PostId => PostOf<T>;
     }
 }
 
@@ -799,19 +800,15 @@ decl_module! {
             // Create and add new thread
             let new_thread_id = <NextThreadId<T>>::get();
 
-            // Reserve cleanup pay off in the thread account plus the cost of creating the
-            // initial thread
-            Self::transfer_to_state_cleanup_treasury_account(
-                T::ThreadDeposit::get() + T::PostDeposit::get(),
-                new_thread_id,
-                &account_id
-            )?;
+            // Pay the thread + post bloat bond into thread treasury account
+            let (repaybale_thread_bloat_bond, repaybale_post_bloat_bond) =
+                Self::pay_thread_and_post_deposit(new_thread_id, &account_id)?;
 
             // Build a new thread
             let new_thread = Thread {
                 category_id,
                 author_id: forum_user_id,
-                cleanup_pay_off: T::ThreadDeposit::get(),
+                cleanup_pay_off: repaybale_thread_bloat_bond,
                 number_of_editable_posts: 0,
             };
 
@@ -826,7 +823,7 @@ decl_module! {
                 category_id,
                 &text,
                 forum_user_id,
-                true,
+                Some(repaybale_post_bloat_bond),
             );
 
             // Update next thread id
@@ -924,8 +921,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Pay off to thread deleter
-            Self::pay_off(thread_id, thread.cleanup_pay_off, &account_id)?;
+            // Pay off the bloat bond
+            let thread_account_id = Self::thread_account(thread_id);
+            thread.cleanup_pay_off.repay::<T>(&thread_account_id, &account_id, true)?;
 
             // Delete thread
             Self::delete_thread_inner(thread.category_id, thread_id);
@@ -1021,7 +1019,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::slash_thread_account(thread_id, thread.cleanup_pay_off);
+            Self::slash_thread_account(thread_id, thread.cleanup_pay_off.amount)?;
 
             // Delete thread
             Self::delete_thread_inner(thread.category_id, thread_id);
@@ -1063,8 +1061,9 @@ decl_module! {
             let _ = Self::ensure_can_add_post(&account_id, &forum_user_id, &category_id, &thread_id)?;
 
             if editable {
+                let post_deposit = T::PostDeposit::get();
                 ensure!(
-                    Self::ensure_enough_balance(T::PostDeposit::get(), &account_id),
+                    has_sufficient_balance_for_fees::<T>(&account_id, post_deposit),
                     Error::<T>::InsufficientBalanceForPost
                 );
             }
@@ -1073,15 +1072,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if editable {
-                // Shouldn't fail since we checked in `ensure_can_add_post` that the account
-                // has enough balance.
-                Self::transfer_to_state_cleanup_treasury_account(
-                    T::PostDeposit::get(),
-                    thread_id,
-                    &account_id
-                )?;
-            }
+            let repayable_bloat_bond = match editable {
+                true => Some(Self::pay_post_deposit(thread_id, &account_id)?),
+                false => None
+            };
 
             // Add new post
             let post_id = Self::add_new_post(
@@ -1089,7 +1083,7 @@ decl_module! {
                     category_id,
                     text.as_slice(),
                     forum_user_id,
-                    editable,
+                    repayable_bloat_bond,
                 );
 
             // Generate event
@@ -1224,7 +1218,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::slash_thread_account(thread_id, post.cleanup_pay_off);
+            Self::slash_thread_account(thread_id, post.cleanup_pay_off.amount)?;
 
             Self::delete_post_inner(category_id, thread_id, post_id);
 
@@ -1283,8 +1277,9 @@ decl_module! {
             //
 
             for (category_id, thread_id, post_id, post) in deleting_posts {
-                // Pay off to thread deleter
-                Self::pay_off(*thread_id, post.cleanup_pay_off, &account_id)?;
+                // Pay off the post bloat bond
+                let thread_account_id = Self::thread_account(*thread_id);
+                post.cleanup_pay_off.repay::<T>(&thread_account_id, &account_id, false)?;
 
                 Self::delete_post_inner(*category_id, *thread_id, *post_id);
             }
@@ -1340,39 +1335,58 @@ decl_module! {
 }
 
 impl<T: Config> Module<T> {
-    fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
-        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
-        let _ = Balances::<T>::slash(&thread_account_id, amount);
+    fn thread_account(thread_id: T::ThreadId) -> T::AccountId {
+        T::ModuleId::get().into_sub_account_truncating(thread_id)
     }
 
-    fn pay_off(
-        thread_id: T::ThreadId,
-        amount: BalanceOf<T>,
-        account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::ModuleId::get().into_sub_account_truncating(thread_id);
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            &state_cleanup_treasury_account,
-            account_id,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
+    fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) -> DispatchResult {
+        let thread_account_id = Self::thread_account(thread_id);
+        burn_from_usable::<T>(&thread_account_id, amount).map(|_| ())
     }
 
-    fn transfer_to_state_cleanup_treasury_account(
-        amount: BalanceOf<T>,
+    fn pay_post_deposit(
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::ModuleId::get().into_sub_account_truncating(thread_id);
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            account_id,
-            &state_cleanup_treasury_account,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
+    ) -> Result<RepayableBloatBondOf<T>, DispatchError> {
+        let post_deposit = T::PostDeposit::get();
+        let thread_account_id = Self::thread_account(thread_id);
+        let locked_balance_used = pay_fee::<T>(account_id, Some(&thread_account_id), post_deposit)?;
+
+        // construct RepayableBloatBond based on pay_fee result
+        Ok(match locked_balance_used.is_zero() {
+            true => RepayableBloatBond::new(post_deposit, None),
+            false => RepayableBloatBond::new(post_deposit, Some(account_id.clone())),
+        })
+    }
+
+    fn pay_thread_and_post_deposit(
+        thread_id: T::ThreadId,
+        account_id: &T::AccountId,
+    ) -> Result<(RepayableBloatBondOf<T>, RepayableBloatBondOf<T>), DispatchError> {
+        let thread_deposit = T::ThreadDeposit::get();
+        let post_deposit = T::PostDeposit::get();
+        let total_deposit = thread_deposit.saturating_add(post_deposit);
+        let thread_account_id = Self::thread_account(thread_id);
+        let locked_balance_used =
+            pay_fee::<T>(account_id, Some(&thread_account_id), total_deposit)?;
+
+        // construct RepayableBloatBond based on pay_fee result
+        Ok(if locked_balance_used.is_zero() {
+            (
+                RepayableBloatBond::new(thread_deposit, None),
+                RepayableBloatBond::new(post_deposit, None),
+            )
+        } else if locked_balance_used <= thread_deposit {
+            (
+                RepayableBloatBond::new(thread_deposit, Some(account_id.clone())),
+                RepayableBloatBond::new(post_deposit, None),
+            )
+        } else {
+            (
+                RepayableBloatBond::new(thread_deposit, Some(account_id.clone())),
+                RepayableBloatBond::new(post_deposit, Some(account_id.clone())),
+            )
+        })
     }
 
     /// Add new posts & increase thread counter
@@ -1381,7 +1395,7 @@ impl<T: Config> Module<T> {
         category_id: T::CategoryId,
         text: &[u8],
         author_id: ForumUserId<T>,
-        editable: bool,
+        repayable_bloat_bond: Option<RepayableBloatBondOf<T>>,
     ) -> T::PostId {
         // Make and add initial post
         let new_post_id = <NextPostId<T>>::get();
@@ -1389,13 +1403,14 @@ impl<T: Config> Module<T> {
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
 
-        if editable {
+        if let Some(cleanup_pay_off) = repayable_bloat_bond {
+            // Post is editable.
             // Build a post
             let new_post = Post {
                 text_hash: T::calculate_hash(text),
                 thread_id,
                 author_id,
-                cleanup_pay_off: T::PostDeposit::get(),
+                cleanup_pay_off,
                 last_edited: frame_system::Pallet::<T>::block_number(),
             };
 
@@ -1433,8 +1448,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
-    {
+    ) -> Result<PostOf<T>, Error<T>> {
         // If the post is stored then it's mutable
         let post = Self::ensure_post_exists(category_id, thread_id, post_id)?;
 
@@ -1449,8 +1463,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
-    {
+    ) -> Result<PostOf<T>, Error<T>> {
         if !<ThreadById<T>>::contains_key(category_id, thread_id) {
             return Err(Error::<T>::PostDoesNotExist);
         }
@@ -1468,8 +1481,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
-    {
+    ) -> Result<PostOf<T>, Error<T>> {
         // Ensure the moderator can moderate the category
         Self::ensure_can_moderate_category(&account_id, actor, category_id)?;
 
@@ -1486,8 +1498,7 @@ impl<T: Config> Module<T> {
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
         hide: bool,
-    ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
-    {
+    ) -> Result<PostOf<T>, Error<T>> {
         let post = Self::ensure_post_is_mutable(category_id, thread_id, post_id)?;
 
         // Check that account is forum member
@@ -1504,7 +1515,7 @@ impl<T: Config> Module<T> {
     }
 
     fn anyone_can_delete_post(
-        post: &Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>,
+        post: &PostOf<T>,
         thread_id: &T::ThreadId,
         category_id: &T::CategoryId,
     ) -> bool {
@@ -1934,26 +1945,22 @@ impl<T: Config> Module<T> {
         account_id: &T::AccountId,
         forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> DispatchResult {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         Self::ensure_category_exists(category_id)?;
 
-        let category = Self::ensure_category_is_mutable(category_id)?;
+        Self::ensure_category_is_mutable(category_id)?;
 
-        // The balance for creation of thread is the base cost plus the cost of a single post
-        let minimum_balance = T::ThreadDeposit::get() + T::PostDeposit::get();
+        // Check if the costs associated with thread and post creation are coverable
+        let fees = T::ThreadDeposit::get().saturating_add(T::PostDeposit::get());
         ensure!(
-            Self::ensure_enough_balance(minimum_balance, account_id),
+            has_sufficient_balance_for_fees::<T>(account_id, fees),
             Error::<T>::InsufficientBalanceForThreadCreation
         );
 
-        Ok(category)
-    }
-
-    fn ensure_enough_balance(balance: BalanceOf<T>, account_id: &T::AccountId) -> bool {
-        Balances::<T>::usable_balance(account_id) >= balance
+        Ok(())
     }
 
     fn ensure_can_add_post(

@@ -10,7 +10,6 @@ pub use mock::*;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::working_group::WorkingGroupBudgetHandler;
 use common::StakingAccountValidator;
-use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{assert_err, assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_arithmetic::Perbill;
@@ -23,7 +22,8 @@ fn gift_membership_succeeds() {
         run_to_block(starting_block);
 
         let params = get_bob_gift_membership_parameters();
-        let alice_start_balance = params.credit_controller_account
+        let alice_start_balance = ed()
+            + params.credit_controller_account
             + params.credit_root_account
             + DefaultMembershipPrice::get();
         let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, alice_start_balance);
@@ -83,6 +83,33 @@ fn gift_membership_fails_with_insufficient_funds() {
         run_to_block(starting_block);
 
         let params = get_bob_gift_membership_parameters();
+        let alice_start_balance = ed()
+            + params.credit_controller_account
+            + params.credit_root_account
+            + DefaultMembershipPrice::get()
+            - 1;
+        let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, alice_start_balance);
+
+        assert_err!(
+            gift_bob_membership_as_alice(params),
+            Error::<Test>::InsufficientBalanceToGift
+        );
+    });
+}
+
+#[test]
+fn gift_membership_fails_with_locked_funds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let params = get_bob_gift_membership_parameters();
+        let alice_start_balance = ed()
+            + params.credit_controller_account
+            + params.credit_root_account
+            + DefaultMembershipPrice::get();
+        let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, alice_start_balance);
+        set_invitation_lock(&ALICE_ACCOUNT_ID, ed() + 1);
 
         assert_err!(
             gift_bob_membership_as_alice(params),
@@ -188,7 +215,7 @@ fn buy_membership_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         let next_member_id = Membership::members_created();
@@ -216,7 +243,7 @@ fn buy_membership_succeeds() {
 #[test]
 fn buy_membership_fails_without_enough_balance() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get() - 1;
+        let initial_balance = ed() + DefaultMembershipPrice::get() - 1;
         set_alice_free_balance(initial_balance);
 
         assert_dispatch_error_message(
@@ -229,10 +256,9 @@ fn buy_membership_fails_without_enough_balance() {
 #[test]
 fn buy_membership_fails_without_enough_balance_with_locked_balance() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
-        let lock_id = LockIdentifier::default();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
-        Balances::set_lock(lock_id, &ALICE_ACCOUNT_ID, 1, WithdrawReasons::all());
+        set_invitation_lock(&ALICE_ACCOUNT_ID, ed() + 1);
 
         assert_dispatch_error_message(
             buy_default_membership_as_alice(),
@@ -244,7 +270,7 @@ fn buy_membership_fails_without_enough_balance_with_locked_balance() {
 #[test]
 fn buy_membership_fails_with_non_unique_handle() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         // alice's handle already taken
@@ -264,7 +290,7 @@ fn update_profile_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         let next_member_id = Membership::members_created();
@@ -297,7 +323,7 @@ fn update_profile_succeeds() {
 #[test]
 fn update_profile_has_no_effect_on_empty_parameters() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         let next_member_id = Membership::members_created();
@@ -375,7 +401,7 @@ fn update_verification_status_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         let next_member_id = Membership::members_created();
@@ -419,7 +445,7 @@ fn update_verification_status_fails_with_invalid_member_id() {
 #[test]
 fn update_verification_status_fails_with_invalid_worker_id() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         let next_member_id = Membership::members_created();
@@ -437,7 +463,7 @@ fn update_verification_status_fails_with_invalid_worker_id() {
 #[test]
 fn buy_membership_fails_with_non_member_referrer_id() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         let invalid_member_id = 111;
@@ -457,6 +483,12 @@ fn buy_membership_with_referral_cut_succeeds() {
         let initial_balance = 10000;
         increase_total_balance_issuance_using_account_id(BOB_ACCOUNT_ID, initial_balance);
 
+        let referral_cut_percent: u8 = 10;
+        assert_ok!(Membership::set_referral_cut(
+            RawOrigin::Root.into(),
+            referral_cut_percent
+        ));
+
         let buy_membership_fixture = BuyMembershipFixture::default()
             .with_handle(b"bobs_handle".to_vec())
             .with_accounts(BOB_ACCOUNT_ID)
@@ -467,7 +499,10 @@ fn buy_membership_with_referral_cut_succeeds() {
 
         let referral_cut = Membership::get_referral_bonus();
 
-        assert_eq!(Balances::usable_balance(&ALICE_ACCOUNT_ID), referral_cut);
+        assert_eq!(
+            Balances::usable_balance(&ALICE_ACCOUNT_ID),
+            ed() + referral_cut
+        );
         assert_eq!(
             Balances::usable_balance(&BOB_ACCOUNT_ID),
             initial_balance - DefaultMembershipPrice::get()
@@ -645,7 +680,7 @@ fn invite_member_succeeds() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -703,7 +738,7 @@ fn invite_member_succeeds_with_additional_checks() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         let new_initial_balance = 50;
@@ -763,7 +798,7 @@ fn invite_member_succeeds_with_additional_checks() {
 #[test]
 fn invite_member_fails_with_existing_invitation_lock() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -781,7 +816,7 @@ fn invite_member_fails_with_existing_invitation_lock() {
 #[test]
 fn invite_member_fails_with_insufficient_working_group_balance() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -808,7 +843,7 @@ fn invite_member_fails_with_bad_origin() {
 #[test]
 fn invite_member_fails_with_invalid_member_id() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -823,7 +858,7 @@ fn invite_member_fails_with_invalid_member_id() {
 #[test]
 fn invite_member_fails_with_not_controller_account() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -854,7 +889,7 @@ fn invite_member_fails_with_not_enough_invites() {
 #[test]
 fn invite_member_fails_with_bad_user_information() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -1035,7 +1070,7 @@ fn add_staking_account_candidate_fails_with_bad_origin() {
 #[test]
 fn add_staking_account_candidate_fails_with_invalid_member_id() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -1101,7 +1136,7 @@ fn remove_staking_account_fails_with_bad_origin() {
 #[test]
 fn remove_staking_account_fails_with_invalid_member_id() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());
@@ -1167,7 +1202,7 @@ fn confirm_staking_account_fails_with_bad_origin() {
 #[test]
 fn confirm_staking_account_fails_with_invalid_member_id() {
     build_test_externalities().execute_with(|| {
-        let initial_balance = DefaultMembershipPrice::get();
+        let initial_balance = ed() + DefaultMembershipPrice::get();
         set_alice_free_balance(initial_balance);
 
         assert_ok!(buy_default_membership_as_alice());

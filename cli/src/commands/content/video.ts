@@ -23,7 +23,7 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': videoId.toString(),
         'InChannel': aVideo.inChannel.toString(),
-        'VideoStateBloatBond': formatBalance(aVideo.videoStateBloatBond),
+        'VideoStateBloatBond': formatBalance(aVideo.videoStateBloatBond.amount),
         'DataObjects': aVideo.dataObjects.toString(),
       })
     } else {
