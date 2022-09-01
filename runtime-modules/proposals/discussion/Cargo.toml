@@ -8,23 +8,23 @@ edition = '2018'
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = false, features = ['derive'] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
 
 # Benchmarking dependencies
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29', optional = true}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe', optional = true}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership', optional = true}
 council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum', optional = true}
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler'}
 council = { package = 'pallet-council', default-features = false, path = '../../council'}
