@@ -23,10 +23,10 @@ import { JSONSchema4 } from 'json-schema'
 import {
   IChannelMetadata,
   IVideoMetadata,
-  IVideoCategoryMetadata,
-  IChannelCategoryMetadata,
+  ICreateVideoCategory,
   IOpeningMetadata,
   IWorkingGroupMetadata,
+  ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import {
   MembershipFieldsFragment,
@@ -199,10 +199,15 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
   mimeType: string
 }
 
-export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
+export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto' | 'subtitles'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
   enableComments?: boolean
+  subtitles?: VideoSubtitleInputParameters[]
+}
+
+export type VideoSubtitleInputParameters = Omit<ISubtitleMetadata, 'newAsset'> & {
+  subtitleAssetPath?: string
 }
 
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
@@ -235,9 +240,7 @@ export type ModerationPermissionsByLevelInputParameters = {
 
 export type ChannelUpdateInputParameters = ChannelCreationInputParameters
 
-export type ChannelCategoryInputParameters = IChannelCategoryMetadata
-
-export type VideoCategoryInputParameters = IVideoCategoryMetadata
+export type VideoCategoryInputParameters = ICreateVideoCategory
 
 export type WorkingGroupOpeningInputParameters = Omit<IOpeningMetadata, 'applicationFormQuestions'> & {
   stakingPolicy: {

@@ -63,6 +63,14 @@ fragment DataObjectInfo on StorageDataObject {
         id
       }
     }
+    ... on DataObjectTypeVideoSubtitle {
+      video {
+        id
+      }
+      subtitle {
+        id
+      }
+    }
     ... on DataObjectTypeChannelAvatar {
       channel {
         id

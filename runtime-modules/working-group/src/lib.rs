@@ -64,6 +64,7 @@ pub use types::{
 };
 use types::{ApplicationInfo, WorkerInfo};
 
+use common::costs::burn_from_usable;
 use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
@@ -1188,11 +1189,9 @@ decl_module! {
             let account_id =
                 T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
 
-            let wg_budget = Self::budget();
-
             ensure!(amount > Zero::zero(), Error::<T, I>::ZeroTokensFunding);
             ensure!(
-                Balances::<T>::can_slash(&account_id, amount),
+                Balances::<T>::usable_balance(&account_id) >= amount,
                 Error::<T, I>::InsufficientTokensForFunding
             );
 
@@ -1200,9 +1199,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::set_working_group_budget(wg_budget.saturating_add(amount));
+            // An account is allowed to die when funding working group budget
+            burn_from_usable::<T>(&account_id, amount)?;
 
-            let _ = Balances::<T>::slash(&account_id, amount);
+            Self::increase_working_group_budget(amount);
 
             Self::deposit_event(
                 RawEvent::WorkingGroupBudgetFunded(
@@ -1617,6 +1617,11 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         <Budget<T, I>>::put(new_budget);
     }
 
+    // Increases working group budget.
+    fn increase_working_group_budget(amount: BalanceOf<T>) {
+        <Budget<T, I>>::mutate(|b| *b = b.saturating_add(amount));
+    }
+
     /// Returns all existing worker id list.
     pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
         <WorkerById<T, I>>::iter()
@@ -1689,11 +1694,7 @@ impl<T: Config<I>, I: Instance>
 
         let _ = Balances::<T>::deposit_creating(account_id, amount);
 
-        let current_budget = Self::get_budget();
-        let new_budget = current_budget.saturating_sub(amount);
-        <Self as common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>>>::set_budget(
-            new_budget,
-        );
+        Self::decrease_budget(amount);
 
         Ok(())
     }

@@ -25,7 +25,7 @@ export default class ForumThreadsCommand extends ForumCommandBase {
       displayTable(
         threads.map(([id, t]) => ({
           'ID': id.toString(),
-          'Cleanup payoff': formatBalance(t.cleanupPayOff),
+          'Cleanup payoff': formatBalance(t.cleanupPayOff.amount),
           'Author member id': t.authorId.toString(),
           'No. posts': t.numberOfPosts.toString(),
         })),

@@ -231,6 +231,11 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ChannelOwnerMemberDoesNotExist: AugmentedError<ApiType>;
       /**
+       * Channel state bloat bond cannot be lower than existential deposit,
+       * because it must secure the channel module account against dusting
+       **/
+      ChannelStateBloatBondBelowExistentialDeposit: AugmentedError<ApiType>;
+      /**
        * Invalid extrinsic call: Channel state bloat bond changed.
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
@@ -310,7 +315,7 @@ declare module '@polkadot/api-base/types/errors' {
       InsufficientBalance: AugmentedError<ApiType>;
       /**
        * Cannot create the channel: channel creator has insufficient balance
-       * (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
+       * (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees + existential deposit)
        **/
       InsufficientBalanceForChannelCreation: AugmentedError<ApiType>;
       /**
@@ -319,7 +324,7 @@ declare module '@polkadot/api-base/types/errors' {
       InsufficientBalanceForTransfer: AugmentedError<ApiType>;
       /**
        * Cannot create the video: video creator has insufficient balance
-       * (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+       * (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees + existential deposit)
        **/
       InsufficientBalanceForVideoCreation: AugmentedError<ApiType>;
       InsufficientCouncilBudget: AugmentedError<ApiType>;
@@ -535,9 +540,9 @@ declare module '@polkadot/api-base/types/errors' {
       WhitelistHasOnlyOneMember: AugmentedError<ApiType>;
       /**
        * An attempt to withdraw funds from channel account failed, because the specified amount
-       * exceeds the account's balance minus ExistantialDeposit
+       * exceeds the withdrawable amount (channel account balance minus channel bloat bond)
        **/
-      WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit: AugmentedError<ApiType>;
+      WithdrawalAmountExceedsChannelAccountWithdrawableBalance: AugmentedError<ApiType>;
       /**
        * An attempt to withdraw funds from channel account failed, because the specified amount
        * is zero
@@ -2620,6 +2625,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Blacklist size limit exceeded.
        **/
       BlacklistSizeLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Call Disabled
+       **/
+      CallDisabled: AugmentedError<ApiType>;
       /**
        * Cannot delete non empty dynamic bag.
        **/

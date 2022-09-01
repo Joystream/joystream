@@ -4,5 +4,9 @@
   "publishedBeforeJoystream": {
     "isPublished": false
   },
-  "license": {}
+  "license": {},
+  "subtitles": [
+    { "type": "subtitle", "language": "en", "mimeType": "SRT", "subtitleAssetPath": "./subtitle-en-2.srt" },
+    { "type": "subtitle", "language": "fr", "mimeType": "SRT", "subtitleAssetPath": "./subtitle-fr-2.srt" }
+  ]
 }

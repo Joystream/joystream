@@ -1,7 +1,9 @@
 import creatingMemberships from '../flows/membership/creatingMemberships'
+import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
+import giftingMemberships from '../flows/membership/giftingMemberships'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
-import invitingMebers from '../flows/membership/invitingMembers'
+import invitingMembers from '../flows/membership/invitingMembers'
 import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
 import membershipSystem from '../flows/membership/membershipSystem'
@@ -19,7 +21,9 @@ scenario('Memberships', async ({ job }) => {
   job('creating members', creatingMemberships).after(membershipSystemJob)
   job('updating member profile', updatingMemberProfile).after(membershipSystemJob)
   job('updating member accounts', updatingMemberAccounts).after(membershipSystemJob)
-  job('inviting members', invitingMebers).after(membershipSystemJob)
+  job('creating founding members', creatingFoundingMembers).after(membershipSystemJob)
+  job('gifting members', giftingMemberships).after(membershipSystemJob)
+  job('inviting members', invitingMembers).after(membershipSystemJob)
   job('transferring invites', transferringInvites).after(membershipSystemJob)
   job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
   job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)

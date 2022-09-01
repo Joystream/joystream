@@ -8,7 +8,7 @@
   "isPublic": true,
   "isExplicit": false,
   "persons": [],
-  "category": 1,
+  "category": "00000001",
   "license": {
     "code": 1001,
     "attribution": "by Joystream Contributors"
@@ -17,5 +17,9 @@
     "isPublished": true,
     "date": "2020-01-01"
   },
+  "subtitles": [
+    { "type": "subtitle", "language": "en", "mimeType": "SRT", "subtitleAssetPath": "./subtitle-en-1.srt" },
+    { "type": "subtitle", "language": "fr", "mimeType": "SRT", "subtitleAssetPath": "./subtitle-fr-1.srt" }
+  ],
   "enableComments": true
 }
