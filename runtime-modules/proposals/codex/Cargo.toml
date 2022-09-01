@@ -8,14 +8,14 @@ edition = '2018'
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = false, features = ['derive'] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../../working-group'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../engine'}
@@ -23,25 +23,25 @@ proposals-discussion = { package = 'pallet-proposals-discussion', default-featur
 constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 content = { package = 'pallet-content', default-features = false, path = '../../content'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f', optional = true}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29', optional = true}
 
 # Benchmarking dependencies
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f', optional = true}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29', optional = true}
 council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
 strum = {version = "0.19", default-features = false}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum'}
 council = { package = 'pallet-council', default-features = false, path = '../../council'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame-election-provider-support = { package = 'frame-election-provider-support', git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-pallet-bags-list = { package = 'pallet-bags-list', features = ["runtime-benchmarks"], git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame-election-provider-support = { package = 'frame-election-provider-support', git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+pallet-bags-list = { package = 'pallet-bags-list', features = ["runtime-benchmarks"], git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
 
 [features]
 default = ['std']

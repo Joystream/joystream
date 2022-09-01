@@ -10,13 +10,13 @@ strum = {version = "0.19", optional = true}
 strum_macros = {version = "0.19", optional = true}
 codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = false, features = ['derive'] }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
 
 [features]
 default = ['std']

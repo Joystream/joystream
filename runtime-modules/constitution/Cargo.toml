@@ -8,16 +8,16 @@ edition = '2018'
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = false, features = ['derive'] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame_system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f', optional = true}
-pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f', optional = true }
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame_system = { package = 'frame-system', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29', optional = true}
+pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29', optional = true }
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '3f915f0a37e73aaa65bf7a1deef69cc9c901641f'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/mnaamani/substrate.git', rev = '867507cab3a5ef2d2e5e56093f9880d722a81e29'}
 
 [features]
 default = ['std']
