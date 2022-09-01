@@ -22,7 +22,7 @@ echo "{
     [\"${CHARLIE}\", ${INITIAL_BALANCE}]
   ],
   \"vesting\":[
-    [\"${BOB}\", "0", "25", "100000000000"]
+    [\"${CHARLIE}\", "0", "25", "100000000000"]
   ]
 }" > ${DATA_PATH}/initial-balances.json
 
