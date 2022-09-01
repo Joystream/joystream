@@ -1550,6 +1550,8 @@ fn accept_pending_data_objects_succeeded() {
             .with_params(upload_params)
             .call_and_assert(Ok(()));
 
+        println!("upload done!");
+
         let data_object_id = 0; // just uploaded data object
 
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
@@ -1565,6 +1567,8 @@ fn accept_pending_data_objects_succeeded() {
             .with_bag_id(bag_id.clone())
             .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
+
+        println!("acceptance done!");
 
         let data_object = Storage::ensure_data_object_exists(&bag_id, &data_object_id).unwrap();
         // Check `accepted` flag for the fist data object in the bag.
@@ -5567,7 +5571,7 @@ fn unsuccessful_dyn_bag_creation_with_bucket_objects_size_limit_reached() {
         CreateDynamicBagFixture::default()
             .with_objects(vec![DataObjectCreationParameters {
                 size: DEFAULT_STORAGE_BUCKET_SIZE_LIMIT + 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1u32.into()),
             }])
             .with_storage_buckets(storage_buckets)
             .call_and_assert(Err(
@@ -5584,11 +5588,11 @@ fn unsuccessful_dyn_bag_creation_with_bucket_objects_number_limit_reached() {
         let storage_buckets = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let objects: Vec<DataObjectCreationParameters> = (0..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT
+        let objects: Vec<DataObjectCreationParameters> = (0..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT as u32
             + 1))
             .map(|idx| DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![idx.try_into().unwrap()],
+                ipfs_content_id: create_cid(idx.into()),
             })
             .collect();
 
@@ -6246,14 +6250,17 @@ fn get_upload_costs_succeeds_overflow_sat() {
 #[test]
 fn uploading_objects_with_invalid_cid_length_should_fail() {
     build_test_externalities().execute_with(|| {
-                let starting_block = 1;
+        let starting_block = 1;
         run_to_block(starting_block);
 
-        let initial_balance = 1000;
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
-
-        let data_object_state_bloat_bond = 10;
+        let data_object_state_bloat_bond = 10u64;
         set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
+
+        let initial_balance = ExistentialDeposit::get() as u64
+            + data_object_state_bloat_bond
+            + Storage::data_object_per_mega_byte_fee() * DEFAULT_DATA_OBJECTS_SIZE;
+
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let object_creation_list = vec![
             DataObjectCreationParameters {
@@ -6283,6 +6290,8 @@ fn creating_dynamic_bag_with_objects_having_invalid_cid_length_should_fail() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        let data_object_state_bloat_bond = Storage::data_object_state_bloat_bond_value();
+
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let family_policy_number1 = 2u32;
         let family_policy_number2 = 3u32;
@@ -6304,7 +6313,10 @@ fn creating_dynamic_bag_with_objects_having_invalid_cid_length_should_fail() {
             .call_and_assert(Ok(()));
 
         let state_bloat_bond_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
-        let initial_balance = 10000;
+        let initial_balance = ExistentialDeposit::get() as u64
+            + data_object_state_bloat_bond
+            + Storage::data_object_per_mega_byte_fee() * DEFAULT_DATA_OBJECTS_SIZE;
+
         increase_account_balance(&state_bloat_bond_account_id, initial_balance);
 
         // pre-check balances

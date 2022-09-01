@@ -471,9 +471,13 @@ pub fn create_data_object_candidates_with_size(
 
     range
         .into_iter()
-        .map(|idx| DataObjectCreationParameters {
-            size,
-            ipfs_content_id: create_cid(idx.into()),
+        .map(|idx| {
+            let ipfs_content_id = create_cid(idx.into());
+
+            DataObjectCreationParameters {
+                size,
+                ipfs_content_id,
+            }
         })
         .collect()
 }

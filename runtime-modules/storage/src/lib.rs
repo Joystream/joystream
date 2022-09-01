@@ -3616,11 +3616,11 @@ impl<T: Config> Module<T> {
         );
         ensure!(obj.size != 0, Error::<T>::ZeroObjectSize,);
         ensure!(!obj.ipfs_content_id.is_empty(), Error::<T>::EmptyContentId);
-        ensure!(!obj.ipfs_content_id.len() == CID_LENGTH, Error::<T>::InvalidCidLength);
         ensure!(
             !Blacklist::contains_key(obj.ipfs_content_id.clone()),
             Error::<T>::DataObjectBlacklisted,
         );
+        ensure!(obj.ipfs_content_id.len() == CID_LENGTH, Error::<T>::InvalidCidLength);
         Ok(())
     }
 
