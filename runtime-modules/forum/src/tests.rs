@@ -2591,10 +2591,10 @@ fn storage_limit_checks() {
 
 #[test]
 fn add_non_editable_post_should_not_increase_thread_number_of_editable_posts() {
-    pub const INITIAL_BALANCE: u64 = 10_000_000;
+    let initial_balance = ExistentialDeposit::get() + ThreadDeposit::get() + PostDeposit::get();
     let origin = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
     with_test_externalities(|| {
-        balances::Pallet::<Runtime>::make_free_balance_be(&FORUM_LEAD_ORIGIN_ID, INITIAL_BALANCE);
+        balances::Pallet::<Runtime>::make_free_balance_be(&FORUM_LEAD_ORIGIN_ID, initial_balance);
         let category_id = create_category_mock(
             origin.clone(),
             None,
