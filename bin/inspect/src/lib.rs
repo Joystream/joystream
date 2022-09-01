@@ -250,6 +250,8 @@ impl<Hash: FromStr + Debug, Number: FromStr + Debug> FromStr for ExtrinsicAddres
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // first try raw bytes
+        // sp_core::bytes is an alias for impl_serde::serialize
+        // Behavior we expect is only in v0.3.1, unit tests will break with v0.3.2
         if let Ok(bytes) = sp_core::bytes::from_hex(s).map(Self::Bytes) {
             return Ok(bytes);
         }
@@ -296,7 +298,9 @@ mod tests {
         assert_eq!(b3, Ok(BlockAddress::Bytes(vec![0, 0x12, 0x34, 0x5f])));
     }
 
-    #[ignore]
+    // If you find these tests breaking
+    // Make sure Cargo.lock has pacakge impl_serde using v0.3.1
+    // unit tests will break with v0.3.2 (see notes above for impl of from_str for ExtrinsicAddress)
     #[test]
     fn should_parse_extrinsic_address() {
         type BlockAddress = super::BlockAddress<Hash, u64>;
