@@ -835,7 +835,7 @@ fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
 
             assert_eq!(
                 Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
-                BIDDER_BALANCE - BID_OFFER,
+                BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
             );
         })
 }
