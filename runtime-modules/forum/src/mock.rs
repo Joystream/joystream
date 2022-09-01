@@ -582,7 +582,7 @@ pub fn delete_post_mock(
     hide: bool,
 ) {
     let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
-    let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
+    let number_of_editable_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_editable_posts;
     let mut deleted_posts = BTreeMap::new();
     let extended_post_id = ExtendedPostIdObject {
         category_id,
@@ -606,8 +606,8 @@ pub fn delete_post_mock(
         assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         if <ThreadById<Runtime>>::contains_key(category_id, thread_id) {
             assert_eq!(
-                <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts,
-                number_of_posts - 1,
+                <ThreadById<Runtime>>::get(category_id, thread_id).number_of_editable_posts,
+                number_of_editable_posts - 1,
             );
         }
         assert_eq!(

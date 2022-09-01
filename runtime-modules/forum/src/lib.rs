@@ -202,7 +202,7 @@ pub struct Thread<ForumUserId, CategoryId, Balance> {
     pub cleanup_pay_off: Balance,
 
     /// Number of posts in the thread
-    pub number_of_posts: NumberOfPosts,
+    pub number_of_editable_posts: NumberOfPosts,
 }
 
 /// Represents a category
@@ -812,7 +812,7 @@ decl_module! {
                 category_id,
                 author_id: forum_user_id,
                 cleanup_pay_off: T::ThreadDeposit::get(),
-                number_of_posts: 0,
+                number_of_editable_posts: 0,
             };
 
             // Store thread
@@ -1403,7 +1403,7 @@ impl<T: Config> Module<T> {
 
             <ThreadById<T>>::mutate(category_id, thread_id, |thread| {
                 // non editable post should leave the counter untouched
-                thread.number_of_posts = thread.number_of_posts.saturating_add(1);
+                thread.number_of_editable_posts = thread.number_of_editable_posts.saturating_add(1);
             });
         }
 
@@ -1421,7 +1421,7 @@ impl<T: Config> Module<T> {
     fn delete_post_inner(category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId) {
         if <ThreadById<T>>::contains_key(category_id, thread_id) {
             let mut thread = <ThreadById<T>>::get(category_id, thread_id);
-            thread.number_of_posts = thread.number_of_posts.saturating_sub(1);
+            thread.number_of_editable_posts = thread.number_of_editable_posts.saturating_sub(1);
 
             <ThreadById<T>>::mutate(category_id, thread_id, |value| *value = thread);
         }
@@ -2013,7 +2013,7 @@ impl<T: Config> Module<T> {
 
     fn ensure_empty_thread(thread: &ThreadOf<T>) -> DispatchResult {
         ensure!(
-            thread.number_of_posts.is_zero(),
+            thread.number_of_editable_posts.is_zero(),
             Error::<T>::CannotDeleteThreadWithOutstandingPosts
         );
         Ok(())

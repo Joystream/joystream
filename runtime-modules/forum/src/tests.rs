@@ -2590,7 +2590,7 @@ fn storage_limit_checks() {
 }
 
 #[test]
-fn add_non_editable_post_should_not_increase_thread_number_of_posts() {
+fn add_non_editable_post_should_not_increase_thread_number_of_editable_posts() {
     pub const INITIAL_BALANCE: u64 = 10_000_000;
     let origin = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
     with_test_externalities(|| {
@@ -2614,7 +2614,7 @@ fn add_non_editable_post_should_not_increase_thread_number_of_posts() {
         );
 
         let counter_pre = TestForumModule::thread_by_id(category_id, thread_id)
-            .number_of_posts;
+            .number_of_editable_posts;
 
         create_post_mock(
             origin,
@@ -2630,7 +2630,7 @@ fn add_non_editable_post_should_not_increase_thread_number_of_posts() {
         assert_eq!(
             counter_pre,
             TestForumModule::thread_by_id(category_id, thread_id)
-                .number_of_posts,
+                .number_of_editable_posts,
             "non editable posts should not increase thread post counter"
         )
     })
