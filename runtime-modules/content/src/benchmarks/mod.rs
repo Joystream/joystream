@@ -812,7 +812,11 @@ type MemberChannelData<T> = (
 );
 
 type NftData<T> = (
-    ContentActor<<T as ContentActorAuthenticator>::CuratorGroupId, <T as ContentActorAuthenticator>::CuratorId, <T as MembershipTypes>::MemberId>, // owner actor
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >, // owner actor
     <T as frame_system::Config>::AccountId, // owner account id
 );
 
@@ -1154,9 +1158,7 @@ where
         // most complex InitTransactionalStatus is EnglishAuction
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
-                buy_now_price: Some(
-                    BUY_NOW_PRICE.into()
-                ),
+                buy_now_price: Some(BUY_NOW_PRICE.into()),
                 duration: Pallet::<T>::min_auction_duration(),
                 extension_period: Pallet::<T>::min_auction_extension_period(),
                 min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1634,7 +1636,8 @@ where
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
             whitelist: whitelisted_members.into_iter().map(|(_, id)| id).collect(),
         }),
-    ).unwrap();
+    )
+    .unwrap();
 
     Ok((nft_data, participant_id, participant_account_id))
 }
@@ -1668,7 +1671,8 @@ where
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
             whitelist: whitelisted_members.into_iter().map(|(_, id)| id).collect(),
         }),
-    ).unwrap();
+    )
+    .unwrap();
 
     Ok((nft_data, participant_id, participant_account_id))
 }
@@ -1679,7 +1683,7 @@ fn setup_nft_with_transactional_status<T>(
     video_id: T::VideoId,
     non_channel_owner: bool,
     transactional_status: InitTransactionalStatus<T>,
-) -> Result<NftData<T>,DispatchError>
+) -> Result<NftData<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
@@ -1689,7 +1693,8 @@ where
 
     let (nft_owner_actor, owner_account) = if non_channel_owner {
         let (owner_account, owner_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
-        let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
+        let nft_owner_actor =
+            ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
         (nft_owner_actor, owner_account)
     } else {
         (actor.clone(), account_id.clone())
@@ -1704,12 +1709,15 @@ where
             royalty: Some(Pallet::<T>::max_creator_royalty()),
             nft_metadata: Vec::new(),
             non_channel_owner: match nft_owner_actor {
-                ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(member_id) => Some(member_id),
+                ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(member_id) => {
+                    Some(member_id)
+                }
                 _ => None,
             },
             init_transactional_status: transactional_status,
         },
-    ).unwrap();
+    )
+    .unwrap();
 
     Ok((nft_owner_actor, owner_account))
 }
