@@ -1653,7 +1653,7 @@ where
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    let whitelisted_members = (1..(whitelist_size as usize))
+    let whitelisted_members = (1..=(whitelist_size as usize))
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
