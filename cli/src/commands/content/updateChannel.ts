@@ -128,7 +128,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetsToRemove,
       newMeta: serializedMeta.length ? serializedMeta : null,
       collaborators: collaborators?.length
-        ? new Map(collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions]))
+        ? new Map(collaborators?.map(({ memberId, permissions }) => [memberId, permissions]))
         : null,
     })
     this.jsonPrettyPrint(
