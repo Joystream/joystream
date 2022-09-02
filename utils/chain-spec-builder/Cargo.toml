@@ -11,10 +11,10 @@ async-std = {version = "1.9.0", features = ["attributes"]}
 futures-util = "0.3.15"
 clap = { version = "3.1.18", features = ["derive"] }
 rand = "0.8"
-sc-keystore = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
-sc-telemetry = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
-sc-chain-spec = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
-sp-core = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
-sp-keystore = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+sc-keystore = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
+sc-telemetry = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
+sc-chain-spec = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
+sp-core = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
+sp-keystore = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
 joystream-node = { path = "../../node" }
 serde_json = "1.0.79"

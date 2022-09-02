@@ -274,6 +274,7 @@ impl staking::Config for Test {
     type OnStakerSlash = OnStakerSlashMock<Test>;
     type BenchmarkingConfig = TestBenchmarkingConfig;
     type WeightInfo = ();
+    type BondingRestriction = ();
 }
 
 impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
