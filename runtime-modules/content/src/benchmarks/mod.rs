@@ -1728,7 +1728,7 @@ fn add_english_auction_bid<T: Config>(
     participant_id: T::MemberId,
     video_id: T::VideoId,
 ) -> BalanceOf<T> {
-    let bid_amount = nft_buy_now_price::<T>() - 1u32.into();
+    let bid_amount = nft_buy_now_price::<T>() - Pallet::<T>::min_bid_step();
     let origin: T::Origin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_english_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
     bid_amount
