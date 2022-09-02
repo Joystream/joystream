@@ -50,8 +50,8 @@ type Channel @entity {
   "Number of the block the channel was created in"
   createdInBlock: Int!
 
-  "List of channel collaborators (members)"
-  collaborators: [Membership!]
+  "List of channel collaborators with their permissions"
+  collaborators: [Collaborator!]! @derivedFrom(field: "channel")
 
   "List of members blocked from from participating on any video of the channel."
   bannedMembers: [Membership!]
@@ -379,4 +379,18 @@ type Comment @entity {
 
   "The event the comment was moderated in (if any)"
   moderatedInEvent: CommentModeratedEvent @derivedFrom(field: "comment")
+}
+
+type Collaborator @entity {
+  "Relevant channel"
+  channel: Channel!
+
+  "Related member"
+  member: Membership!
+
+  # unfortunately permissions can't be modeled as ist of enums
+  # `permissions: [ChannelActionPermission!]!`
+  # rework it after this feature is available https://github.com/Joystream/hydra/issues/507
+  "List of member's permissions"
+  permissions: [String!]!
 }
