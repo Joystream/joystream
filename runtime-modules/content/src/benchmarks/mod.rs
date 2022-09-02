@@ -67,9 +67,9 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
 fn nft_buy_now_price<T: Config>() -> BalanceOf<T>{
     Pallet::<T>::min_starting_price() + 1000u32.into()
 }
-pub const MEMBER_IDS_INIT: u128 = 500;
-pub const MAX_MEMBER_IDS: usize = 100;
-pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_CURATOR_IDS>(MEMBER_IDS_INIT);
+pub const MEMBER_IDS_INIT: u128 = 400;
+pub const MAX_MEMBER_IDS: usize = 200;
+pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
 
 pub const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[0];
 
@@ -1616,7 +1616,7 @@ where
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     assert!(whitelist_size > 1);
-    let whitelisted_members = (1..(whitelist_size as usize))
+    let whitelisted_members = (1..=(whitelist_size as usize))
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
@@ -1654,7 +1654,7 @@ where
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     assert!(whitelist_size > 1);
-    let whitelisted_members = (1..(whitelist_size as usize))
+    let whitelisted_members = (1..=(whitelist_size as usize))
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
