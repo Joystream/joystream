@@ -658,13 +658,11 @@ declare module '@polkadot/types/lookup' {
     readonly asPostDeleted: ITuple<[Bytes, u64, BTreeMap<PalletForumExtendedPostIdObject, bool>]>;
     readonly isPostTextUpdated: boolean;
     readonly asPostTextUpdated: ITuple<[u64, u64, u64, u64, Bytes]>;
-    readonly isPostReacted: boolean;
-    readonly asPostReacted: ITuple<[u64, u64, u64, u64, u64]>;
     readonly isCategoryStickyThreadUpdate: boolean;
     readonly asCategoryStickyThreadUpdate: ITuple<[u64, Vec<u64>, PalletForumPrivilegedActor]>;
     readonly isCategoryMembershipOfModeratorUpdated: boolean;
     readonly asCategoryMembershipOfModeratorUpdated: ITuple<[u64, u64, bool]>;
-    readonly type: 'CategoryCreated' | 'CategoryArchivalStatusUpdated' | 'CategoryTitleUpdated' | 'CategoryDescriptionUpdated' | 'CategoryDeleted' | 'ThreadCreated' | 'ThreadModerated' | 'ThreadUpdated' | 'ThreadMetadataUpdated' | 'ThreadDeleted' | 'ThreadMoved' | 'PostAdded' | 'PostModerated' | 'PostDeleted' | 'PostTextUpdated' | 'PostReacted' | 'CategoryStickyThreadUpdate' | 'CategoryMembershipOfModeratorUpdated';
+    readonly type: 'CategoryCreated' | 'CategoryArchivalStatusUpdated' | 'CategoryTitleUpdated' | 'CategoryDescriptionUpdated' | 'CategoryDeleted' | 'ThreadCreated' | 'ThreadModerated' | 'ThreadUpdated' | 'ThreadMetadataUpdated' | 'ThreadDeleted' | 'ThreadMoved' | 'PostAdded' | 'PostModerated' | 'PostDeleted' | 'PostTextUpdated' | 'CategoryStickyThreadUpdate' | 'CategoryMembershipOfModeratorUpdated';
   }
 
   /** @name PalletForumPrivilegedActor (78) */
@@ -3087,14 +3085,6 @@ declare module '@polkadot/types/lookup' {
       readonly text: Bytes;
       readonly editable: bool;
     } & Struct;
-    readonly isReactPost: boolean;
-    readonly asReactPost: {
-      readonly forumUserId: u64;
-      readonly categoryId: u64;
-      readonly threadId: u64;
-      readonly postId: u64;
-      readonly react: u64;
-    } & Struct;
     readonly isEditPostText: boolean;
     readonly asEditPostText: {
       readonly forumUserId: u64;
@@ -3123,7 +3113,7 @@ declare module '@polkadot/types/lookup' {
       readonly categoryId: u64;
       readonly stickiedIds: Vec<u64>;
     } & Struct;
-    readonly type: 'UpdateCategoryMembershipOfModerator' | 'CreateCategory' | 'UpdateCategoryArchivalStatus' | 'UpdateCategoryTitle' | 'UpdateCategoryDescription' | 'DeleteCategory' | 'CreateThread' | 'EditThreadMetadata' | 'DeleteThread' | 'MoveThreadToCategory' | 'ModerateThread' | 'AddPost' | 'ReactPost' | 'EditPostText' | 'ModeratePost' | 'DeletePosts' | 'SetStickiedThreads';
+    readonly type: 'UpdateCategoryMembershipOfModerator' | 'CreateCategory' | 'UpdateCategoryArchivalStatus' | 'UpdateCategoryTitle' | 'UpdateCategoryDescription' | 'DeleteCategory' | 'CreateThread' | 'EditThreadMetadata' | 'DeleteThread' | 'MoveThreadToCategory' | 'ModerateThread' | 'AddPost' | 'EditPostText' | 'ModeratePost' | 'DeletePosts' | 'SetStickiedThreads';
   }
 
   /** @name PalletConstitutionCall (363) */
@@ -4261,7 +4251,8 @@ declare module '@polkadot/types/lookup' {
     readonly isTooManyNominators: boolean;
     readonly isTooManyValidators: boolean;
     readonly isCommissionTooLow: boolean;
-    readonly type: 'NotController' | 'NotStash' | 'AlreadyBonded' | 'AlreadyPaired' | 'EmptyTargets' | 'DuplicateIndex' | 'InvalidSlashIndex' | 'InsufficientBond' | 'NoMoreChunks' | 'NoUnlockChunk' | 'FundedTarget' | 'InvalidEraToReward' | 'InvalidNumberOfNominations' | 'NotSortedAndUnique' | 'AlreadyClaimed' | 'IncorrectHistoryDepth' | 'IncorrectSlashingSpans' | 'BadState' | 'TooManyTargets' | 'BadTarget' | 'CannotChillOther' | 'TooManyNominators' | 'TooManyValidators' | 'CommissionTooLow';
+    readonly isBondingRestricted: boolean;
+    readonly type: 'NotController' | 'NotStash' | 'AlreadyBonded' | 'AlreadyPaired' | 'EmptyTargets' | 'DuplicateIndex' | 'InvalidSlashIndex' | 'InsufficientBond' | 'NoMoreChunks' | 'NoUnlockChunk' | 'FundedTarget' | 'InvalidEraToReward' | 'InvalidNumberOfNominations' | 'NotSortedAndUnique' | 'AlreadyClaimed' | 'IncorrectHistoryDepth' | 'IncorrectSlashingSpans' | 'BadState' | 'TooManyTargets' | 'BadTarget' | 'CannotChillOther' | 'TooManyNominators' | 'TooManyValidators' | 'CommissionTooLow' | 'BondingRestricted';
   }
 
   /** @name SpCoreCryptoKeyTypeId (467) */
@@ -4606,7 +4597,7 @@ declare module '@polkadot/types/lookup' {
     readonly categoryId: u64;
     readonly authorId: u64;
     readonly cleanupPayOff: PalletCommonBloatBondRepayableBloatBond;
-    readonly numberOfPosts: u64;
+    readonly numberOfEditablePosts: u64;
   }
 
   /** @name PalletForumPost (519) */

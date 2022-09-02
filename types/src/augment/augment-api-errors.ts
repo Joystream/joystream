@@ -2536,6 +2536,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       BadTarget: AugmentedError<ApiType>;
       /**
+       * External restriction prevents bonding with given account
+       **/
+      BondingRestricted: AugmentedError<ApiType>;
+      /**
        * The user has enough bond and thus cannot be chilled forcefully by an external person.
        **/
       CannotChillOther: AugmentedError<ApiType>;

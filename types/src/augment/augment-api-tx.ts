@@ -1229,19 +1229,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       moveThreadToCategory: AugmentedSubmittable<(actor: PalletForumPrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, newCategoryId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletForumPrivilegedActor, u64, u64, u64]>;
       /**
-       * Like or unlike a post.
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (W)` where:
-       * - `W` is the category depth,
-       * - DB:
-       * - O(W)
-       * # </weight>
-       **/
-      reactPost: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, postId: u64 | AnyNumber | Uint8Array, react: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, u64, u64]>;
-      /**
        * Set stickied threads for category
        * 
        * <weight>

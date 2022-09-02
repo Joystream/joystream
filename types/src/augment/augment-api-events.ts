@@ -667,10 +667,6 @@ declare module '@polkadot/api-base/types/events' {
        **/
       PostModerated: AugmentedEvent<ApiType, [u64, Bytes, PalletForumPrivilegedActor, u64, u64]>;
       /**
-       * Thumb up post
-       **/
-      PostReacted: AugmentedEvent<ApiType, [u64, u64, u64, u64, u64]>;
-      /**
        * Post with given id had its text updated.
        * The second argument reflects the number of total edits when the text update occurs.
        **/
