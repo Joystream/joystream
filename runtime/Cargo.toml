@@ -2,7 +2,7 @@
 authors = ['Joystream contributors']
 edition = '2018'
 name = 'joystream-node-runtime'
-# Follow convention: https://github.com/mnaamani/substrate-runtime-joystream/issues/1
+# Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
 version = '11.2.0'
 
