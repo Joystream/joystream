@@ -1550,8 +1550,6 @@ fn accept_pending_data_objects_succeeded() {
             .with_params(upload_params)
             .call_and_assert(Ok(()));
 
-        println!("upload done!");
-
         let data_object_id = 0; // just uploaded data object
 
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
@@ -1567,8 +1565,6 @@ fn accept_pending_data_objects_succeeded() {
             .with_bag_id(bag_id.clone())
             .with_data_object_ids(data_object_ids.clone())
             .call_and_assert(Ok(()));
-
-        println!("acceptance done!");
 
         let data_object = Storage::ensure_data_object_exists(&bag_id, &data_object_id).unwrap();
         // Check `accepted` flag for the fist data object in the bag.
@@ -6256,9 +6252,10 @@ fn uploading_objects_with_invalid_cid_length_should_fail() {
         let data_object_state_bloat_bond = 10u64;
         set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
+        const ONE_MB: u64 = 1_048_576;
         let initial_balance = ExistentialDeposit::get() as u64
             + data_object_state_bloat_bond
-            + Storage::data_object_per_mega_byte_fee() * DEFAULT_DATA_OBJECTS_SIZE;
+            + Storage::data_object_per_mega_byte_fee() * DEFAULT_DATA_OBJECTS_SIZE / ONE_MB;
 
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
