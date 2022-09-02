@@ -930,7 +930,7 @@ fn unsuccessfull_channel_payouts_update_with_insufficient_uploader_account_balan
                 Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
@@ -954,7 +954,7 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
                 Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
@@ -977,7 +977,7 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_object_state_bloat_
                 Storage::<Test>::data_object_state_bloat_bond_value().saturating_add(1),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
@@ -1052,7 +1052,7 @@ fn successful_channel_payouts_update() {
                 Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };

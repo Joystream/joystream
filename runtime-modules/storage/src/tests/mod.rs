@@ -5584,13 +5584,13 @@ fn unsuccessful_dyn_bag_creation_with_bucket_objects_number_limit_reached() {
         let storage_buckets = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let objects: Vec<DataObjectCreationParameters> = (0..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT as u32
-            + 1))
-            .map(|idx| DataObjectCreationParameters {
-                size: 1,
-                ipfs_content_id: create_cid(idx.into()),
-            })
-            .collect();
+        let objects: Vec<DataObjectCreationParameters> =
+            (0..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT as u32 + 1))
+                .map(|idx| DataObjectCreationParameters {
+                    size: 1,
+                    ipfs_content_id: create_cid(idx.into()),
+                })
+                .collect();
 
         CreateDynamicBagFixture::default()
             .with_objects(objects)
@@ -6259,8 +6259,7 @@ fn uploading_objects_with_invalid_cid_length_should_fail() {
 
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let object_creation_list = vec![
-            DataObjectCreationParameters {
+        let object_creation_list = vec![DataObjectCreationParameters {
             size: DEFAULT_DATA_OBJECTS_SIZE,
             ipfs_content_id: b"test".to_vec(),
         }];
@@ -6277,7 +6276,6 @@ fn uploading_objects_with_invalid_cid_length_should_fail() {
         UploadFixture::default()
             .with_params(upload_params.clone())
             .call_and_assert(Err(Error::<Test>::InvalidCidLength.into()));
-
     })
 }
 
@@ -6326,8 +6324,7 @@ fn creating_dynamic_bag_with_objects_having_invalid_cid_length_should_fail() {
             init_module_acc_balance()
         );
 
-        let object_creation_list = vec![
-            DataObjectCreationParameters {
+        let object_creation_list = vec![DataObjectCreationParameters {
             size: DEFAULT_DATA_OBJECTS_SIZE,
             ipfs_content_id: b"test".to_vec(),
         }];
