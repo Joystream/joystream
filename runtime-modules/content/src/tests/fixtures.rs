@@ -1820,7 +1820,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.video_id,
-            self.storage_buckets_num_witness.clone(),
+            self.storage_buckets_num_witness,
             self.num_objects_to_delete,
             self.rationale.clone(),
         )
@@ -3743,7 +3743,7 @@ impl MakeOpenAuctionBidFixture {
                         );
                     }
                 }
-                _ => assert!(false),
+                _ => panic!(),
             }
         } else {
             assert_eq!(bid_post, bid_pre);
@@ -5160,7 +5160,7 @@ impl ContentTest {
                     &agent_permissions,
                 )
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
 
         // Setup claimable reward (optionally)

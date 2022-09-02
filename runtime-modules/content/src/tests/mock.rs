@@ -262,11 +262,10 @@ impl ContentActorAuthenticator for Test {
         let controller_account_id = (*member_id) as u128;
         if Membership::is_member_controller_account(member_id, account_id) {
             true
-        } else if MEMBER_IDS.contains(member_id) {
-            *account_id == controller_account_id
-        } else if COLABORATOR_IDS.contains(member_id) {
-            *account_id == controller_account_id
-        } else if CURATOR_IDS.contains(member_id) {
+        } else if MEMBER_IDS.contains(member_id)
+            || COLABORATOR_IDS.contains(member_id)
+            || CURATOR_IDS.contains(member_id)
+        {
             *account_id == controller_account_id
         } else {
             false
@@ -530,12 +529,12 @@ impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
             Self::is_member_controller_account(&member_id, &account_id),
             DispatchError::BadOrigin
         );
-        Ok(account_id.into())
+        Ok(account_id)
     }
 
     fn is_member_controller_account(member_id: &u64, account_id: &u128) -> bool {
-        return Membership::is_member_controller_account(member_id, account_id)
-            || TestMemberships::is_member_controller_account(member_id, account_id);
+        Membership::is_member_controller_account(member_id, account_id)
+            || TestMemberships::is_member_controller_account(member_id, account_id)
     }
 }
 thread_local! {
@@ -955,11 +954,10 @@ impl MembershipInfoProvider<Test> for TestMemberships {
     ) -> Result<AccountId, DispatchError> {
         Membership::controller_account_id(member_id).or_else(|_| {
             let account_id = member_id as u128;
-            if MEMBER_IDS.contains(&member_id) {
-                Ok(account_id)
-            } else if COLABORATOR_IDS.contains(&member_id) {
-                Ok(account_id)
-            } else if CURATOR_IDS.contains(&member_id) {
+            if MEMBER_IDS.contains(&member_id)
+                || COLABORATOR_IDS.contains(&member_id)
+                || CURATOR_IDS.contains(&member_id)
+            {
                 Ok(account_id)
             } else {
                 Err(DispatchError::Other("no account found"))
@@ -983,14 +981,9 @@ impl MemberOriginValidator<Origin, u64, u128> for TestMemberships {
     }
 
     fn is_member_controller_account(member_id: &u64, _account_id: &u128) -> bool {
-        if MEMBER_IDS.contains(&member_id)
+        MEMBER_IDS.contains(member_id)
             || COLABORATOR_IDS.contains(&member_id)
-            || CURATOR_IDS.contains(&member_id)
-        {
-            true
-        } else {
-            false
-        }
+            || CURATOR_IDS.contains(member_id)
     }
 }
 

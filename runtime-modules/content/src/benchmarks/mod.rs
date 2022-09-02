@@ -64,7 +64,7 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
     res
 }
 
-fn nft_buy_now_price<T: Config>() -> BalanceOf<T>{
+fn nft_buy_now_price<T: Config>() -> BalanceOf<T> {
     Pallet::<T>::min_starting_price() + 1000u32.into()
 }
 pub const MEMBER_IDS_INIT: u128 = 400;
@@ -1698,7 +1698,7 @@ where
             ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
         (nft_owner_actor, owner_account)
     } else {
-        (actor.clone(), account_id.clone())
+        (actor, account_id.clone())
     };
 
     set_nft_limits_helper::<T>(channel_id);
@@ -1742,8 +1742,7 @@ fn add_open_auction_bid<T: Config>(
     let bid_amount = nft_buy_now_price::<T>() - 1u32.into();
     let origin: T::Origin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_open_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
-    let bid = Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id);
-    bid
+    Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id)
 }
 
 fn set_all_channel_paused_features<T: Config>(channel_id: T::ChannelId)

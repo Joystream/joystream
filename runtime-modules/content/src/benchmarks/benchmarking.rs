@@ -2421,7 +2421,7 @@ benchmarks! {
 
         set_all_channel_paused_features::<T>(channel_id);
 
-        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let origin = RawOrigin::Signed(curator_account_id);
 
         let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
         let price = Some(nft_buy_now_price::<T>());
@@ -2470,7 +2470,7 @@ benchmarks! {
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let origin = RawOrigin::Signed(curator_account_id);
 
     }: _ (origin, actor, video_id)
         verify {
@@ -2510,7 +2510,7 @@ benchmarks! {
         let price = Some(nft_buy_now_price::<T>());
 
         let (nft_owner_actor, owner_account) = setup_offered_nft::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             true,
@@ -2571,7 +2571,7 @@ benchmarks! {
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let origin = RawOrigin::Signed(curator_account_id);
 
     }: _ (origin, video_id, actor, price)
         verify {
@@ -2616,7 +2616,7 @@ benchmarks! {
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let origin = RawOrigin::Signed(curator_account_id);
     }: _ (origin, actor, video_id)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -2660,7 +2660,7 @@ benchmarks! {
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let origin = RawOrigin::Signed(curator_account_id);
         let new_price = nft_buy_now_price::<T>() + 1u32.into();
     }: _ (origin, actor, video_id, new_price)
         verify {
@@ -2701,7 +2701,7 @@ benchmarks! {
         let price = nft_buy_now_price::<T>();
 
         let (nft_owner_actor, owner_account) = setup_nft_in_buy_now::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             true,
@@ -2800,7 +2800,7 @@ benchmarks! {
         )?;
 
         let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             false,
@@ -2819,7 +2819,7 @@ benchmarks! {
         };
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(owner_account.clone());
+        let origin = RawOrigin::Signed(owner_account);
 
     }: _(origin, nft_owner_actor, video_id, auction_params)
         verify {
@@ -2854,7 +2854,7 @@ benchmarks! {
 
         let ((nft_owner_actor, owner_account),
              _) = setup_nft_in_english_auction::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             false,
@@ -2913,7 +2913,7 @@ benchmarks! {
         set_all_channel_paused_features::<T>(channel_id);
 
         fastforward_by_blocks::<T>(2u32.into());
-        let _ = add_english_auction_bid::<T>(first_bidder_account.clone(), first_bidder_id, video_id);
+        let _ = add_english_auction_bid::<T>(first_bidder_account, first_bidder_id, video_id);
         let buy_now_amount = nft_buy_now_price::<T>();
 
         let origin = RawOrigin::Signed(second_bidder_account.clone());
@@ -2957,7 +2957,7 @@ benchmarks! {
         )?;
 
         let ((nft_owner_actor, owner_account), bidders) = setup_nft_in_english_auction::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             true,
@@ -2966,10 +2966,10 @@ benchmarks! {
         let (participant_account_id, participant_id) = bidders[0].clone();
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(owner_account.clone());
+        let origin = RawOrigin::Signed(owner_account);
 
         fastforward_by_blocks::<T>(2u32.into());
-        let _ = add_english_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+        let _ = add_english_auction_bid::<T>(participant_account_id, participant_id, video_id);
 
         fastforward_by_blocks::<T>(10u32.into());
     }: _(origin, video_id)
