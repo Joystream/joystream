@@ -166,6 +166,18 @@ export type ChannelNftCollectorFieldsFragment = {
   curatorGroup?: Types.Maybe<{ id: string }>
 }
 
+export type CuratorAgentPermissionsFieldsFragment = {
+  permissions: Array<string>
+  curator: { id: string }
+  curatorGroup: { id: string }
+}
+
+export type CollaboratorsFieldsFragment = {
+  permissions: Array<string>
+  member: { id: string }
+  channel: { id: string }
+}
+
 export type GetChannelByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
@@ -230,6 +242,21 @@ export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
 }>
 
 export type GetDataObjectsByVideoIdQuery = { storageDataObjects: Array<StorageDataObjectFieldsFragment> }
+
+export type GetCuratorPermissionsByIdAndGroupIdQueryVariables = Types.Exact<{
+  curatorGroupId: Types.Scalars['ID']
+  curatorId: Types.Scalars['ID']
+}>
+
+export type GetCuratorPermissionsByIdAndGroupIdQuery = {
+  curatorAgentPermissions: Array<CuratorAgentPermissionsFieldsFragment>
+}
+
+export type GetCollaboratorsByChannelIdQueryVariables = Types.Exact<{
+  channelId: Types.Scalars['ID']
+}>
+
+export type GetCollaboratorsByChannelIdQuery = { collaborators: Array<CollaboratorsFieldsFragment> }
 
 export type CommentCreatedEventFieldsFragment = {
   id: string
@@ -2709,6 +2736,28 @@ export const ChannelNftCollectorFields = gql`
     lastIncreaseAt
   }
 `
+export const CuratorAgentPermissionsFields = gql`
+  fragment CuratorAgentPermissionsFields on CuratorAgentPermissions {
+    curator {
+      id
+    }
+    curatorGroup {
+      id
+    }
+    permissions
+  }
+`
+export const CollaboratorsFields = gql`
+  fragment CollaboratorsFields on Collaborator {
+    member {
+      id
+    }
+    channel {
+      id
+    }
+    permissions
+  }
+`
 export const CommentCreatedEventFields = gql`
   fragment CommentCreatedEventFields on CommentCreatedEvent {
     id
@@ -4833,6 +4882,22 @@ export const GetDataObjectsByVideoId = gql`
     }
   }
   ${StorageDataObjectFields}
+`
+export const GetCuratorPermissionsByIdAndGroupId = gql`
+  query getCuratorPermissionsByIdAndGroupId($curatorGroupId: ID!, $curatorId: ID!) {
+    curatorAgentPermissions(where: { curatorGroup: { id_eq: $curatorGroupId }, curator: { id_eq: $curatorId } }) {
+      ...CuratorAgentPermissionsFields
+    }
+  }
+  ${CuratorAgentPermissionsFields}
+`
+export const GetCollaboratorsByChannelId = gql`
+  query getCollaboratorsByChannelId($channelId: ID!) {
+    collaborators(where: { channel: { id_eq: $channelId } }) {
+      ...CollaboratorsFields
+    }
+  }
+  ${CollaboratorsFields}
 `
 export const GetCommentCreatedEventsByEventIds = gql`
   query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {

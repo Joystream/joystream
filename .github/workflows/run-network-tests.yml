@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage']
+        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding']
         include:
           - scenario: 'setupNewChain'
             no_storage: 'true'

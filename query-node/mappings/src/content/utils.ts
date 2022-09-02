@@ -39,6 +39,7 @@ import {
 import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
+  PalletContentChannelActionPermission,
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
@@ -677,4 +678,8 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
+}
+
+export function mapAgentPermission(permission: PalletContentChannelActionPermission): string {
+  return permission.toString()
 }

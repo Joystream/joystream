@@ -148,8 +148,8 @@ type Membership @entity {
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
 
-  "List of channels the member has collaborator access to"
-  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
+  "List of channel collaborators with their permissions"
+  collaboratorInChannels: [Collaborator!]! @derivedFrom(field: "member")
 
   # Required for Channel->bannedMembers Many-to-Many relationship
   "List of channels the member is baned from participating in"

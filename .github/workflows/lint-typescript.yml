@@ -1,8 +1,8 @@
-name: joystream-types
+name: lint-typescript
 on: [pull_request, push]
 
 jobs:
-  types_checks_ubuntu:
+  lint_ubuntu:
     name: Ubuntu Checks
     runs-on: ubuntu-latest
     strategy:
@@ -14,18 +14,14 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: checks
+    - name: lint
       run: |
         yarn install --frozen-lockfile
         yarn workspace @joystream/types build
-    - name: npm pack test
-      run: |
-        cd types
-        npm pack | tail -1 | xargs tar xzf
-        cd package && npm install
-        node ./index.js
+        yarn workspace @joystream/metadata-protobuf build
+        yarn lint
 
-  types_checks_osx:
+  lint_osx:
     name: MacOS Checks
     runs-on: macos-latest
     strategy:
@@ -37,13 +33,9 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: checks
+    - name: lint
       run: |
-        yarn install --frozen-lockfile --network-timeout 120000
+        yarn install --frozen-lockfile
         yarn workspace @joystream/types build
-    - name: npm pack test
-      run: |
-        cd types
-        npm pack | tail -1 | xargs tar xzf
-        cd package && npm install
-        node ./index.js
+        yarn workspace @joystream/metadata-protobuf build
+        yarn lint
