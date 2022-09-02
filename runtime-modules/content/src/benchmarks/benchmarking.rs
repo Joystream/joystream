@@ -2750,6 +2750,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of permissions
+    // - channel-owning curator group has max number of permissions per level
     // - channel has max collaborators
     // - channel has all features paused
     // - channel has max assets
@@ -2776,6 +2777,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2834,6 +2836,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
     // - member whitelist has max size
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
