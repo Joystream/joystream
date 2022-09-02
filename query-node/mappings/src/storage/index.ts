@@ -195,16 +195,27 @@ export async function storage_StorageBucketDeleted({ event, store }: EventContex
 
 // DYNAMIC BAGS
 export async function storage_DynamicBagCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bagId, storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
+  const [
+    { bagId, storageBuckets, distributionBuckets, objectCreationList, expectedDataObjectStateBloatBond },
+    objectIds,
+  ] = new Storage.DynamicBagCreatedEvent(event).params
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
-    storageBuckets: Array.from(storageBucketIdsSet).map((id) => new StorageBucket({ id: id.toString() })),
-    distributionBuckets: Array.from(distributionBucketIdsSet).map(
+    storageBuckets: Array.from(storageBuckets).map((id) => new StorageBucket({ id: id.toString() })),
+    distributionBuckets: Array.from(distributionBuckets).map(
       (id) => new DistributionBucket({ id: distributionBucketId(id) })
     ),
   })
   await store.save<StorageBag>(storageBag)
+  if (objectCreationList.length) {
+    await createDataObjects(store, {
+      storageBagOrId: storageBag,
+      objectCreationList,
+      stateBloatBond: expectedDataObjectStateBloatBond,
+      objectIds: Array.from(objectIds),
+    })
+  }
 }
 
 export async function storage_DynamicBagDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
