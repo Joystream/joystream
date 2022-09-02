@@ -6,6 +6,7 @@ import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from 
 import { ChannelId, DataObjectId } from '@joystream/types/primitives'
 import {
   Channel,
+  Collaborator,
   ContentActor,
   ContentActorCurator,
   ContentActorMember,
@@ -38,14 +39,17 @@ import {
   convertContentActor,
   processChannelMetadata,
   unsetAssetRelations,
+  mapAgentPermission,
 } from './utils'
+import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
+// Joystream types
+import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [channelId, { owner, dataObjects }, channelCreationParameters, rewardAccount] = new Content.ChannelCreatedEvent(
-    event
-  ).params
+  const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
+    new Content.ChannelCreatedEvent(event).params
 
   // create entity
   const channel = new Channel({
@@ -59,10 +63,8 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
 
-    collaborators: Array.from(channelCreationParameters.collaborators).map(
-      (id) => new Membership({ id: id[0].toString() })
-    ),
     rewardAccount: rewardAccount.toString(),
+    channelStateBloatBond: channelStateBloatBond.amount,
   })
 
   // deserialize & process metadata
@@ -86,6 +88,9 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 
   // save entity
   await store.save<Channel>(channel)
+
+  // update channel permissions
+  await updateChannelAgentsPermissions(store, channel, channelCreationParameters.collaborators)
 
   // emit log event
   logger.info('Channel has been created', { id: channel.id })
@@ -128,13 +133,13 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
     await processChannelMetadata(ctx, channel, newMetadata, storageDataObjectParams)
   }
 
-  const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
-  if (newCollaborators) {
-    channel.collaborators = Array.from(newCollaborators).map((id) => new Membership({ id: id[0].toString() }))
-  }
-
   // save channel
   await store.save<Channel>(channel)
+
+  // update channel permissions
+  if (channelUpdateParameters.collaborators.isSome) {
+    await updateChannelAgentsPermissions(store, channel, channelUpdateParameters.collaborators.unwrap())
+  }
 
   // emit log event
   logger.info('Channel has been updated', { id: channel.id })
@@ -273,6 +278,35 @@ export async function content_ChannelAgentRemarked(ctx: EventContext & StoreCont
 
     // save metaprotocol info
     await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for channel's remark`)
+  }
+}
+
+async function updateChannelAgentsPermissions(
+  store: DatabaseManager,
+  channel: Channel,
+  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>
+) {
+  // safest way to update permission is to delete existing and creating new ones
+
+  // delete existing agent permissions
+  const collaborators = await store.getMany(Collaborator, {
+    where: { channel: { id: channel.id.toString() } },
+  })
+  for (const agentPermissions of collaborators) {
+    await store.remove(agentPermissions)
+  }
+
+  // create new records for privledged members
+  for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
+    const permissionsArray = Array.from(permissions)
+
+    const collaborator = new Collaborator({
+      channel: new Channel({ id: channel.id.toString() }),
+      member: new Membership({ id: memberId.toString() }),
+      permissions: Array.from(permissions).map(mapAgentPermission),
+    })
+
+    await store.save(collaborator)
   }
 }
 

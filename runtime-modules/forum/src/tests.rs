@@ -2958,3 +2958,49 @@ fn storage_limit_checks() {
         }
     });
 }
+
+#[test]
+fn add_non_editable_post_should_not_increase_thread_number_of_editable_posts() {
+    let initial_balance = ExistentialDeposit::get() + ThreadDeposit::get() + PostDeposit::get();
+    let origin = OriginType::Signed(FORUM_LEAD_ORIGIN_ID);
+    with_test_externalities(|| {
+        balances::Pallet::<Runtime>::make_free_balance_be(&FORUM_LEAD_ORIGIN_ID, initial_balance);
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_LEAD_ORIGIN_ID,
+            category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            Ok(()),
+        );
+
+        let counter_pre =
+            TestForumModule::thread_by_id(category_id, thread_id).number_of_editable_posts;
+
+        create_post_mock(
+            origin,
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_LEAD_ORIGIN_ID,
+            category_id,
+            thread_id,
+            good_post_text(),
+            false,
+            Ok(()),
+        );
+
+        assert_eq!(
+            counter_pre,
+            TestForumModule::thread_by_id(category_id, thread_id).number_of_editable_posts,
+            "non editable posts should not increase thread post counter"
+        )
+    })
+}

@@ -2,9 +2,13 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { Curator, CuratorGroup } from 'query-node/dist/model'
+import { Curator, CuratorGroup, CuratorAgentPermissions } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { inconsistentState, logger } from '../common'
+import { mapAgentPermission } from './utils'
+import { BTreeSet } from '@polkadot/types'
+// Joystream types
+import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
 
 async function getCurator(store: DatabaseManager, curatorId: string): Promise<Curator | undefined> {
   const existingCurator = await store.get(Curator, {
@@ -75,7 +79,7 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
 
 export async function content_CuratorAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId] = new Content.CuratorAddedEvent(event).params
+  const [curatorGroupId, curatorId, permissions] = new Content.CuratorAddedEvent(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
@@ -91,11 +95,11 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
   // load curator
   const curator = await ensureCurator(store, curatorId.toString())
 
-  // update curator group
-  curatorGroup.curators.push(curator)
-
   // save curator group
   await store.save<CuratorGroup>(curatorGroup)
+
+  // update curator permissions
+  await updateCuratorAgentPermissions(store, curatorGroup, curator, permissions)
 
   // emit log event
   logger.info('Curator has been added to curator group', { id: curatorGroupId, curatorId })
@@ -116,19 +120,43 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
     return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
   }
 
-  const curatorIndex = curatorGroup.curators.findIndex((item) => item.id.toString() === curatorId.toString())
+  // load curator
+  const curator = await ensureCurator(store, curatorId.toString())
 
-  // ensure curator group exists
-  if (curatorIndex < 0) {
-    return inconsistentState('Non-associated curator removal from curator group requested', curatorId)
-  }
-
-  // update curator group
-  curatorGroup.curators.splice(curatorIndex, 1)
-
-  // save curator group
-  await store.save<CuratorGroup>(curatorGroup)
+  // update curator permissions
+  await updateCuratorAgentPermissions(store, curatorGroup, curator)
 
   // emit log event
   logger.info('Curator has been removed from curator group', { id: curatorGroupId, curatorId })
+}
+
+async function updateCuratorAgentPermissions(
+  store: DatabaseManager,
+  curatorGroup: CuratorGroup,
+  curator: Curator,
+  permissions?: BTreeSet<PalletContentChannelActionPermission>
+) {
+  // safest way to update permission is to delete existing and creating new ones
+
+  // delete existing agent permissions
+  const existingAgentPermissions = await store.getMany(CuratorAgentPermissions, {
+    where: {
+      curatorGroup: { id: curatorGroup.id.toString() },
+      curator: { id: curator.id.toString() },
+    },
+  })
+  for (const agentPermissions of existingAgentPermissions) {
+    await store.remove(agentPermissions)
+  }
+
+  const permissionsArray = Array.from(permissions || [])
+
+  // create new records for privledged members
+  const curatorAgentPermissions = new CuratorAgentPermissions({
+    curatorGroup: new CuratorGroup({ id: curatorGroup.id.toString() }),
+    curator: new Curator({ id: curator.id.toString() }),
+    permissions: permissionsArray.map(mapAgentPermission),
+  })
+
+  await store.save(curatorAgentPermissions)
 }

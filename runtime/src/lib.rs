@@ -63,6 +63,7 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
+use pallet_staking::BondingRestriction;
 use pallet_transaction_payment::CurrencyAdapter;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
@@ -574,6 +575,7 @@ impl pallet_staking::Config for Runtime {
     type OnStakerSlash = (); // NominationPools;
     type WeightInfo = weights::pallet_staking::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
+    type BondingRestriction = RestrictStakingAccountsFromBonding;
 }
 
 parameter_types! {
@@ -1122,6 +1124,19 @@ impl LockComparator<<Runtime as pallet_balances::Config>::Balance> for Runtime {
             .any(|lock_id| !NON_RIVALROUS_LOCKS.contains(lock_id));
 
         other_locks_present && new_lock_is_rivalrous && existing_locks_contain_rivalrous_lock
+    }
+}
+
+pub struct RestrictStakingAccountsFromBonding {}
+
+impl BondingRestriction<AccountId> for RestrictStakingAccountsFromBonding {
+    fn can_bond(stash_account: &AccountId) -> bool {
+        let bonding_lock_id = common::locks::STAKING_LOCK_ID;
+        let existing_lock_ids: Vec<LockIdentifier> = Balances::locks(stash_account)
+            .iter()
+            .map(|lock| lock.id)
+            .collect();
+        !Runtime::are_locks_conflicting(&bonding_lock_id, &existing_lock_ids)
     }
 }
 
