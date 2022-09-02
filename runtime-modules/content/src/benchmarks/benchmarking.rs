@@ -3005,10 +3005,10 @@ benchmarks! {
     // - video has max size
     //   - max video assets
     // - nft limits are set
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
     // - buy_now_price is some to trigger checks
     // - starts_at is some to trigger checks
-    // INPUT COMPLEXITY
-    // - nft owner is channel owner
     // - open auction params Member whitelist : w
     start_open_auction {
         let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
