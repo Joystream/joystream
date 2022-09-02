@@ -2361,7 +2361,7 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft owner is channel owner
+    // - nft owner is channel owner (trivial case)
     // INPUT COMPLEXITY
     sling_nft_back {
         let (
@@ -2383,7 +2383,6 @@ benchmarks! {
         let origin = RawOrigin::Signed(owner_account);
     }: _ (origin, video_id, nft_owner_actor)
         verify {
-            assert!(Pallet::<T>::video_by_id(video_id).nft_status.unwrap().owner == NftOwner::ChannelOwner);
         }
 
 
@@ -2791,11 +2790,12 @@ benchmarks! {
     //   - max collaborators
     // - video has max size:
     //   - max video assets
+    // INPUT COMPLEXITY
+    // - Member whitelist : w
     // - nft owner is channel owner
     // - buy now price is some
     // - starts at price is some
-    // INPUT COMPLEXITY
-    // - Member whitelist : w
+
     start_english_auction {
         let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
 
@@ -2944,6 +2944,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
@@ -2951,6 +2952,7 @@ benchmarks! {
     // - video has max size
     //   - max video assets
     // - nft limits are set
+    // - auction has max number of whitelisted members
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
     //   - royalty is non-zero
