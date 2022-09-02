@@ -255,8 +255,6 @@ fn initialize_channel_transfer_fails_with_invalid_collaborators() {
         InitializeChannelTransferFixture::default()
             .with_collaborators(
                 BTreeMap::from_iter(vec![(invalid_member_id, BTreeSet::new())])
-                    .try_into()
-                    .unwrap(),
             )
             .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()))
     })

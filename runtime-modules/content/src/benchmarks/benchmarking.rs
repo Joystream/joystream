@@ -2304,7 +2304,7 @@ benchmarks! {
 
         set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::VideoNftIssuance]);
 
-        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let origin = RawOrigin::Signed(curator_account_id);
         let params = worst_case_nft_issuance_params_helper::<T>(w,b);
     }: _ (origin, actor, video_id, params)
         verify {
@@ -2336,7 +2336,7 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(curator_account_id.clone());
         let _ = setup_idle_nft::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             false,
@@ -2372,7 +2372,7 @@ benchmarks! {
         )?;
 
         let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             false,
@@ -3022,7 +3022,7 @@ benchmarks! {
             false,
         )?;
 
-        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let origin = RawOrigin::Signed(curator_account_id);
 
         set_all_channel_paused_features::<T>(channel_id);
 
@@ -3069,7 +3069,7 @@ benchmarks! {
         )?;
 
         let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             false,
@@ -3115,7 +3115,7 @@ benchmarks! {
         let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
 
         let (_, participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             false,
@@ -3162,14 +3162,14 @@ benchmarks! {
         ).unwrap();
 
         let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             true,
         ).unwrap();
 
         set_all_channel_paused_features::<T>(channel_id);
-        let origin = RawOrigin::Signed(owner_account.clone());
+        let origin = RawOrigin::Signed(owner_account);
 
         fastforward_by_blocks::<T>(2u32.into());
 
@@ -3217,7 +3217,7 @@ benchmarks! {
         )?;
 
         let ((nft_owner_actor, account_id), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
-            curator_account_id.clone(),
+            curator_account_id,
             actor,
             video_id,
             true,

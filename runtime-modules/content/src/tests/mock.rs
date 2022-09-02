@@ -225,14 +225,9 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        if MEMBER_IDS.contains(member_id)
+        MEMBER_IDS.contains(member_id)
             || COLABORATOR_IDS.contains(member_id)
             || CURATOR_IDS.contains(member_id)
-        {
-            true
-        } else {
-            false
-        }
     }
 
     fn get_leader_member_id() -> Option<Self::MemberId> {
@@ -982,7 +977,7 @@ impl MemberOriginValidator<Origin, u64, u128> for TestMemberships {
 
     fn is_member_controller_account(member_id: &u64, _account_id: &u128) -> bool {
         MEMBER_IDS.contains(member_id)
-            || COLABORATOR_IDS.contains(&member_id)
+            || COLABORATOR_IDS.contains(member_id)
             || CURATOR_IDS.contains(member_id)
     }
 }

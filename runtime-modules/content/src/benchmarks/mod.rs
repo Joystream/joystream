@@ -1698,7 +1698,7 @@ where
             ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
         (nft_owner_actor, owner_account)
     } else {
-        (actor, account_id.clone())
+        (actor, account_id)
     };
 
     set_nft_limits_helper::<T>(channel_id);
