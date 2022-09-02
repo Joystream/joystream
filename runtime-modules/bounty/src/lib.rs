@@ -1343,12 +1343,13 @@ decl_module! {
         /// # <weight>
         ///
         /// ## weight
-        /// `O (N + M + Z)`
-        /// - `N` is number of judgment entries,
-        /// - `M` is the sum of all action_justification lengths (inside OracleJudgment),
-        /// - `Z` is rationale length
+        /// `O (J + K + W + R)`
+        /// - `J` is rationale length,
+        /// - `K` is the sum of all action_justification lengths (inside OracleJudgment),
+        /// - `W` is number of winner judgment entries,
+        /// - `R` is number of rejected judgment entries,
         /// - db:
-        ///    - `O(N)`
+        ///    - `O(W + R)`
         /// # </weight>
         #[weight = Module::<T>::submit_oracle_judgment_weight(
             judgment,

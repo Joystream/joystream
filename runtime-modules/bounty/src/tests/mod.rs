@@ -1071,7 +1071,7 @@ fn terminate_bounty_fails_with_invalid_member_controller_account() {
         increase_account_balance(&account_id, initial_balance);
         set_council_budget(initial_balance);
 
-        // Created by council - try to cancel with bad origin
+        // Created by member - try to cancel with bad origin
         CreateBountyFixture::default()
             .with_origin(RawOrigin::Signed(account_id))
             .with_creator_member_id(1)
