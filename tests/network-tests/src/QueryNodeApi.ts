@@ -410,6 +410,14 @@ import {
   GetDataObjectsByVideoIdQueryVariables,
   GetDataObjectsByVideoId,
   StorageDataObjectFieldsFragment,
+  CuratorAgentPermissionsFieldsFragment,
+  GetCuratorPermissionsByIdAndGroupId,
+  GetCuratorPermissionsByIdAndGroupIdQuery,
+  GetCuratorPermissionsByIdAndGroupIdQueryVariables,
+  CollaboratorsFieldsFragment,
+  GetCollaboratorsByChannelId,
+  GetCollaboratorsByChannelIdQuery,
+  GetCollaboratorsByChannelIdQueryVariables,
   GetChannelDeletedByModeratorEventsByEventIdsQuery,
   GetChannelDeletedByModeratorEventsByEventIdsQueryVariables,
   GetChannelDeletedByModeratorEventsByEventIds,
@@ -1275,6 +1283,24 @@ export class QueryNodeApi {
       GetDataObjectsByVideoId,
       { videoId },
       'storageDataObjects'
+    )
+  }
+
+  public async getCuratorPermissionsByIdAndGroupId(
+    curatorGroupId: string,
+    curatorId: string
+  ): Promise<Maybe<CuratorAgentPermissionsFieldsFragment>> {
+    return this.firstEntityQuery<
+      GetCuratorPermissionsByIdAndGroupIdQuery,
+      GetCuratorPermissionsByIdAndGroupIdQueryVariables
+    >(GetCuratorPermissionsByIdAndGroupId, { curatorGroupId, curatorId }, 'curatorAgentPermissions')
+  }
+
+  public async getCollaboratorsByChannelId(channelId: string): Promise<CollaboratorsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCollaboratorsByChannelIdQuery, GetCollaboratorsByChannelIdQueryVariables>(
+      GetCollaboratorsByChannelId,
+      { channelId },
+      'collaborators'
     )
   }
 

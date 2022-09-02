@@ -5,6 +5,7 @@ import { Api } from '../../Api'
 import * as path from 'path'
 import { getVideoDefaults, getChannelDefaults } from './contentTemplates'
 import { IMember } from './createMembersAndCurators'
+import { ChannelUpdateInputParameters } from '@joystream/cli/src/Types'
 
 export const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'
 
@@ -14,6 +15,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   private videoCount: number
   private videoCategoryId: string
   private author: IMember
+  private channelCollaborators: NonNullable<ChannelUpdateInputParameters['collaborators']>
   private createdItems: {
     channelIds: number[]
     videosData: ICreatedVideoData[]
@@ -26,7 +28,8 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     channelCount: number,
     videoCount: number,
     videoCategoryId: string,
-    author: IMember
+    author: IMember,
+    channelCollaborators: ChannelUpdateInputParameters['collaborators'] = []
   ) {
     super(api, query)
     this.cli = cli
@@ -34,6 +37,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     this.videoCount = videoCount
     this.videoCategoryId = videoCategoryId
     this.author = author
+    this.channelCollaborators = channelCollaborators
 
     this.createdItems = {
       channelIds: [],
@@ -53,7 +57,8 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     await this.cli.importAccount(this.author.keyringPair)
 
     this.debug('Creating channels')
-    this.createdItems.channelIds = await this.createChannels(this.channelCount)
+
+    this.createdItems.channelIds = await this.createChannels(this.channelCount, this.channelCollaborators)
 
     this.debug('Creating videos')
     this.createdItems.videosData = await this.createVideos(
@@ -66,11 +71,15 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   /**
     Creates a new channel.
   */
-  private async createChannels(count: number): Promise<number[]> {
-    const createdIds = await this.createCommonEntities(count, () =>
+  private async createChannels(
+    count: number,
+    channelCollaborators: NonNullable<ChannelUpdateInputParameters['collaborators']>
+  ): Promise<number[]> {
+    const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannel(
         {
           ...getChannelDefaults(cliExamplesFolderPath),
+          collaborators: channelCollaborators,
         },
         ['--context', 'Member', '--useMemberId', this.author.memberId.toString()]
       )
