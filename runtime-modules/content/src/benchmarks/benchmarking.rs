@@ -2323,7 +2323,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     destroy_nft {
@@ -2402,7 +2401,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     offer_nft {
@@ -2448,7 +2446,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_offer {
@@ -2495,7 +2492,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
     //   - royalty is non-zero
@@ -2554,7 +2550,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     sell_nft {
@@ -2598,7 +2593,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_buy_now {
@@ -2643,7 +2637,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
 
     // INPUT COMPLEXITY
@@ -2689,7 +2682,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
@@ -2849,7 +2841,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     cancel_english_auction {
@@ -2892,7 +2883,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - bid triggers buy now
     // - bid already exists and made by a different member
     // - whitelist has max size
@@ -2951,7 +2941,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - auction has max number of whitelisted members
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
@@ -3006,7 +2995,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - nft owner is channel owner
     // INPUT COMPLEXITY
     // - buy_now_price is some to trigger checks
@@ -3068,7 +3056,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - auction has max number of whitelisted members
     // - nft owner is channel owner
     // INPUT COMPLEXITY
@@ -3112,7 +3099,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - auction has max number of whitelisted members
     // - nft owner is channel owner
     // INPUT COMPLEXITY
@@ -3160,7 +3146,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - member whitelist has max size
     // - complete payment has max complexity:
     //   - nft owner is a member (different from channel owner)
@@ -3214,7 +3199,6 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft limits are set
     // - bid triggers buy now
     // - bid already exists
     // - auction whitelist has max size
