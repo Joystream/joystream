@@ -1,8 +1,6 @@
 import { Api } from '../../Api'
-import { assert } from 'chai'
 import { BaseFixture } from '../../Fixture'
 import BN from 'bn.js'
-import RpcError from '@polkadot/rpc-provider/coder/error'
 
 type BondInput = {
   stash: string
