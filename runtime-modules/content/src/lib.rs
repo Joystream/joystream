@@ -2684,12 +2684,16 @@ decl_module! {
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // extr. makes no sense if nft already channel owned
+            if nft.owner == NftOwner::ChannelOwner {
+                return Ok(());
+            }
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
