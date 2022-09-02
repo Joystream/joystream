@@ -62,6 +62,9 @@ type Channel @entity {
   "Channel's reward account, storing the income from the nft sales and channel payouts."
   rewardAccount: String!
 
+  "Value of channel state bloat bond fee paid by channel creator"
+  channelStateBloatBond: BigInt!
+
   "Channel's privilege level"
   privilegeLevel: Int
 }
@@ -138,7 +141,7 @@ type Video @entity {
   "Video media asset"
   media: StorageDataObject
 
-  "Video state bloat bond"
+  "Value of video state bloat bond fee paid by channel owner"
   videoStateBloatBond: BigInt!
 
   ##########################
