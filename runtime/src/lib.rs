@@ -233,6 +233,7 @@ fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool 
 fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
     // TODO: adjust after Carthage
     !matches!(
+        call,
         Call::Content(content::Call::<Runtime>::destroy_nft { .. })
             | Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. })
             | Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. })
