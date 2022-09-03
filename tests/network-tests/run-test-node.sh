@@ -10,7 +10,7 @@ DATA_PATH=./data
 
 # Initial account balance for Alice
 # Alice is the source of funds for all new accounts that are created in the tests.
-INITIAL_BALANCE="9000000000000000000000"
+INITIAL_BALANCE="1000000"
 ALICE="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 CHARLIE="5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
 
@@ -22,7 +22,7 @@ echo "{
     [\"${CHARLIE}\", ${INITIAL_BALANCE}]
   ],
   \"vesting\":[
-    [\"${CHARLIE}\", "0", "25", "100000000000"]
+    [\"${CHARLIE}\", "0", "25", "10000"]
   ]
 }" > ${DATA_PATH}/initial-balances.json
 
