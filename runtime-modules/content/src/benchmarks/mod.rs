@@ -43,6 +43,10 @@ use sp_std::{
     vec::Vec,
 };
 
+// Nft contexts
+pub type NftContexts<T> = (NftData<T>, Vec<(<T as frame_system::Config>::AccountId, <T as MembershipTypes>::MemberId)>);
+pub type NftContext<T> = (NftData<T>, <T as MembershipTypes>::MemberId, <T as frame_system::Config>::AccountId);
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -1609,7 +1613,7 @@ fn setup_nft_in_english_auction<T>(
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     video_id: T::VideoId,
     non_channel_owner: bool,
-) -> Result<(NftData<T>, Vec<(T::AccountId, T::MemberId)>), DispatchError>
+) -> Result<NftContexts<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
@@ -1647,7 +1651,7 @@ fn setup_nft_in_open_auction<T>(
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     video_id: T::VideoId,
     non_channel_owner: bool,
-) -> Result<(NftData<T>, T::MemberId, T::AccountId), DispatchError>
+) -> Result<NftContext<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
