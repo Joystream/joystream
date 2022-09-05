@@ -261,12 +261,13 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## weight
-       * `O (N + M + Z)`
-       * - `N` is number of judgment entries,
-       * - `M` is the sum of all action_justification lengths (inside OracleJudgment),
-       * - `Z` is rationale length
+       * `O (J + K + W + R)`
+       * - `J` is rationale length,
+       * - `K` is the sum of all action_justification lengths (inside OracleJudgment),
+       * - `W` is number of winner judgment entries,
+       * - `R` is number of rejected judgment entries,
        * - db:
-       * - `O(N)`
+       * - `O(W + R)`
        * # </weight>
        **/
       submitOracleJudgment: AugmentedSubmittable<(bountyId: u64 | AnyNumber | Uint8Array, judgment: BTreeMap<u64, PalletBountyOracleWorkEntryJudgment>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, BTreeMap<u64, PalletBountyOracleWorkEntryJudgment>, Bytes]>;
