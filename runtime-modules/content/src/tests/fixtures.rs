@@ -28,10 +28,10 @@ use strum::IntoEnumIterator;
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
 pub type ActorContextResult = (
-        AccountId,
-        ContentActor<CuratorGroupId, CuratorId, MemberId>,
-        Error<Test>,
-    );
+    AccountId,
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    Error<Test>,
+);
 
 fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
     let bag_id = Content::bag_id_for_channel(&channel_id);
@@ -5359,9 +5359,7 @@ pub fn get_default_curator_channel_invalid_contexts() -> Vec<ActorContextResult>
     ]
 }
 
-pub fn run_all_fixtures_with_contexts(
-    contexts: Vec<ActorContextResult>,
-) {
+pub fn run_all_fixtures_with_contexts(contexts: Vec<ActorContextResult>) {
     for (sender, actor, error) in contexts {
         let expected_err = Err(error.into());
         UpdateChannelFixture::default()

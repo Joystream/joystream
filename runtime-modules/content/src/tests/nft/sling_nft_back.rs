@@ -228,11 +228,10 @@ fn sling_nft_back_fails_during_channel_transfer() {
 
 #[test]
 fn sling_nft_back_fails_with_channel_owned_nft() {
-with_default_mock_builder(|| {
+    with_default_mock_builder(|| {
         run_to_block(1);
         ContentTest::default().with_video().setup();
-        IssueNftFixture::default()
-            .call_and_assert(Ok(()));
+        IssueNftFixture::default().call_and_assert(Ok(()));
 
         assert_noop!(
             Content::sling_nft_back(

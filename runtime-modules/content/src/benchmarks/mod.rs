@@ -44,8 +44,18 @@ use sp_std::{
 };
 
 // Nft contexts
-pub type NftContexts<T> = (NftData<T>, Vec<(<T as frame_system::Config>::AccountId, <T as MembershipTypes>::MemberId)>);
-pub type NftContext<T> = (NftData<T>, <T as MembershipTypes>::MemberId, <T as frame_system::Config>::AccountId);
+pub type NftContexts<T> = (
+    NftData<T>,
+    Vec<(
+        <T as frame_system::Config>::AccountId,
+        <T as MembershipTypes>::MemberId,
+    )>,
+);
+pub type NftContext<T> = (
+    NftData<T>,
+    <T as MembershipTypes>::MemberId,
+    <T as frame_system::Config>::AccountId,
+);
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
