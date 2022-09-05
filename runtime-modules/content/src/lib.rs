@@ -2691,9 +2691,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // extr. makes no sense if nft already channel owned
-            if nft.owner == NftOwner::ChannelOwner {
-                return Ok(());
-            }
+            ensure!(nft.owner != NftOwner::ChannelOwner, Error::<T>::NftAlreadyOwnedByChannel);
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;

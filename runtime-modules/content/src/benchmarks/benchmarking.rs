@@ -2375,7 +2375,7 @@ benchmarks! {
             curator_account_id,
             actor,
             video_id,
-            false,
+            true,
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
@@ -2836,7 +2836,7 @@ benchmarks! {
     // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
-    // - channel-owning curator group has max number of permissions per level
+    // channel-owning curator group has max number of permissions per level
     // - member whitelist has max size
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)

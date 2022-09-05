@@ -96,6 +96,9 @@ decl_error! {
         /// Actor cannot Own channel
         ActorCannotOwnChannel,
 
+        /// Attempt to sling back a channel owned nft
+        NftAlreadyOwnedByChannel,
+
         // Auction Errors
         // ---------------------
 
