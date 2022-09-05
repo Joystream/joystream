@@ -4973,6 +4973,38 @@ fn switch_oracle_fails_with_invalid_origin() {
 }
 
 #[test]
+fn switch_oracle_fails_with_invalid_member_controller_of_current_oracle() {
+    //By Member
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let current_oracle_member_id = 2;
+        let new_oracle_member_id = 5;
+
+        set_council_budget(initial_balance);
+
+        let create_bounty_fixture =
+            CreateBountyFixture::default().with_oracle_member_id(current_oracle_member_id);
+
+        create_bounty_fixture.call_and_assert(Ok(()));
+        let bounty_id = 1u64;
+
+        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
+            bounty_id,
+            create_bounty_fixture.get_bounty_creation_parameters(),
+            Vec::new(),
+        ));
+
+        SwitchOracleFixture::default()
+            .with_origin(RawOrigin::Signed(INVALID_ACCOUNT_ID))
+            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
 fn switch_oracle_fails_with_invalid_new_oracle_member_id() {
     //By Member
     build_test_externalities().execute_with(|| {
