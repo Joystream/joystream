@@ -495,8 +495,6 @@ mod tests {
             "size {} of joystream_utility::Call too big",
             size
         );
-        let size = core::mem::size_of::<storage::Call<Runtime>>();
-        assert!(size <= LIMIT, "size {} of storage::Call too big", size);
         let size = core::mem::size_of::<project_token::Call<Runtime>>();
         assert!(
             size <= LIMIT,
@@ -515,6 +513,8 @@ mod tests {
             "size {} of proposals_discussion::Call too big",
             size
         );
+        let size = core::mem::size_of::<storage::Call<Runtime>>();
+        assert!(size <= 128, "size {} of storage::Call too big", size);
         let size = core::mem::size_of::<working_group::Call<Runtime, working_group::Instance1>>();
         assert!(size <= 176, "size {} of working_group::Call too big", size);
         let size = core::mem::size_of::<membership::Call<Runtime>>();
