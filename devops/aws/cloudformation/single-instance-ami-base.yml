@@ -77,7 +77,7 @@ Resources:
             apt-get upgrade -y
             
             # Build toolchains
-            apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python3
+            apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python3 cmake
 
             apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
