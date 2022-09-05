@@ -2989,9 +2989,10 @@ benchmarks! {
 
     // WORST CASE SCENARIO
     // STATE COMPLEXITY
-        // - curator owned channel
+    // - curator owned channel
     // - curator number is max
     // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
     // - channel has max size:
     //   - all feature paused (except necessary ones for extr to succeed)
     //   - max channel assets
