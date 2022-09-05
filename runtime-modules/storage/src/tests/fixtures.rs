@@ -1,8 +1,10 @@
+use crate::BalanceOf;
 use derive_fixture::Fixture;
 use derive_new::new;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::{assert_noop, assert_ok};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
@@ -42,7 +44,7 @@ pub fn run_to_block(n: u64) {
 }
 
 pub fn increase_account_balance(account_id: &u64, balance: u64) {
-    let _ = Balances::deposit_creating(&account_id, balance);
+    let _ = Balances::deposit_creating(account_id, balance);
 }
 
 pub fn set_data_object_per_mega_byte_fee(mb_fee: u64) {
@@ -101,8 +103,8 @@ pub fn create_storage_bucket_and_assign_to_bag(
 
     UpdateStorageBucketForBagsFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-        .with_bag_id(bag_id.clone())
-        .with_add_bucket_ids(buckets.clone())
+        .with_bag_id(bag_id)
+        .with_add_bucket_ids(buckets)
         .call_and_assert(Ok(()));
 
     if let Some(storage_provider_id) = storage_provider_id {
@@ -128,6 +130,10 @@ pub fn set_default_update_storage_buckets_per_bag_limit() {
     let new_limit = 7;
 
     set_update_storage_buckets_per_bag_limit(new_limit);
+}
+
+pub fn init_module_acc_balance() -> BalanceOf<Test> {
+    <Test as crate::Config>::ModuleAccountInitialBalance::get() as u64
 }
 
 pub struct EventFixture;
@@ -193,8 +199,8 @@ impl EventFixture {
     }
 }
 
-const DEFAULT_ACCOUNT_ID: u64 = 1;
-const DEFAULT_WORKER_ID: u64 = 1;
+pub const DEFAULT_ACCOUNT_ID: u64 = 1;
+pub const DEFAULT_WORKER_ID: u64 = 1;
 pub const DEFAULT_DATA_OBJECTS_NUMBER: u64 = DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT / 2;
 pub const DEFAULT_DATA_OBJECTS_SIZE: u64 =
     DEFAULT_STORAGE_BUCKET_SIZE_LIMIT / DEFAULT_DATA_OBJECTS_NUMBER - 1;
@@ -336,7 +342,7 @@ impl UploadFixture {
         Self {
             params: UploadParameters::<Test> {
                 expected_data_object_state_bloat_bond,
-                ..self.params.clone()
+                ..self.params
             },
             ..self
         }
@@ -381,9 +387,8 @@ impl UploadFixture {
             .collect::<Vec<_>>();
         let end_id = Storage::next_data_object_id();
 
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
             // balance check
             assert_eq!(
                 balance_pre.saturating_sub(balance_post),
@@ -432,6 +437,7 @@ impl UploadFixture {
             assert!((start_id..end_id)
                 .all(|id| <crate::DataObjectsById<Test>>::contains_key(&self.params.bag_id, id)));
         } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
             assert_eq!(start_id, end_id);
             assert_eq!(balance_pre, balance_post);
 
@@ -466,7 +472,7 @@ pub fn create_data_object_candidates_with_size(
     range
         .into_iter()
         .map(|idx| DataObjectCreationParameters {
-            size: size,
+            size,
             ipfs_content_id: create_cid(idx.into()),
         })
         .collect()
@@ -690,7 +696,11 @@ impl DeleteDataObjectsFixture {
             .collect::<Vec<_>>();
 
         let state_bloat_bond = self.data_object_ids.iter().fold(0u64, |acc, id| {
-            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).state_bloat_bond)
+            acc.saturating_add(
+                Storage::data_object_by_id(&self.bag_id, id)
+                    .state_bloat_bond
+                    .amount,
+            )
         });
 
         let total_size_removed = self.data_object_ids.iter().fold(0u64, |acc, id| {
@@ -707,7 +717,7 @@ impl DeleteDataObjectsFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.state_bloat_bond_account_id.clone());
+        let balance_post = Balances::usable_balance(self.state_bloat_bond_account_id);
         let bag_post = <crate::Bags<Test>>::get(&self.bag_id);
         let buckets_post = bag_post
             .stored_by
@@ -853,18 +863,18 @@ impl DeleteDynamicBagFixture {
 
         let state_bloat_bond = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
             .fold(0, |acc: u64, (_, obj)| {
-                acc.saturating_add(obj.state_bloat_bond)
+                acc.saturating_add(obj.state_bloat_bond.amount)
             });
 
         let total_size_removed = bag.objects_total_size;
         let total_number_removed = bag.objects_number;
 
         let actual_result =
-            Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
+            Storage::delete_dynamic_bag(&self.deletion_account_id, self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.deletion_account_id.clone());
+        let balance_post = Balances::usable_balance(self.deletion_account_id);
         let s_buckets_post = bag
             .stored_by
             .iter()
@@ -1052,8 +1062,8 @@ impl SetStorageBucketVoucherLimitsFixture {
         let actual_result = Storage::set_storage_bucket_voucher_limits(
             self.origin.clone().into(),
             self.storage_bucket_id,
-            self.new_objects_size_limit.clone(),
-            self.new_objects_number_limit.clone(),
+            self.new_objects_size_limit,
+            self.new_objects_number_limit,
         );
 
         assert_eq!(actual_result, expected_result);
@@ -1088,8 +1098,8 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
 
         let actual_result = Storage::update_storage_buckets_voucher_max_limits(
             self.origin.clone().into(),
-            self.new_objects_size_limit.clone(),
-            self.new_objects_number_limit.clone(),
+            self.new_objects_size_limit,
+            self.new_objects_number_limit,
         );
 
         assert_eq!(actual_result, expected_result);
@@ -1124,6 +1134,9 @@ impl CreateDynamicBagFixture {
             params: DynBagCreationParameters::<Test> {
                 bag_id: DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID),
                 state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(
+                ),
+                expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
                 ..Default::default()
             },
         }
@@ -1205,14 +1218,15 @@ impl CreateDynamicBagFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::create_dynamic_bag(self.params.clone());
 
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
             let bag_id: BagId<Test> = self.params.bag_id.clone().into();
             assert!(<crate::Bags<Test>>::contains_key(&bag_id));
 
             let bag = <crate::Bags<Test>>::get(&bag_id);
-            assert!(bag.stored_by.len() > 0);
+            assert!(!bag.stored_by.is_empty());
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
         }
     }
 }

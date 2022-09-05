@@ -3,17 +3,19 @@
 use crate as forum;
 use crate::*;
 
-pub use frame_support::assert_err;
+pub use frame_support::{assert_err, assert_noop};
 use sp_core::H256;
 
 use crate::Config;
+use common::locks::{BoundStakingAccountLockId, ForumGroupLockId, InvitedMemberLockId};
 use frame_support::traits::{
-    ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize,
+    ConstU16, ConstU32, ConstU64, Currency, LockIdentifier, OnFinalize, OnInitialize,
+    WithdrawReasons,
 };
 use sp_std::cell::RefCell;
-use staking_handler::LockComparator;
+use staking_handler::{LockComparator, StakingHandler};
 
-use frame_support::parameter_types;
+use frame_support::{parameter_types, storage_root, StateVersion};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Hash, IdentityLookup},
@@ -100,9 +102,6 @@ impl common::membership::MembershipTypes for Runtime {
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
-    pub const LockId: [u8; 8] = [9; 8];
-    pub const InviteMemberLockId: [u8; 8] = [9; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [10; 8];
     pub const CandidateStake: u64 = 100;
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
@@ -115,11 +114,11 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Runtime>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -130,168 +129,6 @@ impl LockComparator<<Runtime as balances::Config>::Balance> for Runtime {
         _existing_locks: &[LockIdentifier],
     ) -> bool {
         false
-    }
-}
-
-// Weights info stub
-pub struct Weights;
-impl working_group::WeightInfo for Weights {
-    fn on_initialize_leaving(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn apply_on_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_lead() -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_role_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn cancel_opening() -> u64 {
-        unimplemented!()
-    }
-
-    fn withdraw_application() -> u64 {
-        unimplemented!()
-    }
-
-    fn slash_stake(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_lead(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn increase_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn decrease_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn spend_from_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_amount() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_status_text(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn add_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn fund_working_group_budget() -> Weight {
-        0
-    }
-    fn lead_remark() -> u64 {
-        unimplemented!()
-    }
-    fn worker_remark() -> u64 {
-        unimplemented!()
-    }
-}
-
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
     }
 }
 
@@ -323,11 +160,11 @@ impl membership::Config for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = Wg;
-    type WeightInfo = Weights;
-    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
+    type WeightInfo = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
 }
 
@@ -338,7 +175,6 @@ parameter_types! {
     pub const MaxSubcategories: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 3;
     pub const MaxCategories: u64 = 40;
-    pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
     pub const ForumModuleId: PalletId = PalletId(*b"m0:forum"); // module : forum
@@ -350,7 +186,6 @@ impl StorageLimits for MapLimits {
     type MaxSubcategories = MaxSubcategories;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
-    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
 impl Config for Runtime {
@@ -404,7 +239,9 @@ impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
         let mut benchmarks_accounts: Vec<u128> = (1..max_worker_number).collect::<Vec<_>>();
         allowed_accounts.append(&mut benchmarks_accounts);
 
-        allowed_accounts.contains(account_id) && account_id == member_id
+        (allowed_accounts.contains(account_id) && account_id == member_id)
+            || (*account_id == NOT_FORUM_LEAD_ALT_ORIGIN_ID
+                && *member_id == NOT_FORUM_LEAD_ORIGIN_ID)
     }
 }
 
@@ -432,110 +269,37 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     }
 
     fn is_leader_account_id(account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
-        *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
+        *account_id == FORUM_LEAD_ORIGIN_ID
     }
 
     fn is_worker_account_id(
         account_id: &<Runtime as frame_system::Config>::AccountId,
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
+        Self::worker_exists(worker_id) && *account_id == *worker_id
     }
 
     fn worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        unimplemented!();
+        [
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_MODERATOR_ORIGIN_ID,
+            FORUM_MODERATOR_2_ORIGIN_ID,
+        ]
+        .iter()
+        .chain(EXTRA_MODERATORS.iter())
+        .any(|id| *id == *worker_id)
     }
 
     fn ensure_worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
-        unimplemented!();
-    }
-}
-
-impl WeightInfo for () {
-    fn create_category(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_membership_of_moderator_new() -> Weight {
-        0
-    }
-    fn update_category_membership_of_moderator_old() -> Weight {
-        0
-    }
-    fn update_category_archival_status_lead(_: u32) -> Weight {
-        0
-    }
-    fn update_category_archival_status_moderator(_: u32) -> Weight {
-        0
-    }
-    fn update_category_title_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_title_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_description_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_description_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn delete_category_lead(_: u32) -> Weight {
-        0
-    }
-    fn delete_category_moderator(_: u32) -> Weight {
-        0
-    }
-    fn create_thread(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn edit_thread_metadata(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn delete_thread(_: u32) -> Weight {
-        0
-    }
-    fn move_thread_to_category_lead(_: u32) -> Weight {
-        0
-    }
-    fn move_thread_to_category_moderator(_: u32) -> Weight {
-        0
-    }
-    fn vote_on_poll(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_thread_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_thread_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn add_post(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn react_post(_: u32) -> Weight {
-        0
-    }
-    fn edit_post_text(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_post_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_post_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn set_stickied_threads_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn set_stickied_threads_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn delete_posts(_: u32, _: u32, _: u32) -> Weight {
-        0
+        ensure!(
+            Self::worker_exists(worker_id),
+            DispatchError::Other("Worker doesnt exist")
+        );
+        Ok(())
     }
 }
 
@@ -557,6 +321,8 @@ pub const FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(FORUM_LEAD_ORIGIN_I
 pub const NOT_FORUM_LEAD_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 111;
 
 pub const NOT_FORUM_LEAD_ORIGIN: OriginType = OriginType::Signed(NOT_FORUM_LEAD_ORIGIN_ID);
+
+pub const NOT_FORUM_LEAD_ALT_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 211;
 
 pub const NOT_FORUM_LEAD_2_ORIGIN_ID: <Runtime as frame_system::Config>::AccountId = 112;
 
@@ -634,42 +400,6 @@ pub fn good_moderation_rationale() -> Vec<u8> {
     b"Moderation rationale".to_vec()
 }
 
-/// Get a good poll description
-pub fn good_poll_description() -> Vec<u8> {
-    b"poll description".to_vec()
-}
-
-/// Get a good poll alternative text
-pub fn good_poll_alternative_text() -> Vec<u8> {
-    b"poll alternative".to_vec()
-}
-
-/// Generate a valid poll input
-pub fn generate_poll_input(
-    expiration_diff: u64,
-) -> PollInput<<Runtime as pallet_timestamp::Config>::Moment> {
-    PollInput {
-        description: good_poll_description(),
-        end_time: Timestamp::now() + expiration_diff,
-        poll_alternatives: {
-            let mut alternatives = vec![];
-            for _ in 0..5 {
-                alternatives.push(good_poll_alternative_text());
-            }
-            alternatives
-        },
-    }
-}
-
-/// Generate poll input for different timestamp cases
-pub fn generate_poll_input_timestamp_cases(
-    index: usize,
-    expiration_diff: u64,
-) -> PollInput<<Runtime as pallet_timestamp::Config>::Moment> {
-    let test_cases = vec![generate_poll_input(expiration_diff), generate_poll_input(1)];
-    test_cases[index].clone()
-}
-
 /// Create category mock
 pub fn create_category_mock(
     origin: OriginType,
@@ -695,8 +425,8 @@ pub fn create_category_mock(
             Event::TestForumModule(RawEvent::CategoryCreated(
                 category_id,
                 parent,
-                title.clone(),
-                description.clone()
+                title,
+                description
             ))
         );
     }
@@ -711,23 +441,20 @@ pub fn create_thread_mock(
     category_id: <Runtime as Config>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll_input_data: Option<PollInput<<Runtime as pallet_timestamp::Config>::Moment>>,
     result: DispatchResult,
 ) -> <Runtime as Config>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
     let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
+    let storage_root_pre = storage_root(StateVersion::V1);
 
-    assert_eq!(
-        TestForumModule::create_thread(
-            mock_origin(origin.clone()),
-            forum_user_id,
-            category_id,
-            title.clone(),
-            text.clone(),
-            poll_input_data.clone(),
-        ),
-        result
+    let actual_result = TestForumModule::create_thread(
+        mock_origin(origin),
+        forum_user_id,
+        category_id,
+        title.clone(),
+        text.clone(),
     );
+    assert_eq!(actual_result, result);
     if result.is_ok() {
         assert_eq!(TestForumModule::next_thread_id(), thread_id + 1);
         assert_eq!(
@@ -737,9 +464,8 @@ pub fn create_thread_mock(
                 thread_id,
                 TestForumModule::next_thread_id() - 1,
                 forum_user_id,
-                title.clone(),
-                text.clone(),
-                poll_input_data.clone()
+                title,
+                text,
             ))
         );
 
@@ -750,10 +476,7 @@ pub fn create_thread_mock(
                 - <Runtime as Config>::PostDeposit::get()
         );
     } else {
-        assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance
-        );
+        assert_eq!(storage_root(StateVersion::V1), storage_root_pre);
     }
     thread_id
 }
@@ -793,31 +516,36 @@ pub fn edit_thread_metadata_mock(
 
 /// Create delete thread mock
 pub fn delete_thread_mock(
-    origin: OriginType,
-    account_id: <Runtime as frame_system::Config>::AccountId,
+    sender: &<Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
     thread_id: <Runtime as Config>::ThreadId,
     result: DispatchResult,
 ) {
-    let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
+    let origin = mock::OriginType::Signed(sender.clone());
+    let storage_root_pre = storage_root(StateVersion::V1);
+    let thread = ThreadById::<Runtime>::get(category_id, thread_id);
+    let bloat_bond_reciever = thread.cleanup_pay_off.get_recipient(sender);
+    let bloat_bond_reciever_initial_balance =
+        balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever);
     let hide = false;
 
     let num_direct_threads = match <CategoryById<Runtime>>::contains_key(category_id) {
         true => <CategoryById<Runtime>>::get(category_id).num_direct_threads,
         false => 0,
     };
-    let thread_payment = <ThreadById<Runtime>>::get(category_id, thread_id).cleanup_pay_off;
-    assert_eq!(
-        TestForumModule::delete_thread(
-            mock_origin(origin.clone()),
-            forum_user_id,
-            category_id,
-            thread_id,
-            hide,
-        ),
-        result
+    let thread_payment = <ThreadById<Runtime>>::get(category_id, thread_id)
+        .cleanup_pay_off
+        .amount;
+
+    let actual_result = TestForumModule::delete_thread(
+        mock_origin(origin),
+        forum_user_id,
+        category_id,
+        thread_id,
+        hide,
     );
+    assert_eq!(actual_result, result);
     if result.is_ok() {
         assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
@@ -835,21 +563,21 @@ pub fn delete_thread_mock(
         );
 
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance + thread_payment
+            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever),
+            bloat_bond_reciever_initial_balance + thread_payment
+        );
+        assert_eq!(
+            balances::Pallet::<Runtime>::total_balance(&TestForumModule::thread_account(thread_id)),
+            0
         );
     } else {
-        assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance
-        );
+        assert_eq!(storage_root(StateVersion::V1), storage_root_pre);
     }
 }
 
 /// Create delete post mock
 pub fn delete_post_mock(
-    origin: OriginType,
-    account_id: <Runtime as frame_system::Config>::AccountId,
+    sender: &<Runtime as frame_system::Config>::AccountId,
     forum_user_id: ForumUserId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
     thread_id: <Runtime as Config>::ThreadId,
@@ -857,8 +585,14 @@ pub fn delete_post_mock(
     result: DispatchResult,
     hide: bool,
 ) {
-    let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
-    let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
+    let number_of_editable_posts =
+        <ThreadById<Runtime>>::get(category_id, thread_id).number_of_editable_posts;
+    let origin = mock::OriginType::Signed(sender.clone());
+    let storage_root_pre = storage_root(StateVersion::V1);
+    let post = PostById::<Runtime>::get(thread_id, post_id);
+    let bloat_bond_reciever = post.cleanup_pay_off.get_recipient(sender);
+    let bloat_bond_reciever_initial_balance =
+        balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever);
     let mut deleted_posts = BTreeMap::new();
     let extended_post_id = ExtendedPostIdObject {
         category_id,
@@ -870,7 +604,7 @@ pub fn delete_post_mock(
 
     assert_eq!(
         TestForumModule::delete_posts(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             deleted_posts.clone(),
             vec![0u8]
@@ -882,8 +616,8 @@ pub fn delete_post_mock(
         assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         if <ThreadById<Runtime>>::contains_key(category_id, thread_id) {
             assert_eq!(
-                <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts,
-                number_of_posts - 1,
+                <ThreadById<Runtime>>::get(category_id, thread_id).number_of_editable_posts,
+                number_of_editable_posts - 1,
             );
         }
         assert_eq!(
@@ -896,14 +630,11 @@ pub fn delete_post_mock(
         );
 
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance + <Runtime as Config>::PostDeposit::get()
+            balances::Pallet::<Runtime>::free_balance(bloat_bond_reciever),
+            bloat_bond_reciever_initial_balance + <Runtime as Config>::PostDeposit::get()
         );
     } else {
-        assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&account_id),
-            initial_balance
-        );
+        assert_eq!(storage_root(StateVersion::V1), storage_root_pre);
     }
 }
 
@@ -918,7 +649,7 @@ pub fn move_thread_mock(
 ) {
     assert_eq!(
         TestForumModule::move_thread_to_category(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             PrivilegedActor::Moderator(moderator_id),
             category_id,
             thread_id,
@@ -958,7 +689,7 @@ pub fn create_post_mock(
     let initial_balance = balances::Pallet::<Runtime>::free_balance(account_id);
     assert_eq!(
         TestForumModule::add_post(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -1045,11 +776,6 @@ pub fn edit_post_text_mock(
     post_id
 }
 
-/// Change current timestamp
-pub fn change_current_time(diff: u64) -> () {
-    Timestamp::set_timestamp(Timestamp::now() + diff);
-}
-
 /// Create update category membership of moderator mock
 pub fn update_category_membership_of_moderator_mock(
     origin: OriginType,
@@ -1083,52 +809,6 @@ pub fn update_category_membership_of_moderator_mock(
         );
     };
     category_id
-}
-
-/// Create vote on poll mock
-pub fn vote_on_poll_mock(
-    origin: OriginType,
-    forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Config>::CategoryId,
-    thread_id: <Runtime as Config>::ThreadId,
-    index: u32,
-    result: DispatchResult,
-) -> <Runtime as Config>::ThreadId {
-    let thread = TestForumModule::thread_by_id(category_id, thread_id);
-    assert_eq!(
-        TestForumModule::vote_on_poll(
-            mock_origin(origin),
-            forum_user_id,
-            category_id,
-            thread_id,
-            index
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            TestForumModule::thread_by_id(category_id, thread_id)
-                .poll
-                .unwrap()
-                .poll_alternatives[index as usize]
-                .vote_count,
-            thread.poll.unwrap().poll_alternatives[index as usize].vote_count + 1
-        );
-        assert_eq!(
-            System::events().last().unwrap().event,
-            Event::TestForumModule(RawEvent::VoteOnPoll(
-                thread_id,
-                index,
-                forum_user_id,
-                category_id
-            ))
-        );
-        assert!(TestForumModule::poll_votes_by_thread_id_by_forum_user_id(
-            &thread_id,
-            &forum_user_id
-        ));
-    };
-    thread_id
 }
 
 /// Create update category archival status mock
@@ -1249,8 +929,7 @@ pub fn moderate_thread_mock(
     rationale: Vec<u8>,
     result: DispatchResult,
 ) -> <Runtime as Config>::ThreadId {
-    let thread_account_id =
-        <Runtime as Config>::ModuleId::get().into_sub_account_truncating(thread_id);
+    let thread_account_id = TestForumModule::thread_account(thread_id);
     assert_eq!(
         TestForumModule::moderate_thread(
             mock_origin(origin),
@@ -1273,11 +952,9 @@ pub fn moderate_thread_mock(
             ))
         );
 
-        // If we moderate a thread with no extra post, only the initial post deposit
-        // should remain
         assert_eq!(
-            balances::Pallet::<Runtime>::free_balance(&thread_account_id),
-            <Runtime as Config>::PostDeposit::get()
+            balances::Pallet::<Runtime>::total_balance(&thread_account_id),
+            0
         );
     }
     thread_id
@@ -1352,13 +1029,13 @@ pub fn set_stickied_threads_mock(
     if result.is_ok() {
         assert_eq!(
             TestForumModule::category_by_id(category_id).sticky_thread_ids,
-            stickied_ids.clone()
+            stickied_ids
         );
         assert_eq!(
             System::events().last().unwrap().event,
             Event::TestForumModule(RawEvent::CategoryStickyThreadUpdate(
                 category_id,
-                stickied_ids.clone(),
+                stickied_ids,
                 PrivilegedActor::Moderator(moderator_id)
             ))
         );
@@ -1378,7 +1055,7 @@ pub fn react_post_mock(
 ) {
     assert_eq!(
         TestForumModule::react_post(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -1401,50 +1078,50 @@ pub fn react_post_mock(
     };
 }
 
+pub fn ed() -> BalanceOf<Runtime> {
+    ExistentialDeposit::get().into()
+}
+
+pub fn set_invitation_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+}
+
 /// Create default genesis config
 pub fn default_genesis_config() -> forum::GenesisConfig<Runtime> {
-    create_genesis_config(true)
-}
-
-/// Create config without data migration
-pub fn migration_not_done_config() -> forum::GenesisConfig<Runtime> {
-    create_genesis_config(false)
-}
-
-/// Create genesis config
-pub fn create_genesis_config(data_migration_done: bool) -> forum::GenesisConfig<Runtime> {
     forum::GenesisConfig::<Runtime> {
-        category_by_id: vec![],
         next_category_id: 1,
         category_counter: 0,
-        thread_by_id: vec![],
-        post_by_id: vec![],
         next_thread_id: 1,
         next_post_id: 1,
-
-        category_by_moderator: vec![],
-
-        // data migration part
-        data_migration_done: data_migration_done,
     }
 }
 
-// NB!:
-// Wanted to have payload: a: &GenesisConfig<Test>
-// but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: forum::GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+pub fn build_test_externalities() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 
-    config.assimilate_storage(&mut t).unwrap();
+    default_genesis_config().assimilate_storage(&mut t).unwrap();
 
     t.into()
 }
 
 /// Generate enviroment with test externalities
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
-    let default_genesis_config = default_genesis_config();
     /*
         Events are not emitted on block 0.
         So any dispatchable calls made during genesis block formation will have no events emitted.
@@ -1455,7 +1132,7 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
         f()
     };
 
-    build_test_externalities(default_genesis_config).execute_with(func)
+    build_test_externalities().execute_with(func)
 }
 
 // Recommendation from Parity on testing on_finalize

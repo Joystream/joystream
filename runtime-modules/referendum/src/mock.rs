@@ -4,7 +4,7 @@
 use crate::{
     BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
     ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
-    Votes, WeightInfo,
+    Votes,
 };
 
 pub use crate::DefaultInstance;
@@ -13,7 +13,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
     ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
 };
-use frame_support::weights::Weight;
+
 use frame_support::{parameter_types, traits::EnsureOneOf, StorageMap, StorageValue};
 use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
@@ -91,7 +91,7 @@ impl Config for Runtime {
         account_id: &<Self as frame_system::Config>::AccountId,
         stake: &BalanceOf<Self>,
     ) -> <Self as Config<DefaultInstance>>::VotePower {
-        let stake: u64 = u64::from(*stake);
+        let stake: u64 = *stake;
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
         }
@@ -138,95 +138,6 @@ impl Config for Runtime {
     }
 }
 
-impl WeightInfo for () {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
-    }
-}
-
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
@@ -240,7 +151,7 @@ impl membership::Config for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -496,7 +407,7 @@ where
         for _ in 0..increase {
             <frame_system::Pallet<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
-            block_number = block_number + One::one();
+            block_number += One::one();
             frame_system::Pallet::<T>::set_block_number(block_number);
             <frame_system::Pallet<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
             <Module<T, I> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
@@ -516,7 +427,7 @@ where
         vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
+        Self::calculate_commitment_for_cycle(account_id, cycle_id, vote_option_index, None)
     }
 
     pub fn calculate_commitment_custom_salt(
@@ -527,7 +438,7 @@ where
     ) -> (T::Hash, Vec<u8>) {
         Self::calculate_commitment_for_cycle(
             account_id,
-            &cycle_id,
+            cycle_id,
             vote_option_index,
             Some(custom_salt),
         )
@@ -659,6 +570,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         let winning_target_count = extra_winning_target_count + 1;
         let block_number = frame_system::Pallet::<Runtime>::block_number();
+        let voting_ends_at = block_number + <Runtime as Config>::VoteStageDuration::get();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -666,6 +578,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 started: block_number,
                 winning_target_count,
                 current_cycle_id: cycle_id,
+                ends_at: voting_ends_at
             }),
         );
 
@@ -676,12 +589,16 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::from(RawEvent::ReferendumStarted(winning_target_count))
+            Event::from(RawEvent::ReferendumStarted(
+                winning_target_count,
+                voting_ends_at
+            ))
         );
     }
 
     pub fn check_voting_finished(winning_target_count: u64, cycle_id: u64) {
         let block_number = frame_system::Pallet::<Runtime>::block_number();
+        let revealing_ends_at = block_number + <Runtime as Config>::RevealStageDuration::get();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -690,6 +607,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 winning_target_count,
                 intermediate_winners: vec![],
                 current_cycle_id: cycle_id,
+                ends_at: revealing_ends_at
             }),
         );
 
@@ -699,7 +617,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::RevealingStageStarted())
+            Event::Referendum(RawEvent::RevealingStageStarted(revealing_ends_at))
         );
     }
 
@@ -776,7 +694,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             Votes::<Runtime, DefaultInstance>::get(account_id),
             CastVote {
                 commitment,
-                cycle_id: cycle_id.clone(),
+                cycle_id,
                 stake,
                 vote_for: None,
             },
@@ -848,5 +766,23 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .event,
             Event::Referendum(RawEvent::StakeReleased(account_id))
         );
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl
+    crate::OptionCreator<
+        <Runtime as frame_system::Config>::AccountId,
+        <Runtime as common::membership::MembershipTypes>::MemberId,
+    > for Runtime
+{
+    fn create_option(
+        _: <Runtime as frame_system::Config>::AccountId,
+        option_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+    ) {
+        // clear saved option power from previous cycle
+        INTERMEDIATE_RESULTS.with(|value| {
+            value.borrow_mut().insert(option_id, 0);
+        });
     }
 }

@@ -1,7 +1,6 @@
 import { createType } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
-import BN from 'bn.js'
 import { ApplicationId, OpeningId } from '@joystream/types/primitives'
 
 const workingGroupModules = [
@@ -18,10 +17,6 @@ const workingGroupModules = [
 
 type WorkingGroupModuleName = typeof workingGroupModules[number]
 
-const MIN_APPLICATION_STAKE = new BN(2000)
-const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
-const OPENING_STAKE = new BN(2000)
-
 async function main() {
   // Init api
   const WS_URI = process.env.WS_URI || 'ws://127.0.0.1:9944'
@@ -36,7 +31,9 @@ async function main() {
     ? getKeyFromSuri(process.env.WORKER_MEMBER_URI)
     : getAlicePair()
   const WorkerRoleKeyPair = process.env.WORKER_ROLE_URI ? getKeyFromSuri(process.env.WORKER_ROLE_URI) : getAlicePair()
-  const StakeKeyPair = WorkerRoleKeyPair.derive(`//stake${Date.now()}`)
+  const StakeKeyPair = process.env.STAKING_URI
+    ? getKeyFromSuri(process.env.STAKING_URI)
+    : WorkerRoleKeyPair.derive(`//stake${Date.now()}`)
   const InitialWorkerBalanceTopUp = parseInt(process.env.INITIAL_WORKER_BALANCE_TOP_UP || '0') // In order to dev-initialize the storage worker
 
   // Check if group exists
@@ -71,20 +68,25 @@ async function main() {
 
   // Check if worker already exists
   const workerEntries = await api.query[groupModule].workerById.entries()
-  const matchingWorkerEntry = workerEntries.find(([, worker]) => worker.unwrap().roleAccountId.eq(WorkerRoleKeyPair.address))
+  const matchingWorkerEntry = workerEntries.find(([, worker]) =>
+    worker.unwrap().roleAccountId.eq(WorkerRoleKeyPair.address)
+  )
   if (matchingWorkerEntry) {
     throw new Error(`Worker with role key ${WorkerRoleKeyPair.address} already exists`)
   }
 
   // Send opening stake to lead's stake account
-  console.log(`Topping up lead's staking account with OPENING_STAKE...`)
+  const openingStake = api.consts[groupModule].leaderOpeningStake
+  console.log(`Topping up lead's staking account with opening stake...`)
   await txHelper.sendAndCheck(
     LeadRoleKeyPair,
-    [api.tx.balances.transferKeepAlive(leadWorker.stakingAccountId, OPENING_STAKE)],
+    [api.tx.balances.transferKeepAlive(leadWorker.stakingAccountId, openingStake)],
     'Lead stake top-up failed'
   )
 
   // Create a new opening
+  const minApplicationStake = api.consts[groupModule].minimumApplicationStake
+  const minUnstakingPeriod = api.consts[groupModule].minUnstakingPeriodLimit
   console.log(`Creating ${groupModule} worker opening...`)
   const [openingRes] = await txHelper.sendAndCheck(
     LeadRoleKeyPair,
@@ -93,20 +95,24 @@ async function main() {
         '',
         'Regular',
         {
-          stakeAmount: MIN_APPLICATION_STAKE,
-          leavingUnstakingPeriod: 99999,
+          stakeAmount: minApplicationStake,
+          leavingUnstakingPeriod: minUnstakingPeriod,
         },
         null
       ),
     ],
     `Failed to create ${groupModule} worker opening!`
   )
-  const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as OpeningId
+  const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')?.event.data[0] as OpeningId | undefined
+
+  if (!openingId) {
+    throw new Error('OpeningAdded event not found!')
+  }
 
   // Setting up stake account
   const addCandidateTx = api.tx.members.addStakingAccountCandidate(memberId)
   const addCandidateFee = (await addCandidateTx.paymentInfo(StakeKeyPair.address)).partialFee
-  const stakingAccountBalance = MIN_APPLICATION_STAKE.add(STAKING_ACCOUNT_CANDIDATE_STAKE).add(addCandidateFee)
+  const stakingAccountBalance = minApplicationStake.add(addCandidateFee)
   console.log('Setting up staking account...')
   await txHelper.sendAndCheck(
     WorkerMemberKeyPair,
@@ -132,7 +138,7 @@ async function main() {
         roleAccountId: WorkerRoleKeyPair.address,
         openingId,
         stakeParameters: {
-          stake: MIN_APPLICATION_STAKE,
+          stake: minApplicationStake,
           stakingAccountId: StakeKeyPair.address,
         },
       }),
@@ -140,7 +146,13 @@ async function main() {
     'Failed to apply on worker opening!'
   )
 
-  const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')!.event.data[1] as ApplicationId
+  const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')?.event.data[1] as
+    | ApplicationId
+    | undefined
+
+  if (!applicationId) {
+    throw new Error('AppliedOnOpening event not found!')
+  }
 
   // Filling the opening
   console.log('Filling the opening...')

@@ -31,6 +31,7 @@ pub struct TokenDataBuilder {
         <Test as crate::Config>::Balance,
         <Test as frame_system::Config>::BlockNumber,
     >,
+    pub(crate) revenue_split_rate: Permill,
 }
 
 impl TokenDataBuilder {
@@ -46,6 +47,14 @@ impl TokenDataBuilder {
             accounts_number: 0u64,
             revenue_split: self.revenue_split,
             next_revenue_split_id: 0u32,
+            revenue_split_rate: self.revenue_split_rate,
+        }
+    }
+
+    pub fn with_split_rate(self, revenue_split_rate: Permill) -> Self {
+        Self {
+            revenue_split_rate,
+            ..self
         }
     }
 
@@ -95,6 +104,7 @@ impl TokenDataBuilder {
             // hash of "default"
             symbol: <Test as frame_system::Config>::Hash::default(),
             revenue_split: RevenueSplitState::Inactive,
+            revenue_split_rate: Permill::zero(),
         }
     }
 }
@@ -197,13 +207,13 @@ pub fn default_vesting_schedule() -> VestingScheduleOf<Test> {
 impl<
         BlockNumber: From<u32> + Clone,
         Balance: Zero + From<u32> + Saturating + Clone,
-        ReserveBalance: Zero + Clone,
+        RepayableBloatBond: Default + Clone,
     >
     AccountData<
         VestingSchedule<BlockNumber, Balance>,
         Balance,
         StakingStatus<Balance>,
-        ReserveBalance,
+        RepayableBloatBond,
     >
 {
     pub fn new_with_amount(amount: Balance) -> Self {
@@ -217,7 +227,7 @@ impl<
         self,
         vesting_schedule: VestingSchedule<BlockNumber, Balance>,
     ) -> Self {
-        let max_vesting_schedules = <Test as Config>::MaxVestingBalancesPerAccountPerToken::get();
+        let max_vesting_schedules = <Test as Config>::MaxVestingSchedulesPerAccountPerToken::get();
         let mut acc_data = self.clone();
         for _ in 0..max_vesting_schedules - 1 {
             acc_data = acc_data.with_vesting_schedule(vesting_schedule.clone())

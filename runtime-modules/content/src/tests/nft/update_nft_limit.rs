@@ -3,6 +3,7 @@ use crate::tests::curators::add_curator_to_new_group_with_permissions;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
@@ -145,16 +146,7 @@ fn update_channel_nft_limit_test_helper(
 #[test]
 fn default_channel_nft_limits_set_successfully() {
     with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
-        create_initial_storage_buckets_helper();
-
-        CreateChannelFixture::default()
-            .with_default_storage_buckets()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
-            .call_and_assert(Ok(()));
+        ContentTest::with_member_channel().setup();
 
         let channel_id = 1;
         let channel = Content::channel_by_id(channel_id);
@@ -162,6 +154,33 @@ fn default_channel_nft_limits_set_successfully() {
         assert_eq!(
             channel.weekly_nft_limit,
             DefaultChannelWeeklyNftLimit::get()
+        );
+    })
+}
+
+#[test]
+fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        // nft limits is true by chainspec configuration, changing to false..
+        assert_ok!(Content::toggle_nft_limits(Origin::root(), false));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::Content(RawEvent::ToggledNftLimits(false)),
+        );
+        assert_eq!(Content::nft_limits_enabled(), false);
+    })
+}
+
+#[test]
+fn toggle_nft_limits_fails_by_non_root_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        // nft limits is true by chainspec configuration
+        assert_noop!(
+            Content::toggle_nft_limits(Origin::signed(LEAD_ACCOUNT_ID), false),
+            DispatchError::BadOrigin,
         );
     })
 }

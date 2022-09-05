@@ -23,3 +23,5 @@ template:
       default: joystream/orion:latest
     contentSecret:
       description: Orion featured content secret
+    adminSecret:
+      description: Orion admin secret

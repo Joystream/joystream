@@ -1,6 +1,6 @@
 #![cfg(test)]
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, WithdrawReasons};
 use frame_support::StorageMap;
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
@@ -12,9 +12,21 @@ use super::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    Application, ApplyOnOpeningParameters, Config, DefaultInstance, Opening, OpeningType, RawEvent,
-    StakePolicy, Worker,
+    Application, ApplyOnOpeningParameters, BalanceOf, Config, DefaultInstance, Opening,
+    OpeningType, RawEvent, StakePolicy, Worker,
 };
+use staking_handler::StakingHandler;
+
+pub fn set_invitation_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
 
 pub struct EventFixture;
 impl EventFixture {
@@ -126,7 +138,7 @@ impl AddOpeningFixture {
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
                 stake_policy: self.stake_policy.clone(),
-                reward_per_block: self.reward_per_block.clone(),
+                reward_per_block: self.reward_per_block,
                 creation_stake: if self.opening_type == OpeningType::Regular {
                     <Test as Config>::LeaderOpeningStake::get()
                 } else {
@@ -147,7 +159,7 @@ impl AddOpeningFixture {
             self.description.clone(),
             self.opening_type,
             self.stake_policy.clone(),
-            self.reward_per_block.clone(),
+            self.reward_per_block,
         )?;
 
         Ok(saved_opening_next_id)
@@ -321,7 +333,7 @@ pub struct FillOpeningFixture {
 
 impl FillOpeningFixture {
     pub fn default_for_ids(opening_id: u64, application_ids: Vec<u64>) -> Self {
-        let application_ids: BTreeSet<u64> = application_ids.iter().map(|x| *x).collect();
+        let application_ids: BTreeSet<u64> = application_ids.iter().copied().collect();
 
         Self {
             origin: RawOrigin::Signed(1),
@@ -661,17 +673,15 @@ impl TerminateWorkerRoleFixture {
         let actual_result = TestWorkingGroup::terminate_role(
             self.origin.clone().into(),
             self.worker_id,
-            self.penalty.clone(),
+            self.penalty,
             self.rationale.clone(),
         );
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            if actual_result.is_ok() {
-                assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
-                    self.worker_id
-                ));
-            }
+            assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+                self.worker_id
+            ));
         }
     }
 }
@@ -919,16 +929,14 @@ impl WithdrawApplicationFixture {
             TestWorkingGroup::withdraw_application(self.origin.clone().into(), self.application_id);
         assert_eq!(actual_result.clone(), expected_result);
 
-        if actual_result.is_ok() {
-            if self.stake {
-                // the stake was removed
-                assert_eq!(0, get_stake_balance(&self.account_id));
+        if actual_result.is_ok() && self.stake {
+            // the stake was removed
+            assert_eq!(0, get_stake_balance(&self.account_id));
 
-                let new_balance = Balances::usable_balance(&self.account_id);
+            let new_balance = Balances::usable_balance(&self.account_id);
 
-                // worker balance equilibrium
-                assert_eq!(old_balance + old_stake, new_balance);
-            }
+            // worker balance equilibrium
+            assert_eq!(old_balance + old_stake, new_balance);
         }
     }
 }

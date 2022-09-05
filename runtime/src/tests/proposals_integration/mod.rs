@@ -7,7 +7,7 @@ mod working_group_proposals;
 use crate::tests::{
     account_from_member_id, create_new_members, max_proposal_stake, run_to_block, setup_new_council,
 };
-use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
+use crate::{currency, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use content::NftLimitPeriod;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
@@ -37,7 +37,6 @@ pub type ProposalsCodex = proposals_codex::Module<Runtime>;
 pub type Council = council::Module<Runtime>;
 pub type Membership = membership::Module<Runtime>;
 pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
-pub type Blog = blog::Module<Runtime, BlogInstance>;
 
 struct VoteGenerator {
     proposal_id: u32,
@@ -70,7 +69,7 @@ impl VoteGenerator {
     }
 
     fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult) {
-        assert_eq!(self.vote(vote_kind.clone()), expected_result);
+        assert_eq!(self.vote(vote_kind), expected_result);
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult {
@@ -248,10 +247,13 @@ impl CancelProposalFixture {
 #[test]
 fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
-        let stake_amount = 20000u128;
+        let stake_amount = 2 * <Runtime as membership::Config>::CandidateStake::get();
         let parameters = ProposalParameters {
             voting_period: 3,
             approval_quorum_percentage: 50,
@@ -268,7 +270,8 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             .with_stake(account_id.clone())
             .with_proposer(member_id);
 
-        let account_balance = 500000;
+        let account_balance = 10 * <Runtime as membership::Config>::CandidateStake::get()
+            + crate::ExistentialDeposit::get();
         Balances::make_free_balance_be(&account_id, account_balance);
 
         // Since the account_id is the staking account it neccesarily has locked funds
@@ -286,7 +289,11 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         // Only the biggest locked stake count, we don't need to substract the stake candidate here
         assert_eq!(
             Balances::usable_balance(&account_id),
-            account_balance - stake_amount
+            account_balance
+                - std::cmp::max(
+                    stake_amount,
+                    <Runtime as membership::Config>::CandidateStake::get()
+                )
         );
 
         let proposal = ProposalsEngine::proposals(proposal_id);
@@ -294,7 +301,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let expected_proposal = Proposal {
             parameters,
             proposer_id: member_id,
-            activated_at: 0,
+            activated_at: 1,
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: None,
@@ -326,9 +333,12 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 #[test]
 fn proposal_reset_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
-        setup_new_council(0);
+        setup_new_council(1);
         assert_eq!(ProposalsEngine::active_proposal_count(), 0);
 
         // Voting period long enough to ensure it doesn't expire, but rather is forcefully rejected
@@ -364,7 +374,7 @@ fn proposal_reset_succeeds() {
         assert_eq!(ProposalsEngine::active_proposal_count(), 1);
 
         end_idle_period();
-        setup_new_council(1);
+        setup_new_council(2);
 
         // Proposal should have been rejected on new council being elected
         assert_eq!(ProposalsEngine::active_proposal_count(), 0);
@@ -476,7 +486,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
     .unwrap();
 
     let application = working_group::ApplyOnOpeningParameters::<Runtime> {
-        member_id: lead_id.clone().into(),
+        member_id: lead_id,
         opening_id: 0,
         role_account_id: lead_account_id.clone(),
         reward_account_id: lead_account_id.clone(),
@@ -507,7 +517,7 @@ where
         let account_id = account_from_member_id(self.member_id);
 
         if self.setup_environment {
-            setup_new_council(0);
+            setup_new_council(1);
             if self.set_member_lead {
                 let lead_account_id = account_from_member_id(self.lead_id);
 
@@ -524,7 +534,7 @@ where
             }
         }
 
-        increase_total_balance_issuance_using_account_id(account_id.clone(), max_proposal_stake());
+        increase_total_balance_issuance_using_account_id(account_id, max_proposal_stake());
 
         assert_eq!((self.successful_call)(), Ok(()));
 
@@ -542,12 +552,15 @@ where
 #[test]
 fn text_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -572,6 +585,9 @@ fn text_proposal_execution_succeeds() {
 #[test]
 fn funding_request_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let council_budget = 5_000_000;
@@ -583,7 +599,7 @@ fn funding_request_proposal_execution_succeeds() {
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -615,160 +631,11 @@ fn funding_request_proposal_execution_succeeds() {
 }
 
 #[test]
-fn create_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalsCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::CreateBlogPost(vec![0u8], vec![0u8]),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert_eq!(Blog::post_count(), 0);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Config>::CreateBlogPostProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert_eq!(Blog::post_count(), 1);
-    });
-}
-
-#[test]
-fn edit_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let post_id = Blog::post_count();
-        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalsCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::EditBlogPost(post_id, Some(vec![1u8]), None),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Config>::EditBlogPostProoposalParamters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert!(Blog::post_by_id(post_id) == blog::Post::new(&vec![1u8], &vec![0u8]));
-    });
-}
-
-#[test]
-fn lock_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let post_id = Blog::post_count();
-        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalsCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::LockBlogPost(post_id),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert_eq!(Blog::post_by_id(post_id).is_locked(), false);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Config>::LockBlogPostProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert_eq!(Blog::post_by_id(post_id).is_locked(), true);
-    });
-}
-
-#[test]
-fn unlock_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let post_id = Blog::post_count();
-        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
-        Blog::lock_post(RawOrigin::Root.into(), post_id).unwrap();
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalsCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::UnlockBlogPost(post_id),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert_eq!(Blog::post_by_id(0).is_locked(), true);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Config>::UnlockBlogPostProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert_eq!(Blog::post_by_id(0).is_locked(), false);
-    });
-}
-
-#[test]
 fn veto_proposal_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let council_budget = 5_000_000;
@@ -777,7 +644,7 @@ fn veto_proposal_proposal_execution_succeeds() {
         let proposal_id = ProposalsEngine::proposal_count() + 1;
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -802,7 +669,7 @@ fn veto_proposal_proposal_execution_succeeds() {
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id.into(),
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -833,16 +700,25 @@ fn veto_proposal_proposal_execution_succeeds() {
 #[test]
 fn set_validator_count_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
         let new_validator_count = <pallet_staking::ValidatorCount<Runtime>>::get() + 8;
 
-        setup_new_council(0);
-        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
+        setup_new_council(1);
+        increase_total_balance_issuance_using_account_id(
+            account_id.clone(),
+            10_000 * currency::DOLLARS,
+        );
 
         let staking_account_id: [u8; 32] = [225u8; 32];
-        increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+        increase_total_balance_issuance_using_account_id(
+            staking_account_id.into(),
+            10_000 * currency::DOLLARS,
+        );
         set_staking_account(
             account_id.clone(),
             staking_account_id.into(),
@@ -851,7 +727,7 @@ fn set_validator_count_proposal_execution_succeeds() {
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(staking_account_id.into()),
@@ -881,12 +757,15 @@ fn set_validator_count_proposal_execution_succeeds() {
 #[test]
 fn amend_constitution_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -914,13 +793,16 @@ fn amend_constitution_proposal_execution_succeeds() {
 #[test]
 fn set_membership_price_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let membership_price = Membership::membership_price() + 100;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -948,13 +830,16 @@ fn set_membership_price_proposal_execution_succeeds() {
 #[test]
 fn set_initial_invitation_balance_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let initial_invitation_balance = Membership::initial_invitation_balance() + 100;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -986,13 +871,16 @@ fn set_initial_invitation_balance_proposal_succeeds() {
 #[test]
 fn set_initial_invitation_count_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let new_default_invite_count = Membership::initial_invitation_count() + 50;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -1023,6 +911,9 @@ fn set_initial_invitation_count_proposal_succeeds() {
 #[test]
 fn set_membership_leader_invitation_quota_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let lead_id = create_new_members(1)[0];
@@ -1030,7 +921,7 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -1060,13 +951,16 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
 #[test]
 fn set_referral_cut_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let referral_cut = Membership::referral_cut() + 1;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -1093,13 +987,16 @@ fn set_referral_cut_proposal_succeeds() {
 #[test]
 fn set_budget_increment_proposal_succeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let budget_increment = Council::budget_increment() + 500;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -1131,13 +1028,16 @@ fn set_budget_increment_proposal_succeds() {
 #[test]
 fn set_councilor_reward_proposal_succeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let councilor_reward = Council::councilor_reward() + 100;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),
@@ -1165,10 +1065,13 @@ fn set_councilor_reward_proposal_succeds() {
 #[test]
 fn proposal_reactivation_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
-        setup_new_council(0);
+        setup_new_council(1);
         let council_size = <Runtime as council::Config>::CouncilSize::get() as u32;
 
         let starting_block = System::block_number();
@@ -1205,7 +1108,7 @@ fn proposal_reactivation_succeeds() {
         );
 
         end_idle_period();
-        setup_new_council(1);
+        setup_new_council(2);
 
         run_to_block(System::block_number() + 1);
 
@@ -1227,6 +1130,9 @@ fn proposal_reactivation_succeeds() {
 #[test]
 fn update_global_nft_limit_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
@@ -1235,7 +1141,7 @@ fn update_global_nft_limit_proposal_succeeds() {
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),

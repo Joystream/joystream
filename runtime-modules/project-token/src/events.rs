@@ -1,3 +1,5 @@
+#![allow(clippy::unused_unit)]
+
 use crate::types::{
     JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
     TransferPolicyOf, ValidatedTransfersOf,
@@ -145,5 +147,12 @@ decl_event! {
         /// Params:
         /// - token id
         TransferPolicyChangedToPermissionless(TokenId),
+
+        /// Tokens Burned
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - number of tokens burned
+        TokensBurned(TokenId, MemberId, Balance),
     }
 }

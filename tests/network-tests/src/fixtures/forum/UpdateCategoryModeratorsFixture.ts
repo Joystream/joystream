@@ -9,13 +9,12 @@ import {
   ForumCategoryFieldsFragment,
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { CategoryId } from '@joystream/types/forum'
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId, ForumCategoryId } from '@joystream/types/primitives'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
 import _ from 'lodash'
 
 export type CategoryModeratorStatusUpdate = {
-  categoryId: CategoryId
+  categoryId: ForumCategoryId
   moderatorId: WorkerId
   canModerate: boolean
 }

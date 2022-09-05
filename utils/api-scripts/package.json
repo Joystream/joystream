@@ -11,10 +11,11 @@
     "initialize-lead": "ts-node src/initialize-lead",
     "initialize-worker": "ts-node src/initialize-worker",
     "buy-membership": "ts-node src/buy-membership",
+    "sudo-set-multisig": "ts-node src/sudo-set-multisig",
     "storage-dev-init": "./dev-init-storage.sh"
   },
   "dependencies": {
-    "@joystream/types": "^0.20.0",
+    "@joystream/types": "^0.20.2",
     "@polkadot/api": "8.9.1",
     "@polkadot/types": "8.9.1",
     "@polkadot/keyring": "9.5.1",

@@ -22,10 +22,15 @@ decl_error! {
         /// Symbol already in use
         TokenSymbolAlreadyInUse,
 
+        /// At least one of the members provided as part of InitialAllocation does not exist
+        InitialAllocationToNonExistingMember,
+
         /// Account Already exists
         AccountAlreadyExists,
 
-        /// Token's current issuance state is not Idle
+        /// Transfer destination member id invalid
+        TransferDestinationMemberDoesNotExist,
+
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
 
@@ -140,6 +145,9 @@ decl_error! {
 
         /// Attempt to modify supply when revenue split is active
         CannotModifySupplyWhenRevenueSplitsAreActive,
+
+        /// Revenue split rate cannot be 0
+        RevenueSplitRateIsZero,
 
         // ------ Burning ------------------------------------------------------
 

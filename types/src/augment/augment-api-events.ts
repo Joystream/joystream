@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perquintill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelRecord, PalletContentChannelTransferStatus, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPollInput, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecordBagIdType, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
+import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/events' {
   export interface AugmentedEvents<ApiType extends ApiTypes> {
@@ -63,40 +63,6 @@ declare module '@polkadot/api-base/types/events' {
        **/
       Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32, amount: u128 }>;
     };
-    blog: {
-      /**
-       * A reply to a reply was created
-       **/
-      DirectReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, u64, Bytes, bool]>;
-      /**
-       * A post was created
-       **/
-      PostCreated: AugmentedEvent<ApiType, [u64, Bytes, Bytes]>;
-      /**
-       * A post was edited
-       **/
-      PostEdited: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
-      /**
-       * A post was locked
-       **/
-      PostLocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A post was unlocked
-       **/
-      PostUnlocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A reply to a post was created
-       **/
-      ReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, Bytes, bool]>;
-      /**
-       * A reply was deleted from storage
-       **/
-      ReplyDeleted: AugmentedEvent<ApiType, [u64, u64, u64, bool]>;
-      /**
-       * A reply was edited
-       **/
-      ReplyEdited: AugmentedEvent<ApiType, [u64, u64, u64, Bytes]>;
-    };
     constitution: {
       /**
        * Emits on constitution amendment.
@@ -113,13 +79,14 @@ declare module '@polkadot/api-base/types/events' {
       BidMadeCompletingAuction: AugmentedEvent<ApiType, [u64, u64, Option<u64>]>;
       BuyNowCanceled: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor]>;
       BuyNowPriceUpdated: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor, u128]>;
+      CancelChannelTransfer: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor]>;
       ChannelAgentRemarked: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
       ChannelAssetsDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, Bytes]>;
       ChannelAssetsRemoved: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, PalletContentChannelRecord]>;
-      ChannelCreated: AugmentedEvent<ApiType, [u64, PalletContentChannelRecord, PalletContentChannelCreationParametersRecord]>;
+      ChannelCreated: AugmentedEvent<ApiType, [u64, PalletContentChannelRecord, PalletContentChannelCreationParametersRecord, AccountId32]>;
       ChannelDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       ChannelDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
-      ChannelFundsWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, AccountId32]>;
+      ChannelFundsWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
       ChannelNftLimitUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, PalletContentNftLimitPeriod, u64, u64]>;
       /**
        * Metaprotocols related event
@@ -128,9 +95,10 @@ declare module '@polkadot/api-base/types/events' {
       ChannelPausedFeaturesUpdatedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, Bytes]>;
       ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
-      ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, AccountId32]>;
+      ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
       ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u64]>;
-      ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferParameters]>;
+      ChannelStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
+      ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferCommitmentParameters]>;
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       CouncilRewardClaimed: AugmentedEvent<ApiType, [u64, u128]>;
@@ -142,10 +110,8 @@ declare module '@polkadot/api-base/types/events' {
       CuratorRemoved: AugmentedEvent<ApiType, [u64, u64]>;
       EnglishAuctionSettled: AugmentedEvent<ApiType, [u64, AccountId32, u64]>;
       EnglishAuctionStarted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesEnglishAuctionParamsRecord]>;
-      /**
-       * Nft limits
-       **/
       GlobalNftLimitUpdated: AugmentedEvent<ApiType, [PalletContentNftLimitPeriod, u64]>;
+      InitializedChannelTransfer: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor, PalletContentPendingTransfer]>;
       NftBought: AugmentedEvent<ApiType, [u64, u64]>;
       NftDestroyed: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       NftIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesNftIssuanceParametersRecord]>;
@@ -157,11 +123,12 @@ declare module '@polkadot/api-base/types/events' {
       OfferStarted: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor, u64, Option<u128>]>;
       OpenAuctionBidAccepted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64, u128]>;
       OpenAuctionStarted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesOpenAuctionParamsRecord, u64]>;
-      UpdateChannelTransferStatus: AugmentedEvent<ApiType, [u64, PalletContentPermissionsContentActor, PalletContentChannelTransferStatus]>;
+      ToggledNftLimits: AugmentedEvent<ApiType, [bool]>;
       VideoAssetsDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, bool, Bytes]>;
       VideoCreated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64, PalletContentVideoCreationParametersRecord, BTreeSet<u64>]>;
       VideoDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       VideoDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
+      VideoStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       VideoUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord, BTreeSet<u64>]>;
       VideoVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
     };
@@ -357,7 +324,7 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * New council was elected
        **/
-      AnnouncingPeriodStarted: AugmentedEvent<ApiType, []>;
+      AnnouncingPeriodStarted: AugmentedEvent<ApiType, [u32]>;
       /**
        * Budget balance was changed by the root.
        **/
@@ -413,15 +380,15 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * New council was elected and appointed
        **/
-      NewCouncilElected: AugmentedEvent<ApiType, [Vec<u64>]>;
+      NewCouncilElected: AugmentedEvent<ApiType, [Vec<u64>, u32]>;
       /**
        * New council was not elected
        **/
-      NewCouncilNotElected: AugmentedEvent<ApiType, []>;
+      NewCouncilNotElected: AugmentedEvent<ApiType, [u32]>;
       /**
        * Announcing period can't finish because of insufficient candidtate count
        **/
-      NotEnoughCandidates: AugmentedEvent<ApiType, []>;
+      NotEnoughCandidates: AugmentedEvent<ApiType, [u32]>;
       /**
        * Request has been funded
        **/
@@ -712,7 +679,7 @@ declare module '@polkadot/api-base/types/events' {
        * A thread with given id was created.
        * A third argument reflects the initial post id of the thread.
        **/
-      ThreadCreated: AugmentedEvent<ApiType, [u64, u64, u64, u64, Bytes, Bytes, Option<PalletForumPollInput>]>;
+      ThreadCreated: AugmentedEvent<ApiType, [u64, u64, u64, u64, Bytes, Bytes]>;
       /**
        * A thread was deleted.
        **/
@@ -734,10 +701,6 @@ declare module '@polkadot/api-base/types/events' {
        * The second argument reflects the new archival status of the thread.
        **/
       ThreadUpdated: AugmentedEvent<ApiType, [u64, bool, PalletForumPrivilegedActor, u64]>;
-      /**
-       * Vote on poll
-       **/
-      VoteOnPoll: AugmentedEvent<ApiType, [u64, u32, u64, u64]>;
     };
     forumWorkingGroup: {
       /**
@@ -1174,6 +1137,7 @@ declare module '@polkadot/api-base/types/events' {
       UpdatedWorkingGroupBudget: AugmentedEvent<ApiType, [PalletCommonWorkingGroup, u128, PalletCommonBalanceKind]>;
     };
     members: {
+      FoundingMemberCreated: AugmentedEvent<ApiType, [u64, PalletMembershipCreateFoundingMemberParameters]>;
       InitialInvitationBalanceUpdated: AugmentedEvent<ApiType, [u128]>;
       InitialInvitationCountUpdated: AugmentedEvent<ApiType, [u32]>;
       InvitesTransferred: AugmentedEvent<ApiType, [u64, u64, u32]>;
@@ -1183,6 +1147,7 @@ declare module '@polkadot/api-base/types/events' {
       MemberProfileUpdated: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
       MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
       MembershipBought: AugmentedEvent<ApiType, [u64, PalletMembershipBuyMembershipParameters]>;
+      MembershipGifted: AugmentedEvent<ApiType, [u64, PalletMembershipGiftMembershipParameters]>;
       MembershipPriceUpdated: AugmentedEvent<ApiType, [u128]>;
       MemberVerificationStatusUpdated: AugmentedEvent<ApiType, [u64, bool, u64]>;
       ReferralCutUpdated: AugmentedEvent<ApiType, [u8]>;
@@ -1377,6 +1342,24 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale
        **/
       WorkingGroupBudgetFunded: AugmentedEvent<ApiType, [u64, u128, Bytes]>;
+    };
+    multisig: {
+      /**
+       * A multisig operation has been approved by someone.
+       **/
+      MultisigApproval: AugmentedEvent<ApiType, [approving: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed], { approving: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed }>;
+      /**
+       * A multisig operation has been cancelled.
+       **/
+      MultisigCancelled: AugmentedEvent<ApiType, [cancelling: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed], { cancelling: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed }>;
+      /**
+       * A multisig operation has been executed.
+       **/
+      MultisigExecuted: AugmentedEvent<ApiType, [approving: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed, result: Result<Null, SpRuntimeDispatchError>], { approving: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed, result: Result<Null, SpRuntimeDispatchError> }>;
+      /**
+       * A new multisig operation has begun.
+       **/
+      NewMultisig: AugmentedEvent<ApiType, [approving: AccountId32, multisig: AccountId32, callHash: U8aFixed], { approving: AccountId32, multisig: AccountId32, callHash: U8aFixed }>;
     };
     offences: {
       /**
@@ -2059,6 +2042,14 @@ declare module '@polkadot/api-base/types/events' {
        **/
       TokenSaleInitialized: AugmentedEvent<ApiType, [u64, u32, PalletProjectTokenTokenSale, Option<Bytes>]>;
       /**
+       * Tokens Burned
+       * Params:
+       * - token id
+       * - member id
+       * - number of tokens burned
+       **/
+      TokensBurned: AugmentedEvent<ApiType, [u64, u64, u128]>;
+      /**
        * Tokens Purchased On Sale
        * Params:
        * - token id
@@ -2180,15 +2171,15 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Referendum started
        **/
-      ReferendumStarted: AugmentedEvent<ApiType, [u64]>;
+      ReferendumStarted: AugmentedEvent<ApiType, [u64, u32]>;
       /**
        * Referendum started
        **/
-      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64]>;
+      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64, u32]>;
       /**
        * Revealing phase has begun
        **/
-      RevealingStageStarted: AugmentedEvent<ApiType, []>;
+      RevealingStageStarted: AugmentedEvent<ApiType, [u32]>;
       /**
        * User released his stake
        **/
@@ -2274,14 +2265,6 @@ declare module '@polkadot/api-base/types/events' {
     };
     storage: {
       /**
-       * Bag objects changed.
-       * Params
-       * - bag id
-       * - new total objects size
-       * - new total objects number
-       **/
-      BagObjectsChanged: AugmentedEvent<ApiType, [PalletStorageBagIdType, u64, u64]>;
-      /**
        * Emits on changing the size-based pricing of new objects uploaded.
        * Params
        * - new data size fee
@@ -2313,9 +2296,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on storage assets being uploaded and deleted at the same time
        * Params
        * - UploadParameters
-       * - Objects Id of assets to be removed
+       * - Ids of the uploaded objects
+       * - Ids of the removed objects
        **/
-      DataObjectsUpdated: AugmentedEvent<ApiType, [PalletStorageUploadParametersRecordBagIdType, BTreeSet<u64>]>;
+      DataObjectsUpdated: AugmentedEvent<ApiType, [PalletStorageUploadParametersRecord, BTreeSet<u64>, BTreeSet<u64>]>;
       /**
        * Emits on uploading data objects.
        * Params
@@ -2323,7 +2307,7 @@ declare module '@polkadot/api-base/types/events' {
        * - initial uploading parameters
        * - state bloat bond for objects
        **/
-      DataObjectsUploaded: AugmentedEvent<ApiType, [Vec<u64>, PalletStorageUploadParametersRecordBagIdType, u128]>;
+      DataObjectsUploaded: AugmentedEvent<ApiType, [BTreeSet<u64>, PalletStorageUploadParametersRecord, u128]>;
       /**
        * Emits on creating distribution bucket.
        * Params
@@ -2440,10 +2424,9 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Emits on deleting a dynamic bag.
        * Params
-       * - account ID for the state bloat bond
        * - dynamic bag ID
        **/
-      DynamicBagDeleted: AugmentedEvent<ApiType, [AccountId32, PalletStorageDynamicBagIdType]>;
+      DynamicBagDeleted: AugmentedEvent<ApiType, [PalletStorageDynamicBagIdType]>;
       /**
        * Emits on dynamic bag creation policy update (distribution bucket families).
        * Params

@@ -3,9 +3,14 @@ import { Codec, IEvent } from '@polkadot/types/types'
 import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Membership } from '@joystream/types/members'
-import { MemberId } from '@joystream/types/common'
+import {
+  PalletMembershipMembershipObject as Membership,
+  PalletWorkingGroupOpeningType as OpeningType,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+  PalletContentChannelActionPermission as ChannelActionPermission,
+  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
+} from '@polkadot/types/lookup'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import {
@@ -18,17 +23,17 @@ import { JSONSchema4 } from 'json-schema'
 import {
   IChannelMetadata,
   IVideoMetadata,
-  IVideoCategoryMetadata,
-  IChannelCategoryMetadata,
+  ICreateVideoCategory,
   IOpeningMetadata,
   IWorkingGroupMetadata,
+  ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
 import {
   MembershipFieldsFragment,
   WorkingGroupApplicationDetailsFragment,
   WorkingGroupOpeningDetailsFragment,
 } from './graphql/generated/queries'
+import { EnumVariant } from '@joystream/types'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -46,7 +51,7 @@ export type AccountSummary = {
 
 // Object with "name" and "value" properties, used for rendering simple CLI tables like:
 // Total balance:   100 JOY
-// Free calance:     50 JOY
+// Free balance:     50 JOY
 export type NameValueObj = { name: string; value: string }
 
 // Working groups related types
@@ -93,7 +98,7 @@ export type GroupMember = {
 export type ApplicationDetails = {
   applicationId: number
   member: MemberDetails
-  roleAccout: AccountId
+  roleAccount: AccountId
   stakingAccount: AccountId
   rewardAccount: AccountId
   descriptionHash: string
@@ -194,25 +199,48 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
   mimeType: string
 }
 
-export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
+export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto' | 'subtitles'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
   enableComments?: boolean
+  subtitles?: VideoSubtitleInputParameters[]
+}
+
+export type VideoSubtitleInputParameters = Omit<ISubtitleMetadata, 'newAsset'> & {
+  subtitleAssetPath?: string
 }
 
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
-  rewardAccount?: string
-  collaborators?: number[]
-  moderators?: number[]
+  collaborators?: { memberId: number; permissions: ChannelActionPermission['type'][] }[]
+  privilegeLevel?: number
 }
 
-export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>
+export type ContentModerationActionNullEnumLiteral = Exclude<
+  ContentModerationAction['type'],
+  'ChangeChannelFeatureStatus' | 'DeleteVideoAssets'
+>
 
-export type ChannelCategoryInputParameters = IChannelCategoryMetadata
+export type ContentModerationActionNullEnum = Exclude<
+  EnumVariant<{
+    [K in ContentModerationActionNullEnumLiteral]: null
+  }>,
+  ContentModerationActionNullEnumLiteral
+>
 
-export type VideoCategoryInputParameters = IVideoCategoryMetadata
+export type ModerationPermissionsByLevelInputParameters = {
+  channelPrivilegeLevel: number
+  permissions: (
+    | ContentModerationActionNullEnum
+    | { DeleteVideoAssets: boolean }
+    | { ChangeChannelFeatureStatus: ContentModerationAction['asChangeChannelFeatureStatus']['type'] }
+  )[]
+}[]
+
+export type ChannelUpdateInputParameters = ChannelCreationInputParameters
+
+export type VideoCategoryInputParameters = ICreateVideoCategory
 
 export type WorkingGroupOpeningInputParameters = Omit<IOpeningMetadata, 'applicationFormQuestions'> & {
   stakingPolicy: {
@@ -239,6 +267,8 @@ type RemoveIndex<T> = {
 
 type AnyJSONSchema = RemoveIndex<JSONSchema4>
 
+type IsBoolean<T> = T | boolean extends boolean ? true : false
+
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
@@ -251,9 +281,18 @@ export type JSONTypeName<T> = T extends string
   ? 'number' | ['number', 'null'] | 'integer' | ['integer', 'null']
   : 'object' | ['object', 'null']
 
+// tweaked version of https://stackoverflow.com/questions/53953814/typescript-check-if-a-type-is-a-union
+type IsUnion<T, U extends T = T> = (T extends unknown ? (U extends T ? false : true) : never) extends false
+  ? false
+  : IsBoolean<T> extends true
+  ? false
+  : true
+
 export type PropertySchema<P> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
   type: JSONTypeName<P>
-} & (P extends AnyPrimitive
+} & (IsUnion<NonNullable<P>> extends true
+    ? { enum?: P[] }
+    : P extends AnyPrimitive
     ? { properties?: never }
     : P extends (infer T)[]
     ? { properties?: never; items: PropertySchema<T> }

@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
+import '@joystream/types'
 
 async function main() {
   // Initialise the provider to connect to the local node
@@ -58,7 +59,7 @@ async function main() {
     console.log('Total Validator Locked Balances:', totalValidatorBalances.toString())
   }
 
-  api.disconnect()
+  await api.disconnect()
 }
 
-main()
+main().catch(console.error)

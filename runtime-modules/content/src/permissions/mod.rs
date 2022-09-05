@@ -134,7 +134,7 @@ pub fn ensure_actor_auth_success<T: Config>(
     match actor {
         ContentActor::Lead => ensure_lead_auth_success::<T>(sender),
         ContentActor::Curator(curator_group_id, curator_id) => {
-            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, &sender)
+            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, sender)
         }
         ContentActor::Member(member_id) => ensure_member_auth_success::<T>(sender, member_id),
     }
@@ -163,7 +163,7 @@ pub fn ensure_actor_authorized_to_delete_channel<T: Config>(
     if !channel.data_objects.is_empty() {
         required_permissions.push(ChannelActionPermission::ManageNonVideoChannelAssets);
     }
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
+    ensure_actor_has_channel_permissions::<T>(sender, actor, channel, &required_permissions)
 }
 
 /// Ensure actor is authorized to perform channel update with given params
@@ -187,12 +187,8 @@ pub fn ensure_actor_authorized_to_perform_channel_update<T: Config>(
         required_permissions.push(ChannelActionPermission::ManageNonVideoChannelAssets);
     }
 
-    let opt_agent_permissions = ensure_actor_has_channel_permissions::<T>(
-        &sender,
-        &actor,
-        &channel,
-        &required_permissions,
-    )?;
+    let opt_agent_permissions =
+        ensure_actor_has_channel_permissions::<T>(sender, actor, channel, &required_permissions)?;
 
     if let (Some(agent_permissions), Some(new_collaborators_set)) = (
         opt_agent_permissions.as_ref(),
@@ -245,7 +241,7 @@ pub fn ensure_actor_authorized_to_create_video<T: Config>(
         required_permissions.push(ChannelActionPermission::ManageVideoNfts);
     }
 
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
+    ensure_actor_has_channel_permissions::<T>(sender, actor, channel, &required_permissions)
 }
 
 /// Ensure actor is authorized to perform video update with given params
@@ -269,7 +265,7 @@ pub fn ensure_actor_authorized_to_perform_video_update<T: Config>(
         required_permissions.push(ChannelActionPermission::ManageVideoNfts);
     }
 
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
+    ensure_actor_has_channel_permissions::<T>(sender, actor, channel, &required_permissions)
 }
 
 /// Ensure actor is authorized to delete video
@@ -283,7 +279,7 @@ pub fn ensure_actor_authorized_to_delete_video<T: Config>(
     if !video.data_objects.is_empty() {
         required_permissions.push(ChannelActionPermission::ManageVideoAssets);
     }
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
+    ensure_actor_has_channel_permissions::<T>(sender, actor, channel, &required_permissions)
 }
 
 /// Ensure actor is authorized to manage video nfts
@@ -293,9 +289,9 @@ pub fn ensure_actor_authorized_to_manage_video_nfts<T: Config>(
     channel: &Channel<T>,
 ) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
     ensure_actor_has_channel_permissions::<T>(
-        &sender,
-        &actor,
-        &channel,
+        sender,
+        actor,
+        channel,
         &[ChannelActionPermission::ManageVideoNfts],
     )
 }
@@ -307,9 +303,9 @@ pub fn ensure_actor_authorized_to_send_channel_agent_remark<T: Config>(
     channel: &Channel<T>,
 ) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
     ensure_actor_has_channel_permissions::<T>(
-        &sender,
-        &actor,
-        &channel,
+        sender,
+        actor,
+        channel,
         &[ChannelActionPermission::AgentRemark],
     )
 }
@@ -354,9 +350,9 @@ pub fn ensure_actor_has_channel_permissions<T: Config>(
     channel: &Channel<T>,
     required_permissions: &[ChannelActionPermission],
 ) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
-    ensure_actor_auth_success::<T>(&sender, actor)?;
+    ensure_actor_auth_success::<T>(sender, actor)?;
     match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(&channel).map(|_| None),
+        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(channel).map(|_| None),
         ContentActor::Curator(curator_group_id, curator_id) => {
             ensure_channel_is_owned_by_curator_group::<T>(channel, curator_group_id)?;
             let group = Module::<T>::curator_group_by_id(&curator_group_id);
@@ -369,7 +365,7 @@ pub fn ensure_actor_has_channel_permissions<T: Config>(
             ensure_channel_is_owned_by_member::<T>(channel, member_id).map_or_else(
                 |_| {
                     let agent_permissions =
-                        channel.get_existing_collaborator_permissions::<T>(&member_id)?;
+                        channel.get_existing_collaborator_permissions::<T>(member_id)?;
                     ensure_agent_has_required_permissions::<T>(
                         agent_permissions,
                         required_permissions,
@@ -416,7 +412,7 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Config>(
         );
     } else {
         let channel = Module::<T>::ensure_channel_exists(&in_channel)?;
-        ensure_actor_authorized_to_manage_video_nfts::<T>(&sender, &actor, &channel)?;
+        ensure_actor_authorized_to_manage_video_nfts::<T>(&sender, actor, &channel)?;
     }
     Ok(())
 }
@@ -459,8 +455,8 @@ pub fn ensure_actor_authorized_to_claim_payment<T: Config>(
     let sender = ensure_signed(origin)?;
     ensure_actor_has_channel_permissions::<T>(
         &sender,
-        &actor,
-        &channel,
+        actor,
+        channel,
         &[ChannelActionPermission::ClaimChannelReward],
     )
 }
@@ -474,8 +470,8 @@ pub fn ensure_actor_authorized_to_withdraw_from_channel<T: Config>(
     ensure_actor_auth_success::<T>(&sender, actor)?;
     ensure_actor_has_channel_permissions::<T>(
         &sender,
-        &actor,
-        &channel,
+        actor,
+        channel,
         &[ChannelActionPermission::WithdrawFromChannelBalance],
     )
 }
@@ -493,6 +489,17 @@ pub fn ensure_authorized_to_update_min_cashout<T: Config>(sender: &T::AccountId)
     ensure_lead_auth_success::<T>(sender)
 }
 
+pub fn ensure_authorized_to_update_channel_state_bloat_bond<T: Config>(
+    sender: &T::AccountId,
+) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
+}
+
+pub fn ensure_authorized_to_update_video_state_bloat_bond<T: Config>(
+    sender: &T::AccountId,
+) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
+}
 /// Moderation actions (curator/lead)
 
 pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
@@ -501,7 +508,7 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
     actions: &[ContentModerationAction],
     channel_privilege_level: T::ChannelPrivilegeLevel,
 ) -> DispatchResult {
-    ensure_actor_auth_success::<T>(&sender, &actor)?;
+    ensure_actor_auth_success::<T>(sender, actor)?;
     // Ensure actor is either lead of part of curators group with sufficient permissions
     match actor {
         ContentActor::Lead => Ok(()),
@@ -519,7 +526,7 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
 
 /// Transfer channels permissions
 
-// Transfer channel check.
+// start Transfer channel check.
 pub fn ensure_actor_authorized_to_transfer_channel<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -528,8 +535,23 @@ pub fn ensure_actor_authorized_to_transfer_channel<T: Config>(
     let sender = ensure_signed(origin)?;
     ensure_actor_has_channel_permissions::<T>(
         &sender,
-        &actor,
-        &channel,
+        actor,
+        channel,
+        &[ChannelActionPermission::TransferChannel],
+    )
+}
+
+// cancel Transfer channel check.
+pub fn ensure_actor_authorized_to_cancel_channel_transfer<T: Config>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        actor,
+        channel,
         &[ChannelActionPermission::TransferChannel],
     )
 }
@@ -593,7 +615,7 @@ pub fn ensure_actor_authorized_to_issue_creator_token<T: Config>(
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::IssueCreatorToken];
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
 
@@ -604,7 +626,7 @@ pub fn ensure_actor_authorized_to_claim_creator_token_patronage<T: Config>(
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::ClaimCreatorTokenPatronage];
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
 
@@ -615,12 +637,8 @@ pub fn ensure_actor_authorized_to_init_and_manage_creator_token_sale<T: Config>(
 ) -> Result<(T::AccountId, Option<ChannelAgentPermissions>), DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::InitAndManageCreatorTokenSale];
-    let permissions = ensure_actor_has_channel_permissions::<T>(
-        &sender,
-        &actor,
-        &channel,
-        &required_permissions,
-    )?;
+    let permissions =
+        ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok((sender, permissions))
 }
 
@@ -631,7 +649,7 @@ pub fn ensure_actor_authorized_to_perform_creator_token_issuer_transfer<T: Confi
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::CreatorTokenIssuerTransfer];
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
 
@@ -642,7 +660,7 @@ pub fn ensure_actor_authorized_to_make_creator_token_permissionless<T: Config>(
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::MakeCreatorTokenPermissionless];
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
 
@@ -653,7 +671,7 @@ pub fn ensure_actor_authorized_to_reduce_creator_token_patronage_rate<T: Config>
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::ReduceCreatorTokenPatronageRate];
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
 
@@ -664,7 +682,7 @@ pub fn ensure_actor_authorized_to_manage_revenue_splits<T: Config>(
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::ManageRevenueSplits];
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
 
@@ -675,6 +693,6 @@ pub fn ensure_actor_authorized_to_deissue_creator_token<T: Config>(
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
     let required_permissions = vec![ChannelActionPermission::DeissueCreatorToken];
-    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }

@@ -1,18 +1,38 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, BTreeSet } from '@polkadot/types'
-import { ISubmittableResult, Codec } from '@polkadot/types/types'
+import { u32, u64, BTreeSet, Option } from '@polkadot/types'
+import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, ChannelId, MemberId } from '@joystream/types/common'
+import {
+  ChannelId,
+  VideoId,
+  MemberId,
+  WorkerId,
+  OpeningId,
+  DataObjectId,
+  StorageBucketId,
+} from '@joystream/types/primitives'
 
-import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash, LockIdentifier } from '@polkadot/types/interfaces'
-import { Worker, WorkerId, Opening, OpeningId } from '@joystream/types/working-group'
-import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
+import {
+  AccountId,
+  AccountInfo,
+  Balance,
+  EventRecord,
+  BlockNumber,
+  BlockHash,
+  LockIdentifier,
+} from '@polkadot/types/interfaces'
+import {
+  PalletWorkingGroupGroupWorker as Worker,
+  PalletWorkingGroupOpening as Opening,
+  PalletContentNftTypesEnglishAuctionParamsRecord as EnglishAuctionParams,
+  PalletContentNftTypesOpenAuctionParamsRecord as OpenAuctionParams,
+  PalletProposalsEngineProposalParameters as ProposalParameters,
+} from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
-import { types } from '@joystream/types'
 
 import { extendDebug } from './Debugger'
 import { DispatchError } from '@polkadot/types/interfaces/system'
@@ -27,7 +47,6 @@ import {
   FaucetInfo,
 } from './types'
 
-import { ProposalParameters } from '@joystream/types/proposals'
 import {
   BLOCKTIME,
   KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE,
@@ -35,11 +54,9 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { VideoId, VideoCategoryId, EnglishAuctionParams, OpenAuctionParams } from '@joystream/types/content'
-
-import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
-
+import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
+import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
 export class ApiFactory {
   private readonly api: ApiPromise
@@ -75,7 +92,7 @@ export class ApiFactory {
       connectAttempts++
       debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
-        const api = new ApiPromise({ provider, types })
+        const api = new ApiPromise({ provider })
 
         // Wait for api to be connected and ready
         await api.isReadyOrError
@@ -100,14 +117,14 @@ export class ApiFactory {
 
   constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
     this.api = api
-    this.keyring = new Keyring({ type: 'sr25519' })
+    this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
     this.miniSecret = miniSecret
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
     this.keyId = 0
-    this.faucetInfo = { suri: '', memberId: 0 }
+    this.faucetInfo = { suri: '' }
   }
 
   public getApi(label: string): Api {
@@ -258,7 +275,7 @@ export class Api {
 
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
     const sudo = await this.api.query.sudo.key()
-    return this.signAndSend(this.api.tx.sudo.sudo(tx), sudo)
+    return this.signAndSend(this.api.tx.sudo.sudo(tx), sudo.unwrap())
   }
 
   public enableDebugTxLogs(): void {
@@ -310,7 +327,7 @@ export class Api {
   }
 
   public async getControllerAccountOfMember(id: MemberId): Promise<string> {
-    return (await this.api.query.members.membershipById(id)).controller_account.toString()
+    return (await this.api.query.members.membershipById(id)).unwrap().controllerAccount.toString()
   }
 
   public async getBalance(address: string): Promise<Balance> {
@@ -445,7 +462,7 @@ export class Api {
         )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
       )
     }
-    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
+    return events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown as EventType<S, M>[]
   }
 
   public async getEventDetails<S extends EventSection, M extends EventMethod<S>>(
@@ -506,7 +523,7 @@ export class Api {
     if (leadId.isNone) {
       throw new Error(`Cannot get ${group} lead: Lead not hired!`)
     }
-    return [leadId.unwrap(), await this.api.query[group].workerById(leadId.unwrap())]
+    return [leadId.unwrap(), (await this.api.query[group].workerById(leadId.unwrap())).unwrap()]
   }
 
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
@@ -520,26 +537,26 @@ export class Api {
   }
 
   public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroupModuleName): Promise<string[]> {
-    const workers = await this.api.query[module].workerById.multi<Worker>(workerIds)
+    const workers = await this.api.query[module].workerById.multi<Option<Worker>>(workerIds)
 
     return workers.map((worker) => {
-      return worker.role_account_id.toString()
+      return worker.unwrap().roleAccountId.toString()
     })
   }
 
   public async getLeadRoleKey(group: WorkingGroupModuleName): Promise<string> {
-    return (await this.getLeader(group))[1].role_account_id.toString()
+    return (await this.getLeader(group))[1].roleAccountId.toString()
   }
 
   public async getLeaderStakingKey(group: WorkingGroupModuleName): Promise<string> {
-    return (await this.getLeader(group))[1].staking_account_id.toString()
+    return (await this.getLeader(group))[1].stakingAccountId.toString()
   }
 
   public async getMemberSigners(inputs: { asMember: MemberId }[]): Promise<string[]> {
     return await Promise.all(
       inputs.map(async ({ asMember }) => {
         const membership = await this.query.members.membershipById(asMember)
-        return membership.controller_account.toString()
+        return membership.unwrap().controllerAccount.toString()
       })
     )
   }
@@ -586,12 +603,12 @@ export class Api {
       async ({ debug }) => {
         const currentCouncilStage = await this.query.council.stage()
         const currentElectionStage = await this.query.referendum.stage()
-        const currentStage = currentCouncilStage.stage.isOfType('Election')
+        const currentStage = currentCouncilStage.stage.isElection
           ? (currentElectionStage.type as 'Voting' | 'Revealing')
           : (currentCouncilStage.stage.type as 'Announcing' | 'Idle')
-        const currentStageStartedAt = currentCouncilStage.stage.isOfType('Election')
-          ? currentElectionStage.asType(currentElectionStage.type as 'Voting' | 'Revealing').started
-          : currentCouncilStage.changed_at
+        const currentStageStartedAt = currentCouncilStage.stage.isElection
+          ? (currentElectionStage.isVoting ? currentElectionStage.asVoting : currentElectionStage.asRevealing).started // TODO: check no panic
+          : currentCouncilStage.changedAt
 
         const currentBlock = await this.getBestBlock()
         const { announcingPeriodDuration, idlePeriodDuration } = this.consts.council
@@ -629,7 +646,7 @@ export class Api {
   }
 
   async getMemberControllerAccount(memberId: number): Promise<string | undefined> {
-    return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
+    return (await this.api.query.members.membershipById(memberId)).unwrap().controllerAccount.toString()
   }
 
   public async getNumberOfOutstandingVideos(): Promise<number> {
@@ -640,12 +657,28 @@ export class Api {
     return (await this.api.query.content.channelById.entries<ChannelId>()).length
   }
 
-  public async getNumberOfOutstandingVideoCategories(): Promise<number> {
-    return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
+  public async getVideoStateBloatBond(): Promise<number> {
+    return (await this.api.query.content.videoStateBloatBondValue()).toNumber()
+  }
+
+  public async getChannelStateBloatBond(): Promise<number> {
+    return (await this.api.query.content.channelStateBloatBondValue()).toNumber()
+  }
+
+  public async getDataObjectStateBloatBond(): Promise<number> {
+    return (await this.api.query.storage.dataObjectStateBloatBondValue()).toNumber()
   }
 
   // Create a mock channel, throws on failure
-  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
+  async createMockChannel(
+    memberId: number,
+    storageBuckets: number[],
+    distributionBuckets: {
+      distributionBucketFamilyId: number
+      distributionBucketIndex: number
+    }[],
+    memberControllerAccount?: string
+  ): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
@@ -658,14 +691,15 @@ export class Api {
       {
         assets: null,
         meta: null,
-        reward_account: null,
+        storageBuckets,
+        distributionBuckets,
       }
     )
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)
 
     const event = this.getEvent(result.events, 'content', 'ChannelCreated')
-    return event.data[1]
+    return event.data[0]
   }
 
   // Create a mock video, throws on failure
@@ -688,37 +722,22 @@ export class Api {
     return event.data[2]
   }
 
-  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const [, lead] = await this.getLeader('contentWorkingGroup')
+  async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
 
-    const account = lead.role_account_id
-    const meta = new ChannelCategoryMetadata({
-      name,
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const meta = new MemberRemarked({
+      createVideoCategory: new CreateVideoCategory({
+        name,
+      }),
     })
 
     return this.sender.signAndSend(
-      this.api.tx.content.createChannelCategory(
-        { Lead: null },
-        { meta: Utils.metadataToBytes(ChannelCategoryMetadata, meta) }
-      ),
-      account?.toString()
-    )
-  }
-
-  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const [, lead] = await this.getLeader('contentWorkingGroup')
-
-    const account = lead.role_account_id
-    const meta = new VideoCategoryMetadata({
-      name,
-    })
-
-    return this.sender.signAndSend(
-      this.api.tx.content.createVideoCategory(
-        { Lead: null },
-        { meta: Utils.metadataToBytes(VideoCategoryMetadata, meta) }
-      ),
-      account?.toString()
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      memberAccount.toString()
     )
   }
 
@@ -732,7 +751,7 @@ export class Api {
       throw new Error(`Worker not found by id: ${workerId}!`)
     }
 
-    const memberController = await this.getControllerAccountOfMember(worker.member_id)
+    const memberController = await this.getControllerAccountOfMember(worker.unwrap().memberId)
     // there cannot be a worker associated with member that does not exist
     if (!memberController) {
       throw new Error('Member controller not found')
@@ -788,9 +807,12 @@ export class Api {
   ) {
     return this.sender.signAndSend(
       this.api.tx.storage.updateStorageBucketsForBag(
-        this.api.createType('BagId', { Dynamic: { Channel: channelId } }),
-        this.api.createType('BTreeSet<StorageBucketId>', [addStorageBuckets.map((item) => item.toString())]),
-        this.api.createType('BTreeSet<StorageBucketId>', [])
+        createType('PalletStorageBagIdType', { Dynamic: { Channel: Number(channelId) } }),
+        createType(
+          'BTreeSet<u64>',
+          addStorageBuckets.map((item) => item)
+        ),
+        createType('BTreeSet<u64>', [])
       ),
       accountFrom
     )
@@ -838,10 +860,6 @@ export class Api {
     royaltyPercentage?: number,
     toMemberId?: number | null
   ): Promise<ISubmittableResult> {
-    const royalty = this.api.createType(
-      'Option<Royalty>',
-      royaltyPercentage ? royaltyPercentage * PERBILL_ONE_PERCENT : null
-    )
     // TODO: find proper way to encode metadata (should they be raw string, hex string or some object?)
     // const encodedMetadata = this.api.createType('Metadata', metadata)
     // const encodedMetadata = this.api.createType('Metadata', metadata).toU8a() // invalid type passed to Metadata constructor
@@ -852,17 +870,16 @@ export class Api {
     // const encodedMetadata = this.api.createType('Bytes', '0x') // error
     // const encodedMetadata = this.api.createType('NftMetadata', 'someNonEmptyText')
     // const encodedMetadata = this.api.createType('NftMetadata', 'someNonEmptyText').toU8a() // createType(NftMetadata) // Vec length 604748352930462863646034177481338223 exceeds 65536
-    const encodedMetadata = this.api.createType('NftMetadata', '').toU8a() // THIS IS OK!!! but only for empty string :-\
     // try this later on // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a()
     // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a() // throws error in QN when decoding this (but mb QN error)
 
-    const encodedToAccount = this.api.createType('Option<MemberId>', toMemberId || memberId)
+    const encodedToAccount = createType('Option<u64>', toMemberId || memberId)
 
-    const issuanceParameters = this.api.createType('NftIssuanceParameters', {
-      royalty,
-      nft_metadata: encodedMetadata,
-      non_channel_owner: encodedToAccount,
-      init_transactional_status: this.api.createType('InitTransactionalStatus', { Idle: null }),
+    const issuanceParameters = createType('PalletContentNftTypesNftIssuanceParametersRecord', {
+      royalty: royaltyPercentage ? royaltyPercentage * PERBILL_ONE_PERCENT : null,
+      nftMetadata: metadata,
+      nonChannelOwner: encodedToAccount,
+      initTransactionalStatus: { Idle: null },
     })
 
     return await this.sender.signAndSend(
@@ -898,9 +915,7 @@ export class Api {
     return boundaries
   }
 
-  async createOpenAuctionParameters(
-    whitelist: string[] = []
-  ): Promise<{
+  async createOpenAuctionParameters(whitelist: number[] = []): Promise<{
     auctionParams: OpenAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -910,11 +925,12 @@ export class Api {
 
     const bidLockDuration = boundaries.bidLockDuration.min
 
-    const auctionParams = this.api.createType('OpenAuctionParams', {
-      starting_price: this.api.createType('u128', boundaries.startingPrice.min),
-      buy_now_price: this.api.createType('Option<BlockNumber>', null),
-      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
-      bid_lock_duration: this.api.createType('BlockNumber', bidLockDuration),
+    const auctionParams = createType('PalletContentNftTypesOpenAuctionParamsRecord', {
+      startingPrice: boundaries.startingPrice.min,
+      buyNowPrice: null,
+      whitelist: whitelist,
+      startsAt: null,
+      bidLockDuration: bidLockDuration,
     })
 
     return {
@@ -925,9 +941,7 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(
-    whitelist: string[] = []
-  ): Promise<{
+  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -943,14 +957,14 @@ export class Api {
     const minimalBidStep = boundaries.bidStep.min
     const extensionPeriod = boundaries.extensionPeriod.min
 
-    const auctionParams = this.api.createType('EnglishAuctionParams', {
-      starting_price: this.api.createType('u128', startingPrice),
-      buy_now_price: this.api.createType('Option<Balance>', null),
-      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
-      starts_at: this.api.createType('Option<BlockNumber>', null),
+    const auctionParams = createType('PalletContentNftTypesEnglishAuctionParamsRecord', {
+      startingPrice,
+      buyNowPrice: null,
+      whitelist: whitelist,
+      startsAt: null,
       duration: auctionDuration,
-      extension_period: extensionPeriod,
-      min_bid_step: this.api.createType('u128', minimalBidStep),
+      extensionPeriod,
+      minBidStep: minimalBidStep,
     })
 
     return {
@@ -1071,8 +1085,12 @@ export class Api {
     )
   }
 
-  async acceptIncomingOffer(accountFrom: string, videoId: number): Promise<ISubmittableResult> {
-    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
+  async acceptIncomingOffer(
+    accountFrom: string,
+    videoId: number,
+    price: BN | null = null
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId, price), accountFrom)
   }
 
   async createVideoWithNft(
@@ -1081,25 +1099,30 @@ export class Api {
     channelId: number,
     auctionParams?: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
-    const initTransactionalStatus = this.api.createType(
-      'InitTransactionalStatus',
+    const initTransactionalStatus = createType(
+      'PalletContentNftTypesInitTransactionalStatusRecord',
       auctionParams
-        ? auctionParams instanceof OpenAuctionParams
-          ? { OpenAuction: auctionParams }
-          : { EnglishAuction: auctionParams }
+        ? // eslint-disable-next-line no-prototype-builtins
+          auctionParams.hasOwnProperty('bidLockDuration')
+          ? { OpenAuction: auctionParams as OpenAuctionParams }
+          : { EnglishAuction: auctionParams as EnglishAuctionParams }
         : { Idle: null }
     )
 
-    const createParameters = this.createType('VideoCreationParameters', {
+    const expectedVideoStateBloatBond = await this.getVideoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
+    const createParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets: null,
       meta: null,
-      enable_comments: false,
-      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: {
         royalty: null,
-        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
-        non_channel_owner: ownerId,
-        init_transactional_status: initTransactionalStatus,
-      }),
+        nftMetadata: '',
+        nonChannelOwner: ownerId,
+        initTransactionalStatus,
+      },
     })
 
     return await this.sender.signAndSend(
@@ -1114,18 +1137,22 @@ export class Api {
     channelId: number,
     price: BN
   ): Promise<ISubmittableResult> {
-    const createParameters = this.createType('VideoCreationParameters', {
+    const expectedVideoStateBloatBond = await this.getVideoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
+    const createParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets: null,
       meta: null,
-      enable_comments: false,
-      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: {
         royalty: null,
-        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
-        non_channel_owner: ownerId,
-        init_transactional_status: this.api.createType('InitTransactionalStatus', {
-          BuyNow: this.api.createType('Balance', price.toString()),
-        }),
-      }),
+        nftMetadata: '',
+        nonChannelOwner: ownerId,
+        initTransactionalStatus: {
+          BuyNow: price,
+        },
+      },
     })
 
     return await this.sender.signAndSend(
@@ -1140,21 +1167,24 @@ export class Api {
     videoId: number,
     auctionParams: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
-    const initTransactionalStatus = this.api.createType(
-      'InitTransactionalStatus',
-      auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
-    )
+    const initTransactionalStatus =
+      // eslint-disable-next-line no-prototype-builtins
+      auctionParams.hasOwnProperty('bidLockDuration')
+        ? { OpenAuction: auctionParams as OpenAuctionParams }
+        : { EnglishAuction: auctionParams as EnglishAuctionParams }
 
-    const updateParameters = this.createType('VideoCreationParameters', {
-      assets_to_upload: null,
-      new_meta: null,
-      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
-      enable_comments: null,
-      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
+    const updateParameters = createType('PalletContentVideoUpdateParametersRecord', {
+      assetsToUpload: null,
+      newMeta: null,
+      assetsToRemove: [],
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: createType('PalletContentNftTypesNftIssuanceParametersRecord', {
         royalty: null,
-        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
-        non_channel_owner: ownerId,
-        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+        nftMetadata: '',
+        nonChannelOwner: ownerId,
+        initTransactionalStatus,
       }),
     })
 
@@ -1170,25 +1200,28 @@ export class Api {
     videoId: number,
     auctionParams?: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
-    const initTransactionalStatus = this.api.createType(
-      'InitTransactionalStatus',
+    const initTransactionalStatus = createType(
+      'PalletContentNftTypesInitTransactionalStatusRecord',
       auctionParams
-        ? auctionParams instanceof OpenAuctionParams
-          ? { OpenAuction: auctionParams }
-          : { EnglishAuction: auctionParams }
+        ? // eslint-disable-next-line no-prototype-builtins
+          auctionParams.hasOwnProperty('bidLockDuration')
+          ? { OpenAuction: auctionParams as OpenAuctionParams }
+          : { EnglishAuction: auctionParams as EnglishAuctionParams }
         : { Idle: null }
     )
 
-    const updateParameters = this.createType('VideoUpdateParameters', {
-      assets_to_upload: null,
-      new_meta: null,
-      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
-      enable_comments: false,
-      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
+    const updateParameters = createType('PalletContentVideoUpdateParametersRecord', {
+      assetsToUpload: null,
+      newMeta: null,
+      assetsToRemove: [],
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: createType('PalletContentNftTypesNftIssuanceParametersRecord', {
         royalty: null,
-        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
-        non_channel_owner: ownerId,
-        init_transactional_status: initTransactionalStatus,
+        nftMetadata: '',
+        nonChannelOwner: ownerId,
+        initTransactionalStatus,
       }),
     })
 

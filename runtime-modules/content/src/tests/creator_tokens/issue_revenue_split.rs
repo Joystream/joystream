@@ -2,6 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use sp_arithmetic::PerThing;
 
 #[test]
 fn unsuccessful_issue_revenue_split_non_existing_channel() {
@@ -59,9 +60,7 @@ fn successful_issue_member_channel_revenue_split_by_collaborator() {
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueRevenueSplitFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -77,9 +76,7 @@ fn successful_issue_member_channel_revenue_split_by_owner() {
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
     })
@@ -115,9 +112,7 @@ fn successful_issue_curator_channel_revenue_split_by_curator() {
             .call_and_assert(Ok(()));
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueRevenueSplitFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -137,9 +132,7 @@ fn successful_issue_curator_channel_revenue_split_by_lead() {
             .call_and_assert(Ok(()));
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
+            DEFAULT_PAYOUT_EARNED,
         );
         IssueRevenueSplitFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -153,10 +146,81 @@ fn issue_revenue_split_fails_during_trasfer() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
+fn issue_revenue_split_leftover_funds_sent_to_member_controller_account() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED,
+        );
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        let balance_pre = balances::Pallet::<Test>::usable_balance(DEFAULT_MEMBER_ACCOUNT_ID);
+
+        IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
+
+        assert_eq!(
+            (
+                channel_reward_account_balance(ChannelId::one()),
+                balances::Pallet::<Test>::usable_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            ),
+            (
+                DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+                balance_pre.saturating_add(
+                    DEFAULT_SPLIT_RATE
+                        .left_from_one()
+                        .mul_ceil(DEFAULT_PAYOUT_EARNED)
+                )
+            )
+        )
+    })
+}
+
+#[test]
+fn issue_revenue_split_leftover_funds_sent_to_council_budget() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[
+                ChannelActionPermission::IssueCreatorToken,
+                ChannelActionPermission::ManageRevenueSplits,
+            ])
+            .setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED,
+        );
+        IssueCreatorTokenFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+        let balance_pre = <Test as Config>::CouncilBudgetManager::get_budget();
+
+        IssueRevenueSplitFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            (
+                channel_reward_account_balance(ChannelId::one()),
+                <Test as Config>::CouncilBudgetManager::get_budget(),
+            ),
+            (
+                DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+                balance_pre.saturating_add(
+                    DEFAULT_SPLIT_RATE
+                        .left_from_one()
+                        .mul_ceil(DEFAULT_PAYOUT_EARNED)
+                )
+            )
+        )
     })
 }

@@ -438,6 +438,27 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       stakingHandlerLockId: U8aFixed & AugmentedConst<ApiType>;
     };
+    multisig: {
+      /**
+       * The base amount of currency needed to reserve for creating a multisig execution or to
+       * store a dispatch call for later.
+       * 
+       * This is held for an additional storage item whose value size is
+       * `4 + sizeof((BlockNumber, Balance, AccountId))` bytes and whose key size is
+       * `32 + sizeof(AccountId)` bytes.
+       **/
+      depositBase: u128 & AugmentedConst<ApiType>;
+      /**
+       * The amount of currency needed per unit threshold when creating a multisig execution.
+       * 
+       * This is held for adding 32 bytes more into a pre-existing storage value.
+       **/
+      depositFactor: u128 & AugmentedConst<ApiType>;
+      /**
+       * The maximum amount of signatories allowed in the multisig.
+       **/
+      maxSignatories: u16 & AugmentedConst<ApiType>;
+    };
     operationsWorkingGroupAlpha: {
       /**
        * Stake needed to create an opening.
@@ -528,7 +549,6 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Cancel Working Group Lead Opening' proposal parameters.
        **/
       cancelWorkingGroupLeadOpeningProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      createBlogPostProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Create Working Group Lead Opening' proposal parameters.
        **/
@@ -537,16 +557,22 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Decrease Working Group Lead Stake' proposal parameters.
        **/
       decreaseWorkingGroupLeadStakeProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      editBlogPostProoposalParamters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Fill Working Group Lead Opening' proposal parameters.
        **/
       fillWorkingGroupOpeningProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Max number of accounts per funding request proposal
+       **/
+      fundingRequestProposalMaxAccounts: u32 & AugmentedConst<ApiType>;
+      /**
+       * Max amount in funding request proposal (per account)
+       **/
+      fundingRequestProposalMaxAmount: u128 & AugmentedConst<ApiType>;
+      /**
        * Exports 'Funding Request' proposal parameters.
        **/
       fundingRequestProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      lockBlogPostProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Runtime Upgrade' proposal parameters.
        **/
@@ -564,6 +590,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       setInitialInvitationBalanceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       setInvitationCountProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Max allowed number of validators in set max validator count proposal
+       **/
+      setMaxValidatorCountProposalMaxValidators: u32 & AugmentedConst<ApiType>;
       /**
        * Exports 'Set Max Validator Count' proposal parameters.
        **/
@@ -590,7 +620,6 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Terminate Working Group Lead' proposal parameters.
        **/
       terminateWorkingGroupLeadProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      unlockBlogPostProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**

@@ -1,20 +1,20 @@
 import { FlowProps } from '../../Flow'
 import {
   CreateUpcomingOpeningsFixture,
-  DEFAULT_UPCOMING_OPENING_META,
+  createDefaultUpcomingMeta,
   RemoveUpcomingOpeningsFixture,
   UpcomingOpeningParams,
 } from '../../fixtures/workingGroups'
-
+import { Api } from '../../Api'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
 import Long from 'long'
 
-const upcomingOpeningsToCreate: UpcomingOpeningParams[] = [
+const upcomingOpeningsToCreate = (api: Api): UpcomingOpeningParams[] => [
   // All defaults case:
   {
-    meta: DEFAULT_UPCOMING_OPENING_META,
+    meta: createDefaultUpcomingMeta(api),
   },
   // Invalid metadata case:
   {
@@ -75,7 +75,7 @@ export default async function upcomingOpenings({ api, query, env }: FlowProps): 
         api,
         query,
         group,
-        upcomingOpeningsToCreate
+        upcomingOpeningsToCreate(api)
       )
       await new FixtureRunner(createUpcomingOpeningFixture).runWithQueryNodeChecks()
       const createdUpcomingOpeningIds = createUpcomingOpeningFixture.getCreatedUpcomingOpeningIds()

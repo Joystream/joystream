@@ -1,10 +1,15 @@
 use super::mock::*;
-use crate::{BuyMembershipParameters, InviteMembershipParameters};
+use crate::Event as MembershipEvent;
+use crate::{
+    BalanceOf, BuyMembershipParameters, CreateFoundingMemberParameters, GiftMembershipParameters,
+    InviteMembershipParameters, MembershipObject,
+};
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::StorageMap;
+use frame_support::traits::{OnFinalize, OnInitialize, WithdrawReasons};
+use frame_support::{assert_noop, assert_ok, StorageMap};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
+use staking_handler::StakingHandler;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -16,6 +21,17 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
         <Membership as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+pub fn set_invitation_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
 }
 
 pub struct EventFixture;
@@ -101,8 +117,18 @@ pub fn get_bob_info() -> TestUserInfo {
 
 pub const ALICE_ACCOUNT_ID: u64 = 1;
 pub const BOB_ACCOUNT_ID: u64 = 2;
+pub const BOB_ROOT_ACCOUNT_ID: u64 = 3;
+pub const BOB_CONTROLLER_ACCOUNT_ID: u64 = BOB_ACCOUNT_ID;
 pub const ALICE_MEMBER_ID: u64 = 0;
 pub const BOB_MEMBER_ID: u64 = 1;
+
+pub fn set_alice_as_initial_member() {
+    let initial_balance = ed() + DefaultMembershipPrice::get();
+    set_alice_free_balance(initial_balance);
+    let next_member_id = Membership::members_created();
+    assert_ok!(buy_default_membership_as_alice());
+    assert_eq!(ALICE_MEMBER_ID, next_member_id);
+}
 
 pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
     let info = get_alice_info();
@@ -123,6 +149,73 @@ pub fn buy_default_membership_as_alice() -> DispatchResult {
 
 pub fn set_alice_free_balance(balance: u64) {
     let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, balance);
+}
+
+pub fn get_bob_gift_membership_parameters() -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        controller_account: BOB_CONTROLLER_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(500),
+        credit_root_account: 600,
+        apply_root_account_invitation_lock: Some(300),
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_invalid_root_credit() -> GiftMembershipParameters<u64, u64>
+{
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        controller_account: BOB_CONTROLLER_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: None,
+        credit_root_account: 1000,
+        apply_root_account_invitation_lock: Some(10_000), // more than credit
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_invalid_controller_credit(
+) -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        controller_account: BOB_CONTROLLER_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(10_000), // more than credit
+        credit_root_account: 1000,
+        apply_root_account_invitation_lock: None,
+    }
+}
+
+pub fn get_bob_gift_membership_parameters_single_account() -> GiftMembershipParameters<u64, u64> {
+    let info = get_bob_info();
+
+    GiftMembershipParameters {
+        root_account: BOB_ROOT_ACCOUNT_ID,
+        // same as root account
+        controller_account: BOB_ROOT_ACCOUNT_ID,
+        handle: info.handle,
+        metadata: info.metadata,
+        credit_controller_account: 1000,
+        apply_controller_account_invitation_lock: Some(500),
+        credit_root_account: 2000,
+        apply_root_account_invitation_lock: Some(600),
+    }
+}
+
+pub fn gift_bob_membership_as_alice(params: GiftMembershipParameters<u64, u64>) -> DispatchResult {
+    Membership::gift_membership(Origin::signed(ALICE_ACCOUNT_ID), params)
 }
 
 pub struct UpdateMembershipVerificationFixture {
@@ -199,11 +292,11 @@ impl Default for BuyMembershipFixture {
 impl BuyMembershipFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let params = BuyMembershipParameters {
-            root_account: self.root_account.clone(),
-            controller_account: self.controller_account.clone(),
+            root_account: self.root_account,
+            controller_account: self.controller_account,
             handle: self.handle.clone(),
             metadata: self.metadata.clone(),
-            referrer_id: self.referrer_id.clone(),
+            referrer_id: self.referrer_id,
         };
 
         let actual_result = Membership::buy_membership(self.origin.clone().into(), params);
@@ -350,8 +443,8 @@ impl Default for InviteMembershipFixture {
         Self {
             member_id: ALICE_MEMBER_ID,
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
-            root_account: BOB_ACCOUNT_ID,
-            controller_account: BOB_ACCOUNT_ID,
+            root_account: BOB_ROOT_ACCOUNT_ID,
+            controller_account: BOB_CONTROLLER_ACCOUNT_ID,
             handle: bob.handle,
             metadata: bob.metadata,
         }
@@ -361,9 +454,9 @@ impl Default for InviteMembershipFixture {
 impl InviteMembershipFixture {
     pub fn get_invite_membership_parameters(&self) -> InviteMembershipParameters<u64, u64> {
         InviteMembershipParameters {
-            inviting_member_id: self.member_id.clone(),
-            root_account: self.root_account.clone(),
-            controller_account: self.controller_account.clone(),
+            inviting_member_id: self.member_id,
+            root_account: self.root_account,
+            controller_account: self.controller_account,
             handle: self.handle.clone(),
             metadata: self.metadata.clone(),
         }
@@ -696,5 +789,75 @@ impl ConfirmStakingAccountFixture {
 
     pub fn with_member_id(self, member_id: u64) -> Self {
         Self { member_id, ..self }
+    }
+}
+
+pub struct CreateFoundingMemberFixture {
+    pub origin: RawOrigin<u64>,
+    pub params: CreateFoundingMemberParameters<u64>,
+}
+
+impl CreateFoundingMemberFixture {
+    pub fn default() -> Self {
+        let alice = get_alice_info();
+        Self {
+            origin: RawOrigin::Root,
+            params: CreateFoundingMemberParameters {
+                root_account: ALICE_ACCOUNT_ID,
+                controller_account: ALICE_ACCOUNT_ID,
+                handle: alice.handle.unwrap(),
+                metadata: alice.metadata,
+            },
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_handle(self, handle: Vec<u8>) -> Self {
+        Self {
+            params: CreateFoundingMemberParameters {
+                handle,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let expected_member_id = Membership::members_created();
+        let actual_result =
+            Membership::create_founding_member(self.origin.clone().into(), self.params.clone());
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+
+            let handle_hash: Vec<u8> =
+                <Test as frame_system::Config>::Hashing::hash(&self.params.handle.clone())
+                    .as_ref()
+                    .to_vec();
+            let profile = get_membership_by_id(expected_member_id);
+
+            assert_eq!(Membership::handles(handle_hash.clone()), expected_member_id);
+            assert_eq!(Membership::members_created(), expected_member_id + 1);
+            assert_eq!(
+                profile,
+                MembershipObject {
+                    handle_hash,
+                    root_account: self.params.root_account.clone(),
+                    controller_account: self.params.controller_account.clone(),
+                    verified: true,
+                    invites: Membership::initial_invitation_count()
+                }
+            );
+
+            EventFixture::assert_last_crate_event(MembershipEvent::<Test>::FoundingMemberCreated(
+                expected_member_id,
+                self.params.clone(),
+            ));
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
     }
 }

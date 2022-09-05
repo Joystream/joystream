@@ -2,13 +2,11 @@
 
 use super::*;
 use frame_benchmarking::{account, benchmarks};
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::One;
-use sp_std::boxed::Box;
 use sp_std::convert::TryInto;
 use sp_std::vec;
-use sp_std::vec::Vec;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
@@ -100,7 +98,8 @@ benchmarks! {
     burn_account_tokens {
         let account_id = account::<T::AccountId>("caller", 0, 0);
         let initial_issuance = Balances::<T>::total_issuance();
-        let initial_balance: BalanceOf<T> = 15u32.into();
+        let initial_balance: BalanceOf<T> = 100_000_000u32.into(); // should be larger than existential deposit
+
         let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance);
 
         assert_eq!(Balances::<T>::free_balance(&account_id), initial_balance);
@@ -115,7 +114,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::mocks::{initial_test_ext, Test};
     use frame_support::assert_ok;
     type Utility = crate::Module<Test>;

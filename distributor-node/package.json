@@ -10,8 +10,8 @@
   "dependencies": {
     "@apollo/client": "^3.2.5",
     "@elastic/ecs-winston-format": "^1.1.0",
-    "@joystream/metadata-protobuf": "^2.2.0",
-    "@joystream/types": "^0.20.0",
+    "@joystream/metadata-protobuf": "^2.4.0",
+    "@joystream/types": "^0.20.2",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
@@ -27,6 +27,7 @@
     "fast-safe-stringify": "^2.1.1",
     "file-type": "^16.5.1",
     "graphql": "^14.7.0",
+    "graphql-tag": "^2.12.6",
     "inquirer": "^8.1.2",
     "js-image-generator": "^1.0.3",
     "lodash": "^4.17.21",
@@ -47,7 +48,7 @@
     "yaml": "^1.10.2"
   },
   "devDependencies": {
-    "@adobe/jsonschema2md": "https://github.com/adobe/jsonschema2md",
+    "@adobe/jsonschema2md": "^6.1.4",
     "@graphql-codegen/cli": "^1.21.4",
     "@graphql-codegen/import-types-preset": "^1.18.1",
     "@graphql-codegen/typescript": "^1.22.0",

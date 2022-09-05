@@ -7,14 +7,12 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumPostFieldsFragment, PostAddedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId } from '@joystream/types/forum'
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
-import { POST_DEPOSIT } from '../../consts'
+import { MemberId, ForumPostId, ForumThreadId, ForumCategoryId } from '@joystream/types/primitives'
 import { ForumPostMetadata, IForumPostMetadata } from '@joystream/metadata-protobuf'
 
 export type PostParams = {
-  categoryId: CategoryId | number
-  threadId: ThreadId | number
+  categoryId: ForumCategoryId | number
+  threadId: ForumThreadId | number
   asMember: MemberId
   editable?: boolean // defaults to true
   metadata: MetadataInput<IForumPostMetadata> & { expectReplyFailure?: boolean }
@@ -32,7 +30,7 @@ export class AddPostsFixture extends StandardizedFixture {
     this.postsParams = postsParams
   }
 
-  public getCreatedPostsIds(): PostId[] {
+  public getCreatedPostsIds(): ForumPostId[] {
     if (!this.events.length) {
       throw new Error('Trying to get created posts ids before they were created!')
     }
@@ -42,7 +40,7 @@ export class AddPostsFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.postsParams.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }
@@ -50,7 +48,7 @@ export class AddPostsFixture extends StandardizedFixture {
   public async execute(): Promise<void> {
     const accounts = await this.getSignerAccountOrAccounts()
     // Send required funds to accounts (PostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, POST_DEPOSIT)))
+    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, this.api.consts.forum.postDeposit)))
     await super.execute()
   }
 

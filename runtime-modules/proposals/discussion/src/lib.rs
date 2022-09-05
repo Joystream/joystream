@@ -53,23 +53,27 @@ mod benchmarking;
 #[cfg(test)]
 mod tests;
 mod types;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::sp_runtime::SaturatedConversion;
+use frame_support::traits::Currency;
 use frame_support::traits::Get;
-use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, PalletId, Parameter,
+    decl_error, decl_event, decl_module, decl_storage, ensure, PalletId, Parameter,
 };
-use sp_runtime::traits::{AccountIdConversion, Saturating};
+use sp_runtime::traits::{AccountIdConversion, Saturating, Zero};
 use sp_std::clone::Clone;
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
+use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
+use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::council::CouncilOriginValidator;
-use common::membership::MemberOriginValidator;
+use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::MemberId;
-use types::{DiscussionPost, DiscussionThread};
+use types::*;
 
 pub use types::ThreadMode;
 
@@ -77,15 +81,6 @@ pub use types::ThreadMode;
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 type Balances<T> = balances::Pallet<T>;
-
-/// Proposals discussion WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn add_post(j: u32) -> Weight;
-    fn update_post(j: u32) -> Weight;
-    fn delete_post() -> Weight;
-    fn change_thread_mode(i: u32) -> Weight;
-}
 
 type WeightInfoDiscussion<T> = <T as Config>::WeightInfo;
 
@@ -129,6 +124,9 @@ pub trait Config:
 
     /// Validates post author id and origin combination
     type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+
+    /// For checking member existance
+    type MembershipInfoProvider: MembershipInfoProvider<Self>;
 
     /// Defines whether the member is an active councilor.
     type CouncilOriginValidator: CouncilOriginValidator<
@@ -180,6 +178,10 @@ decl_error! {
         /// Max allowed authors list limit exceeded.
         MaxWhiteListSizeExceeded,
 
+        /// At least one of the member ids provided as part of closed thread whitelist belongs
+        /// to a non-existing member.
+        WhitelistedMemberDoesNotExist,
+
         /// Account has insufficient balance to create a post
         InsufficientBalanceForPost,
 
@@ -193,7 +195,7 @@ decl_storage! {
     pub trait Store for Module<T: Config> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
         pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
-            T::ThreadId => DiscussionThread<MemberId<T>, T::BlockNumber, MemberId<T>>;
+            T::ThreadId => DiscussionThreadOf<T>;
 
         /// Count of all threads that have been created.
         pub ThreadCount get(fn thread_count): u64;
@@ -201,10 +203,18 @@ decl_storage! {
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId:
             double_map hasher(blake2_128_concat) T::ThreadId, hasher(blake2_128_concat) T::PostId =>
-                DiscussionPost<MemberId<T>, BalanceOf<T>, T::BlockNumber>;
+                DiscussionPostOf<T>;
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u64;
+    }
+    add_extra_genesis {
+        build(|_| {
+            // Initialize module account with ExistentialDeposit
+            let module_account_id = crate::Module::<T>::module_account_id();
+            let deposit: BalanceOf<T> = T::ExistentialDeposit::get();
+            let _ = Balances::<T>::deposit_creating(&module_account_id, deposit);
+        });
     }
 }
 
@@ -236,7 +246,9 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoDiscussion::<T>::add_post(text.len().saturated_into())]
+        #[weight = WeightInfoDiscussion::<T>::add_post(
+            text.len().saturated_into(),
+        )]
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,
@@ -253,32 +265,26 @@ decl_module! {
 
             Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
 
-            // Ensure account has enough funds
-            if editable {
-                ensure!(
-                    Balances::<T>::usable_balance(&account_id) >= T::PostDeposit::get(),
-                    Error::<T>::InsufficientBalanceForPost,
-                );
-            }
-
-            // mutation
-
-            if editable {
-                Self::transfer_to_state_cleanup_treasury_account(
-                    T::PostDeposit::get(),
-                    thread_id,
-                    &account_id,
-                )?;
-            }
-
             let next_post_count_value = Self::post_count() + 1;
             let new_post_id = next_post_count_value;
             let post_id = T::PostId::from(new_post_id);
 
             if editable {
+                let post_deposit = T::PostDeposit::get();
+                ensure!(
+                    has_sufficient_balance_for_fees::<T>(&account_id, post_deposit),
+                    Error::<T>::InsufficientBalanceForPost
+                );
+
+                //
+                // MUTATION SAFE
+                //
+
+                let repayable_bloat_bond = Self::pay_bloat_bond(post_deposit, &account_id)?;
+
                 let new_post = DiscussionPost {
                     author_id: post_author_id,
-                    cleanup_pay_off: T::PostDeposit::get(),
+                    cleanup_pay_off: repayable_bloat_bond,
                     last_edited: frame_system::Pallet::<T>::block_number(),
                 };
 
@@ -307,7 +313,7 @@ decl_module! {
             thread_id: T::ThreadId,
             hide: bool,
         ) {
-            let account_id = T::AuthorOriginValidator::ensure_member_controller_account_origin(
+            let sender = T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin.clone(),
                 deleter_id,
             )?;
@@ -331,12 +337,8 @@ decl_module! {
             }
 
             // mutation
-
-            Self::pay_off(
-                thread_id,
-                T::PostDeposit::get(),
-                &account_id,
-            )?;
+            let state_cleanup_treasury_account = Self::module_account_id();
+            post.cleanup_pay_off.repay::<T>(&state_cleanup_treasury_account, &sender, false)?;
 
             <PostThreadIdByPostId<T>>::remove(thread_id, post_id);
             Self::deposit_event(RawEvent::PostDeleted(deleter_id, thread_id, post_id, hide));
@@ -414,6 +416,12 @@ decl_module! {
                     list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
                     Error::<T>::MaxWhiteListSizeExceeded
                 );
+                for member_id in list {
+                    ensure!(
+                        T::MembershipInfoProvider::controller_account_id(*member_id).is_ok(),
+                        Error::<T>::WhitelistedMemberDoesNotExist
+                    )
+                }
             }
 
             let thread = Self::thread_by_id(&thread_id);
@@ -493,34 +501,19 @@ impl<T: Config> Module<T> {
                 >= T::PostLifeTime::get()
     }
 
-    fn pay_off(
-        thread_id: T::ThreadId,
-        amount: BalanceOf<T>,
+    fn pay_bloat_bond(
+        amount: T::Balance,
         account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::ModuleId::get().into_sub_account_truncating(thread_id);
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            &state_cleanup_treasury_account,
-            account_id,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
-    }
+    ) -> Result<RepayableBloatBondOf<T>, DispatchError> {
+        let state_cleanup_treasury_account = Self::module_account_id();
+        let locked_balance_used =
+            pay_fee::<T>(account_id, Some(&state_cleanup_treasury_account), amount)?;
 
-    fn transfer_to_state_cleanup_treasury_account(
-        amount: BalanceOf<T>,
-        thread_id: T::ThreadId,
-        account_id: &T::AccountId,
-    ) -> DispatchResult {
-        let state_cleanup_treasury_account =
-            T::ModuleId::get().into_sub_account_truncating(thread_id);
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            account_id,
-            &state_cleanup_treasury_account,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )
+        // construct RepayableBloatBond based on pay_fee result
+        Ok(match locked_balance_used.is_zero() {
+            true => RepayableBloatBond::new(amount, None),
+            false => RepayableBloatBond::new(amount, Some(account_id.clone())),
+        })
     }
 
     fn ensure_thread_mode(
@@ -548,5 +541,9 @@ impl<T: Config> Module<T> {
                 }
             }
         }
+    }
+
+    fn module_account_id() -> T::AccountId {
+        T::ModuleId::get().into_sub_account_truncating("TREASURY")
     }
 }

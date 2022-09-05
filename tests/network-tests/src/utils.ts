@@ -54,7 +54,11 @@ export class Utils {
   }
 
   public static metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
-    return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
+    return createType('Bytes', Utils.metadataToString(metaClass, obj))
+  }
+
+  public static metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
+    return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
   }
 
   public static metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): DecodedMetadataObject<T> {
@@ -105,6 +109,10 @@ export class Utils {
     }
   }
 
+  public static hasDuplicates<T>(values: T[] | null | undefined): boolean {
+    return !!values && values.length > new Set(values).size
+  }
+
   public static async until(
     name: string,
     conditionFunc: (props: { debug: Debugger.Debugger }) => Promise<boolean>,
@@ -124,7 +132,9 @@ export class Utils {
         }
         debug('Condition not satisfied, waiting...')
       }
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       const interval = setInterval(check, intervalMs)
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       check()
     })
   }

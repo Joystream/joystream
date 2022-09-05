@@ -9,10 +9,9 @@ WorkingDirectory=/home/ubuntu/joystream/
 ExecStart=/home/ubuntu/joystream/target/release/joystream-node \
         --chain {{ template_remote_chain_spec_path }} \
         --pruning archive \
-        --node-key-file {{ template_secret_path }} \
+        --node-key-file {{ template_node_secret_path }} \
         --keystore-path {{ template_keystore_path }} \
-        --validator \
-        --log runtime,txpool,transaction-pool,trace=sync
+        --validator
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=10000

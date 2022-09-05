@@ -23,32 +23,33 @@ pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
-pub mod initial_members;
+pub mod storage_config;
 
 use grandpa_primitives::AuthorityId as GrandpaId;
-use hex_literal::hex;
+
 use node_runtime::{
-    constants::currency::*, constants::JOY_ADDRESS_PREFIX, membership, wasm_binary_unwrap,
-    AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig, CouncilConfig,
-    ForumConfig, GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig, ReferendumConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    TransactionPaymentConfig,
+    constants::currency::{ENDOWMENT, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND, STASH},
+    wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
+    GrandpaConfig, ImOnlineConfig, MaxNominations, SessionConfig, SessionKeys, StakerStatus,
+    StakingConfig, StorageConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
+    VestingConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
-use sc_telemetry::TelemetryEndpoints;
+
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
+use sp_core::{sr25519, Pair, Public};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     Perbill,
 };
 
-pub use node_runtime::primitives::{AccountId, Balance, Signature};
+pub use node_runtime::constants::JOY_ADDRESS_PREFIX;
+pub use node_runtime::primitives::{AccountId, Balance, BlockNumber, Signature};
 pub use node_runtime::GenesisConfig;
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -156,6 +157,7 @@ pub fn joy_chain_spec_properties() -> json::map::Map<String, json::Value> {
     properties
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Helper function to create GenesisConfig for testing
 pub fn testnet_genesis(
     initial_authorities: Vec<(
@@ -169,10 +171,10 @@ pub fn testnet_genesis(
     initial_nominators: Vec<AccountId>,
     root_key: AccountId,
     mut endowed_accounts: Vec<AccountId>,
-    members: Vec<membership::genesis::Member<u64, AccountId>>,
-    forum_cfg: ForumConfig,
     genesis_balances: Vec<(AccountId, Balance)>,
+    vesting_accounts: Vec<(AccountId, BlockNumber, BlockNumber, Balance)>,
     content_cfg: ContentConfig,
+    storage_cfg: StorageConfig,
 ) -> GenesisConfig {
     // endow all authorities and nominators.
     initial_authorities
@@ -193,7 +195,7 @@ pub fn testnet_genesis(
         .chain(initial_nominators.iter().map(|x| {
             use rand::{seq::SliceRandom, Rng};
             let limit = (MaxNominations::get() as usize).min(initial_authorities.len());
-            let count = rng.gen::<usize>() % limit;
+            let count = (rng.gen::<usize>() % limit).saturating_add(1); // at least one nomination
             let nominations = initial_authorities
                 .as_slice()
                 .choose_multiple(&mut rng, count)
@@ -209,8 +211,19 @@ pub fn testnet_genesis(
         }))
         .collect::<Vec<_>>();
 
-    const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
-    const STASH: Balance = ENDOWMENT / 1000;
+    // staking benchmakrs is not sensitive to actual value of min bonds so
+    // accounts are not funded with sufficient funds and fail with InsufficientBond err
+    // so for benchmarks we set min bond to zero.
+    let min_nominator_bond = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_NOMINATOR_BOND
+    };
+    let min_validator_bond = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_VALIDATOR_BOND
+    };
 
     GenesisConfig {
         system: SystemConfig {
@@ -246,6 +259,8 @@ pub fn testnet_genesis(
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
             stakers,
+            min_nominator_bond,
+            min_validator_bond,
             ..Default::default()
         },
         sudo: SudoConfig {
@@ -261,26 +276,32 @@ pub fn testnet_genesis(
             authorities: vec![],
         },
         transaction_payment: TransactionPaymentConfig {},
-        vesting: Default::default(),
+        vesting: VestingConfig {
+            vesting: vesting_accounts,
+        },
         council: council_config::create_council_config(),
-        members: MembersConfig { members },
-        forum: forum_cfg,
+        forum: forum_config::empty(),
         content: content_cfg,
+        storage: storage_cfg,
         referendum: council_config::create_referendum_config(),
         project_token: Default::default(),
+        proposals_discussion: Default::default(),
     }
 }
 
 fn development_config_genesis() -> GenesisConfig {
     testnet_genesis(
         vec![authority_keys_from_seed("Alice")],
-        vec![],
+        vec![
+            get_account_id_from_seed::<sr25519::Public>("Bob"),
+            get_account_id_from_seed::<sr25519::Public>("Charlie"),
+        ],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
-        initial_members::none(),
-        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+        vec![],
         vec![],
         content_config::testing_config(),
+        storage_config::testing_config(),
     )
 }
 
@@ -309,10 +330,10 @@ fn local_testnet_genesis() -> GenesisConfig {
         vec![],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
-        initial_members::none(),
-        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+        vec![],
         vec![],
         content_config::testing_config(),
+        storage_config::testing_config(),
     )
 }
 
@@ -346,9 +367,9 @@ pub(crate) mod tests {
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             development_endowed_accounts(),
             vec![],
-            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
             content_config::testing_config(),
+            storage_config::testing_config(),
         )
     }
 

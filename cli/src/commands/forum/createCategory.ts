@@ -1,9 +1,8 @@
 import { createType } from '@joystream/types'
-import { CategoryId } from '@joystream/types/forum'
+import { ForumCategoryId as CategoryId } from '@joystream/types/primitives'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import ForumCommandBase from '../../base/ForumCommandBase'
-import { Option } from '@polkadot/types'
 
 export default class ForumCreateCategoryCommand extends ForumCommandBase {
   static description = 'Create forum category.'
@@ -41,11 +40,7 @@ export default class ForumCreateCategoryCommand extends ForumCommandBase {
 
     const result = await this.sendAndFollowTx(
       await this.getDecodedPair(lead.roleAccount),
-      api.tx.forum.createCategory(
-        createType<Option<CategoryId>, 'Option<CategoryId>'>('Option<CategoryId>', parentCategoryId ?? null),
-        title,
-        description
-      )
+      api.tx.forum.createCategory(createType('Option<u64>', parentCategoryId ?? null), title, description)
     )
 
     const categoryId: CategoryId = this.getEvent(result, 'forum', 'CategoryCreated').data[0]

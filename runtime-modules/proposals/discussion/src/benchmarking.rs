@@ -2,17 +2,18 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsDiscussion;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use council::Module as Council;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use referendum::Module as Referendum;
 use referendum::ReferendumManager;
+use sp_runtime::traits::One;
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 
@@ -142,6 +143,8 @@ fn elect_council<
     let mut candidates = Vec::new();
     let last_id = start_id as usize + (council_size + number_of_extra_candidates) as usize;
 
+    run_to_block::<T>(T::BlockNumber::one());
+
     for i in start_id as usize..last_id {
         let (account_id, member_id) = member_account::<T>("councilor", i.try_into().unwrap());
         Council::<T>::announce_candidacy(
@@ -173,7 +176,7 @@ fn elect_council<
         let commitment = Referendum::<T, ReferendumInstance>::calculate_commitment(
             &voters[i].0,
             &[0u8],
-            &0,
+            &1,
             &candidates[i].member_id,
         );
         Referendum::<T, ReferendumInstance>::vote(
@@ -229,8 +232,6 @@ benchmarks! {
     }
 
     add_post {
-        let i in 1 .. T::MaxWhiteListSize::get();
-
         let j in 0 .. MAX_BYTES;
 
         // We do this to ignore the id 0 because the `Test` runtime
@@ -242,13 +243,13 @@ benchmarks! {
 
         // We start from 2 since we have previously created id 0 and not used it
         // and used id 1 for the caller (see comment above)
-        for id in 2 .. i + 1 {
+        for id in 2 .. T::MaxWhiteListSize::get() + 1 {
             let (_, member_id) = member_account::<T>("member", id);
             whitelisted_members.push(member_id);
         }
 
         // Worst case scenario there is a council
-        elect_council::<T>(i+1);
+        elect_council::<T>(T::MaxWhiteListSize::get()+1);
 
         let thread_id = ProposalsDiscussion::<T>::create_thread(
             caller_member_id,
@@ -392,7 +393,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
     type Discussions = crate::Module<Test>;

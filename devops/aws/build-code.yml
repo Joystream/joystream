@@ -1,18 +1,13 @@
 ---
 
 - name: Get latest Joystream code and run setup on all hosts
-  hosts: build,rpc
+  hosts: build,rpc,storage,distributors
   gather_facts: no
   tasks:
     - name: Get code from local or git repo
       include_role:
         name: common
         tasks_from: "{{ 'get-code-local' if build_local_code|bool else 'get-code-git' }}"
-
-    - name: Run setup
-      include_role:
-        name: common
-        tasks_from: run-setup
 
 - name: Build joystream-node on build host and copy binary to local
   hosts: build

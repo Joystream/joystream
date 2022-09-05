@@ -258,6 +258,7 @@ export class ContentService {
         }
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       pipeline(dataStream, fileStream, async (err) => {
         dataStream.off('data', onData)
         const { bytesWritten } = fileStream

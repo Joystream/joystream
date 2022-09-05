@@ -7,7 +7,6 @@ use frame_support::traits::{Currency, Get};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Bounded;
-use sp_std::boxed::Box;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
@@ -23,7 +22,7 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters,
+    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters, DataObjectStorage,
     DistributionBucketByFamilyIdById, DistributionBucketFamilyById, DistributionBucketId,
     DynamicBagType, Module, Module as Pallet, RawEvent, StaticBagId, StorageBucketById,
     StorageBucketOperatorStatus, UploadParameters, WorkerId,
@@ -543,6 +542,19 @@ benchmarks! {
         );
     }
 
+    update_data_object_state_bloat_bond {
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+
+    }: _ (RawOrigin::Signed(lead_account_id), new_bloat_bond)
+    verify {
+
+        assert_eq!(Module::<T>::data_object_state_bloat_bond_value(), new_bloat_bond);
+        assert_last_event::<T>(
+            RawEvent::DataObjectStateBloatBondValueUpdated(new_bloat_bond).into()
+        );
+    }
+
     update_number_of_storage_buckets_in_dynamic_bag_creation_policy {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let dynamic_bag_type = DynamicBagType::Member;
@@ -935,15 +947,12 @@ benchmarks! {
         let upload_parameters = UploadParameters::<T>{
             bag_id: bag_id.clone(),
             state_bloat_bond_source_account_id: worker_account_id.clone(),
-            expected_data_size_fee: Default::default(),
-            expected_data_object_state_bloat_bond: Default::default(),
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
+            expected_data_size_fee: Module::<T>::data_object_per_mega_byte_fee(),
+            expected_data_object_state_bloat_bond: Module::<T>::data_object_state_bloat_bond_value(),
             object_creation_list: object_parameters
         };
 
-        Module::<T>::sudo_upload_data_objects(
-            RawOrigin::Root.into(),
+        <Module::<T> as DataObjectStorage::<T>>::upload_data_objects(
             upload_parameters,
         )
         .unwrap();
@@ -1391,7 +1400,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::mocks::{build_test_externalities, Test};
     use frame_support::assert_ok;
     type Storage = crate::Module<Test>;
@@ -1428,6 +1436,13 @@ mod tests {
     fn update_storage_buckets_voucher_max_limits() {
         build_test_externalities().execute_with(|| {
             assert_ok!(Storage::test_benchmark_update_storage_buckets_voucher_max_limits());
+        });
+    }
+
+    #[test]
+    fn update_data_object_state_bloat_bond() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(Storage::test_benchmark_update_data_object_state_bloat_bond());
         });
     }
 

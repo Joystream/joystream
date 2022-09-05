@@ -1,43 +1,56 @@
-import BN from 'bn.js'
-import { createType, types } from '@joystream/types'
-import { ApiPromise, WsProvider } from '@polkadot/api'
-import { SubmittableExtrinsic, AugmentedQuery } from '@polkadot/api/types'
-import { formatBalance } from '@polkadot/util'
-import { Balance, LockIdentifier, StakingLedger, ElectionStatus } from '@polkadot/types/interfaces'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { Codec, Observable } from '@polkadot/types/types'
-import { UInt, Option } from '@polkadot/types'
+import { createType, AsCodec } from '@joystream/types'
 import {
-  AccountSummary,
-  WorkingGroups,
-  Reward,
-  GroupMember,
-  ApplicationDetails,
-  OpeningDetails,
-  UnaugmentedApiPromise,
-  MemberDetails,
-} from './Types'
-import { DeriveBalancesAll } from '@polkadot/api-derive/types'
-import { CLIError } from '@oclif/errors'
-import { Worker, WorkerId, OpeningId, Application, ApplicationId, Opening } from '@joystream/types/working-group'
-import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
-import { MemberId, ChannelId, AccountId, ThreadId, PostId } from '@joystream/types/common'
-import {
-  Channel,
-  Video,
-  ChannelCategoryId,
-  VideoId,
+  ApplicationId,
+  ChannelId,
   CuratorGroupId,
-  CuratorGroup,
-  VideoCategoryId,
-} from '@joystream/types/content'
-import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
-import QueryNodeApi from './QueryNodeApi'
-import { MembershipFieldsFragment } from './graphql/generated/queries'
+  DataObjectId,
+  ForumCategoryId as CategoryId,
+  ForumPostId as PostId,
+  ForumThreadId as ThreadId,
+  MemberId,
+  VideoId,
+  WorkerId,
+} from '@joystream/types/primitives'
+import { CLIError } from '@oclif/errors'
+import { ApiPromise, WsProvider } from '@polkadot/api'
+import { DeriveBalancesAll } from '@polkadot/api-derive/types'
+import { AugmentedQuery, SubmittableExtrinsic } from '@polkadot/api/types'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { Option, UInt, u64 } from '@polkadot/types'
+import { Balance, AccountId, LockIdentifier, StakingLedger } from '@polkadot/types/interfaces'
+import {
+  PalletContentChannelRecord as Channel,
+  PalletContentPermissionsCuratorGroup as CuratorGroup,
+  PalletContentVideoRecord as Video,
+  PalletForumCategory as Category,
+  PalletForumPost as Post,
+  PalletForumThread as Thread,
+  PalletMembershipMembershipObject as Membership,
+  PalletMembershipStakingAccountMemberBinding as StakingAccountMemberBinding,
+  PalletStorageBagIdType as BagId,
+  PalletStorageDataObject as DataObject,
+  PalletWorkingGroupGroupWorker as Worker,
+  PalletWorkingGroupJobApplication as Application,
+  PalletWorkingGroupOpening as Opening,
+} from '@polkadot/types/lookup'
+import { Codec, Observable } from '@polkadot/types/types'
+import { formatBalance } from '@polkadot/util'
 import { blake2AsHex } from '@polkadot/util-crypto'
-import { Category, CategoryId, Post, Thread } from '@joystream/types/forum'
+import BN from 'bn.js'
 import chalk from 'chalk'
 import _ from 'lodash'
+import { MembershipFieldsFragment } from './graphql/generated/queries'
+import QueryNodeApi from './QueryNodeApi'
+import {
+  AccountSummary,
+  ApplicationDetails,
+  GroupMember,
+  MemberDetails,
+  OpeningDetails,
+  Reward,
+  UnaugmentedApiPromise,
+  WorkingGroups,
+} from './Types'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
@@ -72,12 +85,12 @@ export default class Api {
 
   // Get api for use-cases where no type augmentations are desirable
   public getUnaugmentedApi(): UnaugmentedApiPromise {
-    return (this._api as unknown) as UnaugmentedApiPromise
+    return this._api as unknown as UnaugmentedApiPromise
   }
 
   private static async initApi(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>) {
     const wsProvider: WsProvider = new WsProvider(apiUri)
-    const api = new ApiPromise({ provider: wsProvider, types, metadata: metadataCache })
+    const api = new ApiPromise({ provider: wsProvider, metadata: metadataCache })
     await api.isReadyOrError
 
     const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
@@ -132,8 +145,8 @@ export default class Api {
   // Working groups
   async entriesByIds<IDType extends UInt, ValueType extends Codec>(
     apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>, [IDType]>
-  ): Promise<[IDType, ValueType][]> {
-    const entries: [IDType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+  ): Promise<[IDType, AsCodec<ValueType>][]> {
+    const entries: [IDType, AsCodec<ValueType>][] = (await apiMethod.entries()).map(([storageKey, value]) => [
       storageKey.args[0] as IDType,
       value,
     ])
@@ -143,8 +156,8 @@ export default class Api {
 
   async entriesByAccountIds<AccountType extends AccountId, ValueType extends Codec>(
     apiMethod: AugmentedQuery<'promise', (key: AccountType) => Observable<ValueType>, [AccountType]>
-  ): Promise<[AccountType, ValueType][]> {
-    const entries: [AccountType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+  ): Promise<[AccountType, AsCodec<ValueType>][]> {
+    const entries: [AccountType, AsCodec<ValueType>][] = (await apiMethod.entries()).map(([storageKey, value]) => [
       storageKey.args[0] as AccountType,
       value,
     ])
@@ -193,8 +206,8 @@ export default class Api {
   }
 
   async memberDetailsById(memberId: MemberId | number): Promise<MemberDetails | null> {
-    const membership = await this._api.query.members.membershipById(memberId)
-    return membership.isEmpty ? null : await this.memberDetails(createType('MemberId', memberId), membership)
+    const membership = (await this._api.query.members.membershipById(memberId)).unwrap()
+    return membership.isEmpty ? null : await this.memberDetails(createType('u64', memberId), membership)
   }
 
   async expectedMemberDetailsById(memberId: MemberId | number): Promise<MemberDetails> {
@@ -207,17 +220,19 @@ export default class Api {
   }
 
   async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
-    return this._api.query.members.membershipById.multi(ids)
+    return (await this._api.query.members.membershipById.multi(ids)).map((optionalMember) => optionalMember.unwrap())
   }
 
   async membersDetailsByIds(ids: MemberId[] | number[]): Promise<MemberDetails[]> {
     const memberships = await this.getMembers(ids)
-    const entries: [MemberId, Membership][] = ids.map((id, i) => [createType('MemberId', id), memberships[i]])
+    const entries: [MemberId, Membership][] = ids.map((id, i) => [createType('u64', id), memberships[i]])
     return this.membersDetails(entries)
   }
 
   async allMembersDetails(): Promise<MemberDetails[]> {
-    const entries = await this.entriesByIds(this._api.query.members.membershipById)
+    const entries: [u64, Membership][] = (await this.entriesByIds(this._api.query.members.membershipById)).map(
+      ([id, m]) => [id, m.unwrap()]
+    )
     return this.membersDetails(entries)
   }
 
@@ -236,24 +251,24 @@ export default class Api {
 
   protected async fetchStake(account: AccountId | string, group: WorkingGroups): Promise<Balance> {
     const groupLockId = this._api.consts[apiModuleByGroup[group]].stakingHandlerLockId
-    return this._api.createType(
+    return this._api.createType<Balance>(
       'Balance',
       new BN((await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(groupLockId))?.amount || 0)
     )
   }
 
   protected async parseGroupMember(group: WorkingGroups, id: WorkerId, worker: Worker): Promise<GroupMember> {
-    const roleAccount = worker.role_account_id
-    const stakingAccount = worker.staking_account_id
-    const memberId = worker.member_id
+    const roleAccount = worker.roleAccountId
+    const stakingAccount = worker.stakingAccountId
+    const memberId = worker.memberId
 
     const profile = await this.expectedMemberDetailsById(memberId)
 
-    const stake = await this.fetchStake(worker.staking_account_id, group)
+    const stake = await this.fetchStake(worker.stakingAccountId, group)
 
     const reward: Reward = {
-      valuePerBlock: worker.reward_per_block.unwrapOr(undefined),
-      totalMissed: worker.missed_reward.unwrapOr(undefined),
+      valuePerBlock: worker.rewardPerBlock.unwrapOr(undefined),
+      totalMissed: worker.missedReward.unwrapOr(undefined),
     }
 
     return {
@@ -268,7 +283,7 @@ export default class Api {
   }
 
   async workerByWorkerId(group: WorkingGroups, workerId: WorkerId | number): Promise<Worker> {
-    const worker = await this.workingGroupApiQuery(group).workerById(workerId)
+    const worker = (await this.workingGroupApiQuery(group).workerById(workerId)).unwrap()
 
     if (worker.isEmpty) {
       throw new CLIError(`Worker ${chalk.magentaBright(workerId)} does not exist!`)
@@ -279,7 +294,7 @@ export default class Api {
 
   async groupMember(group: WorkingGroups, workerId: number): Promise<GroupMember> {
     const worker = await this.workerByWorkerId(group, workerId)
-    return await this.parseGroupMember(group, this._api.createType('WorkerId', workerId), worker)
+    return await this.parseGroupMember(group, createType('u64', workerId), worker)
   }
 
   async groupMembers(group: WorkingGroups): Promise<GroupMember[]> {
@@ -292,12 +307,12 @@ export default class Api {
     return groupMembers.reverse() // Sort by newest
   }
 
-  groupWorkers(group: WorkingGroups): Promise<[WorkerId, Worker][]> {
-    return this.entriesByIds(this.workingGroupApiQuery(group).workerById)
+  async groupWorkers(group: WorkingGroups): Promise<[WorkerId, Worker][]> {
+    return (await this.entriesByIds(this.workingGroupApiQuery(group).workerById)).map(([id, w]) => [id, w.unwrap()])
   }
 
   async openingsByGroup(group: WorkingGroups): Promise<OpeningDetails[]> {
-    const openings = await this.entriesByIds<OpeningId, Opening>(this.workingGroupApiQuery(group).openingById)
+    const openings = await this.entriesByIds(this.workingGroupApiQuery(group).openingById)
 
     return Promise.all(openings.map(([id, opening]) => this.fetchOpeningDetails(group, opening, id.toNumber())))
   }
@@ -309,7 +324,7 @@ export default class Api {
       throw new CLIError('Invalid working group application ID!')
     }
 
-    const result = await this.workingGroupApiQuery(group).applicationById(applicationId)
+    const result = (await this.workingGroupApiQuery(group).applicationById(applicationId)).unwrap()
 
     if (result.isEmpty) {
       throw new CLIError(`Application of ID=${applicationId} no longer exists!`)
@@ -326,12 +341,12 @@ export default class Api {
     const qnData = await this._qnApi?.applicationDetailsById(group, applicationId)
     return {
       applicationId,
-      member: await this.expectedMemberDetailsById(application.member_id),
-      roleAccout: application.role_account_id,
-      rewardAccount: application.reward_account_id,
-      stakingAccount: application.staking_account_id,
-      descriptionHash: application.description_hash.toString(),
-      openingId: application.opening_id.toNumber(),
+      member: await this.expectedMemberDetailsById(application.memberId),
+      roleAccount: application.roleAccountId,
+      rewardAccount: application.rewardAccountId,
+      stakingAccount: application.stakingAccountId,
+      descriptionHash: application.descriptionHash.toString(),
+      openingId: application.openingId.toNumber(),
       answers: qnData?.answers,
     }
   }
@@ -342,14 +357,12 @@ export default class Api {
   }
 
   protected async groupOpeningApplications(group: WorkingGroups, openingId: number): Promise<ApplicationDetails[]> {
-    const applicationEntries = await this.entriesByIds<ApplicationId, Application>(
-      this.workingGroupApiQuery(group).applicationById
-    )
+    const applicationEntries = await this.entriesByIds(this.workingGroupApiQuery(group).applicationById)
 
     return Promise.all(
       applicationEntries
-        .filter(([, application]) => application.opening_id.eqn(openingId))
-        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application))
+        .filter(([, application]) => application.unwrap().openingId.eqn(openingId))
+        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application.unwrap()))
     )
   }
 
@@ -372,10 +385,10 @@ export default class Api {
   async fetchOpeningDetails(group: WorkingGroups, opening: Opening, openingId: number): Promise<OpeningDetails> {
     const qnData = await this._qnApi?.openingDetailsById(group, openingId)
     const applications = await this.groupOpeningApplications(group, openingId)
-    const type = opening.opening_type
+    const type = opening.openingType
     const stake = {
-      unstakingPeriod: opening.stake_policy.leaving_unstaking_period.toNumber(),
-      value: opening.stake_policy.stake_amount,
+      unstakingPeriod: opening.stakePolicy.leavingUnstakingPeriod.toNumber(),
+      value: opening.stakePolicy.stakeAmount,
     }
 
     return {
@@ -384,7 +397,7 @@ export default class Api {
       type,
       stake,
       createdAtBlock: opening.created.toNumber(),
-      rewardPerBlock: opening.reward_per_block.unwrapOr(undefined),
+      rewardPerBlock: opening.rewardPerBlock.unwrapOr(undefined),
       metadata: qnData?.metadata || undefined,
     }
   }
@@ -395,7 +408,7 @@ export default class Api {
   }
 
   async allMembers(): Promise<[MemberId, Membership][]> {
-    return this.entriesByIds<MemberId, Membership>(this._api.query.members.membershipById)
+    return (await this.entriesByIds(this._api.query.members.membershipById)).map(([id, m]) => [id, m.unwrap()])
   }
 
   // Content directory
@@ -419,9 +432,9 @@ export default class Api {
     return await this._api.query.staking.ledger(account)
   }
 
-  async getEraElectionStatus(): Promise<ElectionStatus> {
-    return await this._api.query.staking.eraElectionStatus()
-  }
+  // async getEraElectionStatus(): Promise<ElectionStatus> {
+  //   return await this._api.consts.staking.eraElectionStatus()
+  // }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
     const exists = !!(await this._api.query.content.curatorGroupById.size(id)).toNumber()
@@ -452,27 +465,81 @@ export default class Api {
     return video
   }
 
+  async videoStateBloatBond(): Promise<BN> {
+    return await this._api.query.content.videoStateBloatBondValue()
+  }
+
+  async channelStateBloatBond(): Promise<BN> {
+    return await this._api.query.content.channelStateBloatBondValue()
+  }
+
+  async dataObjectStateBloatBond(): Promise<BN> {
+    return await this._api.query.storage.dataObjectStateBloatBondValue()
+  }
+
   async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {
     return this._api.query.storage.dataObjectsById.multi(ids.map((id) => [bagId, id]))
   }
 
-  async channelCategoryIds(): Promise<ChannelCategoryId[]> {
-    // There is currently no way to differentiate between unexisting and existing category
-    // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
-    return (await this.entriesByIds(this._api.query.content.channelCategoryById)).map(([id]) => id)
+  async selectStorageBucketsForNewChannel(): Promise<number[]> {
+    const storageBuckets = await this._qnApi?.storageBucketsForNewChannel()
+    const { numberOfStorageBuckets: storageBucketsPolicy } = await this._api.query.storage.dynamicBagCreationPolicies(
+      'Channel'
+    )
+
+    if (!storageBuckets || storageBuckets.length < storageBucketsPolicy.toNumber()) {
+      throw new CLIError(`Storage buckets policy constraint unsatisfied. Not enough storage buckets exist`)
+    }
+
+    return storageBuckets.map((b) => Number(b.id)).slice(0, storageBucketsPolicy.toNumber())
   }
 
-  async videoCategoryIds(): Promise<VideoCategoryId[]> {
-    // There is currently no way to differentiate between unexisting and existing category
-    // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
-    return (await this.entriesByIds(this._api.query.content.videoCategoryById)).map(([id]) => id)
+  async selectDistributionBucketsForNewChannel(): Promise<
+    { distributionBucketFamilyId: number; distributionBucketIndex: number }[]
+  > {
+    const { families: distributionBucketFamiliesPolicy } = await this._api.query.storage.dynamicBagCreationPolicies(
+      'Channel'
+    )
+
+    const families = await this._qnApi?.distributionBucketsForNewChannel()
+    const distributionBucketIds = []
+
+    for (const { id, buckets } of families || []) {
+      const bucketsCountPolicy = [...distributionBucketFamiliesPolicy]
+        .find(([familyId]) => familyId.toString() === id)?.[1]
+        .toNumber()
+
+      if (!bucketsCountPolicy) {
+        continue
+      }
+
+      if (bucketsCountPolicy > buckets.length) {
+        throw new CLIError(
+          `Distribution buckets policy constraint unsatisfied. Not enough buckets exist in Bucket Family ${id}`
+        )
+      }
+
+      distributionBucketIds.push(
+        ..._.sampleSize(buckets, bucketsCountPolicy).map(({ bucketIndex }) => {
+          return {
+            distributionBucketFamilyId: Number(id),
+            distributionBucketIndex: bucketIndex,
+          }
+        })
+      )
+    }
+    return distributionBucketIds
   }
 
   async dataObjectsInBag(bagId: BagId): Promise<[DataObjectId, DataObject][]> {
-    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(([{ args: [, dataObjectId] }, value]) => [
-      dataObjectId,
-      value,
-    ])
+    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(
+      ([
+        {
+          args: [, dataObjectId],
+        },
+        value,
+      ]) => [dataObjectId, value]
+    )
   }
 
   async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {
@@ -490,7 +557,7 @@ export default class Api {
     const votingLockId = this._api.consts.referendum.stakingHandlerLockId
     const boundStakingAccountLockId = this._api.consts.members.stakingCandidateLockId
     const invitedMemberLockId = this._api.consts.members.invitedMemberLockId
-    const vestigLockId = this._api.createType('LockIdentifier', 'vesting ')
+    const vestigLockId = createType('LockIdentifier', 'vesting ') as LockIdentifier
 
     return [votingLockId, boundStakingAccountLockId, invitedMemberLockId, vestigLockId]
   }
@@ -525,8 +592,8 @@ export default class Api {
   async forumCategoryAncestors(categoryId: CategoryId | number): Promise<[CategoryId, Category][]> {
     const ancestors: [CategoryId, Category][] = []
     let category = await this._api.query.forum.categoryById(categoryId)
-    while (category.parent_category_id.isSome) {
-      const parentCategoryId = category.parent_category_id.unwrap()
+    while (category.parentCategoryId.isSome) {
+      const parentCategoryId = category.parentCategoryId.unwrap()
       category = await this._api.query.forum.categoryById(parentCategoryId)
       ancestors.push([parentCategoryId, category])
     }

@@ -93,49 +93,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       VestingBalance: AugmentedError<ApiType>;
     };
-    blog: {
-      /**
-       * A non-owner is trying to do a privilegeded action.
-       **/
-      BlogOwnershipError: AugmentedError<ApiType>;
-      /**
-       * Insuficient balance for reply creation
-       **/
-      InsufficientBalanceForReply: AugmentedError<ApiType>;
-      /**
-       * This error represent the invalid state where there is not enough funds in a post
-       * account to pay off its delete
-       **/
-      InsufficientBalanceInPostAccount: AugmentedError<ApiType>;
-      /**
-       * Reaction doesn't exists
-       **/
-      InvalidReactionIndex: AugmentedError<ApiType>;
-      /**
-       * A non-member is trying to participate
-       **/
-      MembershipError: AugmentedError<ApiType>;
-      /**
-       * Number of posts exceeds limits.
-       **/
-      PostLimitReached: AugmentedError<ApiType>;
-      /**
-       * Post is locked for modifications.
-       **/
-      PostLockedError: AugmentedError<ApiType>;
-      /**
-       * Post do not exists.
-       **/
-      PostNotFound: AugmentedError<ApiType>;
-      /**
-       * Reply do no exists.
-       **/
-      ReplyNotFound: AugmentedError<ApiType>;
-      /**
-       * A non-owner of a reply is trying to do a privileged action.
-       **/
-      ReplyOwnershipError: AugmentedError<ApiType>;
-    };
     content: {
       /**
        * Already active auction cannot be cancelled
@@ -266,6 +223,31 @@ declare module '@polkadot/api-base/types/errors' {
       ChannelNftDailyLimitExceeded: AugmentedError<ApiType>;
       ChannelNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Provided channel owner (curator group) does not exist
+       **/
+      ChannelOwnerCuratorGroupDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Provided channel owner (member) does not exist
+       **/
+      ChannelOwnerMemberDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Channel state bloat bond cannot be lower than existential deposit,
+       * because it must secure the channel module account against dusting
+       **/
+      ChannelStateBloatBondBelowExistentialDeposit: AugmentedError<ApiType>;
+      /**
+       * Invalid extrinsic call: Channel state bloat bond changed.
+       **/
+      ChannelStateBloatBondChanged: AugmentedError<ApiType>;
+      /**
+       * Channel Transfers are blocked during revenue splits
+       **/
+      ChannelTransfersBlockedDuringRevenueSplits: AugmentedError<ApiType>;
+      /**
+       * Channel Transfers are blocked during token sales
+       **/
+      ChannelTransfersBlockedDuringTokenSales: AugmentedError<ApiType>;
+      /**
        * Creator token was already issued for this channel
        **/
       CreatorTokenAlreadyIssued: AugmentedError<ApiType>;
@@ -325,10 +307,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Auction extension period upper bound exceeded
        **/
       ExtensionPeriodUpperBoundExceeded: AugmentedError<ApiType>;
-      /**
-       * Feature Not Implemented
-       **/
-      FeatureNotImplemented: AugmentedError<ApiType>;
       GlobalNftDailyLimitExceeded: AugmentedError<ApiType>;
       GlobalNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
@@ -336,9 +314,19 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InsufficientBalance: AugmentedError<ApiType>;
       /**
+       * Cannot create the channel: channel creator has insufficient balance
+       * (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees + existential deposit)
+       **/
+      InsufficientBalanceForChannelCreation: AugmentedError<ApiType>;
+      /**
        * Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
        **/
       InsufficientBalanceForTransfer: AugmentedError<ApiType>;
+      /**
+       * Cannot create the video: video creator has insufficient balance
+       * (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees + existential deposit)
+       **/
+      InsufficientBalanceForVideoCreation: AugmentedError<ApiType>;
       InsufficientCouncilBudget: AugmentedError<ApiType>;
       /**
        * Insufficient treasury balance
@@ -357,9 +345,9 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBidAmountSpecified: AugmentedError<ApiType>;
       /**
-       * Invalid Buy Now price commit provided
+       * `witness_price` provided to `buy_now` extrinsic does not match the current sell price
        **/
-      InvalidBuyNowPriceProvided: AugmentedError<ApiType>;
+      InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
        * Incorrect channel owner for an operation.
        **/
@@ -382,6 +370,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidMemberProvided: AugmentedError<ApiType>;
       /**
+       * Current nft offer price does not match the provided `witness_price`
+       **/
+      InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
+      /**
        * Invalid number of objects to delete provided for delete_video
        **/
       InvalidVideoDataObjectsCountProvided: AugmentedError<ApiType>;
@@ -401,6 +393,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Max auction whitelist length upper bound exceeded
        **/
       MaxAuctionWhiteListLengthUpperBoundExceeded: AugmentedError<ApiType>;
+      /**
+       * Attempt to set minimum cashout allowed above the limit
+       **/
+      MaxCashoutValueTooHigh: AugmentedError<ApiType>;
       /**
        * Member authentication failed
        **/
@@ -427,6 +423,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MinCashoutAllowedExceedsMaxCashoutAllowed: AugmentedError<ApiType>;
       /**
+       * Attempt to set minimum cashout allowed below the limit
+       **/
+      MinCashoutValueTooLow: AugmentedError<ApiType>;
+      /**
        * Nft for given video id already exists
        **/
       NftAlreadyExists: AugmentedError<ApiType>;
@@ -442,6 +442,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Can not create auction for Nft, if auction have been already started or nft is locked for the transfer
        **/
       NftIsNotIdle: AugmentedError<ApiType>;
+      /**
+       * Non-channel owner specified during nft issuance does not exist
+       **/
+      NftNonChannelOwnerDoesNotExist: AugmentedError<ApiType>;
       /**
        * Given video nft is not in buy now state
        **/
@@ -507,6 +511,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       StartsAtUpperBoundExceeded: AugmentedError<ApiType>;
       /**
+       * Nft offer target member does not exist
+       **/
+      TargetMemberDoesNotExist: AugmentedError<ApiType>;
+      /**
        * Insufficient balance
        **/
       UnsufficientBalance: AugmentedError<ApiType>;
@@ -519,14 +527,22 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       VideoInSeason: AugmentedError<ApiType>;
       /**
+       * Invalid extrinsic call: video state bloat bond changed.
+       **/
+      VideoStateBloatBondChanged: AugmentedError<ApiType>;
+      /**
+       * At least one of the whitelisted members does not exist
+       **/
+      WhitelistedMemberDoesNotExist: AugmentedError<ApiType>;
+      /**
        * Auction whitelist has only one member
        **/
       WhitelistHasOnlyOneMember: AugmentedError<ApiType>;
       /**
        * An attempt to withdraw funds from channel account failed, because the specified amount
-       * exceeds the account's balance minus ExistantialDeposit
+       * exceeds the withdrawable amount (channel account balance minus channel bloat bond)
        **/
-      WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit: AugmentedError<ApiType>;
+      WithdrawalAmountExceedsChannelAccountWithdrawableBalance: AugmentedError<ApiType>;
       /**
        * An attempt to withdraw funds from channel account failed, because the specified amount
        * is zero
@@ -945,13 +961,13 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AccountDoesNotMatchThreadAuthor: AugmentedError<ApiType>;
       /**
-       * Forum user has already voted.
-       **/
-      AlreadyVotedOnPoll: AugmentedError<ApiType>;
-      /**
        * Ancestor category immutable, i.e. deleted or archived
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
+      /**
+       * A thread with outstanding posts cannot be removed
+       **/
+      CannotDeleteThreadWithOutstandingPosts: AugmentedError<ApiType>;
       /**
        * Category does not exist.
        **/
@@ -972,10 +988,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category still contains some threads.
        **/
       CategoryNotEmptyThreads: AugmentedError<ApiType>;
-      /**
-       * data migration not done yet.
-       **/
-      DataMigrationNotDone: AugmentedError<ApiType>;
       /**
        * Forum user id not match its account.
        **/
@@ -1024,26 +1036,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Category path len should be greater than zero
        **/
       PathLengthShouldBeGreaterThanZero: AugmentedError<ApiType>;
-      /**
-       * Poll items number too short.
-       **/
-      PollAlternativesTooShort: AugmentedError<ApiType>;
-      /**
-       * Poll data committed after poll expired.
-       **/
-      PollCommitExpired: AugmentedError<ApiType>;
-      /**
-       * Poll data committed is wrong.
-       **/
-      PollData: AugmentedError<ApiType>;
-      /**
-       * Poll not exist.
-       **/
-      PollNotExist: AugmentedError<ApiType>;
-      /**
-       * Poll date setting is wrong.
-       **/
-      PollTimeSetting: AugmentedError<ApiType>;
       /**
        * Post does not exist.
        **/
@@ -1395,6 +1387,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ControllerAccountRequired: AugmentedError<ApiType>;
       /**
+       * Locked amount is greater than credit amount
+       **/
+      GifLockExceedsCredit: AugmentedError<ApiType>;
+      /**
        * Handle already registered.
        **/
       HandleAlreadyRegistered: AugmentedError<ApiType>;
@@ -1406,6 +1402,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient balance to cover stake.
        **/
       InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
+      /**
+       * Gifter doesn't have sufficient balance to credit
+       **/
+      InsufficientBalanceToGift: AugmentedError<ApiType>;
       /**
        * Member profile not found (invalid member id).
        **/
@@ -1439,7 +1439,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       StakingAccountIsAlreadyRegistered: AugmentedError<ApiType>;
       /**
-       * Invalid origin.
+       * Unsigned origin.
        **/
       UnsignedOrigin: AugmentedError<ApiType>;
       /**
@@ -1577,6 +1577,64 @@ declare module '@polkadot/api-base/types/errors' {
        * Trying to fund with zero tokens
        **/
       ZeroTokensFunding: AugmentedError<ApiType>;
+    };
+    multisig: {
+      /**
+       * Call is already approved by this signatory.
+       **/
+      AlreadyApproved: AugmentedError<ApiType>;
+      /**
+       * The data to be stored is already stored.
+       **/
+      AlreadyStored: AugmentedError<ApiType>;
+      /**
+       * The maximum weight information provided was too low.
+       **/
+      MaxWeightTooLow: AugmentedError<ApiType>;
+      /**
+       * Threshold must be 2 or greater.
+       **/
+      MinimumThreshold: AugmentedError<ApiType>;
+      /**
+       * Call doesn't need any (more) approvals.
+       **/
+      NoApprovalsNeeded: AugmentedError<ApiType>;
+      /**
+       * Multisig operation not found when attempting to cancel.
+       **/
+      NotFound: AugmentedError<ApiType>;
+      /**
+       * No timepoint was given, yet the multisig operation is already underway.
+       **/
+      NoTimepoint: AugmentedError<ApiType>;
+      /**
+       * Only the account that originally created the multisig is able to cancel it.
+       **/
+      NotOwner: AugmentedError<ApiType>;
+      /**
+       * The sender was contained in the other signatories; it shouldn't be.
+       **/
+      SenderInSignatories: AugmentedError<ApiType>;
+      /**
+       * The signatories were provided out of order; they should be ordered.
+       **/
+      SignatoriesOutOfOrder: AugmentedError<ApiType>;
+      /**
+       * There are too few signatories in the list.
+       **/
+      TooFewSignatories: AugmentedError<ApiType>;
+      /**
+       * There are too many signatories in the list.
+       **/
+      TooManySignatories: AugmentedError<ApiType>;
+      /**
+       * A timepoint was given, yet no multisig operation is underway.
+       **/
+      UnexpectedTimepoint: AugmentedError<ApiType>;
+      /**
+       * A different timepoint was given to the multisig operation that is underway.
+       **/
+      WrongTimepoint: AugmentedError<ApiType>;
     };
     operationsWorkingGroupAlpha: {
       /**
@@ -2002,6 +2060,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CannotParticipateInSplitWithZeroAmount: AugmentedError<ApiType>;
       /**
+       * At least one of the members provided as part of InitialAllocation does not exist
+       **/
+      InitialAllocationToNonExistingMember: AugmentedError<ApiType>;
+      /**
        * User does not posses enough balance to participate in the revenue split
        **/
       InsufficientBalanceForSplitParticipation: AugmentedError<ApiType>;
@@ -2071,6 +2133,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       RevenueSplitNotOngoing: AugmentedError<ApiType>;
       /**
+       * Revenue split rate cannot be 0
+       **/
+      RevenueSplitRateIsZero: AugmentedError<ApiType>;
+      /**
        * Specified revenue split starting block is in the past
        **/
       RevenueSplitTimeToStartTooShort: AugmentedError<ApiType>;
@@ -2125,7 +2191,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenDoesNotExist: AugmentedError<ApiType>;
       /**
-       * Token's current issuance state is not Idle
        * Token's current offering state is not Idle
        **/
       TokenIssuanceNotInIdleState: AugmentedError<ApiType>;
@@ -2133,6 +2198,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Symbol already in use
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
+      /**
+       * Transfer destination member id invalid
+       **/
+      TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * User already participating in the revenue split
        **/
@@ -2151,6 +2220,9 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient funds for 'Update Working Group Budget' proposal execution
        **/
       InsufficientFundsForBudgetUpdate: AugmentedError<ApiType>;
+      /**
+       * The specified min channel cashout is greater than the specified max channel cashout in `Update Channel Payouts` proposal.
+       **/
       InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout: AugmentedError<ApiType>;
       /**
        * Invalid council election parameter - announcing_period
@@ -2196,6 +2268,22 @@ declare module '@polkadot/api-base/types/errors' {
        * Repeated account in 'Funding Request' proposal.
        **/
       InvalidFundingRequestProposalRepeatedAccount: AugmentedError<ApiType>;
+      /**
+       * Provided lead application id is not valid
+       **/
+      InvalidLeadApplicationId: AugmentedError<ApiType>;
+      /**
+       * Provided lead opening id is not valid
+       **/
+      InvalidLeadOpeningId: AugmentedError<ApiType>;
+      /**
+       * Provided lead worker id is not valid
+       **/
+      InvalidLeadWorkerId: AugmentedError<ApiType>;
+      /**
+       * Provided proposal id is not valid
+       **/
+      InvalidProposalId: AugmentedError<ApiType>;
       /**
        * Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
        **/
@@ -2258,6 +2346,11 @@ declare module '@polkadot/api-base/types/errors' {
        * Thread doesn't exist
        **/
       ThreadDoesntExist: AugmentedError<ApiType>;
+      /**
+       * At least one of the member ids provided as part of closed thread whitelist belongs
+       * to a non-existing member.
+       **/
+      WhitelistedMemberDoesNotExist: AugmentedError<ApiType>;
     };
     proposalsEngine: {
       /**
@@ -2525,9 +2618,17 @@ declare module '@polkadot/api-base/types/errors' {
     };
     storage: {
       /**
+       * Generic Arithmetic Error due to internal accounting operation
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Blacklist size limit exceeded.
        **/
       BlacklistSizeLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Call Disabled
+       **/
+      CallDisabled: AugmentedError<ApiType>;
       /**
        * Cannot delete non empty dynamic bag.
        **/

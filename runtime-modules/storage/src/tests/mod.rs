@@ -17,20 +17,20 @@ use common::working_group::WorkingGroup;
 use crate::{
     BagId, DataObject, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
     DistributionBucketId, DynamicBagId, DynamicBagType, Error, ModuleAccount, RawEvent,
-    StaticBagId, StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
+    RepayableBloatBond, StaticBagId, StorageBucketOperatorStatus, StorageTreasury,
+    UploadParameters, Voucher,
 };
 
 use mocks::{
-    build_test_externalities, build_test_externalities_with_genesis, create_cid, Balances,
-    BlacklistSizeLimit, DefaultChannelDynamicBagNumberOfStorageBuckets,
-    DefaultMemberDynamicBagNumberOfStorageBuckets, ExistentialDeposit, MaxDataObjectSize,
-    MaxDistributionBucketFamilyNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
-    ANOTHER_STORAGE_PROVIDER_ID, DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
-    DEFAULT_DISTRIBUTION_PROVIDER_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
-    DEFAULT_STORAGE_BUCKETS_NUMBER, DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT,
-    DEFAULT_STORAGE_BUCKET_SIZE_LIMIT, DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
-    DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, ONE_MB,
-    STORAGE_WG_LEADER_ACCOUNT_ID,
+    build_test_externalities, create_cid, Balances, BlacklistSizeLimit,
+    DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
+    ExistentialDeposit, MaxDataObjectSize, MaxDistributionBucketFamilyNumber, Storage, Test,
+    ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID,
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
+    DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
+    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, ONE_MB, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
@@ -335,7 +335,7 @@ fn update_storage_buckets_for_bags_succeeded_with_additioonal_checks_on_adding_a
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
-            .with_remove_bucket_ids(add_buckets_ids.clone())
+            .with_remove_bucket_ids(add_buckets_ids)
             .call_and_assert(Ok(()));
 
         let bag = Storage::bag(&bag_id);
@@ -350,7 +350,7 @@ fn update_storage_buckets_for_bags_succeeded_with_additioonal_checks_on_adding_a
 fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id);
 
         let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
         let invite_worker = Some(storage_provider_id);
@@ -365,8 +365,8 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_ids(add_buckets.clone())
+            .with_bag_id(bag_id)
+            .with_add_bucket_ids(add_buckets)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
@@ -375,7 +375,7 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
 fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
     build_test_externalities().execute_with(|| {
         let static_bag_id = StaticBagId::Council;
-        let bag_id = BagId::<Test>::Static(static_bag_id.clone());
+        let bag_id = BagId::<Test>::Static(static_bag_id);
 
         set_default_update_storage_buckets_per_bag_limit();
 
@@ -390,8 +390,8 @@ fn update_storage_buckets_for_bags_fails_with_non_accepting_new_bags_bucket() {
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_ids(add_buckets.clone())
+            .with_bag_id(bag_id)
+            .with_add_bucket_ids(add_buckets)
             .call_and_assert(Err(Error::<Test>::StorageBucketDoesntAcceptNewBags.into()));
     });
 }
@@ -419,7 +419,7 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let objects_limit = 1;
@@ -440,9 +440,9 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_add_bucket_ids(new_buckets.clone())
-            .with_remove_bucket_ids(old_buckets.clone())
+            .with_remove_bucket_ids(old_buckets)
             .call_and_assert(Ok(()));
 
         let bag = Storage::static_bag(&StaticBagId::Council);
@@ -479,14 +479,14 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let new_bucket_objects_limit = 0;
@@ -502,8 +502,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_ids(new_buckets.clone())
+            .with_bag_id(bag_id)
+            .with_add_bucket_ids(new_buckets)
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectNumberLimitReached.into()
             ));
@@ -526,14 +526,14 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let new_bucket_objects_limit = 1;
@@ -549,8 +549,8 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_ids(new_buckets.clone())
+            .with_bag_id(bag_id)
+            .with_add_bucket_ids(new_buckets)
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectSizeLimitReached.into()
             ));
@@ -578,7 +578,7 @@ fn update_storage_buckets_for_working_group_static_bags_succeeded() {
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_add_bucket_ids(buckets.clone())
             .call_and_assert(Ok(()));
 
@@ -612,11 +612,11 @@ fn update_storage_buckets_for_dynamic_bags_succeeded() {
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_remove_bucket_ids(buckets.clone())
             .call_and_assert(Ok(()));
 
-        let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
+        let bag_id: BagId<Test> = dynamic_bag_id.into();
         let bag: crate::Bag<Test> = <crate::Bags<Test>>::get(bag_id);
         assert_eq!(bag.stored_by, BTreeSet::new());
     });
@@ -661,8 +661,8 @@ fn update_storage_buckets_for_bags_fails_with_non_existing_storage_buckets() {
         // Invalid removed bucket ID.
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
-            .with_remove_bucket_ids(buckets.clone())
+            .with_bag_id(bag_id)
+            .with_remove_bucket_ids(buckets)
             .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
     });
 }
@@ -672,13 +672,13 @@ fn update_storage_buckets_for_bags_fails_with_going_beyond_the_buckets_per_bag_l
         let limit = 3;
         set_update_storage_buckets_per_bag_limit(limit);
 
-        let buckets = BTreeSet::from_iter((0..=limit).into_iter());
+        let buckets = BTreeSet::from_iter(0..=limit);
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_ids(buckets.clone())
+            .with_bag_id(bag_id)
+            .with_add_bucket_ids(buckets)
             .call_and_assert(Err(Error::<Test>::StorageBucketPerBagLimitExceeded.into()));
     });
 }
@@ -712,7 +712,7 @@ fn update_storage_buckets_succeeds_with_add_remove_within_limits() {
 
         UpdateStorageBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_add_bucket_ids(add_buckets)
             .with_remove_bucket_ids(remove_buckets)
             .call_and_assert(Ok(()));
@@ -761,7 +761,7 @@ fn upload_succeeded() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: data_object_state_bloat_bond,
+                state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
         );
@@ -773,11 +773,11 @@ fn upload_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            data_object_state_bloat_bond
+            init_module_acc_balance() + data_object_state_bloat_bond
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsUploaded(
-            vec![data_object_id],
+            BTreeSet::from_iter(vec![data_object_id]),
             upload_params,
             data_object_state_bloat_bond,
         ));
@@ -803,7 +803,7 @@ fn upload_failed_with_exceeding_the_data_object_max_size() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::MaxDataObjectSizeExceeded.into()));
     });
 }
@@ -832,7 +832,7 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params1.clone())
+            .with_params(upload_params1)
             .call_and_assert(Ok(()));
 
         let data_object_id_1 = 0_u64;
@@ -857,7 +857,7 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_state_bloat_bond
+            init_module_acc_balance() + 2 * data_object_state_bloat_bond
         );
 
         let upload_params2 = UploadParameters::<Test> {
@@ -870,7 +870,7 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params2.clone())
+            .with_params(upload_params2)
             .call_and_assert(Ok(()));
 
         let data_object_id_3 = 2_u64;
@@ -895,7 +895,7 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            4 * data_object_state_bloat_bond
+            init_module_acc_balance() + 4 * data_object_state_bloat_bond
         );
     });
 }
@@ -934,7 +934,7 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
             .with_expected_data_size_fee(Storage::data_object_per_mega_byte_fee())
             .call_and_assert(Ok(()));
 
-        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id);
 
         let upload_params1 = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
@@ -946,7 +946,7 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params1.clone())
+            .with_params(upload_params1)
             .call_and_assert(Ok(()));
 
         let data_object_id_1 = 0_u64;
@@ -971,7 +971,7 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_state_bloat_bond
+            init_module_acc_balance() + 2 * data_object_state_bloat_bond
         );
 
         let upload_params2 = UploadParameters::<Test> {
@@ -984,7 +984,7 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params2.clone())
+            .with_params(upload_params2)
             .call_and_assert(Ok(()));
 
         let data_object_id_3 = 2_u64;
@@ -1009,7 +1009,7 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            4 * data_object_state_bloat_bond
+            init_module_acc_balance() + 4 * data_object_state_bloat_bond
         );
     });
 }
@@ -1036,7 +1036,7 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         //// Check voucher
@@ -1065,7 +1065,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
         let upload_params = UploadParameters::<Test> {
             bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -1077,7 +1077,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
 
         // Check storage bucket voucher: object number limit.
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectNumberLimitReached.into()
             ));
@@ -1101,7 +1101,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
         let upload_params = UploadParameters::<Test> {
             bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -1109,7 +1109,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
 
         // Check storage bucket voucher: object size limit.
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectSizeLimitReached.into()
             ));
@@ -1159,7 +1159,7 @@ fn upload_succeeded_with_dynamic_bag() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                state_bloat_bond: data_object_state_bloat_bond,
+                state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
         );
@@ -1172,7 +1172,7 @@ fn upload_fails_with_non_existent_dynamic_bag() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
+            bag_id: BagId::<Test>::Dynamic(dynamic_bag_id),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -1181,7 +1181,7 @@ fn upload_fails_with_non_existent_dynamic_bag() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
@@ -1373,7 +1373,7 @@ fn upload_failed_with_blocked_uploading() {
             .call_and_assert(Ok(()));
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::UploadingBlocked.into()));
     });
 }
@@ -1403,7 +1403,7 @@ fn upload_failed_with_blacklisted_data_object() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::DataObjectBlacklisted.into()));
     });
 }
@@ -1547,7 +1547,7 @@ fn accept_pending_data_objects_succeeded() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0; // just uploaded data object
@@ -1614,7 +1614,7 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0;
@@ -1625,7 +1625,7 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
             .with_storage_bucket_id(bucket_id)
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_data_object_ids(data_object_ids)
             .call_and_assert(Err(Error::<Test>::StorageBucketIsNotBoundToBag.into()));
     });
@@ -1654,7 +1654,7 @@ fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id);
 
         let data_object_id = 0;
 
@@ -1664,7 +1664,7 @@ fn accept_pending_data_objects_fails_with_non_existing_dynamic_bag() {
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
             .with_storage_bucket_id(bucket_id)
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_data_object_ids(data_object_ids)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
@@ -1694,7 +1694,7 @@ fn accept_pending_data_objects_fails_with_invalid_transactor_account_id() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id);
 
         let data_object_id = 0;
 
@@ -1704,7 +1704,7 @@ fn accept_pending_data_objects_fails_with_invalid_transactor_account_id() {
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
             .with_storage_bucket_id(bucket_id)
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_data_object_ids(data_object_ids)
             .call_and_assert(Err(Error::<Test>::InvalidTransactorAccount.into()));
     });
@@ -1756,7 +1756,7 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0; // just uploaded data object
@@ -1766,7 +1766,7 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
         AcceptPendingDataObjectsFixture::new()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_worker_id(storage_provider_id)
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_data_object_ids(data_object_ids)
             .call_and_assert(Ok(()));
 
@@ -1795,7 +1795,7 @@ fn accept_pending_data_objects_fails_with_empty_params() {
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let bucket_id = create_storage_bucket_and_assign_to_bag(
-            bag_id.clone(),
+            bag_id,
             Some(storage_provider_id),
             objects_limit,
             size_limit,
@@ -1831,7 +1831,7 @@ fn accept_pending_data_objects_fails_with_non_existing_data_object() {
 
         AcceptPendingDataObjectsFixture::new()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_data_object_ids(data_object_ids)
             .with_storage_bucket_id(bucket_id)
             .with_worker_id(storage_provider_id)
@@ -1844,7 +1844,7 @@ fn accept_pending_data_objects_fails_with_invalid_storage_provider() {
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
-        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id);
 
         AcceptPendingDataObjectsFixture::new()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
@@ -2092,7 +2092,7 @@ fn move_data_objects_succeeded() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0u64;
@@ -2139,7 +2139,7 @@ fn move_data_objects_fails_with_non_existing_dynamic_bags() {
         let src_bag_id = BagId::<Test>::Dynamic(src_dynamic_bag_id.clone());
 
         let dest_dynamic_bag_id = DynamicBagId::<Test>::Member(2u64);
-        let dest_bag_id = BagId::<Test>::Dynamic(dest_dynamic_bag_id.clone());
+        let dest_bag_id = BagId::<Test>::Dynamic(dest_dynamic_bag_id);
 
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
@@ -2160,9 +2160,9 @@ fn move_data_objects_fails_with_non_existing_dynamic_bags() {
 
         // Src bag exists, dest doesn't
         MoveDataObjectsFixture::default()
-            .with_src_bag_id(src_bag_id.clone())
-            .with_dest_bag_id(dest_bag_id.clone())
-            .with_data_object_ids(ids.clone())
+            .with_src_bag_id(src_bag_id)
+            .with_dest_bag_id(dest_bag_id)
+            .with_data_object_ids(ids)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
@@ -2195,7 +2195,7 @@ fn move_data_objects_succeeded_having_voucher() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0u64;
@@ -2212,9 +2212,9 @@ fn move_data_objects_succeeded_having_voucher() {
         assert_eq!(src_bucket.voucher.size_used, object_creation_list[0].size);
 
         MoveDataObjectsFixture::default()
-            .with_src_bag_id(src_bag_id.clone())
-            .with_dest_bag_id(dest_bag_id.clone())
-            .with_data_object_ids(ids.clone())
+            .with_src_bag_id(src_bag_id)
+            .with_dest_bag_id(dest_bag_id)
+            .with_data_object_ids(ids)
             .call_and_assert(Ok(()));
 
         //// Check vouchers
@@ -2268,23 +2268,23 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0u64;
         let ids = BTreeSet::from_iter(vec![data_object_id]);
 
         MoveDataObjectsFixture::default()
-            .with_src_bag_id(src_bag_id.clone())
-            .with_dest_bag_id(dest_bag_id.clone())
-            .with_data_object_ids(ids.clone())
+            .with_src_bag_id(src_bag_id)
+            .with_dest_bag_id(dest_bag_id)
+            .with_data_object_ids(ids)
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectNumberLimitReached.into()
             ));
@@ -2328,23 +2328,23 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0u64;
         let ids = BTreeSet::from_iter(vec![data_object_id]);
 
         MoveDataObjectsFixture::default()
-            .with_src_bag_id(src_bag_id.clone())
-            .with_dest_bag_id(dest_bag_id.clone())
-            .with_data_object_ids(ids.clone())
+            .with_src_bag_id(src_bag_id)
+            .with_dest_bag_id(dest_bag_id)
+            .with_data_object_ids(ids)
             .call_and_assert(Err(
                 Error::<Test>::StorageBucketObjectSizeLimitReached.into()
             ));
@@ -2420,7 +2420,7 @@ fn delete_data_objects_succeeded() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         let data_object_id = 0; // just uploaded data object
@@ -2439,7 +2439,7 @@ fn delete_data_objects_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            data_object_state_bloat_bond
+            init_module_acc_balance() + data_object_state_bloat_bond
         );
 
         DeleteDataObjectsFixture::new()
@@ -2460,7 +2460,7 @@ fn delete_data_objects_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
@@ -2478,15 +2478,15 @@ fn delete_data_objects_fails_with_non_existent_dynamic_bag() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id);
 
         let data_object_id = 0;
 
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         DeleteDataObjectsFixture::new()
-            .with_bag_id(bag_id.clone())
-            .with_data_object_ids(data_object_ids.clone())
+            .with_bag_id(bag_id)
+            .with_data_object_ids(data_object_ids)
             .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
@@ -2520,15 +2520,14 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
-        EventFixture::contains_crate_event(RawEvent::BagObjectsChanged(
-            bag_id.clone(),
-            object_creation_list[0].size,
-            1,
-        ));
-
         let data_object_id = 0; // just uploaded data object
-
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
+
+        EventFixture::contains_crate_event(RawEvent::DataObjectsUploaded(
+            data_object_ids.clone(),
+            upload_params.clone(),
+            Storage::data_object_state_bloat_bond_value(),
+        ));
 
         //// Pre-check voucher
         let bucket = Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
@@ -2552,7 +2551,11 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         assert_eq!(bucket.voucher.objects_used, 0);
         assert_eq!(bucket.voucher.size_used, 0);
 
-        EventFixture::contains_crate_event(RawEvent::BagObjectsChanged(bag_id.clone(), 0, 0));
+        EventFixture::contains_crate_event(RawEvent::DataObjectsDeleted(
+            DEFAULT_ACCOUNT_ID,
+            bag_id,
+            data_object_ids,
+        ));
     });
 }
 
@@ -2574,7 +2577,7 @@ fn delete_data_objects_succeeds_with_original_obj_state_bloat_bond() {
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
         CreateDynamicBagFixture::default()
-            .with_bag_id(dynamic_bag_id.clone())
+            .with_bag_id(dynamic_bag_id)
             .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_storage_buckets(storage_buckets)
             .with_expected_data_object_state_bloat_bond(
@@ -2592,7 +2595,7 @@ fn delete_data_objects_succeeds_with_original_obj_state_bloat_bond() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         //Doubling the data object state bloat bond, should not influence older data objects when deleting them.
@@ -2615,7 +2618,7 @@ fn delete_data_objects_succeeds_with_original_obj_state_bloat_bond() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_state_bloat_bond
+            init_module_acc_balance() + 2 * data_object_state_bloat_bond
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
@@ -2643,10 +2646,98 @@ fn delete_data_objects_fails_with_non_existing_data_object() {
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         DeleteDataObjectsFixture::new()
-            .with_bag_id(council_bag_id.clone())
-            .with_data_object_ids(data_object_ids.clone())
+            .with_bag_id(council_bag_id)
+            .with_data_object_ids(data_object_ids)
             .call_and_assert(Err(Error::<Test>::DataObjectDoesntExist.into()));
     });
+}
+
+#[test]
+fn update_storage_bucket_for_bag_fails_with_voucher_limits_overflow() {
+    // SETUP :
+    // - storage bucket with size limit u64::MAX, call it bucket1
+    // - bag (eg static) with bucket1 as backend, bag1
+    // - upload to bag1 a data object of size MaxDataObjectSize
+    // - storage buckets with size limit u64::MAX, call it bucket2,bucket3,bucket4,..
+    // - bag (eg static) with bucket2,bucket3,bucket4,.. as backend, bag2
+    // - upload to bag2 a data object of size u64::MAX - MaxDataObjectSize, filling bucket2
+    // - add bucket2 to bag1
+    let static_bag_id = StaticBagId::Council;
+    let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+    pub const NEW_LIMIT: u64 = 7;
+    pub const OBJECTS_LIMIT: u64 = 10;
+    pub const SIZE_LIMIT: u64 = u64::MAX;
+
+    build_test_externalities().execute_with(|| {
+        set_update_storage_buckets_per_bag_limit(NEW_LIMIT);
+
+        UpdateStorageBucketsVoucherMaxLimitsFixture::new()
+            .with_new_objects_size_limit(SIZE_LIMIT)
+            .with_new_objects_number_limit(OBJECTS_LIMIT)
+            .call_and_assert(Ok(()));
+
+        let bucket_id = CreateStorageBucketFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_size_limit(SIZE_LIMIT)
+            .with_objects_limit(OBJECTS_LIMIT)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        UpdateStorageBucketForBagsFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(static_bag_id.clone().into())
+            .with_add_bucket_ids(BTreeSet::from_iter(vec![bucket_id]))
+            .call_and_assert(Ok(()));
+
+        UploadFixture::default()
+            .with_params(UploadParameters::<Test> {
+                bag_id: static_bag_id.clone().into(),
+                state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                object_creation_list: vec![DataObjectCreationParameters {
+                    size: MaxDataObjectSize::get(),
+                    ipfs_content_id: create_cid(1u8.into()),
+                }],
+                expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+                expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(
+                ),
+            })
+            .call_and_assert(Ok(()));
+
+        let dyn_bag_storage_buckets = CreateStorageBucketFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_size_limit(SIZE_LIMIT)
+            .with_objects_limit(OBJECTS_LIMIT)
+            .create_several(3); // member dyn bag policy: 3 buckets per bag
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_storage_buckets(dyn_bag_storage_buckets.clone())
+            .with_expected_data_object_state_bloat_bond(
+                Storage::data_object_state_bloat_bond_value(),
+            )
+            .with_expected_data_size_fee(Storage::data_object_per_mega_byte_fee())
+            .call_and_assert(Ok(()));
+
+        UploadFixture::default()
+            .with_params(UploadParameters::<Test> {
+                bag_id: dynamic_bag_id.clone().into(),
+                state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                object_creation_list: vec![DataObjectCreationParameters {
+                    size: SIZE_LIMIT - MaxDataObjectSize::get() + 1,
+                    ipfs_content_id: create_cid(2u8.into()),
+                }],
+                expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+                expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(
+                ),
+            })
+            .call_and_assert(Ok(()));
+
+        UpdateStorageBucketForBagsFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(static_bag_id.into())
+            .with_add_bucket_ids(dyn_bag_storage_buckets)
+            .call_and_assert(Err(Error::<Test>::ArithmeticError.into()));
+    })
 }
 
 #[test]
@@ -2703,7 +2794,7 @@ fn update_blacklist_succeeded() {
         let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
         UpdateBlacklistFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_add_hashes(add_hashes.clone())
+            .with_add_hashes(add_hashes)
             .call_and_assert(Ok(()));
 
         assert!(crate::Blacklist::contains_key(&cid1));
@@ -2742,7 +2833,7 @@ fn update_blacklist_failed_with_exceeding_size_limit() {
 
         UpdateBlacklistFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_add_hashes(add_hashes.clone())
+            .with_add_hashes(add_hashes)
             .call_and_assert(Ok(()));
 
         let remove_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
@@ -2750,8 +2841,8 @@ fn update_blacklist_failed_with_exceeding_size_limit() {
 
         UpdateBlacklistFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_add_hashes(add_hashes.clone())
-            .with_remove_hashes(remove_hashes.clone())
+            .with_add_hashes(add_hashes)
+            .with_remove_hashes(remove_hashes)
             .call_and_assert(Err(Error::<Test>::BlacklistSizeLimitExceeded.into()));
 
         assert!(crate::Blacklist::contains_key(&cid1));
@@ -2776,7 +2867,7 @@ fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_ha
 
         UpdateBlacklistFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_add_hashes(add_hashes.clone())
+            .with_add_hashes(add_hashes)
             .call_and_assert(Ok(()));
 
         let remove_hashes = BTreeSet::from_iter(vec![cid3.clone()]);
@@ -2784,8 +2875,8 @@ fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_ha
 
         UpdateBlacklistFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_add_hashes(add_hashes.clone())
-            .with_remove_hashes(remove_hashes.clone())
+            .with_add_hashes(add_hashes)
+            .with_remove_hashes(remove_hashes)
             .call_and_assert(Err(Error::<Test>::BlacklistSizeLimitExceeded.into()));
 
         assert!(crate::Blacklist::contains_key(&cid1));
@@ -2808,7 +2899,7 @@ fn update_blacklist_succeeds_with_existent_remove_hashes() {
 
         UpdateBlacklistFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_add_hashes(add_hashes.clone())
+            .with_add_hashes(add_hashes)
             .call_and_assert(Ok(()));
 
         assert!(crate::Blacklist::contains_key(&cid1));
@@ -2821,10 +2912,10 @@ fn update_blacklist_fails_with_invalid_length() {
     build_test_externalities().execute_with(|| {
         let cid1 = vec![1];
 
-        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        let add_hashes = BTreeSet::from_iter(vec![cid1]);
         UpdateBlacklistFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_add_hashes(add_hashes.clone())
+            .with_add_hashes(add_hashes)
             .call_and_assert(Err(Error::<Test>::InvalidCidLength.into()));
     });
 }
@@ -2866,7 +2957,7 @@ fn delete_dynamic_bags_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         DeleteDynamicBagFixture::new()
@@ -2877,17 +2968,14 @@ fn delete_dynamic_bags_succeeded() {
         // post-check balances
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
             initial_balance
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeleted(
-            DEFAULT_MEMBER_ACCOUNT_ID,
-            dynamic_bag_id,
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::DynamicBagDeleted(dynamic_bag_id));
     });
 }
 
@@ -2940,7 +3028,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
             total_distributed_buckets_number as usize
         );
 
-        let distributed_by_bag = bag.distributed_by.clone();
+        let distributed_by_bag = bag.distributed_by;
         for distribution_bucket_id in &distributed_by_bag {
             let bucket = Storage::distribution_bucket_by_family_id_by_index(
                 distribution_bucket_id.distribution_bucket_family_id,
@@ -2951,7 +3039,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
         }
 
         DeleteDynamicBagFixture::new()
-            .with_bag_id(dynamic_bag_id.clone())
+            .with_bag_id(dynamic_bag_id)
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
@@ -2986,7 +3074,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
 
         assert_eq!(bag.stored_by, storage_buckets);
 
-        let stored_by_bag = bag.stored_by.clone();
+        let stored_by_bag = bag.stored_by;
         for bucket_id in &stored_by_bag {
             let bucket =
                 Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
@@ -2995,7 +3083,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
         }
 
         DeleteDynamicBagFixture::new()
-            .with_bag_id(dynamic_bag_id.clone())
+            .with_bag_id(dynamic_bag_id)
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
@@ -3014,7 +3102,7 @@ fn delete_dynamic_bags_fails_with_non_existent_dynamic_bag() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
         DeleteDynamicBagFixture::new()
-            .with_bag_id(dynamic_bag_id.clone())
+            .with_bag_id(dynamic_bag_id)
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
@@ -3073,16 +3161,16 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: bag_id.clone(),
+            bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list.clone(),
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         DeleteStorageBucketFixture::new()
@@ -3097,7 +3185,7 @@ fn delete_storage_bucket_fails_with_assigned_bag() {
     build_test_externalities().execute_with(|| {
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
-        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id.clone());
+        let bucket_id = create_default_storage_bucket_and_assign_to_bag(bag_id);
 
         DeleteStorageBucketFixture::new()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -3277,7 +3365,7 @@ fn storage_bucket_voucher_changed_event_fired() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: bag_id.clone(),
+            bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
@@ -3286,7 +3374,7 @@ fn storage_bucket_voucher_changed_event_fired() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Ok(()));
 
         EventFixture::contains_crate_event(RawEvent::VoucherChanged(
@@ -3516,7 +3604,7 @@ fn create_dynamic_bag_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         CreateDynamicBagFixture::default()
@@ -3532,7 +3620,7 @@ fn create_dynamic_bag_succeeded() {
             .call_and_assert(Ok(()));
 
         let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
-        let bag: crate::Bag<Test> = <crate::Bags<Test>>::get(bag_id.clone());
+        let bag: crate::Bag<Test> = <crate::Bags<Test>>::get(bag_id);
 
         // Check that IDs are within possible range.
         assert!(bag
@@ -3565,7 +3653,7 @@ fn create_dynamic_bag_succeeded() {
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            0
+            init_module_acc_balance()
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
@@ -3587,7 +3675,11 @@ fn create_dynamic_bag_fails_with_invalid_data_object_state_bloat_bond() {
 
         let invalid_data_object_state_bloat_bond_value = 55;
         CreateDynamicBagFixture::default()
-            .with_bag_id(dynamic_bag_id.clone())
+            .with_bag_id(dynamic_bag_id)
+            .with_objects(vec![DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            }])
             .with_expected_data_object_state_bloat_bond(invalid_data_object_state_bloat_bond_value)
             .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DataObjectStateBloatBondChanged.into()));
@@ -3608,7 +3700,7 @@ fn create_dynamic_bag_failed_with_existing_bag() {
 
         CreateDynamicBagFixture::default()
             .with_storage_buckets(storage_buckets)
-            .with_bag_id(dynamic_bag_id.clone())
+            .with_bag_id(dynamic_bag_id)
             .call_and_assert(Err(Error::<Test>::DynamicBagExists.into()));
     });
 }
@@ -3845,7 +3937,7 @@ fn delete_distribution_bucket_family_fails_with_bound_member_dynamic_bag_creatio
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .with_families(families.clone())
+            .with_families(families)
             .with_dynamic_bag_type(dynamic_bag_type)
             .call_and_assert(Ok(()));
 
@@ -3872,7 +3964,7 @@ fn delete_distribution_bucket_family_fails_with_bound_channel_dynamic_bag_creati
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .with_families(families.clone())
+            .with_families(families)
             .with_dynamic_bag_type(dynamic_bag_type)
             .call_and_assert(Ok(()));
 
@@ -4248,7 +4340,7 @@ fn update_distribution_buckets_for_bags_succeeded_with_additioonal_checks_on_add
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_bag_id(bag_id.clone())
             .with_family_id(family_id)
-            .with_remove_bucket_indices(add_buckets_ids.clone())
+            .with_remove_bucket_indices(add_buckets_ids)
             .call_and_assert(Ok(()));
 
         let bag = Storage::bag(&bag_id);
@@ -4281,8 +4373,8 @@ fn update_distribution_buckets_for_bags_fails_with_non_existing_dynamic_bag() {
         UpdateDistributionBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_family_id(family_id)
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_indices(add_buckets.clone())
+            .with_bag_id(bag_id)
+            .with_add_bucket_indices(add_buckets)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
@@ -4312,8 +4404,8 @@ fn update_distribution_buckets_for_bags_fails_with_non_accepting_new_bags_bucket
         UpdateDistributionBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_family_id(family_id)
-            .with_bag_id(bag_id.clone())
-            .with_add_bucket_indices(add_buckets.clone())
+            .with_bag_id(bag_id)
+            .with_add_bucket_indices(add_buckets)
             .call_and_assert(Err(
                 Error::<Test>::DistributionBucketDoesntAcceptNewBags.into()
             ));
@@ -4367,9 +4459,9 @@ fn update_distribution_buckets_for_bags_fails_with_non_existing_distribution_buc
         // Invalid removed bucket ID.
         UpdateDistributionBucketForBagsFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .with_bag_id(bag_id.clone())
+            .with_bag_id(bag_id)
             .with_family_id(family_id)
-            .with_remove_bucket_indices(buckets.clone())
+            .with_remove_bucket_indices(buckets)
             .call_and_assert(Err(Error::<Test>::DistributionBucketDoesntExist.into()));
     });
 }
@@ -4544,10 +4636,73 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_invalid_family_id()
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .with_families(families.clone())
+            .with_families(families)
             .with_dynamic_bag_type(dynamic_bag_type)
             .call_and_assert(Err(
                 Error::<Test>::DistributionBucketFamilyDoesntExist.into()
+            ));
+    });
+}
+
+#[test]
+fn update_families_in_dynamic_bag_creation_policy_fails_with_too_many_buckets_per_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_type = DynamicBagType::Channel;
+
+        for _ in 0..2 {
+            CreateDistributionBucketFamilyFixture::new()
+                .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+                .call_and_assert(Ok(()));
+        }
+
+        let min_buckets_per_bag: u32 =
+            <Test as crate::Config>::DistributionBucketsPerBagValueConstraint::get()
+                .min
+                .try_into()
+                .unwrap();
+        let families = BTreeMap::from_iter(vec![
+            (Storage::next_distribution_bucket_family_id() - 1, u32::MAX), // u32 overflow case test
+            (
+                Storage::next_distribution_bucket_family_id() - 2,
+                min_buckets_per_bag,
+            ),
+        ]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Err(
+                Error::<Test>::NumberOfDistributionBucketsOutsideOfAllowedContraints.into(),
+            ));
+    });
+}
+
+#[test]
+fn update_families_in_dynamic_bag_creation_policy_fails_with_not_enough_buckets_per_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_type = DynamicBagType::Channel;
+
+        CreateDistributionBucketFamilyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()));
+
+        let min_buckets_per_bag: u32 =
+            <Test as crate::Config>::DistributionBucketsPerBagValueConstraint::get()
+                .min
+                .try_into()
+                .unwrap();
+        let families = BTreeMap::from_iter(vec![(
+            Storage::next_distribution_bucket_family_id() - 1,
+            min_buckets_per_bag.saturating_sub(1),
+        )]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families)
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Err(
+                Error::<Test>::NumberOfDistributionBucketsOutsideOfAllowedContraints.into(),
             ));
     });
 }
@@ -5389,7 +5544,7 @@ fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
             .into_iter()
             .map(|idx| DataObjectCreationParameters {
                 // set size high on purpose to trigger error
-                size: 5 * ONE_MB + 1,
+                size: MaxDataObjectSize::get() + 1,
                 ipfs_content_id: vec![idx.try_into().unwrap()],
             })
             .collect();
@@ -5402,7 +5557,7 @@ fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
 }
 
 #[test]
-fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available() {
+fn unsuccessful_dyn_bag_creation_with_bucket_objects_size_limit_reached() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
@@ -5415,22 +5570,24 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_size_available
                 ipfs_content_id: vec![1],
             }])
             .with_storage_buckets(storage_buckets)
-            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+            .call_and_assert(Err(
+                Error::<Test>::StorageBucketObjectSizeLimitReached.into()
+            ));
     })
 }
 
 #[test]
-fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_objects_available() {
+fn unsuccessful_dyn_bag_creation_with_bucket_objects_number_limit_reached() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
         let storage_buckets = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
-        let objects: Vec<DataObjectCreationParameters> = (1..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT
+        let objects: Vec<DataObjectCreationParameters> = (0..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT
             + 1))
             .map(|idx| DataObjectCreationParameters {
-                size: DEFAULT_DATA_OBJECTS_SIZE,
+                size: 1,
                 ipfs_content_id: vec![idx.try_into().unwrap()],
             })
             .collect();
@@ -5438,7 +5595,9 @@ fn unsuccessful_dyn_bag_creation_with_buckets_having_insufficient_objects_availa
         CreateDynamicBagFixture::default()
             .with_objects(objects)
             .with_storage_buckets(storage_buckets)
-            .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+            .call_and_assert(Err(
+                Error::<Test>::StorageBucketObjectNumberLimitReached.into()
+            ));
     })
 }
 
@@ -5954,7 +6113,7 @@ fn distribution_operator_remark_unsuccessful_with_invalid_origin() {
 
 #[test]
 fn initial_module_account_balance_set() {
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         run_to_block(1);
 
         assert_eq!(
@@ -5965,9 +6124,9 @@ fn initial_module_account_balance_set() {
 }
 
 #[test]
-fn funds_needed_for_upload_succeeds() {
+fn get_upload_costs_succeeds() {
     //Module == 0 -> 0
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(0);
         set_data_object_state_bloat_bond_value(0);
 
@@ -5982,7 +6141,7 @@ fn funds_needed_for_upload_succeeds() {
     });
 
     //Module > 0 round_up((ONE_MB - 1) % ONE_MB) -> 1
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
         set_data_object_state_bloat_bond_value(0);
 
@@ -5997,7 +6156,7 @@ fn funds_needed_for_upload_succeeds() {
     });
 
     //Module == 0 ONE_MB % ONE_MB -> 1
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
         set_data_object_state_bloat_bond_value(0);
 
@@ -6012,7 +6171,7 @@ fn funds_needed_for_upload_succeeds() {
     });
 
     //Module =! 0 round_up((ONE_MB + 1 ) % ONE_MB) -> 2
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
         set_data_object_state_bloat_bond_value(0);
 
@@ -6028,8 +6187,8 @@ fn funds_needed_for_upload_succeeds() {
 }
 
 #[test]
-fn funds_needed_for_upload_succeeds_overflow_sat() {
-    build_test_externalities_with_genesis().execute_with(|| {
+fn get_upload_costs_succeeds_overflow_sat() {
+    build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(0);
         set_data_object_state_bloat_bond_value(5);
@@ -6047,7 +6206,7 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
         assert_eq!(funds_needed_saturated, u64::MAX);
     });
 
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(3689348814741910323);
         set_data_object_state_bloat_bond_value(0);
@@ -6065,7 +6224,7 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
         assert_eq!(funds_needed_saturated, u64::MAX);
     });
 
-    build_test_externalities_with_genesis().execute_with(|| {
+    build_test_externalities().execute_with(|| {
         //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(3689348814741910303);
         set_data_object_state_bloat_bond_value(5);

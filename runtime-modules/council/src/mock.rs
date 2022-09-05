@@ -5,17 +5,16 @@ use crate as council;
 use crate::{
     AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, Candidate, CandidateOf, Candidates,
     Config, CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing,
-    CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, Module,
-    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, WeightInfo,
+    CouncilStageElection, CouncilStageIdle, CouncilStageUpdate, CouncilorReward, Error, Module,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage,
 };
 
-use balances;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{
     ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, Get, LockIdentifier, OnFinalize,
-    OnInitialize,
+    OnInitialize, WithdrawReasons,
 };
-use frame_support::weights::Weight;
+
 use frame_support::{ensure, parameter_types, StorageMap, StorageValue};
 use frame_system::{ensure_signed, EnsureRoot, EnsureSigned, EventRecord, Phase, RawOrigin};
 use rand::Rng;
@@ -23,13 +22,13 @@ use referendum::{
     CastVote, OptionResult, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
 };
 use sp_core::H256;
-use sp_io;
+
 use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Zero},
 };
-use staking_handler::{LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingHandler, StakingManager};
 use std::boxed::Box;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -130,57 +129,6 @@ impl common::StakingAccountValidator<Runtime> for () {
     }
 }
 
-impl WeightInfo for () {
-    fn try_process_budget() -> Weight {
-        0
-    }
-    fn try_progress_stage_idle() -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_restart() -> Weight {
-        0
-    }
-    fn announce_candidacy() -> Weight {
-        0
-    }
-    fn release_candidacy_stake() -> Weight {
-        0
-    }
-    fn set_candidacy_note(_: u32) -> Weight {
-        0
-    }
-    fn withdraw_candidacy() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn plan_budget_refill() -> Weight {
-        0
-    }
-    fn set_budget_increment() -> Weight {
-        0
-    }
-    fn set_councilor_reward() -> Weight {
-        0
-    }
-    fn funding_request(_: u32) -> Weight {
-        0
-    }
-    fn fund_council_budget() -> Weight {
-        0
-    }
-    fn councilor_remark() -> Weight {
-        0
-    }
-    fn candidate_remark() -> Weight {
-        0
-    }
-}
-
 /////////////////// Module implementation //////////////////////////////////////
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -273,7 +221,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumVotingStake;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
 
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
@@ -281,7 +229,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
         account_id: &<Self as frame_system::Config>::AccountId,
         stake: &Balance<Self>,
     ) -> Self::VotePower {
-        let stake: u64 = u64::from(*stake);
+        let stake: u64 = *stake;
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
         }
@@ -303,7 +251,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
             .iter()
             .map(|item| OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <Module<Runtime> as ReferendumConnection<Runtime>>::recieve_referendum_results(
@@ -330,95 +278,6 @@ impl referendum::Config<ReferendumInstance> for Runtime {
     }
 }
 
-// Weights info stub
-pub struct Weights;
-impl referendum::WeightInfo for Weights {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
-    }
-}
-
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
 impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
@@ -435,7 +294,7 @@ impl membership::Config for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -756,7 +615,7 @@ where
                 <Runtime as frame_system::Config>::BlockNumber,
             >>::on_finalize(block_number.into());
 
-            block_number = block_number + 1.into();
+            block_number += 1.into();
             frame_system::Pallet::<T>::set_block_number(block_number);
 
             <Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
@@ -785,7 +644,7 @@ where
 
         let auto_topup_amount = stake * TOPUP_MULTIPLIER.into();
 
-        Self::topup_account(account_id.into(), auto_topup_amount);
+        Self::topup_account(account_id, auto_topup_amount);
 
         CandidateInfo {
             origin,
@@ -807,7 +666,7 @@ where
         let (commitment, salt) =
             Self::vote_commitment(&account_id.into(), &vote_for_index.into(), &cycle_id);
 
-        Self::topup_account(account_id.into(), stake);
+        Self::topup_account(account_id, stake);
 
         VoterInfo {
             origin,
@@ -833,7 +692,7 @@ where
         let salt = Self::generate_salt();
 
         (
-            T::Referendum::calculate_commitment(account_id, &salt, &cycle_id, vote_option_index),
+            T::Referendum::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
         )
     }
@@ -862,12 +721,12 @@ where
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
-        expected_state: CouncilStageAnnouncing,
+        expected_state: CouncilStageAnnouncing<T::BlockNumber>,
     ) -> () {
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageUpdateOf::<T> {
+            CouncilStageUpdate::<T::BlockNumber> {
                 stage: CouncilStage::Announcing(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -881,7 +740,7 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageUpdateOf::<T> {
+            CouncilStageUpdate::<T::BlockNumber> {
                 stage: CouncilStage::Election(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -892,8 +751,10 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageUpdateOf::<T> {
-                stage: CouncilStage::Idle,
+            CouncilStageUpdate::<T::BlockNumber> {
+                stage: CouncilStage::Idle(CouncilStageIdle::<T::BlockNumber> {
+                    ends_at: expected_update_block_number + T::IdlePeriodDuration::get()
+                }),
                 changed_at: expected_update_block_number,
             },
         );
@@ -938,6 +799,9 @@ where
                     })
                     .collect(),
                 current_cycle_id: AnnouncementPeriodNr::get(),
+                ends_at:
+                    <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get()
+                        + expected_update_block_number.into()
             }),
         );
 
@@ -966,10 +830,7 @@ where
     pub fn check_candidacy_note(membership_id: &T::MemberId, note: Option<&[u8]>) {
         assert_eq!(Candidates::<T>::contains_key(membership_id), true);
 
-        let note_hash = match note {
-            Some(tmp_note) => Some(T::Hashing::hash(tmp_note)),
-            None => None,
-        };
+        let note_hash = note.map(T::Hashing::hash);
 
         assert_eq!(
             Candidates::<T>::get(membership_id)
@@ -1357,11 +1218,12 @@ where
             params.cycle_start_block_number,
             CouncilStageAnnouncing {
                 candidates_count: 0,
+                ends_at: params.cycle_start_block_number + T::AnnouncingPeriodDuration::get(),
             },
         );
 
         escape_checkpoint!(
-            params.interrupt_point.clone(),
+            params.interrupt_point,
             Some(CouncilCycleInterrupt::BeforeCandidatesAnnounce)
         );
 
@@ -1369,14 +1231,14 @@ where
         params.candidates_announcing.iter().for_each(|candidate| {
             Self::announce_candidacy(
                 candidate.origin.clone(),
-                candidate.account_id.clone(),
+                candidate.account_id,
                 settings.min_candidate_stake,
                 Ok(()),
             );
         });
 
         escape_checkpoint!(
-            params.interrupt_point.clone(),
+            params.interrupt_point,
             Some(CouncilCycleInterrupt::AfterCandidatesAnnounce)
         );
 
@@ -1392,22 +1254,17 @@ where
         );
 
         escape_checkpoint!(
-            params.interrupt_point.clone(),
+            params.interrupt_point,
             Some(CouncilCycleInterrupt::BeforeVoting)
         );
 
         // vote with all voters
         params.voters.iter().for_each(|voter| {
-            Self::vote_for_candidate(
-                voter.origin.clone(),
-                voter.commitment.clone(),
-                voter.stake.clone(),
-                Ok(()),
-            )
+            Self::vote_for_candidate(voter.origin.clone(), voter.commitment, voter.stake, Ok(()))
         });
 
         escape_checkpoint!(
-            params.interrupt_point.clone(),
+            params.interrupt_point,
             Some(CouncilCycleInterrupt::AfterVoting)
         );
 
@@ -1425,7 +1282,7 @@ where
         );
 
         escape_checkpoint!(
-            params.interrupt_point.clone(),
+            params.interrupt_point,
             Some(CouncilCycleInterrupt::BeforeRevealing)
         );
 
@@ -1440,7 +1297,7 @@ where
         });
 
         escape_checkpoint!(
-            params.interrupt_point.clone(),
+            params.interrupt_point,
             Some(CouncilCycleInterrupt::AfterRevealing)
         );
 
@@ -1455,7 +1312,7 @@ where
         Self::check_council_members(params.expected_final_council_members.clone());
 
         escape_checkpoint!(
-            params.interrupt_point.clone(),
+            params.interrupt_point,
             Some(CouncilCycleInterrupt::AfterElectionComplete)
         );
 
@@ -1493,7 +1350,7 @@ where
             }
 
             InstanceMockUtils::<Runtime>::increase_block_number(
-                start_block_number.into() - current_block_number + 1,
+                start_block_number.into() + 1 - current_block_number,
             );
         }
 
@@ -1505,7 +1362,7 @@ where
             as u64)
             .map(|i| {
                 InstanceMockUtils::<T>::generate_candidate(
-                    u64::from(i) + users_offset,
+                    i + users_offset,
                     council_settings.min_candidate_stake,
                 )
             })
@@ -1560,7 +1417,7 @@ where
             cycle_start_block_number: start_block_number,
             expected_initial_council_members: expected_initial_council_members.to_vec(),
             expected_final_council_members,
-            candidates_announcing: candidates.clone(),
+            candidates_announcing: candidates,
             expected_candidates,
             voters,
 
@@ -1659,4 +1516,15 @@ impl EventFixture {
 
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
+}
+
+pub fn set_invitation_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: Balance<Runtime>,
+) {
+    <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
 }

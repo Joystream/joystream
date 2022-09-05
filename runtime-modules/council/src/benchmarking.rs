@@ -67,16 +67,23 @@ fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
 }
 
 fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T>) {
-    Balances::<T>::make_free_balance_be(&account_id, balance);
+    Balances::<T>::make_free_balance_be(account_id, balance);
+}
+
+fn existential_deposit<T: Config>() -> Balance<T> {
+    <T as balances::Config>::ExistentialDeposit::get()
 }
 
 fn start_announcing_period<T: Config>() {
+    let previous_announcing_period_nr = Council::<T>::announcement_period_nr();
+
     Mutations::<T>::start_announcing_period();
 
-    let current_state = CouncilStageAnnouncing {
-        candidates_count: 0,
-    };
     let current_block_number = System::<T>::block_number();
+    let current_state = CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+        candidates_count: 0,
+        ends_at: current_block_number + T::AnnouncingPeriodDuration::get(),
+    };
 
     assert_eq!(
         Council::<T>::stage(),
@@ -89,7 +96,7 @@ fn start_announcing_period<T: Config>() {
 
     assert_eq!(
         Council::<T>::announcement_period_nr(),
-        1,
+        previous_announcing_period_nr + 1,
         "Announcement period not updated"
     );
 }
@@ -137,7 +144,7 @@ where
     let account_id = T::AccountId::create_account_id(id);
     let handle = handle_from_id::<T>(id);
 
-    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
     let members_created = Membership::<T>::members_created();
     let member_id = if cfg!(test) {
         // For the tests we need member_id == account_id even if that's not what's registered
@@ -157,7 +164,7 @@ where
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
@@ -183,6 +190,7 @@ where
     let id = START_ID + id;
 
     let (account_id, member_id) = member_funded_account::<T>(id);
+    let cycle_id = Council::<T>::announcement_period_nr();
 
     // Announce once before to take the branch that release the stake
     Council::<T>::announce_candidacy(
@@ -203,7 +211,7 @@ where
         Council::<T>::candidates(member_id),
         Some(Candidate {
             staking_account_id: account_id.clone(),
-            cycle_id: 1,
+            cycle_id,
             stake: T::MinCandidateStake::get(),
             note_hash: None,
             reward_account_id: account_id.clone(),
@@ -239,8 +247,9 @@ where
 
     Mutations::<T>::start_announcing_period();
 
-    let current_state = CouncilStageAnnouncing {
+    let current_state = CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
         candidates_count: 0,
+        ends_at: current_block_number + T::AnnouncingPeriodDuration::get(),
     };
 
     assert_eq!(
@@ -317,7 +326,7 @@ benchmarks! {
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
         assert_eq!(Council::<T>::budget(), Balance::<T>::max_value());
         let mut funding_requests = Vec::new();
-        let amount: Balance<T> = 100u32.into();
+        let amount: Balance<T> = existential_deposit::<T>();
 
         for id in 0 .. i {
             let account = T::AccountId::create_account_id(id);
@@ -350,14 +359,29 @@ benchmarks! {
         }
     }
 
-    // We calculate `on_finalize` as `try_progress_stage + try_process_budget`
-    try_process_budget {
-        // We need to make sure that the block number starts at 0 to make payment/budget refill
-        // periods easier to calculate
-        let mut current_block_number = Zero::zero();
-        System::<T>::set_block_number(current_block_number);
-        assert_eq!(System::<T>::block_number(), current_block_number, "Block number not updated");
+    // We calculate `on_finalize` as
+    // `try_progress_stage + try_process_budget_refill_budget_only` +
+    //   try_process_budget_payout_council_members_only
+    //
+    // We split the budget handling into two, (instead of benchmarking try_process_budget)
+    // to avoid having to "run_to_block" to a potentially
+    // very distant block where budget refill and payout of members align,
+    // if ElectedMemberRewardPeriod mod BudgetRefillPeriod is non zero.
+    // ie at ElectedMemberRewardPeriod * BudgetRefillPeriod in the general case.
+    // This causes the benchmark to take too long for large values.
+    try_process_budget_refill_budget_only {
+        // Refill budget independant of how many members are elected
+        // Worst case is
+        let now = System::<T>::block_number();
+    }: { Council::<T>::refill_budget(now); }
+    verify {
+        // budget increment is independant of the number of blocks since last payment
+        assert_eq!(Council::<T>::budget(), Council::<T>::budget_increment());
+    }
 
+    try_process_budget_payout_council_members_only {
+        System::<T>::set_block_number(Zero::zero());
+        assert_eq!(System::<T>::block_number(), Zero::zero(), "Block number not updated");
         // Worst case we have a council elected
         let (accounts_id, candidates_id) = start_period_announce_multiple_candidates::<T>(
             T::CouncilSize::get().try_into().unwrap()
@@ -371,11 +395,7 @@ benchmarks! {
             }
         }).collect::<Vec<_>>();
 
-        Council::<T>::end_announcement_period(
-            CouncilStageAnnouncing {
-                candidates_count: T::CouncilSize::get(),
-            }
-        );
+        Council::<T>::end_announcement_period(T::CouncilSize::get());
 
         Council::<T>::end_election_period(&winners[..]);
 
@@ -395,112 +415,38 @@ benchmarks! {
             "Council not updated"
         );
 
-        // Both payments and refill execute at BudgetRefefillPeriod * ElectedMemberRewardPeriod
-        // -1 because we want to move just before the refill
-        current_block_number = T::BudgetRefillPeriod::get() *
-            T::ElectedMemberRewardPeriod::get() - One::one();
-
-        // The first time we reach the next_reward_payments
-        // the next time will be now + next_reward_payments
-        // Note: this function doesn't execute the `on_finalize` of the
-        // `current_block_number` this is important since we want to execute
-        // the `try_process_budget` for this block
-        move_to_block::<T>(current_block_number);
-
-        // Worst case scenario we can pay as much as it is possible
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
-
-        let target = System::<T>::block_number() + One::one();
-
-        assert_eq!(
-            Council::<T>::next_budget_refill(),
-            target,
-            "Budget refill not now",
-        );
-
-        assert_eq!(
-            Council::<T>::next_reward_payments(),
-            target,
-            "Reward payment not now",
-        );
-
-        let reward_period: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
-
-        let current_council = Council::<T>::council_members();
-        let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = target - reward_period;
-            councillor
-        }).collect::<Vec<_>>();
-
-        assert_eq!(
-            current_council,
-            council,
-            "Payment block not updated"
-        );
-        let unpaid_rewards = Council::<T>::council_members()
-            .iter()
-            .map(|member| member.unpaid_reward)
-            .collect::<Vec<_>>();
-    }: { Council::<T>::try_process_budget(target); }
+        let now = T::ElectedMemberRewardPeriod::get();
+    }: {
+        Council::<T>::pay_elected_member_rewards(now);
+    }
     verify {
+        // verify budget was reduced correct amount
+        let reward_period = T::ElectedMemberRewardPeriod::get();
         let reward_per_block: Balance<T> = Council::<T>::councilor_reward();
-
-        let reward_per_councillor: Balance<T> =
+        let num_council_members = T::CouncilSize::get().saturated_into();
+        let total_reward: Balance<T> =
             reward_period
             .saturated_into::<u64>()
             .saturating_mul(reward_per_block.saturated_into())
+            .saturating_mul(num_council_members)
             .saturated_into();
 
-        assert_eq!(
-            Council::<T>::next_budget_refill(),
-            target + T::BudgetRefillPeriod::get(),
-            "Budget refill not updated"
-        );
-
-        let current_council = Council::<T>::council_members();
-        let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = target;
-            councillor
-        }).collect::<Vec<_>>();
-
-        assert_eq!(
-            current_council,
-            council,
-            "Update block not updated"
-        );
-
-        let total_unpdaid_rewards: Balance<T> =
-            unpaid_rewards.into_iter().fold(Zero::zero(), |acc, x| acc + x);
-
-        let budget = Balance::<T>::max_value()
-            .saturating_sub(
-                reward_per_councillor.saturating_mul(T::CouncilSize::get().saturated_into())
-            ).saturating_sub(total_unpdaid_rewards);
+        let budget = Balance::<T>::max_value().saturating_sub(total_reward);
 
         assert_eq!(
             Council::<T>::budget(),
             budget,
             "Budget not correctly updated, probably a councillor was not correctly paid"
         );
-
-        candidates_id.into_iter().enumerate().for_each(|(idx, member_id)| {
-            let member_id: T::MemberId = member_id;
-            let account_id: T::AccountId = accounts_id[idx].clone();
-            assert_in_events::<T>(
-                RawEvent::RewardPayment(
-                    member_id,
-                    account_id,
-                    reward_per_councillor,
-                    Balance::<T>::from(0u32),
-                ).into()
-            )
-        });
     }
 
     try_progress_stage_idle {
         let current_block_number = System::<T>::block_number();
 
-        let current_stage = CouncilStage::Idle;
+        let current_stage = CouncilStage::Idle(CouncilStageIdle::<<T as frame_system::Config>::BlockNumber> {
+            ends_at: current_block_number + T::IdlePeriodDuration::get()
+        });
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
@@ -513,7 +459,9 @@ benchmarks! {
         });
 
         // Redefine `current_stage_update` simply because we haven't derived clone in the struct
-        let current_stage = CouncilStage::Idle;
+        let current_stage = CouncilStage::Idle(CouncilStageIdle::<<T as frame_system::Config>::BlockNumber> {
+            ends_at: current_block_number + T::IdlePeriodDuration::get()
+        });
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
@@ -525,31 +473,34 @@ benchmarks! {
 
     }: { Council::<T>::try_progress_stage(System::<T>::block_number()); }
     verify {
+        let announcing_ends_at = target_block_number + T::AnnouncingPeriodDuration::get();
         assert_eq!(
             Council::<T>::stage(),
             CouncilStageUpdate {
-                stage: CouncilStage::Announcing(CouncilStageAnnouncing {
+                stage: CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
                     candidates_count: 0,
+                    ends_at: announcing_ends_at
                 }),
                 changed_at: target_block_number,
             },
             "Idle period didn't end"
         );
 
-        assert_last_event::<T>(RawEvent::AnnouncingPeriodStarted().into());
+        assert_last_event::<T>(RawEvent::AnnouncingPeriodStarted(announcing_ends_at).into());
     }
 
     try_progress_stage_announcing_start_election {
         let i in
             ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get()).try_into().unwrap()) ..
             ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get() + MAX_CANDIDATES)
-                .try_into().unwrap()) => {
-                    start_period_announce_multiple_candidates::<T>(i + 1);
-                };
+                .try_into().unwrap());
+
+        start_period_announce_multiple_candidates::<T>(i + 1);
         let current_block_number = System::<T>::block_number();
         let current_stage =
-            CouncilStage::Announcing(CouncilStageAnnouncing {
-                candidates_count: (i + 1).into()
+            CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+                candidates_count: (i + 1).into(),
+                ends_at: current_block_number + T::AnnouncingPeriodDuration::get()
             });
         let current_stage_update =
             CouncilStageUpdate {
@@ -567,7 +518,7 @@ benchmarks! {
             CouncilStageUpdate {
                 stage: CouncilStage::Election(
                     CouncilStageElection {
-                        candidates_count: (i + 1).into(),
+                        candidates_count: (i + 1).into()
                     }),
                 changed_at: target_block_number,
             },
@@ -581,8 +532,9 @@ benchmarks! {
         start_announcing_period::<T>();
         let current_block_number = System::<T>::block_number();
         let current_stage =
-            CouncilStage::Announcing(CouncilStageAnnouncing {
-                candidates_count: 0
+            CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+                candidates_count: 0,
+                ends_at: current_block_number + T::AnnouncingPeriodDuration::get()
             });
         let current_stage_update =
             CouncilStageUpdate {
@@ -596,9 +548,11 @@ benchmarks! {
         );
     }: { Council::<T>::try_progress_stage(System::<T>::block_number()); }
     verify {
+        let announcing_ends_at = target_block_number + T::AnnouncingPeriodDuration::get();
         let current_stage =
-            CouncilStage::Announcing(CouncilStageAnnouncing {
-                candidates_count: 0
+            CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+                candidates_count: 0,
+                ends_at: announcing_ends_at
             });
         let current_stage_update =
             CouncilStageUpdate {
@@ -608,7 +562,7 @@ benchmarks! {
 
         assert_eq!(Council::<T>::stage(), current_stage_update, "Council stage not restarted");
 
-        assert_last_event::<T>(RawEvent::NotEnoughCandidates().into());
+        assert_last_event::<T>(RawEvent::NotEnoughCandidates(announcing_ends_at).into());
 
     }
 
@@ -619,6 +573,7 @@ benchmarks! {
             RawOrigin::Signed(account_id.clone()).into(),
             member_id
         ).unwrap();
+        let cycle_id = Council::<T>::announcement_period_nr();
     }: _ (
         RawOrigin::Signed(account_id.clone()),
         member_id,
@@ -633,7 +588,7 @@ benchmarks! {
             candidate,
             Some(Candidate {
                 staking_account_id: account_id.clone(),
-                cycle_id: 2,
+                cycle_id,
                 stake: T::MinCandidateStake::get(),
                 note_hash: None,
                 reward_account_id: account_id.clone(),
@@ -642,8 +597,9 @@ benchmarks! {
             "Candidacy hasn't been announced"
         );
 
-        let current_state = CouncilStageAnnouncing {
+        let current_state = CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
             candidates_count: 1,
+            ends_at: current_block_number + T::AnnouncingPeriodDuration::get()
         };
 
         assert_eq!(
@@ -775,11 +731,7 @@ benchmarks! {
             }
         }).collect::<Vec<_>>();
 
-        Council::<T>::end_announcement_period(
-            CouncilStageAnnouncing {
-                candidates_count: T::CouncilSize::get(),
-            }
-        );
+        Council::<T>::end_announcement_period(T::CouncilSize::get());
 
         Council::<T>::end_election_period(&winners[..]);
 
@@ -807,10 +759,28 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     pub use crate::mock::Runtime;
     use crate::mock::{build_test_externalities, default_genesis_config};
+    use crate::Module as Council;
     use frame_support::assert_ok;
+
+    #[test]
+    fn test_refill_budget() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(Council::<Runtime>::test_benchmark_try_process_budget_refill_budget_only());
+        })
+    }
+
+    #[test]
+    fn test_payout_council_members() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(
+                Council::<Runtime>::test_benchmark_try_process_budget_payout_council_members_only()
+            );
+        })
+    }
 
     #[test]
     fn test_announce_candidacy() {
@@ -859,14 +829,6 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_idle());
-        })
-    }
-
-    #[test]
-    fn test_try_process_budget() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Council::<Runtime>::test_benchmark_try_process_budget());
         })
     }
 

@@ -3,12 +3,13 @@ import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
-import { WorkerId, Worker } from '@joystream/types/working-group'
+import { PalletWorkingGroupGroupWorker as Worker } from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
+import { AccountId } from '@polkadot/types/interfaces'
 import { Utils } from '../../utils'
 import { WorkerFieldsFragment, WorkerRewardAccountUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
-import { AccountId } from '@joystream/types/common'
+import { WorkerId } from '@joystream/types/primitives'
 
 export class UpdateWorkerRewardAccountsFixture extends BaseWorkingGroupFixture {
   protected workerIds: WorkerId[] = []
@@ -29,12 +30,14 @@ export class UpdateWorkerRewardAccountsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async loadWorkersData(): Promise<void> {
-    this.workers = await this.api.query[this.group].workerById.multi<Worker>(this.workerIds)
+    this.workers = (await this.api.query[this.group].workerById.multi(this.workerIds)).map((optionalWorker) =>
+      optionalWorker.unwrap()
+    )
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     await this.loadWorkersData()
-    return this.workers.map((w) => w.role_account_id.toString())
+    return this.workers.map((w) => w.roleAccountId.toString())
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {

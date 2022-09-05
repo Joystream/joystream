@@ -7,10 +7,11 @@ pub use mock::{build_test_externalities, Test, DEFAULT_WORKER_ACCOUNT_ID};
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
-    CancelOpeningFixture, DecreaseWorkerStakeFixture, FundWorkingGroupBudgetFixture,
-    IncreaseWorkerStakeFixture, SetBudgetFixture, SetStatusTextFixture, SlashWorkerStakeFixture,
-    SpendFromBudgetFixture, UpdateRewardAccountFixture, UpdateRewardAmountFixture,
-    UpdateWorkerStorageFixture, WithdrawApplicationFixture,
+    set_invitation_lock, CancelOpeningFixture, DecreaseWorkerStakeFixture,
+    FundWorkingGroupBudgetFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
+    SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
+    UpdateRewardAccountFixture, UpdateRewardAmountFixture, UpdateWorkerStorageFixture,
+    WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
@@ -240,8 +241,7 @@ fn apply_on_opening_fails_with_bad_member_id() {
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::Signed(1), member_id);
 
-        apply_on_opening_fixture
-            .call_and_assert(Err(DispatchError::Other(ACTOR_ORIGIN_ERROR).into()));
+        apply_on_opening_fixture.call_and_assert(Err(DispatchError::Other(ACTOR_ORIGIN_ERROR)));
     });
 }
 
@@ -257,7 +257,7 @@ fn fill_opening_succeeded() {
 
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
-            .with_reward_per_block(Some(reward_per_block.clone()));
+            .with_reward_per_block(Some(reward_per_block));
 
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -562,7 +562,7 @@ fn update_worker_role_fails_with_leaving_worker() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         let new_account_id = 10;
@@ -797,7 +797,7 @@ fn leave_worker_role_fails_already_leaving_worker() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1198,7 +1198,7 @@ fn leave_worker_unlocks_the_stake() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
@@ -1228,7 +1228,7 @@ fn leave_worker_unlocks_the_stake_with_unstaking_period() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
@@ -1874,7 +1874,7 @@ fn decrease_worker_stake_fails_with_leaving_worker() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1902,7 +1902,7 @@ fn increase_worker_stake_fails_with_leaving_worker() {
         };
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .with_initial_balance(total_balance)
             .hire();
 
@@ -2349,7 +2349,7 @@ fn spend_from_budget_succeeded() {
 fn spend_from_budget_failed_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         SpendFromBudgetFixture::default()
-            .with_origin(RawOrigin::None.into())
+            .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
@@ -2598,7 +2598,7 @@ fn update_worker_storage_fails_with_invalid_worker_id() {
 
         let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
             invalid_worker_id,
-            storage_field.clone(),
+            storage_field,
         );
 
         update_storage_fixture.call_and_assert(Err(
@@ -2614,10 +2614,8 @@ fn update_worker_storage_fails_with_too_long_text() {
 
         let worker_id = HireRegularWorkerFixture::default().hire();
 
-        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
-            worker_id,
-            storage_field.clone(),
-        );
+        let update_storage_fixture =
+            UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field);
 
         update_storage_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::WorkerStorageValueTooLong.into(),
@@ -2632,16 +2630,17 @@ fn fund_wg_budget_succeeded() {
         let member_id = 1;
         let amount = 100;
         let initial_budget = 1000;
+        let initial_funder_balance = 1000;
         let rationale = b"text".to_vec();
         run_to_block(1);
 
-        let _ = Balances::deposit_creating(&account_id, initial_budget);
+        let _ = Balances::deposit_creating(&account_id, initial_funder_balance);
 
         let set_budget_fixture = SetBudgetFixture::default().with_budget(initial_budget);
         assert_eq!(set_budget_fixture.call(), Ok(()));
 
         FundWorkingGroupBudgetFixture::default()
-            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
             .with_rationale(rationale.clone())
@@ -2649,8 +2648,39 @@ fn fund_wg_budget_succeeded() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            initial_budget - amount
+            initial_funder_balance - amount
         );
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkingGroupBudgetFunded(
+            member_id, amount, rationale,
+        ));
+    });
+}
+
+#[test]
+fn fund_wg_budget_succeeded_with_funder_dying() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let member_id = 1;
+        let amount = 100;
+        let initial_budget = 1000;
+        let initial_funder_balance = amount;
+        let rationale = b"text".to_vec();
+        run_to_block(1);
+
+        let _ = Balances::deposit_creating(&account_id, initial_funder_balance);
+
+        let set_budget_fixture = SetBudgetFixture::default().with_budget(initial_budget);
+        assert_eq!(set_budget_fixture.call(), Ok(()));
+
+        FundWorkingGroupBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .with_rationale(rationale.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(Balances::total_balance(&account_id), 0);
 
         EventFixture::assert_last_crate_event(RawEvent::WorkingGroupBudgetFunded(
             member_id, amount, rationale,
@@ -2662,7 +2692,7 @@ fn fund_wg_budget_succeeded() {
 fn fund_wg_budget_failed_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         FundWorkingGroupBudgetFixture::default()
-            .with_origin(RawOrigin::None.into())
+            .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
@@ -2675,13 +2705,33 @@ fn fund_wg_budget_fails_with_insufficient_balance() {
         let amount = 100;
 
         FundWorkingGroupBudgetFixture::default()
-            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
             .call_and_assert(Err(
                 Error::<Test, DefaultInstance>::InsufficientTokensForFunding.into(),
             ));
     });
+}
+
+#[test]
+fn fund_wg_budget_failed_with_locked_balance() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let amount = 100;
+
+        let _ = Balances::deposit_creating(&account_id, amount);
+        set_invitation_lock(&account_id, 1);
+
+        FundWorkingGroupBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(
+                Error::<Test, DefaultInstance>::InsufficientTokensForFunding.into(),
+            ));
+    })
 }
 
 #[test]

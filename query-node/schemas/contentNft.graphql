@@ -21,14 +21,7 @@ type ContentActorLead @variant {
   dummy: Int
 }
 
-type ContentActorCollaborator @variant {
-  "Type needs to have at least one non-relation entity. This value is not used."
-  dummy: Int
-
-  member: Membership!
-}
-
-union ContentActor = ContentActorCurator | ContentActorMember | ContentActorLead | ContentActorCollaborator
+union ContentActor = ContentActorCurator | ContentActorMember | ContentActorLead
 
 type CuratorGroup @entity {
   "Runtime identifier"
@@ -37,14 +30,15 @@ type CuratorGroup @entity {
   "Is group active or not"
   isActive: Boolean!
 
-  "Curators belonging to this group"
-  curators: [Curator!]! @derivedFrom(field: "curatorGroups")
-
   "Channels curated by this group"
   channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
 
   "NFTs owned by this member in various channels."
   nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "curatorGroup")
+  # permissionsByLevel: ModerationPermissionsByLevel<T>,
+
+  "Curator belonging to this group with their permissions"
+  curators: [CuratorAgentPermissions!]! @derivedFrom(field: "curatorGroup")
 }
 
 type Curator @entity {
@@ -54,7 +48,8 @@ type Curator @entity {
   "Type needs to have at least one non-relation entity. This value is not used."
   dummy: Int
 
-  curatorGroups: [CuratorGroup!]!
+  "Curator belonging to this group with their permissions"
+  curatorGroups: [CuratorAgentPermissions!]! @derivedFrom(field: "curator")
 }
 
 # NFT in name can't be UPPERCASE because it causes codegen errors
@@ -269,3 +264,17 @@ type Bid @entity {
 }
 
 # TODO entity for (cancelable) offers; will be needed to see history of offers
+
+type CuratorAgentPermissions @entity {
+  "Relevant channel"
+  curatorGroup: CuratorGroup!
+
+  "Related member"
+  curator: Curator!
+
+  # unfortunately permissions can't be modeled as list of enums
+  # `permissions: [ChannelActionPermission!]!`
+  # rework it after this feature is available https://github.com/Joystream/hydra/issues/507
+  "List of member's permissions"
+  permissions: [String!]!
+}

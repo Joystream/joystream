@@ -9,16 +9,15 @@ import {
   ThreadMetadataUpdatedEventFieldsFragment,
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { CategoryId } from '@joystream/types/forum'
 import { StandardizedFixture } from '../../Fixture'
-import { ThreadId } from '@joystream/types/common'
+import { ForumThreadId, ForumCategoryId } from '@joystream/types/primitives'
 import _ from 'lodash'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 
 export type ThreadMetadataUpdate = {
-  categoryId: CategoryId
-  threadId: ThreadId
+  categoryId: ForumCategoryId
+  threadId: ForumThreadId
   newMetadata: MetadataInput<IForumThreadMetadata>
   preUpdateValues?: {
     title: string
@@ -39,8 +38,8 @@ export class UpdateThreadsMetadataFixture extends StandardizedFixture {
     this.threadAuthors = await Promise.all(
       this.updates.map(async (u) => {
         const thread = await this.api.query.forum.threadById(u.categoryId, u.threadId)
-        const member = await this.api.query.members.membershipById(thread.author_id)
-        return { account: member.controller_account.toString(), memberId: thread.author_id }
+        const member = (await this.api.query.members.membershipById(thread.authorId)).unwrap()
+        return { account: member.controllerAccount.toString(), memberId: thread.authorId }
       })
     )
   }

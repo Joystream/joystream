@@ -1,7 +1,7 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import { Utils } from '../../../utils'
 
 export class NftAuctionWhitelistFixture extends BaseQueryNodeFixture {
@@ -20,16 +20,10 @@ export class NftAuctionWhitelistFixture extends BaseQueryNodeFixture {
     Execute this Fixture.
   */
   public async execute(): Promise<void> {
-    const nonExistingMember = 1_000_000 // some really big number higher than any member's id
-
     const whitelistedParticipants = [this.participants[0], this.participants[1]]
     const forbiddenParticipant = this.participants[2]
 
-    // add nonexisting member to whitelist to test this feature
-    // runtime allows that so this shouldn't cause any problems
-    const whitelistedMemberIds = whitelistedParticipants
-      .map((item) => item.memberId.toString())
-      .concat([nonExistingMember.toString()])
+    const whitelistedMemberIds = whitelistedParticipants.map((item) => item.memberId.toNumber())
 
     this.debug('Create video with NFT being auctioned')
     const { auctionParams, minimalBidStep: bidAmount } = await this.api.createEnglishAuctionParameters(

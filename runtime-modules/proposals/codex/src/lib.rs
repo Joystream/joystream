@@ -46,6 +46,8 @@ mod types;
 mod tests;
 
 mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
@@ -58,7 +60,9 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 
 use common::membership::MemberOriginValidator;
+use common::working_group::*;
 use common::MemberId;
+use frame_support::traits::Instance;
 use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
@@ -67,47 +71,36 @@ pub use types::{
     CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
     ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
-
-// Max allowed value for 'Funding Request' proposal
-const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
-// Max validator count for the 'Set Max Validator Count' proposal
-const MAX_VALIDATOR_COUNT: u32 = 300;
-// Max number of account that a fund request accept
-const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
-
-/// Proposal codex WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn create_proposal_signal(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_funding_request(i: u32, d: u32) -> Weight;
-    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_working_group_budget(t: u32, d: u32) -> Weight;
-    fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32) -> Weight;
-    fn create_proposal_slash_working_group_lead(d: u32) -> Weight;
-    fn create_proposal_set_working_group_lead_reward(t: u32, d: u32) -> Weight;
-    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight;
-    fn create_proposal_amend_constitution(i: u32, d: u32) -> Weight;
-    fn create_proposal_cancel_working_group_lead_opening(d: u32) -> Weight;
-    fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_council_budget_increment(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_councilor_reward(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_membership_lead_invitation_quota(d: u32) -> Weight;
-    fn create_proposal_set_referral_cut(t: u32, d: u32) -> Weight;
-    fn create_proposal_create_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
-    fn create_proposal_edit_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
-    fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight;
-    fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
-    fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_global_nft_limit(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
-}
+use working_group::{ApplicationId, OpeningId, OpeningType, WorkerId};
 
 type WeightInfoCodex<T> = <T as Config>::WeightInfo;
+
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+// The content directory working group instance alias.
+pub type ContentWorkingGroupInstance = working_group::Instance3;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
+
+// The gateway working group instance alias.
+pub type GatewayWorkingGroupInstance = working_group::Instance5;
+
+// The membership working group instance alias.
+pub type MembershipWorkingGroupInstance = working_group::Instance6;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceBeta = working_group::Instance7;
+
+// The builder working group instance alias.
+pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
+
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 /// 'Proposals codex' substrate module Trait
 pub trait Config:
@@ -117,6 +110,15 @@ pub trait Config:
     + common::membership::MembershipTypes
     + staking::Config
     + proposals_engine::Config
+    + working_group::Config<ForumWorkingGroupInstance>
+    + working_group::Config<StorageWorkingGroupInstance>
+    + working_group::Config<ContentWorkingGroupInstance>
+    + working_group::Config<OperationsWorkingGroupInstanceAlpha>
+    + working_group::Config<GatewayWorkingGroupInstance>
+    + working_group::Config<MembershipWorkingGroupInstance>
+    + working_group::Config<OperationsWorkingGroupInstanceBeta>
+    + working_group::Config<OperationsWorkingGroupInstanceGamma>
+    + working_group::Config<DistributionWorkingGroupInstance>
 {
     /// Proposal Codex module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -232,22 +234,6 @@ pub trait Config:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// `Create Blog Post` proposal parameters
-    type CreateBlogPostProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
-    /// `Edit Blog Post` proposal parameters
-    type EditBlogPostProoposalParamters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
-
-    /// `Lock Blog Post` proposal parameters
-    type LockBlogPostProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
-
-    /// `Unlock Blog Post` proposal parameters
-    type UnlockBlogPostProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
@@ -260,6 +246,15 @@ pub trait Config:
     type UpdateChannelPayoutsProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// Max amount in funding request proposal (per account)
+    type FundingRequestProposalMaxAmount: Get<BalanceOf<Self>>;
+
+    /// Max number of accounts per funding request proposal
+    type FundingRequestProposalMaxAccounts: Get<u32>;
+
+    /// Max allowed number of validators in set max validator count proposal
+    type SetMaxValidatorCountProposalMaxValidators: Get<u32>;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -349,8 +344,20 @@ decl_error! {
         /// Repeated account in 'Funding Request' proposal.
         InvalidFundingRequestProposalRepeatedAccount,
 
-        // The specified min channel cashout is greater than the specified max channel cashout in `Update Channel Payouts` proposal.
+        /// The specified min channel cashout is greater than the specified max channel cashout in `Update Channel Payouts` proposal.
         InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout,
+
+        /// Provided lead worker id is not valid
+        InvalidLeadWorkerId,
+
+        /// Provided lead opening id is not valid
+        InvalidLeadOpeningId,
+
+        /// Provided lead application id is not valid
+        InvalidLeadApplicationId,
+
+        /// Provided proposal id is not valid
+        InvalidProposalId,
     }
 }
 
@@ -448,18 +455,6 @@ decl_module! {
         const SetReferralCutProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetReferralCutProposalParameters::get();
 
-        const CreateBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::CreateBlogPostProposalParameters::get();
-
-        const EditBlogPostProoposalParamters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::EditBlogPostProoposalParamters::get();
-
-        const LockBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::LockBlogPostProposalParameters::get();
-
-        const UnlockBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UnlockBlogPostProposalParameters::get();
-
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
 
@@ -468,6 +463,18 @@ decl_module! {
 
         const UpdateChannelPayoutsProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
+
+        /// Max amount in funding request proposal (per account)
+        const FundingRequestProposalMaxAmount: BalanceOf<T> =
+            T::FundingRequestProposalMaxAmount::get();
+
+        /// Max number of accounts per funding request proposal
+        const FundingRequestProposalMaxAccounts: u32 =
+            T::FundingRequestProposalMaxAccounts::get();
+
+        /// Max allowed number of validators in set max validator count proposal
+        const SetMaxValidatorCountProposalMaxValidators: u32 =
+            T::SetMaxValidatorCountProposalMaxValidators::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -483,8 +490,8 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = Module::<T>::get_create_proposal_weight(
-                &general_proposal_parameters,
-                &proposal_details
+                general_proposal_parameters,
+                proposal_details
             )
         ]
         pub fn create_proposal(
@@ -546,6 +553,157 @@ decl_module! {
 }
 
 impl<T: Config> Module<T> {
+    fn is_lead_worker_id<I: Instance>(worker_id: &WorkerId<T>) -> bool
+    where
+        T: working_group::Config<I>,
+    {
+        working_group::Module::<T, I>::current_lead()
+            .map(|id| id == *worker_id)
+            .unwrap_or(false)
+    }
+
+    // Ensure worker exists in given working group
+    fn ensure_valid_lead_worker_id(wg: &WorkingGroup, worker_id: &WorkerId<T>) -> DispatchResult {
+        let is_lead_id_valid = match wg {
+            WorkingGroup::Forum => Self::is_lead_worker_id::<ForumWorkingGroupInstance>(worker_id),
+            WorkingGroup::Storage => {
+                Self::is_lead_worker_id::<StorageWorkingGroupInstance>(worker_id)
+            }
+            WorkingGroup::Content => {
+                Self::is_lead_worker_id::<ContentWorkingGroupInstance>(worker_id)
+            }
+            WorkingGroup::OperationsAlpha => {
+                Self::is_lead_worker_id::<OperationsWorkingGroupInstanceAlpha>(worker_id)
+            }
+            WorkingGroup::Gateway => {
+                Self::is_lead_worker_id::<GatewayWorkingGroupInstance>(worker_id)
+            }
+            WorkingGroup::Membership => {
+                Self::is_lead_worker_id::<MembershipWorkingGroupInstance>(worker_id)
+            }
+            WorkingGroup::OperationsBeta => {
+                Self::is_lead_worker_id::<OperationsWorkingGroupInstanceBeta>(worker_id)
+            }
+            WorkingGroup::OperationsGamma => {
+                Self::is_lead_worker_id::<OperationsWorkingGroupInstanceGamma>(worker_id)
+            }
+            WorkingGroup::Distribution => {
+                Self::is_lead_worker_id::<DistributionWorkingGroupInstance>(worker_id)
+            }
+        };
+        ensure!(is_lead_id_valid, Error::<T>::InvalidLeadWorkerId);
+        Ok(())
+    }
+
+    fn is_lead_opening_id<I: Instance>(opening_id: &OpeningId) -> bool
+    where
+        T: working_group::Config<I>,
+    {
+        working_group::OpeningById::<T, I>::contains_key(opening_id)
+            && working_group::OpeningById::<T, I>::get(opening_id).opening_type
+                == OpeningType::Leader
+    }
+
+    // Ensure lead opening exists in given working group
+    fn ensure_valid_lead_opening_id(wg: &WorkingGroup, opening_id: &OpeningId) -> DispatchResult {
+        let is_opening_id_valid = match wg {
+            WorkingGroup::Forum => {
+                Self::is_lead_opening_id::<ForumWorkingGroupInstance>(opening_id)
+            }
+            WorkingGroup::Storage => {
+                Self::is_lead_opening_id::<StorageWorkingGroupInstance>(opening_id)
+            }
+            WorkingGroup::Content => {
+                Self::is_lead_opening_id::<ContentWorkingGroupInstance>(opening_id)
+            }
+            WorkingGroup::OperationsAlpha => {
+                Self::is_lead_opening_id::<OperationsWorkingGroupInstanceAlpha>(opening_id)
+            }
+            WorkingGroup::Gateway => {
+                Self::is_lead_opening_id::<GatewayWorkingGroupInstance>(opening_id)
+            }
+            WorkingGroup::Membership => {
+                Self::is_lead_opening_id::<MembershipWorkingGroupInstance>(opening_id)
+            }
+            WorkingGroup::OperationsBeta => {
+                Self::is_lead_opening_id::<OperationsWorkingGroupInstanceBeta>(opening_id)
+            }
+            WorkingGroup::OperationsGamma => {
+                Self::is_lead_opening_id::<OperationsWorkingGroupInstanceGamma>(opening_id)
+            }
+            WorkingGroup::Distribution => {
+                Self::is_lead_opening_id::<DistributionWorkingGroupInstance>(opening_id)
+            }
+        };
+        ensure!(is_opening_id_valid, Error::<T>::InvalidLeadOpeningId);
+        Ok(())
+    }
+
+    fn is_lead_application_id<I: Instance>(application_id: &ApplicationId) -> bool
+    where
+        T: working_group::Config<I>,
+    {
+        if let Some(application) = working_group::ApplicationById::<T, I>::get(application_id) {
+            working_group::ApplicationById::<T, I>::contains_key(application_id)
+                && working_group::OpeningById::<T, I>::get(application.opening_id).opening_type
+                    == OpeningType::Leader
+        } else {
+            false
+        }
+    }
+
+    // Ensure lead application exists in given working group
+    fn ensure_valid_lead_application_id(
+        wg: &WorkingGroup,
+        application_id: &ApplicationId,
+    ) -> DispatchResult {
+        let is_application_id_valid = match wg {
+            WorkingGroup::Forum => {
+                Self::is_lead_application_id::<ForumWorkingGroupInstance>(application_id)
+            }
+            WorkingGroup::Storage => {
+                Self::is_lead_application_id::<StorageWorkingGroupInstance>(application_id)
+            }
+            WorkingGroup::Content => {
+                Self::is_lead_application_id::<ContentWorkingGroupInstance>(application_id)
+            }
+            WorkingGroup::OperationsAlpha => {
+                Self::is_lead_application_id::<OperationsWorkingGroupInstanceAlpha>(application_id)
+            }
+            WorkingGroup::Gateway => {
+                Self::is_lead_application_id::<GatewayWorkingGroupInstance>(application_id)
+            }
+            WorkingGroup::Membership => {
+                Self::is_lead_application_id::<MembershipWorkingGroupInstance>(application_id)
+            }
+            WorkingGroup::OperationsBeta => {
+                Self::is_lead_application_id::<OperationsWorkingGroupInstanceBeta>(application_id)
+            }
+            WorkingGroup::OperationsGamma => {
+                Self::is_lead_application_id::<OperationsWorkingGroupInstanceGamma>(application_id)
+            }
+            WorkingGroup::Distribution => {
+                Self::is_lead_application_id::<DistributionWorkingGroupInstance>(application_id)
+            }
+        };
+        ensure!(
+            is_application_id_valid,
+            Error::<T>::InvalidLeadApplicationId
+        );
+        Ok(())
+    }
+
+    // Ensure proposal id is valid
+    fn ensure_valid_proposal_id(
+        proposal_id: &<T as proposals_engine::Config>::ProposalId,
+    ) -> DispatchResult {
+        ensure!(
+            proposals_engine::Proposals::<T>::contains_key(proposal_id),
+            Error::<T>::InvalidProposalId
+        );
+        Ok(())
+    }
+
     // Ensure that the proposal details respects all the checks
     fn ensure_details_checks(details: &ProposalDetailsOf<T>) -> DispatchResult {
         match details {
@@ -562,7 +720,7 @@ impl<T: Config> Module<T> {
                 );
 
                 ensure!(
-                    funding_requests.len() <= MAX_FUNDING_REQUEST_ACCOUNTS,
+                    funding_requests.len() <= T::FundingRequestProposalMaxAccounts::get() as usize,
                     Error::<T>::InvalidFundingRequestProposalNumberOfAccount
                 );
 
@@ -583,7 +741,7 @@ impl<T: Config> Module<T> {
                     );
 
                     ensure!(
-                        funding_request.amount <= <BalanceOf<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
+                        funding_request.amount <= T::FundingRequestProposalMaxAmount::get(),
                         Error::<T>::InvalidFundingRequestProposalBalance
                     );
 
@@ -601,39 +759,44 @@ impl<T: Config> Module<T> {
                 );
 
                 ensure!(
-                    *new_validator_count <= MAX_VALIDATOR_COUNT,
+                    *new_validator_count <= T::SetMaxValidatorCountProposalMaxValidators::get(),
                     Error::<T>::InvalidValidatorCount
                 );
             }
             ProposalDetails::CreateWorkingGroupLeadOpening(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::FillWorkingGroupLeadOpening(..) => {
-                // Note: No checks for this proposal for now
+            ProposalDetails::FillWorkingGroupLeadOpening(params) => {
+                Self::ensure_valid_lead_opening_id(&params.working_group, &params.opening_id)?;
+                Self::ensure_valid_lead_application_id(
+                    &params.working_group,
+                    &params.application_id,
+                )?;
             }
             ProposalDetails::UpdateWorkingGroupBudget(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::DecreaseWorkingGroupLeadStake(_, ref stake_amount, _) => {
+            ProposalDetails::DecreaseWorkingGroupLeadStake(worker_id, ref stake_amount, wg) => {
+                Self::ensure_valid_lead_worker_id(wg, worker_id)?;
                 ensure!(
                     *stake_amount != Zero::zero(),
                     Error::<T>::DecreasingStakeIsZero
                 );
             }
-            ProposalDetails::SlashWorkingGroupLead(..) => {
-                // Note: No checks for this proposal for now
+            ProposalDetails::SlashWorkingGroupLead(worker_id, _, wg) => {
+                Self::ensure_valid_lead_worker_id(wg, worker_id)?;
             }
-            ProposalDetails::SetWorkingGroupLeadReward(..) => {
-                // Note: No checks for this proposal for now
+            ProposalDetails::SetWorkingGroupLeadReward(worker_id, _, wg) => {
+                Self::ensure_valid_lead_worker_id(wg, worker_id)?;
             }
-            ProposalDetails::TerminateWorkingGroupLead(..) => {
-                // Note: No checks for this proposal for now
+            ProposalDetails::TerminateWorkingGroupLead(params) => {
+                Self::ensure_valid_lead_worker_id(&params.group, &params.worker_id)?;
             }
             ProposalDetails::AmendConstitution(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
-                // Note: No checks for this proposal for now
+            ProposalDetails::CancelWorkingGroupLeadOpening(opening_id, wg) => {
+                Self::ensure_valid_lead_opening_id(wg, opening_id)?;
             }
             ProposalDetails::SetMembershipPrice(..) => {
                 // Note: No checks for this proposal for now
@@ -656,25 +819,12 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetReferralCut(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::CreateBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::EditBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::LockBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::UnlockBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::VetoProposal(..) => {
-                // Note: No checks for this proposal for now
+            ProposalDetails::VetoProposal(proposal_id) => {
+                Self::ensure_valid_proposal_id(proposal_id)?;
             }
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 // Note: No checks for this proposal for now
             }
-
             ProposalDetails::UpdateChannelPayouts(params) => {
                 if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
                     ensure!(
@@ -743,10 +893,6 @@ impl<T: Config> Module<T> {
                 T::SetMembershipLeadInvitationQuotaProposalParameters::get()
             }
             ProposalDetails::SetReferralCut(..) => T::SetReferralCutProposalParameters::get(),
-            ProposalDetails::CreateBlogPost(..) => T::CreateBlogPostProposalParameters::get(),
-            ProposalDetails::EditBlogPost(..) => T::EditBlogPostProoposalParamters::get(),
-            ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
-            ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 T::UpdateGlobalNftLimitProposalParameters::get()
@@ -780,6 +926,7 @@ impl<T: Config> Module<T> {
             ProposalDetails::FundingRequest(params) => {
                 WeightInfoCodex::<T>::create_proposal_funding_request(
                     params.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -816,6 +963,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SlashWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -834,6 +982,7 @@ impl<T: Config> Module<T> {
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
                     new_constitution.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -845,6 +994,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -874,6 +1024,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -882,37 +1033,6 @@ impl<T: Config> Module<T> {
                     title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
-            }
-            ProposalDetails::CreateBlogPost(header, body) => {
-                WeightInfoCodex::<T>::create_proposal_create_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                    header.len().saturated_into(),
-                    body.len().saturated_into(),
-                )
-            }
-            ProposalDetails::EditBlogPost(_, header, body) => {
-                let header_len = header.as_ref().map_or(0, |h| h.len());
-                let body_len = body.as_ref().map_or(0, |b| b.len());
-                WeightInfoCodex::<T>::create_proposal_edit_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                    header_len.saturated_into(),
-                    body_len.saturated_into(),
-                )
-            }
-            ProposalDetails::LockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_lock_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-            }
-            ProposalDetails::UnlockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_unlock_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-                .saturated_into()
             }
             ProposalDetails::VetoProposal(..) => {
                 WeightInfoCodex::<T>::create_proposal_veto_proposal(
@@ -930,12 +1050,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
                 WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
                     params
                         .payload
                         .as_ref()
                         .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
                 .saturated_into()
             }

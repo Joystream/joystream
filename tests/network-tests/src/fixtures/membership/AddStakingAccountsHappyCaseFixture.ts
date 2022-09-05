@@ -9,8 +9,7 @@ import {
   StakingAccountAddedEventFieldsFragment,
   StakingAccountConfirmedEventFieldsFragment,
 } from '../../graphql/generated/queries'
-import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { Utils } from '../../utils'
@@ -77,7 +76,7 @@ export class AddStakingAccountsHappyCaseFixture extends StandardizedFixture {
   async execute(): Promise<void> {
     await Promise.all(
       this.inputs.map(({ account, stakeAmount }) =>
-        this.api.treasuryTransferBalance(account, (stakeAmount || new BN(0)).addn(MINIMUM_STAKING_ACCOUNT_BALANCE))
+        this.api.treasuryTransferBalance(account, stakeAmount || this.api.consts.members.candidateStake)
       )
     )
     await super.execute()

@@ -24,7 +24,7 @@ fn cancel_buy_now() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE);
 
         // Sell nft
         assert_ok!(Content::sell_nft(
@@ -223,7 +223,7 @@ fn cancel_buy_now_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::BuyNow)
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 

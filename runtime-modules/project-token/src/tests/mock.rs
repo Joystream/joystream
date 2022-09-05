@@ -5,23 +5,24 @@ use frame_support::{
     traits::{Currency, OnFinalize, OnInitialize},
 };
 
-use codec::Encode;
+use common::locks::{BoundStakingAccountLockId, InvitedMemberLockId};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use frame_support::{
     ensure,
-    traits::{ConstU16, ConstU32, ConstU64, LockIdentifier},
+    traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons},
     PalletId,
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
-use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
+use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
 use sp_runtime::{DispatchError, DispatchResult, Permill};
 use sp_std::convert::{TryFrom, TryInto};
-use staking_handler::LockComparator;
+use staking_handler::{LockComparator, StakingHandler};
 
 // crate import
+pub(crate) use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::{
     types::*, AccountDataOf, Config, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
 };
@@ -75,7 +76,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // --------- Pallet Project Token parameters ---------------------
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
-    pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
     // --------- balances::Config parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
@@ -97,8 +98,6 @@ parameter_types! {
     pub const MaxDataObjectSize: u64 = 1_000_000_000;
     // constants for membership::Config
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const ReferralCutMaximumPercent: u8 = 50;
@@ -143,7 +142,6 @@ impl storage::Config for Test {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
-
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type ModuleAccountInitialBalance = ExistentialDeposit;
@@ -163,8 +161,9 @@ impl Config for Test {
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
-    type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
+    type WeightInfo = ();
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
 }
@@ -374,7 +373,7 @@ impl membership::Config for Test {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }
@@ -455,11 +454,13 @@ impl MembershipInfoProvider<Test> for TestMemberships {
     fn controller_account_id(
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
-        if member_id < 1000 {
-            return Ok(member_id + 1000);
-        }
+        membership::Module::<Test>::controller_account_id(member_id).or_else(|_| {
+            if member_id < 1000 {
+                return Ok(member_id + 1000);
+            }
 
-        Err(DispatchError::Other("no account found"))
+            Err(DispatchError::Other("no account found"))
+        })
     }
 }
 
@@ -471,7 +472,8 @@ impl MemberOriginValidator<Origin, u64, u64> for TestMemberships {
     ) -> Result<u64, DispatchError> {
         let sender = ensure_signed(origin)?;
         ensure!(
-            Self::is_member_controller_account(&member_id, &sender),
+            membership::Module::<Test>::is_member_controller_account(&member_id, &sender)
+                || Self::is_member_controller_account(&member_id, &sender),
             DispatchError::Other("origin signer not a member controller account"),
         );
         Ok(sender)
@@ -615,10 +617,11 @@ pub const DEFAULT_SALE_DURATION: u64 = 100;
 
 // ------ Revenue Split constants ------------
 pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
-pub const DEFAULT_SPLIT_ALLOCATION: u128 = 1000;
+pub const DEFAULT_SPLIT_REVENUE: u128 = 1000;
+pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
 pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
-pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 100; // (participation / issuance) * allocation
+pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * revenue * rate
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -628,113 +631,17 @@ pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 
-// Merkle tree Helpers
-#[derive(Debug)]
-pub(crate) struct IndexItem {
-    index: usize,
-    side: MerkleSide,
-}
-
-pub(crate) fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
-    // used as a helper function to generate the correct sequence of indexes used to
-    // construct the merkle path necessary for membership proof
-    let mut idx = index;
-    assert!(idx > 0); // index starting at 1
-    let floor_2 = |x: usize| (x >> 1) + (x % 2);
-    let mut path = Vec::new();
-    let mut prev_len: usize = 0;
-    let mut el = len;
-    while el != 1 {
-        if idx % 2 == 1 && idx == el {
-            path.push(IndexItem {
-                index: prev_len + idx,
-                side: MerkleSide::Left,
-            });
-        } else {
-            match idx % 2 {
-                1 => path.push(IndexItem {
-                    index: prev_len + idx + 1,
-                    side: MerkleSide::Right,
-                }),
-                _ => path.push(IndexItem {
-                    index: prev_len + idx - 1,
-                    side: MerkleSide::Left,
-                }),
-            };
-        }
-        prev_len += el;
-        idx = floor_2(idx);
-        el = floor_2(el);
-    }
-    return path;
-}
-
-pub(crate) fn generate_merkle_root_helper<E: Encode>(
-    collection: &[E],
-) -> Vec<<Test as frame_system::Config>::Hash> {
-    // generates merkle root from the ordered sequence collection.
-    // The resulting vector is structured as follows: elements in range
-    // [0..collection.len()) will be the tree leaves (layer 0), elements in range
-    // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
-    // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
-    assert!(!collection.is_empty());
-    let mut out = Vec::new();
-    for e in collection.iter() {
-        out.push(Hashing::hash(&e.encode()));
-    }
-
-    let mut start: usize = 0;
-    let mut last_len = out.len();
-    //let mut new_len = out.len();
-    let mut max_len = last_len >> 1;
-    let mut rem = last_len % 2;
-
-    // range [last..(maxlen >> 1) + (maxlen % 2)]
-    while max_len != 0 {
-        last_len = out.len();
-        for i in 0..max_len {
-            out.push(Hashing::hash(
-                &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
-            ));
-        }
-        if rem == 1 {
-            out.push(Hashing::hash(
-                &[out[last_len - 1], out[last_len - 1]].encode(),
-            ));
-        }
-        let new_len: usize = out.len() - last_len;
-        rem = new_len % 2;
-        max_len = new_len >> 1;
-        start = last_len;
-    }
-    out
-}
-
-/// Generates merkle proof (Hash, Side) for element collection[index_for_proof]
-pub(crate) fn build_merkle_path_helper<E: Encode + Clone>(
-    collection: &[E],
-    index_for_proof: usize,
-) -> Vec<(<Test as frame_system::Config>::Hash, MerkleSide)> {
-    let merkle_tree = generate_merkle_root_helper(collection);
-    // builds the actual merkle path with the hashes needed for the proof
-    let index_path = index_path_helper(collection.len(), index_for_proof + 1);
-    index_path
-        .iter()
-        .map(|idx_item| (merkle_tree[idx_item.index - 1], idx_item.side))
-        .collect()
-}
-
 #[macro_export]
 macro_rules! merkle_root {
     [$($vals:expr),*] => {
-        generate_merkle_root_helper(&vec![$($vals,)*]).pop().unwrap()
+        generate_merkle_root_helper::<Test, _>(&vec![$($vals,)*]).pop().unwrap()
     };
 }
 
 #[macro_export]
 macro_rules! merkle_proof {
     ($idx:expr,[$($vals:expr),*]) => {
-        MerkleProofOf::<Test>::new(build_merkle_path_helper(&vec![$($vals,)*], $idx as usize))
+        MerkleProofOf::<Test>::new(build_merkle_path_helper::<Test, _>(&vec![$($vals,)*], $idx as usize))
     };
 }
 
@@ -758,4 +665,23 @@ impl Convert<BlockNumber, Balance> for Block2Balance {
 
 pub fn increase_account_balance(account_id: &AccountId, balance: Balance) {
     let _ = Balances::deposit_creating(account_id, balance);
+}
+
+pub fn ed() -> Balance {
+    ExistentialDeposit::get()
+}
+
+pub fn set_invitation_lock(who: &<Test as frame_system::Config>::AccountId, amount: Balance) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: Balance,
+) {
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
