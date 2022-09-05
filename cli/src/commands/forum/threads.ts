@@ -27,7 +27,7 @@ export default class ForumThreadsCommand extends ForumCommandBase {
           'ID': id.toString(),
           'Cleanup payoff': formatBalance(t.cleanupPayOff.amount),
           'Author member id': t.authorId.toString(),
-          'No. posts': t.numberOfPosts.toString(),
+          'No. posts': t.numberOfEditablePosts.toString(),
         })),
         5
       )
