@@ -2360,7 +2360,7 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
-    // - nft owner is channel owner (trivial case)
+    // - nft owner is member
     // INPUT COMPLEXITY
     sling_nft_back {
         let (
