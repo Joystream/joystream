@@ -508,7 +508,12 @@ export default class Api {
       const bucketsCountPolicy = [...distributionBucketFamiliesPolicy]
         .find(([familyId]) => familyId.toString() === id)?.[1]
         .toNumber()
-      if (bucketsCountPolicy && bucketsCountPolicy > buckets.length) {
+
+      if (!bucketsCountPolicy) {
+        continue
+      }
+
+      if (bucketsCountPolicy > buckets.length) {
         throw new CLIError(
           `Distribution buckets policy constraint unsatisfied. Not enough buckets exist in Bucket Family ${id}`
         )
