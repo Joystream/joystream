@@ -1646,7 +1646,15 @@ decl_module! {
 
         /// Updates channel state bloat bond value.
         /// Only lead can upload this value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_channel_state_bloat_bond()]
         pub fn update_channel_state_bloat_bond(
             origin,
             new_channel_state_bloat_bond: BalanceOf<T>,
@@ -1666,7 +1674,15 @@ decl_module! {
 
         /// Updates video state bloat bond value.
         /// Only lead can upload this value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_video_state_bloat_bond()]
         pub fn update_video_state_bloat_bond(
             origin,
             new_video_state_bloat_bond: BalanceOf<T>,
@@ -2907,7 +2923,16 @@ decl_module! {
         }
 
         /// Channel owner remark
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (B)`
+        /// - DB:
+        ///    - O(1)
+        /// where:
+        /// - B is the byte lenght of `msg`
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::channel_owner_remark(msg.len() as u32)]
         pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2921,7 +2946,16 @@ decl_module! {
         }
 
         /// Channel collaborator remark
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (B)`
+        /// - DB:
+        ///    - O(1)
+        /// where:
+        ///   - B is the byte lenght of `msg`
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::channel_agent_remark(msg.len() as u32)]
         pub fn channel_agent_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2934,7 +2968,16 @@ decl_module! {
         }
 
         /// NFT owner remark
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (B)`
+        /// - DB:
+        ///   - O(1)
+        /// where:
+        ///   - B is the byte lenght of `msg`
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::nft_owner_remark(msg.len() as u32)]
         pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
