@@ -109,7 +109,7 @@ export class ContentService {
       } else {
         // Existing file size is OK - detect mimeType if missing
         if (!this.stateCache.getContentMimeType(objectId)) {
-          this.stateCache.setContentMimeType(objectId, await this.detectMimeType(objectId))
+          this.stateCache.setContentMimeType(objectId, await this.detectMimeType(objectId, dataObject.fallbackMimeType))
         }
       }
     }
@@ -176,19 +176,19 @@ export class ContentService {
     return buff
   }
 
-  public async detectMimeType(objectId: string): Promise<string> {
+  public async detectMimeType(objectId: string, fallback?: string): Promise<string> {
     const objectPath = this.path(objectId)
     try {
       const buffer = await this.readFileChunk(objectPath, MIME_TYPE_DETECTION_CHUNK_SIZE)
       const result = await FileType.fromBuffer(buffer)
-      return result?.mime || DEFAULT_CONTENT_TYPE
+      return result?.mime || fallback || DEFAULT_CONTENT_TYPE
     } catch (err) {
       this.logger.error(`Error while trying to detect object mimeType: ${err instanceof Error ? err.message : err}`, {
         err,
         objectId,
         objectPath,
       })
-      return DEFAULT_CONTENT_TYPE
+      return fallback || DEFAULT_CONTENT_TYPE
     }
   }
 
@@ -212,7 +212,8 @@ export class ContentService {
     objectId: string,
     expectedSize: number,
     expectedHash: string,
-    dataStream: Readable
+    dataStream: Readable,
+    fallbackMimeType?: string
   ): Promise<void> {
     this.logger.verbose('Handling new content', {
       objectId,
@@ -290,7 +291,7 @@ export class ContentService {
           return
         }
 
-        const mimeType = await this.detectMimeType(objectId)
+        const mimeType = await this.detectMimeType(objectId, fallbackMimeType)
         this.logger.info('New content accepted', { ...logMetadata })
         this.stateCache.dropPendingDownload(objectId, PendingDownloadStatusType.Completed)
         this.stateCache.newContent(objectId, expectedSize)
@@ -323,6 +324,10 @@ export class ContentService {
 
     if (!objectInfo.isSupported) {
       return { type: ObjectStatusType.NotSupported }
+    }
+
+    if (!objectInfo.isAccepted) {
+      return { type: ObjectStatusType.NotUploadedYet }
     }
 
     const { data: objectData } = objectInfo

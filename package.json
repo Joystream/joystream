@@ -40,6 +40,7 @@
     "@polkadot/x-global": "9.5.1",
     "@polkadot/x-ws": "9.5.1",
     "typescript": "^4.4.3",
+    "ts-node": "^10.9.1",
     "bn.js": "^5.2.1",
     "rxjs": "^7.4.0",
     "typeorm": "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz",
