@@ -1,27 +1,29 @@
 mod benchmarking;
 
-use crate::nft::{
-    EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters, OpenAuctionBid,
-    OpenAuctionParams,
-};
 use crate::{
-    permissions::*, types::*, ContentModerationAction, InitTransferParametersOf,
-    ModerationPermissionsByLevel,
+    nft::{
+        EnglishAuctionParams, InitTransactionalStatus, NftIssuanceParameters, OpenAuctionBid,
+        OpenAuctionParams,
+    },
+    permissions::*,
+    types::*,
+    Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
+    Module as Pallet, NextVideoId,
 };
-use crate::{BalanceOf, Config, Module as Pallet};
+
 use balances::Pallet as Balances;
 use common::MembershipTypes;
 use frame_benchmarking::account;
 use frame_support::{
     dispatch::DispatchError,
-    storage::{StorageMap, StorageValue},
-    traits::{Currency, Get, Instance},
+    storage::{IterableStorageMap, StorageDoubleMap, StorageMap, StorageValue},
+    traits::{Currency, Get, Instance, OnFinalize, OnInitialize},
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
-use sp_arithmetic::traits::One;
-use sp_runtime::traits::Hash;
-use sp_runtime::SaturatedConversion;
+use project_token::{types::*, AccountInfoByTokenAndMember};
+use sp_arithmetic::traits::{One, Zero};
+use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use storage::{
     DataObjectCreationParameters, DataObjectStorage, DistributionBucketId, DynamicBagType,
     Module as Storage,
@@ -40,6 +42,20 @@ use sp_std::{
     vec,
     vec::Vec,
 };
+
+// Nft contexts
+pub type NftContexts<T> = (
+    NftData<T>,
+    Vec<(
+        <T as frame_system::Config>::AccountId,
+        <T as MembershipTypes>::MemberId,
+    )>,
+);
+pub type NftContext<T> = (
+    NftData<T>,
+    <T as MembershipTypes>::MemberId,
+    <T as frame_system::Config>::AccountId,
+);
 
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
@@ -62,8 +78,11 @@ const fn gen_array_u128<const N: usize>(init: u128) -> [u128; N] {
     res
 }
 
-pub const MEMBER_IDS_INIT: u128 = 500;
-pub const MAX_MEMBER_IDS: usize = 100;
+fn nft_buy_now_price<T: Config>() -> BalanceOf<T> {
+    Pallet::<T>::min_starting_price() + 1000u32.into()
+}
+pub const MEMBER_IDS_INIT: u128 = 400;
+pub const MAX_MEMBER_IDS: usize = 200;
 pub const MEMBER_IDS: [u128; MAX_MEMBER_IDS] = gen_array_u128::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
 
 pub const DEFAULT_MEMBER_ID: u128 = MEMBER_IDS[0];
@@ -89,22 +108,46 @@ pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u128 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004; // must match the mocks
-const MAX_BYTES_METADATA: u32 = 5000;
+/**
+ * FIXME: Since we have no bounds for this in the runtime, as this value relies solely on the
+ * genesis config, we use this arbitrary constant for benchmarking purposes
+ */
+const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksize available for regular extrinsics
 
-const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 13] = [
+// Creator tokens
+const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
+const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
+const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
+const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
+const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
+const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
+const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
+const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
+const DEFAULT_CRT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
+
+const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
+    ChannelActionPermission::UpdateChannelMetadata,
+    ChannelActionPermission::ManageNonVideoChannelAssets,
+    ChannelActionPermission::ManageChannelCollaborators,
+    ChannelActionPermission::UpdateVideoMetadata,
     ChannelActionPermission::AddVideo,
-    ChannelActionPermission::AgentRemark,
-    ChannelActionPermission::ClaimChannelReward,
+    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::DeleteChannel,
     ChannelActionPermission::DeleteVideo,
-    ChannelActionPermission::ManageChannelCollaborators,
-    ChannelActionPermission::ManageNonVideoChannelAssets,
-    ChannelActionPermission::ManageVideoAssets,
     ChannelActionPermission::ManageVideoNfts,
+    ChannelActionPermission::AgentRemark,
     ChannelActionPermission::TransferChannel,
-    ChannelActionPermission::UpdateChannelMetadata,
-    ChannelActionPermission::UpdateVideoMetadata,
+    ChannelActionPermission::ClaimChannelReward,
     ChannelActionPermission::WithdrawFromChannelBalance,
+    ChannelActionPermission::IssueCreatorToken,
+    ChannelActionPermission::ClaimCreatorTokenPatronage,
+    ChannelActionPermission::InitAndManageCreatorTokenSale,
+    ChannelActionPermission::CreatorTokenIssuerTransfer,
+    ChannelActionPermission::MakeCreatorTokenPermissionless,
+    ChannelActionPermission::ReduceCreatorTokenPatronageRate,
+    ChannelActionPermission::ManageRevenueSplits,
+    ChannelActionPermission::DeissueCreatorToken,
 ];
 
 const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
@@ -127,6 +170,23 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::DeleteVideoAssets(false),
     ContentModerationAction::DeleteNonVideoChannelAssets,
     ContentModerationAction::UpdateChannelNftLimits,
+];
+
+#[macro_export]
+macro_rules! assert_lt {
+    ($a:expr, $b:expr) => {
+        assert!($a < $b, "Expected {:?} to be lower than {:?}", $a, $b);
+    };
+}
+
+const CONTENT_PAUSABLE_CHANNEL_FEATURE: [PausableChannelFeature; 7] = [
+    PausableChannelFeature::ChannelFundsTransfer,
+    PausableChannelFeature::CreatorCashout,
+    PausableChannelFeature::VideoNftIssuance,
+    PausableChannelFeature::VideoCreation,
+    PausableChannelFeature::VideoUpdate,
+    PausableChannelFeature::ChannelUpdate,
+    PausableChannelFeature::CreatorTokenIssuance,
 ];
 
 fn storage_bucket_objs_number_limit<T: Config>() -> u64 {
@@ -191,12 +251,18 @@ where
     RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
+    assert_past_event::<T>(expected_event, 0);
+}
+
+fn assert_past_event<T: Config>(
+    expected_event: <T as frame_system::Config>::Event,
+    index_from_last: u32,
+) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
+    let EventRecord { event, .. } = &events[events.len() - 1 - index_from_last as usize];
+    assert_eq!(event, &expected_event);
 }
 
 fn get_byte(num: u128, byte_number: u8) -> u8 {
@@ -416,8 +482,6 @@ where
     let account_id = T::AccountId::create_account_id(id);
 
     let handle = handle_from_id::<T>(id);
-
-    //println!("account_id : handle :: {:?} : {:?}", account_id, handle);
 
     // Give balance for buying membership
     let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance::<T>());
@@ -646,7 +710,7 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
-    let meta = Some(vec![0u8].repeat(max_bytes_metadata as usize));
+    let meta = Some(vec![0xff].repeat(max_bytes_metadata as usize));
 
     ChannelCreationParameters::<T> {
         assets,
@@ -665,6 +729,10 @@ fn worst_case_content_moderation_actions_set() -> BTreeSet<ContentModerationActi
 
 fn worst_case_channel_agent_permissions() -> ChannelAgentPermissions {
     CHANNEL_AGENT_PERMISSIONS.iter().cloned().collect()
+}
+
+fn worst_case_pausable_channel_feature() -> BTreeSet<PausableChannelFeature> {
+    CONTENT_PAUSABLE_CHANNEL_FEATURE.iter().cloned().collect()
 }
 
 fn worst_case_scenario_collaborators<T: RuntimeConfig>(
@@ -749,6 +817,22 @@ where
     Ok(channel_id)
 }
 
+type MemberChannelData<T> = (
+    <T as storage::Config>::ChannelId,      // channel id
+    <T as MembershipTypes>::MemberId,       // member id
+    <T as frame_system::Config>::AccountId, // member_account_id
+    <T as frame_system::Config>::AccountId, // content_lead_account_id
+);
+
+type NftData<T> = (
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >, // owner actor
+    <T as frame_system::Config>::AccountId, // owner account id
+);
+
 fn setup_worst_case_scenario_member_channel<T: Config>(
     objects_num: u32,
     storage_buckets_num: u32,
@@ -756,64 +840,23 @@ fn setup_worst_case_scenario_member_channel<T: Config>(
     // benchmarks should always use "true" if possible (ie. the benchmarked tx
     // is allowed during active transfer, for example - delete_channel)
     with_transfer: bool,
-) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+) -> Result<MemberChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
-
-    let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
-
-    let (_, distribution_wg_lead_account_id) = insert_distribution_leader::<T>();
-
     let (_, lead_account_id) = insert_content_leader::<T>();
 
-    let _ = setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
+    let (member_account_id, member_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
 
-    let channel_owner = ChannelOwner::Member(member_id);
-    let origin = RawOrigin::Signed(member_account_id.clone());
-
-    let params = generate_channel_creation_params::<T>(
-        storage_wg_lead_account_id,
-        distribution_wg_lead_account_id,
-        T::MaxNumberOfCollaboratorsPerChannel::get(),
+    let channel_id = setup_worst_case_scenario_channel::<T>(
+        member_account_id.clone(),
+        ChannelOwner::Member(member_id),
+        objects_num,
         storage_buckets_num,
         distribution_buckets_num,
-        objects_num,
-        MAX_BYTES_METADATA,
-        T::MaxDataObjectSize::get(),
-    );
-
-    let channel_id = Pallet::<T>::next_channel_id();
-
-    Pallet::<T>::create_channel(origin.clone().into(), channel_owner.clone(), params)?;
-
-    // initialize worst-case-scenario transfer
-    if with_transfer {
-        let (_, new_owner_id) = member_funded_account::<T>(0);
-        let new_owner = ChannelOwner::Member(new_owner_id);
-        let new_collaborators = worst_case_scenario_collaborators::<T>(
-            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
-            T::MaxNumberOfCollaboratorsPerChannel::get(), // number of collaborators
-        );
-        let price = <T as balances::Config>::Balance::one();
-        let actor = match channel_owner {
-            ChannelOwner::Member(member_id) => ContentActor::Member(member_id),
-            ChannelOwner::CuratorGroup(_) => ContentActor::Lead,
-        };
-        let transfer_params = InitTransferParametersOf::<T> {
-            new_owner,
-            new_collaborators,
-            price,
-        };
-        Pallet::<T>::initialize_channel_transfer(
-            origin.into(),
-            channel_id,
-            actor,
-            transfer_params,
-        )?;
-    }
+        with_transfer,
+    )?;
 
     Ok((channel_id, member_id, member_account_id, lead_account_id))
 }
@@ -843,14 +886,15 @@ where
         permissions_by_level,
     )?;
 
-    // We substract 1 from `next_worker_id`, because we're not counting the lead
+    // We substract 1 from the number of curators because we're not counting the lead
     let already_existing_curators_num =
-        working_group::Pallet::<T, ContentWorkingGroupInstance>::next_worker_id()
+        working_group::WorkerById::<T, ContentWorkingGroupInstance>::iter()
+            .count()
             .saturated_into::<u32>()
             .saturating_sub(1);
 
     assert!(
-        already_existing_curators_num + curators_len <= MAX_COLABORATOR_IDS as u32,
+        already_existing_curators_num + curators_len <= MAX_CURATOR_IDS as u32,
         "Too many curators created"
     );
 
@@ -871,7 +915,14 @@ where
     Ok(group_id)
 }
 
-#[allow(clippy::type_complexity)]
+type CuratorChannelData<T> = (
+    <T as storage::Config>::ChannelId,                // channel id
+    <T as ContentActorAuthenticator>::CuratorGroupId, // curator group id
+    <T as frame_system::Config>::AccountId,           // lead_account_id
+    <T as ContentActorAuthenticator>::CuratorId,      // curator_id
+    <T as frame_system::Config>::AccountId,           // curator_account_id
+);
+
 fn setup_worst_case_scenario_curator_channel<T>(
     objects_num: u32,
     storage_buckets_num: u32,
@@ -879,16 +930,7 @@ fn setup_worst_case_scenario_curator_channel<T>(
     // benchmarks should always use "true" unless initializing a transfer
     // is part of the benchmarks itself
     with_transfer: bool,
-) -> Result<
-    (
-        T::ChannelId,
-        T::CuratorGroupId,
-        T::AccountId,
-        T::CuratorId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<CuratorChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -920,19 +962,19 @@ where
     ))
 }
 
-#[allow(clippy::type_complexity)]
+fn worst_case_scenario_assets<T: RuntimeConfig>(num: u32) -> StorageAssets<T> {
+    StorageAssets::<T> {
+        expected_data_size_fee: storage::Pallet::<T>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_object_candidates_helper(
+            num,                         // number of objects
+            T::MaxDataObjectSize::get(), // object size
+        ),
+    }
+}
+
 fn setup_worst_case_scenario_curator_channel_all_max<T>(
     with_transfer: bool,
-) -> Result<
-    (
-        T::ChannelId,
-        T::CuratorGroupId,
-        T::AccountId,
-        T::CuratorId,
-        T::AccountId,
-    ),
-    DispatchError,
->
+) -> Result<CuratorChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -945,10 +987,9 @@ where
     )
 }
 
-#[allow(dead_code, clippy::type_complexity)]
 fn setup_worst_case_scenario_member_channel_all_max<T>(
     with_transfer: bool,
-) -> Result<(T::ChannelId, T::MemberId, T::AccountId, T::AccountId), DispatchError>
+) -> Result<MemberChannelData<T>, DispatchError>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
@@ -1002,7 +1043,7 @@ pub fn all_channel_pausable_features_except(
     ]
     .iter()
     .filter(|&&x| !except.contains(&x))
-    .map(|&x| x)
+    .copied()
     .collect::<BTreeSet<_>>()
 }
 
@@ -1021,6 +1062,91 @@ pub fn create_pull_payments_with_reward<T: Config>(
     payments
 }
 
+fn setup_video<T>(
+    origin: T::Origin,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    assets_num: u32,
+    auto_issue_nft: Option<NftIssuanceParameters<T>>,
+    meta: u32,
+) -> T::VideoId
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let max_obj_size: u64 = T::MaxDataObjectSize::get();
+
+    let assets = if assets_num > 0 {
+        Some(StorageAssets::<T> {
+            expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_object_candidates_helper(assets_num, max_obj_size),
+        })
+    } else {
+        None
+    };
+
+    let expected_data_object_state_bloat_bond = Storage::<T>::data_object_state_bloat_bond_value();
+
+    let expected_video_state_bloat_bond = Pallet::<T>::video_state_bloat_bond_value();
+    let meta = Some(vec![1u8].repeat(meta as usize));
+    let storage_buckets_num_witness = storage_buckets_num_witness::<T>(channel_id).unwrap();
+
+    let params = VideoCreationParameters::<T> {
+        assets,
+        meta,
+        auto_issue_nft,
+        expected_data_object_state_bloat_bond,
+        expected_video_state_bloat_bond,
+        storage_buckets_num_witness,
+    };
+
+    let video_id = NextVideoId::<T>::get();
+
+    Pallet::<T>::create_video(origin, actor, channel_id, params).unwrap();
+
+    video_id
+}
+
+fn setup_worst_case_nft_video<T>(
+    origin: T::Origin,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    assets_num: u32,
+    meta: u32,
+) -> T::VideoId
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let whitelist = (0..Pallet::<T>::max_auction_whitelist_length())
+        .into_iter()
+        .map(|i| {
+            let (_, member_id) = member_funded_account::<T>((1000 + i) as u128);
+            member_id
+        })
+        .collect::<BTreeSet<_>>();
+
+    let init_transactional_status =
+        InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
+            starting_price: Pallet::<T>::min_starting_price(),
+            buy_now_price: None,
+            extension_period: Pallet::<T>::min_auction_extension_period(),
+            duration: Pallet::<T>::min_auction_duration(),
+            min_bid_step: Pallet::<T>::min_bid_step(),
+            starts_at: None,
+            whitelist,
+        });
+
+    let auto_issue_nft = Some(NftIssuanceParameters::<T> {
+        royalty: None,
+        nft_metadata: vec![0u8].repeat(meta as usize),
+        non_channel_owner: None,
+        init_transactional_status,
+    });
+
+    setup_video::<T>(origin, actor, channel_id, assets_num, auto_issue_nft, meta)
+}
+
 fn channel_bag_witness<T: Config>(
     channel_id: T::ChannelId,
 ) -> Result<ChannelBagWitness, DispatchError> {
@@ -1030,6 +1156,107 @@ fn channel_bag_witness<T: Config>(
         storage_buckets_num: channel_bag.stored_by.len() as u32,
         distribution_buckets_num: channel_bag.distributed_by.len() as u32,
     })
+}
+
+fn worst_case_scenario_video_nft_issuance_params<T>(whitelist_size: u32) -> NftIssuanceParameters<T>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let mut next_member_id = membership::Pallet::<T>::members_created();
+    NftIssuanceParameters::<T> {
+        nft_metadata: Vec::new(),
+        non_channel_owner: Some(T::MemberId::zero()),
+        royalty: Some(Pallet::<T>::max_creator_royalty()),
+        // most complex InitTransactionalStatus is EnglishAuction
+        init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
+            EnglishAuctionParams::<T> {
+                buy_now_price: Some(nft_buy_now_price::<T>()),
+                duration: Pallet::<T>::min_auction_duration(),
+                extension_period: Pallet::<T>::min_auction_extension_period(),
+                min_bid_step: Pallet::<T>::min_bid_step(),
+                starting_price: Pallet::<T>::min_starting_price(),
+                starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+                whitelist: (0..whitelist_size)
+                    .map(|_| {
+                        let (_, member_id) =
+                            member_funded_account::<T>(next_member_id.saturated_into());
+                        next_member_id += T::MemberId::one();
+                        member_id
+                    })
+                    .collect(),
+            },
+        ),
+    }
+}
+
+type VideoCreationInputParameters<T> = (
+    <T as frame_system::Config>::AccountId,
+    ContentActor<
+        <T as ContentActorAuthenticator>::CuratorGroupId,
+        <T as ContentActorAuthenticator>::CuratorId,
+        <T as MembershipTypes>::MemberId,
+    >,
+    <T as storage::Config>::ChannelId,
+    VideoCreationParameters<T>,
+);
+
+fn prepare_worst_case_scenario_video_creation_parameters<T>(
+    assets_num: Option<u32>,
+    storage_buckets_num: u32,
+    nft_auction_whitelist_size: Option<u32>,
+    metadata_length: u32,
+) -> Result<VideoCreationInputParameters<T>, DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let (channel_id, group_id, _, curator_id, curator_account_id) =
+        setup_worst_case_scenario_curator_channel::<T>(
+            T::MaxNumberOfAssetsPerChannel::get(),
+            storage_buckets_num,
+            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            false,
+        )?;
+    let actor = ContentActor::Curator(group_id, curator_id);
+    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
+    let assets = assets_num.map(|n| worst_case_scenario_assets::<T>(n));
+    let auto_issue_nft =
+        nft_auction_whitelist_size.map(|s| worst_case_scenario_video_nft_issuance_params::<T>(s));
+
+    Ok((
+        curator_account_id,
+        actor,
+        channel_id,
+        VideoCreationParameters::<T> {
+            assets,
+            meta: Some(vec![0xff].repeat(metadata_length as usize)),
+            auto_issue_nft,
+            expected_video_state_bloat_bond: video_state_bloat_bond,
+            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
+            storage_buckets_num_witness: storage_buckets_num_witness::<T>(channel_id)?,
+        },
+    ))
+}
+
+fn setup_worst_case_scenario_mutable_video<T>(
+    assets_num: Option<u32>,
+    storage_buckets_num: u32,
+) -> Result<(T::VideoId, VideoCreationInputParameters<T>), DispatchError>
+where
+    T: RuntimeConfig,
+    T::AccountId: CreateAccountId,
+{
+    let p = prepare_worst_case_scenario_video_creation_parameters::<T>(
+        assets_num,
+        storage_buckets_num,
+        None,
+        MAX_BYTES_METADATA,
+    )?;
+    let video_id = Pallet::<T>::next_video_id();
+    Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
+
+    Ok((video_id, p))
 }
 
 fn storage_buckets_num_witness<T: Config>(channel_id: T::ChannelId) -> Result<u32, DispatchError> {
@@ -1045,14 +1272,195 @@ fn max_curators_per_group<T: RuntimeConfig>() -> u32 {
     )
 }
 
+fn create_token_issuance_params<T: Config>(
+    initial_allocation: BTreeMap<T::MemberId, TokenAllocationOf<T>>,
+) -> TokenIssuanceParametersOf<T> {
+    let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
+    let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
+    TokenIssuanceParametersOf::<T> {
+        initial_allocation,
+        symbol: token_symbol,
+        transfer_policy: TransferPolicyParamsOf::<T>::Permissioned(WhitelistParamsOf::<T> {
+            commitment: transfer_policy_commit,
+            payload: Some(SingleDataObjectUploadParams {
+                object_creation_params: DataObjectCreationParameters {
+                    ipfs_content_id: vec![0],
+                    size: T::MaxDataObjectSize::get(),
+                },
+                expected_data_object_state_bloat_bond:
+                    Storage::<T>::data_object_state_bloat_bond_value(),
+                expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+            }),
+        }),
+        patronage_rate: DEFAULT_CRT_PATRONAGE_RATE,
+        revenue_split_rate: DEFAULT_CRT_REVENUE_SPLIT_RATE,
+    }
+}
+
+fn default_vesting_schedule_params<T: Config>() -> VestingScheduleParamsOf<T> {
+    VestingScheduleParamsOf::<T> {
+        linear_vesting_duration: 100u32.into(),
+        blocks_before_cliff: 100u32.into(),
+        cliff_amount_percentage: Permill::from_percent(10),
+    }
+}
+
+fn worst_case_scenario_initial_allocation<T: RuntimeConfig>(
+    members_num: u32,
+) -> BTreeMap<T::MemberId, TokenAllocationOf<T>>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    (0..members_num)
+        .map(|i| {
+            let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+            let allocation = TokenAllocationOf::<T> {
+                amount: 100u32.into(),
+                vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+            };
+            (member_id, allocation)
+        })
+        .collect()
+}
+
+fn setup_account_with_max_number_of_locks<T: Config>(
+    token_id: T::TokenId,
+    member_id: &T::MemberId,
+) {
+    AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
+        (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
+            a.add_or_update_vesting_schedule(
+                VestingSource::Sale(i),
+                VestingSchedule::from_params(
+                    frame_system::Pallet::<T>::block_number(),
+                    TokenBalanceOf::<T>::one(),
+                    VestingScheduleParamsOf::<T> {
+                        linear_vesting_duration: 0u32.into(),
+                        blocks_before_cliff: u32::MAX.into(),
+                        cliff_amount_percentage: Permill::from_percent(100),
+                    },
+                ),
+                None,
+            );
+        });
+        a.stake(0u32, TokenBalanceOf::<T>::one());
+    });
+}
+
+fn curator_member_id<T: Config + working_group::Config<ContentWorkingGroupInstance>>(
+    curator_id: T::CuratorId,
+) -> T::MemberId {
+    working_group::Pallet::<T, ContentWorkingGroupInstance>::worker_by_id::<T::ActorId>(
+        curator_id.saturated_into::<u64>().saturated_into(),
+    )
+    .unwrap()
+    .member_id
+}
+
+fn issue_creator_token_with_worst_case_scenario_owner<T: Config>(
+    sender: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+    owner_member_id: T::MemberId,
+) -> Result<T::TokenId, DispatchError>
+where
+    T::AccountId: CreateAccountId,
+{
+    let initial_allocation = BTreeMap::<T::MemberId, TokenAllocationOf<T>>::from_iter(vec![(
+        owner_member_id,
+        TokenAllocationOf::<T> {
+            amount: DEFAULT_CRT_OWNER_ISSUANCE.into(),
+            vesting_schedule_params: None,
+        },
+    )]);
+    let issuance_params = create_token_issuance_params::<T>(initial_allocation);
+    let token_id = project_token::Pallet::<T>::next_token_id();
+    Pallet::<T>::issue_creator_token(
+        RawOrigin::Signed(sender).into(),
+        actor,
+        channel_id,
+        issuance_params,
+    )?;
+    setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id);
+    Ok(token_id)
+}
+
+fn worst_case_scenario_token_sale_params<T: Config>(
+    metatada_len: u32,
+    starts_at: Option<T::BlockNumber>,
+) -> TokenSaleParamsOf<T> {
+    TokenSaleParamsOf::<T> {
+        cap_per_member: Some(1_000_000u32.into()),
+        duration: DEFAULT_CRT_SALE_DURATION.into(),
+        starts_at,
+        unit_price: DEFAULT_CRT_SALE_PRICE.into(),
+        upper_bound_quantity: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
+        vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
+        metadata: Some(vec![0xf].repeat(metatada_len as usize)),
+    }
+}
+
+fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
+    num: u32,
+) -> TransfersWithVestingOf<T>
+where
+    T::AccountId: CreateAccountId,
+{
+    let start_member_id: u128 = membership::Module::<T>::members_created().saturated_into();
+    Transfers(
+        (0..num)
+            .map(|i| {
+                let (_, member_id) = member_funded_account::<T>(start_member_id + i as u128);
+                let payment = PaymentWithVestingOf::<T> {
+                    amount: 100u32.into(),
+                    vesting_schedule: Some(default_vesting_schedule_params::<T>()),
+                };
+                (member_id, payment)
+            })
+            .collect(),
+    )
+}
+
+pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
+    let mut current_block = System::<T>::block_number();
+    while current_block < target_block {
+        // Other on_finalize calls if needed...
+        System::<T>::on_finalize(current_block);
+
+        current_block += One::one();
+        System::<T>::set_block_number(current_block);
+
+        System::<T>::on_initialize(current_block);
+        // Other on_initialize calls if needed...
+    }
+}
+
+pub fn fastforward_by_blocks<T: Config>(blocks: T::BlockNumber) {
+    let current_block = System::<T>::block_number();
+    run_to_block::<T>(current_block + blocks);
+}
+
+pub fn transferrable_crt_balance<T: Config>(
+    token_id: T::TokenId,
+    member_id: T::MemberId,
+) -> TokenBalanceOf<T> {
+    project_token::Pallet::<T>::account_info_by_token_and_member(token_id, member_id)
+        .transferrable::<T>(System::<T>::block_number())
+}
+
 fn set_all_channel_paused_features_except<T: Config>(
-    origin: RawOrigin<T::AccountId>,
     channel_id: T::ChannelId,
     exceptions: Vec<crate::PausableChannelFeature>,
-) {
+) where
+    T::AccountId: CreateAccountId,
+{
     Pallet::<T>::set_channel_paused_features_as_moderator(
-        origin.into(),
-        crate::ContentActor::Lead,
+        RawOrigin::Signed(T::AccountId::create_account_id(
+            CONTENT_WG_LEADER_ACCOUNT_ID,
+        ))
+        .into(),
+        ContentActor::Lead,
         channel_id,
         all_channel_pausable_features_except(BTreeSet::from_iter(exceptions)),
         b"reason".to_vec(),
@@ -1122,21 +1530,21 @@ where
     ))
 }
 
-fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>() -> NftIssuanceParameters<T>
+fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
+    whitelist_size: u32,
+    metadata_size: u32,
+) -> NftIssuanceParameters<T>
 where
     T: RuntimeConfig,
     T::AccountId: CreateAccountId,
 {
-    let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     NftIssuanceParameters::<T> {
         royalty: Some(Pallet::<T>::max_creator_royalty()),
-        nft_metadata: Vec::new(),
+        nft_metadata: vec![0xff].repeat(metadata_size as usize),
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {
-                buy_now_price: Some(
-                    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step(),
-                ),
+                buy_now_price: Some(nft_buy_now_price::<T>()),
                 duration: Pallet::<T>::min_auction_duration(),
                 extension_period: Pallet::<T>::min_auction_extension_period(),
                 min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1150,115 +1558,91 @@ where
     }
 }
 
-#[allow(dead_code)]
-fn setup_worst_case_video_nft<T>(
+fn setup_idle_nft<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
-) -> Result<T::VideoId, DispatchError>
+    video_id: T::VideoId,
+    non_channel_owner: bool,
+) -> Result<NftData<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-    let video_id = Pallet::<T>::next_video_id();
-    let origin: T::Origin = RawOrigin::Signed(account_id).into();
-    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
-    Pallet::<T>::create_video(
-        origin.clone(),
-        actor.clone(),
-        channel_id,
-        VideoCreationParameters::<T> {
-            expected_video_state_bloat_bond: video_state_bloat_bond,
-            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
-            assets: None,
-            auto_issue_nft: None,
-            meta: None,
-        },
-    )?;
-    set_nft_limits_helper::<T>(channel_id);
-    let params = worst_case_nft_issuance_params_helper::<T>();
-    Pallet::<T>::issue_nft(origin, actor, video_id, params)?;
-    Ok(video_id)
-}
-
-fn setup_video_with_idle_nft<T>(
-    account_id: T::AccountId,
-    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
-) -> Result<T::VideoId, DispatchError>
-where
-    T::AccountId: CreateAccountId,
-    T: RuntimeConfig,
-{
-    setup_video_with_nft_transactional_status::<T>(
+    setup_nft_with_transactional_status::<T>(
         account_id,
         actor,
-        channel_id,
+        video_id,
+        non_channel_owner,
         InitTransactionalStatus::<T>::Idle,
     )
 }
 
-fn setup_video_with_offered_nft<T>(
+fn setup_offered_nft<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
+    video_id: T::VideoId,
+    non_channel_owner: bool,
     to_member: T::MemberId,
     price: Option<BalanceOf<T>>,
-) -> Result<T::VideoId, DispatchError>
+) -> Result<NftData<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-    setup_video_with_nft_transactional_status::<T>(
+    setup_nft_with_transactional_status::<T>(
         account_id,
         actor,
-        channel_id,
+        video_id,
+        non_channel_owner,
         InitTransactionalStatus::<T>::InitiatedOfferToMember(to_member, price),
     )
 }
 
-fn setup_video_with_nft_in_buy_now<T>(
+fn setup_nft_in_buy_now<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
+    video_id: T::VideoId,
+    non_channel_owner: bool,
     price: BalanceOf<T>,
-) -> Result<T::VideoId, DispatchError>
+) -> Result<NftData<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-    setup_video_with_nft_transactional_status::<T>(
+    setup_nft_with_transactional_status::<T>(
         account_id,
         actor,
-        channel_id,
+        video_id,
+        non_channel_owner,
         InitTransactionalStatus::<T>::BuyNow(price),
     )
 }
 
-fn setup_video_with_nft_in_english_auction<T>(
+fn setup_nft_in_english_auction<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
-) -> Result<(T::VideoId, T::MemberId, T::AccountId), DispatchError>
+    video_id: T::VideoId,
+    non_channel_owner: bool,
+) -> Result<NftContexts<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    let whitelisted_members = (0..(whitelist_size as usize))
+    assert!(whitelist_size > 1);
+    let whitelisted_members = (1..=(whitelist_size as usize))
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
-    let (participant_account_id, participant_id) = whitelisted_members[0].clone();
+    let bidders = whitelisted_members[0..=1].to_vec();
 
-    let buy_now_price =
-        Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(10u32.into());
-    let video_id = setup_video_with_nft_transactional_status::<T>(
+    let nft_data = setup_nft_with_transactional_status::<T>(
         account_id,
         actor,
-        channel_id,
+        video_id,
+        non_channel_owner,
         InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
-            buy_now_price: Some(buy_now_price),
+            buy_now_price: Some(nft_buy_now_price::<T>()),
             duration: Pallet::<T>::min_auction_duration(),
             extension_period: Pallet::<T>::min_auction_extension_period(),
             min_bid_step: Pallet::<T>::min_bid_step(),
@@ -1266,70 +1650,71 @@ where
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
             whitelist: whitelisted_members.into_iter().map(|(_, id)| id).collect(),
         }),
-    )?;
+    )
+    .unwrap();
 
-    Ok((video_id, participant_id, participant_account_id))
+    Ok((nft_data, bidders))
 }
 
-fn setup_video_with_nft_in_open_auction<T>(
+fn setup_nft_in_open_auction<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
-) -> Result<(T::VideoId, T::MemberId, T::AccountId), DispatchError>
+    video_id: T::VideoId,
+    non_channel_owner: bool,
+) -> Result<NftContext<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
-    let whitelisted_members = (0..(whitelist_size as usize))
+    assert!(whitelist_size > 1);
+    let whitelisted_members = (1..=(whitelist_size as usize))
         .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
         .collect::<Vec<_>>();
 
     let (participant_account_id, participant_id) = whitelisted_members[0].clone();
 
-    let buy_now_price =
-        Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step().mul(10u32.into());
-    let video_id = setup_video_with_nft_transactional_status::<T>(
+    let nft_data = setup_nft_with_transactional_status::<T>(
         account_id,
         actor,
-        channel_id,
+        video_id,
+        non_channel_owner,
         InitTransactionalStatus::<T>::OpenAuction(OpenAuctionParams::<T> {
-            buy_now_price: Some(buy_now_price),
+            buy_now_price: Some(nft_buy_now_price::<T>()),
             bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
             whitelist: whitelisted_members.into_iter().map(|(_, id)| id).collect(),
         }),
-    )?;
+    )
+    .unwrap();
 
-    Ok((video_id, participant_id, participant_account_id))
+    Ok((nft_data, participant_id, participant_account_id))
 }
 
-fn setup_video_with_nft_transactional_status<T>(
+fn setup_nft_with_transactional_status<T>(
     account_id: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
+    video_id: T::VideoId,
+    non_channel_owner: bool,
     transactional_status: InitTransactionalStatus<T>,
-) -> Result<T::VideoId, DispatchError>
+) -> Result<NftData<T>, DispatchError>
 where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-    let video_id = Pallet::<T>::next_video_id();
-    let origin: T::Origin = RawOrigin::Signed(account_id).into();
-    let (_, video_state_bloat_bond, data_object_state_bloat_bond, _) = setup_bloat_bonds::<T>()?;
-    Pallet::<T>::create_video(
-        origin.clone(),
-        actor.clone(),
-        channel_id,
-        VideoCreationParameters::<T> {
-            expected_video_state_bloat_bond: video_state_bloat_bond,
-            expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
-            assets: None,
-            auto_issue_nft: None,
-            meta: None,
-        },
-    )?;
+    let origin = RawOrigin::Signed(account_id.clone()).into();
+    let channel_id = Pallet::<T>::video_by_id(video_id).in_channel;
+
+    let (nft_owner_actor, owner_account) = if non_channel_owner {
+        let (owner_account, owner_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let nft_owner_actor =
+            ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
+        (nft_owner_actor, owner_account)
+    } else {
+        (actor, account_id)
+    };
+
     set_nft_limits_helper::<T>(channel_id);
     Pallet::<T>::issue_nft(
         origin,
@@ -1338,12 +1723,18 @@ where
         NftIssuanceParameters::<T> {
             royalty: Some(Pallet::<T>::max_creator_royalty()),
             nft_metadata: Vec::new(),
-            non_channel_owner: None,
+            non_channel_owner: match nft_owner_actor {
+                ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(member_id) => {
+                    Some(member_id)
+                }
+                _ => None,
+            },
             init_transactional_status: transactional_status,
         },
-    )?;
+    )
+    .unwrap();
 
-    Ok(video_id)
+    Ok((nft_owner_actor, owner_account))
 }
 
 fn add_english_auction_bid<T: Config>(
@@ -1351,7 +1742,7 @@ fn add_english_auction_bid<T: Config>(
     participant_id: T::MemberId,
     video_id: T::VideoId,
 ) -> BalanceOf<T> {
-    let bid_amount = Pallet::<T>::min_starting_price();
+    let bid_amount = nft_buy_now_price::<T>() - Pallet::<T>::min_bid_step();
     let origin: T::Origin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_english_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
     bid_amount
@@ -1362,9 +1753,15 @@ fn add_open_auction_bid<T: Config>(
     participant_id: T::MemberId,
     video_id: T::VideoId,
 ) -> OpenAuctionBid<T> {
-    let bid_amount = Pallet::<T>::min_starting_price();
+    let bid_amount = nft_buy_now_price::<T>() - 1u32.into();
     let origin: T::Origin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_open_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
-    let bid = Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id);
-    bid
+    Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id)
+}
+
+fn set_all_channel_paused_features<T: Config>(channel_id: T::ChannelId)
+where
+    T::AccountId: CreateAccountId,
+{
+    set_all_channel_paused_features_except::<T>(channel_id, vec![]);
 }

@@ -36,6 +36,9 @@ decl_error! {
         /// are being updated.
         MissingStorageBucketsNumWitness,
 
+        ///Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
+        NumberOfAssetsToRemoveIsZero,
+
         // Curator Management Errors
         // -------------------------
 
@@ -92,6 +95,9 @@ decl_error! {
 
         /// Actor cannot Own channel
         ActorCannotOwnChannel,
+
+        /// Attempt to sling back a channel owned nft
+        NftAlreadyOwnedByChannel,
 
         // Auction Errors
         // ---------------------

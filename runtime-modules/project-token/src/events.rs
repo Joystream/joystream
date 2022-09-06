@@ -28,18 +28,19 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - source member id
-        /// - map containing validated outputs (amount, remark) data indexed by
-        ///   (member_id + account existance)
-        TokenAmountTransferred(TokenId, MemberId, ValidatedTransfers),
+        /// - map containing validated outputs (amount indexed by (member_id + account existance))
+        /// - transfer's metadata
+        TokenAmountTransferred(TokenId, MemberId, ValidatedTransfers, Vec<u8>),
 
         /// Token amount transferred by issuer
         /// Params:
         /// - token identifier
         /// - source (issuer) member id
         /// - map containing validated outputs
-        ///   (amount, opt. vesting schedule, opt. vesting cleanup key, remark) data indexed by
+        ///   (amount, opt. vesting schedule, opt. vesting cleanup key) data indexed by
         ///   (account_id + account existance)
-        TokenAmountTransferredByIssuer(TokenId, MemberId, ValidatedTransfers),
+        /// - transfer's metadata
+        TokenAmountTransferredByIssuer(TokenId, MemberId, ValidatedTransfers, Vec<u8>),
 
         /// Patronage rate decreased
         /// Params:

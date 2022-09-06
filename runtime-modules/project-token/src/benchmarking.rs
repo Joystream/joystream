@@ -37,6 +37,8 @@ const DEFAULT_SPLIT_PARTICIPATION: u32 = 300_000_000;
 const DEFAULT_SPLIT_PAYOUT: u32 = 150_000;
 // Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(1));
+// Metadata
+const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // Close to the blocksize available for standard extrinsics
 
 // ----- HELPERS
 
@@ -217,6 +219,7 @@ benchmarks! {
     // - bloat_bond is non-zero
     transfer {
         let o in 1 .. MAX_TX_OUTPUTS;
+        let m in 1 .. MAX_BYTES_METADATA;
 
         let (owner_member_id, owner_account) = create_owner::<T>();
         let outputs = Transfers::<_, _>(
@@ -229,7 +232,6 @@ benchmarks! {
                 (
                     member_id,
                     Payment::<<T as Config>::Balance> {
-                        remark: vec![],
                         amount: DEFAULT_TX_AMOUNT.into()
                     }
                 )
@@ -244,11 +246,13 @@ benchmarks! {
             &owner_account,
             bloat_bond * o.into()
         );
+        let metadata = vec![0xf].repeat(m as usize);
     }: _(
         RawOrigin::Signed(owner_account.clone()),
         owner_member_id,
         token_id,
-        outputs.clone()
+        outputs.clone(),
+        metadata.clone()
     )
     verify {
         outputs.0.keys().for_each(|m| {
@@ -267,7 +271,8 @@ benchmarks! {
                         .iter()
                         .map(|(m, p)| (Validated::NonExisting(*m), ValidatedPayment::from(PaymentWithVesting::from(p.clone()))))
                         .collect()
-                )
+                ),
+                metadata
             ).into()
         );
         // Ensure bloat_bond was transferred

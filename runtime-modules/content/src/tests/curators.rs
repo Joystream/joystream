@@ -69,7 +69,7 @@ fn curator_group_management() {
         );
 
         let group = Content::curator_group_by_id(curator_group_id);
-        assert_eq!(group.is_active(), true);
+        assert!(group.is_active());
 
         // Group permissions
         let permissions = BTreeMap::from_iter(vec![
