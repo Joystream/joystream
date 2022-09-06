@@ -2966,7 +2966,6 @@ decl_module! {
         }
 
         /// NFT owner remark
-        /// Only Council can toggle nft issuance limits constraints
         /// <weight>
         ///
         /// ## Weight
