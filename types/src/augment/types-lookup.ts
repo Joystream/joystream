@@ -4456,7 +4456,8 @@ declare module '@polkadot/types/lookup' {
     readonly isTooManyNominators: boolean;
     readonly isTooManyValidators: boolean;
     readonly isCommissionTooLow: boolean;
-    readonly type: 'NotController' | 'NotStash' | 'AlreadyBonded' | 'AlreadyPaired' | 'EmptyTargets' | 'DuplicateIndex' | 'InvalidSlashIndex' | 'InsufficientBond' | 'NoMoreChunks' | 'NoUnlockChunk' | 'FundedTarget' | 'InvalidEraToReward' | 'InvalidNumberOfNominations' | 'NotSortedAndUnique' | 'AlreadyClaimed' | 'IncorrectHistoryDepth' | 'IncorrectSlashingSpans' | 'BadState' | 'TooManyTargets' | 'BadTarget' | 'CannotChillOther' | 'TooManyNominators' | 'TooManyValidators' | 'CommissionTooLow';
+    readonly isBondingRestricted: boolean;
+    readonly type: 'NotController' | 'NotStash' | 'AlreadyBonded' | 'AlreadyPaired' | 'EmptyTargets' | 'DuplicateIndex' | 'InvalidSlashIndex' | 'InsufficientBond' | 'NoMoreChunks' | 'NoUnlockChunk' | 'FundedTarget' | 'InvalidEraToReward' | 'InvalidNumberOfNominations' | 'NotSortedAndUnique' | 'AlreadyClaimed' | 'IncorrectHistoryDepth' | 'IncorrectSlashingSpans' | 'BadState' | 'TooManyTargets' | 'BadTarget' | 'CannotChillOther' | 'TooManyNominators' | 'TooManyValidators' | 'CommissionTooLow' | 'BondingRestricted';
   }
 
   /** @name SpCoreCryptoKeyTypeId (477) */
@@ -4801,7 +4802,7 @@ declare module '@polkadot/types/lookup' {
     readonly categoryId: u64;
     readonly authorId: u64;
     readonly cleanupPayOff: PalletCommonBloatBondRepayableBloatBond;
-    readonly numberOfPosts: u64;
+    readonly numberOfEditablePosts: u64;
   }
 
   /** @name PalletForumPost (529) */
