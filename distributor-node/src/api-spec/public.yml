@@ -56,7 +56,7 @@ paths:
         421:
           description: Misdirected request. Data object not supported by the node.
         404:
-          description: Data object does not exist.
+          description: Data object does not exist or has not been uploaded yet.
         500:
           description: Unexpected server error
     get:
@@ -112,7 +112,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         404:
-          description: Data object does not exist.
+          description: Data object does not exist or has not been uploaded yet.
           content:
             application/json:
               schema:

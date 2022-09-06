@@ -1,4 +1,4 @@
-import { Config } from '../types'
+import { Config, DisplaySafeConfig } from '../types'
 import { NetworkingService } from '../services/networking'
 import { LoggingService } from '../services/logging'
 import { StateCacheService } from '../services/cache/StateCacheService'
@@ -9,6 +9,7 @@ import nodeCleanup from 'node-cleanup'
 import { AppIntervals } from '../types/app'
 import { PublicApiService } from '../services/httpApi/PublicApiService'
 import { OperatorApiService } from '../services/httpApi/OperatorApiService'
+import _ from 'lodash'
 
 export class App {
   private config: Config
@@ -89,8 +90,18 @@ export class App {
     }
   }
 
+  private hideSecrets(config: Config) {
+    const displaySafeConfig: DisplaySafeConfig = {
+      ...config,
+      keys: config.keys?.map((k) => _.mapValues(k, () => '###SECRET###' as const)),
+      operatorApi: _.mapValues(config.operatorApi, () => '###SECRET###' as const),
+    }
+
+    return displaySafeConfig
+  }
+
   public async start(): Promise<void> {
-    this.logger.info('Starting the app', { config: this.config })
+    this.logger.info('Starting the app', { config: this.hideSecrets(this.config) })
     try {
       this.checkConfigDirectories()
       this.stateCache.load()

@@ -1,3 +1,10 @@
+### 0.2.0
+
+- **Carthage release:** Support for mime-type provided as part of `SubtitleMetadata` (video subtitles). It is now treated as fallback `mime-type` as long as it's a valid `text/*` type and the `file-type` package fails to detect any type from the file signature (magic number).
+- **Security:** Sensitive information (like private keys) is now hidden in the node's logs.
+- Requesting an asset which has not been accepted by any storage provider yet (`isAccepted == false`) now results in `404: Data object has not been uploaded yet` (previously `500: Failed to download object {id} from any availablable storage provider`)
+- Fixed links in CLI docs
+
 ### 0.1.2
 - Fix cache `cache-control: max-age` header for objects served from the filesystem ([`send`](https://www.npmjs.com/package/send) library requires `max-age` to be provided as miliseconds) 
 
