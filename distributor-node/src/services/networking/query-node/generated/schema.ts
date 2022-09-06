@@ -11218,12 +11218,21 @@ export type FundingRequestDestinationWhereInput = {
   AND?: Maybe<Array<FundingRequestDestinationWhereInput>>
   OR?: Maybe<Array<FundingRequestDestinationWhereInput>>
   NOT?: Maybe<Array<FundingRequestDestinationWhereInput>>
+<<<<<<< HEAD
 }
 
 export type FundingRequestDestinationWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+=======
+}
+
+export type FundingRequestDestinationWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+>>>>>>> upstream/carthage
 export type FundingRequestDestinationsList = BaseGraphQlObject & {
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
@@ -13979,6 +13988,346 @@ export type MembershipGiftedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+<<<<<<< HEAD
+=======
+export type MembershipConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<MembershipEdge>
+  pageInfo: PageInfo
+}
+
+export type MembershipCreateInput = {
+  handle: Scalars['String']
+  metadata: Scalars['ID']
+  controllerAccount: Scalars['String']
+  rootAccount: Scalars['String']
+  entry: Scalars['JSONObject']
+  isVerified: Scalars['Boolean']
+  boundAccounts: Array<Scalars['String']>
+  inviteCount: Scalars['Float']
+  invitedBy?: Maybe<Scalars['ID']>
+  referredBy?: Maybe<Scalars['ID']>
+  isFoundingMember: Scalars['Boolean']
+  isCouncilMember: Scalars['Boolean']
+}
+
+export type MembershipEdge = {
+  node: Membership
+  cursor: Scalars['String']
+}
+
+export type MembershipEntryFoundingMemberCreated = {
+  /** The event the member was gifted in */
+  foundingMemberCreatedEvent?: Maybe<FoundingMemberCreatedEvent>
+}
+
+export type MembershipEntryGenesis = {
+  phantom?: Maybe<Scalars['Int']>
+}
+
+export type MembershipEntryGifted = {
+  /** The event the member was gifted in */
+  membershipGiftedEvent?: Maybe<MembershipGiftedEvent>
+}
+
+export type MembershipEntryInvited = {
+  /** The event the member was invited in */
+  memberInvitedEvent?: Maybe<MemberInvitedEvent>
+}
+
+export type MembershipEntryMethod =
+  | MembershipEntryPaid
+  | MembershipEntryInvited
+  | MembershipEntryGifted
+  | MembershipEntryFoundingMemberCreated
+  | MembershipEntryGenesis
+
+export type MembershipEntryPaid = {
+  /** The event the membership was bought in */
+  membershipBoughtEvent?: Maybe<MembershipBoughtEvent>
+}
+
+export type MembershipExternalResource = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  type: MembershipExternalResourceType
+  value: Scalars['String']
+  memberMetadata: MemberMetadata
+  memberMetadataId: Scalars['String']
+  member?: Maybe<Membership>
+  memberId?: Maybe<Scalars['String']>
+}
+
+export type MembershipExternalResourceConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<MembershipExternalResourceEdge>
+  pageInfo: PageInfo
+}
+
+export type MembershipExternalResourceCreateInput = {
+  type: MembershipExternalResourceType
+  value: Scalars['String']
+  memberMetadata: Scalars['ID']
+  member?: Maybe<Scalars['ID']>
+}
+
+export type MembershipExternalResourceEdge = {
+  node: MembershipExternalResource
+  cursor: Scalars['String']
+}
+
+export enum MembershipExternalResourceOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  TypeAsc = 'type_ASC',
+  TypeDesc = 'type_DESC',
+  ValueAsc = 'value_ASC',
+  ValueDesc = 'value_DESC',
+  MemberMetadataAsc = 'memberMetadata_ASC',
+  MemberMetadataDesc = 'memberMetadata_DESC',
+  MemberAsc = 'member_ASC',
+  MemberDesc = 'member_DESC',
+}
+
+export enum MembershipExternalResourceType {
+  Email = 'EMAIL',
+  Hyperlink = 'HYPERLINK',
+  Twitter = 'TWITTER',
+  Telegram = 'TELEGRAM',
+  Discord = 'DISCORD',
+  Facebook = 'FACEBOOK',
+  Youtube = 'YOUTUBE',
+  Matrix = 'MATRIX',
+  Irc = 'IRC',
+  Wechat = 'WECHAT',
+  Whatsapp = 'WHATSAPP',
+}
+
+export type MembershipExternalResourceUpdateInput = {
+  type?: Maybe<MembershipExternalResourceType>
+  value?: Maybe<Scalars['String']>
+  memberMetadata?: Maybe<Scalars['ID']>
+  member?: Maybe<Scalars['ID']>
+}
+
+export type MembershipExternalResourceWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  type_eq?: Maybe<MembershipExternalResourceType>
+  type_in?: Maybe<Array<MembershipExternalResourceType>>
+  value_eq?: Maybe<Scalars['String']>
+  value_contains?: Maybe<Scalars['String']>
+  value_startsWith?: Maybe<Scalars['String']>
+  value_endsWith?: Maybe<Scalars['String']>
+  value_in?: Maybe<Array<Scalars['String']>>
+  memberMetadata?: Maybe<MemberMetadataWhereInput>
+  member?: Maybe<MembershipWhereInput>
+  AND?: Maybe<Array<MembershipExternalResourceWhereInput>>
+  OR?: Maybe<Array<MembershipExternalResourceWhereInput>>
+  NOT?: Maybe<Array<MembershipExternalResourceWhereInput>>
+}
+
+export type MembershipExternalResourceWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type MembershipGiftedEvent = Event &
+  BaseGraphQlObject & {
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['ID']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['ID']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['ID']>
+    version: Scalars['Int']
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    newMember: Membership
+    newMemberId: Scalars['String']
+    /** New member root account in SS58 encoding. */
+    rootAccount: Scalars['String']
+    /** New member controller in SS58 encoding. */
+    controllerAccount: Scalars['String']
+    /** New member handle. */
+    handle: Scalars['String']
+    metadata: MemberMetadata
+    metadataId: Scalars['String']
+  }
+
+export type MembershipGiftedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<MembershipGiftedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type MembershipGiftedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  newMember: Scalars['ID']
+  rootAccount: Scalars['String']
+  controllerAccount: Scalars['String']
+  handle: Scalars['String']
+  metadata: Scalars['ID']
+}
+
+export type MembershipGiftedEventEdge = {
+  node: MembershipGiftedEvent
+  cursor: Scalars['String']
+}
+
+export enum MembershipGiftedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  NewMemberAsc = 'newMember_ASC',
+  NewMemberDesc = 'newMember_DESC',
+  RootAccountAsc = 'rootAccount_ASC',
+  RootAccountDesc = 'rootAccount_DESC',
+  ControllerAccountAsc = 'controllerAccount_ASC',
+  ControllerAccountDesc = 'controllerAccount_DESC',
+  HandleAsc = 'handle_ASC',
+  HandleDesc = 'handle_DESC',
+  MetadataAsc = 'metadata_ASC',
+  MetadataDesc = 'metadata_DESC',
+}
+
+export type MembershipGiftedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  newMember?: Maybe<Scalars['ID']>
+  rootAccount?: Maybe<Scalars['String']>
+  controllerAccount?: Maybe<Scalars['String']>
+  handle?: Maybe<Scalars['String']>
+  metadata?: Maybe<Scalars['ID']>
+}
+
+export type MembershipGiftedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rootAccount_eq?: Maybe<Scalars['String']>
+  rootAccount_contains?: Maybe<Scalars['String']>
+  rootAccount_startsWith?: Maybe<Scalars['String']>
+  rootAccount_endsWith?: Maybe<Scalars['String']>
+  rootAccount_in?: Maybe<Array<Scalars['String']>>
+  controllerAccount_eq?: Maybe<Scalars['String']>
+  controllerAccount_contains?: Maybe<Scalars['String']>
+  controllerAccount_startsWith?: Maybe<Scalars['String']>
+  controllerAccount_endsWith?: Maybe<Scalars['String']>
+  controllerAccount_in?: Maybe<Array<Scalars['String']>>
+  handle_eq?: Maybe<Scalars['String']>
+  handle_contains?: Maybe<Scalars['String']>
+  handle_startsWith?: Maybe<Scalars['String']>
+  handle_endsWith?: Maybe<Scalars['String']>
+  handle_in?: Maybe<Array<Scalars['String']>>
+  newMember?: Maybe<MembershipWhereInput>
+  metadata?: Maybe<MemberMetadataWhereInput>
+  AND?: Maybe<Array<MembershipGiftedEventWhereInput>>
+  OR?: Maybe<Array<MembershipGiftedEventWhereInput>>
+  NOT?: Maybe<Array<MembershipGiftedEventWhereInput>>
+}
+
+export type MembershipGiftedEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+>>>>>>> upstream/carthage
 export enum MembershipOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
@@ -14905,6 +15254,7 @@ export type NewCouncilElectedEventWhereInput = {
   AND?: Maybe<Array<NewCouncilElectedEventWhereInput>>
   OR?: Maybe<Array<NewCouncilElectedEventWhereInput>>
   NOT?: Maybe<Array<NewCouncilElectedEventWhereInput>>
+<<<<<<< HEAD
 }
 
 export type NewCouncilElectedEventWhereUniqueInput = {
@@ -15022,6 +15372,127 @@ export type NewCouncilNotElectedEventWhereInput = {
   AND?: Maybe<Array<NewCouncilNotElectedEventWhereInput>>
   OR?: Maybe<Array<NewCouncilNotElectedEventWhereInput>>
   NOT?: Maybe<Array<NewCouncilNotElectedEventWhereInput>>
+=======
+>>>>>>> upstream/carthage
+}
+
+export type NewCouncilElectedEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type NewCouncilNotElectedEvent = Event &
+  BaseGraphQlObject & {
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['ID']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['ID']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['ID']>
+    version: Scalars['Int']
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+<<<<<<< HEAD
+=======
+  }
+
+export type NewCouncilNotElectedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<NewCouncilNotElectedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type NewCouncilNotElectedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+}
+
+export type NewCouncilNotElectedEventEdge = {
+  node: NewCouncilNotElectedEvent
+  cursor: Scalars['String']
+}
+
+export enum NewCouncilNotElectedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+}
+
+export type NewCouncilNotElectedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+}
+
+export type NewCouncilNotElectedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  AND?: Maybe<Array<NewCouncilNotElectedEventWhereInput>>
+  OR?: Maybe<Array<NewCouncilNotElectedEventWhereInput>>
+  NOT?: Maybe<Array<NewCouncilNotElectedEventWhereInput>>
 }
 
 export type NewCouncilNotElectedEventWhereUniqueInput = {
@@ -15048,6 +15519,7 @@ export type NewMissedRewardLevelReachedEvent = Event &
     indexInBlock: Scalars['Int']
     /** Filtering options for interface implementers */
     type?: Maybe<EventTypeOptions>
+>>>>>>> upstream/carthage
     group: WorkingGroup
     groupId: Scalars['String']
     worker: Worker
@@ -22835,6 +23307,49 @@ export type QueryMembershipBoughtEventsConnectionArgs = {
 }
 
 export type QueryMembershipExternalResourcesArgs = {
+<<<<<<< HEAD
+=======
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<MembershipExternalResourceWhereInput>
+  orderBy?: Maybe<Array<MembershipExternalResourceOrderByInput>>
+}
+
+export type QueryMembershipExternalResourceByUniqueInputArgs = {
+  where: MembershipExternalResourceWhereUniqueInput
+}
+
+export type QueryMembershipExternalResourcesConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<MembershipExternalResourceWhereInput>
+  orderBy?: Maybe<Array<MembershipExternalResourceOrderByInput>>
+}
+
+export type QueryMembershipGiftedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<MembershipGiftedEventWhereInput>
+  orderBy?: Maybe<Array<MembershipGiftedEventOrderByInput>>
+}
+
+export type QueryMembershipGiftedEventByUniqueInputArgs = {
+  where: MembershipGiftedEventWhereUniqueInput
+}
+
+export type QueryMembershipGiftedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<MembershipGiftedEventWhereInput>
+  orderBy?: Maybe<Array<MembershipGiftedEventOrderByInput>>
+}
+
+export type QueryMembershipPriceUpdatedEventsArgs = {
+>>>>>>> upstream/carthage
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
   where?: Maybe<MembershipExternalResourceWhereInput>
@@ -28179,6 +28694,180 @@ export type StorageDataObjectWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+<<<<<<< HEAD
+=======
+/** Global storage system parameters */
+export type StorageSystemParameters = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** Blacklisted content hashes */
+  blacklist: Array<Scalars['String']>
+  /** How many buckets can be assigned to store a bag */
+  storageBucketsPerBagLimit: Scalars['Int']
+  /** How many buckets can be assigned to distribute a bag */
+  distributionBucketsPerBagLimit: Scalars['Int']
+  /** Whether the uploading is globally blocked */
+  uploadingBlocked: Scalars['Boolean']
+  /** Additional fee for storing 1 MB of data */
+  dataObjectFeePerMb: Scalars['BigInt']
+  /** Global max. number of objects a storage bucket can store (can also be further limitted the provider) */
+  storageBucketMaxObjectsCountLimit: Scalars['BigInt']
+  /** Global max. size of objects a storage bucket can store (can also be further limitted the provider) */
+  storageBucketMaxObjectsSizeLimit: Scalars['BigInt']
+  /** ID of the next data object when created */
+  nextDataObjectId: Scalars['BigInt']
+  /** Data Object state bloat bond value */
+  dataObjectStateBloatBondValue: Scalars['BigInt']
+}
+
+export type StorageSystemParametersConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<StorageSystemParametersEdge>
+  pageInfo: PageInfo
+}
+
+export type StorageSystemParametersCreateInput = {
+  blacklist: Array<Scalars['String']>
+  storageBucketsPerBagLimit: Scalars['Float']
+  distributionBucketsPerBagLimit: Scalars['Float']
+  uploadingBlocked: Scalars['Boolean']
+  dataObjectFeePerMb: Scalars['String']
+  storageBucketMaxObjectsCountLimit: Scalars['String']
+  storageBucketMaxObjectsSizeLimit: Scalars['String']
+  nextDataObjectId: Scalars['String']
+  dataObjectStateBloatBondValue: Scalars['String']
+}
+
+export type StorageSystemParametersEdge = {
+  node: StorageSystemParameters
+  cursor: Scalars['String']
+}
+
+export enum StorageSystemParametersOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  StorageBucketsPerBagLimitAsc = 'storageBucketsPerBagLimit_ASC',
+  StorageBucketsPerBagLimitDesc = 'storageBucketsPerBagLimit_DESC',
+  DistributionBucketsPerBagLimitAsc = 'distributionBucketsPerBagLimit_ASC',
+  DistributionBucketsPerBagLimitDesc = 'distributionBucketsPerBagLimit_DESC',
+  UploadingBlockedAsc = 'uploadingBlocked_ASC',
+  UploadingBlockedDesc = 'uploadingBlocked_DESC',
+  DataObjectFeePerMbAsc = 'dataObjectFeePerMb_ASC',
+  DataObjectFeePerMbDesc = 'dataObjectFeePerMb_DESC',
+  StorageBucketMaxObjectsCountLimitAsc = 'storageBucketMaxObjectsCountLimit_ASC',
+  StorageBucketMaxObjectsCountLimitDesc = 'storageBucketMaxObjectsCountLimit_DESC',
+  StorageBucketMaxObjectsSizeLimitAsc = 'storageBucketMaxObjectsSizeLimit_ASC',
+  StorageBucketMaxObjectsSizeLimitDesc = 'storageBucketMaxObjectsSizeLimit_DESC',
+  NextDataObjectIdAsc = 'nextDataObjectId_ASC',
+  NextDataObjectIdDesc = 'nextDataObjectId_DESC',
+  DataObjectStateBloatBondValueAsc = 'dataObjectStateBloatBondValue_ASC',
+  DataObjectStateBloatBondValueDesc = 'dataObjectStateBloatBondValue_DESC',
+}
+
+export type StorageSystemParametersUpdateInput = {
+  blacklist?: Maybe<Array<Scalars['String']>>
+  storageBucketsPerBagLimit?: Maybe<Scalars['Float']>
+  distributionBucketsPerBagLimit?: Maybe<Scalars['Float']>
+  uploadingBlocked?: Maybe<Scalars['Boolean']>
+  dataObjectFeePerMb?: Maybe<Scalars['String']>
+  storageBucketMaxObjectsCountLimit?: Maybe<Scalars['String']>
+  storageBucketMaxObjectsSizeLimit?: Maybe<Scalars['String']>
+  nextDataObjectId?: Maybe<Scalars['String']>
+  dataObjectStateBloatBondValue?: Maybe<Scalars['String']>
+}
+
+export type StorageSystemParametersWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  blacklist_containsAll?: Maybe<Array<Scalars['String']>>
+  blacklist_containsNone?: Maybe<Array<Scalars['String']>>
+  blacklist_containsAny?: Maybe<Array<Scalars['String']>>
+  storageBucketsPerBagLimit_eq?: Maybe<Scalars['Int']>
+  storageBucketsPerBagLimit_gt?: Maybe<Scalars['Int']>
+  storageBucketsPerBagLimit_gte?: Maybe<Scalars['Int']>
+  storageBucketsPerBagLimit_lt?: Maybe<Scalars['Int']>
+  storageBucketsPerBagLimit_lte?: Maybe<Scalars['Int']>
+  storageBucketsPerBagLimit_in?: Maybe<Array<Scalars['Int']>>
+  distributionBucketsPerBagLimit_eq?: Maybe<Scalars['Int']>
+  distributionBucketsPerBagLimit_gt?: Maybe<Scalars['Int']>
+  distributionBucketsPerBagLimit_gte?: Maybe<Scalars['Int']>
+  distributionBucketsPerBagLimit_lt?: Maybe<Scalars['Int']>
+  distributionBucketsPerBagLimit_lte?: Maybe<Scalars['Int']>
+  distributionBucketsPerBagLimit_in?: Maybe<Array<Scalars['Int']>>
+  uploadingBlocked_eq?: Maybe<Scalars['Boolean']>
+  uploadingBlocked_in?: Maybe<Array<Scalars['Boolean']>>
+  dataObjectFeePerMb_eq?: Maybe<Scalars['BigInt']>
+  dataObjectFeePerMb_gt?: Maybe<Scalars['BigInt']>
+  dataObjectFeePerMb_gte?: Maybe<Scalars['BigInt']>
+  dataObjectFeePerMb_lt?: Maybe<Scalars['BigInt']>
+  dataObjectFeePerMb_lte?: Maybe<Scalars['BigInt']>
+  dataObjectFeePerMb_in?: Maybe<Array<Scalars['BigInt']>>
+  storageBucketMaxObjectsCountLimit_eq?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsCountLimit_gt?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsCountLimit_gte?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsCountLimit_lt?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsCountLimit_lte?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsCountLimit_in?: Maybe<Array<Scalars['BigInt']>>
+  storageBucketMaxObjectsSizeLimit_eq?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsSizeLimit_gt?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsSizeLimit_gte?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsSizeLimit_lt?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsSizeLimit_lte?: Maybe<Scalars['BigInt']>
+  storageBucketMaxObjectsSizeLimit_in?: Maybe<Array<Scalars['BigInt']>>
+  nextDataObjectId_eq?: Maybe<Scalars['BigInt']>
+  nextDataObjectId_gt?: Maybe<Scalars['BigInt']>
+  nextDataObjectId_gte?: Maybe<Scalars['BigInt']>
+  nextDataObjectId_lt?: Maybe<Scalars['BigInt']>
+  nextDataObjectId_lte?: Maybe<Scalars['BigInt']>
+  nextDataObjectId_in?: Maybe<Array<Scalars['BigInt']>>
+  dataObjectStateBloatBondValue_eq?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_gt?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_gte?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_lt?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_lte?: Maybe<Scalars['BigInt']>
+  dataObjectStateBloatBondValue_in?: Maybe<Array<Scalars['BigInt']>>
+  AND?: Maybe<Array<StorageSystemParametersWhereInput>>
+  OR?: Maybe<Array<StorageSystemParametersWhereInput>>
+  NOT?: Maybe<Array<StorageSystemParametersWhereInput>>
+}
+
+export type StorageSystemParametersWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+>>>>>>> upstream/carthage
 export type Subscription = {
   stateSubscription: ProcessorState
 }
