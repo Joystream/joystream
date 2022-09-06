@@ -99,6 +99,24 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       maxReserves: u32 & AugmentedConst<ApiType>;
     };
+    bounty: {
+      /**
+       * Exports const - max work entry number for a closed assurance type contract bounty.
+       **/
+      closedContractSizeLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - creator state bloat bond amount for a bounty.
+       **/
+      creatorStateBloatBondAmount: u128 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - funder state bloat bond amount for a bounty.
+       **/
+      funderStateBloatBondAmount: u128 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - min work entrant stake for a bounty.
+       **/
+      minWorkEntrantStake: u128 & AugmentedConst<ApiType>;
+    };
     content: {
       /**
        * Exports const - default channel daily NFT limit.

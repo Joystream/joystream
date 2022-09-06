@@ -181,7 +181,12 @@ fn genesis_constructor(
 
     let genesis_balances = initial_balances_path
         .as_ref()
-        .map(|path| initial_balances::from_json(path.as_path()))
+        .map(|path| initial_balances::balances_from_json(path.as_path()))
+        .unwrap_or_else(Vec::new);
+
+    let vesting_accounts = initial_balances_path
+        .as_ref()
+        .map(|path| initial_balances::vesting_from_json(path.as_path()))
         .unwrap_or_else(Vec::new);
 
     let content_cfg = match deployment {
@@ -200,6 +205,7 @@ fn genesis_constructor(
         sudo_account.clone(),
         endowed_accounts.to_vec(),
         genesis_balances,
+        vesting_accounts,
         content_cfg,
         storage_cfg,
     )

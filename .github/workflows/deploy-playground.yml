@@ -11,25 +11,37 @@ on:
         description: 'Branch to deploy'
         required: false
         default: 'master'
+      runtimeProfile:
+        description: 'STAGING | PLAYGROUND | TESTING - leave balnk for production'
+        default: 'PLAYGROUND'
+        required: false
       sshPubKey:
         description: 'SSH pubkey eg. `ssh-rsa AAAAB3NzaC1yc2EA....0hc3GND8IR mysshkey`'
         required: false
-      instanceType:
-        description: 'AWS EC2 instance type (t2.micro, t2.large)'
-        required: false
-        default: 't2.micro'
       stackNamePrefix:
         description: 'Additional identifier to include in stack name'
         required: false
         default: 'playground'
       skipChainSetup:
         description: 'Optionally skip running newChainSetup script (true or false)'
-        required: true
-        default: 'false'
-      runtimeProfile:
-        description: 'STAGING | PLAYGROUND | TESTING - leave balnk for production'
         required: false
-
+        default: 'false'
+      chainSetupScenario:
+        description: 'Scenario name to run after chain stats'
+        required: false
+        default: 'setupNewChainMultiStorage'
+      sudoSuri:
+        description: 'SURI of sudo account - must be different than treasury'
+        required: false
+        default: '//Alice'
+      treasurySuri:
+        description: 'SURI of treasury account - must be different than sudo'
+        required: false
+        default: '//Bob'
+      initialBalances: 
+        description: 'JSON string or http URL to override initial balances and vesting config'
+        default: ''
+        required: false
 defaults:
   run:
     working-directory: devops/aws
@@ -71,7 +83,7 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: devops/aws/cloudformation/single-instance.yml
           no-fail-on-empty-changeset: '1'
-          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=${{ github.event.inputs.instanceType }}'
+          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=t2.large'
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
@@ -89,7 +101,11 @@ jobs:
                           skip_chain_setup=${{ github.event.inputs.skipChainSetup }} \
                           stack_name=${{ env.STACK_NAME }} \
                           runtime_profile=${{ github.event.inputs.runtimeProfile }} \
-                          ssh_pub_key='${{ github.event.inputs.sshPubKey }}'"
+                          ssh_pub_key='${{ github.event.inputs.sshPubKey }}' \
+                          sudo_suri='${{ github.event.inputs.sudoSuri }}' \
+                          treasury_suri='${{ github.event.inputs.treasurySuri }}' \
+                          initial_balances='${{ github.event.inputs.initialBalances }}' \
+                          init_chain_scenario='${{ github.event.inputs.chainSetupScenario }}'"
             --verbose
 
       - name: Save the endpoints file as an artifact

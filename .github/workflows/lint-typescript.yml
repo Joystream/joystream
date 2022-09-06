@@ -1,0 +1,41 @@
+name: lint-typescript
+on: [pull_request, push]
+
+jobs:
+  lint_ubuntu:
+    name: Ubuntu Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: lint
+      run: |
+        yarn install --frozen-lockfile
+        yarn workspace @joystream/types build
+        yarn workspace @joystream/metadata-protobuf build
+        yarn lint
+
+  lint_osx:
+    name: MacOS Checks
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: lint
+      run: |
+        yarn install --frozen-lockfile
+        yarn workspace @joystream/types build
+        yarn workspace @joystream/metadata-protobuf build
+        yarn lint

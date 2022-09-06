@@ -2,10 +2,12 @@ import { createType } from '@joystream/types'
 import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 import { WorkerId, CuratorGroupId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE } from '../../consts'
-import { Api } from '../../Api'
-import { BaseQueryNodeFixture } from '../../Fixture'
-import { QueryNodeApi } from '../../QueryNodeApi'
+import { KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE } from '../../../consts'
+import { Api } from '../../../Api'
+import { BaseQueryNodeFixture } from '../../../Fixture'
+import { QueryNodeApi } from '../../../QueryNodeApi'
+import { assertCuratorCollaboratorPermissions } from './utils'
+import { Utils } from '../../../utils'
 
 export type AddCuratorToGroupParams = {
   curatorGroupId: CuratorGroupId
@@ -50,6 +52,23 @@ export class AddCuratorToCuratorGroupFixture extends BaseQueryNodeFixture {
         curatorId,
         createType('BTreeSet<PalletContentChannelActionPermission>', permissions)
       )
+    )
+  }
+
+  public async checkCuratorPermissions(curatorIndex: number): Promise<void> {
+    await this.query.tryQueryWithTimeout(
+      () =>
+        this.query.getCuratorPermissionsByIdAndGroupId(
+          this.addCuratorToGroupParams[curatorIndex].curatorGroupId.toString(),
+          this.addCuratorToGroupParams[curatorIndex].curatorId.toString()
+        ),
+      (curator) => {
+        Utils.assert(curator)
+        assertCuratorCollaboratorPermissions(
+          this.addCuratorToGroupParams[curatorIndex].permissions,
+          curator.permissions
+        )
+      }
     )
   }
 }

@@ -90,8 +90,7 @@ joystream_pallet_benchmark council council
 joystream_pallet_benchmark referendum referendum
 joystream_pallet_benchmark forum forum
 joystream_pallet_benchmark membership membership
-# Disabled until we merge new bounty module
-# joystream_pallet_benchmark bounty bounty
+joystream_pallet_benchmark bounty bounty
 joystream_pallet_benchmark joystream_utility utility
 joystream_pallet_benchmark storage storage
 joystream_pallet_benchmark project_token project-token
