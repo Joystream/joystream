@@ -8,7 +8,7 @@ use crate::{
     permissions::*,
     types::*,
     Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
-    Module as Pallet, NextVideoId,
+    Module as Pallet,
 };
 
 use balances::Pallet as Balances;
@@ -67,7 +67,7 @@ pub type DistributionWorkingGroupInstance = working_group::Instance9;
 pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 fn nft_buy_now_price<T: Config>() -> BalanceOf<T> {
-    Pallet::<T>::min_starting_price() + 1000u32.into()
+    Pallet::<T>::min_starting_price() + Pallet::<T>::min_bid_step() + 1000u32.into()
 }
 
 pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
@@ -1106,90 +1106,6 @@ pub fn create_pull_payments_with_reward<T: Config>(
     payments
 }
 
-fn setup_video<T>(
-    origin: T::Origin,
-    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
-    assets_num: u32,
-    auto_issue_nft: Option<NftIssuanceParameters<T>>,
-    meta: u32,
-) -> T::VideoId
-where
-    T: RuntimeConfig,
-    T::AccountId: CreateAccountId,
-{
-    let max_obj_size: u64 = T::MaxDataObjectSize::get();
-
-    let assets = if assets_num > 0 {
-        Some(StorageAssets::<T> {
-            expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
-            object_creation_list: create_data_object_candidates_helper(assets_num, max_obj_size),
-        })
-    } else {
-        None
-    };
-
-    let expected_data_object_state_bloat_bond = Storage::<T>::data_object_state_bloat_bond_value();
-
-    let expected_video_state_bloat_bond = Pallet::<T>::video_state_bloat_bond_value();
-    let meta = Some(vec![1u8].repeat(meta as usize));
-    let storage_buckets_num_witness = storage_buckets_num_witness::<T>(channel_id).unwrap();
-
-    let params = VideoCreationParameters::<T> {
-        assets,
-        meta,
-        auto_issue_nft,
-        expected_data_object_state_bloat_bond,
-        expected_video_state_bloat_bond,
-        storage_buckets_num_witness,
-    };
-
-    let video_id = NextVideoId::<T>::get();
-
-    Pallet::<T>::create_video(origin, actor, channel_id, params).unwrap();
-
-    video_id
-}
-
-fn setup_worst_case_nft_video<T>(
-    origin: T::Origin,
-    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_id: T::ChannelId,
-    assets_num: u32,
-    meta: u32,
-) -> T::VideoId
-where
-    T: RuntimeConfig,
-    T::AccountId: CreateAccountId,
-{
-    let whitelist = (0..Pallet::<T>::max_auction_whitelist_length())
-        .map(|i| {
-            let (_, member_id) = member_funded_account::<T>();
-            member_id
-        })
-        .collect::<BTreeSet<_>>();
-
-    let init_transactional_status =
-        InitTransactionalStatus::<T>::EnglishAuction(EnglishAuctionParams::<T> {
-            starting_price: Pallet::<T>::min_starting_price(),
-            buy_now_price: None,
-            extension_period: Pallet::<T>::min_auction_extension_period(),
-            duration: Pallet::<T>::min_auction_duration(),
-            min_bid_step: Pallet::<T>::min_bid_step(),
-            starts_at: None,
-            whitelist,
-        });
-
-    let auto_issue_nft = Some(NftIssuanceParameters::<T> {
-        royalty: None,
-        nft_metadata: vec![0u8].repeat(meta as usize),
-        non_channel_owner: None,
-        init_transactional_status,
-    });
-
-    setup_video::<T>(origin, actor, channel_id, assets_num, auto_issue_nft, meta)
-}
-
 fn channel_bag_witness<T: Config>(
     channel_id: T::ChannelId,
 ) -> Result<ChannelBagWitness, DispatchError> {
@@ -1546,7 +1462,7 @@ where
                 starting_price: Pallet::<T>::min_starting_price(),
                 starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
                 whitelist: (0..(whitelist_size as usize))
-                    .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                    .map(|_| member_funded_account::<T>().1)
                     .collect(),
             },
         ),
@@ -1625,8 +1541,8 @@ where
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     assert!(whitelist_size > 1);
-    let whitelisted_members = (1..=(whitelist_size as usize))
-        .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
+    let whitelisted_members = (0..(whitelist_size as usize))
+        .map(|_| member_funded_account::<T>())
         .collect::<Vec<_>>();
 
     let bidders = whitelisted_members[0..=1].to_vec();
@@ -1663,8 +1579,8 @@ where
 {
     let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
     assert!(whitelist_size > 1);
-    let whitelisted_members = (1..=(whitelist_size as usize))
-        .map(|i| member_funded_account::<T>(MEMBER_IDS[i]))
+    let whitelisted_members = (0..(whitelist_size as usize))
+        .map(|_| member_funded_account::<T>())
         .collect::<Vec<_>>();
 
     let (participant_account_id, participant_id) = whitelisted_members[0].clone();
@@ -1702,7 +1618,7 @@ where
     let channel_id = Pallet::<T>::video_by_id(video_id).in_channel;
 
     let (nft_owner_actor, owner_account) = if non_channel_owner {
-        let (owner_account, owner_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let (owner_account, owner_id) = member_funded_account::<T>();
         let nft_owner_actor =
             ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
         (nft_owner_actor, owner_account)

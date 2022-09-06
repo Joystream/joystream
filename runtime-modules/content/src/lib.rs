@@ -3119,7 +3119,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::accept_channel_transfer(
+        #[weight = Module::<T>::accept_channel_transfer_weight(
             commitment_params.new_collaborators.len() as u32
         )]
         pub fn accept_channel_transfer(
@@ -4787,6 +4787,19 @@ impl<T: Config> Module<T> {
 
             WeightInfoContent::<T>::delete_video_as_moderator_without_assets(a)
         }
+    }
+
+    // Calculates weight for accept_channel_transfer extrinsic.
+    fn accept_channel_transfer_weight(collaborators_len: u32) -> Weight {
+        WeightInfoContent::<T>::accept_channel_transfer_curator_to_curator(collaborators_len)
+            .max(
+                WeightInfoContent::<T>::accept_channel_transfer_member_to_curator(
+                    collaborators_len,
+                ),
+            )
+            .max(
+                WeightInfoContent::<T>::accept_channel_transfer_member_to_member(collaborators_len),
+            )
     }
 }
 
