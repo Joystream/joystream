@@ -50,7 +50,7 @@ use frame_election_provider_support::{
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
     ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
-    LockIdentifier, OnUnbalanced,
+    LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -63,6 +63,7 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
+use pallet_staking::BondingRestriction;
 use pallet_transaction_payment::CurrencyAdapter;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
@@ -78,6 +79,7 @@ use sp_runtime::{
 
 use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
+use sp_std::marker::PhantomData;
 use sp_std::{vec, vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -231,28 +233,20 @@ fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool 
 // Filter out a subset of calls on content pallet and some specific proposals
 #[cfg(not(feature = "runtime-benchmarks"))]
 fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        // TODO: adjust after Carthage
-        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
-            ..
-        }) => false,
-        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
-            general_proposal_parameters: _,
-            proposal_details,
-        }) => !matches!(
-            proposal_details,
-            proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
-                | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
-        ),
-        _ => true, // Enable all other calls
-    }
+    // TODO: adjust after Carthage
+    !matches!(
+        call,
+        Call::Content(content::Call::<Runtime>::destroy_nft { .. })
+            | Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. })
+            | Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. })
+            | Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. })
+            | Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. })
+            | Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. })
+            | Call::Content(
+                content::Call::<Runtime>::set_channel_paused_features_as_moderator { .. }
+            )
+            | Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. })
+    )
 }
 
 // Live Production config
@@ -437,7 +431,7 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+pub(crate) type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 
 pub struct Author;
 impl OnUnbalanced<NegativeImbalance> for Author {
@@ -448,17 +442,17 @@ impl OnUnbalanced<NegativeImbalance> for Author {
     }
 }
 
-pub struct DealWithFees;
-impl OnUnbalanced<NegativeImbalance> for DealWithFees {
+pub struct DealWithFees<R>(PhantomData<R>);
+impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFees<R> {
     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
         if let Some(fees) = fees_then_tips.next() {
-            // for fees, 20% to author, for now we don't have treasury so the 80% is ignored
-            let mut split = fees.ration(80, 20);
+            // for fees, we burn them all
+            let mut split = fees.ration(100, 0);
             if let Some(tips) = fees_then_tips.next() {
                 // For tips %100 are for the author
                 tips.ration_merge_into(0, 100, &mut split);
             }
-            Author::on_unbalanced(split.1);
+            R::on_unbalanced(split.1);
         }
     }
 }
@@ -471,7 +465,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Author>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -573,6 +567,7 @@ impl pallet_staking::Config for Runtime {
     type OnStakerSlash = (); // NominationPools;
     type WeightInfo = weights::pallet_staking::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
+    type BondingRestriction = RestrictStakingAccountsFromBonding;
 }
 
 parameter_types! {
@@ -1132,6 +1127,19 @@ impl LockComparator<<Runtime as pallet_balances::Config>::Balance> for Runtime {
     }
 }
 
+pub struct RestrictStakingAccountsFromBonding {}
+
+impl BondingRestriction<AccountId> for RestrictStakingAccountsFromBonding {
+    fn can_bond(stash_account: &AccountId) -> bool {
+        let bonding_lock_id = common::locks::STAKING_LOCK_ID;
+        let existing_lock_ids: Vec<LockIdentifier> = Balances::locks(stash_account)
+            .iter()
+            .map(|lock| lock.id)
+            .collect();
+        !Runtime::are_locks_conflicting(&bonding_lock_id, &existing_lock_ids)
+    }
+}
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const MinUnstakingPeriodLimit: u32 = 43200;
@@ -1455,34 +1463,32 @@ impl pallet_constitution::Config for Runtime {
     type WeightInfo = pallet_constitution::weights::SubstrateWeight<Runtime>;
 }
 
-// parameter_types! {
-//     pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
-//     pub const ClosedContractSizeLimit: u32 = 50;
-//     pub const MinCherryLimit: Balance = 1000;
-//     pub const MinFundingLimit: Balance = 1000;
-//     pub const MinWorkEntrantStake: Balance = 1000;
-// }
+parameter_types! {
+    pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
+    pub const ClosedContractSizeLimit: u32 = 50;
+    pub const MinWorkEntrantStake: Balance = 100 * currency::DOLLARS;
+    pub const FunderStateBloatBondAmount: Balance = 10 * currency::DOLLARS;
+    pub const CreatorStateBloatBondAmount: Balance = 10 * currency::DOLLARS;
+}
 
-// impl bounty::Config for Runtime {
-//     type Event = Event;
-//     type ModuleId = BountyModuleId;
-//     type BountyId = u64;
-//     type Membership = Members;
-//     type WeightInfo = weights::bounty::WeightInfo;
-//     type CouncilBudgetManager = Council;
-//     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
-//     type EntryId = u64;
-//     type ClosedContractSizeLimit = ClosedContractSizeLimit;
-//     type MinCherryLimit = MinCherryLimit;
-//     type MinFundingLimit = MinFundingLimit;
-//     type MinWorkEntrantStake = MinWorkEntrantStake;
-// }
-
-/// Forum identifier for category
-pub type CategoryId = u64;
+impl bounty::Config for Runtime {
+    type Event = Event;
+    type ModuleId = BountyModuleId;
+    type BountyId = u64;
+    type Membership = Members;
+    type WeightInfo = bounty::weights::SubstrateWeight<Runtime>;
+    type CouncilBudgetManager = Council;
+    type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
+    type EntryId = u64;
+    type ClosedContractSizeLimit = ClosedContractSizeLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
+}
 
 parameter_types! {
     pub const MinVestedTransfer: Balance = 100 * currency::CENTS; // TODO: adjust value
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons = WithdrawReasons::empty();
 }
 
 impl pallet_vesting::Config for Runtime {
@@ -1491,6 +1497,7 @@ impl pallet_vesting::Config for Runtime {
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
     type WeightInfo = weights::pallet_vesting::SubstrateWeight<Runtime>;
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
     // `VestingInfo` encode length is 36bytes. 28 schedules gets encoded as 1009 bytes, which is the
     // highest number of schedules that encodes less than 2^10.
     const MAX_VESTING_SCHEDULES: u32 = 28;
@@ -1567,7 +1574,7 @@ construct_runtime!(
         Members: membership::{Pallet, Call, Storage, Event<T>},
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Pallet, Call, Storage, Event},
-        // Bounty: bounty::{Pallet, Call, Storage, Event<T>},
+        Bounty: bounty::{Pallet, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},

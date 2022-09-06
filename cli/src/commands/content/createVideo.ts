@@ -77,18 +77,20 @@ export default class CreateVideoCommand extends UploadCommandBase {
     meta.thumbnailPhoto = videoAssetIndices.thumbnailPhotoPath
 
     // Subtitle assets
-    const resolvedSubtitleAssets = await Promise.all(
-      (subtitles || []).map(async (subtitleInputParameters, i) => {
-        const { subtitleAssetPath } = subtitleInputParameters
-        const [[resolvedAsset], assetIndices] = await this.resolveAndValidateAssets({ subtitleAssetPath }, input)
-        // Set assets indices in the metadata
-        if (meta.subtitles) {
-          meta.subtitles[i].newAsset =
-            assetIndices.subtitleAssetPath || 0 + Object.entries(videoAssetIndices).length + i
-        }
-        return resolvedAsset
-      })
-    )
+    let subtitleAssetIndex = Object.values(videoAssetIndices).filter((v) => v !== undefined).length
+    const resolvedSubtitleAssets = (
+      await Promise.all(
+        (subtitles || []).map(async (subtitleInputParameters, i) => {
+          const { subtitleAssetPath } = subtitleInputParameters
+          const [[resolvedAsset]] = await this.resolveAndValidateAssets({ subtitleAssetPath }, input)
+          // Set assets indices in the metadata
+          if (meta.subtitles && resolvedAsset) {
+            meta.subtitles[i].newAsset = subtitleAssetIndex++
+          }
+          return resolvedAsset
+        })
+      )
+    ).filter((r) => r)
 
     // Try to get video file metadata
     if (videoAssetIndices.videoPath !== undefined) {

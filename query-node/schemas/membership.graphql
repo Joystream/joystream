@@ -63,15 +63,26 @@ type MembershipEntryInvited @variant {
 
 type MembershipEntryGifted @variant {
   "The event the member was gifted in"
-  # Must be optional because of member.entry <=> memberInvitedEvent.newMember cross relationship
+  # Must be optional because of member.entry <=> membershipGiftedEvent.newMember cross relationship
   membershipGiftedEvent: MembershipGiftedEvent
+}
+
+type MembershipEntryFoundingMemberCreated @variant {
+  "The event the member was gifted in"
+  # Must be optional because of member.entry <=> foundingMemberCreatedEvent.newMember cross relationship
+  foundingMemberCreatedEvent: FoundingMemberCreatedEvent
 }
 
 type MembershipEntryGenesis @variant {
   phantom: Int
 }
 
-union MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited | MembershipEntryGenesis
+union MembershipEntryMethod =
+    MembershipEntryPaid
+  | MembershipEntryInvited
+  | MembershipEntryGifted
+  | MembershipEntryFoundingMemberCreated
+  | MembershipEntryGenesis
 
 "Stored information about a registered user"
 type Membership @entity {
@@ -137,8 +148,8 @@ type Membership @entity {
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
 
-  "List of channels the member has collaborator access to"
-  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
+  "List of channel collaborators with their permissions"
+  collaboratorInChannels: [Collaborator!]! @derivedFrom(field: "member")
 
   # Required for Channel->bannedMembers Many-to-Many relationship
   "List of channels the member is baned from participating in"

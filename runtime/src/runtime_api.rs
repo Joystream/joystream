@@ -110,7 +110,7 @@ mod benches {
         [working_group, ContentWorkingGroup]
         [referendum, Referendum]
         [council, Council]
-        // [bounty, Bounty]
+        [bounty, Bounty]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
         [content, Content]

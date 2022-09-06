@@ -6151,7 +6151,7 @@ export type Channel = BaseGraphQlObject & {
   videos: Array<Video>
   /** Number of the block the channel was created in */
   createdInBlock: Scalars['Int']
-  collaborators: Array<Membership>
+  collaborators: Array<Collaborator>
   bannedMembers: Array<Membership>
   channelNftCollectors: Array<ChannelNftCollectors>
   /** Channel's reward account, storing the income from the nft sales and channel payouts. */
@@ -6723,9 +6723,9 @@ export type ChannelWhereInput = {
   videos_none?: Maybe<VideoWhereInput>
   videos_some?: Maybe<VideoWhereInput>
   videos_every?: Maybe<VideoWhereInput>
-  collaborators_none?: Maybe<MembershipWhereInput>
-  collaborators_some?: Maybe<MembershipWhereInput>
-  collaborators_every?: Maybe<MembershipWhereInput>
+  collaborators_none?: Maybe<CollaboratorWhereInput>
+  collaborators_some?: Maybe<CollaboratorWhereInput>
+  collaborators_every?: Maybe<CollaboratorWhereInput>
   bannedMembers_none?: Maybe<MembershipWhereInput>
   bannedMembers_some?: Maybe<MembershipWhereInput>
   bannedMembers_every?: Maybe<MembershipWhereInput>
@@ -6765,6 +6765,98 @@ export type ChannelWhereInput = {
 }
 
 export type ChannelWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type Collaborator = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  channel: Channel
+  channelId: Scalars['String']
+  member: Membership
+  memberId: Scalars['String']
+  /** List of member's permissions */
+  permissions: Array<Scalars['String']>
+}
+
+export type CollaboratorConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<CollaboratorEdge>
+  pageInfo: PageInfo
+}
+
+export type CollaboratorCreateInput = {
+  channel: Scalars['ID']
+  member: Scalars['ID']
+  permissions: Array<Scalars['String']>
+}
+
+export type CollaboratorEdge = {
+  node: Collaborator
+  cursor: Scalars['String']
+}
+
+export enum CollaboratorOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  ChannelAsc = 'channel_ASC',
+  ChannelDesc = 'channel_DESC',
+  MemberAsc = 'member_ASC',
+  MemberDesc = 'member_DESC',
+}
+
+export type CollaboratorUpdateInput = {
+  channel?: Maybe<Scalars['ID']>
+  member?: Maybe<Scalars['ID']>
+  permissions?: Maybe<Array<Scalars['String']>>
+}
+
+export type CollaboratorWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  permissions_containsAll?: Maybe<Array<Scalars['String']>>
+  permissions_containsNone?: Maybe<Array<Scalars['String']>>
+  permissions_containsAny?: Maybe<Array<Scalars['String']>>
+  channel?: Maybe<ChannelWhereInput>
+  member?: Maybe<MembershipWhereInput>
+  AND?: Maybe<Array<CollaboratorWhereInput>>
+  OR?: Maybe<Array<CollaboratorWhereInput>>
+  NOT?: Maybe<Array<CollaboratorWhereInput>>
+}
+
+export type CollaboratorWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -8556,7 +8648,99 @@ export type Curator = BaseGraphQlObject & {
   version: Scalars['Int']
   /** Type needs to have at least one non-relation entity. This value is not used. */
   dummy?: Maybe<Scalars['Int']>
-  curatorGroups: Array<CuratorGroup>
+  curatorGroups: Array<CuratorAgentPermissions>
+}
+
+export type CuratorAgentPermissions = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  curatorGroup: CuratorGroup
+  curatorGroupId: Scalars['String']
+  curator: Curator
+  curatorId: Scalars['String']
+  /** List of member's permissions */
+  permissions: Array<Scalars['String']>
+}
+
+export type CuratorAgentPermissionsConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<CuratorAgentPermissionsEdge>
+  pageInfo: PageInfo
+}
+
+export type CuratorAgentPermissionsCreateInput = {
+  curatorGroup: Scalars['ID']
+  curator: Scalars['ID']
+  permissions: Array<Scalars['String']>
+}
+
+export type CuratorAgentPermissionsEdge = {
+  node: CuratorAgentPermissions
+  cursor: Scalars['String']
+}
+
+export enum CuratorAgentPermissionsOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  CuratorGroupAsc = 'curatorGroup_ASC',
+  CuratorGroupDesc = 'curatorGroup_DESC',
+  CuratorAsc = 'curator_ASC',
+  CuratorDesc = 'curator_DESC',
+}
+
+export type CuratorAgentPermissionsUpdateInput = {
+  curatorGroup?: Maybe<Scalars['ID']>
+  curator?: Maybe<Scalars['ID']>
+  permissions?: Maybe<Array<Scalars['String']>>
+}
+
+export type CuratorAgentPermissionsWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  permissions_containsAll?: Maybe<Array<Scalars['String']>>
+  permissions_containsNone?: Maybe<Array<Scalars['String']>>
+  permissions_containsAny?: Maybe<Array<Scalars['String']>>
+  curatorGroup?: Maybe<CuratorGroupWhereInput>
+  curator?: Maybe<CuratorWhereInput>
+  AND?: Maybe<Array<CuratorAgentPermissionsWhereInput>>
+  OR?: Maybe<Array<CuratorAgentPermissionsWhereInput>>
+  NOT?: Maybe<Array<CuratorAgentPermissionsWhereInput>>
+}
+
+export type CuratorAgentPermissionsWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type CuratorConnection = {
@@ -8585,9 +8769,9 @@ export type CuratorGroup = BaseGraphQlObject & {
   version: Scalars['Int']
   /** Is group active or not */
   isActive: Scalars['Boolean']
-  curators: Array<Curator>
   channels: Array<Channel>
   nftCollectorInChannels: Array<ChannelNftCollectors>
+  curators: Array<CuratorAgentPermissions>
   auctionbidcanceledeventownerCuratorGroup?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventownerCuratorGroup?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventownerCuratorGroup?: Maybe<Array<AuctionCanceledEvent>>
@@ -8665,15 +8849,15 @@ export type CuratorGroupWhereInput = {
   deletedById_in?: Maybe<Array<Scalars['ID']>>
   isActive_eq?: Maybe<Scalars['Boolean']>
   isActive_in?: Maybe<Array<Scalars['Boolean']>>
-  curators_none?: Maybe<CuratorWhereInput>
-  curators_some?: Maybe<CuratorWhereInput>
-  curators_every?: Maybe<CuratorWhereInput>
   channels_none?: Maybe<ChannelWhereInput>
   channels_some?: Maybe<ChannelWhereInput>
   channels_every?: Maybe<ChannelWhereInput>
   nftCollectorInChannels_none?: Maybe<ChannelNftCollectorsWhereInput>
   nftCollectorInChannels_some?: Maybe<ChannelNftCollectorsWhereInput>
   nftCollectorInChannels_every?: Maybe<ChannelNftCollectorsWhereInput>
+  curators_none?: Maybe<CuratorAgentPermissionsWhereInput>
+  curators_some?: Maybe<CuratorAgentPermissionsWhereInput>
+  curators_every?: Maybe<CuratorAgentPermissionsWhereInput>
   auctionbidcanceledeventownerCuratorGroup_none?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_some?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_every?: Maybe<AuctionBidCanceledEventWhereInput>
@@ -8783,9 +8967,9 @@ export type CuratorWhereInput = {
   dummy_lt?: Maybe<Scalars['Int']>
   dummy_lte?: Maybe<Scalars['Int']>
   dummy_in?: Maybe<Array<Scalars['Int']>>
-  curatorGroups_none?: Maybe<CuratorGroupWhereInput>
-  curatorGroups_some?: Maybe<CuratorGroupWhereInput>
-  curatorGroups_every?: Maybe<CuratorGroupWhereInput>
+  curatorGroups_none?: Maybe<CuratorAgentPermissionsWhereInput>
+  curatorGroups_some?: Maybe<CuratorAgentPermissionsWhereInput>
+  curatorGroups_every?: Maybe<CuratorAgentPermissionsWhereInput>
   AND?: Maybe<Array<CuratorWhereInput>>
   OR?: Maybe<Array<CuratorWhereInput>>
   NOT?: Maybe<Array<CuratorWhereInput>>
@@ -10144,6 +10328,7 @@ export enum EventTypeOptions {
   CouncilorRewardUpdatedEvent = 'CouncilorRewardUpdatedEvent',
   EnglishAuctionSettledEvent = 'EnglishAuctionSettledEvent',
   EnglishAuctionStartedEvent = 'EnglishAuctionStartedEvent',
+  FoundingMemberCreatedEvent = 'FoundingMemberCreatedEvent',
   InitialInvitationBalanceUpdatedEvent = 'InitialInvitationBalanceUpdatedEvent',
   InitialInvitationCountUpdatedEvent = 'InitialInvitationCountUpdatedEvent',
   InvitesTransferredEvent = 'InvitesTransferredEvent',
@@ -10947,6 +11132,170 @@ export type ForumThreadWhereInput = {
 }
 
 export type ForumThreadWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type FoundingMemberCreatedEvent = Event &
+  BaseGraphQlObject & {
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['ID']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['ID']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['ID']>
+    version: Scalars['Int']
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    newMember: Membership
+    newMemberId: Scalars['String']
+    /** New member root account in SS58 encoding. */
+    rootAccount: Scalars['String']
+    /** New member controller in SS58 encoding. */
+    controllerAccount: Scalars['String']
+    /** New member handle. */
+    handle: Scalars['String']
+    metadata: MemberMetadata
+    metadataId: Scalars['String']
+  }
+
+export type FoundingMemberCreatedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<FoundingMemberCreatedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type FoundingMemberCreatedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  newMember: Scalars['ID']
+  rootAccount: Scalars['String']
+  controllerAccount: Scalars['String']
+  handle: Scalars['String']
+  metadata: Scalars['ID']
+}
+
+export type FoundingMemberCreatedEventEdge = {
+  node: FoundingMemberCreatedEvent
+  cursor: Scalars['String']
+}
+
+export enum FoundingMemberCreatedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  NewMemberAsc = 'newMember_ASC',
+  NewMemberDesc = 'newMember_DESC',
+  RootAccountAsc = 'rootAccount_ASC',
+  RootAccountDesc = 'rootAccount_DESC',
+  ControllerAccountAsc = 'controllerAccount_ASC',
+  ControllerAccountDesc = 'controllerAccount_DESC',
+  HandleAsc = 'handle_ASC',
+  HandleDesc = 'handle_DESC',
+  MetadataAsc = 'metadata_ASC',
+  MetadataDesc = 'metadata_DESC',
+}
+
+export type FoundingMemberCreatedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  newMember?: Maybe<Scalars['ID']>
+  rootAccount?: Maybe<Scalars['String']>
+  controllerAccount?: Maybe<Scalars['String']>
+  handle?: Maybe<Scalars['String']>
+  metadata?: Maybe<Scalars['ID']>
+}
+
+export type FoundingMemberCreatedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rootAccount_eq?: Maybe<Scalars['String']>
+  rootAccount_contains?: Maybe<Scalars['String']>
+  rootAccount_startsWith?: Maybe<Scalars['String']>
+  rootAccount_endsWith?: Maybe<Scalars['String']>
+  rootAccount_in?: Maybe<Array<Scalars['String']>>
+  controllerAccount_eq?: Maybe<Scalars['String']>
+  controllerAccount_contains?: Maybe<Scalars['String']>
+  controllerAccount_startsWith?: Maybe<Scalars['String']>
+  controllerAccount_endsWith?: Maybe<Scalars['String']>
+  controllerAccount_in?: Maybe<Array<Scalars['String']>>
+  handle_eq?: Maybe<Scalars['String']>
+  handle_contains?: Maybe<Scalars['String']>
+  handle_startsWith?: Maybe<Scalars['String']>
+  handle_endsWith?: Maybe<Scalars['String']>
+  handle_in?: Maybe<Array<Scalars['String']>>
+  newMember?: Maybe<MembershipWhereInput>
+  metadata?: Maybe<MemberMetadataWhereInput>
+  AND?: Maybe<Array<FoundingMemberCreatedEventWhereInput>>
+  OR?: Maybe<Array<FoundingMemberCreatedEventWhereInput>>
+  NOT?: Maybe<Array<FoundingMemberCreatedEventWhereInput>>
+}
+
+export type FoundingMemberCreatedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -12779,6 +13128,7 @@ export type MemberMetadata = BaseGraphQlObject & {
   about?: Maybe<Scalars['String']>
   member?: Maybe<Membership>
   externalResources?: Maybe<Array<MembershipExternalResource>>
+  foundingmembercreatedeventmetadata?: Maybe<Array<FoundingMemberCreatedEvent>>
   memberinvitedeventmetadata?: Maybe<Array<MemberInvitedEvent>>
   memberprofileupdatedeventnewMetadata?: Maybe<Array<MemberProfileUpdatedEvent>>
   membershipboughteventmetadata?: Maybe<Array<MembershipBoughtEvent>>
@@ -12861,6 +13211,9 @@ export type MemberMetadataWhereInput = {
   externalResources_none?: Maybe<MembershipExternalResourceWhereInput>
   externalResources_some?: Maybe<MembershipExternalResourceWhereInput>
   externalResources_every?: Maybe<MembershipExternalResourceWhereInput>
+  foundingmembercreatedeventmetadata_none?: Maybe<FoundingMemberCreatedEventWhereInput>
+  foundingmembercreatedeventmetadata_some?: Maybe<FoundingMemberCreatedEventWhereInput>
+  foundingmembercreatedeventmetadata_every?: Maybe<FoundingMemberCreatedEventWhereInput>
   memberinvitedeventmetadata_none?: Maybe<MemberInvitedEventWhereInput>
   memberinvitedeventmetadata_some?: Maybe<MemberInvitedEventWhereInput>
   memberinvitedeventmetadata_every?: Maybe<MemberInvitedEventWhereInput>
@@ -13213,7 +13566,7 @@ export type Membership = BaseGraphQlObject & {
   whitelistedIn: Array<ProposalDiscussionWhitelist>
   whitelistedInBounties: Array<BountyEntrantWhitelist>
   channels: Array<Channel>
-  collaboratorInChannels: Array<Channel>
+  collaboratorInChannels: Array<Collaborator>
   memberBannedFromChannels: Array<Channel>
   councilCandidacies: Array<Candidate>
   councilMembers: Array<CouncilMember>
@@ -13251,6 +13604,7 @@ export type Membership = BaseGraphQlObject & {
   forumpostauthor?: Maybe<Array<ForumPost>>
   forumpostreactionmember?: Maybe<Array<ForumPostReaction>>
   forumthreadauthor?: Maybe<Array<ForumThread>>
+  foundingmembercreatedeventnewMember?: Maybe<Array<FoundingMemberCreatedEvent>>
   invitestransferredeventsourceMember?: Maybe<Array<InvitesTransferredEvent>>
   invitestransferredeventtargetMember?: Maybe<Array<InvitesTransferredEvent>>
   memberaccountsupdatedeventmember?: Maybe<Array<MemberAccountsUpdatedEvent>>
@@ -13486,6 +13840,11 @@ export type MembershipEdge = {
   cursor: Scalars['String']
 }
 
+export type MembershipEntryFoundingMemberCreated = {
+  /** The event the member was gifted in */
+  foundingMemberCreatedEvent?: Maybe<FoundingMemberCreatedEvent>
+}
+
 export type MembershipEntryGenesis = {
   phantom?: Maybe<Scalars['Int']>
 }
@@ -13500,7 +13859,12 @@ export type MembershipEntryInvited = {
   memberInvitedEvent?: Maybe<MemberInvitedEvent>
 }
 
-export type MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited | MembershipEntryGenesis
+export type MembershipEntryMethod =
+  | MembershipEntryPaid
+  | MembershipEntryInvited
+  | MembershipEntryGifted
+  | MembershipEntryFoundingMemberCreated
+  | MembershipEntryGenesis
 
 export type MembershipEntryPaid = {
   /** The event the membership was bought in */
@@ -14171,9 +14535,9 @@ export type MembershipWhereInput = {
   channels_none?: Maybe<ChannelWhereInput>
   channels_some?: Maybe<ChannelWhereInput>
   channels_every?: Maybe<ChannelWhereInput>
-  collaboratorInChannels_none?: Maybe<ChannelWhereInput>
-  collaboratorInChannels_some?: Maybe<ChannelWhereInput>
-  collaboratorInChannels_every?: Maybe<ChannelWhereInput>
+  collaboratorInChannels_none?: Maybe<CollaboratorWhereInput>
+  collaboratorInChannels_some?: Maybe<CollaboratorWhereInput>
+  collaboratorInChannels_every?: Maybe<CollaboratorWhereInput>
   memberBannedFromChannels_none?: Maybe<ChannelWhereInput>
   memberBannedFromChannels_some?: Maybe<ChannelWhereInput>
   memberBannedFromChannels_every?: Maybe<ChannelWhereInput>
@@ -14285,6 +14649,9 @@ export type MembershipWhereInput = {
   forumthreadauthor_none?: Maybe<ForumThreadWhereInput>
   forumthreadauthor_some?: Maybe<ForumThreadWhereInput>
   forumthreadauthor_every?: Maybe<ForumThreadWhereInput>
+  foundingmembercreatedeventnewMember_none?: Maybe<FoundingMemberCreatedEventWhereInput>
+  foundingmembercreatedeventnewMember_some?: Maybe<FoundingMemberCreatedEventWhereInput>
+  foundingmembercreatedeventnewMember_every?: Maybe<FoundingMemberCreatedEventWhereInput>
   invitestransferredeventsourceMember_none?: Maybe<InvitesTransferredEventWhereInput>
   invitestransferredeventsourceMember_some?: Maybe<InvitesTransferredEventWhereInput>
   invitestransferredeventsourceMember_every?: Maybe<InvitesTransferredEventWhereInput>
@@ -20385,6 +20752,9 @@ export type Query = {
   channels: Array<Channel>
   channelByUniqueInput?: Maybe<Channel>
   channelsConnection: ChannelConnection
+  collaborators: Array<Collaborator>
+  collaboratorByUniqueInput?: Maybe<Collaborator>
+  collaboratorsConnection: CollaboratorConnection
   commentCreatedEvents: Array<CommentCreatedEvent>
   commentCreatedEventByUniqueInput?: Maybe<CommentCreatedEvent>
   commentCreatedEventsConnection: CommentCreatedEventConnection
@@ -20421,6 +20791,9 @@ export type Query = {
   councilorRewardUpdatedEvents: Array<CouncilorRewardUpdatedEvent>
   councilorRewardUpdatedEventByUniqueInput?: Maybe<CouncilorRewardUpdatedEvent>
   councilorRewardUpdatedEventsConnection: CouncilorRewardUpdatedEventConnection
+  curatorAgentPermissions: Array<CuratorAgentPermissions>
+  curatorAgentPermissionsByUniqueInput?: Maybe<CuratorAgentPermissions>
+  curatorAgentPermissionsConnection: CuratorAgentPermissionsConnection
   curatorGroups: Array<CuratorGroup>
   curatorGroupByUniqueInput?: Maybe<CuratorGroup>
   curatorGroupsConnection: CuratorGroupConnection
@@ -20473,6 +20846,9 @@ export type Query = {
   forumThreads: Array<ForumThread>
   forumThreadByUniqueInput?: Maybe<ForumThread>
   forumThreadsConnection: ForumThreadConnection
+  foundingMemberCreatedEvents: Array<FoundingMemberCreatedEvent>
+  foundingMemberCreatedEventByUniqueInput?: Maybe<FoundingMemberCreatedEvent>
+  foundingMemberCreatedEventsConnection: FoundingMemberCreatedEventConnection
   fundingRequestDestinations: Array<FundingRequestDestination>
   fundingRequestDestinationByUniqueInput?: Maybe<FundingRequestDestination>
   fundingRequestDestinationsConnection: FundingRequestDestinationConnection
@@ -21803,6 +22179,26 @@ export type QueryChannelsConnectionArgs = {
   orderBy?: Maybe<Array<ChannelOrderByInput>>
 }
 
+export type QueryCollaboratorsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<CollaboratorWhereInput>
+  orderBy?: Maybe<Array<CollaboratorOrderByInput>>
+}
+
+export type QueryCollaboratorByUniqueInputArgs = {
+  where: CollaboratorWhereUniqueInput
+}
+
+export type QueryCollaboratorsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<CollaboratorWhereInput>
+  orderBy?: Maybe<Array<CollaboratorOrderByInput>>
+}
+
 export type QueryCommentCreatedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -22041,6 +22437,26 @@ export type QueryCouncilorRewardUpdatedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<CouncilorRewardUpdatedEventWhereInput>
   orderBy?: Maybe<Array<CouncilorRewardUpdatedEventOrderByInput>>
+}
+
+export type QueryCuratorAgentPermissionsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<CuratorAgentPermissionsWhereInput>
+  orderBy?: Maybe<Array<CuratorAgentPermissionsOrderByInput>>
+}
+
+export type QueryCuratorAgentPermissionsByUniqueInputArgs = {
+  where: CuratorAgentPermissionsWhereUniqueInput
+}
+
+export type QueryCuratorAgentPermissionsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<CuratorAgentPermissionsWhereInput>
+  orderBy?: Maybe<Array<CuratorAgentPermissionsOrderByInput>>
 }
 
 export type QueryCuratorGroupsArgs = {
@@ -22388,6 +22804,26 @@ export type QueryForumThreadsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<ForumThreadWhereInput>
   orderBy?: Maybe<Array<ForumThreadOrderByInput>>
+}
+
+export type QueryFoundingMemberCreatedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<FoundingMemberCreatedEventWhereInput>
+  orderBy?: Maybe<Array<FoundingMemberCreatedEventOrderByInput>>
+}
+
+export type QueryFoundingMemberCreatedEventByUniqueInputArgs = {
+  where: FoundingMemberCreatedEventWhereUniqueInput
+}
+
+export type QueryFoundingMemberCreatedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<FoundingMemberCreatedEventWhereInput>
+  orderBy?: Maybe<Array<FoundingMemberCreatedEventOrderByInput>>
 }
 
 export type QueryFundingRequestDestinationsArgs = {

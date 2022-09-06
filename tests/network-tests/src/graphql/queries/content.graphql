@@ -242,6 +242,26 @@ fragment ChannelNftCollectorFields on ChannelNftCollectors {
   lastIncreaseAt
 }
 
+fragment CuratorAgentPermissionsFields on CuratorAgentPermissions {
+  curator {
+    id
+  }
+  curatorGroup {
+    id
+  }
+  permissions
+}
+
+fragment CollaboratorsFields on Collaborator {
+  member {
+    id
+  }
+  channel {
+    id
+  }
+  permissions
+}
+
 query getChannelById($id: ID!) {
   channelByUniqueInput(where: { id: $id }) {
     ...ChannelFields
@@ -305,5 +325,17 @@ query getChannelNftCollectors {
 query getDataObjectsByVideoId($videoId: ID) {
   storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
     ...StorageDataObjectFields
+  }
+}
+
+query getCuratorPermissionsByIdAndGroupId($curatorGroupId: ID!, $curatorId: ID!) {
+  curatorAgentPermissions(where: { curatorGroup: { id_eq: $curatorGroupId }, curator: { id_eq: $curatorId } }) {
+    ...CuratorAgentPermissionsFields
+  }
+}
+
+query getCollaboratorsByChannelId($channelId: ID!) {
+  collaborators(where: { channel: { id_eq: $channelId } }) {
+    ...CollaboratorsFields
   }
 }

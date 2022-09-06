@@ -3,14 +3,14 @@
 
 #[macro_use]
 mod proposals_integration;
-
+mod fee_tests;
+mod handle_fees;
 mod locks;
 
-mod fee_tests;
-
+use crate::constants::currency;
 use crate::primitives::{Balance, MemberId};
 use crate::{BlockNumber, ReferendumInstance, Runtime};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, GenesisBuild, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{traits::One, AccountId32, BuildStorage};
@@ -32,6 +32,16 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     council_config.assimilate_storage(&mut t).unwrap();
+
+    let staking_config = pallet_staking::GenesisConfig::<crate::Runtime> {
+        min_nominator_bond: currency::MIN_NOMINATOR_BOND,
+        min_validator_bond: currency::MIN_VALIDATOR_BOND,
+        ..Default::default()
+    }
+    .build_storage()
+    .unwrap();
+
+    staking_config.assimilate_storage(&mut t).unwrap();
 
     t.into()
 }

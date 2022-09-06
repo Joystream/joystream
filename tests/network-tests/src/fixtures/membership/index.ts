@@ -1,6 +1,8 @@
 export { AddStakingAccountsHappyCaseFixture } from './AddStakingAccountsHappyCaseFixture'
 export { BuyMembershipHappyCaseFixture } from './BuyMembershipHappyCaseFixture'
 export { BuyMembershipWithInsufficienFundsFixture } from './BuyMembershipWithInsufficienFundsFixture'
+export { CreateFoundingMemberHappyCaseFixture } from './CreateFoundingMemberHappyCaseFixture'
+export { GiftMembershipHappyCaseFixture } from './GiftMembershipHappyCaseFixture'
 export { InviteMembersHappyCaseFixture } from './InviteMembersHappyCaseFixture'
 export { RemoveStakingAccountsHappyCaseFixture } from './RemoveStakingAccountsHappyCaseFixture'
 export { SudoUpdateMembershipSystem } from './SudoUpdateMembershipSystem'

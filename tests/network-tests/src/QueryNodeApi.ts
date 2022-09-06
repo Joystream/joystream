@@ -212,6 +212,14 @@ import {
   GetMemberInvitedEventsByEventIdsQuery,
   GetMemberInvitedEventsByEventIdsQueryVariables,
   GetMemberInvitedEventsByEventIds,
+  GetFoundingMemberCreatedEventsByEventIdsQuery,
+  GetFoundingMemberCreatedEventsByEventIdsQueryVariables,
+  GetFoundingMemberCreatedEventsByEventIds,
+  FoundingMemberCreatedEventFieldsFragment,
+  GetMembershipGiftedEventsByEventIdsQuery,
+  GetMembershipGiftedEventsByEventIdsQueryVariables,
+  GetMembershipGiftedEventsByEventIds,
+  MembershipGiftedEventFieldsFragment,
   ProposalFieldsFragment,
   GetProposalsByIdsQuery,
   GetProposalsByIdsQueryVariables,
@@ -402,6 +410,14 @@ import {
   GetDataObjectsByVideoIdQueryVariables,
   GetDataObjectsByVideoId,
   StorageDataObjectFieldsFragment,
+  CuratorAgentPermissionsFieldsFragment,
+  GetCuratorPermissionsByIdAndGroupId,
+  GetCuratorPermissionsByIdAndGroupIdQuery,
+  GetCuratorPermissionsByIdAndGroupIdQueryVariables,
+  CollaboratorsFieldsFragment,
+  GetCollaboratorsByChannelId,
+  GetCollaboratorsByChannelIdQuery,
+  GetCollaboratorsByChannelIdQueryVariables,
   GetChannelDeletedByModeratorEventsByEventIdsQuery,
   GetChannelDeletedByModeratorEventsByEventIdsQueryVariables,
   GetChannelDeletedByModeratorEventsByEventIds,
@@ -557,6 +573,24 @@ export class QueryNodeApi {
       GetMemberAccountsUpdatedEventsByMemberIdQuery,
       GetMemberAccountsUpdatedEventsByMemberIdQueryVariables
     >(GetMemberAccountsUpdatedEventsByMemberId, { memberId: memberId.toString() }, 'memberAccountsUpdatedEvents')
+  }
+
+  public async getFoundingMemberCreatedEvents(
+    events: EventDetails[]
+  ): Promise<FoundingMemberCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetFoundingMemberCreatedEventsByEventIdsQuery,
+      GetFoundingMemberCreatedEventsByEventIdsQueryVariables
+    >(GetFoundingMemberCreatedEventsByEventIds, { eventIds }, 'foundingMemberCreatedEvents')
+  }
+
+  public async getMembershipGiftedEvents(events: EventDetails[]): Promise<MembershipGiftedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMembershipGiftedEventsByEventIdsQuery,
+      GetMembershipGiftedEventsByEventIdsQueryVariables
+    >(GetMembershipGiftedEventsByEventIds, { eventIds }, 'membershipGiftedEvents')
   }
 
   public async getMemberInvitedEvents(events: EventDetails[]): Promise<MemberInvitedEventFieldsFragment[]> {
@@ -1249,6 +1283,24 @@ export class QueryNodeApi {
       GetDataObjectsByVideoId,
       { videoId },
       'storageDataObjects'
+    )
+  }
+
+  public async getCuratorPermissionsByIdAndGroupId(
+    curatorGroupId: string,
+    curatorId: string
+  ): Promise<Maybe<CuratorAgentPermissionsFieldsFragment>> {
+    return this.firstEntityQuery<
+      GetCuratorPermissionsByIdAndGroupIdQuery,
+      GetCuratorPermissionsByIdAndGroupIdQueryVariables
+    >(GetCuratorPermissionsByIdAndGroupId, { curatorGroupId, curatorId }, 'curatorAgentPermissions')
+  }
+
+  public async getCollaboratorsByChannelId(channelId: string): Promise<CollaboratorsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCollaboratorsByChannelIdQuery, GetCollaboratorsByChannelIdQueryVariables>(
+      GetCollaboratorsByChannelId,
+      { channelId },
+      'collaborators'
     )
   }
 

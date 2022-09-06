@@ -28,10 +28,11 @@ pub mod storage_config;
 use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
-    constants::currency::{ENDOWMENT, STASH},
+    constants::currency::{ENDOWMENT, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND, STASH},
     wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
     GrandpaConfig, ImOnlineConfig, MaxNominations, SessionConfig, SessionKeys, StakerStatus,
     StakingConfig, StorageConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
+    VestingConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -48,7 +49,7 @@ use sp_runtime::{
 };
 
 pub use node_runtime::constants::JOY_ADDRESS_PREFIX;
-pub use node_runtime::primitives::{AccountId, Balance, Signature};
+pub use node_runtime::primitives::{AccountId, Balance, BlockNumber, Signature};
 pub use node_runtime::GenesisConfig;
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -171,6 +172,7 @@ pub fn testnet_genesis(
     root_key: AccountId,
     mut endowed_accounts: Vec<AccountId>,
     genesis_balances: Vec<(AccountId, Balance)>,
+    vesting_accounts: Vec<(AccountId, BlockNumber, BlockNumber, Balance)>,
     content_cfg: ContentConfig,
     storage_cfg: StorageConfig,
 ) -> GenesisConfig {
@@ -209,6 +211,20 @@ pub fn testnet_genesis(
         }))
         .collect::<Vec<_>>();
 
+    // staking benchmakrs is not sensitive to actual value of min bonds so
+    // accounts are not funded with sufficient funds and fail with InsufficientBond err
+    // so for benchmarks we set min bond to zero.
+    let min_nominator_bond = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_NOMINATOR_BOND
+    };
+    let min_validator_bond = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_VALIDATOR_BOND
+    };
+
     GenesisConfig {
         system: SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
@@ -243,6 +259,8 @@ pub fn testnet_genesis(
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
             stakers,
+            min_nominator_bond,
+            min_validator_bond,
             ..Default::default()
         },
         sudo: SudoConfig {
@@ -258,7 +276,9 @@ pub fn testnet_genesis(
             authorities: vec![],
         },
         transaction_payment: TransactionPaymentConfig {},
-        vesting: Default::default(),
+        vesting: VestingConfig {
+            vesting: vesting_accounts,
+        },
         council: council_config::create_council_config(),
         forum: forum_config::empty(),
         content: content_cfg,
@@ -278,6 +298,7 @@ fn development_config_genesis() -> GenesisConfig {
         ],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
+        vec![],
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
@@ -309,6 +330,7 @@ fn local_testnet_genesis() -> GenesisConfig {
         vec![],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
+        vec![],
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
@@ -344,6 +366,7 @@ pub(crate) mod tests {
             vec![],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             development_endowed_accounts(),
+            vec![],
             vec![],
             content_config::testing_config(),
             storage_config::testing_config(),
