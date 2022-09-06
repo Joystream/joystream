@@ -3272,6 +3272,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
         let msg = vec![1u8].repeat(b as usize);
         let origin = RawOrigin::Signed(lead_account_id);
+        set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, channel_id, msg.clone())
         verify {
             assert_last_event::<T>(
@@ -3300,6 +3301,8 @@ benchmarks! {
         let b in 1 .. MAX_BYTES_METADATA;
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
         let msg = vec![1u8].repeat(b as usize);
@@ -3347,6 +3350,7 @@ benchmarks! {
             false,
         )?;
 
+        set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(owner_account);
         let msg = vec![1u8].repeat(b as usize);
     }: _(origin, nft_owner_actor, video_id, msg.clone())
@@ -3363,15 +3367,14 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
-    // DB OPERATIONS
-    // - DB Write: Balance
-    // - DB Read: Balance
+    // STATE COMPLEXITY
+    // -
+    // INPUT COMPLEXITY
+    // -
     update_channel_state_bloat_bond {
-        let (_, _, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let (_, lead_account_id) = insert_content_leader::<T>();
         let origin = RawOrigin::Signed(lead_account_id);
-        let new_channel_bloat_bond: BalanceOf::<T> = 100u32.into();
+        let new_channel_bloat_bond: BalanceOf::<T> = T::ExistentialDeposit::get();
     }: _(origin, new_channel_bloat_bond)
         verify {
             assert_eq!(
@@ -3381,13 +3384,12 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
-    // DB OPERATIONS
-    // - DB Write: Balance
-    // - DB Read: Balance
+    // STATE COMPLEXITY
+    // -
+    // INPUT COMPLEXITY
+    // -
     update_video_state_bloat_bond {
-        let (_, _, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let (_, lead_account_id) = insert_content_leader::<T>();
         let origin = RawOrigin::Signed(lead_account_id);
         let new_video_bloat_bond: BalanceOf::<T> = 100u32.into();
     }: _(origin, new_video_bloat_bond)

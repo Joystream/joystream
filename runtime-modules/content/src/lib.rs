@@ -2926,10 +2926,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (B)`
         /// - DB:
-        ///    - O(B) where:
-        ///        - B is the byte lenght of `msg`
+        ///    - O(1)
+        /// where:
+        /// - B is the byte lenght of `msg`
         /// # </weight>
         #[weight = WeightInfoContent::<T>::channel_owner_remark(msg.len() as u32)]
         pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
@@ -2948,10 +2949,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (B)`
         /// - DB:
-        ///    - O(B) where:
-        ///        - B is the byte lenght of `msg`
+        ///    - O(1)
+        /// where:
+        ///   - B is the byte lenght of `msg`
         /// # </weight>
         #[weight = WeightInfoContent::<T>::channel_agent_remark(msg.len() as u32)]
         pub fn channel_agent_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
@@ -2964,15 +2966,16 @@ decl_module! {
 
             Self::deposit_event(RawEvent::ChannelAgentRemarked(actor, channel_id, msg));
         }
-
+  
         /// NFT owner remark
         /// <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (B)`
         /// - DB:
-        ///    - O(B) where:
-        ///        - B is the byte lenght of `msg`
+        ///   - O(1)
+        /// where:
+        ///   - B is the byte lenght of `msg`
         /// # </weight>
         #[weight = WeightInfoContent::<T>::nft_owner_remark(msg.len() as u32)]
         pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
