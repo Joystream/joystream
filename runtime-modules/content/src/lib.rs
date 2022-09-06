@@ -268,7 +268,7 @@ decl_storage! {
 
         /// Global weekly NFT limit.
         pub GlobalWeeklyNftLimit get(fn global_weekly_nft_limit):
-        LimitPerPeriod<T::BlockNumber>;
+            LimitPerPeriod<T::BlockNumber>;
 
         /// NFT limits enabled or not
         /// Can be updated in flight by the Council
@@ -1733,7 +1733,18 @@ decl_module! {
         }
 
         /// Issue NFT
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W + B)`
+        /// - DB:
+        ///    - O(W)
+        /// where:
+        ///    - W : member whitelist length in case nft initial status is auction
+        ///    - B : bytelength of metadata parameter
+        /// # </weight>
+        #[weight = Module::<T>::create_issue_nft_weight(params)]
         pub fn issue_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1786,7 +1797,15 @@ decl_module! {
         }
 
         /// Destroy NFT
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::destroy_nft()]
         pub fn destroy_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1821,7 +1840,15 @@ decl_module! {
         }
 
         /// Start video nft open auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - W : member whitelist length
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::start_open_auction(auction_params.whitelist.len() as u32)]
         pub fn start_open_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1877,7 +1904,15 @@ decl_module! {
         }
 
         /// Start video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - W : whitelist member list length
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::start_english_auction(auction_params.whitelist.len() as u32)]
         pub fn start_english_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1931,8 +1966,15 @@ decl_module! {
             );
         }
 
-        // Cancel video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Cancel video nft english auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_english_auction()]
         pub fn cancel_english_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1972,8 +2014,15 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
         }
 
-        // Cancel video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Cancel video nft open auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_open_auction()]
         pub fn cancel_open_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2013,7 +2062,15 @@ decl_module! {
         }
 
         /// Cancel Nft offer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_offer()]
         pub fn cancel_offer(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2024,7 +2081,6 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
-
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
@@ -2053,7 +2109,15 @@ decl_module! {
         }
 
         /// Cancel Nft sell order
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// </weight>
+        #[weight = WeightInfoContent::<T>::cancel_buy_now()]
         pub fn cancel_buy_now(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2092,7 +2156,15 @@ decl_module! {
         }
 
         /// Update Buy now nft price
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_buy_now_price()]
         pub fn update_buy_now_price(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2135,7 +2207,14 @@ decl_module! {
 
 
         /// Make auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::make_open_auction_bid()]
         pub fn make_open_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -2162,7 +2241,7 @@ decl_module! {
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Validate parameters & return english auction
-            let open_auction =  Self::ensure_in_open_auction_state(&nft)?;
+            let open_auction = Self::ensure_in_open_auction_state(&nft)?;
 
             // check whitelisted participant
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
@@ -2229,8 +2308,15 @@ decl_module! {
 
         }
 
-        /// Make auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Make english auction bid
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::make_english_auction_bid()]
         pub fn make_english_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -2249,7 +2335,7 @@ decl_module! {
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Validate parameters & return english auction
-            let eng_auction =  Self::ensure_in_english_auction_state(&nft)?;
+            let eng_auction = Self::ensure_in_english_auction_state(&nft)?;
 
             // Balance check
             let old_bid_value = eng_auction.top_bid.as_ref().map(|bid| {
@@ -2345,7 +2431,14 @@ decl_module! {
         }
 
         /// Cancel open auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_open_auction_bid()]
         pub fn cancel_open_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -2389,7 +2482,14 @@ decl_module! {
 
         /// Claim won english auction
         /// Can be called by anyone
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::settle_english_auction()]
         pub fn settle_english_auction(
             origin,
             video_id: T::VideoId,
@@ -2438,7 +2538,14 @@ decl_module! {
 
         /// Accept open auction bid
         /// Should only be called by auctioneer
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::pick_open_auction_winner()]
         pub fn pick_open_auction_winner(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2501,7 +2608,15 @@ decl_module! {
         }
 
         /// Offer Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::offer_nft()]
         pub fn offer_nft(
             origin,
             video_id: T::VideoId,
@@ -2555,18 +2670,28 @@ decl_module! {
         }
 
         /// Return Nft back to the original artist at no cost
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::sling_nft_back()]
         pub fn sling_nft_back(
             origin,
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // extr. makes no sense if nft already channel owned
+            ensure!(nft.owner != NftOwner::ChannelOwner, Error::<T>::NftAlreadyOwnedByChannel);
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
@@ -2600,7 +2725,15 @@ decl_module! {
         }
 
         /// Accept incoming Nft offer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::accept_incoming_offer()]
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
@@ -2642,7 +2775,14 @@ decl_module! {
         }
 
         /// Sell Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::sell_nft()]
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
@@ -2688,14 +2828,21 @@ decl_module! {
         }
 
         /// Buy Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::buy_nft()]
         pub fn buy_nft(
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
             witness_price: BalanceOf<T>, // in order to avoid front running
         ) {
-
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
@@ -2736,7 +2883,14 @@ decl_module! {
         }
 
         /// Only Council can toggle nft issuance limits constraints
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::toggle_nft_limits()]
         pub fn toggle_nft_limits(
             origin,
             enabled: bool
@@ -2941,8 +3095,15 @@ decl_module! {
             );
         }
 
-        /// Updates global NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Updates global NFT limit
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_global_nft_limit()]
         pub fn update_global_nft_limit(
             origin,
             nft_limit_period: NftLimitPeriod,
@@ -2965,7 +3126,14 @@ decl_module! {
         }
 
         /// Updates channel's NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_channel_nft_limit()]
         pub fn update_channel_nft_limit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -4366,6 +4534,13 @@ impl<T: Config> Module<T> {
         } else {
             WeightInfoContent::<T>::delete_video_without_assets()
         }
+    }
+
+    // calculates nft issuance weights
+    fn create_issue_nft_weight(params: &NftIssuanceParameters<T>) -> Weight {
+        let whitelist_size = Self::extract_nft_auction_whitelist_size_len(params);
+        let metadata_size = params.nft_metadata.len() as u32;
+        WeightInfoContent::<T>::issue_nft(whitelist_size, metadata_size)
     }
 
     // Calculates weight for set_channel_paused_features_as_moderator extrinsic.

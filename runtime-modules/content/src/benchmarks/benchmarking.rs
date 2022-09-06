@@ -5,9 +5,10 @@ use crate::permissions::*;
 use crate::types::*;
 use crate::{
     assert_lt,
-    nft::{NftOwner, TransactionalStatus},
+    nft::{Nft, NftOwner, OpenAuctionParams, TransactionalStatus},
     Call, ChannelById, Config, ContentActor, Event, Module as Pallet,
 };
+use crate::{ContentTreasury, UpdateChannelPayoutsParameters};
 use balances::Pallet as Balances;
 use common::{build_merkle_path_helper, generate_merkle_root_helper, BudgetManager};
 use frame_benchmarking::{benchmarks, Zero};
@@ -54,7 +55,7 @@ benchmarks! {
     ============================================================================
     ======================================== CHANNEL CUD GROUP =================
     ============================================================================
-    */
+     */
 
     create_channel {
 
@@ -64,8 +65,8 @@ benchmarks! {
             (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
         let c in
-        (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-        (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
+            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
         let d in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
@@ -96,13 +97,13 @@ benchmarks! {
         );
 
     }: _ (sender, channel_owner, params.clone())
-    verify {
+        verify {
 
-        let channel_id: T::ChannelId = One::one();
-        assert!(ChannelById::<T>::contains_key(&channel_id));
+            let channel_id: T::ChannelId = One::one();
+            assert!(ChannelById::<T>::contains_key(&channel_id));
 
-        let channel = ChannelById::<T>::get(channel_id);
-        let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
+            let channel = ChannelById::<T>::get(channel_id);
+            let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
 
         assert_last_event::<T>(
             <T as Config>::Event::from(
@@ -127,23 +128,23 @@ benchmarks! {
         let d in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
 
         let e in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
         let assets_to_remove: BTreeSet<T::DataObjectId> = (0..c).map(|i| i.saturated_into()).collect();
 
         let (channel_id,
-            group_id,
-            lead_account_id,
-            curator_id,
-            curator_account_id) =
-        setup_worst_case_scenario_curator_channel::<T>(
-            c,
-            e,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            false
-        ).unwrap();
+             group_id,
+             lead_account_id,
+             curator_id,
+             curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                c,
+                e,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                false
+            ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
 
@@ -154,20 +155,20 @@ benchmarks! {
             .collect();
 
         let collaborators = Some(channel.collaborators
-            .into_iter()
-            .take(a as usize)
-            .map(|(member_id, _)|{
-                (member_id, permissions.clone())
-            })
-            .collect::<BTreeMap<_, _>>());
+                                 .into_iter()
+                                 .take(a as usize)
+                                 .map(|(member_id, _)|{
+                                     (member_id, permissions.clone())
+                                 })
+                                 .collect::<BTreeMap<_, _>>());
 
         let assets_to_upload = StorageAssets::<T> {
-                expected_data_size_fee:
-                    Storage::<T>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_object_candidates_helper(
-                    b,
-                    max_obj_size
-                ),
+            expected_data_size_fee:
+            Storage::<T>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_object_candidates_helper(
+                b,
+                max_obj_size
+            ),
         };
 
         let new_data_object_ids: BTreeSet<T::DataObjectId> = (c..c+b).map(|i| i.saturated_into()).collect();
@@ -191,9 +192,9 @@ benchmarks! {
 
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
-    verify {
+        verify {
 
-        assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(&channel_id));
 
         assert_last_event::<T>(
             <T as Config>::Event::from(
@@ -214,16 +215,16 @@ benchmarks! {
         let b in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
 
         let (channel_id,
-            group_id,
-            lead_account_id,
-            curator_id,
-            curator_account_id) =
-        setup_worst_case_scenario_curator_channel::<T>(
-            T::MaxNumberOfAssetsPerChannel::get(),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-            false
-        ).unwrap();
+             group_id,
+             lead_account_id,
+             curator_id,
+             curator_account_id) =
+            setup_worst_case_scenario_curator_channel::<T>(
+                T::MaxNumberOfAssetsPerChannel::get(),
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                false
+            ).unwrap();
 
         let channel = ChannelById::<T>::get(channel_id);
 
@@ -234,12 +235,12 @@ benchmarks! {
             .collect();
 
         let collaborators = Some(channel.collaborators
-            .into_iter()
-            .take(a as usize)
-            .map(|(member_id, _)|{
-                (member_id, permissions.clone())
-            })
-            .collect::<BTreeMap<_, _>>());
+                                 .into_iter()
+                                 .take(a as usize)
+                                 .map(|(member_id, _)|{
+                                     (member_id, permissions.clone())
+                                 })
+                                 .collect::<BTreeMap<_, _>>());
 
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
@@ -260,9 +261,9 @@ benchmarks! {
 
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
-    verify {
+        verify {
 
-        assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(&channel_id));
 
         assert_last_event::<T>(
             <T as Config>::Event::from(
@@ -281,7 +282,7 @@ benchmarks! {
         let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
         let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-         (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
 
         let c in
          (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
@@ -294,14 +295,14 @@ benchmarks! {
             curator_id,
             curator_account_id
         ) =
-        setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
+            setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
 
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
 
     }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
-    verify {
+        verify {
 
         assert_last_event::<T>(
             <T as Config>::Event::from(
@@ -1995,6 +1996,7 @@ benchmarks! {
     claim_creator_token_patronage_credit {
         let (channel_id, owner_member_id, owner_acc, lead_account_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
+
         let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
         let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
         let origin = RawOrigin::Signed(collaborator_account_id.clone());
@@ -2043,7 +2045,13 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO:
-    // - DB read cost already maxed out due to `payload` being a struct of `Option`s
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
+    // - channel has all features paused except necessary ones
+    // - channel has max assets
+    // INPUT COMPLEXITY
     // - `payload` fields `Some(..)` in order to maximize the number of storage mutation performed
     update_channel_payouts {
         let origin = RawOrigin::Root;
@@ -2138,9 +2146,13 @@ benchmarks! {
             );
         }
 
-    // Worst case scenario:
-    // - curator channel belonging to a group with max number curator and max curator permissions
-    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
+    // - channel has all features paused except necessary ones
+    // - channel has max assets
     claim_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 
@@ -2155,7 +2167,7 @@ benchmarks! {
         set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorCashout]);
 
         Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-           commitment: Some(commitment),
+            commitment: Some(commitment),
             ..Default::default()
         })?;
 
@@ -2171,45 +2183,6 @@ benchmarks! {
             assert_eq!(
                 T::CouncilBudgetManager::get_budget(),
                 T::ExistentialDeposit::get(),
-            );
-        }
-
-    // Worst case scenario:
-    // - curator channel belonging to a group with max number curator and max curator permissions
-    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    claim_and_withdraw_curator_channel_reward {
-        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
-
-        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
-        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
-        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
-        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
-        let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id);
-
-        set_all_channel_paused_features_except::<T>(channel_id, vec![
-                PausableChannelFeature::CreatorCashout,
-                PausableChannelFeature::ChannelFundsTransfer,
-            ]);
-
-        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-           commitment: Some(commitment),
-            ..Default::default()
-        })?;
-
-        let actor = ContentActor::Lead;
-        let item = payments[0];
-        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
-    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
-        verify {
-            assert_eq!(
-                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
-                item.cumulative_reward_earned
-            );
-            assert_eq!(
-                T::CouncilBudgetManager::get_budget(),
-                cumulative_reward_claimed + T::ExistentialDeposit::get(),
             );
         }
 
@@ -2252,6 +2225,1029 @@ benchmarks! {
                 Balances::<T>::usable_balance(member_account_id),
                 cumulative_reward_claimed + balances_pre,
             );
+        }
+
+    // Worst case scenario:
+    // - curator channel belonging to a group with max number curator and max curator permissions
+    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
+    claim_and_withdraw_curator_channel_reward {
+        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
+
+        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
+        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
+        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
+        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
+        let (channel_id, group_id, lead_account_id, _, _) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(lead_account_id);
+
+        set_all_channel_paused_features_except::<T>(channel_id, vec![
+                PausableChannelFeature::CreatorCashout,
+                PausableChannelFeature::ChannelFundsTransfer,
+            ]);
+
+        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
+            commitment: Some(commitment),
+            ..Default::default()
+        })?;
+
+        let actor = ContentActor::Lead;
+        let item = payments[0];
+        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
+    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
+        verify {
+            assert_eq!(
+                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
+                item.cumulative_reward_earned
+            );
+            assert_eq!(
+                T::CouncilBudgetManager::get_budget(),
+                cumulative_reward_claimed + T::ExistentialDeposit::get(),
+            );
+        }
+
+    // ================================================================================
+    // ============================ NFT - BASIC  ======================================
+    // ================================================================================
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft limits are set
+    // INPUT COMPLEXITY
+    // - params of type EnglishAuctionParameters with:
+    //   - member whitelist size : w
+    //   - metadata bytelength : b
+    //   - royalty is some
+    //   - buy now price is some
+    //   - starts at is some
+    issue_nft {
+        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+        let b in 1..MAX_BYTES_METADATA;
+
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::VideoNftIssuance]);
+
+        let origin = RawOrigin::Signed(curator_account_id);
+        let params = worst_case_nft_issuance_params_helper::<T>(w,b);
+    }: _ (origin, actor, video_id, params)
+        verify {
+            assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_some());
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    destroy_nft {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let origin = RawOrigin::Signed(curator_account_id.clone());
+        let _ = setup_idle_nft::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            false,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _ (origin, actor, video_id)
+        verify {
+            assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_none());
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is member
+    // INPUT COMPLEXITY
+    sling_nft_back {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            true,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(owner_account);
+    }: _ (origin, video_id, nft_owner_actor)
+        verify {
+        }
+
+
+    // ================================================================================
+    // ============================== NFT - OFFERS ====================================
+    // ================================================================================
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    offer_nft {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let _ = setup_idle_nft::<T>(
+            curator_account_id.clone(),
+            actor,
+            video_id,
+            false,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+
+        let origin = RawOrigin::Signed(curator_account_id);
+
+        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let price = Some(nft_buy_now_price::<T>());
+
+    }: _ (origin, video_id, actor, to_member, price)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::InitiatedOfferToMember(to_memeber, price),
+                ..
+            })));
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - channel owning curator group has max number of permissions per level
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    cancel_offer {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let price = Some(nft_buy_now_price::<T>());
+
+        let _ = setup_offered_nft::<T>(
+            curator_account_id.clone(),
+            actor,
+            video_id,
+            false,
+            to_member,
+            price,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(curator_account_id);
+
+    }: _ (origin, actor, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
+    // INPUT COMPLEXITY
+    accept_incoming_offer {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        ).unwrap();
+
+        let (to_member_account, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let price = Some(nft_buy_now_price::<T>());
+
+        let (nft_owner_actor, owner_account) = setup_offered_nft::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            true,
+            to_member,
+            price,
+        ).unwrap();
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(to_member_account.clone());
+        let balance_pre = Balances::<T>::usable_balance(&to_member_account);
+
+    }: _ (origin, video_id, price)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+            assert_eq!(
+                Balances::<T>::usable_balance(&to_member_account),
+                balance_pre - price.unwrap(),
+            );
+        }
+
+    // ================================================================================
+    // ============================ NFT - BUY NOW =====================================
+    // ================================================================================
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - channel owning curator group has max number of permissions per level
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    sell_nft {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let price = nft_buy_now_price::<T>();
+
+        let _ = setup_idle_nft::<T>(
+            curator_account_id.clone(),
+            actor,
+            video_id,
+            false,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(curator_account_id);
+
+    }: _ (origin, video_id, actor, price)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::BuyNow(price),
+                ..
+            })));
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    cancel_buy_now {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let price = nft_buy_now_price::<T>();
+
+        let _ = setup_nft_in_buy_now::<T>(
+            curator_account_id.clone(),
+            actor,
+            video_id,
+            false,
+            price,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(curator_account_id);
+    }: _ (origin, actor, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+
+    // INPUT COMPLEXITY
+    update_buy_now_price {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let price = nft_buy_now_price::<T>();
+
+        let _ = setup_nft_in_buy_now::<T>(
+            curator_account_id.clone(),
+            actor,
+            video_id,
+            false,
+            price,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(curator_account_id);
+        let new_price = nft_buy_now_price::<T>() + 1u32.into();
+    }: _ (origin, actor, video_id, new_price)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::BuyNow(new_price),
+                ..
+            })));
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
+    // INPUT COMPLEXITY
+    buy_nft {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let (buyer_account_id, buyer_id) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let price = nft_buy_now_price::<T>();
+
+        let (nft_owner_actor, owner_account) = setup_nft_in_buy_now::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            true,
+            price,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(buyer_account_id.clone());
+
+        let balance_pre = Balances::<T>::usable_balance(buyer_account_id.clone());
+    }: _ (origin, video_id, buyer_id, price)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+            assert_eq!(Balances::<T>::usable_balance(buyer_account_id), balance_pre - price)
+        }
+
+    // ================================================================================
+    // ========================== NFT - UPDATE LIMITS =================================1
+    // ================================================================================
+
+    // WORST CASE SCENARIO:
+    // INPUT COMPLEXITY
+    toggle_nft_limits {
+        let origin = RawOrigin::Root;
+        let enabled = false;
+    }: _ (origin, enabled)
+        verify {
+            assert!(!Pallet::<T>::nft_limits_enabled());
+        }
+
+    // STATE COMPLEXITY
+    // INPUT COMPLEXITY
+    update_global_nft_limit {
+        let origin = RawOrigin::Root;
+        let nft_limit_period = NftLimitPeriod::Daily;
+        let limit = 10u64;
+    }: _(origin, nft_limit_period, limit)
+        verify {
+            assert_eq!(Pallet::<T>::global_daily_nft_limit().limit, 10u64);
+        }
+
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of permissions
+    // - channel-owning curator group has max number of permissions per level
+    // - channel has max collaborators
+    // - channel has all features paused
+    // - channel has max assets
+    // INPUT COMPLEXITY
+    update_channel_nft_limit {
+        let nft_limit_period = NftLimitPeriod::Daily;
+        let limit = 10u64;
+        let (channel_id, group_id, _, curator_id, curator_account_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let origin = RawOrigin::Signed(curator_account_id);
+        set_all_channel_paused_features::<T>(channel_id);
+        let actor = ContentActor::Curator(group_id, curator_id);
+    }: _(origin, actor, nft_limit_period, channel_id, limit)
+        verify {
+            assert_eq!(Pallet::<T>::channel_by_id(channel_id).daily_nft_limit.limit, limit);
+        }
+
+    // ================================================================================
+    // =========================== NFT - ENGLISH AUCTION ==============================
+    // ================================================================================
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size:
+    //   - max video assets
+    // INPUT COMPLEXITY
+    // - Member whitelist : w
+    // - nft owner is channel owner
+    // - buy now price is some
+    // - starts at price is some
+
+    start_english_auction {
+        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            false,
+        )?;
+
+        let auction_params = EnglishAuctionParams::<T> {
+            buy_now_price: Some(nft_buy_now_price::<T>()),
+            duration: Pallet::<T>::min_auction_duration(),
+            extension_period: Pallet::<T>::min_auction_extension_period(),
+            min_bid_step: Pallet::<T>::min_bid_step(),
+            starting_price: Pallet::<T>::min_starting_price(),
+            starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+            whitelist: (0..(w as usize))
+                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                .collect(),
+        };
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(owner_account);
+
+    }: _(origin, nft_owner_actor, video_id, auction_params)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::EnglishAuction(..),
+                ..
+            })))
+        }
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // channel-owning curator group has max number of permissions per level
+    // - member whitelist has max size
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    cancel_english_auction {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        ).unwrap();
+
+        let ((nft_owner_actor, owner_account),
+             _) = setup_nft_in_english_auction::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            false,
+        ).unwrap();
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(owner_account);
+
+    }: _(origin, nft_owner_actor, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })))
+        }
+
+    // WORST CASE SCENARIO:
+    // STATE COMPLEXITY:
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - bid triggers buy now
+    // - bid already exists and made by a different member
+    // - whitelist has max size
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
+    // INPUT COMPLEXITY
+    make_english_auction_bid {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let ((nft_owner_actor, owner_account), bidders) = setup_nft_in_english_auction::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            true,
+        )?;
+
+        let (first_bidder_account, first_bidder_id) = bidders[0].clone();
+        let (second_bidder_account, second_bidder_id) = bidders[1].clone();
+
+        set_all_channel_paused_features::<T>(channel_id);
+
+        fastforward_by_blocks::<T>(2u32.into());
+        let _ = add_english_auction_bid::<T>(first_bidder_account, first_bidder_id, video_id);
+        let buy_now_amount = nft_buy_now_price::<T>();
+
+        let origin = RawOrigin::Signed(second_bidder_account.clone());
+        let balance_pre = Balances::<T>::usable_balance(second_bidder_account.clone());
+    }: _(origin, second_bidder_id, video_id, buy_now_amount)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+            assert_eq!(
+                Balances::<T>::usable_balance(second_bidder_account),
+                balance_pre - buy_now_amount,
+            )
+        }
+
+    // WORST CASE SCENARIO:
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - auction has max number of whitelisted members
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
+    // INPUT COMPLEXITY
+    settle_english_auction {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let ((nft_owner_actor, owner_account), bidders) = setup_nft_in_english_auction::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            true,
+        )?;
+
+        let (participant_account_id, participant_id) = bidders[0].clone();
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(owner_account);
+
+        fastforward_by_blocks::<T>(2u32.into());
+        let _ = add_english_auction_bid::<T>(participant_account_id, participant_id, video_id);
+
+        fastforward_by_blocks::<T>(10u32.into());
+    }: _(origin, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+        }
+
+    // ================================================================================
+    // =========================== NFT - OPEN AUCTION =================================
+    // ================================================================================
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel-owning curator group has max number of permissions per level
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    // - buy_now_price is some to trigger checks
+    // - starts_at is some to trigger checks
+    // - open auction params Member whitelist : w
+    start_open_auction {
+        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let buy_now_price = Pallet::<T>::min_starting_price()
+            + Pallet::<T>::min_bid_step().mul(10u32.into());
+
+        let _ = setup_idle_nft::<T>(
+            curator_account_id.clone(),
+            actor,
+            video_id,
+            false,
+        )?;
+
+        let origin = RawOrigin::Signed(curator_account_id);
+
+        set_all_channel_paused_features::<T>(channel_id);
+
+        let auction_params = OpenAuctionParams::<T> {
+            buy_now_price: Some(buy_now_price),
+            bid_lock_duration: Pallet::<T>::min_bid_lock_duration(),
+            starting_price: Pallet::<T>::min_starting_price(),
+            starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
+            whitelist: (0..(w as usize))
+                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                .collect(),
+
+        };
+    }: _(origin, actor, video_id, auction_params)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::OpenAuction(..),
+                ..
+            })));
+        }
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - channel-owning curator group has max number of permissions per level
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - auction has max number of whitelisted members
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    cancel_open_auction {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            false,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+
+        let origin = RawOrigin::Signed(owner_account);
+
+     }: _(origin, nft_owner_actor, video_id)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })))
+        }
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - curator number is max
+    // - channel-owning curator group has max number of permissions per level
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - auction has max number of whitelisted members
+    // - nft owner is channel owner
+    // INPUT COMPLEXITY
+    cancel_open_auction_bid {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let (owner_account, owner_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
+
+        let (_, participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            false,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(participant_account_id.clone());
+
+        fastforward_by_blocks::<T>(2u32.into());
+
+        let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
+        fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
+
+    }: _(origin, participant_id, video_id)
+        verify {
+            assert_eq!(Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id).amount, 0u32.into());
+        }
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - member whitelist has max size
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
+    // INPUT COMPLEXITY
+    pick_open_auction_winner {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        ).unwrap();
+
+        let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            true,
+        ).unwrap();
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(owner_account);
+
+        fastforward_by_blocks::<T>(2u32.into());
+
+        let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
+
+        fastforward_by_blocks::<T>(10u32.into());
+
+    }: _(origin, nft_owner_actor, video_id, participant_id, bid.amount)
+        verify {
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
+
+            assert_eq!(Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id).amount, 0u32.into());
+        }
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // - bid triggers buy now
+    // - bid already exists
+    // - auction whitelist has max size
+    // - complete payment has max complexity:
+    //   - nft owner is a member (different from channel owner)
+    //   - royalty is non-zero
+    //   - `price - royalty` is non-zero
+    // INPUT COMPLEXITY
+    make_open_auction_bid {
+        let (
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
+
+        let ((nft_owner_actor, account_id), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
+            curator_account_id,
+            actor,
+            video_id,
+            true,
+        )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
+        let origin = RawOrigin::Signed(participant_account_id.clone());
+
+        fastforward_by_blocks::<T>(2u32.into());
+
+        let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
+        let _ = add_open_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
+        let price = nft_buy_now_price::<T>();
+        fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
+
+    }: _(origin, participant_id, video_id, price)
+        verify {
+            assert_eq!(
+                balance_pre - price,
+                Balances::<T>::usable_balance(participant_account_id)
+            );
+
+            assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
+                transactional_status: TransactionalStatus::<T>::Idle,
+                ..
+            })));
         }
 }
 
@@ -2513,9 +3509,163 @@ pub mod tests {
     }
 
     #[test]
+    fn issue_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_issue_nft());
+        })
+    }
+
+    #[test]
     fn claim_channel_and_withdraw_curator_channel_reward() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_claim_and_withdraw_curator_channel_reward());
+        })
+    }
+
+    #[test]
+    fn destroy_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_destroy_nft());
+        })
+    }
+
+    #[test]
+    fn sling_nft_back() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_sling_nft_back());
+        })
+    }
+
+    #[test]
+    fn offer_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_offer_nft());
+        })
+    }
+
+    #[test]
+    fn cancel_offer() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_offer());
+        })
+    }
+
+    #[test]
+    fn accept_incoming_offer() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_accept_incoming_offer());
+        })
+    }
+
+    #[test]
+    fn sell_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_sell_nft());
+        })
+    }
+
+    #[test]
+    fn cancel_buy_now() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_buy_now());
+        })
+    }
+
+    #[test]
+    fn update_buy_now_price() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_buy_now_price());
+        })
+    }
+
+    #[test]
+    fn buy_nft() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_buy_nft());
+        })
+    }
+
+    #[test]
+    fn toggle_nft_limits() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_toggle_nft_limits());
+        })
+    }
+
+    #[test]
+    fn update_global_nft_limit() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_global_nft_limit());
+        })
+    }
+
+    #[test]
+    fn update_channel_nft_limit() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_update_channel_nft_limit());
+        })
+    }
+
+    #[test]
+    fn start_english_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_start_english_auction());
+        })
+    }
+
+    #[test]
+    fn cancel_english_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_english_auction());
+        })
+    }
+
+    #[test]
+    fn make_english_auction_bid() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_make_english_auction_bid());
+        })
+    }
+
+    #[test]
+    fn settle_english_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_settle_english_auction());
+        })
+    }
+
+    #[test]
+    fn start_open_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_start_open_auction());
+        })
+    }
+
+    #[test]
+    fn cancel_open_auction() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_open_auction());
+        })
+    }
+
+    #[test]
+    fn cancel_open_auction_bid() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_cancel_open_auction_bid());
+        })
+    }
+
+    #[test]
+    fn pick_open_auction_winner() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_pick_open_auction_winner());
+        })
+    }
+
+    #[test]
+    fn make_open_auction_bid() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_make_open_auction_bid());
         })
     }
 
