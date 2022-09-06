@@ -1366,7 +1366,7 @@ benchmarks! {
         };
         let transfer_id = Pallet::<T>::next_transfer_id();
         Pallet::<T>::initialize_channel_transfer(
-            RawOrigin::Signed(member_account_id.clone()).into(),
+            RawOrigin::Signed(member_account_id).into(),
             channel_id,
             ContentActor::Member(member_id),
             transfer_params
@@ -1412,7 +1412,7 @@ benchmarks! {
         };
         let transfer_id = Pallet::<T>::next_transfer_id();
         Pallet::<T>::initialize_channel_transfer(
-            RawOrigin::Signed(member_account_id.clone()).into(),
+            RawOrigin::Signed(member_account_id).into(),
             channel_id,
             ContentActor::Member(member_id),
             transfer_params
