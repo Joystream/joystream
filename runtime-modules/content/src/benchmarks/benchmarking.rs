@@ -187,6 +187,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
 
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelUpdate]);
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
         verify {
@@ -256,6 +257,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
 
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelUpdate]);
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
         verify {
@@ -298,6 +300,7 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
         verify {
 
@@ -334,6 +337,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(lead_account_id);
         let privilege_level = T::ChannelPrivilegeLevel::one();
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin, channel_id, privilege_level)
         verify {
 
@@ -418,6 +422,7 @@ benchmarks! {
         let storage_buckets_num_witness =
             storage_buckets_num_witness::<T>(channel_id)?;
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin,
         actor,
@@ -464,6 +469,7 @@ benchmarks! {
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
         let rationale = vec![1u8].repeat(d as usize);
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin,
           actor,
           channel_id,
@@ -505,6 +511,7 @@ benchmarks! {
 
         let rationale = vec![0u8].repeat(a as usize);
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin, actor, channel_id, true, rationale.clone())
         verify {
 
@@ -528,7 +535,7 @@ benchmarks! {
 
         let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
-        let (video_id, (curator_account_id, actor, _, _)) =
+        let (video_id, (curator_account_id, actor, channel_id, _)) =
             setup_worst_case_scenario_mutable_video::<T>(
                 Some(T::MaxNumberOfAssetsPerVideo::get()),
                 b
@@ -545,6 +552,8 @@ benchmarks! {
             .map(|i| i.saturated_into()).collect();
 
         let _ = setup_nft_in_english_auction::<T>(curator_account_id, actor, video_id, false)?;
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin,
         actor,
@@ -576,9 +585,10 @@ benchmarks! {
         let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
         let rationale = vec![1u8].repeat(c as usize);
-        let (video_id, (curator_acc_id, actor, _, _)) =
+        let (video_id, (curator_acc_id, actor, channel_id, _)) =
             setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video_as_moderator (
         RawOrigin::Signed(curator_acc_id),
         actor,
@@ -601,7 +611,7 @@ benchmarks! {
     delete_video_as_moderator_without_assets {
         let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
-        let (video_id, (curator_acc_id, actor, _, _)) =
+        let (video_id, (curator_acc_id, actor, channel_id, _)) =
             setup_worst_case_scenario_mutable_video::<T>(
                 None,
                 T::StorageBucketsPerBagValueConstraint::get().max() as u32
@@ -609,6 +619,7 @@ benchmarks! {
 
         let rationale = vec![1u8].repeat(a as usize);
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video_as_moderator (
         RawOrigin::Signed(curator_acc_id),
         actor,
@@ -634,13 +645,14 @@ benchmarks! {
 
         let (
             video_id,
-            (curator_account_id, actor, _, _)
+            (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
         let rationale = vec![0u8].repeat(a as usize);
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         RawOrigin::Signed(curator_account_id),
         actor,
@@ -1173,6 +1185,8 @@ benchmarks! {
             None,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1201,6 +1215,8 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
         let witness = storage_buckets_num_witness::<T>(channel_id)?;
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1242,6 +1258,8 @@ benchmarks! {
         };
         let transfer_id = Pallet::<T>::next_transfer_id();
         let actor = ContentActor::Curator(group_id, curator_id);
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: initialize_channel_transfer (
         RawOrigin::Signed(curator_account_id),
         channel_id,
@@ -1276,6 +1294,8 @@ benchmarks! {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(true)?;
         let actor = ContentActor::Curator(group_id, curator_id);
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         RawOrigin::Signed(curator_account_id),
         channel_id,
@@ -1325,6 +1345,8 @@ benchmarks! {
             price,
             new_collaborators
         };
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: accept_channel_transfer (
         RawOrigin::Signed(lead_account_id),
         channel_id,
@@ -1376,6 +1398,8 @@ benchmarks! {
             price,
             new_collaborators
         };
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: accept_channel_transfer (
         RawOrigin::Signed(content_lead_acc_id),
         channel_id,
@@ -1422,6 +1446,8 @@ benchmarks! {
             price,
             new_collaborators
         };
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: accept_channel_transfer (
         RawOrigin::Signed(new_owner_acc),
         channel_id,
