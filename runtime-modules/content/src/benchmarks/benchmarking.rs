@@ -3255,9 +3255,17 @@ benchmarks! {
     // ================================================================================
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
-    // DB OPERATIONS
-    // - DB Write: Metadata
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // INPUT COMPLEXITY
+    // - remark message byte-length: b
     channel_owner_remark {
         let b in 1 .. MAX_BYTES_METADATA;
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
@@ -3277,13 +3285,17 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
-    // - channel is curator owned
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // DB OPERATIONS
-    // - DB Write: Metadata
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // INPUT COMPLEXITY
+    // - remark message byte-length: b
     channel_agent_remark {
         let b in 1 .. MAX_BYTES_METADATA;
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
@@ -3305,14 +3317,19 @@ benchmarks! {
         }
 
     // WORST CASE SCENARIO
-    // COMPLEXITY
-    // - channel has max collaborators
-    // - channel has all features paused except necessary ones
-    // - channel has max assets
-    // - NFT owner == channel owner
-    // DB OPERATIONS
-    // - DB Write: Metadata
-    // - DB Read: Video
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // - video has max size
+    //   - max video assets
+    // INPUT COMPLEXITY
+    // - remark message byte-length: b
     nft_owner_remark {
         let b in 1 .. MAX_BYTES_METADATA;
         let (
