@@ -220,7 +220,12 @@ export default class Api {
   }
 
   async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
-    return (await this._api.query.members.membershipById.multi(ids)).map((optionalMember) => optionalMember.unwrap())
+    return (await this._api.query.members.membershipById.multi(ids)).map((optionalMember, i) => {
+      if (optionalMember.isSome) {
+        return optionalMember.unwrap()
+      }
+      throw new CLIError(`Member ${ids[i]} does not exist!`)
+    })
   }
 
   async membersDetailsByIds(ids: MemberId[] | number[]): Promise<MemberDetails[]> {
