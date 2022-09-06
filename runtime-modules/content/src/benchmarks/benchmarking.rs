@@ -3343,7 +3343,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
+        let ((nft_owner_actor, owner_account), _) = setup_nft_in_english_auction::<T>(
             curator_account_id,
             actor,
             video_id,
