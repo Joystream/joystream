@@ -32,6 +32,12 @@ use strum::IntoEnumIterator;
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
 
+pub type ActorContextResult = (
+    AccountId,
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    Error<Test>,
+);
+
 fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
     let bag_id = Content::bag_id_for_channel(&channel_id);
     let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
@@ -1933,7 +1939,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.video_id,
-            self.storage_buckets_num_witness.clone(),
+            self.storage_buckets_num_witness,
             self.num_objects_to_delete,
             self.rationale.clone(),
         )
@@ -3869,7 +3875,7 @@ impl MakeOpenAuctionBidFixture {
                         );
                     }
                 }
-                _ => assert!(false),
+                _ => panic!(),
             }
         } else {
             assert_eq!(bid_post, bid_pre);
@@ -5265,7 +5271,7 @@ impl ContentTest {
                     &agent_permissions,
                 )
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
 
         // Setup claimable reward (optionally)
@@ -5352,11 +5358,7 @@ pub fn agent_permissions(permissions: &[ChannelActionPermission]) -> ChannelAgen
     permissions.iter().cloned().collect()
 }
 
-pub fn get_default_member_channel_invalid_contexts() -> Vec<(
-    AccountId,
-    ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    Error<Test>,
-)> {
+pub fn get_default_member_channel_invalid_contexts() -> Vec<ActorContextResult> {
     vec![
         // collaborator as owner
         (
@@ -5403,11 +5405,7 @@ pub fn get_default_member_channel_invalid_contexts() -> Vec<(
     ]
 }
 
-pub fn get_default_curator_channel_invalid_contexts() -> Vec<(
-    AccountId,
-    ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    Error<Test>,
-)> {
+pub fn get_default_curator_channel_invalid_contexts() -> Vec<ActorContextResult> {
     vec![
         // collaborator as lead
         (
@@ -5466,13 +5464,7 @@ pub fn get_default_curator_channel_invalid_contexts() -> Vec<(
     ]
 }
 
-pub fn run_all_fixtures_with_contexts(
-    contexts: Vec<(
-        AccountId,
-        ContentActor<CuratorGroupId, CuratorId, MemberId>,
-        Error<Test>,
-    )>,
-) {
+pub fn run_all_fixtures_with_contexts(contexts: Vec<ActorContextResult>) {
     for (sender, actor, error) in contexts {
         let expected_err = Err(error.into());
         UpdateChannelFixture::default()

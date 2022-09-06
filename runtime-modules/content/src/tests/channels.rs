@@ -988,8 +988,6 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        assert!(DATA_OBJECTS_NUMBER > 0);
-
         DeleteChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))

@@ -102,7 +102,7 @@ pub const DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_CHANNEL_STATE_BLOAT_BOND: u64 = 25; // Should be >= ExistentialDeposit!
 pub const DEFAULT_VIDEO_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
-pub const DATA_OBJECTS_NUMBER: u64 = 10;
+pub const DATA_OBJECTS_NUMBER: u64 = 10; // MUST BE >= 1
 pub const OUTSTANDING_VIDEOS: u64 = 5;
 pub const OUTSTANDING_CHANNELS: u64 = 3;
 pub const TOTAL_OBJECTS_NUMBER: u64 =
@@ -533,7 +533,7 @@ impl common::membership::MemberOriginValidator<Origin, u64, U256> for () {
             Self::is_member_controller_account(&member_id, &account_id),
             DispatchError::BadOrigin
         );
-        Ok(account_id.into())
+        Ok(account_id)
     }
 
     fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
