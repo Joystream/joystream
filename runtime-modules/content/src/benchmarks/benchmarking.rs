@@ -3331,6 +3331,7 @@ benchmarks! {
     //   - max collaborators
     // - video has max size
     //   - max video assets
+    // nft is channel owned
     // INPUT COMPLEXITY
     // - remark message byte-length: b
     nft_owner_remark {
