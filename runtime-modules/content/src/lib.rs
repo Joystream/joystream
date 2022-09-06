@@ -2966,7 +2966,7 @@ decl_module! {
 
             Self::deposit_event(RawEvent::ChannelAgentRemarked(actor, channel_id, msg));
         }
-  
+
         /// NFT owner remark
         /// <weight>
         ///
