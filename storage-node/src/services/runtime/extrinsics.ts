@@ -342,19 +342,42 @@ export async function removeStorageBucketOperator(
 }
 
 /**
- * Updates a 'DataSizeFee' variable.
+ * Updates the 'DataSizeFee' variable.
  *
  * @remarks
  * It sends an extrinsic to the runtime.
  *
  * @param api - runtime API promise
- * @param bagId - BagId instance
+ * @param account - KeyringPair instance
  * @param fee - new fee
  * @returns promise with a success flag.
  */
 export async function updateDataSizeFee(api: ApiPromise, account: KeyringPair, fee: number): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const tx = api.tx.storage.updateDataSizeFee(fee)
+
+    return sendAndFollowNamedTx(api, account, tx)
+  })
+}
+
+/**
+ * Updates the 'DataObjectStateBloatBondValue' variable.
+ *
+ * @remarks
+ * It sends an extrinsic to the runtime.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @param value - new value
+ * @returns promise with a success flag.
+ */
+export async function updateDataObjectBloatBond(
+  api: ApiPromise,
+  account: KeyringPair,
+  value: number
+): Promise<boolean> {
+  return await extrinsicWrapper(() => {
+    const tx = api.tx.storage.updateDataObjectStateBloatBond(value)
 
     return sendAndFollowNamedTx(api, account, tx)
   })

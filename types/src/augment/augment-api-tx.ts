@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, WrapperKeepOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
+import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParameters, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -152,6 +152,198 @@ declare module '@polkadot/api-base/types/submittable' {
        * [`transfer`]: struct.Pallet.html#method.transfer
        **/
       transferKeepAlive: AugmentedSubmittable<(dest: AccountId32 | string | Uint8Array, value: Compact<u128> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Compact<u128>]>;
+    };
+    bounty: {
+      /**
+       * Announce work entry for a successful bounty.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (W + M)` where:
+       * - `W` is the work_description length.
+       * - `M` is closed contract member list length.
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      announceWorkEntry: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, stakingAccountId: AccountId32 | string | Uint8Array, workDescription: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, AccountId32, Bytes]>;
+      /**
+       * Bounty Contributor made a remark
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)`
+       * - `N` is msg length
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      contributorRemark: AugmentedSubmittable<(contributor: PalletBountyBountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyActor, u64, Bytes]>;
+      /**
+       * Creates a bounty. Metadata stored in the transaction log but discarded after that.
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W)` where:
+       * - `W` is the _metadata length.
+       * - `M` is closed contract member list length.
+       * - DB:
+       * - O(M) (O(1) on open contract)
+       * # </weight>
+       **/
+      createBounty: AugmentedSubmittable<(params: PalletBountyBountyParameters | { oracle?: any; contractType?: any; creator?: any; cherry?: any; oracleReward?: any; entrantStake?: any; fundingType?: any } | string | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyParameters, Bytes]>;
+      /**
+       * Bounty Oracle made a remark
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)`
+       * - `N` is msg length
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      creatorRemark: AugmentedSubmittable<(creator: PalletBountyBountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyActor, u64, Bytes]>;
+      /**
+       * end bounty working period.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      endWorkingPeriod: AugmentedSubmittable<(bountyId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Bounty Entrant Worker made a remark
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)`
+       * - `N` is msg length
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      entrantRemark: AugmentedSubmittable<(entrantId: u64 | AnyNumber | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, entryId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, Bytes]>;
+      /**
+       * Provides bounty funding.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      fundBounty: AugmentedSubmittable<(funder: PalletBountyBountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyActor, u64, u128]>;
+      /**
+       * Bounty Oracle made a remark
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)`
+       * - `N` is msg length
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      oracleRemark: AugmentedSubmittable<(oracle: PalletBountyBountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyActor, u64, Bytes]>;
+      /**
+       * Submits an oracle judgment for a bounty, slashing the entries rejected
+       * by an arbitrary percentage and rewarding the winners by an arbitrary amount
+       * (not surpassing the total fund amount)
+       * # <weight>
+       * 
+       * ## weight
+       * `O (J + K + W + R)`
+       * - `J` is rationale length,
+       * - `K` is the sum of all action_justification lengths (inside OracleJudgment),
+       * - `W` is number of winner judgment entries,
+       * - `R` is number of rejected judgment entries,
+       * - db:
+       * - `O(W + R)`
+       * # </weight>
+       **/
+      submitOracleJudgment: AugmentedSubmittable<(bountyId: u64 | AnyNumber | Uint8Array, judgment: BTreeMap<u64, PalletBountyOracleWorkEntryJudgment>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, BTreeMap<u64, PalletBountyOracleWorkEntryJudgment>, Bytes]>;
+      /**
+       * Submit work for a bounty.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (N)`
+       * - `N` is the work_data length,
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      submitWork: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, entryId: u64 | AnyNumber | Uint8Array, workData: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, Bytes]>;
+      /**
+       * Oracle switches himself to a new one
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       * 
+       **/
+      switchOracle: AugmentedSubmittable<(newOracle: PalletBountyBountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyActor, u64]>;
+      /**
+       * Terminates a bounty in funding, funding expired,
+       * worksubmission, judging period.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      terminateBounty: AugmentedSubmittable<(bountyId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Unlocks the stake related to a work entry
+       * After the oracle makes the judgment or the council terminates the bounty by calling terminate_bounty(...),
+       * each worker whose entry has not been judged, can unlock the totality of their stake.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawEntrantStake: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array, entryId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64]>;
+      /**
+       * Withdraw bounty funding by a member or a council.
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawFunding: AugmentedSubmittable<(funder: PalletBountyBountyActor | { Council: any } | { Member: any } | string | Uint8Array, bountyId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyActor, u64]>;
+      /**
+       * Withraws the oracle reward to oracle
+       * If bounty is successfully, Failed or Cancelled oracle must call this
+       * extrinsic to withdraw the oracle reward,
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawOracleReward: AugmentedSubmittable<(bountyId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
     };
     constitution: {
       /**

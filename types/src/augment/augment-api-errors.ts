@@ -93,6 +93,146 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       VestingBalance: AugmentedError<ApiType>;
     };
+    bounty: {
+      /**
+       * Bounty doesnt exist.
+       **/
+      BountyDoesntExist: AugmentedError<ApiType>;
+      /**
+       * Incompatible assurance contract type for a member: cannot submit work to the 'closed
+       * assurance' bounty contract.
+       **/
+      CannotSubmitWorkToClosedContractBounty: AugmentedError<ApiType>;
+      /**
+       * Cherry less than minimum allowed.
+       **/
+      CherryLessThenMinimumAllowed: AugmentedError<ApiType>;
+      /**
+       * Cannot create a 'closed assurance contract' bounty with empty member list.
+       **/
+      ClosedContractMemberListIsEmpty: AugmentedError<ApiType>;
+      /**
+       * Cannot create a 'closed assurance contract' bounty with member list larger
+       * than allowed max work entry limit.
+       **/
+      ClosedContractMemberListIsTooLarge: AugmentedError<ApiType>;
+      /**
+       * 'closed assurance contract' bounty member list can only include existing members
+       **/
+      ClosedContractMemberNotFound: AugmentedError<ApiType>;
+      /**
+       * The conflicting stake discovered. Cannot stake.
+       **/
+      ConflictingStakes: AugmentedError<ApiType>;
+      /**
+       * Cannot create a bounty with an entrant stake is less than required minimum.
+       **/
+      EntrantStakeIsLessThanMininum: AugmentedError<ApiType>;
+      /**
+       * Cannot create a bounty with zero funding amount parameter.
+       **/
+      FundingAmountCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Cannot create a bounty with zero funding period parameter.
+       **/
+      FundingPeriodCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Insufficient balance for a bounty cherry.
+       **/
+      InsufficientBalanceForBounty: AugmentedError<ApiType>;
+      /**
+       * There is not enough balance for a stake.
+       **/
+      InsufficientBalanceForStake: AugmentedError<ApiType>;
+      /**
+       * Bounty contributor not found
+       **/
+      InvalidContributorActorSpecified: AugmentedError<ApiType>;
+      /**
+       * Invalid Creator Actor for Bounty specified
+       **/
+      InvalidCreatorActorSpecified: AugmentedError<ApiType>;
+      /**
+       * Member specified is not an entrant worker
+       **/
+      InvalidEntrantWorkerSpecified: AugmentedError<ApiType>;
+      /**
+       * Bounty oracle not found
+       **/
+      InvalidOracleActorSpecified: AugmentedError<ApiType>;
+      /**
+       * Provided oracle member id does not belong to an existing member
+       **/
+      InvalidOracleMemberId: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: Cancelled.
+       **/
+      InvalidStageUnexpectedCancelled: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: FailedBountyWithdrawal.
+       **/
+      InvalidStageUnexpectedFailedBountyWithdrawal: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: Funding.
+       **/
+      InvalidStageUnexpectedFunding: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: Judgment.
+       **/
+      InvalidStageUnexpectedJudgment: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: NoFundingContributed.
+       **/
+      InvalidStageUnexpectedNoFundingContributed: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: SuccessfulBountyWithdrawal.
+       **/
+      InvalidStageUnexpectedSuccessfulBountyWithdrawal: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: WorkSubmission.
+       **/
+      InvalidStageUnexpectedWorkSubmission: AugmentedError<ApiType>;
+      /**
+       * Staking account doesn't belong to a member.
+       **/
+      InvalidStakingAccountForMember: AugmentedError<ApiType>;
+      /**
+       * Min funding amount cannot be greater than max amount.
+       **/
+      MinFundingAmountCannotBeGreaterThanMaxAmount: AugmentedError<ApiType>;
+      /**
+       * Cannot found bounty contribution.
+       **/
+      NoBountyContributionFound: AugmentedError<ApiType>;
+      /**
+       * Oracle have already been withdrawn
+       **/
+      OracleRewardAlreadyWithdrawn: AugmentedError<ApiType>;
+      /**
+       * Origin is root, so switching oracle is not allowed in this extrinsic. (call switch_oracle_as_root)
+       **/
+      SwitchOracleOriginIsRoot: AugmentedError<ApiType>;
+      /**
+       * The total reward for winners should be equal to total bounty funding.
+       **/
+      TotalRewardShouldBeEqualToTotalFunding: AugmentedError<ApiType>;
+      /**
+       * Invalid judgment - all winners should have work submissions.
+       **/
+      WinnerShouldHasWorkSubmission: AugmentedError<ApiType>;
+      /**
+       * Worker tried to access a work entry that doesn't belong to him
+       **/
+      WorkEntryDoesntBelongToWorker: AugmentedError<ApiType>;
+      /**
+       * Work entry doesnt exist.
+       **/
+      WorkEntryDoesntExist: AugmentedError<ApiType>;
+      /**
+       * Cannot set zero reward for winners.
+       **/
+      ZeroWinnerReward: AugmentedError<ApiType>;
+    };
     content: {
       /**
        * Already active auction cannot be cancelled

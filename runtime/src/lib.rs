@@ -233,28 +233,20 @@ fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool 
 // Filter out a subset of calls on content pallet and some specific proposals
 #[cfg(not(feature = "runtime-benchmarks"))]
 fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        // TODO: adjust after Carthage
-        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
-            ..
-        }) => false,
-        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
-            general_proposal_parameters: _,
-            proposal_details,
-        }) => !matches!(
-            proposal_details,
-            proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
-                | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
-        ),
-        _ => true, // Enable all other calls
-    }
+    // TODO: adjust after Carthage
+    !matches!(
+        call,
+        Call::Content(content::Call::<Runtime>::destroy_nft { .. })
+            | Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. })
+            | Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. })
+            | Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. })
+            | Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. })
+            | Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. })
+            | Call::Content(
+                content::Call::<Runtime>::set_channel_paused_features_as_moderator { .. }
+            )
+            | Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. })
+    )
 }
 
 // Live Production config
@@ -1463,31 +1455,28 @@ impl pallet_constitution::Config for Runtime {
     type WeightInfo = pallet_constitution::weights::SubstrateWeight<Runtime>;
 }
 
-// parameter_types! {
-//     pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
-//     pub const ClosedContractSizeLimit: u32 = 50;
-//     pub const MinCherryLimit: Balance = 1000;
-//     pub const MinFundingLimit: Balance = 1000;
-//     pub const MinWorkEntrantStake: Balance = 1000;
-// }
+parameter_types! {
+    pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
+    pub const ClosedContractSizeLimit: u32 = 50;
+    pub const MinWorkEntrantStake: Balance = 100 * currency::DOLLARS;
+    pub const FunderStateBloatBondAmount: Balance = 10 * currency::DOLLARS;
+    pub const CreatorStateBloatBondAmount: Balance = 10 * currency::DOLLARS;
+}
 
-// impl bounty::Config for Runtime {
-//     type Event = Event;
-//     type ModuleId = BountyModuleId;
-//     type BountyId = u64;
-//     type Membership = Members;
-//     type WeightInfo = weights::bounty::WeightInfo;
-//     type CouncilBudgetManager = Council;
-//     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
-//     type EntryId = u64;
-//     type ClosedContractSizeLimit = ClosedContractSizeLimit;
-//     type MinCherryLimit = MinCherryLimit;
-//     type MinFundingLimit = MinFundingLimit;
-//     type MinWorkEntrantStake = MinWorkEntrantStake;
-// }
-
-/// Forum identifier for category
-pub type CategoryId = u64;
+impl bounty::Config for Runtime {
+    type Event = Event;
+    type ModuleId = BountyModuleId;
+    type BountyId = u64;
+    type Membership = Members;
+    type WeightInfo = bounty::weights::SubstrateWeight<Runtime>;
+    type CouncilBudgetManager = Council;
+    type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
+    type EntryId = u64;
+    type ClosedContractSizeLimit = ClosedContractSizeLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
+}
 
 parameter_types! {
     pub const MinVestedTransfer: Balance = 100 * currency::CENTS; // TODO: adjust value
@@ -1577,7 +1566,7 @@ construct_runtime!(
         Members: membership::{Pallet, Call, Storage, Event<T>},
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Pallet, Call, Storage, Event},
-        // Bounty: bounty::{Pallet, Call, Storage, Event<T>},
+        Bounty: bounty::{Pallet, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},

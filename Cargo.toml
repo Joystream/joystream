@@ -14,7 +14,7 @@ members = [
 	"runtime-modules/content",
 	"runtime-modules/constitution",
 	"runtime-modules/staking-handler",
-	# "runtime-modules/bounty",
+	"runtime-modules/bounty",
 	"runtime-modules/utility",
 	"runtime-modules/project-token",    
 	"node",

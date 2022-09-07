@@ -2735,6 +2735,7 @@ dependencies = [
  "pallet-babe",
  "pallet-bags-list",
  "pallet-balances",
+ "pallet-bounty",
  "pallet-common",
  "pallet-constitution",
  "pallet-content",
@@ -4356,6 +4357,30 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-bounty"
+version = "2.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-council",
+ "pallet-membership",
+ "pallet-referendum",
+ "pallet-staking-handler",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
