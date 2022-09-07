@@ -45,13 +45,14 @@
 #![allow(clippy::type_complexity)]
 
 // used dependencies
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use common::costs::burn_from_usable;
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberId, MemberOriginValidator};
 use common::{FundingRequestParameters, StakingAccountValidator};
 use core::marker::PhantomData;
 use frame_support::dispatch::DispatchResult;
+use frame_support::storage::weak_bounded_vec::WeakBoundedVec;
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
@@ -76,7 +77,7 @@ pub use weights::WeightInfo;
 
 /// Information about council's current state and when it changed the last time.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct CouncilStageUpdate<BlockNumber: One> {
     pub stage: CouncilStage<BlockNumber>,
     pub changed_at: BlockNumber,
@@ -84,7 +85,7 @@ pub struct CouncilStageUpdate<BlockNumber: One> {
 
 /// Possible council states.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum CouncilStage<BlockNumber> {
     /// Candidacy announcement period.
     Announcing(CouncilStageAnnouncing<BlockNumber>),
@@ -104,9 +105,9 @@ impl<BlockNumber: One> Default for CouncilStage<BlockNumber> {
 
 /// Representation for announcing candidacy stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct CouncilStageAnnouncing<BlockNumber> {
-    pub candidates_count: u64,
+    pub candidates_count: u32,
     // We store the pre-computed end block in case the duration of the announcing period is
     // updated via runtime upgrade while there is already an ongoing announcing stage
     pub ends_at: BlockNumber,
@@ -114,14 +115,14 @@ pub struct CouncilStageAnnouncing<BlockNumber> {
 
 /// Representation for new council members election stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct CouncilStageElection {
-    candidates_count: u64,
+    candidates_count: u32,
 }
 
 /// Representation for idle council stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct CouncilStageIdle<BlockNumber> {
     // We store the pre-computed end block in case the duration of the idle period is
     // updated via runtime upgrade while there is already an ongoing idle stage
@@ -130,7 +131,7 @@ pub struct CouncilStageIdle<BlockNumber> {
 
 /// Candidate representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Clone, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Clone, TypeInfo, MaxEncodedLen)]
 pub struct Candidate<AccountId, Balance, Hash, VotePower> {
     staking_account_id: AccountId,
     reward_account_id: AccountId,
@@ -142,7 +143,7 @@ pub struct Candidate<AccountId, Balance, Hash, VotePower> {
 
 /// Council member representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Clone, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Clone, TypeInfo, MaxEncodedLen)]
 pub struct CouncilMember<AccountId, MemberId, Balance, BlockNumber> {
     staking_account_id: AccountId,
     reward_account_id: AccountId,
@@ -234,10 +235,10 @@ pub trait Config:
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
-    type MinNumberOfExtraCandidates: Get<u64>;
+    type MinNumberOfExtraCandidates: Get<u32>;
 
     /// Council member count
-    type CouncilSize: Get<u64>;
+    type CouncilSize: Get<u32>;
 
     /// Minimum stake candidate has to lock
     type MinCandidateStake: Get<Balance<Self>>;
@@ -314,13 +315,13 @@ pub trait ReferendumConnection<T: Config> {
     fn increase_option_power(membership_id: &T::MemberId, amount: &VotePowerOf<T>);
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Council {
         /// Current council voting stage
         pub Stage get(fn stage) config(): CouncilStageUpdate<T::BlockNumber>;
 
         /// Current council members
-        pub CouncilMembers get(fn council_members) config(): Vec<CouncilMemberOf<T>>;
+        pub CouncilMembers get(fn council_members): WeakBoundedVec<CouncilMemberOf<T>, T::CouncilSize>;
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
         pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat)
@@ -345,6 +346,20 @@ decl_storage! {
         /// Councilor reward per block
         pub CouncilorReward get(fn councilor_reward) config(): Balance<T>;
     }
+
+    add_extra_genesis {
+        config(council_members): Vec<CouncilMemberOf<T>>;
+
+        build(|s| {
+            // Set initial council members
+            CouncilMembers::<T>::put(
+                WeakBoundedVec::force_from(
+                    s.council_members.clone(),
+                    Some("ConcilMembers genesis")
+                )
+            );
+        });
+    }
 }
 
 decl_event! {
@@ -362,7 +377,7 @@ decl_event! {
         NotEnoughCandidates(BlockNumber),
 
         /// Candidates are announced and voting starts
-        VotingPeriodStarted(u64),
+        VotingPeriodStarted(u32),
 
         /// New candidate announced
         NewCandidate(MemberId, AccountId, AccountId, Balance),
@@ -513,10 +528,10 @@ decl_module! {
 
         /// Minimum number of extra candidates needed for the valid election.
         /// Number of total candidates is equal to council size plus extra candidates.
-        const MinNumberOfExtraCandidates: u64 = T::MinNumberOfExtraCandidates::get();
+        const MinNumberOfExtraCandidates: u32 = T::MinNumberOfExtraCandidates::get();
 
         /// Council member count
-        const CouncilSize: u64 = T::CouncilSize::get();
+        const CouncilSize: u32 = T::CouncilSize::get();
 
         /// Minimum stake candidate has to lock
         const MinCandidateStake: Balance<T> = T::MinCandidateStake::get();
@@ -980,7 +995,7 @@ impl<T: Config> Module<T> {
 
     // Checkout expire of referendum stage.
     // Returns the number of candidates if currently in stage announcing
-    fn try_progress_stage(now: T::BlockNumber) -> Option<u64> {
+    fn try_progress_stage(now: T::BlockNumber) -> Option<u32> {
         // election progress
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
@@ -1016,7 +1031,7 @@ impl<T: Config> Module<T> {
     }
 
     // Finish voting and start ravealing.
-    fn end_announcement_period(candidates_count: u64) {
+    fn end_announcement_period(candidates_count: u32) {
         let min_candidate_count = T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get();
 
         // reset announcing period when not enough candidates registered
@@ -1046,7 +1061,7 @@ impl<T: Config> Module<T> {
         >],
     ) {
         let council_size = T::CouncilSize::get();
-        if winners.len() as u64 != council_size {
+        if winners.len() as u32 != council_size {
             // reset candidacy announcement period
             let new_announcing_period_end_block = Mutations::<T>::start_announcing_period();
 
@@ -1200,7 +1215,7 @@ impl<T: Config> Module<T> {
         }
     }
 
-    fn calculate_on_initialize_weight(mb_candidate_count: Option<u64>) -> Weight {
+    fn calculate_on_initialize_weight(mb_candidate_count: Option<u32>) -> Weight {
         // Minimum weight for progress stage
         let weight = CouncilWeightInfo::<T>::try_progress_stage_idle()
             .max(CouncilWeightInfo::<T>::try_progress_stage_announcing_restart());
@@ -1377,11 +1392,14 @@ impl<T: Config> Mutations<T> {
     }
 
     // Change the council stage from the announcing to the election stage.
-    fn finalize_announcing_period(candidates_count: u64) {
+    fn finalize_announcing_period(candidates_count: u32) {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
 
         // start referendum
-        T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
+        T::Referendum::force_start(
+            extra_winning_target_count as u64,
+            AnnouncementPeriodNr::get(),
+        );
 
         let block_number = <frame_system::Pallet<T>>::block_number();
 
@@ -1413,7 +1431,10 @@ impl<T: Config> Mutations<T> {
         }
 
         // set new council
-        CouncilMembers::<T>::put(elected_members.to_vec());
+        CouncilMembers::<T>::put(WeakBoundedVec::<_, _>::force_from(
+            elected_members.to_vec(),
+            Some("CouncilMembers"),
+        ));
 
         // setup elected member lock for new council's members
         for council_member in CouncilMembers::<T>::get() {

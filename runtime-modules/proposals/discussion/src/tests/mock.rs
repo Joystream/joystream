@@ -261,10 +261,10 @@ impl MembershipInfoProvider<Test> for () {
 }
 
 parameter_types! {
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 27;
-    pub const CouncilSize: u64 = 4;
+    pub const CouncilSize: u32 = 4;
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;

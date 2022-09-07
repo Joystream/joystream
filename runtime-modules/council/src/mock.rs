@@ -53,10 +53,10 @@ thread_local! {
 }
 
 parameter_types! {
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 27;
-    pub const CouncilSize: u64 = 3;
+    pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
@@ -93,7 +93,7 @@ impl Config for Runtime {
     type WeightInfo = ();
 
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
-        let is_ok = elected_members == CouncilMembers::<Runtime>::get();
+        let is_ok = elected_members == CouncilMembers::<Runtime>::get().to_vec();
 
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (is_ok,);
@@ -425,8 +425,8 @@ pub struct VoterInfo<T: Config> {
 
 #[derive(Clone)]
 pub struct CouncilSettings<T: Config> {
-    pub council_size: u64,
-    pub min_candidate_count: u64,
+    pub council_size: u32,
+    pub min_candidate_count: u32,
     pub min_candidate_stake: Balance<T>,
     pub announcing_stage_duration: T::BlockNumber,
     pub voting_stage_duration: T::BlockNumber,
@@ -1249,7 +1249,7 @@ where
         Self::check_election_period(
             params.cycle_start_block_number + settings.announcing_stage_duration,
             CouncilStageElection {
-                candidates_count: params.expected_candidates.len() as u64,
+                candidates_count: params.expected_candidates.len() as u32,
             },
         );
 
@@ -1273,7 +1273,7 @@ where
 
         // referendum - start revealing period
         Self::check_referendum_revealing(
-            settings.council_size,
+            settings.council_size as u64,
             vec![],
             BTreeMap::new(), //<u64, T::VotePower>,
             params.cycle_start_block_number

@@ -845,10 +845,10 @@ parameter_types! {
     pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 14400;
     pub const IdlePeriodDuration: BlockNumber = 57600;
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u32 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
@@ -866,7 +866,7 @@ parameter_types! {
     pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 200;
     pub const IdlePeriodDuration: BlockNumber = 400;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
@@ -879,14 +879,14 @@ parameter_types! {
 #[cfg(feature = "staging_runtime")]
 #[cfg(not(feature = "playground_runtime"))]
 parameter_types! {
-    pub const CouncilSize: u64 = 3;
+    pub const CouncilSize: u32 = 3;
 }
 
 // Playground council size
 #[cfg(feature = "staging_runtime")]
 #[cfg(feature = "playground_runtime")]
 parameter_types! {
-    pub const CouncilSize: u64 = 1;
+    pub const CouncilSize: u32 = 1;
 }
 
 // Testing config
@@ -899,10 +899,10 @@ parameter_types! {
     pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 20;
     pub const IdlePeriodDuration: BlockNumber = 20;
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u32 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 1000;

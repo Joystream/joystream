@@ -215,12 +215,7 @@ fn elect_council<
         council.iter().map(|c| c.member_id).collect::<Vec<_>>()
     );
 
-    (
-        council,
-        (2 * (council_size + number_of_extra_candidates))
-            .try_into()
-            .unwrap(),
-    )
+    (council, (2 * (council_size + number_of_extra_candidates)))
 }
 
 const MAX_BYTES: u32 = 16384;

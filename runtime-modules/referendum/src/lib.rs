@@ -33,7 +33,7 @@
 #![allow(clippy::result_unit_err)]
 
 // used dependencies
-use codec::{Codec, Decode, Encode};
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
 use frame_support::traits::{EnsureOrigin, Get, LockIdentifier};
 use frame_support::weights::Weight;
@@ -185,7 +185,8 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     // TODO: Disabled during the 'Olympia - Sumer' merge. Refactor on the next pallet change.
     #[allow(clippy::result_unit_err)]
@@ -242,7 +243,8 @@ pub trait Config<I: Instance = DefaultInstance>:
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     /// Duration of voting stage (number of blocks)
     type VoteStageDuration: Get<Self::BlockNumber>;
