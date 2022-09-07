@@ -79,8 +79,7 @@ typegen:
     - forum.PostModerated
     - forum.PostDeleted
     - forum.PostTextUpdated
-    - forum.PostReacted
-    - forum.CategoryStickyThreadUpdate
+        - forum.CategoryStickyThreadUpdate
     - forum.CategoryMembershipOfModeratorUpdated
     # Content directory
     - content.CuratorGroupCreated
@@ -694,8 +693,6 @@ mappings:
       handler: forum_PostDeleted
     - event: forum.PostTextUpdated
       handler: forum_PostTextUpdated
-    - event: forum.PostReacted
-      handler: forum_PostReacted
     - event: forum.CategoryStickyThreadUpdate
       handler: forum_CategoryStickyThreadUpdate
     - event: forum.CategoryMembershipOfModeratorUpdated
