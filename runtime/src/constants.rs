@@ -168,8 +168,9 @@ pub mod currency {
 mod tests {
     use super::currency::{CENTS, DOLLARS, MILLICENTS};
     use super::fees::WeightToFee;
+    use super::ExtrinsicBaseWeight;
     use crate::MAXIMUM_BLOCK_WEIGHT;
-    use frame_support::weights::{constants::ExtrinsicBaseWeight, WeightToFee as WeightToFeeT};
+    use frame_support::weights::WeightToFee as WeightToFeeT;
     use pallet_balances::WeightInfo;
 
     #[test]
