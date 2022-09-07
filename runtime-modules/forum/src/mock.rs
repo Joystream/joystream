@@ -1088,3 +1088,26 @@ pub fn run_to_block(n: u64) {
         <TestForumModule as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
+
+
+pub fn ed() -> BalanceOf<Runtime> {
+    ExistentialDeposit::get().into()
+}
+
+pub fn set_invitation_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+}
