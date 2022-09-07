@@ -1078,6 +1078,7 @@ parameter_types! {
     pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
+    pub const MaxStickiedThreads: u32 = 20;
 }
 
 pub struct MapLimits;
@@ -1102,6 +1103,7 @@ impl forum::Config for Runtime {
     type WorkingGroup = ForumWorkingGroup;
     type MemberOriginValidator = Members;
     type PostLifeTime = PostLifeTime;
+    type MaxStickiedThreads = MaxStickiedThreads;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)

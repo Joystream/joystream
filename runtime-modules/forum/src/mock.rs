@@ -177,6 +177,7 @@ parameter_types! {
     pub const MaxCategories: u64 = 40;
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
+    pub const MaxStickiedThreads: u32 = 10;
     pub const ForumModuleId: PalletId = PalletId(*b"m0:forum"); // module : forum
 }
 
@@ -202,6 +203,7 @@ impl Config for Runtime {
     type MemberOriginValidator = ();
     type ThreadDeposit = ThreadDeposit;
     type PostDeposit = PostDeposit;
+    type MaxStickiedThreads = MaxStickiedThreads;
 
     type ModuleId = ForumModuleId;
 
@@ -1014,7 +1016,7 @@ pub fn set_stickied_threads_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
-    stickied_ids: Vec<<Runtime as Config>::ThreadId>,
+    stickied_ids: BTreeSet<<Runtime as Config>::ThreadId>,
     result: DispatchResult,
 ) -> <Runtime as Config>::CategoryId {
     assert_eq!(
@@ -1028,7 +1030,7 @@ pub fn set_stickied_threads_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::category_by_id(category_id).sticky_thread_ids,
+            BTreeSet::<_>::from(TestForumModule::category_by_id(category_id).sticky_thread_ids),
             stickied_ids
         );
         assert_eq!(
