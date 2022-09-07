@@ -3607,7 +3607,7 @@ fn create_dynamic_bag_succeeded() {
             init_module_acc_balance()
         );
 
-        CreateDynamicBagFixture::default()
+        let fixture = CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_storage_buckets(storage_bucket_ids.clone())
             .with_distribution_buckets(
@@ -3616,8 +3616,9 @@ fn create_dynamic_bag_succeeded() {
                     .chain(distribution_bucket_ids2.iter())
                     .cloned()
                     .collect(),
-            )
-            .call_and_assert(Ok(()));
+            );
+
+        fixture.call_and_assert(Ok(()));
 
         let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
         let bag: crate::Bag<Test> = <crate::Bags<Test>>::get(bag_id);
@@ -3657,9 +3658,8 @@ fn create_dynamic_bag_succeeded() {
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DynamicBagCreated(
-            dynamic_bag_id,
-            BTreeSet::from_iter(bag.stored_by),
-            BTreeSet::from_iter(bag.distributed_by),
+            fixture.get_params(),
+            BTreeSet::new(),
         ));
     });
 }

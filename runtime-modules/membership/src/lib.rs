@@ -378,7 +378,7 @@ decl_event! {
     {
         MemberInvited(MemberId, InviteMembershipParameters),
         MembershipGifted(MemberId, GiftMembershipParameters),
-        MembershipBought(MemberId, BuyMembershipParameters),
+        MembershipBought(MemberId, BuyMembershipParameters, u32),
         MemberProfileUpdated(
             MemberId,
             Option<Vec<u8>>,
@@ -396,7 +396,7 @@ decl_event! {
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
         MemberRemarked(MemberId, Vec<u8>),
-        FoundingMemberCreated(MemberId, CreateFoundingMemberParameters),
+        FoundingMemberCreated(MemberId, CreateFoundingMemberParameters, u32),
     }
 }
 
@@ -468,12 +468,13 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+            let initial_invitation_count = Self::initial_invitation_count();
 
             let member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
                 handle_hash,
-                Self::initial_invitation_count(),
+                initial_invitation_count,
                 false
             );
 
@@ -493,7 +494,9 @@ decl_module! {
             }
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MembershipBought(member_id, params));
+            Self::deposit_event(
+                RawEvent::MembershipBought(member_id, params, initial_invitation_count)
+            );
         }
 
         /// Update member's all or some of name, handle, avatar and about text.
@@ -1198,17 +1201,20 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+            let initial_invitation_count = Self::initial_invitation_count();
 
             let member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
                 handle_hash,
-                Self::initial_invitation_count(),
+                initial_invitation_count,
                 true
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::FoundingMemberCreated(member_id, params));
+            Self::deposit_event(
+                RawEvent::FoundingMemberCreated(member_id, params, initial_invitation_count)
+            );
         }
     }
 }
