@@ -1,33 +1,3 @@
-"Global storage system parameters"
-type StorageSystemParameters @entity {
-  "Blacklisted content hashes"
-  blacklist: [String!]
-
-  "How many buckets can be assigned to store a bag"
-  storageBucketsPerBagLimit: Int!
-
-  "How many buckets can be assigned to distribute a bag"
-  distributionBucketsPerBagLimit: Int!
-
-  "Whether the uploading is globally blocked"
-  uploadingBlocked: Boolean!
-
-  "Additional fee for storing 1 MB of data"
-  dataObjectFeePerMB: BigInt!
-
-  "Global max. number of objects a storage bucket can store (can also be further limitted the provider)"
-  storageBucketMaxObjectsCountLimit: BigInt!
-
-  "Global max. size of objects a storage bucket can store (can also be further limitted the provider)"
-  storageBucketMaxObjectsSizeLimit: BigInt!
-
-  "ID of the next data object when created"
-  nextDataObjectId: BigInt!
-
-  "Data Object state bloat bond value"
-  dataObjectStateBloatBondValue: BigInt!
-}
-
 type StorageBucketOperatorStatusMissing @variant {
   _phantom: Int
 }

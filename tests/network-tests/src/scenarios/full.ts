@@ -10,7 +10,6 @@ import updatingMemberAccounts from '../flows/membership/updatingAccounts'
 import invitingMebers from '../flows/membership/invitingMembers'
 import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
-import membershipSystem from '../flows/membership/membershipSystem'
 import openingsAndApplications from '../flows/working-groups/openingsAndApplications'
 import upcomingOpenings from '../flows/working-groups/upcomingOpenings'
 import groupStatus from '../flows/working-groups/groupStatus'
@@ -45,23 +44,20 @@ scenario('Full', async ({ job, env }) => {
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
     : undefined
 
-  const membershipSystemJob = job('membership system', membershipSystem).requires(
-    runtimeUpgradeProposalJob || councilJob
-  )
+  const coreJob = runtimeUpgradeProposalJob || councilJob
 
-  // All other jobs should be executed after membershipSystemJob,
-  // otherwise changing membershipPrice etc. may break them
+  // All other jobs should be executed after coreJob
 
   // Membership:
-  job('creating members', creatingMemberships).after(membershipSystemJob)
-  job('updating member profile', updatingMemberProfile).after(membershipSystemJob)
-  job('updating member accounts', updatingMemberAccounts).after(membershipSystemJob)
-  job('inviting members', invitingMebers).after(membershipSystemJob)
-  job('transferring invites', transferringInvites).after(membershipSystemJob)
-  job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
+  job('creating members', creatingMemberships).after(coreJob)
+  job('updating member profile', updatingMemberProfile).after(coreJob)
+  job('updating member accounts', updatingMemberAccounts).after(coreJob)
+  job('inviting members', invitingMebers).after(coreJob)
+  job('transferring invites', transferringInvites).after(coreJob)
+  job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
   // Council (should not interrupt proposalsJob!)
-  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
+  const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
 
   // Proposals:
@@ -98,7 +94,7 @@ scenario('Full', async ({ job, env }) => {
   // following jobs must be run sequentially due to some QN queries that could interfere
   const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
   const createChannelJob = job('create channel via CLI', createChannel).requires(videoCategoriesJob)
-  const subtitlesJob = job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(createChannelJob)
+  job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(createChannelJob)
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(createChannelJob)
   const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(

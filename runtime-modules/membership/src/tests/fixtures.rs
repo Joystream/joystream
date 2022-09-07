@@ -855,6 +855,7 @@ impl CreateFoundingMemberFixture {
             EventFixture::assert_last_crate_event(MembershipEvent::<Test>::FoundingMemberCreated(
                 expected_member_id,
                 self.params.clone(),
+                Membership::initial_invitation_count(),
             ));
         } else {
             assert_noop!(actual_result, expected_result.err().unwrap());

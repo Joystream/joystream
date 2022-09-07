@@ -151,6 +151,7 @@ impl EventFixture {
             u64,
             DistributionBucketId<Test>,
             u64,
+            DynBagCreationParameters<Test>,
         >,
     ) {
         let converted_event = TestEvent::Storage(expected_raw_event);
@@ -171,6 +172,7 @@ impl EventFixture {
             u64,
             DistributionBucketId<Test>,
             u64,
+            DynBagCreationParameters<Test>,
         >,
     ) {
         let converted_event = TestEvent::Storage(expected_raw_event);
@@ -1213,6 +1215,10 @@ impl CreateDynamicBagFixture {
             },
             ..self
         }
+    }
+
+    pub fn get_params(&self) -> DynBagCreationParameters<Test> {
+        self.params.clone()
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {

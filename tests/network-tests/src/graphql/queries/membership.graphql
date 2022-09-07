@@ -66,24 +66,3 @@ query getMembersByIds($ids: [ID!]) {
     ...MembershipFields
   }
 }
-
-fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
-  createdAt
-  snapshotBlock
-  referralCut
-  invitedInitialBalance
-  defaultInviteCount
-  membershipPrice
-}
-
-query getMembershipSystemSnapshotAt($time: DateTime!) {
-  membershipSystemSnapshots(where: { createdAt_eq: $time }, orderBy: createdAt_DESC, limit: 1) {
-    ...MembershipSystemSnapshotFields
-  }
-}
-
-query getMembershipSystemSnapshotBefore($time: DateTime!) {
-  membershipSystemSnapshots(where: { createdAt_lt: $time }, orderBy: createdAt_DESC, limit: 1) {
-    ...MembershipSystemSnapshotFields
-  }
-}
