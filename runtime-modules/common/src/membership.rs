@@ -1,4 +1,4 @@
-use codec::Codec;
+use codec::{Codec, MaxEncodedLen};
 use frame_support::dispatch::DispatchError;
 use frame_support::Parameter;
 use sp_arithmetic::traits::BaseArithmetic;
@@ -21,7 +21,8 @@ pub trait MembershipTypes: frame_system::Config {
         + Copy
         + MaybeSerialize
         + Ord
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter
@@ -33,7 +34,8 @@ pub trait MembershipTypes: frame_system::Config {
         + MaybeSerialize
         + MaybeSerializeDeserialize
         + Ord
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 }
 
 /// Validates staking account ownership for a member.
