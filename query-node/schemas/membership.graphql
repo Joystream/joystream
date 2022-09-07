@@ -148,8 +148,8 @@ type Membership @entity {
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
 
-  "List of channels the member has collaborator access to"
-  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
+  "List of channel collaborators with their permissions"
+  collaboratorInChannels: [Collaborator!]! @derivedFrom(field: "member")
 
   # Required for Channel->bannedMembers Many-to-Many relationship
   "List of channels the member is baned from participating in"
@@ -191,21 +191,4 @@ type Membership @entity {
   # Required for BidMadeCompletingAuctionEvent->members Many-to-Many relationship
   "Member as bidder in BidMadeCompletingAuctionEvent/s."
   memberBidMadeCompletingAuctionEvents: [BidMadeCompletingAuctionEvent!] @derivedFrom(field: "bidders")
-}
-
-type MembershipSystemSnapshot @entity {
-  "The snapshot block number"
-  snapshotBlock: Int!
-
-  "Initial invitation count of a new member."
-  defaultInviteCount: Int!
-
-  "Current price to buy a membership."
-  membershipPrice: BigInt!
-
-  "Percentage of tokens diverted to invitor."
-  referralCut: Int!
-
-  "The initial, locked, balance credited to controller account of invitee."
-  invitedInitialBalance: BigInt!
 }

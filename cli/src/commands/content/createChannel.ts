@@ -64,9 +64,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
       storageBuckets,
       distributionBuckets,
       meta: metadataToBytes(ChannelMetadata, meta),
-      collaborators: new Map(
-        collaborators?.map(({ memberId, channelAgentPermissions }) => [memberId, channelAgentPermissions])
-      ),
+      collaborators: new Map(collaborators?.map(({ memberId, permissions }) => [memberId, permissions])),
     })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, collaborators }))
