@@ -29,4 +29,5 @@ pub mod pallet_session;
 pub mod pallet_staking;
 pub mod pallet_timestamp;
 pub mod pallet_vesting;
+pub mod rocksdb_weights;
 pub mod substrate_utility;

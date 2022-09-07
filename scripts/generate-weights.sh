@@ -18,11 +18,10 @@ substrate_pallet_benchmark() {
       --repeat=$REPEAT \
       --execution=wasm \
       --template=$SCRIPT_DIR/../devops/frame-weight-template.hbs \
-      --output=. 2>&1 > /dev/null)
+      --output=$SCRIPT_DIR/../runtime/src/weights/$1.rs 2>&1 > /dev/null)
 
   if [[ $ERROR != *"Error"* ]]; then
       end=`date +%s`
-      mv $SCRIPT_DIR/../*.rs $SCRIPT_DIR/../runtime/src/weights/
       echo "Weights generated successfully for $1"
       echo "It took $((end-start)) seconds"
   else
@@ -46,11 +45,10 @@ joystream_pallet_benchmark() {
       --repeat=$REPEAT \
       --execution=wasm \
       --template=$SCRIPT_DIR/../devops/joystream-pallet-weight-template.hbs \
-      --output=. 2>&1 > /dev/null)
+      --output=$SCRIPT_DIR/../runtime-modules/$2/src/weights.rs 2>&1 > /dev/null)
 
   if [[ $ERROR != *"Error"* ]]; then
       end=`date +%s`
-      mv $SCRIPT_DIR/../$1.rs $SCRIPT_DIR/../runtime-modules/$2/src/weights.rs
       echo "Weights generated successfully for $1"
       echo "It took $((end-start)) seconds"
   else
@@ -80,6 +78,29 @@ overhead_benchmarks() {
       exit 1
   fi
 }
+
+storage_benchmarks() {
+  echo "Generating storage weights"
+  start=`date +%s`
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark storage \
+      --chain=dev \
+      --warmups=100 \
+      --weight-path=$SCRIPT_DIR/../runtime/src/weights/ \
+      --state-version 1)
+
+  if [[ $ERROR != *"Error"* ]]; then
+      end=`date +%s`
+      echo "Storage weights generated successfully"
+      echo "It took $((end-start)) seconds"
+  else
+      >&2 echo "$ERROR"
+      >&2 echo "There was a problem generating storage weights check the error above"
+      exit 1
+  fi
+}
+
+# RocksDb Weights
+storage_benchmarks
 
 # Generate core weights -> BlockExecutionWeight and ExtrinsicBaseWeight
 overhead_benchmarks

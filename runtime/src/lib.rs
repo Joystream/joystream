@@ -53,10 +53,12 @@ use frame_support::traits::{
     LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{
-    constants::{RocksDbWeight, WEIGHT_PER_SECOND},
-    ConstantMultiplier, DispatchClass, Weight,
+    constants::WEIGHT_PER_SECOND, ConstantMultiplier, DispatchClass, Weight,
 };
-pub use weights::{block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight};
+pub use weights::{
+    block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
+    rocksdb_weights::constants::RocksDbWeight,
+};
 
 use frame_support::{construct_runtime, parameter_types, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
