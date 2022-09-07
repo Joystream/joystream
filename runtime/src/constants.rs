@@ -1,4 +1,5 @@
 use super::Balance;
+use super::ExtrinsicBaseWeight;
 use crate::{BlockNumber, Moment};
 pub use common::locks::*;
 use frame_support::parameter_types;
@@ -57,8 +58,8 @@ pub const JOY_ADDRESS_PREFIX: u16 = 126;
 /// This module is based on https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#relay-chain-transaction-fees-and-per-block-transaction-limits
 /// It was copied from Polkadot's implementation
 pub mod fees {
+    use super::ExtrinsicBaseWeight;
     use super::{parameter_types, Balance};
-    use frame_support::weights::constants::ExtrinsicBaseWeight;
     use frame_support::weights::{
         WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
     };

@@ -60,6 +60,30 @@ joystream_pallet_benchmark() {
   fi
 }
 
+overhead_benchmarks() {
+  echo "Generating core weights"
+  start=`date +%s`
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark overhead \
+      --chain=dev \
+      --execution=wasm \
+      --warmup=10 \
+      --repeat=100 \
+      --weight-path=$SCRIPT_DIR/../runtime/src/weights)
+
+  if [[ $ERROR != *"Error"* ]]; then
+      end=`date +%s`
+      echo "Core weights generated successfully"
+      echo "It took $((end-start)) seconds"
+  else
+      >&2 echo "$ERROR"
+      >&2 echo "There was a problem generating core weights check the error above"
+      exit 1
+  fi
+}
+
+# Generate core weights -> BlockExecutionWeight and ExtrinsicBaseWeight
+overhead_benchmarks
+
 # FRAME benchmarks
 substrate_pallet_benchmark frame_system
 substrate_pallet_benchmark substrate_utility
