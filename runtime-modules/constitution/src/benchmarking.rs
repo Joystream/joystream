@@ -24,15 +24,14 @@ benchmarks! {
 
     }: _ (RawOrigin::Root, text.clone())
     verify {
-            let hashed = T::Hashing::hash(&text);
-            let hash = hashed.as_ref().to_vec();
+            let hash = T::Hashing::hash(&text);
 
             let constitution_info = ConstitutionInfo{
                 text_hash: hash.clone(),
             };
 
             assert_eq!(Pallet::<T>::constitution(), constitution_info);
-            assert_last_event::<T>(Event::ConstutionAmended(hash, text).into());
+            assert_last_event::<T>(Event::<T>::ConstutionAmended(hash, text).into());
     }
 }
 

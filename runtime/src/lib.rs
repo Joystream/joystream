@@ -1566,7 +1566,7 @@ construct_runtime!(
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
         Members: membership::{Pallet, Call, Storage, Event<T>},
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Constitution: pallet_constitution::{Pallet, Call, Storage, Event},
+        Constitution: pallet_constitution::{Pallet, Call, Storage, Event<T>},
         Bounty: bounty::{Pallet, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
