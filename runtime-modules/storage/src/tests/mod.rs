@@ -6255,7 +6255,8 @@ fn uploading_objects_with_invalid_cid_length_should_fail() {
         const ONE_MB: u64 = 1_048_576;
         let initial_balance = ExistentialDeposit::get() as u64
             + data_object_state_bloat_bond
-            + Storage::data_object_per_mega_byte_fee() * ((DEFAULT_DATA_OBJECTS_SIZE + ONE_MB - 1) / ONE_MB);
+            + Storage::data_object_per_mega_byte_fee()
+                * ((DEFAULT_DATA_OBJECTS_SIZE + ONE_MB - 1) / ONE_MB);
 
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
