@@ -1089,7 +1089,6 @@ pub fn run_to_block(n: u64) {
     }
 }
 
-
 pub fn ed() -> BalanceOf<Runtime> {
     ExistentialDeposit::get().into()
 }
