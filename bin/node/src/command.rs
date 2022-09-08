@@ -27,6 +27,7 @@ use crate::{
 };
 use frame_benchmarking_cli::*;
 use node_runtime::Block;
+use node_runtime::RuntimeApi;
 
 use sc_cli::{ChainSpec, Result, RuntimeVersion, SubstrateCli};
 use sc_finality_grandpa as grandpa;
@@ -97,11 +98,11 @@ pub fn run() -> Result<()> {
                     .map_err(sc_cli::Error::Service)
             })
         }
-        // Some(Subcommand::Inspect(cmd)) => {
-        //     let runner = cli.create_runner(cmd)?;
+        Some(Subcommand::Inspect(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
 
-        //     runner.sync_run(|config| cmd.run::<Block, RuntimeApi, ExecutorDispatch>(config))
-        // }
+            runner.sync_run(|config| cmd.run::<Block, RuntimeApi, ExecutorDispatch>(config))
+        }
         Some(Subcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
 
@@ -225,24 +226,6 @@ pub fn run() -> Result<()> {
                 Ok((cmd.run(client, backend, Some(aux_revert)), task_manager))
             })
         }
-        #[cfg(feature = "try-runtime")]
-        Some(Subcommand::TryRuntime(cmd)) => {
-            let runner = cli.create_runner(cmd)?;
-            runner.async_run(|config| {
-                // we don't need any of the components of new_partial, just a runtime, or a task
-                // manager to do `async_run`.
-                let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
-                let task_manager =
-                    sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
-                        .map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
-
-                Ok((cmd.run::<Block, ExecutorDispatch>(config), task_manager))
-            })
-        }
-        #[cfg(not(feature = "try-runtime"))]
-        Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
-				You can enable it with `--features try-runtime`."
-            .into()),
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run::<Block>(&config))
