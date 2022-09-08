@@ -32,18 +32,6 @@ use sp_std::{
 };
 use storage::Module as Storage;
 
-use super::{
-    assert_last_event, channel_bag_witness, clone_curator_group,
-    create_data_object_candidates_helper, generate_channel_creation_params, insert_content_leader,
-    insert_curator, insert_distribution_leader, insert_storage_leader, max_curators_per_group,
-    member_funded_account, setup_worst_case_curator_group_with_curators,
-    setup_worst_case_scenario_curator_channel, setup_worst_case_scenario_curator_channel_all_max,
-    storage_buckets_num_witness, worst_case_channel_agent_permissions,
-    worst_case_content_moderation_actions_set, worst_case_pausable_channel_feature,
-    worst_case_scenario_collaborators, ContentWorkingGroupInstance, CreateAccountId, RuntimeConfig,
-    MAX_BYTES_METADATA,
-};
-
 benchmarks! {
     where_clause {
     where
