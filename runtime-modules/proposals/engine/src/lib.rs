@@ -144,7 +144,7 @@ mod tests;
 pub mod weights;
 pub use weights::WeightInfo;
 
-use codec::Decode;
+use codec::{Decode, MaxEncodedLen};
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Get, LockIdentifier};
@@ -192,7 +192,7 @@ pub trait Config:
     type TotalVotersCounter: VotersParameters;
 
     /// Proposal Id type
-    type ProposalId: From<u32> + Parameter + Default + Copy;
+    type ProposalId: From<u32> + Parameter + Default + Copy + MaxEncodedLen;
 
     /// Provides stake logic implementation.
     type StakingHandler: StakingHandler<
