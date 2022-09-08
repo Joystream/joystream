@@ -39,12 +39,14 @@ import {
 import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
-  PalletContentStorageAssetsRecord as StorageAssets,
+  PalletContentChannelActionPermission,
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import _ from 'lodash'
-import { createDataObjects, getMostRecentlyCreatedDataObjects, StorageDataObjectParams } from '../storage/utils'
+import { getSortedDataObjectsByIds } from '../storage/utils'
+import { BTreeSet } from '@polkadot/types'
+import { DataObjectId } from '@joystream/types/primitives'
 
 const ASSET_TYPES = {
   channel: [
@@ -168,9 +170,9 @@ export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   meta: DecodedMetadataObject<IChannelMetadata>,
-  dataObjectParams: StorageDataObjectParams
+  newAssets: BTreeSet<DataObjectId>
 ): Promise<Channel> {
-  const assets = await createDataObjects(ctx.store, dataObjectParams)
+  const assets = await getSortedDataObjectsByIds(ctx.store, newAssets)
 
   integrateMeta(channel, meta, ['title', 'description', 'isPublic'])
 
@@ -188,9 +190,9 @@ export async function processVideoMetadata(
   ctx: EventContext & StoreContext,
   video: Video,
   meta: DecodedMetadataObject<IVideoMetadata>,
-  assetsParams?: StorageAssets
+  newAssets: BTreeSet<DataObjectId>
 ): Promise<Video> {
-  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+  const assets = await getSortedDataObjectsByIds(ctx.store, newAssets)
 
   integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic'])
 
@@ -452,13 +454,6 @@ function processPublishedBeforeJoystream(
   return new Date(timestamp)
 }
 
-async function processNewAssets(ctx: EventContext & StoreContext, assets: StorageAssets): Promise<StorageDataObject[]> {
-  const assetsUploaded = assets.objectCreationList.length
-  // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
-  const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
-  return objects
-}
-
 function extractVideoSize(assets: StorageDataObject[]): BN | undefined {
   const mediaAsset = assets.find((a) => a.type?.isTypeOf === DataObjectTypeVideoMedia.name)
   return mediaAsset ? mediaAsset.size : undefined
@@ -683,4 +678,8 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
+}
+
+export function mapAgentPermission(permission: PalletContentChannelActionPermission): string {
+  return permission.toString()
 }

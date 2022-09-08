@@ -1,45 +1,13 @@
 import { DatabaseManager, StoreContext } from '@joystream/hydra-common'
 import BN from 'bn.js'
-import {
-  StorageSystemParameters,
-  MembershipSystemSnapshot,
-  WorkingGroup,
-  ElectedCouncil,
-  CouncilStageUpdate,
-  CouncilStageIdle,
-} from 'query-node/dist/model'
-import { storageSystemData, membershipSystemData, workingGroupsData } from './bootstrap-data'
+import { WorkingGroup, ElectedCouncil, CouncilStageUpdate, CouncilStageIdle } from 'query-node/dist/model'
+import { workingGroupsData } from './bootstrap-data'
 
 import { CURRENT_NETWORK } from './common'
 
 export async function bootstrapData({ store }: StoreContext): Promise<void> {
-  await initMembershipSystem(store)
-  await initStorageSystem(store)
   await initWorkingGroups(store)
   await initCouncil(store)
-}
-
-async function initMembershipSystem(store: DatabaseManager): Promise<void> {
-  await store.save<MembershipSystemSnapshot>(
-    new MembershipSystemSnapshot({
-      snapshotBlock: 0,
-      ...membershipSystemData,
-      membershipPrice: new BN(membershipSystemData.membershipPrice),
-      invitedInitialBalance: new BN(membershipSystemData.invitedInitialBalance),
-    })
-  )
-}
-
-async function initStorageSystem(store: DatabaseManager): Promise<void> {
-  // Storage system
-  await store.save<StorageSystemParameters>(
-    new StorageSystemParameters({
-      ...storageSystemData,
-      storageBucketMaxObjectsCountLimit: new BN(storageSystemData.storageBucketMaxObjectsCountLimit),
-      storageBucketMaxObjectsSizeLimit: new BN(storageSystemData.storageBucketMaxObjectsSizeLimit),
-      dataObjectFeePerMb: new BN(storageSystemData.dataObjectFeePerMb),
-    })
-  )
 }
 
 async function initWorkingGroups(store: DatabaseManager): Promise<void> {

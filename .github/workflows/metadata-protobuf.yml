@@ -18,5 +18,4 @@ jobs:
       run: |
         yarn install --frozen-lockfile
         yarn workspace @joystream/metadata-protobuf build
-        yarn workspace @joystream/metadata-protobuf checks --quiet
         yarn workspace @joystream/metadata-protobuf test

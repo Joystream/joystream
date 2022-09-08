@@ -8,16 +8,16 @@ edition = '2018'
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = false, features = ['derive'] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-frame_system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true}
-pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true }
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+frame_system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe', optional = true}
+pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe', optional = true }
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
 
 [features]
 default = ['std']

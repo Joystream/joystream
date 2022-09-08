@@ -1120,6 +1120,7 @@ decl_event! {
         <T as Config>::DistributionBucketFamilyId,
         DistributionBucketId = DistributionBucketId<T>,
         <T as Config>::DistributionBucketIndex,
+        DynamicBagCreationParameters = DynBagCreationParameters<T>
     {
         /// Emits on creating the storage bucket.
         /// Params
@@ -1243,13 +1244,11 @@ decl_event! {
 
         /// Emits on creating a dynamic bag.
         /// Params
-        /// - dynamic bag ID
-        /// - assigned storage buckets' IDs
-        /// - assigned distribution buckets' IDs
+        /// - dynamic bag creation parameters
+        /// - uploaded data objects ids
         DynamicBagCreated(
-            DynamicBagId,
-            BTreeSet<StorageBucketId>,
-            BTreeSet<DistributionBucketId>,
+            DynamicBagCreationParameters,
+            BTreeSet<DataObjectId>
         ),
 
         /// Emits on changing the voucher for a storage bucket.
@@ -3215,16 +3214,12 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
         let (bag, new_object_ids) = Self::try_performing_dynamic_bag_creation(
             params.state_bloat_bond_source_account_id.clone(),
             params.bag_id.clone(),
-            params.object_creation_list,
-            params.storage_buckets,
-            params.distribution_buckets,
+            params.object_creation_list.clone(),
+            params.storage_buckets.clone(),
+            params.distribution_buckets.clone(),
         )?;
 
-        Self::deposit_event(RawEvent::DynamicBagCreated(
-            params.bag_id,
-            bag.stored_by.clone(),
-            bag.distributed_by.clone(),
-        ));
+        Self::deposit_event(RawEvent::DynamicBagCreated(params, new_object_ids.clone()));
 
         Ok((bag, new_object_ids))
     }

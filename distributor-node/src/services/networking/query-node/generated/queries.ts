@@ -25,6 +25,7 @@ export type DataObjectDetailsFragment = {
   size: any
   ipfsHash: string
   isAccepted: boolean
+  type: { subtitle?: Types.Maybe<{ mimeType: string }> }
   storageBag: {
     storageBuckets: Array<StorageBucketDetailsFragment>
     distributionBuckets: Array<DistributionBucketDetailsFragment>
@@ -39,7 +40,9 @@ export type GetDataObjectDetailsQuery = { storageDataObjectByUniqueInput?: Types
 
 export type DistirubtionBucketWithObjectsFragment = {
   id: string
-  bags: Array<{ objects: Array<{ id: string; size: any; ipfsHash: string }> }>
+  bags: Array<{
+    objects: Array<{ id: string; size: any; ipfsHash: string; type: { subtitle?: Types.Maybe<{ mimeType: string }> } }>
+  }>
 }
 
 export type GetDistributionBucketsWithObjectsByIdsQueryVariables = Types.Exact<{
@@ -109,6 +112,13 @@ export const DataObjectDetails = gql`
     size
     ipfsHash
     isAccepted
+    type {
+      ... on DataObjectTypeVideoSubtitle {
+        subtitle {
+          mimeType
+        }
+      }
+    }
     storageBag {
       storageBuckets {
         ...StorageBucketDetails
@@ -129,6 +139,13 @@ export const DistirubtionBucketWithObjects = gql`
         id
         size
         ipfsHash
+        type {
+          ... on DataObjectTypeVideoSubtitle {
+            subtitle {
+              mimeType
+            }
+          }
+        }
       }
     }
   }
