@@ -236,6 +236,7 @@ fn buy_membership_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::MembershipBought(
             next_member_id,
             get_alice_membership_parameters(),
+            crate::DEFAULT_MEMBER_INVITES_COUNT,
         ));
     });
 }

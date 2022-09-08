@@ -3627,6 +3627,26 @@ impl StartEnglishAuctionFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_buy_now_price(self, price: BalanceOf<Test>) -> Self {
+        Self {
+            params: EnglishAuctionParams::<Test> {
+                buy_now_price: Some(price),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_min_bid_step(self, min_bid_step: BalanceOf<Test>) -> Self {
+        Self {
+            params: EnglishAuctionParams::<Test> {
+                min_bid_step,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     #[allow(dead_code)]
     pub fn with_video_id(self, video_id: VideoId) -> Self {
         Self { video_id, ..self }

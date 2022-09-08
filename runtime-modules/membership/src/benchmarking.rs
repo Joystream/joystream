@@ -129,20 +129,23 @@ benchmarks! {
 
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
+        let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
             handle_hash: handle_hash.clone(),
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites,
         };
 
         assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
-        assert_last_event::<T>(RawEvent::MembershipBought(member_id, params).into());
+        assert_last_event::<T>(
+            RawEvent::MembershipBought(member_id, params, invites).into()
+        );
     }
 
     buy_membership_with_referrer{
@@ -201,13 +204,14 @@ benchmarks! {
 
         let second_handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
 
+        let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
             handle_hash: second_handle_hash.clone(),
             root_account: account_id.clone(),
             controller_account: account_id,
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites,
         };
 
         let second_member_id = member_id + T::MemberId::one();
@@ -216,7 +220,9 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(second_member_id), Some(membership));
 
-        assert_last_event::<T>(RawEvent::MembershipBought(second_member_id, params).into());
+        assert_last_event::<T>(
+            RawEvent::MembershipBought(second_member_id, params, invites).into()
+        );
     }
 
     update_profile{
@@ -784,19 +790,22 @@ benchmarks! {
 
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
+        let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
             handle_hash: handle_hash.clone(),
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: true,
-            invites: Module::<T>::initial_invitation_count(),
+            invites,
         };
 
         assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
-        assert_last_event::<T>(RawEvent::FoundingMemberCreated(member_id, params).into());
+        assert_last_event::<T>(
+            RawEvent::FoundingMemberCreated(member_id, params, invites).into()
+        );
     }
 
     // impl_benchmark_test_suite!(Module, tests::mock::build_test_externalities(), tests::mock::Test)

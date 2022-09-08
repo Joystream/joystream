@@ -317,7 +317,7 @@ declare module '@polkadot/api-base/types/errors' {
       /**
        * Auction buy now is less then starting price
        **/
-      BuyNowIsLessThenStartingPrice: AugmentedError<ApiType>;
+      BuyNowMustBeGreaterThanStartingPrice: AugmentedError<ApiType>;
       /**
        * Cannot directly withdraw funds from a channel account when the channel has
        * a creator token issued
@@ -595,6 +595,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Nft for given video id already exists
        **/
       NftAlreadyExists: AugmentedError<ApiType>;
+      /**
+       * Attempt to sling back a channel owned nft
+       **/
+      NftAlreadyOwnedByChannel: AugmentedError<ApiType>;
       /**
        * Nft auction is already expired
        **/
