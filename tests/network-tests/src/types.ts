@@ -82,5 +82,4 @@ export type PostPath = {
 // Forum init
 export type FaucetInfo = {
   suri: string
-  memberId: number
 }

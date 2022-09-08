@@ -32,6 +32,7 @@ yarn
 ln -s ../../../../../node_modules/typeorm/cli.js ./generated/graphql-server/node_modules/.bin/typeorm
 
 yarn workspace query-node codegen
+
 yarn workspace query-node build
 
 yarn workspace query-node-mappings build

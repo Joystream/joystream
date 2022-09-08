@@ -46,7 +46,6 @@
 #![allow(clippy::unused_unit)]
 
 pub mod benchmarking;
-pub mod genesis;
 #[cfg(test)]
 mod tests;
 pub mod weights;
@@ -70,6 +69,7 @@ use sp_runtime::{
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
+use common::costs::{burn_from_usable, has_sufficient_balance_for_payment};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::working_group::{WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use staking_handler::StakingHandler;
@@ -352,27 +352,6 @@ decl_storage! {
         pub(crate) StakingAccountIdMemberStatus get(fn staking_account_id_member_status):
             map hasher(blake2_128_concat) T::AccountId => StakingAccountMemberBinding<T::MemberId>;
     }
-    add_extra_genesis {
-        config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
-        build(|config: &GenesisConfig<T>| {
-            for member in &config.members {
-                let handle_hash = <Module<T>>::get_handle_hash(
-                    &Some(member.handle.clone().into_bytes()),
-                ).expect("Importing Member Failed");
-
-                let member_id = <Module<T>>::insert_member(
-                    &member.root_account,
-                    &member.controller_account,
-                    handle_hash,
-                    Zero::zero(),
-                    false
-                );
-
-                // ensure imported member id matches assigned id
-                assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
-            }
-        });
-    }
 }
 
 decl_event! {
@@ -471,7 +450,7 @@ decl_module! {
 
             // Ensure enough free balance to cover membership fee.
             ensure!(
-                balances::Pallet::<T>::usable_balance(&who) >= fee,
+                has_sufficient_balance_for_payment::<T>(&who, fee),
                 Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
@@ -499,7 +478,7 @@ decl_module! {
             );
 
             // Collect membership fee (just burn it).
-            let _ = balances::Pallet::<T>::slash(&who, fee);
+            burn_from_usable::<T>(&who, fee)?;
 
             // Reward the referring member.
             if let Some(referrer) = referrer {
@@ -826,18 +805,15 @@ decl_module! {
 
             // Check that gifter has sufficient funds
             let membership_fee = Self::membership_price();
-            let gifter_usable_balance = balances::Pallet::<T>::usable_balance(&gifter);
             let total_credit = params
                 .credit_controller_account
                 .saturating_add(params.credit_root_account);
 
             ensure!(
-                balances::Pallet::<T>::can_slash(&gifter, membership_fee.saturating_add(total_credit)),
-                Error::<T>::InsufficientBalanceToGift
-            );
-
-            ensure!(
-                gifter_usable_balance >= total_credit,
+                has_sufficient_balance_for_payment::<T>(
+                    &gifter,
+                    membership_fee.saturating_add(total_credit)
+                ),
                 Error::<T>::InsufficientBalanceToGift
             );
 
@@ -894,18 +870,8 @@ decl_module! {
                 ExistenceRequirement::KeepAlive
             )?;
 
-            // slash fee, balance_not_slashed should be zero
-            let (_negative_imbalance, balance_not_slashed) = balances::Pallet::<T>::slash(
-                &gifter,
-                membership_fee
-            );
-
-            // Ensure the entire fee was slashed. This should not fail
-            // since we checked for sufficient usable balance.
-            ensure!(
-                balance_not_slashed == Zero::zero(),
-                Error::<T>::InsufficientBalanceToGift
-            );
+            // burn membership fee
+            burn_from_usable::<T>(&gifter, membership_fee)?;
 
             if params.root_account != params.controller_account {
                 // Lock credited balance. Allow only transaction payments.

@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, BTreeSet, Option } from '@polkadot/types'
+import { u32, u64, BTreeSet, Option } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -27,6 +27,7 @@ import {
   PalletContentNftTypesEnglishAuctionParamsRecord as EnglishAuctionParams,
   PalletContentNftTypesOpenAuctionParamsRecord as OpenAuctionParams,
   PalletProposalsEngineProposalParameters as ProposalParameters,
+  PalletContentChannelBagWitness,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -54,6 +55,7 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
+import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -123,7 +125,7 @@ export class ApiFactory {
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
     this.keyId = 0
-    this.faucetInfo = { suri: '', memberId: 0 }
+    this.faucetInfo = { suri: '' }
   }
 
   public getApi(label: string): Api {
@@ -721,6 +723,25 @@ export class Api {
     return event.data[2]
   }
 
+  async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
+
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const meta = new MemberRemarked({
+      createVideoCategory: new CreateVideoCategory({
+        name,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      memberAccount.toString()
+    )
+  }
+
   async assignWorkerRoleAccount(
     group: WorkingGroupModuleName,
     workerId: WorkerId,
@@ -1071,6 +1092,21 @@ export class Api {
     price: BN | null = null
   ): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId, price), accountFrom)
+  }
+
+  async channelBagWitness(channelId: ChannelId | number): Promise<PalletContentChannelBagWitness> {
+    const channelBag = await this.api.query.storage.bags(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+    return createType('PalletContentChannelBagWitness', {
+      storageBucketsNum: channelBag.storedBy.size,
+      distributionBucketsNum: channelBag.distributedBy.size,
+    })
+  }
+
+  async channelBagWitnessByVideoId(videoId: VideoId | number): Promise<PalletContentChannelBagWitness> {
+    const video = await this.api.query.content.videoById(videoId)
+    return this.channelBagWitness(video.inChannel)
   }
 
   async storageBucketsNumWitness(channelId: ChannelId | number): Promise<number> {

@@ -8,7 +8,7 @@ use frame_support::traits::{
 };
 use frame_support::{parameter_types, PalletId};
 pub use membership::WeightInfo;
-use sp_core::H256;
+use sp_core::{H256, U256};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Convert, IdentityLookup},
@@ -20,6 +20,7 @@ use staking_handler::LockComparator;
 
 use crate::Config;
 use crate::ContentActorAuthenticator;
+use common::locks::{BoundStakingAccountLockId, InvitedMemberLockId};
 
 /// Type aliases
 pub type HashOutput = <Test as frame_system::Config>::Hash;
@@ -45,6 +46,10 @@ const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
     res
 }
 
+const fn account(id: u64) -> U256 {
+    U256([id, 0, 0, 0])
+}
+
 pub const MEMBER_IDS_INIT: u64 = 500;
 pub const MAX_MEMBER_IDS: usize = 100;
 
@@ -61,39 +66,40 @@ pub const MAX_COLABORATOR_IDS: usize = 100;
 pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
     gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
 
-pub const LEAD_ACCOUNT_ID: u128 = 100005;
+pub const LEAD_ACCOUNT_ID: U256 = account(100005);
 pub const LEAD_MEMBER_ID: u64 = 100005;
 
-pub const DEFAULT_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[0] as u128;
+pub const DEFAULT_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[0]);
+pub const DEFAULT_MEMBER_ALT_ACCOUNT_ID: U256 = account(MEMBER_IDS[1]);
 pub const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[0];
 
-pub const SECOND_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[1] as u128;
-pub const SECOND_MEMBER_ID: u64 = MEMBER_IDS[1];
+pub const SECOND_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[2]);
+pub const SECOND_MEMBER_ID: u64 = MEMBER_IDS[2];
 
-pub const THIRD_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[2] as u128;
-pub const THIRD_MEMBER_ID: u64 = MEMBER_IDS[2];
+pub const THIRD_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[3]);
+pub const THIRD_MEMBER_ID: u64 = MEMBER_IDS[3];
 
-pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = COLABORATOR_IDS[0] as u128;
+pub const COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = account(COLABORATOR_IDS[0]);
 pub const COLLABORATOR_MEMBER_ID: u64 = COLABORATOR_IDS[0];
 
-pub const DEFAULT_CURATOR_ACCOUNT_ID: u128 = CURATOR_IDS[0] as u128;
+pub const DEFAULT_CURATOR_ACCOUNT_ID: U256 = account(CURATOR_IDS[0]);
 pub const DEFAULT_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[0];
 pub const DEFAULT_CURATOR_ID: u64 = CURATOR_IDS[0];
 
-pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = 100008;
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: U256 = account(100008);
 
-pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u128 = MEMBER_IDS[3] as u128;
-pub const UNAUTHORIZED_MEMBER_ID: u64 = MEMBER_IDS[3];
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[4]);
+pub const UNAUTHORIZED_MEMBER_ID: u64 = MEMBER_IDS[4];
 
-pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u128 = CURATOR_IDS[1] as u128;
+pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: U256 = account(CURATOR_IDS[1]);
 pub const UNAUTHORIZED_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[1];
 pub const UNAUTHORIZED_CURATOR_ID: u64 = CURATOR_IDS[1];
 
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = COLABORATOR_IDS[1] as u128;
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = account(COLABORATOR_IDS[1]);
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = COLABORATOR_IDS[1];
 
 pub const DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND: u64 = 0;
-pub const DEFAULT_CHANNEL_STATE_BLOAT_BOND: u64 = 0;
+pub const DEFAULT_CHANNEL_STATE_BLOAT_BOND: u64 = 25; // Should be >= ExistentialDeposit!
 pub const DEFAULT_VIDEO_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
 pub const DATA_OBJECTS_NUMBER: u64 = 10; // MUST BE >= 1
@@ -170,7 +176,7 @@ impl frame_system::Config for Test {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = u128;
+    type AccountId = U256;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
@@ -225,9 +231,16 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        MEMBER_IDS.contains(member_id)
+        if Membership::membership(member_id).is_some()
+            || MEMBER_IDS.contains(member_id)
             || COLABORATOR_IDS.contains(member_id)
             || CURATOR_IDS.contains(member_id)
+            || LEAD_MEMBER_ID == *member_id
+        {
+            true
+        } else {
+            false
+        }
     }
 
     fn get_leader_member_id() -> Option<Self::MemberId> {
@@ -235,11 +248,11 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId> {
-        match *curator_id {
+        ContentWorkingGroup::get_worker_member_id(curator_id).or_else(|| match *curator_id {
             DEFAULT_CURATOR_ID => Some(DEFAULT_CURATOR_MEMBER_ID),
             UNAUTHORIZED_CURATOR_ID => Some(UNAUTHORIZED_CURATOR_MEMBER_ID),
             _ => None,
-        }
+        })
     }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
@@ -250,16 +263,19 @@ impl ContentActorAuthenticator for Test {
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
         working_group::Module::<Test, ContentWorkingGroupInstance>::is_worker_account_id(
             account_id, curator_id,
-        ) || (CURATOR_IDS.contains(curator_id) && *account_id == (*curator_id as u128))
+        ) || (CURATOR_IDS.contains(curator_id) && *account_id == account(*curator_id))
     }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
-        let controller_account_id = (*member_id) as u128;
-        if Membership::is_member_controller_account(member_id, account_id) {
+        let controller_account_id = account(*member_id);
+        if Membership::is_member_controller_account(member_id, account_id)
+            || (*account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID && *member_id == DEFAULT_MEMBER_ID)
+        {
             true
         } else if MEMBER_IDS.contains(member_id)
             || COLABORATOR_IDS.contains(member_id)
             || CURATOR_IDS.contains(member_id)
+            || LEAD_MEMBER_ID == *member_id
         {
             *account_id == controller_account_id
         } else {
@@ -290,10 +306,10 @@ parameter_types! {
     pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
 }
 
-pub const STORAGE_WG_LEADER_ACCOUNT_ID: u128 = 100001;
-pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u128 = 100002;
-pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u128 = 100003;
-pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u128 = 100004;
+pub const STORAGE_WG_LEADER_ACCOUNT_ID: U256 = U256([100001, 0, 0, 0]);
+pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: U256 = U256([100002, 0, 0, 0]);
+pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: U256 = U256([100003, 0, 0, 0]);
+pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: U256 = U256([100004, 0, 0, 0]);
 pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
 pub const ANOTHER_STORAGE_PROVIDER_ID: u64 = 11;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
@@ -323,7 +339,7 @@ impl storage::Config for Test {
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type WeightInfo = ();
-    type ModuleAccountInitialBalance = ModuleAccountInitialBalance;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
 }
 
 // Anyone can upload and delete without restriction
@@ -335,9 +351,7 @@ parameter_types! {
     pub const MaxNumberOfCollaboratorsPerChannel: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
-    pub const PricePerByte: u32 = 2;
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
-    pub const ModuleAccountInitialBalance: u64 = 1;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
         block_number_period: 100,
         limit: 10000,
@@ -377,9 +391,6 @@ impl Config for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
-
-    /// price per byte
-    type PricePerByte = PricePerByte;
 
     /// module id
     type ModuleId = ContentModuleId;
@@ -440,7 +451,7 @@ thread_local! {
 }
 
 pub struct CouncilBudgetManager;
-impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
+impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
         COUNCIL_BUDGET.with(|val| *val.borrow())
     }
@@ -451,7 +462,7 @@ impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
         });
     }
 
-    fn try_withdraw(account_id: &u128, amount: u64) -> DispatchResult {
+    fn try_withdraw(account_id: &U256, amount: u64) -> DispatchResult {
         ensure!(
             Self::get_budget() >= amount,
             DispatchError::Other("CouncilBudgetManager: try_withdraw - not enough balance.")
@@ -459,9 +470,7 @@ impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
 
         let _ = Balances::deposit_creating(account_id, amount);
 
-        let current_budget = Self::get_budget();
-        let new_budget = current_budget.saturating_sub(amount);
-        Self::set_budget(new_budget);
+        Self::decrease_budget(amount);
 
         Ok(())
     }
@@ -478,7 +487,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -493,7 +502,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -509,16 +518,16 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
+impl common::membership::MemberOriginValidator<Origin, u64, U256> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u64,
-    ) -> Result<u128, DispatchError> {
+    ) -> Result<U256, DispatchError> {
         let account_id = ensure_signed(origin).unwrap();
         ensure!(
             Self::is_member_controller_account(&member_id, &account_id),
@@ -527,119 +536,17 @@ impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
         Ok(account_id)
     }
 
-    fn is_member_controller_account(member_id: &u64, account_id: &u128) -> bool {
-        Membership::is_member_controller_account(member_id, account_id)
-            || TestMemberships::is_member_controller_account(member_id, account_id)
+    fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
+        return Membership::is_member_controller_account(member_id, account_id)
+            || TestMemberships::is_member_controller_account(member_id, account_id);
     }
 }
 thread_local! {
     pub static CONTENT_WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
 }
-// Weights info stub
-pub struct Weights;
-impl working_group::WeightInfo for Weights {
-    fn on_initialize_leaving(_: u32) -> u64 {
-        unimplemented!()
-    }
 
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn apply_on_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_lead() -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_role_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn cancel_opening() -> u64 {
-        unimplemented!()
-    }
-
-    fn withdraw_application() -> u64 {
-        unimplemented!()
-    }
-
-    fn slash_stake(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_lead(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn increase_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn decrease_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn spend_from_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_amount() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_status_text(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn add_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn lead_remark() -> u64 {
-        unimplemented!()
-    }
-
-    fn worker_remark() -> u64 {
-        unimplemented!()
-    }
-
-    fn fund_working_group_budget() -> u64 {
-        unimplemented!()
-    }
-}
 pub struct ContentWG;
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for ContentWG {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for ContentWG {
     fn get_budget() -> u64 {
         CONTENT_WG_BUDGET.with(|val| *val.borrow())
     }
@@ -650,7 +557,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for ContentWG {
         });
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }
@@ -680,6 +587,8 @@ pub struct ExtBuilder {
     auction_starts_at_max_delta: u64,
     max_auction_whitelist_length: u32,
     nft_limits_enabled: bool,
+    channel_state_bloat_bond_value: BalanceOf<Test>,
+    video_state_bloat_bond_value: BalanceOf<Test>,
 }
 
 impl Default for ExtBuilder {
@@ -709,6 +618,8 @@ impl Default for ExtBuilder {
             auction_starts_at_max_delta: 90_000,
             max_auction_whitelist_length: 100,
             nft_limits_enabled: true,
+            channel_state_bloat_bond_value: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+            video_state_bloat_bond_value: DEFAULT_VIDEO_STATE_BLOAT_BOND,
         }
     }
 }
@@ -736,6 +647,10 @@ impl ExtBuilder {
             .unwrap();
 
         balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
+        storage::GenesisConfig::<Test>::default()
             .assimilate_storage(&mut t)
             .unwrap();
 
@@ -768,6 +683,8 @@ impl ExtBuilder {
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
             max_auction_whitelist_length: self.max_auction_whitelist_length,
             nft_limits_enabled: self.nft_limits_enabled,
+            channel_state_bloat_bond_value: self.channel_state_bloat_bond_value,
+            video_state_bloat_bond_value: self.video_state_bloat_bond_value,
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -822,13 +739,11 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
 parameter_types! {
     pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 30;
+    pub const MaxWorkerNumberLimit: u32 = 10;
     pub const LockId: LockIdentifier = [9; 8];
     pub const LockId2: LockIdentifier = [10; 8];
     pub const LockId3: LockIdentifier = [11; 8];
@@ -847,7 +762,7 @@ impl membership::Config for Test {
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
     type WeightInfo = ();
 }
@@ -860,7 +775,7 @@ thread_local! {
 }
 
 pub struct Wg;
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for Wg {
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -871,7 +786,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
         });
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }
@@ -930,7 +845,7 @@ impl LockComparator<u64> for Test {
     }
 }
 
-impl LockComparator<u128> for Test {
+impl LockComparator<U256> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         if *new_lock == InvitedMemberLockId::get() {
             existing_locks.contains(new_lock)
@@ -948,10 +863,11 @@ impl MembershipInfoProvider<Test> for TestMemberships {
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
         Membership::controller_account_id(member_id).or_else(|_| {
-            let account_id = member_id as u128;
+            let account_id = account(member_id);
             if MEMBER_IDS.contains(&member_id)
                 || COLABORATOR_IDS.contains(&member_id)
                 || CURATOR_IDS.contains(&member_id)
+                || member_id == LEAD_MEMBER_ID
             {
                 Ok(account_id)
             } else {
@@ -962,11 +878,11 @@ impl MembershipInfoProvider<Test> for TestMemberships {
 }
 
 // Mock MemberOriginValidator impl.
-impl MemberOriginValidator<Origin, u64, u128> for TestMemberships {
+impl MemberOriginValidator<Origin, u64, U256> for TestMemberships {
     fn ensure_member_controller_account_origin(
         origin: Origin,
         member_id: u64,
-    ) -> Result<u128, DispatchError> {
+    ) -> Result<U256, DispatchError> {
         let sender = ensure_signed(origin)?;
         ensure!(
             Self::is_member_controller_account(&member_id, &sender),
@@ -975,10 +891,12 @@ impl MemberOriginValidator<Origin, u64, u128> for TestMemberships {
         Ok(sender)
     }
 
-    fn is_member_controller_account(member_id: &u64, _account_id: &u128) -> bool {
-        MEMBER_IDS.contains(member_id)
-            || COLABORATOR_IDS.contains(member_id)
-            || CURATOR_IDS.contains(member_id)
+    fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
+        Membership::is_member_controller_account(member_id, account_id)
+            || MEMBER_IDS.contains(&member_id)
+            || COLABORATOR_IDS.contains(&member_id)
+            || CURATOR_IDS.contains(&member_id)
+            || LEAD_MEMBER_ID == *member_id
     }
 }
 
@@ -1109,7 +1027,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for StorageWG {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for StorageWG {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -1118,12 +1036,12 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for StorageWG {
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for DistributionWG {
+impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for DistributionWG {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -1132,7 +1050,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Distributio
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &U256, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }

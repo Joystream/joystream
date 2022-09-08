@@ -9,7 +9,7 @@ export function getMemberDefaults(index: number) {
   }
 }
 
-export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
+export function getVideoDefaults(cliExamplesFolderPath: string, addSubtitles?: boolean) {
   return {
     title: 'Active video counters Testing video',
     description: 'Video for testing active video counters.',
@@ -24,7 +24,23 @@ export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
       code: 1001,
       attribution: 'by Joystream Contributors',
     },
-    enableComments: true,
+    subtitles: addSubtitles
+      ? [
+          {
+            type: 'subtitle',
+            language: 'en',
+            mimeType: 'SRT',
+            subtitleAssetPath: cliExamplesFolderPath + '/subtitle-en-1.srt',
+          },
+          {
+            type: 'subtitle',
+            language: 'fr',
+            mimeType: 'SRT',
+            subtitleAssetPath: cliExamplesFolderPath + '/subtitle-fr-1.srt',
+          },
+        ]
+      : undefined,
+    clearSubtitles: false,
   }
 }
 
@@ -34,7 +50,7 @@ export function getVideoCategoryDefaults(index: number) {
   }
 }
 
-export function getChannelDefaults(index: number, cliExamplesFolderPath: string) {
+export function getChannelDefaults(cliExamplesFolderPath: string) {
   return {
     title: 'Active video counters Testing channel',
     description: 'Channel for testing active video counters.',

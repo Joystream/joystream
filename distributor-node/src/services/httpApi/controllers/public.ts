@@ -51,10 +51,14 @@ export class PublicApiController {
     res: express.Response,
     next: express.NextFunction,
     objectId: string,
-    sourceApiEndpoint: string
+    sourceApiEndpoint: string,
+    fallbackMimeType?: string
   ) {
     const sourceObjectUrl = new URL(urljoin(sourceApiEndpoint, `files/${objectId}`))
     res.setHeader('x-data-source', 'external')
+    if (fallbackMimeType) {
+      res.setHeader('content-type', fallbackMimeType)
+    }
     this.logger.verbose(`Forwarding request to ${sourceObjectUrl.toString()}`, {
       objectId,
       sourceUrl: sourceObjectUrl.href,
@@ -78,7 +82,7 @@ export class PublicApiController {
     next: express.NextFunction,
     objectData: DataObjectData
   ): Promise<void> {
-    const { objectId, size, contentHash } = objectData
+    const { objectId, size, contentHash, fallbackMimeType } = objectData
 
     const { maxCachedItemSize } = this.config.limits
     if (maxCachedItemSize && size > maxCachedItemSize) {
@@ -89,14 +93,14 @@ export class PublicApiController {
       })
       const source = await this.networking.getDataObjectDownloadSource(objectData)
       res.setHeader('x-cache', 'miss')
-      return this.proxyAssetRequest(req, res, next, objectId, source)
+      return this.proxyAssetRequest(req, res, next, objectId, source, fallbackMimeType)
     }
 
     const downloadResponse = await this.networking.downloadDataObject({ objectData })
 
     if (downloadResponse) {
       // Note: Await will only wait unil the file is created, so we may serve the response from it
-      await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data)
+      await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data, fallbackMimeType)
       res.setHeader('x-cache', 'miss')
     } else {
       res.setHeader('x-cache', 'pending')
@@ -177,7 +181,7 @@ export class PublicApiController {
     }
 
     // Range doesn't start from the beginning of the content or the file was not found - froward request to source storage node
-    return this.proxyAssetRequest(req, res, next, objectId, source)
+    return this.proxyAssetRequest(req, res, next, objectId, source, contentType)
   }
 
   private async servePendingDownloadAssetFromFile(
@@ -236,6 +240,7 @@ export class PublicApiController {
         res.setHeader('content-length', objectStatus.pendingDownload.getObjectSize())
         break
       case ObjectStatusType.NotFound:
+      case ObjectStatusType.NotUploadedYet:
         res.status(404)
         break
       case ObjectStatusType.NotSupported:
@@ -278,6 +283,9 @@ export class PublicApiController {
         return
       case ObjectStatusType.NotSupported:
         res.status(421).json(this.createErrorResponse('Data object not served by this node'))
+        return
+      case ObjectStatusType.NotUploadedYet:
+        res.status(404).json(this.createErrorResponse('Data object has not been uploaded yet'))
         return
       case ObjectStatusType.Missing:
         return this.serveMissingAsset(req, res, next, objectStatus.objectData)

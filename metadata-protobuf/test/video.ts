@@ -20,7 +20,7 @@ describe('Video Metadata', () => {
       isExplicit: false,
       video: 0,
       thumbnailPhoto: 1,
-      category: Long.fromNumber(101, true),
+      category: '101',
     }
     const videoMessage = new VideoMetadata(video)
 

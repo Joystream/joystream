@@ -2,7 +2,7 @@ import BN from 'bn.js'
 import {
   AddCuratorToCuratorGroupFixture,
   AddCuratorToGroupParams,
-} from '../../fixtures/content/addCuratorsToCuratorGroupFixture'
+} from '../../fixtures/content/collaboratorAndCurator/addCuratorsToCuratorGroupFixture'
 import { CreateCuratorGroupFixture, CuratorGroupParams } from '../../fixtures/content/createCuratorGroupFixture'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
@@ -38,25 +38,25 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   const videoCount = 2 // should be equal to number of uses of `nextVideo()` below
   const videoCategoryCount = 1
   const channelCount = 1
+  const channelOwnerCount = channelCount
   const curatorCount = 1
-  const channelCategoryCount = 1
-  const sufficientTopupAmount = new BN(1_000_000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // prepare content
 
-  const createContentStructureFixture = new CreateContentStructureFixture(
-    api,
-    query,
-    joystreamCli,
-    videoCategoryCount,
-    channelCategoryCount
-  )
+  const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
-  const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos as well as auction participants
-  const createMembersFixture = new CreateMembersFixture(api, query, channelCount, curatorCount, sufficientTopupAmount)
+  const createMembersFixture = new CreateMembersFixture(
+    api,
+    query,
+    channelOwnerCount,
+    curatorCount,
+    sufficientTopupAmount
+  )
   await new FixtureRunner(createMembersFixture).run()
 
   const {
@@ -70,7 +70,6 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     joystreamCli,
     channelCount,
     videoCount,
-    channelCategoryIds[0],
     videoCategoryIds[0],
     channelOwner
   )
@@ -115,11 +114,12 @@ export default async function curatorModerationActions({ api, query, env }: Flow
    * delete video as moderator
    */
 
+  const numOfVideoObjectsToDelete = (await query.dataObjectsByVideoId(videosData[0].videoId.toString())).length
   const deleteVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
     {
       asCurator: [curatorGroupId, curatorId],
       videoId: videosData[0].videoId, // first video
-      numOfObjectsToDelete: 2,
+      numOfObjectsToDelete: numOfVideoObjectsToDelete,
       rationale: 'Deleted video due to offensive content',
     },
   ]

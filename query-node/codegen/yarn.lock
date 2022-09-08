@@ -306,10 +306,10 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-cli@^4.0.0-alpha.4":
-  version "4.0.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-4.0.0-alpha.4.tgz#41660053d5a5f3990d2b8ec777f64d39170e5fa7"
-  integrity sha512-cnDznDEcAevrAsIbCNlnOzN+ChVuPx0GRRMv5YYVi1/Szd255GuBMhD3eq2Cg3l5YBdLSxxgDoiQWaseiNV9+Q==
+"@joystream/hydra-cli@^4.0.0-alpha.6":
+  version "4.0.0-alpha.6"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-4.0.0-alpha.6.tgz#418cd5e36c6abebe8c289e9dbfab61810cd8c035"
+  integrity sha512-xry3np6xCREZCMebzAgP8MwMShN3TueKDv45Rg422Bonrip1Z4ONZaE63Cvb+8AcPosepBqYP6sYZLEMGVOiMQ==
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
@@ -342,10 +342,10 @@
     pluralize "^8.0.0"
     tslib "1.11.2"
 
-"@joystream/hydra-typegen@^4.0.0-alpha.4":
-  version "4.0.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-4.0.0-alpha.4.tgz#2b0f0672b7396eefe2b4e4afc75e1b04ac331963"
-  integrity sha512-Sm4T52M+YNTeaAPWwQRe661H0ih/SIXmJkgPUIDenNRW0F52ZD5DmxHbOzTiMYpdQUCzS8m9Xiczbbo5HY9LuA==
+"@joystream/hydra-typegen@^4.0.0-alpha.6":
+  version "4.0.0-alpha.6"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-4.0.0-alpha.6.tgz#bd7145723e436cc1f8482054fc42d7344dd3cf52"
+  integrity sha512-spAPc0qZmVcmkJNtEWckg/AoymS5u35rI0RkWLhcBS2iaxqsmZwP13tr07QQQay9suteFvZ9Bo4GUoV8nlhXeQ==
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"

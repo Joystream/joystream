@@ -65,7 +65,7 @@
       delay: 100
 
     - name: Start Playground Services
-      shell: . ~/.bash_profile && yarn start
+      shell: . ~/.bash_profile && ./tests/network-tests/run-node-docker.sh && ./start-multistorage.sh
       args:
         chdir: '{{ remote_code_path }}'
       environment:
@@ -73,14 +73,23 @@
         PERSIST: 'true'
         COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
         DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
+        COLOSSUS_2_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-2/'
+        DISTRIBUTOR_2_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-2/'
         SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
+        INIT_CHAIN_SCENARIO: '{{ init_chain_scenario }}'
+        BALANCE_CREDIT: 1000000000000000
+        BALANCE_LOCKED: 1000000000000000
+        SUDO_ACCOUNT_URI: '{{ sudo_suri }}'
+        TREASURY_ACCOUNT_URI: '{{ treasury_suri }}'
+        INITIAL_BALANCES: '{{ initial_balances }}'
+        SKIP_NODE: 'true'
       async: 1800
       poll: 0
-      register: compose_result
+      register: start_services_result
 
     - name: Check on yarn start task
       async_status:
-        jid: '{{ compose_result.ansible_job_id }}'
+        jid: '{{ start_services_result.ansible_job_id }}'
       register: job_result
       until: job_result.finished
       # Max number of times to check for status
@@ -108,8 +117,10 @@
         all_services: |
           websocket_rpc: wss://{{ nip_domain }}/ws-rpc
           http_rpc: https://{{ nip_domain }}/http-rpc
-          colossus: https://{{ nip_domain }}/colossus-1
-          distributor: https://{{ nip_domain }}/distributor-1
+          colossus_1: https://{{ nip_domain }}/colossus-1
+          distributor_1: https://{{ nip_domain }}/distributor-1
+          colossus_2: https://{{ nip_domain }}/colossus-2
+          distributor_2: https://{{ nip_domain }}/distributor-2
           graphql_server: https://{{ nip_domain }}/query-node/server/graphql
           graphql_server_websocket: wss://{{ nip_domain }}/query-node/server/graphql
           indexer: https://{{ nip_domain }}/query-node/indexer/graphql

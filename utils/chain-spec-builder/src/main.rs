@@ -24,8 +24,8 @@ use std::{
 };
 
 use joystream_node::chain_spec::{
-    self, content_config, forum_config, initial_balances, initial_members,
-    joy_chain_spec_properties, AccountId, JOY_ADDRESS_PREFIX,
+    self, content_config, initial_balances, joy_chain_spec_properties, storage_config, AccountId,
+    JOY_ADDRESS_PREFIX,
 };
 
 use sc_chain_spec::ChainType;
@@ -84,12 +84,6 @@ enum ChainSpecBuilder {
         /// The path where the chain spec should be saved.
         #[clap(long, short, default_value = "./chain_spec.json")]
         chain_spec_path: PathBuf,
-        /// The path to an initial members data
-        #[structopt(long)]
-        initial_members_path: Option<PathBuf>,
-        /// The path to an initial forum data
-        #[structopt(long)]
-        initial_forum_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[structopt(long)]
         initial_balances_path: Option<PathBuf>,
@@ -121,12 +115,6 @@ enum ChainSpecBuilder {
         /// `auth-0`, `auth-1`, etc.
         #[clap(long, short)]
         keystore_path: Option<PathBuf>,
-        /// The path to an initial members data
-        #[clap(long)]
-        initial_members_path: Option<PathBuf>,
-        /// The path to an initial forum data
-        #[clap(long)]
-        initial_forum_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[clap(long)]
         initial_balances_path: Option<PathBuf>,
@@ -146,32 +134,6 @@ impl ChainSpecBuilder {
             ChainSpecBuilder::Generate {
                 chain_spec_path, ..
             } => chain_spec_path.as_path(),
-        }
-    }
-
-    /// Returns the path to load initial members from
-    fn initial_members_path(&self) -> &Option<PathBuf> {
-        match self {
-            ChainSpecBuilder::New {
-                initial_members_path,
-                ..
-            } => initial_members_path,
-            ChainSpecBuilder::Generate {
-                initial_members_path,
-                ..
-            } => initial_members_path,
-        }
-    }
-
-    /// Returns the path to load initial forum from
-    fn initial_forum_path(&self) -> &Option<PathBuf> {
-        match self {
-            ChainSpecBuilder::New {
-                initial_forum_path, ..
-            } => initial_forum_path,
-            ChainSpecBuilder::Generate {
-                initial_forum_path, ..
-            } => initial_forum_path,
         }
     }
 
@@ -209,8 +171,6 @@ fn genesis_constructor(
     nominator_accounts: &[AccountId],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
-    initial_members_path: &Option<PathBuf>,
-    initial_forum_path: &Option<PathBuf>,
     initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
@@ -219,19 +179,14 @@ fn genesis_constructor(
         .map(chain_spec::authority_keys_from_seed)
         .collect::<Vec<_>>();
 
-    let genesis_members = initial_members_path
-        .as_ref()
-        .map(|path| initial_members::from_json(path.as_path()))
-        .unwrap_or_else(initial_members::none);
-
-    let forum_cfg = initial_forum_path
-        .as_ref()
-        .map(|path| forum_config::from_json(sudo_account.clone(), path.as_path()))
-        .unwrap_or_else(|| forum_config::empty(sudo_account.clone()));
-
     let genesis_balances = initial_balances_path
         .as_ref()
-        .map(|path| initial_balances::from_json(path.as_path()))
+        .map(|path| initial_balances::balances_from_json(path.as_path()))
+        .unwrap_or_else(Vec::new);
+
+    let vesting_accounts = initial_balances_path
+        .as_ref()
+        .map(|path| initial_balances::vesting_from_json(path.as_path()))
         .unwrap_or_else(Vec::new);
 
     let content_cfg = match deployment {
@@ -239,15 +194,20 @@ fn genesis_constructor(
         _ => content_config::testing_config(),
     };
 
+    let storage_cfg = match deployment {
+        ChainDeployment::live => storage_config::production_config(),
+        _ => storage_config::testing_config(),
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         nominator_accounts.to_vec(),
         sudo_account.clone(),
         endowed_accounts.to_vec(),
-        genesis_members,
-        forum_cfg,
         genesis_balances,
+        vesting_accounts,
         content_cfg,
+        storage_cfg,
     )
 }
 
@@ -258,8 +218,6 @@ fn generate_chain_spec(
     nominator_accounts: Vec<String>,
     endowed_accounts: Vec<String>,
     sudo_account: String,
-    initial_members_path: Option<PathBuf>,
-    initial_forum_path: Option<PathBuf>,
     initial_balances_path: Option<PathBuf>,
 ) -> Result<String, String> {
     let parse_account = |address: String| {
@@ -299,8 +257,6 @@ fn generate_chain_spec(
                 &nominator_accounts,
                 &endowed_accounts,
                 &sudo_account,
-                &initial_members_path,
-                &initial_forum_path,
                 &initial_balances_path,
             )
         },
@@ -394,8 +350,6 @@ async fn main() -> Result<(), String> {
 
     let builder = ChainSpecBuilder::from_args();
     let chain_spec_path = builder.chain_spec_path().to_path_buf();
-    let initial_members_path = builder.initial_members_path().clone();
-    let initial_forum_path = builder.initial_forum_path().clone();
     let initial_balances_path = builder.initial_balances_path().clone();
     let deployment = builder.chain_deployment();
 
@@ -476,8 +430,6 @@ async fn main() -> Result<(), String> {
         nominator_accounts,
         endowed_accounts,
         sudo_account,
-        initial_members_path,
-        initial_forum_path,
         initial_balances_path,
     )?;
 

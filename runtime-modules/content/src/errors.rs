@@ -36,6 +36,16 @@ decl_error! {
         /// are being updated.
         MissingStorageBucketsNumWitness,
 
+        /// Provided channel owner (member) does not exist
+        ChannelOwnerMemberDoesNotExist,
+
+        /// Provided channel owner (curator group) does not exist
+        ChannelOwnerCuratorGroupDoesNotExist,
+
+        /// Channel state bloat bond cannot be lower than existential deposit,
+        /// because it must secure the channel module account against dusting
+        ChannelStateBloatBondBelowExistentialDeposit,
+
         ///Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
         NumberOfAssetsToRemoveIsZero,
 
@@ -237,6 +247,12 @@ decl_error! {
         /// Auction whitelist has only one member
         WhitelistHasOnlyOneMember,
 
+        /// At least one of the whitelisted members does not exist
+        WhitelistedMemberDoesNotExist,
+
+        /// Non-channel owner specified during nft issuance does not exist
+        NftNonChannelOwnerDoesNotExist,
+
         /// Extension period is greater then auction duration
         ExtensionPeriodIsGreaterThenAuctionDuration,
 
@@ -283,8 +299,9 @@ decl_error! {
         CashoutAmountBelowMinimumAmount,
 
         /// An attempt to withdraw funds from channel account failed, because the specified amount
-        /// exceeds the account's balance minus ExistantialDeposit
-        WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit,
+        /// exceeds the withdrawable amount (channel account balance minus channel bloat bond)
+        WithdrawalAmountExceedsChannelAccountWithdrawableBalance,
+
         /// An attempt to withdraw funds from channel account failed, because the specified amount
         /// is zero
         WithdrawFromChannelAmountIsZero,
@@ -337,11 +354,11 @@ decl_error! {
         InsufficientBalanceForTransfer,
 
         /// Cannot create the channel: channel creator has insufficient balance
-        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
+        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees + existential deposit)
         InsufficientBalanceForChannelCreation,
 
         /// Cannot create the video: video creator has insufficient balance
-        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees + existential deposit)
         InsufficientBalanceForVideoCreation,
 
         // Insufficient council budget to cover channel reward claim

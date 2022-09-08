@@ -32,18 +32,6 @@ use sp_std::{
 };
 use storage::Module as Storage;
 
-use super::{
-    assert_last_event, channel_bag_witness, clone_curator_group,
-    create_data_object_candidates_helper, generate_channel_creation_params, insert_content_leader,
-    insert_curator, insert_distribution_leader, insert_storage_leader, max_curators_per_group,
-    member_funded_account, setup_video, setup_worst_case_curator_group_with_curators,
-    setup_worst_case_nft_video, setup_worst_case_scenario_curator_channel,
-    setup_worst_case_scenario_curator_channel_all_max, storage_buckets_num_witness,
-    worst_case_channel_agent_permissions, worst_case_content_moderation_actions_set,
-    worst_case_pausable_channel_feature, worst_case_scenario_collaborators,
-    ContentWorkingGroupInstance, CreateAccountId, RuntimeConfig, CURATOR_IDS, MAX_BYTES_METADATA,
-};
-
 benchmarks! {
     where_clause {
     where
@@ -72,8 +60,6 @@ benchmarks! {
 
         let e in 1 .. MAX_BYTES_METADATA; //max bytes for metadata
 
-        let max_obj_size: u64 = T::MaxDataObjectSize::get();
-
         let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
 
         let (_, distribution_wg_lead_account_id) =
@@ -93,7 +79,6 @@ benchmarks! {
             storage_wg_lead_account_id,
             distribution_wg_lead_account_id,
             a, b, c, d, e,
-            max_obj_size,
         );
 
     }: _ (sender, channel_owner, params.clone())
@@ -190,6 +175,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
 
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelUpdate]);
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
         verify {
@@ -259,6 +245,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
 
+        set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::ChannelUpdate]);
     }: update_channel(
         origin, actor, channel_id, update_params.clone())
         verify {
@@ -301,6 +288,7 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin, actor, channel_id, channel_bag_witness, a.into())
         verify {
 
@@ -337,6 +325,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(lead_account_id);
         let privilege_level = T::ChannelPrivilegeLevel::one();
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin, channel_id, privilege_level)
         verify {
 
@@ -421,6 +410,7 @@ benchmarks! {
         let storage_buckets_num_witness =
             storage_buckets_num_witness::<T>(channel_id)?;
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin,
         actor,
@@ -467,6 +457,7 @@ benchmarks! {
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
         let rationale = vec![1u8].repeat(d as usize);
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin,
           actor,
           channel_id,
@@ -508,6 +499,7 @@ benchmarks! {
 
         let rationale = vec![0u8].repeat(a as usize);
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin, actor, channel_id, true, rationale.clone())
         verify {
 
@@ -531,26 +523,14 @@ benchmarks! {
 
         let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
-        let (
-            channel_id,
-            group_id,
-            _,
-            curator_id,
-            curator_account_id
-        ) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                b,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-                false
-            ).unwrap();
+        let (video_id, (curator_account_id, actor, channel_id, _)) =
+            setup_worst_case_scenario_mutable_video::<T>(
+                Some(T::MaxNumberOfAssetsPerVideo::get()),
+                b
+            )?;
 
-        let origin = RawOrigin::Signed(curator_account_id);
-        let actor = ContentActor::Curator(group_id, curator_id);
-
+        let origin = RawOrigin::Signed(curator_account_id.clone());
         let rationale = vec![1u8].repeat(c as usize);
-        let storage_buckets_num_witness =
-            storage_buckets_num_witness::<T>(channel_id)?;
 
         let assets_to_remove_start = T::MaxNumberOfAssetsPerChannel::get();
         let assets_to_remove_end = T::MaxNumberOfAssetsPerChannel::get() + a;
@@ -559,14 +539,14 @@ benchmarks! {
             (assets_to_remove_start..assets_to_remove_end)
             .map(|i| i.saturated_into()).collect();
 
-        let video_id = setup_worst_case_nft_video::<T>(
-            origin.clone().into(), actor, channel_id, a, c);
+        let _ = setup_nft_in_english_auction::<T>(curator_account_id, actor, video_id, false)?;
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         origin,
         actor,
         video_id,
-        storage_buckets_num_witness,
+        b,
         assets_to_remove.clone(),
         rationale.clone())
         verify {
@@ -592,40 +572,16 @@ benchmarks! {
 
         let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
-        let (
-            channel_id,
-            group_id,
-            _,
-            curator_id,
-            curator_account_id
-        ) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                b,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-                false
-            ).unwrap();
-
-        let origin = RawOrigin::Signed(curator_account_id);
-        let actor = ContentActor::Curator(group_id, curator_id);
-
         let rationale = vec![1u8].repeat(c as usize);
-        let storage_buckets_num_witness =
-            Some(storage_buckets_num_witness::<T>(channel_id)?);
+        let (video_id, (curator_acc_id, actor, channel_id, _)) =
+            setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
 
-        let video_id = setup_video::<T>(
-            origin.clone().into(),
-            actor,
-            channel_id,
-            a,
-            None,
-            MAX_BYTES_METADATA);
-
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video_as_moderator (
-        origin,
+        RawOrigin::Signed(curator_acc_id),
         actor,
         video_id,
-        storage_buckets_num_witness,
+        Some(b),
         a.into(),
         rationale.clone())
         verify {
@@ -641,42 +597,22 @@ benchmarks! {
         }
 
     delete_video_as_moderator_without_assets {
-
         let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
-        let (
-            channel_id,
-            group_id,
-            _,
-            curator_id,
-            curator_account_id
-        ) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-                false
-            ).unwrap();
-
-        let origin = RawOrigin::Signed(curator_account_id);
-        let actor = ContentActor::Curator(group_id, curator_id);
-        let storage_buckets_num_witness: Option<u32> = None;
-
-        let video_id = setup_video::<T>(
-            origin.clone().into(),
-            actor,
-            channel_id,
-            0,
-            None,
-            MAX_BYTES_METADATA);
+        let (video_id, (curator_acc_id, actor, channel_id, _)) =
+            setup_worst_case_scenario_mutable_video::<T>(
+                None,
+                T::StorageBucketsPerBagValueConstraint::get().max() as u32
+            )?;
 
         let rationale = vec![1u8].repeat(a as usize);
 
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video_as_moderator (
-        origin,
+        RawOrigin::Signed(curator_acc_id),
         actor,
         video_id,
-        storage_buckets_num_witness,
+        None,
         0,
         rationale.clone())
         verify {
@@ -696,33 +632,22 @@ benchmarks! {
         let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
         let (
-            channel_id,
-            group_id,
-            _,
-            curator_id,
-            curator_account_id
-        ) =
-            setup_worst_case_scenario_curator_channel::<T>(
-                T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
-                false
-            ).unwrap();
-
-        let origin = RawOrigin::Signed(curator_account_id);
-        let actor = ContentActor::Curator(group_id, curator_id);
-
-        let video_id = setup_video::<T>(
-            origin.clone().into(),
-            actor,
-            channel_id,
-            T::MaxNumberOfAssetsPerVideo::get(),
-            None,
-            MAX_BYTES_METADATA);
-
+            video_id,
+            (curator_account_id, actor, channel_id, _)
+        ) = setup_worst_case_scenario_mutable_video::<T>(
+            Some(T::MaxNumberOfAssetsPerVideo::get()),
+            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+        )?;
         let rationale = vec![0u8].repeat(a as usize);
 
-    }: _ (origin, actor, video_id, true, rationale.clone())
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _ (
+        RawOrigin::Signed(curator_account_id),
+        actor,
+        video_id,
+        true,
+        rationale.clone()
+    )
         verify {
 
             assert_last_event::<T>(
@@ -821,9 +746,7 @@ benchmarks! {
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
             max_curators_per_group::<T>() - 1
         )?;
-        let (curator_id, _) = insert_curator::<T>(
-            CURATOR_IDS[max_curators_per_group::<T>() as usize - 1]
-        );
+        let (curator_id, _) = insert_curator::<T>();
         let group = Pallet::<T>::curator_group_by_id(group_id);
         assert_eq!(group.get_curators().get(&curator_id), None);
     }: _ (
@@ -903,7 +826,7 @@ benchmarks! {
             assert_eq!(video.in_channel, channel_id);
             assert_eq!(video.nft_status, None);
             assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
-            assert_eq!(video.video_state_bloat_bond, Pallet::<T>::video_state_bloat_bond_value());
+            assert_eq!(video.video_state_bloat_bond.amount, Pallet::<T>::video_state_bloat_bond_value());
             assert_last_event::<T>(
                 <T as Config>::Event::from(
                     Event::<T>::VideoCreated(
@@ -953,7 +876,7 @@ benchmarks! {
             let video = Pallet::<T>::video_by_id(expected_video_id);
             let nft_params = params.auto_issue_nft.as_ref().unwrap();
             assert_eq!(video.in_channel, channel_id);
-            assert_eq!(video.nft_status.as_ref().unwrap().owner, NftOwner::<T::MemberId>::Member(T::MemberId::zero()));
+            assert!(matches!(video.nft_status.as_ref().unwrap().owner, NftOwner::Member(_)));
             assert_eq!(video.nft_status.as_ref().unwrap().creator_royalty, nft_params.royalty);
             match &video.nft_status.as_ref().unwrap().transactional_status {
                 TransactionalStatus::<T>::EnglishAuction(params) => {
@@ -965,7 +888,7 @@ benchmarks! {
             }
 
             assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
-            assert_eq!(video.video_state_bloat_bond, Pallet::<T>::video_state_bloat_bond_value());
+            assert_eq!(video.video_state_bloat_bond.amount, Pallet::<T>::video_state_bloat_bond_value());
             assert_last_event::<T>(
                 <T as Config>::Event::from(
                     Event::<T>::VideoCreated(
@@ -1139,7 +1062,7 @@ benchmarks! {
             let video = Pallet::<T>::video_by_id(video_id);
             assert_eq!(BTreeSet::from(video.data_objects), existing_asset_ids);
             let nft_params = params.auto_issue_nft.as_ref().unwrap();
-            assert_eq!(video.nft_status.as_ref().unwrap().owner, NftOwner::<T::MemberId>::Member(T::MemberId::zero()));
+            assert!(matches!(video.nft_status.as_ref().unwrap().owner, NftOwner::Member(_)));
             assert_eq!(video.nft_status.as_ref().unwrap().creator_royalty, nft_params.royalty);
             match &video.nft_status.as_ref().unwrap().transactional_status {
                 TransactionalStatus::<T>::EnglishAuction(params) => {
@@ -1220,7 +1143,7 @@ benchmarks! {
             let video = Pallet::<T>::video_by_id(video_id);
             assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
             let nft_params = params.auto_issue_nft.as_ref().unwrap();
-            assert_eq!(video.nft_status.as_ref().unwrap().owner, NftOwner::<T::MemberId>::Member(T::MemberId::zero()));
+            assert!(matches!(video.nft_status.as_ref().unwrap().owner, NftOwner::Member(_)));
             assert_eq!(video.nft_status.as_ref().unwrap().creator_royalty, nft_params.royalty);
             match &video.nft_status.as_ref().unwrap().transactional_status {
                 TransactionalStatus::<T>::EnglishAuction(params) => {
@@ -1250,6 +1173,8 @@ benchmarks! {
             None,
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1278,6 +1203,8 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
         let witness = storage_buckets_num_witness::<T>(channel_id)?;
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: delete_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1304,10 +1231,9 @@ benchmarks! {
 
     initialize_channel_transfer {
         let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
-        let (_, new_owner_id) = member_funded_account::<T>(0);
+        let (_, new_owner_id) = member_funded_account::<T>();
         let new_owner = ChannelOwner::Member(new_owner_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
-            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
             a // number of collaborators
         );
         let price = <T as balances::Config>::Balance::one();
@@ -1320,6 +1246,8 @@ benchmarks! {
         };
         let transfer_id = Pallet::<T>::next_transfer_id();
         let actor = ContentActor::Curator(group_id, curator_id);
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: initialize_channel_transfer (
         RawOrigin::Signed(curator_account_id),
         channel_id,
@@ -1354,6 +1282,8 @@ benchmarks! {
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(true)?;
         let actor = ContentActor::Curator(group_id, curator_id);
+
+        set_all_channel_paused_features::<T>(channel_id);
     }: _ (
         RawOrigin::Signed(curator_account_id),
         channel_id,
@@ -1371,7 +1301,7 @@ benchmarks! {
         );
     }
 
-    accept_channel_transfer {
+    accept_channel_transfer_curator_to_curator {
         let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
 
         let (channel_id, group_id, lead_account_id, _, _) =
@@ -1379,7 +1309,6 @@ benchmarks! {
         let new_owner_group_id = clone_curator_group::<T>(group_id)?;
         let new_owner = ChannelOwner::CuratorGroup(new_owner_group_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
-            T::MaxNumberOfCollaboratorsPerChannel::get(), // start id
             a // number of collaborators
         );
         let price = <T as balances::Config>::Balance::one();
@@ -1404,8 +1333,111 @@ benchmarks! {
             price,
             new_collaborators
         };
-    }: _ (
+
+        set_all_channel_paused_features::<T>(channel_id);
+    }: accept_channel_transfer (
         RawOrigin::Signed(lead_account_id),
+        channel_id,
+        witness.clone()
+    ) verify {
+        let channel = Pallet::<T>::channel_by_id(channel_id);
+        assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
+        assert_eq!(channel.owner, new_owner);
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::ChannelTransferAccepted(
+                    channel_id,
+                    witness
+                )
+            ).into()
+        );
+    }
+
+    accept_channel_transfer_member_to_curator {
+        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+
+        let (channel_id, member_id, member_account_id, content_lead_acc_id) =
+            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
+        let new_owner_group_id =
+            setup_worst_case_curator_group_with_curators::<T>(max_curators_per_group::<T>())?;
+        let new_owner = ChannelOwner::CuratorGroup(new_owner_group_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            a // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        working_group::Pallet::<T, ContentWorkingGroupInstance>::set_budget(
+            RawOrigin::Root.into(),
+            price
+        )?;
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner: new_owner.clone(),
+            new_collaborators: new_collaborators.clone(),
+            price
+        };
+        let transfer_id = Pallet::<T>::next_transfer_id();
+        Pallet::<T>::initialize_channel_transfer(
+            RawOrigin::Signed(member_account_id).into(),
+            channel_id,
+            ContentActor::Member(member_id),
+            transfer_params
+        )?;
+        let witness = TransferCommitmentWitnessOf::<T> {
+            transfer_id,
+            price,
+            new_collaborators
+        };
+
+        set_all_channel_paused_features::<T>(channel_id);
+    }: accept_channel_transfer (
+        RawOrigin::Signed(content_lead_acc_id),
+        channel_id,
+        witness.clone()
+    ) verify {
+        let channel = Pallet::<T>::channel_by_id(channel_id);
+        assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
+        assert_eq!(channel.owner, new_owner);
+        assert_last_event::<T>(
+            <T as Config>::Event::from(
+                Event::<T>::ChannelTransferAccepted(
+                    channel_id,
+                    witness
+                )
+            ).into()
+        );
+    }
+
+    accept_channel_transfer_member_to_member {
+        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+
+        let (channel_id, member_id, member_account_id, content_lead_acc_id) =
+            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
+        let (new_owner_acc, new_owner_id) = member_funded_account::<T>();
+        let new_owner = ChannelOwner::Member(new_owner_id);
+        let new_collaborators = worst_case_scenario_collaborators::<T>(
+            a // number of collaborators
+        );
+        let price = <T as balances::Config>::Balance::one();
+        let transfer_params = InitTransferParametersOf::<T> {
+            new_owner: new_owner.clone(),
+            new_collaborators: new_collaborators.clone(),
+            price
+        };
+        let transfer_id = Pallet::<T>::next_transfer_id();
+        Pallet::<T>::initialize_channel_transfer(
+            RawOrigin::Signed(member_account_id).into(),
+            channel_id,
+            ContentActor::Member(member_id),
+            transfer_params
+        )?;
+        let witness = TransferCommitmentWitnessOf::<T> {
+            transfer_id,
+            price,
+            new_collaborators
+        };
+
+        set_all_channel_paused_features::<T>(channel_id);
+    }: accept_channel_transfer (
+        RawOrigin::Signed(new_owner_acc),
         channel_id,
         witness.clone()
     ) verify {
@@ -1775,11 +1807,7 @@ benchmarks! {
         let duration: T::BlockNumber = project_token::Pallet::<T>::min_revenue_split_duration();
         let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
         let reward_amount = 1_000_000u32.into();
-        let _ = balances::Pallet::<T>::deposit_creating(
-            &channel_acc,
-            // TODO: Existential deposit should not be needed after https://github.com/Joystream/joystream/issues/4033
-            T::JoyExistentialDeposit::get() + reward_amount
-        );
+        let _ = balances::Pallet::<T>::deposit_creating(&channel_acc, reward_amount);
         let council_budget_pre = T::CouncilBudgetManager::get_budget();
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
@@ -1816,8 +1844,9 @@ benchmarks! {
     issue_revenue_split_as_collaborator {
         let (channel_id, owner_member_id, owner_acc, lead_account_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
-        let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
-        let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
+        let channel = Pallet::<T>::channel_by_id(channel_id);
+        let collaborator_member_id: T::MemberId = *channel.collaborators.keys().next().unwrap();
+        let collaborator_account_id = T::AccountId::create_account_id(collaborator_member_id.saturated_into());
         let origin = RawOrigin::Signed(collaborator_account_id.clone());
         let actor = ContentActor::Member(collaborator_member_id);
         let token_id =
@@ -1832,11 +1861,7 @@ benchmarks! {
         let duration: T::BlockNumber = project_token::Pallet::<T>::min_revenue_split_duration();
         let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
         let reward_amount = 1_000_000u32.into();
-        let _ = balances::Pallet::<T>::deposit_creating(
-            &channel_acc,
-            // TODO: Existential deposit should not be needed after https://github.com/Joystream/joystream/issues/4033
-            T::JoyExistentialDeposit::get() + reward_amount
-        );
+        let _ = balances::Pallet::<T>::deposit_creating(&channel_acc, reward_amount);
         let owner_acc_balance_pre = balances::Pallet::<T>::usable_balance(owner_acc.clone());
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
@@ -1885,12 +1910,8 @@ benchmarks! {
             )?;
         let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
         let reward_amount = 1_000_000u32.into();
-        let _ = balances::Pallet::<T>::deposit_creating(
-            &channel_acc,
-            // TODO: Existential deposit should not be needed after https://github.com/Joystream/joystream/issues/4033
-            T::JoyExistentialDeposit::get() + reward_amount
-        );
-        let duration: T::BlockNumber = 100u32.into();
+        let _ = balances::Pallet::<T>::deposit_creating(&channel_acc, reward_amount);
+        let duration: T::BlockNumber = project_token::Pallet::<T>::min_revenue_split_duration() + T::BlockNumber::one();
         Pallet::<T>::issue_revenue_split(
             origin.clone().into(),
             actor,
@@ -1898,7 +1919,7 @@ benchmarks! {
             None,
             duration
         )?;
-        fastforward_by_blocks::<T>(project_token::Pallet::<T>::min_revenue_split_duration());
+        fastforward_by_blocks::<T>(project_token::Pallet::<T>::min_revenue_split_time_to_start());
         // Remove the default token owner stake
         project_token::AccountInfoByTokenAndMember::<T>::mutate(token_id, curator_member_id, |acc| {
             acc.unstake();
@@ -1996,9 +2017,9 @@ benchmarks! {
     claim_creator_token_patronage_credit {
         let (channel_id, owner_member_id, owner_acc, lead_account_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
-
-        let collaborator_member_id: T::MemberId = COLABORATOR_IDS[0].saturated_into();
-        let collaborator_account_id = T::AccountId::create_account_id(COLABORATOR_IDS[0]);
+        let channel = Pallet::<T>::channel_by_id(channel_id);
+        let collaborator_member_id: T::MemberId = *channel.collaborators.keys().next().unwrap();
+        let collaborator_account_id = T::AccountId::create_account_id(collaborator_member_id.saturated_into());
         let origin = RawOrigin::Signed(collaborator_account_id.clone());
         let actor = ContentActor::Member(collaborator_member_id);
         let token_id =
@@ -2055,7 +2076,7 @@ benchmarks! {
     // - `payload` fields `Some(..)` in order to maximize the number of storage mutation performed
     update_channel_payouts {
         let origin = RawOrigin::Root;
-        let (account_id, _) = member_funded_account::<T>(1);
+        let (account_id, _) = member_funded_account::<T>();
         let hash = <<T as frame_system::Config>::Hashing as Hash>::hash(&"test".encode());
         let params = UpdateChannelPayoutsParameters::<T> {
             commitment: Some(hash),
@@ -2068,8 +2089,8 @@ benchmarks! {
                 expected_data_object_state_bloat_bond: Storage::<T>::data_object_state_bloat_bond_value(),
                 expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
             }),
-            min_cashout_allowed: Some(<T as balances::Config>::Balance::one()),
-            max_cashout_allowed: Some(<T as balances::Config>::Balance::from(1_000_000u32)),
+            min_cashout_allowed: Some(T::MinimumCashoutAllowedLimit::get()),
+            max_cashout_allowed: Some(T::MaximumCashoutAllowedLimit::get()),
             channel_cashouts_enabled: Some(true),
         };
     }: _ (origin, params)
@@ -2093,7 +2114,7 @@ benchmarks! {
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
             &ContentTreasury::<T>::account_for_channel(channel_id),
-            amount + T::ExistentialDeposit::get(),
+            amount
         );
 
         let actor = ContentActor::Lead;
@@ -2107,7 +2128,7 @@ benchmarks! {
 
             assert_eq!(
                 Balances::<T>::usable_balance(ContentTreasury::<T>::account_for_channel(channel_id)),
-                T::ExistentialDeposit::get(),
+                Pallet::<T>::channel_state_bloat_bond_value(),
             );
         }
 
@@ -2127,7 +2148,7 @@ benchmarks! {
         let amount = <T as balances::Config>::Balance::from(100u32);
         let _ = Balances::<T>::deposit_creating(
             &ContentTreasury::<T>::account_for_channel(channel_id),
-            amount + T::ExistentialDeposit::get(),
+            amount
         );
 
         let origin = RawOrigin::Signed(member_account_id.clone());
@@ -2142,7 +2163,7 @@ benchmarks! {
 
             assert_eq!(
                 Balances::<T>::usable_balance(ContentTreasury::<T>::account_for_channel(channel_id)),
-                T::ExistentialDeposit::get(),
+                Pallet::<T>::channel_state_bloat_bond_value(),
             );
         }
 
@@ -2156,7 +2177,7 @@ benchmarks! {
     claim_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 
-        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
+        let cumulative_reward_claimed: BalanceOf<T> = Pallet::<T>::min_cashout_allowed();
         let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
@@ -2192,7 +2213,7 @@ benchmarks! {
     claim_and_withdraw_member_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 
-        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
+        let cumulative_reward_claimed: BalanceOf<T> = Pallet::<T>::min_cashout_allowed();
         let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
@@ -2233,7 +2254,7 @@ benchmarks! {
     claim_and_withdraw_curator_channel_reward {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 
-        let cumulative_reward_claimed: BalanceOf<T> = 100u32.into();
+        let cumulative_reward_claimed: BalanceOf<T> = Pallet::<T>::min_cashout_allowed();
         let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
         let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
@@ -2423,7 +2444,7 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(curator_account_id);
 
-        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let (_, to_member) = member_funded_account::<T>();
         let price = Some(nft_buy_now_price::<T>());
 
     }: _ (origin, video_id, actor, to_member, price)
@@ -2457,7 +2478,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let (_, to_member) = member_funded_account::<T>();
         let price = Some(nft_buy_now_price::<T>());
 
         let _ = setup_offered_nft::<T>(
@@ -2506,7 +2527,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         ).unwrap();
 
-        let (to_member_account, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let (to_member_account, to_member) = member_funded_account::<T>();
         let price = Some(nft_buy_now_price::<T>());
 
         let (nft_owner_actor, owner_account) = setup_offered_nft::<T>(
@@ -2604,7 +2625,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let (_, to_member) = member_funded_account::<T>();
         let price = nft_buy_now_price::<T>();
 
         let _ = setup_nft_in_buy_now::<T>(
@@ -2697,7 +2718,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (buyer_account_id, buyer_id) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let (buyer_account_id, buyer_id) = member_funded_account::<T>();
         let price = nft_buy_now_price::<T>();
 
         let (nft_owner_actor, owner_account) = setup_nft_in_buy_now::<T>(
@@ -2816,7 +2837,7 @@ benchmarks! {
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
             whitelist: (0..(w as usize))
-                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                .map(|i| member_funded_account::<T>().1)
                 .collect(),
         };
 
@@ -3015,7 +3036,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (_, to_member) = member_funded_account::<T>(MEMBER_IDS[1]);
+        let (_, to_member) = member_funded_account::<T>();
         let buy_now_price = Pallet::<T>::min_starting_price()
             + Pallet::<T>::min_bid_step().mul(10u32.into());
 
@@ -3036,7 +3057,7 @@ benchmarks! {
             starting_price: Pallet::<T>::min_starting_price(),
             starts_at: Some(System::<T>::block_number() + T::BlockNumber::one()),
             whitelist: (0..(w as usize))
-                .map(|i| member_funded_account::<T>(WHITELISTED_MEMBERS_IDS[i]).1)
+                .map(|i| member_funded_account::<T>().1)
                 .collect(),
 
         };
@@ -3115,7 +3136,7 @@ benchmarks! {
             T::StorageBucketsPerBagValueConstraint::get().max() as u32,
         )?;
 
-        let (owner_account, owner_id) = member_funded_account::<T>(DEFAULT_MEMBER_ID);
+        let (owner_account, owner_id) = member_funded_account::<T>();
         let nft_owner_actor = ContentActor::<T::CuratorGroupId, T::CuratorId, T::MemberId>::Member(owner_id);
 
         let (_, participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
@@ -3619,9 +3640,23 @@ pub mod tests {
     }
 
     #[test]
-    fn accept_channel_transfer() {
+    fn accept_channel_transfer_curator_to_curator() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_accept_channel_transfer());
+            assert_ok!(Content::test_benchmark_accept_channel_transfer_curator_to_curator());
+        })
+    }
+
+    #[test]
+    fn accept_channel_transfer_member_to_curator() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_accept_channel_transfer_member_to_curator());
+        })
+    }
+
+    #[test]
+    fn accept_channel_transfer_member_to_member() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_accept_channel_transfer_member_to_member());
         })
     }
 

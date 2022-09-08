@@ -17,24 +17,26 @@ use storage::BagId;
 // ----- DEFAULTS
 
 const SEED: u32 = 0;
-const DEFAULT_TOKEN_ISSUANCE: u32 = 1_000_000_000;
+const DEFAULT_TOKEN_ISSUANCE: u64 = 1_000_000;
 // Transfers
 const MAX_TX_OUTPUTS: u32 = 1024;
 const DEFAULT_TX_AMOUNT: u32 = 100;
 // Whitelist
 const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 // Sales
-const DEFAULT_TOKENS_ON_SALE: u32 = 1_000_000;
+const DEFAULT_TOKENS_ON_SALE: u32 = 100_000;
 const DEFAULT_SALE_DURATION: u32 = 14400;
-const DEFAULT_SALE_UNIT_PRICE: u32 = 1;
+const DEFAULT_SALE_UNIT_PRICE: u32 = 2_000_000;
 const DEFAULT_SALE_PURCHASE: u32 = 100;
 // Revenue splits
 const DEFAULT_SPLIT_DURATION: u32 = 14400;
-const DEFAULT_SPLIT_REVENUE: u32 = 1_000_000;
+const DEFAULT_SPLIT_REVENUE: u64 = 8_000_000;
 const DEFAULT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
-const DEFAULT_SPLIT_ALLOCATION: u32 = 500_000; // DEFAULT_REVENUE_SPLIT_RATE * DEFAULT_SPLIT_REVENUE
-const DEFAULT_SPLIT_PARTICIPATION: u32 = 300_000_000;
-const DEFAULT_SPLIT_PAYOUT: u32 = 150_000;
+const DEFAULT_SPLIT_ALLOCATION: u64 = 4_000_000; // DEFAULT_REVENUE_SPLIT_RATE * DEFAULT_SPLIT_REVENUE
+const DEFAULT_SPLIT_PAYOUT: u64 = 2_000_000;
+const DEFAULT_SPLIT_PARTICIPATION: u64 =
+    DEFAULT_SPLIT_PAYOUT * DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION;
+
 // Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(1));
 // Metadata
@@ -63,7 +65,10 @@ fn create_member<T: Config>(
     handle: &[u8],
 ) -> <T as MembershipTypes>::MemberId {
     let member_id = Members::<T>::members_created();
-    let _ = Balances::<T>::deposit_creating(account_id, Members::<T>::membership_price());
+    let _ = Balances::<T>::deposit_creating(
+        account_id,
+        T::JoyExistentialDeposit::get() + Members::<T>::membership_price(),
+    );
     Members::<T>::buy_membership(
         RawOrigin::Signed(account_id.clone()).into(),
         BuyMembershipParameters {
@@ -81,7 +86,6 @@ fn create_member<T: Config>(
 fn create_owner<T: Config>() -> (<T as MembershipTypes>::MemberId, T::AccountId) {
     let owner_account = token_owner_account::<T>();
     let owner_member_id = create_member::<T>(&owner_account, b"owner");
-    let _ = Joy::<T>::deposit_creating(&owner_account, T::JoyExistentialDeposit::get());
     (owner_member_id, owner_account)
 }
 
@@ -142,7 +146,10 @@ fn init_token_sale<T: Config>(token_id: T::TokenId) -> Result<TokenSaleId, Dispa
 
 fn issue_revenue_split<T: Config>(token_id: T::TokenId, forced_id: Option<u32>) -> DispatchResult {
     // top up owner JOY balance
-    let _ = Joy::<T>::deposit_creating(&token_owner_account::<T>(), DEFAULT_SPLIT_REVENUE.into());
+    let _ = Joy::<T>::deposit_creating(
+        &token_owner_account::<T>(),
+        DEFAULT_SPLIT_REVENUE.saturated_into(),
+    );
 
     if let Some(forced_id) = forced_id {
         TokenInfoById::<T>::mutate(token_id, |token_data| {
@@ -155,13 +162,13 @@ fn issue_revenue_split<T: Config>(token_id: T::TokenId, forced_id: Option<u32>) 
         None,
         DEFAULT_SPLIT_DURATION.into(),
         token_owner_account::<T>(),
-        DEFAULT_SPLIT_REVENUE.into(),
+        DEFAULT_SPLIT_REVENUE.saturated_into(),
     )?;
 
     // Slash the remaining balance
     let _ = Joy::<T>::slash(
         &token_owner_account::<T>(),
-        (DEFAULT_SPLIT_REVENUE - DEFAULT_SPLIT_ALLOCATION).into(),
+        (DEFAULT_SPLIT_REVENUE - DEFAULT_SPLIT_ALLOCATION).saturated_into(),
     );
 
     Ok(())
@@ -238,7 +245,7 @@ benchmarks! {
             })
             .collect()
         );
-        let bloat_bond: JoyBalanceOf<T> = 100u32.into();
+        let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
         BloatBond::<T>::set(bloat_bond);
@@ -287,7 +294,7 @@ benchmarks! {
     // - token policy is Permissioned
     dust_account {
         let (owner_member_id, owner_account) = create_owner::<T>();
-        let bloat_bond: JoyBalanceOf<T> = 100u32.into();
+        let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
 
         BloatBond::<T>::set(bloat_bond);
         let _ = Joy::<T>::deposit_creating(&owner_account, bloat_bond);
@@ -348,13 +355,13 @@ benchmarks! {
             commitment,
             payload: None
         });
-        let bloat_bond: JoyBalanceOf<T> = 100u32.into();
+        let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
 
 
         // Make sure that proof.0.len() is h
         assert_eq!(proof.0.len() as u32, h);
 
-        let _ = Joy::<T>::deposit_creating(&acc, T::JoyExistentialDeposit::get() + bloat_bond);
+        let _ = Joy::<T>::deposit_creating(&acc, bloat_bond);
         let token_id = issue_token::<T>(transfer_policy_params.clone())?;
         BloatBond::<T>::set(bloat_bond);
     }: _(
@@ -390,12 +397,11 @@ benchmarks! {
         create_owner::<T>();
         let participant = account::<T::AccountId>("participant", 0, SEED);
         let member_id = create_member::<T>(&participant, b"participant");
-        let bloat_bond: JoyBalanceOf<T> = 100u32.into();
+        let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
         let platform_fee = Permill::from_percent(10);
 
         let _ = Joy::<T>::deposit_creating(
             &participant,
-            T::JoyExistentialDeposit::get() +
             bloat_bond +
             (DEFAULT_SALE_PURCHASE * DEFAULT_SALE_UNIT_PRICE).into()
         );
@@ -428,7 +434,7 @@ benchmarks! {
             split_staking_status: None,
             last_sale_total_purchased_amount: Some((sale_id, DEFAULT_SALE_PURCHASE.into())),
             next_vesting_transfer_id: 0,
-            bloat_bond,
+            bloat_bond: RepayableBloatBond::new(bloat_bond, None),
         });
         assert_last_event::<T>(
             RawEvent::TokensPurchasedOnSale(
@@ -479,14 +485,14 @@ benchmarks! {
         );
         assert_eq!(
             Joy::<T>::usable_balance(&participant_acc),
-            DEFAULT_SPLIT_PAYOUT.into()
+            T::JoyExistentialDeposit::get() + DEFAULT_SPLIT_PAYOUT.saturated_into()
         );
         assert_last_event::<T>(
             RawEvent::UserParticipatedInSplit(
                 token_id,
                 participant_id,
                 DEFAULT_SPLIT_PARTICIPATION.into(),
-                DEFAULT_SPLIT_PAYOUT.into(),
+                DEFAULT_SPLIT_PAYOUT.saturated_into(),
                 1u32
             ).into()
         );
@@ -557,12 +563,14 @@ benchmarks! {
         assert_eq!(
             Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap(),
             AccountDataOf::<T> {
-            split_staking_status: Some(StakingStatus {
-                split_id: 0,
-                amount: TokenBalanceOf::<T>::zero()
-            }),
-            ..Default::default()
-        });
+                split_staking_status: Some(StakingStatus {
+                    split_id: 0,
+                    amount: TokenBalanceOf::<T>::zero()
+                }),
+                bloat_bond: RepayableBloatBond::new(Zero::zero(), None),
+                ..Default::default()
+            }
+        );
         assert_last_event::<T>(
             RawEvent::TokensBurned(
                 token_id,

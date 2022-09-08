@@ -70,6 +70,10 @@ fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T
     Balances::<T>::make_free_balance_be(account_id, balance);
 }
 
+fn existential_deposit<T: Config>() -> Balance<T> {
+    <T as balances::Config>::ExistentialDeposit::get()
+}
+
 fn start_announcing_period<T: Config>() {
     let previous_announcing_period_nr = Council::<T>::announcement_period_nr();
 
@@ -322,7 +326,7 @@ benchmarks! {
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
         assert_eq!(Council::<T>::budget(), Balance::<T>::max_value());
         let mut funding_requests = Vec::new();
-        let amount: Balance<T> = 100u32.into();
+        let amount: Balance<T> = existential_deposit::<T>();
 
         for id in 0 .. i {
             let account = T::AccountId::create_account_id(id);

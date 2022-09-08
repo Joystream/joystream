@@ -100,6 +100,7 @@ mod benches {
         [pallet_timestamp, Timestamp]
         [substrate_utility, Utility]
         [pallet_vesting, Vesting]
+        [pallet_multisig, Multisig]
         [proposals_discussion, ProposalsDiscussion]
         [proposals_codex, ProposalsCodex]
         [proposals_engine, ProposalsEngine]
@@ -109,7 +110,7 @@ mod benches {
         [working_group, ContentWorkingGroup]
         [referendum, Referendum]
         [council, Council]
-        // [bounty, Bounty]
+        [bounty, Bounty]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
         [content, Content]
@@ -392,7 +393,7 @@ impl_runtime_apis! {
                         member_id,
                         account_id.clone(),
                         account_id,
-                        <Runtime as council::Config>::MinCandidateStake::get().into(),
+                        <Runtime as council::Config>::MinCandidateStake::get(),
                     ).expect(
                         "Should pass a valid member associated to the account and the account
                         should've enough

@@ -212,6 +212,14 @@ import {
   GetMemberInvitedEventsByEventIdsQuery,
   GetMemberInvitedEventsByEventIdsQueryVariables,
   GetMemberInvitedEventsByEventIds,
+  GetFoundingMemberCreatedEventsByEventIdsQuery,
+  GetFoundingMemberCreatedEventsByEventIdsQueryVariables,
+  GetFoundingMemberCreatedEventsByEventIds,
+  FoundingMemberCreatedEventFieldsFragment,
+  GetMembershipGiftedEventsByEventIdsQuery,
+  GetMembershipGiftedEventsByEventIdsQueryVariables,
+  GetMembershipGiftedEventsByEventIds,
+  MembershipGiftedEventFieldsFragment,
   ProposalFieldsFragment,
   GetProposalsByIdsQuery,
   GetProposalsByIdsQueryVariables,
@@ -306,14 +314,13 @@ import {
   GetChannelsByIds,
   GetChannelsByIdsQuery,
   GetChannelsByIdsQueryVariables,
-  ChannelCategoryFieldsFragment,
-  GetChannelCategoryByIdQuery,
-  GetChannelCategoryByIdQueryVariables,
-  GetChannelCategoryById,
   VideoCategoryFieldsFragment,
   GetVideoCategoryByIdQuery,
   GetVideoCategoryByIdQueryVariables,
   GetVideoCategoryById,
+  GetVideoCategoriesQuery,
+  GetVideoCategoriesQueryVariables,
+  GetVideoCategories,
   OwnedNftFieldsFragment,
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
@@ -403,6 +410,14 @@ import {
   GetDataObjectsByVideoIdQueryVariables,
   GetDataObjectsByVideoId,
   StorageDataObjectFieldsFragment,
+  CuratorAgentPermissionsFieldsFragment,
+  GetCuratorPermissionsByIdAndGroupId,
+  GetCuratorPermissionsByIdAndGroupIdQuery,
+  GetCuratorPermissionsByIdAndGroupIdQueryVariables,
+  CollaboratorsFieldsFragment,
+  GetCollaboratorsByChannelId,
+  GetCollaboratorsByChannelIdQuery,
+  GetCollaboratorsByChannelIdQueryVariables,
   GetChannelDeletedByModeratorEventsByEventIdsQuery,
   GetChannelDeletedByModeratorEventsByEventIdsQueryVariables,
   GetChannelDeletedByModeratorEventsByEventIds,
@@ -419,6 +434,9 @@ import {
   GetDistributionFamiliesAdndBucketsQuery,
   GetDistributionFamiliesAdndBucketsQueryVariables,
   GetDistributionFamiliesAdndBuckets,
+  GetVideoByIdQuery,
+  GetVideoByIdQueryVariables,
+  GetVideoById,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -555,6 +573,24 @@ export class QueryNodeApi {
       GetMemberAccountsUpdatedEventsByMemberIdQuery,
       GetMemberAccountsUpdatedEventsByMemberIdQueryVariables
     >(GetMemberAccountsUpdatedEventsByMemberId, { memberId: memberId.toString() }, 'memberAccountsUpdatedEvents')
+  }
+
+  public async getFoundingMemberCreatedEvents(
+    events: EventDetails[]
+  ): Promise<FoundingMemberCreatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetFoundingMemberCreatedEventsByEventIdsQuery,
+      GetFoundingMemberCreatedEventsByEventIdsQueryVariables
+    >(GetFoundingMemberCreatedEventsByEventIds, { eventIds }, 'foundingMemberCreatedEvents')
+  }
+
+  public async getMembershipGiftedEvents(events: EventDetails[]): Promise<MembershipGiftedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMembershipGiftedEventsByEventIdsQuery,
+      GetMembershipGiftedEventsByEventIdsQueryVariables
+    >(GetMembershipGiftedEventsByEventIds, { eventIds }, 'membershipGiftedEvents')
   }
 
   public async getMemberInvitedEvents(events: EventDetails[]): Promise<MemberInvitedEventFieldsFragment[]> {
@@ -1202,19 +1238,19 @@ export class QueryNodeApi {
     )
   }
 
-  public async channelCategoryById(id: string): Promise<Maybe<ChannelCategoryFieldsFragment>> {
-    return this.uniqueEntityQuery<GetChannelCategoryByIdQuery, GetChannelCategoryByIdQueryVariables>(
-      GetChannelCategoryById,
-      { id },
-      'channelCategoryByUniqueInput'
-    )
-  }
-
   public async videoCategoryById(id: string): Promise<Maybe<VideoCategoryFieldsFragment>> {
     return this.uniqueEntityQuery<GetVideoCategoryByIdQuery, GetVideoCategoryByIdQueryVariables>(
       GetVideoCategoryById,
       { id },
       'videoCategoryByUniqueInput'
+    )
+  }
+
+  public async getVideoCategories(): Promise<VideoCategoryFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideoCategoriesQuery, GetVideoCategoriesQueryVariables>(
+      GetVideoCategories,
+      {},
+      'videoCategories'
     )
   }
 
@@ -1250,6 +1286,24 @@ export class QueryNodeApi {
     )
   }
 
+  public async getCuratorPermissionsByIdAndGroupId(
+    curatorGroupId: string,
+    curatorId: string
+  ): Promise<Maybe<CuratorAgentPermissionsFieldsFragment>> {
+    return this.firstEntityQuery<
+      GetCuratorPermissionsByIdAndGroupIdQuery,
+      GetCuratorPermissionsByIdAndGroupIdQueryVariables
+    >(GetCuratorPermissionsByIdAndGroupId, { curatorGroupId, curatorId }, 'curatorAgentPermissions')
+  }
+
+  public async getCollaboratorsByChannelId(channelId: string): Promise<CollaboratorsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetCollaboratorsByChannelIdQuery, GetCollaboratorsByChannelIdQueryVariables>(
+      GetCollaboratorsByChannelId,
+      { channelId },
+      'collaborators'
+    )
+  }
+
   public async getMembershipVerificationStatusUpdatedEvents(
     events: EventDetails[]
   ): Promise<MemberVerificationStatusUpdatedEventFieldsFragment[]> {
@@ -1258,6 +1312,14 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async videoById(videoId: string): Promise<VideoFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetVideoByIdQuery, GetVideoByIdQueryVariables>(
+      GetVideoById,
+      { videoId },
+      'videoByUniqueInput'
+    )
   }
 
   public async getVideosByIds(ids: string[]): Promise<VideoFieldsFragment[]> {

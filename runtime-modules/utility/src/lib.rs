@@ -30,8 +30,8 @@ pub use weights::WeightInfo;
 use common::{working_group::WorkingGroup, BalanceKind};
 use council::Module as Council;
 use frame_support::dispatch::DispatchResultWithPostInfo;
-use frame_support::traits::Currency;
 use frame_support::traits::Get;
+use frame_support::traits::{Currency, Imbalance};
 use frame_support::weights::{DispatchClass, Weight};
 use frame_support::{decl_error, decl_event, decl_module, ensure, print};
 use frame_system::{ensure_root, ensure_signed};
@@ -221,9 +221,9 @@ decl_module! {
 
             // == Mutation Safe == //
 
-            let _ = Balances::<T>::slash(&account_id, amount);
+            let (actually_burned, _) = Balances::<T>::slash(&account_id, amount);
 
-            Self::deposit_event(RawEvent::TokensBurned(account_id, amount));
+            Self::deposit_event(RawEvent::TokensBurned(account_id, actually_burned.peek()));
         }
 
     }

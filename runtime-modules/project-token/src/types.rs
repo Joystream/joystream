@@ -1,5 +1,5 @@
 use codec::{Decode, Encode};
-use common::MembershipTypes;
+use common::{bloat_bond::RepayableBloatBond, MembershipTypes};
 use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
     ensure,
@@ -24,7 +24,7 @@ use sp_std::{
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
-use crate::{errors::Error, Config};
+use crate::{errors::Error, Config, RepayableBloatBondOf};
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
@@ -51,7 +51,7 @@ pub struct StakingStatus<Balance> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
+pub struct AccountData<VestingSchedule, Balance, StakingStatus, RepayableBloatBond> {
     /// Map that represents account's vesting schedules indexed by source.
     /// Account's total unvested (locked) balance at current block (b)
     /// can be calculated by summing `v.locks()` of all
@@ -67,7 +67,7 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
 
     /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
     /// account, returned when this account is removed
-    pub bloat_bond: JoyBalance,
+    pub bloat_bond: RepayableBloatBond,
 
     /// Id of the next incoming transfer that includes tokens subject to vesting
     /// (for the purpose of generating VestingSource)
@@ -793,6 +793,17 @@ pub enum Validated<MemberId: Ord + Eq + Clone> {
     NonExisting(MemberId),
 }
 
+/// Utility wrapper around existing/non existing accounts to be updated/inserted due to
+/// toknes transfer
+#[derive(Encode, Decode, PartialEq, Eq, Debug, PartialOrd, Ord, Clone, TypeInfo)]
+pub enum ValidatedWithBloatBond<MemberId, RepayableBloatBond> {
+    /// Existing account
+    Existing(MemberId),
+
+    /// Non Existing account
+    NonExisting(MemberId, RepayableBloatBond),
+}
+
 // implementation
 
 /// Default trait for OfferingState
@@ -815,23 +826,28 @@ impl<Balance: Zero, VestingScheduleParams> Default
 }
 
 /// Default trait for AccountData
-impl<VestingSchedule, Balance: Zero, StakingStatus, JoyBalance: Zero> Default
-    for AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance>
+impl<VestingSchedule, Balance: Zero, StakingStatus, RepayableBloatBond: Default> Default
+    for AccountData<VestingSchedule, Balance, StakingStatus, RepayableBloatBond>
 {
     fn default() -> Self {
         Self {
             vesting_schedules: BTreeMap::new(),
             split_staking_status: None,
             amount: Balance::zero(),
-            bloat_bond: JoyBalance::zero(),
+            bloat_bond: RepayableBloatBond::default(),
             next_vesting_transfer_id: 0,
             last_sale_total_purchased_amount: None,
         }
     }
 }
 
-impl<Balance, BlockNumber, JoyBalance>
-    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus<Balance>, JoyBalance>
+impl<Balance, BlockNumber, RepayableBloatBond>
+    AccountData<
+        VestingSchedule<BlockNumber, Balance>,
+        Balance,
+        StakingStatus<Balance>,
+        RepayableBloatBond,
+    >
 where
     Balance: Clone
         + Zero
@@ -845,10 +861,10 @@ where
         + TryInto<u64>
         + Copy,
     BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
-    JoyBalance: Zero,
+    RepayableBloatBond: Default,
 {
     /// Ctor
-    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: JoyBalance) -> Self {
+    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: RepayableBloatBond) -> Self {
         Self {
             amount,
             bloat_bond,
@@ -859,7 +875,7 @@ where
     pub fn new_with_vesting_and_bond(
         source: VestingSource,
         schedule: VestingSchedule<BlockNumber, Balance>,
-        bloat_bond: JoyBalance,
+        bloat_bond: RepayableBloatBond,
     ) -> Self {
         let next_vesting_transfer_id = if let VestingSource::IssuerTransfer(_) = source {
             1
@@ -1323,8 +1339,12 @@ pub(crate) type Joy<T> = balances::Pallet<T>;
 pub(crate) type StakingStatusOf<T> = StakingStatus<<T as Config>::Balance>;
 
 /// Alias for Account Data
-pub(crate) type AccountDataOf<T> =
-    AccountData<VestingScheduleOf<T>, TokenBalanceOf<T>, StakingStatusOf<T>, JoyBalanceOf<T>>;
+pub(crate) type AccountDataOf<T> = AccountData<
+    VestingScheduleOf<T>,
+    TokenBalanceOf<T>,
+    StakingStatusOf<T>,
+    RepayableBloatBond<<T as frame_system::Config>::AccountId, JoyBalanceOf<T>>,
+>;
 
 /// Alias for Token Data
 pub type TokenDataOf<T> = TokenData<
@@ -1426,3 +1446,11 @@ pub type RevenueSplitStateOf<T> =
 /// Alias for ValidatedTransfers
 pub(crate) type ValidatedTransfersOf<T> =
     Transfers<Validated<<T as MembershipTypes>::MemberId>, ValidatedPaymentOf<T>>;
+
+/// Alias for ValidatedWithBloatBond
+pub(crate) type ValidatedWithBloatBondOf<T> =
+    ValidatedWithBloatBond<<T as MembershipTypes>::MemberId, RepayableBloatBondOf<T>>;
+
+/// Alias for complex type BTreeMap<MemberId, (TokenAllocation, RepayableBloatBond)>
+pub(crate) type AllocationWithBloatBondsOf<T> =
+    BTreeMap<<T as MembershipTypes>::MemberId, (TokenAllocationOf<T>, RepayableBloatBondOf<T>)>;

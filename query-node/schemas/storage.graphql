@@ -25,7 +25,7 @@ type StorageSystemParameters @entity {
   nextDataObjectId: BigInt!
 
   "Data Object state bloat bond value"
-  dataObjectStateBloatBondValue: Int!
+  dataObjectStateBloatBondValue: BigInt!
 }
 
 type StorageBucketOperatorStatusMissing @variant {
@@ -193,6 +193,16 @@ type DataObjectTypeVideoThumbnail @variant {
   video: Video!
 }
 
+type DataObjectTypeVideoSubtitle @variant {
+  "Related subtitle entity"
+  subtitle: VideoSubtitle!
+
+  # Useful for filtering subtitles against video, since
+  # relationship filtering through variant is not supported
+  "Related video entity"
+  video: Video!
+}
+
 type DataObjectTypeUnknown @variant {
   _phantom: Int
 }
@@ -202,6 +212,7 @@ union DataObjectType =
   | DataObjectTypeChannelCoverPhoto
   | DataObjectTypeVideoMedia
   | DataObjectTypeVideoThumbnail
+  | DataObjectTypeVideoSubtitle
   | DataObjectTypeUnknown
 
 type StorageDataObject @entity {
@@ -235,6 +246,9 @@ type StorageDataObject @entity {
 
   "Video that has this data object associated as media."
   videoMedia: Video @derivedFrom(field: "media")
+
+  "Video subtitle that has this data object associated as subtitle file."
+  videoSubtitle: VideoSubtitle @derivedFrom(field: "asset")
 }
 
 type DistributionBucketFamilyGeographicArea @entity {

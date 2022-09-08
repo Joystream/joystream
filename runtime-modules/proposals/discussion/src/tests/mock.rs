@@ -2,7 +2,10 @@
 
 pub use frame_system;
 
-use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use common::locks::{
+    BoundStakingAccountLockId, CandidacyLockId, CouncilorLockId, InvitedMemberLockId, VotingLockId,
+};
+use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize, WithdrawReasons};
 use frame_support::{
     parameter_types,
     traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
@@ -16,13 +19,12 @@ use sp_runtime::{
     DispatchResult,
 };
 
-use crate::CouncilOriginValidator;
-use crate::MemberOriginValidator;
+use crate::{BalanceOf, CouncilOriginValidator, MemberOriginValidator, MembershipInfoProvider};
 
 use frame_support::dispatch::DispatchError;
 use sp_std::convert::{TryFrom, TryInto};
 
-use staking_handler::{LockComparator, StakingManager};
+use staking_handler::{LockComparator, StakingHandler, StakingManager};
 
 use crate as proposals_discussion;
 
@@ -62,9 +64,7 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 4;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
-    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const ReferralCutMaximumPercent: u8 = 50;
-    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
     pub const PostLifeTime: u64 = 10;
     pub const PostDeposit: u64 = 100;
@@ -135,7 +135,7 @@ impl membership::Config for Test {
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
-        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+        staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
 }
 
@@ -210,6 +210,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
 impl crate::Config for Test {
     type Event = Event;
     type AuthorOriginValidator = ();
+    type MembershipInfoProvider = ();
     type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
     type PostId = u64;
@@ -249,14 +250,22 @@ impl MemberOriginValidator<Origin, u64, u128> for () {
     }
 }
 
+impl MembershipInfoProvider<Test> for () {
+    fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
+        if member_id <= 12 {
+            Ok(member_id.into())
+        } else {
+            Err(DispatchError::Other("member does not exist"))
+        }
+    }
+}
+
 parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 27;
     pub const CouncilSize: u64 = 4;
     pub const MinCandidateStake: u64 = 11000;
-    pub const CandidacyLockId: LockIdentifier = *b"council1";
-    pub const CouncilorLockId: LockIdentifier = *b"council2";
     pub const ElectedMemberRewardPeriod: u64 = 10;
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
@@ -307,7 +316,6 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 23;
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
-    pub const VotingLockId: LockIdentifier = *b"referend";
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
@@ -372,6 +380,10 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
+    crate::GenesisConfig::default()
+        .assimilate_storage::<Test>(&mut t)
+        .unwrap();
+
     council::GenesisConfig::<Test>::default()
         .assimilate_storage(&mut t)
         .unwrap();
@@ -389,4 +401,26 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
         <Discussions as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+pub fn ed() -> BalanceOf<Test> {
+    ExistentialDeposit::get().into()
+}
+
+pub fn set_invitation_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }

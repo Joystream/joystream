@@ -3,14 +3,14 @@
 
 #[macro_use]
 mod proposals_integration;
-
+mod fee_tests;
+mod handle_fees;
 mod locks;
 
-mod fee_tests;
-
-use crate::primitives::MemberId;
+use crate::constants::currency;
+use crate::primitives::{Balance, MemberId};
 use crate::{BlockNumber, ReferendumInstance, Runtime};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, GenesisBuild, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{traits::One, AccountId32, BuildStorage};
@@ -32,6 +32,16 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     council_config.assimilate_storage(&mut t).unwrap();
+
+    let staking_config = pallet_staking::GenesisConfig::<crate::Runtime> {
+        min_nominator_bond: currency::MIN_NOMINATOR_BOND,
+        min_validator_bond: currency::MIN_VALIDATOR_BOND,
+        ..Default::default()
+    }
+    .build_storage()
+    .unwrap();
+
+    staking_config.assimilate_storage(&mut t).unwrap();
 
     t.into()
 }
@@ -192,15 +202,15 @@ pub(crate) fn set_staking_account(
     member_id: u64,
 ) {
     let current_balance = pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id);
-
+    let stake = <Runtime as membership::Config>::CandidateStake::get();
     let _ = pallet_balances::Pallet::<Runtime>::deposit_creating(
         &staking_account_id,
-        <Runtime as membership::Config>::CandidateStake::get(),
+        stake + crate::ExistentialDeposit::get(),
     );
 
     assert_eq!(
         pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id),
-        current_balance + <Runtime as membership::Config>::CandidateStake::get()
+        current_balance + stake + crate::ExistentialDeposit::get()
     );
 
     membership::Module::<Runtime>::add_staking_account_candidate(
@@ -211,7 +221,7 @@ pub(crate) fn set_staking_account(
 
     assert_eq!(
         pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id),
-        current_balance
+        current_balance + crate::ExistentialDeposit::get()
     );
 
     membership::Module::<Runtime>::confirm_staking_account(
@@ -240,17 +250,18 @@ pub(crate) fn run_to_block(n: BlockNumber) {
 
 pub(crate) fn increase_total_balance_issuance_using_account_id(
     account_id: AccountId32,
-    balance: u128,
+    balance: Balance,
 ) {
     type Balances = pallet_balances::Pallet<Runtime>;
     let initial_balance = Balances::total_issuance();
+    let deposit = balance + crate::ExistentialDeposit::get();
     {
-        let _ = Balances::deposit_creating(&account_id, balance);
+        let _ = Balances::deposit_creating(&account_id, deposit);
     }
-    assert_eq!(Balances::total_issuance(), initial_balance + balance);
+    assert_eq!(Balances::total_issuance(), initial_balance + deposit);
 }
 
-pub(crate) fn max_proposal_stake() -> u128 {
+pub(crate) fn max_proposal_stake() -> Balance {
     let mut stakes = vec![];
     stakes
         .push(<Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get());
@@ -298,6 +309,8 @@ pub(crate) fn max_proposal_stake() -> u128 {
     stakes.push(<Runtime as proposals_codex::Config>::VetoProposalProposalParameters::get());
     stakes
         .push(<Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get());
+    stakes
+        .push(<Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get());
 
     stakes
         .iter()

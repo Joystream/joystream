@@ -1,14 +1,15 @@
 use super::mock::*;
 use crate::Event as MembershipEvent;
 use crate::{
-    BuyMembershipParameters, CreateFoundingMemberParameters, GiftMembershipParameters,
+    BalanceOf, BuyMembershipParameters, CreateFoundingMemberParameters, GiftMembershipParameters,
     InviteMembershipParameters, MembershipObject,
 };
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{OnFinalize, OnInitialize, WithdrawReasons};
 use frame_support::{assert_noop, assert_ok, StorageMap};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::traits::Hash;
+use staking_handler::StakingHandler;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -20,6 +21,17 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
         <Membership as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+pub fn set_invitation_lock(
+    who: &<Test as frame_system::Config>::AccountId,
+    amount: BalanceOf<Test>,
+) {
+    <Test as Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
 }
 
 pub struct EventFixture;
@@ -109,6 +121,14 @@ pub const BOB_ROOT_ACCOUNT_ID: u64 = 3;
 pub const BOB_CONTROLLER_ACCOUNT_ID: u64 = BOB_ACCOUNT_ID;
 pub const ALICE_MEMBER_ID: u64 = 0;
 pub const BOB_MEMBER_ID: u64 = 1;
+
+pub fn set_alice_as_initial_member() {
+    let initial_balance = ed() + DefaultMembershipPrice::get();
+    set_alice_free_balance(initial_balance);
+    let next_member_id = Membership::members_created();
+    assert_ok!(buy_default_membership_as_alice());
+    assert_eq!(ALICE_MEMBER_ID, next_member_id);
+}
 
 pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
     let info = get_alice_info();

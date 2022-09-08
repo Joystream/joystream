@@ -883,15 +883,15 @@ benchmarks! {
             author_id: forum_user_id.saturated_into(),
             thread_id: next_thread_id,
             last_edited: System::<T>::block_number(),
-            cleanup_pay_off: T::PostDeposit::get(),
+            cleanup_pay_off: RepayableBloatBond::new(T::PostDeposit::get(), None),
         };
 
         // Ensure new thread created successfully
         let new_thread = Thread {
             category_id,
             author_id: forum_user_id.saturated_into(),
-            cleanup_pay_off: T::ThreadDeposit::get(),
-            number_of_posts: 1,
+            cleanup_pay_off: RepayableBloatBond::new(T::ThreadDeposit::get(), None),
+            number_of_editable_posts: 1,
         };
 
         assert_eq!(Module::<T>::thread_by_id(category_id, next_thread_id), new_thread);
@@ -1196,9 +1196,9 @@ benchmarks! {
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, rationale.clone())
     verify {
         // Thread balance was correctly slashed
-        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
+        let thread_account_id = Module::<T>::thread_account(thread_id);
         assert_eq!(
-           Balances::<T>::free_balance(&thread_account_id),
+           Balances::<T>::total_balance(&thread_account_id),
            <T as balances::Config>::Balance::zero()
         );
 
@@ -1264,9 +1264,9 @@ benchmarks! {
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, rationale.clone())
     verify {
         // Thread balance was correctly slashed
-        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
+        let thread_account_id = Module::<T>::thread_account(thread_id);
         assert_eq!(
-           Balances::<T>::free_balance(&thread_account_id),
+           Balances::<T>::total_balance(&thread_account_id),
            <T as balances::Config>::Balance::zero()
         );
 
@@ -1326,7 +1326,7 @@ benchmarks! {
             author_id: forum_user_id.saturated_into(),
             thread_id,
             last_edited: System::<T>::block_number(),
-            cleanup_pay_off: T::PostDeposit::get(),
+            cleanup_pay_off: RepayableBloatBond::new(T::PostDeposit::get(), None),
         };
 
         assert_eq!(Module::<T>::post_by_id(thread_id, post_id), new_post);
@@ -1463,7 +1463,7 @@ benchmarks! {
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, post_id, rationale.clone())
     verify {
-        thread.number_of_posts -= 1;
+        thread.number_of_editable_posts -= 1;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
         assert!(!<PostById<T>>::contains_key(thread_id, post_id));
@@ -1515,7 +1515,7 @@ benchmarks! {
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, post_id, rationale.clone())
     verify {
-        thread.number_of_posts -= 1;
+        thread.number_of_editable_posts -= 1;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
         assert!(!<PostById<T>>::contains_key(thread_id, post_id));
@@ -1591,7 +1591,7 @@ benchmarks! {
         rationale.clone()
     )
     verify {
-        thread.number_of_posts -= k as u64;
+        thread.number_of_editable_posts -= k as u64;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
         for extended_post in posts.keys() {
