@@ -5,7 +5,6 @@ export { CreateFoundingMemberHappyCaseFixture } from './CreateFoundingMemberHapp
 export { GiftMembershipHappyCaseFixture } from './GiftMembershipHappyCaseFixture'
 export { InviteMembersHappyCaseFixture } from './InviteMembersHappyCaseFixture'
 export { RemoveStakingAccountsHappyCaseFixture } from './RemoveStakingAccountsHappyCaseFixture'
-export { SudoUpdateMembershipSystem } from './SudoUpdateMembershipSystem'
 export { TransferInvitesHappyCaseFixture } from './TransferInvitesHappyCaseFixture'
 export { UpdateAccountsHappyCaseFixture } from './UpdateAccountsHappyCaseFixture'
 export { UpdateProfileHappyCaseFixture, MemberProfileData } from './UpdateProfileHappyCaseFixture'

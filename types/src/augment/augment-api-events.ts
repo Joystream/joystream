@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perquintill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
+import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletBountyBountyActor, PalletBountyBountyParameters, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/events' {
   export interface AugmentedEvents<ApiType extends ApiTypes> {
@@ -62,6 +62,192 @@ declare module '@polkadot/api-base/types/events' {
        * Some amount was withdrawn from the account (e.g. for transaction fees).
        **/
       Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32, amount: u128 }>;
+    };
+    bounty: {
+      /**
+       * Bounty contributor made a message remark
+       * Params:
+       * - contributor
+       * - bounty id
+       * - message
+       **/
+      BountyContributorRemarked: AugmentedEvent<ApiType, [PalletBountyBountyActor, u64, Bytes]>;
+      /**
+       * A bounty was created.
+       * Params:
+       * - bounty ID
+       * - creation parameters
+       * - bounty metadata
+       **/
+      BountyCreated: AugmentedEvent<ApiType, [u64, PalletBountyBountyParameters, Bytes]>;
+      /**
+       * A bounty creator has withdrawn the cherry (member or council).
+       * Params:
+       * - bounty ID
+       * - bounty creator
+       **/
+      BountyCreatorCherryWithdrawal: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor]>;
+      /**
+       * A bounty creator has withdrawn the oracle reward (member or council).
+       * Params:
+       * - bounty ID
+       * - bounty creator
+       **/
+      BountyCreatorOracleRewardWithdrawal: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor]>;
+      /**
+       * Bounty creator made a message remark
+       * Params:
+       * - creator
+       * - bounty id
+       * - message
+       **/
+      BountyCreatorRemarked: AugmentedEvent<ApiType, [PalletBountyBountyActor, u64, Bytes]>;
+      /**
+       * Bounty entrant made a message remark
+       * Params:
+       * - entrant_id
+       * - bounty id
+       * - entry id
+       * - message
+       **/
+      BountyEntrantRemarked: AugmentedEvent<ApiType, [u64, u64, u64, Bytes]>;
+      /**
+       * A bounty was funded by a member or a council.
+       * Params:
+       * - bounty ID
+       * - bounty funder
+       * - funding amount
+       **/
+      BountyFunded: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor, u128]>;
+      /**
+       * A member or a council has withdrawn the funding.
+       * Params:
+       * - bounty ID
+       * - bounty funder
+       **/
+      BountyFundingWithdrawal: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor]>;
+      /**
+       * A bounty has reached its target funding amount.
+       * Params:
+       * - bounty ID
+       **/
+      BountyMaxFundingReached: AugmentedEvent<ApiType, [u64]>;
+      /**
+       * Bounty oracle made a message remark
+       * Params:
+       * - oracle
+       * - bounty id
+       * - message
+       **/
+      BountyOracleRemarked: AugmentedEvent<ApiType, [PalletBountyBountyActor, u64, Bytes]>;
+      /**
+       * A Oracle has withdrawn the oracle reward (member or council).
+       * Params:
+       * - bounty ID
+       * - bounty creator
+       * - Oracle Reward
+       **/
+      BountyOracleRewardWithdrawal: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor, u128]>;
+      /**
+       * Bounty Oracle Switched by current oracle or council.
+       * Params:
+       * - bounty ID
+       * - switcher
+       * - current_oracle,
+       * - new oracle
+       **/
+      BountyOracleSwitched: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor, PalletBountyBountyActor, PalletBountyBountyActor]>;
+      /**
+       * A bounty was removed.
+       * Params:
+       * - bounty ID
+       **/
+      BountyRemoved: AugmentedEvent<ApiType, [u64]>;
+      /**
+       * A bounty was terminated by council.
+       * Params:
+       * - bounty ID
+       * - bounty terminator
+       * - bounty creator
+       * - bounty oracle
+       **/
+      BountyTerminated: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor, PalletBountyBountyActor, PalletBountyBountyActor]>;
+      /**
+       * A member or a council creator has withdrawn the creator state bloat bond.
+       * Params:
+       * - bounty ID
+       * - bounty creator
+       * - Creator State bloat bond amount
+       **/
+      CreatorStateBloatBondWithdrawn: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor, u128]>;
+      /**
+       * A member or a council funder has withdrawn the funder state bloat bond.
+       * Params:
+       * - bounty ID
+       * - bounty funder
+       * - funder State bloat bond amount
+       **/
+      FunderStateBloatBondWithdrawn: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor, u128]>;
+      /**
+       * Submit oracle judgment.
+       * Params:
+       * - bounty ID
+       * - oracle
+       * - judgment data
+       * - rationale
+       **/
+      OracleJudgmentSubmitted: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor, BTreeMap<u64, PalletBountyOracleWorkEntryJudgment>, Bytes]>;
+      /**
+       * Work entry was slashed.
+       * Params:
+       * - bounty ID
+       * - entry ID
+       * - entrant member ID
+       **/
+      WorkEntrantFundsWithdrawn: AugmentedEvent<ApiType, [u64, u64, u64]>;
+      /**
+       * Work entry stake slashed.
+       * Params:
+       * - bounty ID
+       * - entry ID
+       * - stake account
+       * - slashed amount
+       **/
+      WorkEntrantStakeSlashed: AugmentedEvent<ApiType, [u64, u64, AccountId32, u128]>;
+      /**
+       * Work entry stake unlocked.
+       * Params:
+       * - bounty ID
+       * - entry ID
+       * - stake account
+       **/
+      WorkEntrantStakeUnlocked: AugmentedEvent<ApiType, [u64, u64, AccountId32]>;
+      /**
+       * Work entry was announced.
+       * Params:
+       * - bounty ID
+       * - created entry ID
+       * - entrant member ID
+       * - staking account ID
+       * - work description
+       **/
+      WorkEntryAnnounced: AugmentedEvent<ApiType, [u64, u64, u64, AccountId32, Bytes]>;
+      /**
+       * Work entry was slashed.
+       * Params:
+       * - bounty ID
+       * - oracle (caller)
+       **/
+      WorkSubmissionPeriodEnded: AugmentedEvent<ApiType, [u64, PalletBountyBountyActor]>;
+      /**
+       * Submit work.
+       * Params:
+       * - bounty ID
+       * - created entry ID
+       * - entrant member ID
+       * - work data (description, URL, BLOB, etc.)
+       **/
+      WorkSubmitted: AugmentedEvent<ApiType, [u64, u64, u64, Bytes]>;
     };
     constitution: {
       /**
@@ -1137,7 +1323,7 @@ declare module '@polkadot/api-base/types/events' {
       UpdatedWorkingGroupBudget: AugmentedEvent<ApiType, [PalletCommonWorkingGroup, u128, PalletCommonBalanceKind]>;
     };
     members: {
-      FoundingMemberCreated: AugmentedEvent<ApiType, [u64, PalletMembershipCreateFoundingMemberParameters]>;
+      FoundingMemberCreated: AugmentedEvent<ApiType, [u64, PalletMembershipCreateFoundingMemberParameters, u32]>;
       InitialInvitationBalanceUpdated: AugmentedEvent<ApiType, [u128]>;
       InitialInvitationCountUpdated: AugmentedEvent<ApiType, [u32]>;
       InvitesTransferred: AugmentedEvent<ApiType, [u64, u64, u32]>;
@@ -1146,7 +1332,7 @@ declare module '@polkadot/api-base/types/events' {
       MemberInvited: AugmentedEvent<ApiType, [u64, PalletMembershipInviteMembershipParameters]>;
       MemberProfileUpdated: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
       MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
-      MembershipBought: AugmentedEvent<ApiType, [u64, PalletMembershipBuyMembershipParameters]>;
+      MembershipBought: AugmentedEvent<ApiType, [u64, PalletMembershipBuyMembershipParameters, u32]>;
       MembershipGifted: AugmentedEvent<ApiType, [u64, PalletMembershipGiftMembershipParameters]>;
       MembershipPriceUpdated: AugmentedEvent<ApiType, [u128]>;
       MemberVerificationStatusUpdated: AugmentedEvent<ApiType, [u64, bool, u64]>;
@@ -2416,11 +2602,10 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Emits on creating a dynamic bag.
        * Params
-       * - dynamic bag ID
-       * - assigned storage buckets' IDs
-       * - assigned distribution buckets' IDs
+       * - dynamic bag creation parameters
+       * - uploaded data objects ids
        **/
-      DynamicBagCreated: AugmentedEvent<ApiType, [PalletStorageDynamicBagIdType, BTreeSet<u64>, BTreeSet<PalletStorageDistributionBucketIdRecord>]>;
+      DynamicBagCreated: AugmentedEvent<ApiType, [PalletStorageDynBagCreationParametersRecord, BTreeSet<u64>]>;
       /**
        * Emits on deleting a dynamic bag.
        * Params

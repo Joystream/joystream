@@ -152,29 +152,29 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 # CLI Commands
 
 <!-- commands -->
-
-- [`storage-node dev:multihash`](#storage-node-devmultihash)
-- [`storage-node dev:sync`](#storage-node-devsync)
-- [`storage-node dev:upload`](#storage-node-devupload)
-- [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
-- [`storage-node help [COMMAND]`](#storage-node-help-command)
-- [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
-- [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
-- [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
-- [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
-- [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
-- [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
-- [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
-- [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
-- [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
-- [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
-- [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
-- [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
-- [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
-- [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
-- [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
-- [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
-- [`storage-node server`](#storage-node-server)
+* [`storage-node dev:multihash`](#storage-node-devmultihash)
+* [`storage-node dev:sync`](#storage-node-devsync)
+* [`storage-node dev:upload`](#storage-node-devupload)
+* [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
+* [`storage-node help [COMMAND]`](#storage-node-help-command)
+* [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
+* [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
+* [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
+* [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
+* [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
+* [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
+* [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
+* [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
+* [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
+* [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
+* [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
+* [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
+* [`storage-node leader:update-data-object-bloat-bond`](#storage-node-leaderupdate-data-object-bloat-bond)
+* [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
+* [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
+* [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
+* [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
+* [`storage-node server`](#storage-node-server)
 
 ## `storage-node dev:multihash`
 
@@ -231,6 +231,7 @@ USAGE
 OPTIONS
   -c, --cid=cid                (required) Data object IPFS content ID.
   -h, --help                   show CLI help
+  -i, --bagId=bagId            (required) BagId for uploading the Data object.
   -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
   -m, --dev                    Use development mode
   -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
@@ -257,16 +258,16 @@ OPTIONS
 
   -i, --bagId=bagId
       (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
-           - Bag types: 'static', 'dynamic'
-           - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-           - Id:
-             - absent for 'static:council'
-             - working group name for 'static:wg'
-             - integer for 'dynamic:member' and 'dynamic:channel'
-           Examples:
-           - static:council
-           - static:wg:storage
-           - dynamic:member:4
+      - Bag types: 'static', 'dynamic'
+      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+      - Id:
+      - absent for 'static:council'
+      - working group name for 'static:wg'
+      - integer for 'dynamic:member' and 'dynamic:channel'
+      Examples:
+      - static:council
+      - static:wg:storage
+      - dynamic:member:4
 ```
 
 _See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/verify-bag-id.ts)_
@@ -286,7 +287,7 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.3.1/src/commands/help.ts)_
 
 ## `storage-node leader:cancel-invite`
 
@@ -458,23 +459,23 @@ USAGE
 
 OPTIONS
   -a, --add=add
-      [default: ] ID of a bucket to add to bag
+      [default: ] ID/s of a bucket/s to add to bag
 
   -h, --help
       show CLI help
 
   -i, --bagId=bagId
       (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
-           - Bag types: 'static', 'dynamic'
-           - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-           - Id:
-             - absent for 'static:council'
-             - working group name for 'static:wg'
-             - integer for 'dynamic:member' and 'dynamic:channel'
-           Examples:
-           - static:council
-           - static:wg:storage
-           - dynamic:member:4
+      - Bag types: 'static', 'dynamic'
+      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+      - Id:
+      - absent for 'static:council'
+      - working group name for 'static:wg'
+      - integer for 'dynamic:member' and 'dynamic:channel'
+      Examples:
+      - static:council
+      - static:wg:storage
+      - dynamic:member:4
 
   -k, --keyFile=keyFile
       Key file for the account. Mandatory in non-dev environment.
@@ -486,7 +487,7 @@ OPTIONS
       Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
 
   -r, --remove=remove
-      [default: ] ID of a bucket to remove from bag
+      [default: ] ID/s of a bucket/s to remove from bag
 
   -u, --apiUrl=apiUrl
       [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
@@ -587,6 +588,28 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-fee.ts)_
+
+## `storage-node leader:update-data-object-bloat-bond`
+
+Update data object bloat bond value. Requires storage working group leader permissions.
+
+```
+USAGE
+  $ storage-node leader:update-data-object-bloat-bond
+
+OPTIONS
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                    Use development mode
+  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+  -v, --value=value            (required) New data object bloat bond value
+
+  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
+                               overriden by ACCOUNT_URI environment variable.
+```
+
+_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-object-bloat-bond.ts)_
 
 ## `storage-node leader:update-dynamic-bag-policy`
 
@@ -751,5 +774,4 @@ OPTIONS
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/server.ts)_
-
 <!-- commandsstop -->

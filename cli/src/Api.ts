@@ -206,8 +206,8 @@ export default class Api {
   }
 
   async memberDetailsById(memberId: MemberId | number): Promise<MemberDetails | null> {
-    const membership = (await this._api.query.members.membershipById(memberId)).unwrap()
-    return membership.isEmpty ? null : await this.memberDetails(createType('u64', memberId), membership)
+    const membership = await this._api.query.members.membershipById(memberId)
+    return membership.isNone ? null : await this.memberDetails(createType('u64', memberId), membership.unwrap())
   }
 
   async expectedMemberDetailsById(memberId: MemberId | number): Promise<MemberDetails> {
@@ -220,7 +220,12 @@ export default class Api {
   }
 
   async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
-    return (await this._api.query.members.membershipById.multi(ids)).map((optionalMember) => optionalMember.unwrap())
+    return (await this._api.query.members.membershipById.multi(ids)).map((optionalMember, i) => {
+      if (optionalMember.isSome) {
+        return optionalMember.unwrap()
+      }
+      throw new CLIError(`Member ${ids[i]} does not exist!`)
+    })
   }
 
   async membersDetailsByIds(ids: MemberId[] | number[]): Promise<MemberDetails[]> {
@@ -283,13 +288,13 @@ export default class Api {
   }
 
   async workerByWorkerId(group: WorkingGroups, workerId: WorkerId | number): Promise<Worker> {
-    const worker = (await this.workingGroupApiQuery(group).workerById(workerId)).unwrap()
+    const worker = await this.workingGroupApiQuery(group).workerById(workerId)
 
-    if (worker.isEmpty) {
+    if (worker.isNone) {
       throw new CLIError(`Worker ${chalk.magentaBright(workerId)} does not exist!`)
     }
 
-    return worker
+    return worker.unwrap()
   }
 
   async groupMember(group: WorkingGroups, workerId: number): Promise<GroupMember> {
@@ -324,13 +329,13 @@ export default class Api {
       throw new CLIError('Invalid working group application ID!')
     }
 
-    const result = (await this.workingGroupApiQuery(group).applicationById(applicationId)).unwrap()
+    const result = await this.workingGroupApiQuery(group).applicationById(applicationId)
 
-    if (result.isEmpty) {
+    if (result.isNone) {
       throw new CLIError(`Application of ID=${applicationId} no longer exists!`)
     }
 
-    return result
+    return result.unwrap()
   }
 
   protected async fetchApplicationDetails(
@@ -508,7 +513,12 @@ export default class Api {
       const bucketsCountPolicy = [...distributionBucketFamiliesPolicy]
         .find(([familyId]) => familyId.toString() === id)?.[1]
         .toNumber()
-      if (bucketsCountPolicy && bucketsCountPolicy > buckets.length) {
+
+      if (!bucketsCountPolicy) {
+        continue
+      }
+
+      if (bucketsCountPolicy > buckets.length) {
         throw new CLIError(
           `Distribution buckets policy constraint unsatisfied. Not enough buckets exist in Bucket Family ${id}`
         )

@@ -16,11 +16,10 @@ import {
   StorageBucketOperatorStatusInvited,
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
-  StorageSystemParameters,
   GeoCoordinates,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { getById, inconsistentState, INT32MAX, toNumber } from '../common'
+import { getById, inconsistentState } from '../common'
 import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
 import {
   processDistributionBucketFamilyMetadata,
@@ -29,7 +28,6 @@ import {
 } from './metadata'
 import {
   createDataObjects,
-  getStorageSystem,
   getStorageBucketWithOperatorMetadata,
   getBag,
   getDynamicBagId,
@@ -197,16 +195,27 @@ export async function storage_StorageBucketDeleted({ event, store }: EventContex
 
 // DYNAMIC BAGS
 export async function storage_DynamicBagCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bagId, storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
+  const [
+    { bagId, storageBuckets, distributionBuckets, objectCreationList, expectedDataObjectStateBloatBond },
+    objectIds,
+  ] = new Storage.DynamicBagCreatedEvent(event).params
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
-    storageBuckets: Array.from(storageBucketIdsSet).map((id) => new StorageBucket({ id: id.toString() })),
-    distributionBuckets: Array.from(distributionBucketIdsSet).map(
+    storageBuckets: Array.from(storageBuckets).map((id) => new StorageBucket({ id: id.toString() })),
+    distributionBuckets: Array.from(distributionBuckets).map(
       (id) => new DistributionBucket({ id: distributionBucketId(id) })
     ),
   })
   await store.save<StorageBag>(storageBag)
+  if (objectCreationList.length) {
+    await createDataObjects(store, {
+      storageBagOrId: storageBag,
+      objectCreationList,
+      stateBloatBond: expectedDataObjectStateBloatBond,
+      objectIds: Array.from(objectIds),
+    })
+  }
 }
 
 export async function storage_DynamicBagDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -543,88 +552,4 @@ async function removeDistributionBucketOperator(store: DatabaseManager, operator
       }
     }
   }
-}
-
-// STORAGE SYSTEM GLOBAL PARAMS
-
-export async function storage_UpdateBlacklist({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [removedContentIds, addedContentIds] = new Storage.UpdateBlacklistEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-  storageSystem.blacklist = storageSystem.blacklist
-    .filter((cid) => !Array.from(removedContentIds).some((id) => id.eq(cid)))
-    .concat(Array.from(addedContentIds).map((id) => id.toString()))
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_DistributionBucketsPerBagLimitUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [newLimit] = new Storage.DistributionBucketsPerBagLimitUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.distributionBucketsPerBagLimit = toNumber(newLimit, INT32MAX)
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_StorageBucketsPerBagLimitUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [newLimit] = new Storage.StorageBucketsPerBagLimitUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.storageBucketsPerBagLimit = toNumber(newLimit, INT32MAX)
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_StorageBucketsVoucherMaxLimitsUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [sizeLimit, countLimit] = new Storage.StorageBucketsVoucherMaxLimitsUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.storageBucketMaxObjectsSizeLimit = sizeLimit
-  storageSystem.storageBucketMaxObjectsCountLimit = countLimit
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_UploadingBlockStatusUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [isBlocked] = new Storage.UploadingBlockStatusUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.uploadingBlocked = isBlocked.isTrue
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_DataObjectPerMegabyteFeeUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [newFee] = new Storage.DataObjectPerMegabyteFeeUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.dataObjectFeePerMb = newFee
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_DataObjectStateBloatBondValueUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [newStateBloatBondValue] = new Storage.DataObjectStateBloatBondValueUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-  storageSystem.dataObjectStateBloatBondValue = newStateBloatBondValue
-
-  await store.save<StorageSystemParameters>(storageSystem)
 }

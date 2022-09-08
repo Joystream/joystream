@@ -25,6 +25,13 @@ fragment DataObjectDetails on StorageDataObject {
   size
   ipfsHash
   isAccepted
+  type {
+    ... on DataObjectTypeVideoSubtitle {
+      subtitle {
+        mimeType
+      }
+    }
+  }
   storageBag {
     storageBuckets {
       ...StorageBucketDetails
@@ -48,6 +55,13 @@ fragment DistirubtionBucketWithObjects on DistributionBucket {
       id
       size
       ipfsHash
+      type {
+        ... on DataObjectTypeVideoSubtitle {
+          subtitle {
+            mimeType
+          }
+        }
+      }
     }
   }
 }

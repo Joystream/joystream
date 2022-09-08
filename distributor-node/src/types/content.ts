@@ -15,6 +15,7 @@ export type DataObjectData = {
   objectId: string
   size: number
   contentHash: string
+  fallbackMimeType?: string
   accessPoints?: DataObjectAccessPoints
 }
 
@@ -28,6 +29,7 @@ export type DownloadData = {
 export type DataObjectInfo = {
   exists: boolean
   isSupported: boolean
+  isAccepted: boolean
   data?: DataObjectData
 }
 
@@ -35,6 +37,7 @@ export enum ObjectStatusType {
   Available = 'Available',
   PendingDownload = 'PendingDownload',
   NotFound = 'NotFound',
+  NotUploadedYet = 'NotUploadedYet',
   NotSupported = 'NotSupported',
   Missing = 'Missing',
 }
@@ -62,9 +65,14 @@ export type ObjectStatusMissing = {
   objectData: DataObjectData
 }
 
+export type ObjectStatusNotUploadedYet = {
+  type: ObjectStatusType.NotUploadedYet
+}
+
 export type ObjectStatus =
   | ObjectStatusAvailable
   | ObjectStatusPendingDownload
   | ObjectStatusNotFound
   | ObjectStatusNotSupported
   | ObjectStatusMissing
+  | ObjectStatusNotUploadedYet
