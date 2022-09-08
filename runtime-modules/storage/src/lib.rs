@@ -3615,6 +3615,10 @@ impl<T: Config> Module<T> {
             !Blacklist::contains_key(obj.ipfs_content_id.clone()),
             Error::<T>::DataObjectBlacklisted,
         );
+        ensure!(
+            obj.ipfs_content_id.len() == CID_LENGTH,
+            Error::<T>::InvalidCidLength
+        );
         Ok(())
     }
 
