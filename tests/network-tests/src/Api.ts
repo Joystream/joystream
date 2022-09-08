@@ -27,6 +27,7 @@ import {
   PalletContentNftTypesEnglishAuctionParamsRecord as EnglishAuctionParams,
   PalletContentNftTypesOpenAuctionParamsRecord as OpenAuctionParams,
   PalletProposalsEngineProposalParameters as ProposalParameters,
+  PalletContentChannelBagWitness,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -1091,6 +1092,21 @@ export class Api {
     price: BN | null = null
   ): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId, price), accountFrom)
+  }
+
+  async channelBagWitness(channelId: ChannelId | number): Promise<PalletContentChannelBagWitness> {
+    const channelBag = await this.api.query.storage.bags(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+    return createType('PalletContentChannelBagWitness', {
+      storageBucketsNum: channelBag.storedBy.size,
+      distributionBucketsNum: channelBag.distributedBy.size,
+    })
+  }
+
+  async channelBagWitnessByVideoId(videoId: VideoId | number): Promise<PalletContentChannelBagWitness> {
+    const video = await this.api.query.content.videoById(videoId)
+    return this.channelBagWitness(video.inChannel)
   }
 
   async storageBucketsNumWitness(channelId: ChannelId | number): Promise<number> {
