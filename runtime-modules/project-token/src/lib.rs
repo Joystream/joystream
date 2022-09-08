@@ -3,7 +3,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::FullCodec;
+use codec::{FullCodec, MaxEncodedLen};
 use common::membership::{MemberId as MemberIdOf, MemberOriginValidator, MembershipInfoProvider};
 use core::default::Default;
 use frame_support::{
@@ -21,6 +21,7 @@ use sp_runtime::{
     Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryInto;
 use sp_std::iter::Sum;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -68,10 +69,17 @@ pub trait Config:
         + From<u64>
         + UniqueSaturatedInto<u64>
         + Into<JoyBalanceOf<Self>>
-        + TypeInfo;
+        + TypeInfo
+        + MaxEncodedLen;
 
     /// The token identifier used
-    type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + TypeInfo;
+    type TokenId: AtLeast32BitUnsigned
+        + FullCodec
+        + Copy
+        + Default
+        + Debug
+        + TypeInfo
+        + MaxEncodedLen;
 
     /// Block number to balance converter used for interest calculation
     type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Config>::Balance>;
@@ -86,7 +94,7 @@ pub trait Config:
     type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
 
     /// Maximum number of vesting balances per account per token
-    type MaxVestingSchedulesPerAccountPerToken: Get<u8>;
+    type MaxVestingSchedulesPerAccountPerToken: Get<u32>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -105,10 +113,10 @@ pub trait Config:
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Token {
         /// Double map TokenId x MemberId => AccountData for managing account data
-        pub AccountInfoByTokenAndMember get(fn account_info_by_token_and_member) config():
+        pub AccountInfoByTokenAndMember get(fn account_info_by_token_and_member):
         double_map
             hasher(blake2_128_concat) T::TokenId,
             hasher(blake2_128_concat) T::MemberId => AccountDataOf<T>;
@@ -142,7 +150,17 @@ decl_storage! {
     }
 
     add_extra_genesis {
-        build(|_| {
+        config(account_info_by_token_and_member): Vec<(T::TokenId, T::MemberId, ConfigAccountDataOf<T>)>;
+
+        build(|s| {
+            // Initialize accounts
+            for (token_id, member_id, config_account_data) in s.account_info_by_token_and_member.iter() {
+                let opt_acc_data: Option<AccountDataOf<T>> = config_account_data.clone().try_into().ok();
+                if let Some(account_data) = opt_acc_data {
+                    AccountInfoByTokenAndMember::<T>::insert(token_id, member_id, account_data);
+                }
+            }
+
             // We deposit some initial balance to the pallet's module account
             // on the genesis block to protect the account
             // from being deleted ("dusted") on early stages of pallet's work
@@ -289,9 +307,10 @@ decl_module! {
             let now = Self::current_block();
 
             // Burn tokens from the account
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account| {
-                account.burn::<T>(amount, now);
-            });
+            AccountInfoByTokenAndMember::<T>::try_mutate(token_id, member_id, |account| {
+                account.burn::<T>(amount, now)?;
+                DispatchResult::Ok(())
+            })?;
 
             // Decrease token supply by the burned amount
             TokenInfoById::<T>::mutate(token_id, |token| {
@@ -563,32 +582,33 @@ decl_module! {
             }
 
             if account_data.is_some() {
-                AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |acc_data| {
-                    acc_data.process_sale_purchase(
+                AccountInfoByTokenAndMember::<T>::try_mutate(token_id, &member_id, |acc_data| {
+                    acc_data.process_sale_purchase::<T>(
                         sale_id,
                         amount,
                         vesting_schedule,
                         vesting_cleanup_key
-                    );
-                });
+                    )?;
+                    DispatchResult::Ok(())
+                })?;
             } else {
                 Self::transfer_joy(&sender, &treasury, bloat_bond)?;
+                let mut account = AccountDataOf::<T>::new_with_amount_and_bond(
+                        TokenBalanceOf::<T>::zero(),
+                        // No restrictions on repayable bloat bond,
+                        // since only usable balance is allowed
+                        RepayableBloatBond::new(bloat_bond, None)
+                    );
+                account.process_sale_purchase::<T>(
+                        sale_id,
+                        amount,
+                        vesting_schedule,
+                        vesting_cleanup_key
+                    )?;
                 Self::do_insert_new_account_for_token(
                     token_id,
                     &member_id,
-                    AccountDataOf::<T>
-                        ::new_with_amount_and_bond(
-                            TokenBalanceOf::<T>::zero(),
-                            // No restrictions on repayable bloat bond,
-                            // since only usable balance is allowed
-                            RepayableBloatBond::new(bloat_bond, None)
-                        )
-                        .process_sale_purchase(
-                            sale_id,
-                            amount,
-                            vesting_schedule,
-                            vesting_cleanup_key
-                        ).clone()
+                    account
                 );
             }
 
@@ -1384,34 +1404,35 @@ impl<T: Config> Module<T> {
                 });
             match validated_account {
                 ValidatedWithBloatBond::Existing(dst_member_id) => {
-                    AccountInfoByTokenAndMember::<T>::mutate(
+                    AccountInfoByTokenAndMember::<T>::try_mutate(
                         token_id,
                         &dst_member_id,
                         |account_data| {
                             if let Some(vs) = vesting_schedule {
-                                account_data.add_or_update_vesting_schedule(
+                                account_data.add_or_update_vesting_schedule::<T>(
                                     VestingSource::IssuerTransfer(
                                         account_data.next_vesting_transfer_id,
                                     ),
                                     vs,
                                     validated_payment.vesting_cleanup_candidate.clone(),
-                                )
+                                )?;
                             } else {
                                 account_data.increase_amount_by(validated_payment.payment.amount);
                             }
+                            DispatchResult::Ok(())
                         },
-                    );
+                    )?;
                 }
                 ValidatedWithBloatBond::NonExisting(dst_member_id, repayable_bloat_bond) => {
                     Self::do_insert_new_account_for_token(
                         token_id,
                         dst_member_id,
                         if let Some(vs) = vesting_schedule {
-                            AccountDataOf::<T>::new_with_vesting_and_bond(
+                            AccountDataOf::<T>::new_with_vesting_and_bond::<T>(
                                 VestingSource::IssuerTransfer(0),
                                 vs,
                                 repayable_bloat_bond.clone(),
-                            )
+                            )?
                         } else {
                             AccountDataOf::<T>::new_with_amount_and_bond(
                                 validated_payment.payment.amount,
@@ -1689,11 +1710,11 @@ impl<T: Config> Module<T> {
 
         for (destination, (allocation, repayable_bloat_bond)) in targets_with_bloat_bonds.iter() {
             let account_data = if let Some(vsp) = allocation.vesting_schedule_params.as_ref() {
-                AccountDataOf::<T>::new_with_vesting_and_bond(
+                AccountDataOf::<T>::new_with_vesting_and_bond::<T>(
                     VestingSource::InitialIssuance,
                     VestingSchedule::from_params(current_block, allocation.amount, vsp.clone()),
                     repayable_bloat_bond.clone(),
-                )
+                )?
             } else {
                 AccountDataOf::<T>::new_with_amount_and_bond(
                     allocation.amount,

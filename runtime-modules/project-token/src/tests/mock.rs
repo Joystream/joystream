@@ -42,6 +42,7 @@ pub type VestingScheduleParams = VestingScheduleParamsOf<Test>;
 pub type IssuanceState = OfferingStateOf<Test>;
 pub type TransferPolicyParams = TransferPolicyParamsOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
+pub type ConfigAccountData = ConfigAccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Config>::AccountId;
 pub type BlockNumber = <Test as frame_system::Config>::BlockNumber;
 pub type Balance = TokenBalanceOf<Test>;
@@ -76,7 +77,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // --------- Pallet Project Token parameters ---------------------
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
-    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
+    pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
     // --------- balances::Config parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
@@ -486,7 +487,7 @@ impl MemberOriginValidator<Origin, u64, u64> for TestMemberships {
 
 /// Genesis config builder
 pub struct GenesisConfigBuilder {
-    pub(crate) account_info_by_token_and_member: Vec<(TokenId, MemberId, AccountData)>,
+    pub(crate) account_info_by_token_and_member: Vec<(TokenId, MemberId, ConfigAccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
     pub(crate) bloat_bond: JoyBalance,
