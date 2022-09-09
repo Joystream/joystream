@@ -299,15 +299,15 @@ parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 0, max_min_diff: 7};
-    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-    storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
+    pub const MinStorageBucketsPerBag: u32 = 0;
+    pub const MaxStorageBucketsPerBag: u32 = 7;
+    pub const MinDistributionBucketsPerBag: u32 = 3;
+    pub const MaxDistributionBucketsPerBag: u32 = 10;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
     pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: U256 = U256([100001, 0, 0, 0]);
@@ -329,15 +329,18 @@ impl storage::Config for Test {
     type ChannelId = u64;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
     type StorageWorkingGroup = StorageWG;

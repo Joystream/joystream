@@ -4707,7 +4707,7 @@ pub fn create_default_assets_helper() -> StorageAssets<Test> {
     }
 }
 
-pub fn set_dynamic_bag_creation_policy_for_storage_numbers(storage_bucket_number: u64) {
+pub fn set_dynamic_bag_creation_policy_for_storage_numbers(storage_bucket_number: u32) {
     // Set storage bucket in the dynamic bag creation policy to zero.
     assert_eq!(
         Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(

@@ -990,29 +990,30 @@ impl common::StorageOwnership for Runtime {
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 20; //TODO: adjust value
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
+    pub const MinDistributionBucketsPerBag: u32 = 1; //TODO: adjust value
+    pub const MaxDistributionBucketsPerBag: u32 = 100; //TODO: adjust value
     pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 20; // TODO: adjust value
 }
 
 // Production storage parameters
 #[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
 parameter_types! {
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
+    pub const MinStorageBucketsPerBag: u32 = 5; //TODO: adjust value
+    pub const MaxStorageBucketsPerBag: u32 = 20; //TODO: adjust value
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 5; //TODO: adjust value
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 5; //TODO: adjust value
 }
 
 // Staging/testing storage parameters
 #[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
 parameter_types! {
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 1, max_min_diff: 15};
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 1;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 1;
+    pub const MinStorageBucketsPerBag: u32 = 1;
+    pub const MaxStorageBucketsPerBag: u32 = 20;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 1;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 1;
 }
 
 impl storage::Config for Runtime {
@@ -1024,16 +1025,19 @@ impl storage::Config for Runtime {
     type ChannelId = ChannelId;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type DistributionBucketOperatorId = DistributionBucketOperatorId;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
     type WeightInfo = storage::weights::SubstrateWeight<Runtime>;

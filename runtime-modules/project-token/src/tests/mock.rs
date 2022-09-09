@@ -87,16 +87,17 @@ parameter_types! {
     pub const DataObjectDeletionPrize: u64 = 15;
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
     pub const MaxRandomIterationNumber: u64 = 3;
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-    storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
     pub const MaxDataObjectSize: u64 = 1_000_000_000;
+    pub const MinStorageBucketsPerBag: u32 = 3;
+    pub const MaxStorageBucketsPerBag: u32 = 10;
+    pub const MinDistributionBucketsPerBag: u32 = 3;
+    pub const MaxDistributionBucketsPerBag: u32 = 10;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
     // constants for membership::Config
     pub const DefaultMembershipPrice: u64 = 100;
     pub const CandidateStake: u64 = 100;
@@ -132,15 +133,18 @@ impl storage::Config for Test {
     type ChannelId = u64;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
     type StorageWorkingGroup = StorageWG;

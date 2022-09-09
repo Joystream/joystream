@@ -9,6 +9,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Bounded;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 use sp_std::iter;
 use sp_std::iter::FromIterator;
 use sp_std::vec;
@@ -22,10 +23,10 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Blacklist, Call, Cid, Config, DataObjectCreationParameters, DataObjectStorage,
-    DistributionBucketByFamilyIdById, DistributionBucketFamilyById, DistributionBucketId,
-    DynamicBagType, Module, Module as Pallet, RawEvent, StaticBagId, StorageBucketById,
-    StorageBucketOperatorStatus, UploadParameters, WorkerId,
+    BagId, Balances, Base58Multihash, Blacklist, Call, Config, DataObjectCreationParameters,
+    DataObjectStorage, DistributionBucketByFamilyIdById, DistributionBucketFamilyById,
+    DistributionBucketId, DynamicBagType, Module, Module as Pallet, RawEvent, StaticBagId,
+    StorageBucketById, StorageBucketOperatorStatus, UploadParameters, WorkerId,
 };
 use frame_support::sp_runtime::SaturatedConversion;
 
@@ -353,8 +354,8 @@ fn create_storage_buckets<T: Config>(
         .collect::<_>()
 }
 
-fn create_cids(i: u32, prefix: u8) -> BTreeSet<Cid> {
-    fn create_cid(i: u32, prefix: u8) -> Cid {
+fn create_cids(i: u32, prefix: u8) -> BTreeSet<Vec<u8>> {
+    fn create_cid(i: u32, prefix: u8) -> Vec<u8> {
         let bytes = i.to_be_bytes();
         let mut buffer = Vec::new();
 
@@ -516,7 +517,7 @@ benchmarks! {
 
     update_storage_buckets_per_bag_limit {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-        let new_limit = 10u64;
+        let new_limit = 10u32;
 
     }: _ (RawOrigin::Signed(lead_account_id), new_limit)
     verify {
@@ -558,7 +559,7 @@ benchmarks! {
     update_number_of_storage_buckets_in_dynamic_bag_creation_policy {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let dynamic_bag_type = DynamicBagType::Member;
-        let new_number = 10u64;
+        let new_number = 10u32;
 
     }: _ (RawOrigin::Signed(lead_account_id), dynamic_bag_type, new_number)
     verify {
@@ -593,11 +594,13 @@ benchmarks! {
     }: _ (RawOrigin::Signed(lead_account_id), remove_cids.clone(), add_cids.clone())
     verify {
         if let Some(cid) = add_cids.iter().next(){
-            assert!(Blacklist::contains_key(&cid));
+            let cid_bounded: Base58Multihash = cid.clone().try_into().unwrap();
+            assert!(Blacklist::contains_key(&cid_bounded));
         }
 
         if let Some(cid) = remove_cids.iter().next(){
-            assert!(!Blacklist::contains_key(&cid));
+            let cid_bounded: Base58Multihash = cid.clone().try_into().unwrap();
+            assert!(!Blacklist::contains_key(&cid_bounded));
         }
 
         assert_last_event::<T>(
@@ -621,15 +624,15 @@ benchmarks! {
     }
 
     update_storage_buckets_for_bag {
-        let i in 1 .. T::StorageBucketsPerBagValueConstraint::get().max().saturated_into();
-        let j in 1 .. T::StorageBucketsPerBagValueConstraint::get().max().saturated_into();
+        let i in 1 .. T::MaxStorageBucketsPerBag::get();
+        let j in 1 .. T::MaxStorageBucketsPerBag::get();
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
 
         Module::<T>::update_storage_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
-            T::StorageBucketsPerBagValueConstraint::get().max().saturated_into(),
+            T::MaxStorageBucketsPerBag::get(),
         ).unwrap();
 
         let add_buckets = create_storage_buckets::<T>(lead_account_id.clone(), i);
@@ -652,7 +655,7 @@ benchmarks! {
     )
     verify {
         let bag = Module::<T>::bag(bag_id.clone());
-        assert_eq!(bag.stored_by, add_buckets);
+        assert_eq!(BTreeSet::from(bag.stored_by), add_buckets);
 
         assert_last_event::<T>(
             RawEvent::StorageBucketsUpdatedForBag(bag_id, add_buckets, remove_buckets).into()
@@ -907,7 +910,7 @@ benchmarks! {
 
         Module::<T>::update_storage_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
-            T::StorageBucketsPerBagValueConstraint::get().max().saturated_into(),
+            T::MaxStorageBucketsPerBag::get(),
         ).unwrap();
 
         Module::<T>::update_storage_buckets_for_bag(
@@ -1046,14 +1049,14 @@ benchmarks! {
     }
 
     update_distribution_buckets_for_bag {
-        let i in 1 .. T::DistributionBucketsPerBagValueConstraint::get().max().saturated_into();
-        let j in 1 .. T::DistributionBucketsPerBagValueConstraint::get().max().saturated_into();
+        let i in 1 .. T::MaxDistributionBucketsPerBag::get();
+        let j in 1 .. T::MaxDistributionBucketsPerBag::get();
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
         let family_id = create_distribution_family::<T>(lead_account_id.clone());
 
-        let new_limit: u64 = T::DistributionBucketsPerBagValueConstraint::get().max();
+        let new_limit: u32 = T::MaxDistributionBucketsPerBag::get();
         Module::<T>::update_distribution_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
             new_limit
@@ -1091,7 +1094,7 @@ benchmarks! {
     )
     verify {
         let bag = Module::<T>::bag(bag_id.clone());
-        assert_eq!(bag.distributed_by, added_buckets);
+        assert_eq!(BTreeSet::from(bag.distributed_by), added_buckets);
 
         assert_last_event::<T>(
             RawEvent::DistributionBucketsUpdatedForBag(
@@ -1149,7 +1152,7 @@ benchmarks! {
     verify {
 
         let policy = Module::<T>::dynamic_bag_creation_policy(dynamic_bag_type);
-        assert_eq!(policy.families, fam_policies);
+        assert_eq!(BTreeMap::from(policy.families), fam_policies);
 
         assert_last_event::<T>(
             RawEvent::FamiliesInDynamicBagCreationPolicyUpdated(dynamic_bag_type, fam_policies).into()

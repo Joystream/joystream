@@ -2,7 +2,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod bloat_bond;
-pub mod constraints;
 pub mod costs;
 pub mod council;
 pub mod currency;
