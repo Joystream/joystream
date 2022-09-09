@@ -207,6 +207,10 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     }
 }
 
+parameter_types! {
+    pub const DispatchableCallCodeMaxLen: u32 = 1024 * 1024;
+}
+
 impl crate::Config for Test {
     type Event = Event;
     type ProposerOriginValidator = ();
@@ -223,6 +227,7 @@ impl crate::Config for Test {
     type ProposalObserver = ();
     type WeightInfo = ();
     type StakingAccountValidator = ();
+    type DispatchableCallCodeMaxLen = DispatchableCallCodeMaxLen;
 }
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;

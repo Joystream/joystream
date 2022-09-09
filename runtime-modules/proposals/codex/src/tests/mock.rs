@@ -386,6 +386,7 @@ parameter_types! {
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [2; 8];
+    pub const DispatchableCallCodeMaxLen: u32 = 1024 * 1024;
 }
 
 impl proposals_engine::Config for Test {
@@ -404,6 +405,7 @@ impl proposals_engine::Config for Test {
     type ProposalObserver = crate::Module<Test>;
     type WeightInfo = ();
     type StakingAccountValidator = ();
+    type DispatchableCallCodeMaxLen = DispatchableCallCodeMaxLen;
 }
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;

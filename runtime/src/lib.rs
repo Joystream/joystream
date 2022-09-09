@@ -1328,6 +1328,7 @@ parameter_types! {
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 20;
+    pub const DispatchableCallCodeMaxLen: u32 = 3 * 1024 * 1024; // 3 MB
 }
 
 impl proposals_engine::Config for Runtime {
@@ -1346,6 +1347,7 @@ impl proposals_engine::Config for Runtime {
     type ProposalObserver = ProposalsCodex;
     type WeightInfo = proposals_engine::weights::SubstrateWeight<Runtime>;
     type StakingAccountValidator = Members;
+    type DispatchableCallCodeMaxLen = DispatchableCallCodeMaxLen;
 }
 
 impl Default for Call {
