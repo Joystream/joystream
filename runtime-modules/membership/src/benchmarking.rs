@@ -131,7 +131,7 @@ benchmarks! {
 
         let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: false,
@@ -206,7 +206,7 @@ benchmarks! {
 
         let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
-            handle_hash: second_handle_hash.clone(),
+            handle_hash: second_handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id,
             verified: false,
@@ -487,7 +487,7 @@ benchmarks! {
         let handle_hash = T::Hashing::hash(&handle);
 
         let invited_membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: false,
@@ -524,10 +524,10 @@ benchmarks! {
             controller_account: controller_account.clone(),
             handle: Some(handle.clone()),
             metadata,
-            credit_controller_account: (5_000_000 as u32).saturated_into::<BalanceOf<T>>(),
-            apply_controller_account_invitation_lock: Some((3_000_000 as u32).saturated_into()),
-            credit_root_account: (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
-            apply_root_account_invitation_lock: Some((1_000_000 as u32).saturated_into()),
+            credit_controller_account: (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            apply_controller_account_invitation_lock: Some((3_000_000_u32).saturated_into()),
+            credit_root_account: (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            apply_root_account_invitation_lock: Some((1_000_000_u32).saturated_into()),
         };
 
         let member_id = <NextMemberId<T>>::get();
@@ -539,7 +539,7 @@ benchmarks! {
         let handle_hash = T::Hashing::hash(&handle);
 
         let gifted_membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified: false,
@@ -554,22 +554,22 @@ benchmarks! {
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(controller_account.clone()),
-            (5_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(root_account.clone()),
-            (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(controller_account),
-            (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(root_account),
-            (1_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (1_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
     }
 
@@ -793,7 +793,7 @@ benchmarks! {
 
         let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: true,

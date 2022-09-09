@@ -543,7 +543,7 @@ decl_module! {
                 // remove old handle hash
                 <MemberIdByHandleHash<T>>::remove(&membership.handle_hash);
 
-                <MemberIdByHandleHash<T>>::insert(new_handle_hash.clone(), member_id);
+                <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
 
                 <MembershipById<T>>::insert(&member_id, Membership::<T> {
                     handle_hash: new_handle_hash,
@@ -1309,7 +1309,7 @@ impl<T: Config> Module<T> {
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified,

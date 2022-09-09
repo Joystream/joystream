@@ -27,7 +27,7 @@ benchmarks! {
             let hash = T::Hashing::hash(&text);
 
             let constitution_info = ConstitutionInfo{
-                text_hash: hash.clone(),
+                text_hash: hash,
             };
 
             assert_eq!(Pallet::<T>::constitution(), constitution_info);

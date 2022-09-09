@@ -1632,7 +1632,7 @@ benchmarks! {
     verify {
         let category = Module::<T>::category_by_id(category_id);
         // Ensure category stickied_ids updated successfully.
-        assert_eq!(BTreeSet::<_>::from(category.sticky_thread_ids.clone()), stickied_ids);
+        assert_eq!(BTreeSet::<_>::from(category.sticky_thread_ids), stickied_ids);
 
         assert_last_event::<T>(
             RawEvent::CategoryStickyThreadUpdate(
