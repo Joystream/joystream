@@ -17,8 +17,9 @@ members = [
 	"runtime-modules/bounty",
 	"runtime-modules/utility",
 	"runtime-modules/project-token",    
-	"node",
-	"utils/chain-spec-builder/",
+	"bin/node",
+	"bin/inspect",
+	"bin/utils/chain-spec-builder/",
 	"runtime-modules/support/derive-fixture",
 ]
 exclude = [

@@ -128,6 +128,7 @@ pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
 /// This runtime version.
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
@@ -194,9 +195,9 @@ const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO
 /// Our extrinsics call filter
 pub enum CallFilter {}
 
-/// Filter that disables all non-essential calls.
-/// Allowing only calls for successful block authoring, staking, nominating.
-/// Since balances calls are disabled, his means that stash and controller
+/// Stage 1: Filter all non-essential calls.
+/// Allow only calls that are essential for successful block authoring, staking, nominating.
+/// Since balances calls are disabled, this means that stash and controller
 /// accounts must already be funded. If this is not practical to setup at genesis
 /// then consider enabling Balances calls?
 /// This will be used at initial launch, and other calls will be enabled as we rollout.
@@ -205,7 +206,7 @@ pub enum CallFilter {}
     feature = "testing_runtime",
     feature = "runtime-benchmarks"
 )))]
-fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool {
+fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
     match call {
         Call::System(method) =>
         // All methods except the remark call
@@ -229,24 +230,32 @@ fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool 
     }
 }
 
-// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
-// Filter out a subset of calls on content pallet and some specific proposals
+// Stage 2: Filter out only a subset of calls on content pallet, some specific proposals
+// and the bounty creation call.
 #[cfg(not(feature = "runtime-benchmarks"))]
-fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
+fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
     // TODO: adjust after Carthage
-    !matches!(
-        call,
-        Call::Content(content::Call::<Runtime>::destroy_nft { .. })
-            | Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. })
-            | Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. })
-            | Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. })
-            | Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. })
-            | Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. })
-            | Call::Content(
-                content::Call::<Runtime>::set_channel_paused_features_as_moderator { .. }
-            )
-            | Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. })
-    )
+    match call {
+        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+            ..
+        }) => false,
+        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+        Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
+        Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
+        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+            general_proposal_parameters: _,
+            proposal_details,
+        }) => !matches!(
+            proposal_details,
+            proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+        ),
+        _ => true,
+    }
 }
 
 // Live Production config
@@ -257,7 +266,7 @@ fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) 
 )))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_non_essential(call) && filter_content_and_proposals(call)
+        filter_stage_1(call) && filter_stage_2(call)
     }
 }
 
@@ -273,7 +282,7 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
 #[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_content_and_proposals(call)
+        filter_stage_2(call)
     }
 }
 
@@ -528,7 +537,7 @@ pallet_staking_reward_curve::build! {
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
-    pub const SlashDeferDuration: sp_staking::EraIndex = BONDING_DURATION - 1;
+    pub const SlashDeferDuration: sp_staking::EraIndex = SLASH_DEFER_DURATION;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);

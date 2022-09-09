@@ -3707,12 +3707,11 @@ impl<T: Config> Module<T> {
         );
         ensure!(obj.size != 0, Error::<T>::ZeroObjectSize,);
         ensure!(!obj.ipfs_content_id.is_empty(), Error::<T>::EmptyContentId);
-        // TODO:
-        // // This will also validate too short cid's!
-        // ensure!(
-        //     obj.ipfs_content_id.len() as u32 == Base58MultihashLen::get(),
-        //     Error::<T>::InvalidCidLength
-        // );
+        // This will also validate too short cid's!
+        ensure!(
+            obj.ipfs_content_id.len() as u32 == Base58MultihashLen::get(),
+            Error::<T>::InvalidCidLength
+        );
         let bounded_cid = obj
             .ipfs_content_id
             .clone()

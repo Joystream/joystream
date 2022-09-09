@@ -3473,6 +3473,26 @@ impl StartEnglishAuctionFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_buy_now_price(self, price: BalanceOf<Test>) -> Self {
+        Self {
+            params: EnglishAuctionParams::<Test> {
+                buy_now_price: Some(price),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_min_bid_step(self, min_bid_step: BalanceOf<Test>) -> Self {
+        Self {
+            params: EnglishAuctionParams::<Test> {
+                min_bid_step,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     #[allow(dead_code)]
     pub fn with_video_id(self, video_id: VideoId) -> Self {
         Self { video_id, ..self }
@@ -4681,6 +4701,19 @@ pub fn slash_account_balance_helper(account_id: U256) {
     let _ = Balances::<Test>::slash(&account_id, Balances::<Test>::total_balance(&account_id));
 }
 
+pub(crate) fn create_cid(i: u64) -> Vec<u8> {
+    let bytes = i.to_be_bytes();
+    let mut buffer: [u8; 46] = [0; 46];
+
+    // Total CID = 46 bytes
+    // 44 bytes
+    for i in 0..46 {
+        buffer[i] = bytes[i % 8]
+    }
+
+    buffer.to_vec()
+}
+
 pub fn create_data_object_candidates_helper(
     starting_ipfs_index: u8,
     number: u64,
@@ -4689,9 +4722,9 @@ pub fn create_data_object_candidates_helper(
 
     range
         .into_iter()
-        .map(|_| DataObjectCreationParameters {
+        .map(|idx| DataObjectCreationParameters {
             size: DEFAULT_OBJECT_SIZE,
-            ipfs_content_id: vec![1u8],
+            ipfs_content_id: create_cid(idx),
         })
         .collect()
 }
