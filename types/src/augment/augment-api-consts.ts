@@ -4,7 +4,7 @@
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { U8aFixed, Vec, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { Perbill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportWeightsRuntimeDbWeight, FrameSystemLimitsBlockLength, FrameSystemLimitsBlockWeights, PalletCommonConstraintsBoundedValueConstraint, PalletContentLimitPerPeriod, PalletProposalsEngineProposalParameters, SpVersionRuntimeVersion } from '@polkadot/types/lookup';
+import type { FrameSupportWeightsRuntimeDbWeight, FrameSystemLimitsBlockLength, FrameSystemLimitsBlockWeights, PalletContentLimitPerPeriod, PalletProposalsEngineProposalParameters, SpVersionRuntimeVersion } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/consts' {
   export interface AugmentedConsts<ApiType extends ApiTypes> {
@@ -190,7 +190,7 @@ declare module '@polkadot/api-base/types/consts' {
       /**
        * Council member count
        **/
-      councilSize: u64 & AugmentedConst<ApiType>;
+      councilSize: u32 & AugmentedConst<ApiType>;
       /**
        * Interval for automatic reward payments.
        **/
@@ -207,7 +207,7 @@ declare module '@polkadot/api-base/types/consts' {
        * Minimum number of extra candidates needed for the valid election.
        * Number of total candidates is equal to council size plus extra candidates.
        **/
-      minNumberOfExtraCandidates: u64 & AugmentedConst<ApiType>;
+      minNumberOfExtraCandidates: u32 & AugmentedConst<ApiType>;
     };
     distributionWorkingGroup: {
       /**
@@ -752,16 +752,12 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports const - the default dynamic bag creation policy for channels (storage bucket
        * number).
        **/
-      defaultChannelDynamicBagNumberOfStorageBuckets: u64 & AugmentedConst<ApiType>;
+      defaultChannelDynamicBagNumberOfStorageBuckets: u32 & AugmentedConst<ApiType>;
       /**
        * Exports const - the default dynamic bag creation policy for members (storage bucket
        * number).
        **/
-      defaultMemberDynamicBagNumberOfStorageBuckets: u64 & AugmentedConst<ApiType>;
-      /**
-       * Exports const - "Distribution buckets per bag" value constraint.
-       **/
-      distributionBucketsPerBagValueConstraint: PalletCommonConstraintsBoundedValueConstraint & AugmentedConst<ApiType>;
+      defaultMemberDynamicBagNumberOfStorageBuckets: u32 & AugmentedConst<ApiType>;
       /**
        * Exports const - max data object size in bytes.
        **/
@@ -771,13 +767,29 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       maxDistributionBucketFamilyNumber: u64 & AugmentedConst<ApiType>;
       /**
+       * Exports const - maximum number of distribution buckets per bag.
+       **/
+      maxDistributionBucketsPerBag: u32 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - max number of operators per distribution bucket.
+       **/
+      maxNumberOfOperatorsPerDistributionBucket: u32 & AugmentedConst<ApiType>;
+      /**
        * Exports const - max number of pending invitations per distribution bucket.
        **/
-      maxNumberOfPendingInvitationsPerDistributionBucket: u64 & AugmentedConst<ApiType>;
+      maxNumberOfPendingInvitationsPerDistributionBucket: u32 & AugmentedConst<ApiType>;
       /**
-       * Exports const - "Storage buckets per bag" value constraint.
+       * Exports const - maximum number of storage buckets per bag.
        **/
-      storageBucketsPerBagValueConstraint: PalletCommonConstraintsBoundedValueConstraint & AugmentedConst<ApiType>;
+      maxStorageBucketsPerBag: u32 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - minimum number of distribution buckets per bag.
+       **/
+      minDistributionBucketsPerBag: u32 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - minimum number of storage buckets per bag.
+       **/
+      minStorageBucketsPerBag: u32 & AugmentedConst<ApiType>;
     };
     storageWorkingGroup: {
       /**

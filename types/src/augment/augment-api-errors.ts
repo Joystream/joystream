@@ -1145,6 +1145,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MapSizeLimit: AugmentedError<ApiType>;
       /**
+       * Maximum number of stickied threads per category exceeded
+       **/
+      MaxNumberOfStickiedThreadsExceeded: AugmentedError<ApiType>;
+      /**
        * Maximum valid category depth exceeded.
        **/
       MaxValidCategoryDepthExceeded: AugmentedError<ApiType>;
@@ -1180,10 +1184,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Post does not exist.
        **/
       PostDoesNotExist: AugmentedError<ApiType>;
-      /**
-       * Duplicates for the stickied thread id collection.
-       **/
-      StickiedThreadIdsDuplicates: AugmentedError<ApiType>;
       /**
        * Thread does not exist
        **/
@@ -2542,6 +2542,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MaxActiveProposalNumberExceeded: AugmentedError<ApiType>;
       /**
+       * The size of encoded dispatchable call to be executed by the proposal is too big
+       **/
+      MaxDispatchableCallCodeSizeExceeded: AugmentedError<ApiType>;
+      /**
        * Not an author
        **/
       NotAuthor: AugmentedError<ApiType>;
@@ -2914,6 +2918,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Max distribution bucket number per bag limit exceeded.
        **/
       MaxDistributionBucketNumberPerBagLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Max number of operators for a distribution bucket reached.
+       **/
+      MaxNumberOfOperatorsPerDistributionBucketReached: AugmentedError<ApiType>;
       /**
        * Max number of pending invitations limit for a distribution bucket reached.
        **/
