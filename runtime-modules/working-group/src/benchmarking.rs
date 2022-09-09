@@ -842,7 +842,7 @@ benchmarks_instance! {
 
     }: _ (RawOrigin::Signed(lead_id), status_text.clone())
     verify {
-        let status_text_hash = T::Hashing::hash(&status_text.clone().unwrap()).as_ref().to_vec();
+        let status_text_hash = T::Hashing::hash(&status_text.clone().unwrap());
 
         assert_eq!(
             WorkingGroup::<T, I>::status_text_hash(),
