@@ -104,7 +104,7 @@ frame_support::construct_runtime!(
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         Utility: utility::{Pallet, Call, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T, I>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T, I>},
 
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T, I>},
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
@@ -414,7 +414,7 @@ parameter_types! {
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VotingLockId: LockIdentifier = *b"referend";
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 impl referendum::Config<ReferendumInstance> for Test {

@@ -1396,10 +1396,7 @@ impl<T: Config> Mutations<T> {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
 
         // start referendum
-        T::Referendum::force_start(
-            extra_winning_target_count as u64,
-            AnnouncementPeriodNr::get(),
-        );
+        T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
 
         let block_number = <frame_system::Pallet<T>>::block_number();
 

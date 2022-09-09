@@ -852,7 +852,7 @@ parameter_types! {
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
-    pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
+    pub const MaxWinnerTargetCount: u32 = 10; // should be greater than council size
 }
 
 // Common staging and playground coucil and elections configuration
@@ -872,7 +872,7 @@ parameter_types! {
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 // Staging council size
@@ -906,7 +906,7 @@ parameter_types! {
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 impl referendum::Config<ReferendumInstance> for Runtime {
@@ -1567,7 +1567,7 @@ construct_runtime!(
         Multisig: pallet_multisig,
         // Joystream
         Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Members: membership::{Pallet, Call, Storage, Event<T>},
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Pallet, Call, Storage, Event<T>},

@@ -38,8 +38,8 @@ use core::marker::PhantomData;
 use frame_support::traits::{EnsureOrigin, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
-    StorageValue,
+    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin,
+    storage::weak_bounded_vec::WeakBoundedVec, Parameter, StorageValue,
 };
 use frame_system::ensure_signed;
 use scale_info::TypeInfo;
@@ -71,30 +71,30 @@ pub use weights::WeightInfo;
 
 /// Possible referendum states.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo)]
-pub enum ReferendumStage<BlockNumber, MemberId, VotePower> {
+#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub enum ReferendumStage<BlockNumber, IntermediateWinners> {
     /// The referendum is dormant and waiting to be started by external source.
     Inactive,
     /// In the voting stage, users can cast their sealed votes.
     Voting(ReferendumStageVoting<BlockNumber>),
     /// In the revealing stage, users can reveal votes they cast in the voting stage.
-    Revealing(ReferendumStageRevealing<BlockNumber, MemberId, VotePower>),
+    Revealing(ReferendumStageRevealing<BlockNumber, IntermediateWinners>),
 }
 
-impl<BlockNumber, MemberId, VotePower: Encode + Decode> Default
-    for ReferendumStage<BlockNumber, MemberId, VotePower>
+impl<BlockNumber, IntermediateWinners> Default
+    for ReferendumStage<BlockNumber, IntermediateWinners>
 {
-    fn default() -> ReferendumStage<BlockNumber, MemberId, VotePower> {
+    fn default() -> ReferendumStage<BlockNumber, IntermediateWinners> {
         ReferendumStage::Inactive
     }
 }
 
 /// Representation for voting stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct ReferendumStageVoting<BlockNumber> {
     pub started: BlockNumber,      // block in which referendum started
-    pub winning_target_count: u64, // target number of winners
+    pub winning_target_count: u32, // target number of winners
     pub current_cycle_id: u64,     // index of current election
     // Block at which the stage is supposed to end.
     // We store the pre-computed end block in case the duration of the voting stage is changed
@@ -104,14 +104,14 @@ pub struct ReferendumStageVoting<BlockNumber> {
 
 /// Representation for revealing stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
-pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
+pub struct ReferendumStageRevealing<BlockNumber, IntermediateWinners> {
     // block in which referendum started
     pub started: BlockNumber,
     // target number of winners
-    pub winning_target_count: u64,
+    pub winning_target_count: u32,
     // intermediate winning options
-    pub intermediate_winners: Vec<OptionResult<MemberId, VotePower>>,
+    pub intermediate_winners: IntermediateWinners,
     // index of current election
     pub current_cycle_id: u64,
     // Block at which the stage is supposed to end.
@@ -121,7 +121,7 @@ pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone, TypeInfo, MaxEncodedLen)]
 pub struct OptionResult<MemberId, VotePower> {
     pub option_id: MemberId,
     pub vote_power: VotePower,
@@ -129,7 +129,7 @@ pub struct OptionResult<MemberId, VotePower> {
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct CastVote<Hash, Currency, MemberId> {
     // A commitment that a user submits in the voting stage before revealing what this vote is
     // actually for
@@ -154,13 +154,12 @@ pub type CastVoteOf<T> = CastVote<
     BalanceOf<T>,
     <T as common::membership::MembershipTypes>::MemberId,
 >;
+pub type IntermediateWinnersOf<T, I> =
+    WeakBoundedVec<OptionResultOf<T, I>, <T as Config<I>>::MaxWinnerTargetCount>;
 pub type ReferendumStageVotingOf<T> =
     ReferendumStageVoting<<T as frame_system::Config>::BlockNumber>;
-pub type ReferendumStageRevealingOf<T, I> = ReferendumStageRevealing<
-    <T as frame_system::Config>::BlockNumber,
-    <T as common::membership::MembershipTypes>::MemberId,
-    <T as Config<I>>::VotePower,
->;
+pub type ReferendumStageRevealingOf<T, I> =
+    ReferendumStageRevealing<<T as frame_system::Config>::BlockNumber, IntermediateWinnersOf<T, I>>;
 pub type OptionResultOf<T, I> =
     OptionResult<<T as common::membership::MembershipTypes>::MemberId, <T as Config<I>>::VotePower>;
 
@@ -193,7 +192,7 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// Start a new referendum.
     fn start_referendum(
         origin: Origin,
-        extra_winning_target_count: u64,
+        extra_winning_target_count: u32,
         cycle_id: u64,
     ) -> Result<(), ()>;
 
@@ -202,7 +201,7 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// any winners selected.
     /// If it is called with a bigger winning target count greated than the max allowed the max
     /// will be used
-    fn force_start(extra_winning_target_count: u64, cycle_id: u64);
+    fn force_start(extra_winning_target_count: u32, cycle_id: u64);
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
@@ -258,7 +257,7 @@ pub trait Config<I: Instance = DefaultInstance>:
     type WeightInfo: WeightInfo;
 
     /// Maximum number of winning target count
-    type MaxWinnerTargetCount: Get<u64>;
+    type MaxWinnerTargetCount: Get<u32>;
 
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
@@ -285,11 +284,11 @@ pub trait Config<I: Instance = DefaultInstance>:
     fn increase_option_power(option_id: &Self::MemberId, amount: &Self::VotePower);
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config<I>, I: Instance = DefaultInstance> as Referendum {
         /// Current referendum stage.
-        pub Stage get(fn stage) config():
-        ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
+        pub Stage get(fn stage):
+        ReferendumStage<T::BlockNumber, IntermediateWinnersOf<T, I>>;
 
         /// Votes cast in the referendum. A new record is added to this map when a user casts a
         /// sealed vote.
@@ -297,7 +296,7 @@ decl_storage! {
         /// A record is finally removed when the user unstakes, which can happen during a voting
         /// stage or after the current cycle ends.
         /// A stake for a vote can be reused in future referendum cycles.
-        pub Votes get(fn votes) config(): map hasher(blake2_128_concat)
+        pub Votes get(fn votes): map hasher(blake2_128_concat)
                                           T::AccountId => CastVoteOf<T>;
     }
 }
@@ -313,10 +312,10 @@ decl_event! {
         <T as common::membership::MembershipTypes>::MemberId,
     {
         /// Referendum started
-        ReferendumStarted(u64, BlockNumber),
+        ReferendumStarted(u32, BlockNumber),
 
         /// Referendum started
-        ReferendumStartedForcefully(u64, BlockNumber),
+        ReferendumStartedForcefully(u32, BlockNumber),
 
         /// Revealing phase has begun
         RevealingStageStarted(BlockNumber),
@@ -587,7 +586,7 @@ impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Me
     // Start new referendum run.
     fn start_referendum(
         origin: T::Origin,
-        extra_winning_target_count: u64,
+        extra_winning_target_count: u32,
         cycle_id: u64,
     ) -> Result<(), ()> {
         let winning_target_count = extra_winning_target_count + 1;
@@ -618,7 +617,7 @@ impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Me
     // Start referendum independent of the current state.
     // If an election is running before calling this function, it will be discontinued without any
     // winners selected.
-    fn force_start(extra_winning_target_count: u64, cycle_id: u64) {
+    fn force_start(extra_winning_target_count: u32, cycle_id: u64) {
         let winning_target_count = extra_winning_target_count + 1;
 
         // If a greater than the max allowed target count is used the max will be used in its place
@@ -673,7 +672,7 @@ struct Mutations<T: Config<I>, I: Instance> {
 
 impl<T: Config<I>, I: Instance> Mutations<T, I> {
     // Change the referendum stage from inactive to voting stage.
-    fn start_voting_period(winning_target_count: &u64, cycle_id: &u64) -> T::BlockNumber {
+    fn start_voting_period(winning_target_count: &u32, cycle_id: &u64) -> T::BlockNumber {
         let now = <frame_system::Pallet<T>>::block_number();
         let ends_at = now.saturating_add(T::VoteStageDuration::get());
         // change referendum state
@@ -700,7 +699,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
         > {
             started: now,
             winning_target_count: old_stage.winning_target_count,
-            intermediate_winners: vec![],
+            intermediate_winners: WeakBoundedVec::default(),
             current_cycle_id: old_stage.current_cycle_id,
             ends_at,
         }));
@@ -721,7 +720,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Inactive);
 
         // return winning option
-        revealing_stage.intermediate_winners
+        revealing_stage.intermediate_winners.to_vec()
     }
 
     // Cast a user's sealed vote for the current referendum cycle.
@@ -795,13 +794,13 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
     fn try_winner_insert(
         option_result: OptionResultOf<T, I>,
         current_winners: &[OptionResultOf<T, I>],
-        winning_target_count: u64,
-    ) -> Vec<OptionResultOf<T, I>> {
+        winning_target_count: u32,
+    ) -> IntermediateWinnersOf<T, I> {
         // Tries to place record to temporary place in the winning list.
         fn place_record_to_winner_list<T: Config<I>, I: Instance>(
             option_result: OptionResultOf<T, I>,
             current_winners: &[OptionResultOf<T, I>],
-            winning_target_count: u64,
+            winning_target_count: u32,
         ) -> (Vec<OptionResultOf<T, I>>, Option<usize>) {
             let current_winners_count = current_winners.len();
 
@@ -815,7 +814,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
             // espace when item is currently not in winning list and still has not enough vote
             // power to make it to already full list
             if current_winners_index_of_vote_recipient.is_none()
-                && current_winners_count as u64 == winning_target_count
+                && current_winners_count as u32 == winning_target_count
                 && option_result.vote_power <= current_winners[current_winners_count - 1].vote_power
             {
                 return (current_winners.to_vec(), None);
@@ -833,7 +832,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
             // at this point record needs to be added to list
 
             // replace last winner if list is already full
-            if current_winners_count as u64 == winning_target_count {
+            if current_winners_count as u32 == winning_target_count {
                 let last_index = current_winners_count - 1;
                 new_winners[last_index] = option_result;
 
@@ -848,7 +847,10 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
 
         // if there are no winners right now return list with only current option
         if current_winners.is_empty() {
-            return vec![option_result];
+            return WeakBoundedVec::force_from(
+                vec![option_result],
+                Some("Referendum try_winner_insert"),
+            );
         }
 
         // get new possibly updated list and record's position in it
@@ -869,7 +871,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
             }
         }
 
-        new_winners.to_vec()
+        WeakBoundedVec::force_from(new_winners, Some("Referendum try_winner_insert"))
     }
 }
 

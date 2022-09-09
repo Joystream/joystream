@@ -143,7 +143,7 @@ frame_support::construct_runtime!(
         System: frame_system, // ::{Module, Call, Config, Storage, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>},
         Membership: membership::{Pallet, Call, Storage, Event<T>},
-        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
     }
 );
@@ -203,7 +203,7 @@ parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
@@ -766,8 +766,7 @@ where
     }
 
     pub fn check_referendum_revealing(
-        //        candidate_count: u64,
-        winning_target_count: u64,
+        winning_target_count: u32,
         intermediate_winners: Vec<
             OptionResult<
                 T::MemberId,
@@ -797,7 +796,9 @@ where
                         option_id: <T::MemberId as Into<u64>>::into(item.option_id),
                         vote_power: item.vote_power.into(),
                     })
-                    .collect(),
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap(),
                 current_cycle_id: AnnouncementPeriodNr::get(),
                 ends_at:
                     <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get()
@@ -1273,7 +1274,7 @@ where
 
         // referendum - start revealing period
         Self::check_referendum_revealing(
-            settings.council_size as u64,
+            settings.council_size,
             vec![],
             BTreeMap::new(), //<u64, T::VotePower>,
             params.cycle_start_block_number
