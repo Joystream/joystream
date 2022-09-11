@@ -128,6 +128,7 @@ pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
 /// This runtime version.
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
@@ -244,6 +245,7 @@ fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
             ..
         }) => false,
         Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+        Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
         Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
         Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
             general_proposal_parameters: _,
@@ -535,7 +537,7 @@ pallet_staking_reward_curve::build! {
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
-    pub const SlashDeferDuration: sp_staking::EraIndex = BONDING_DURATION - 1;
+    pub const SlashDeferDuration: sp_staking::EraIndex = SLASH_DEFER_DURATION;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
