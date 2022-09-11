@@ -79,7 +79,7 @@ typegen:
     - forum.PostModerated
     - forum.PostDeleted
     - forum.PostTextUpdated
-        - forum.CategoryStickyThreadUpdate
+    - forum.CategoryStickyThreadUpdate
     - forum.CategoryMembershipOfModeratorUpdated
     # Content directory
     - content.CuratorGroupCreated

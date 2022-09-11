@@ -89,10 +89,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   await addRepliesRunner.run()
 
   // Run compound query node checks
-  await Promise.all([
-    addPostsFixture.runQueryNodeChecks(),
-    addRepliesRunner.runQueryNodeChecks(),
-  ])
+  await Promise.all([addPostsFixture.runQueryNodeChecks(), addRepliesRunner.runQueryNodeChecks()])
 
   // Post text updates
   const postTextUpdates: PostTextUpdate[] = [

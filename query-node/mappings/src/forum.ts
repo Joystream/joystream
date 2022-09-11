@@ -49,10 +49,7 @@ import {
 } from 'query-node/dist/model'
 import { Forum } from '../generated/types'
 import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
-import {
-  ForumPostMetadata,
-    ForumThreadMetadata,
-} from '@joystream/metadata-protobuf'
+import { ForumPostMetadata, ForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { MAX_TAGS_PER_FORUM_THREAD } from '@joystream/metadata-protobuf/consts'
 import { Not, In } from 'typeorm'
