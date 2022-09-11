@@ -411,7 +411,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_size_le
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: STORAGE_BUCKET_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(
@@ -455,7 +455,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
                 object_creation_list: (0..(STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1))
                     .map(|_| DataObjectCreationParameters {
                         size: 1,
-                        ipfs_content_id: vec![1u8],
+                        ipfs_content_id: create_cid(1),
                     })
                     .collect(),
             })
@@ -481,7 +481,7 @@ fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: VOUCHER_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
@@ -1008,7 +1008,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_size_left
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: STORAGE_BUCKET_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(
@@ -1039,7 +1039,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_number_le
                 object_creation_list: (0..(STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1))
                     .map(|_| DataObjectCreationParameters {
                         size: 1,
-                        ipfs_content_id: vec![1u8],
+                        ipfs_content_id: create_cid(1),
                     })
                     .collect(),
             })
@@ -1063,7 +1063,7 @@ fn unsuccessful_video_update_with_max_object_size_limits_exceeded() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: <Test as storage::Config>::MaxDataObjectSize::get() + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));

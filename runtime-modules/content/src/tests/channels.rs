@@ -218,7 +218,7 @@ fn unsuccessful_channel_creation_with_bucket_objects_size_limit_reached() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: STORAGE_BUCKET_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .with_default_storage_buckets()
@@ -250,7 +250,7 @@ fn unsuccessful_channel_creation_with_bucket_objects_number_limit_reached() {
                 object_creation_list: (0..(STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1))
                     .map(|_| DataObjectCreationParameters {
                         size: 1,
-                        ipfs_content_id: vec![1u8],
+                        ipfs_content_id: create_cid(1),
                     })
                     .collect(),
             })
@@ -276,7 +276,7 @@ fn unsuccessful_channel_creation_with_data_limits_exceeded() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: VOUCHER_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .with_default_storage_buckets()
@@ -579,7 +579,7 @@ fn unsuccessful_channel_update_with_data_limits_exceeded() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: VOUCHER_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
@@ -691,7 +691,7 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_size_limit(
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: STORAGE_BUCKET_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(
@@ -724,7 +724,7 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
                 object_creation_list: (0..(STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1))
                     .map(|_| DataObjectCreationParameters {
                         size: 1,
-                        ipfs_content_id: vec![1u8],
+                        ipfs_content_id: create_cid(1),
                     })
                     .collect(),
             })
