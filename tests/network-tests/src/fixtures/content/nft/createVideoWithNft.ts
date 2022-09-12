@@ -1,3 +1,4 @@
+import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
@@ -30,7 +31,9 @@ export class CreateVideoWithNftFixture extends BaseQueryNodeFixture {
     const videoCreatedWithNftEvent = await this.api.getEvent(videoCreatedWithNftResponse, 'content', 'VideoCreated')
 
     this.debug('Check NFT ownership')
-    await assertNftOwner(this.query, videoCreatedWithNftEvent.data[2].toNumber(), this.author)
+    await assertNftOwner(this.query, videoCreatedWithNftEvent.data[2].toNumber(), this.author, (ownedNft) => {
+      assert.equal(ownedNft.videoCategory?.id, ownedNft.video.category?.id)
+    })
 
     // SCENARIO 2
     this.debug('Create video with NFT being auctioned')
@@ -52,6 +55,7 @@ export class CreateVideoWithNftFixture extends BaseQueryNodeFixture {
     this.debug('Check NFT ownership')
     await assertNftOwner(this.query, videoCreatedWithAuctionedNftEvent.data[2].toNumber(), this.author, (ownedNft) => {
       Utils.assert(ownedNft.transactionalStatusAuction, 'NFT not in auctioned state')
+      assert.equal(ownedNft.videoCategory?.id, ownedNft.video.category?.id)
     })
   }
 }

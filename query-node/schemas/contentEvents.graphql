@@ -21,6 +21,7 @@ type VideoReactedEvent implements Event @entity {
   "The video being reacted to"
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "Video channel"
   videoChannel: Channel!
 
@@ -57,6 +58,7 @@ type CommentReactedEvent implements Event @entity {
   "Comment's video"
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "Video channel"
   videoChannel: Channel!
 
@@ -96,6 +98,7 @@ type CommentCreatedEvent implements Event @entity {
   "Comment's video"
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "Video channel"
   videoChannel: Channel!
 
@@ -129,6 +132,7 @@ type CommentTextUpdatedEvent implements Event @entity {
   "Comment's video"
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "Video channel"
   videoChannel: Channel!
 
@@ -164,6 +168,7 @@ type CommentDeletedEvent implements Event @entity {
   "Comment's video"
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "Video channel"
   videoChannel: Channel!
 
@@ -196,6 +201,7 @@ type CommentModeratedEvent implements Event @entity {
   "Comment's video"
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "Video channel"
   videoChannel: Channel!
 
@@ -233,6 +239,7 @@ type CommentPinnedEvent implements Event @entity {
   "Comment's video"
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "Video channel"
   videoChannel: Channel!
 

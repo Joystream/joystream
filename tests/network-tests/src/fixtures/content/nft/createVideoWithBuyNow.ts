@@ -36,6 +36,7 @@ export class NftCreateVideoWithBuyNowFixture extends BaseQueryNodeFixture {
     await assertNftOwner(this.query, event.data[2].toNumber(), this.author, (ownedNft) => {
       Utils.assert(ownedNft.transactionalStatus)
       assert.equal(ownedNft.transactionalStatus.__typename, 'TransactionalStatusBuyNow')
+      assert.equal(ownedNft.videoCategory?.id, ownedNft.video.category?.id)
     })
   }
 }

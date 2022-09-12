@@ -103,6 +103,7 @@ export type VideoFieldsFragment = {
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  category?: Types.Maybe<VideoCategoryFieldsFragment>
   language?: Types.Maybe<{ iso: string }>
   comments: Array<CommentFieldsFragment>
   reactions: Array<VideoReactionFieldsFragment>
@@ -131,6 +132,7 @@ export type OwnedNftFieldsFragment = {
   lastSalePrice?: Types.Maybe<any>
   lastSaleDate?: Types.Maybe<any>
   video: VideoFieldsFragment
+  videoCategory?: Types.Maybe<VideoCategoryFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   transactionalStatus?: Types.Maybe<
     | { __typename: 'TransactionalStatusIdle'; dummy?: Types.Maybe<number> }
@@ -2611,6 +2613,9 @@ export const VideoFields = gql`
     title
     description
     isPublic
+    category {
+      ...VideoCategoryFields
+    }
     language {
       iso
     }
@@ -2633,6 +2638,7 @@ export const VideoFields = gql`
       }
     }
   }
+  ${VideoCategoryFields}
   ${CommentFields}
   ${VideoReactionFields}
   ${StorageDataObjectFields}
@@ -2668,6 +2674,9 @@ export const OwnedNftFields = gql`
     id
     video {
       ...VideoFields
+    }
+    videoCategory {
+      ...VideoCategoryFields
     }
     ownerMember {
       id
@@ -2718,6 +2727,7 @@ export const OwnedNftFields = gql`
     lastSaleDate
   }
   ${VideoFields}
+  ${VideoCategoryFields}
   ${BidFields}
 `
 export const ChannelNftCollectorFields = gql`
