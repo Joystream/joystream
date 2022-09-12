@@ -99,6 +99,7 @@ typegen:
     - content.ChannelAssetsDeletedByModerator
     - content.VideoAssetsDeletedByModerator
     - content.VideoVisibilitySetByModerator
+    - content.ChannelVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
     # Storage
@@ -733,6 +734,8 @@ mappings:
       handler: content_VideoAssetsDeletedByModerator
     - event: content.VideoVisibilitySetByModerator
       handler: content_VideoVisibilitySetByModerator
+    - event: content.ChannelVisibilitySetByModerator
+      handler: content_ChannelVisibilitySetByModerator
 
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked

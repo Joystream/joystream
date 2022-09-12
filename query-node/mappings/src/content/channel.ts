@@ -17,6 +17,7 @@ import {
   StorageDataObject,
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
+  ChannelVisibilitySetByModeratorEvent,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -44,6 +45,7 @@ import {
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -193,6 +195,46 @@ export async function content_ChannelDeletedByModerator({ store, event }: EventC
   })
 
   await store.save<ChannelDeletedByModeratorEvent>(channelDeletedByModeratorEvent)
+}
+
+export async function content_ChannelVisibilitySetByModerator({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  // read event data
+  const [actor, channelId, isCensored, rationale] = new Content.ChannelVisibilitySetByModeratorEvent(event).params
+
+  // load channel
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+  })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Non-existing channel censoring requested', channelId)
+  }
+
+  // update channel
+  channel.isCensored = isCensored.isTrue
+
+  // save channel
+  await store.save<Channel>(channel)
+
+  // emit log event
+  logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })
+
+  // common event processing - second
+
+  const channelVisibilitySetByModeratorEvent = new ChannelVisibilitySetByModeratorEvent({
+    ...genericEventFields(event),
+
+    channelId: channelId.toNumber(),
+    isHidden: isCensored.isTrue,
+    rationale: rationale.toHuman() as string,
+    actor: await convertContentActor(store, actor),
+  })
+
+  await store.save<ChannelVisibilitySetByModeratorEvent>(channelVisibilitySetByModeratorEvent)
 }
 
 export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
