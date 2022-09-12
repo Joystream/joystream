@@ -6156,6 +6156,8 @@ export type Channel = BaseGraphQlObject & {
   channelNftCollectors: Array<ChannelNftCollectors>
   /** Channel's reward account, storing the income from the nft sales and channel payouts. */
   rewardAccount: Scalars['String']
+  /** Value of channel state bloat bond fee paid by channel creator */
+  channelStateBloatBond: Scalars['BigInt']
   /** Channel's privilege level */
   privilegeLevel?: Maybe<Scalars['Int']>
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
@@ -6337,6 +6339,7 @@ export type ChannelCreateInput = {
   language?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
   rewardAccount: Scalars['String']
+  channelStateBloatBond: Scalars['String']
   privilegeLevel?: Maybe<Scalars['Float']>
 }
 
@@ -6633,6 +6636,8 @@ export enum ChannelOrderByInput {
   CreatedInBlockDesc = 'createdInBlock_DESC',
   RewardAccountAsc = 'rewardAccount_ASC',
   RewardAccountDesc = 'rewardAccount_DESC',
+  ChannelStateBloatBondAsc = 'channelStateBloatBond_ASC',
+  ChannelStateBloatBondDesc = 'channelStateBloatBond_DESC',
   PrivilegeLevelAsc = 'privilegeLevel_ASC',
   PrivilegeLevelDesc = 'privilegeLevel_DESC',
 }
@@ -6650,6 +6655,7 @@ export type ChannelUpdateInput = {
   language?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
   rewardAccount?: Maybe<Scalars['String']>
+  channelStateBloatBond?: Maybe<Scalars['String']>
   privilegeLevel?: Maybe<Scalars['Float']>
 }
 
@@ -6709,6 +6715,12 @@ export type ChannelWhereInput = {
   rewardAccount_startsWith?: Maybe<Scalars['String']>
   rewardAccount_endsWith?: Maybe<Scalars['String']>
   rewardAccount_in?: Maybe<Array<Scalars['String']>>
+  channelStateBloatBond_eq?: Maybe<Scalars['BigInt']>
+  channelStateBloatBond_gt?: Maybe<Scalars['BigInt']>
+  channelStateBloatBond_gte?: Maybe<Scalars['BigInt']>
+  channelStateBloatBond_lt?: Maybe<Scalars['BigInt']>
+  channelStateBloatBond_lte?: Maybe<Scalars['BigInt']>
+  channelStateBloatBond_in?: Maybe<Array<Scalars['BigInt']>>
   privilegeLevel_eq?: Maybe<Scalars['Int']>
   privilegeLevel_gt?: Maybe<Scalars['Int']>
   privilegeLevel_gte?: Maybe<Scalars['Int']>
@@ -10372,7 +10384,6 @@ export enum EventTypeOptions {
   PostAddedEvent = 'PostAddedEvent',
   PostDeletedEvent = 'PostDeletedEvent',
   PostModeratedEvent = 'PostModeratedEvent',
-  PostReactedEvent = 'PostReactedEvent',
   PostTextUpdatedEvent = 'PostTextUpdatedEvent',
   ProposalCancelledEvent = 'ProposalCancelledEvent',
   ProposalCreatedEvent = 'ProposalCreatedEvent',
@@ -10661,14 +10672,12 @@ export type ForumPost = BaseGraphQlObject & {
   /** The origin of the post (either thread creation event or regular PostAdded event) */
   origin: PostOrigin
   edits: Array<PostTextUpdatedEvent>
-  reactions: Array<ForumPostReaction>
   deletedInEvent?: Maybe<PostDeletedEvent>
   deletedInEventId?: Maybe<Scalars['String']>
   forumpostrepliesTo?: Maybe<Array<ForumPost>>
   forumthreadinitialPost?: Maybe<Array<ForumThread>>
   postaddedeventpost?: Maybe<Array<PostAddedEvent>>
   postmoderatedeventpost?: Maybe<Array<PostModeratedEvent>>
-  postreactedeventpost?: Maybe<Array<PostReactedEvent>>
 }
 
 export type ForumPostConnection = {
@@ -10712,99 +10721,6 @@ export enum ForumPostOrderByInput {
   IsVisibleDesc = 'isVisible_DESC',
   DeletedInEventAsc = 'deletedInEvent_ASC',
   DeletedInEventDesc = 'deletedInEvent_DESC',
-}
-
-export type ForumPostReaction = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['ID']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['ID']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['ID']>
-  version: Scalars['Int']
-  member: Membership
-  memberId: Scalars['String']
-  post: ForumPost
-  postId: Scalars['String']
-  /** The reaction */
-  reaction: PostReaction
-}
-
-export type ForumPostReactionConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ForumPostReactionEdge>
-  pageInfo: PageInfo
-}
-
-export type ForumPostReactionCreateInput = {
-  member: Scalars['ID']
-  post: Scalars['ID']
-  reaction: PostReaction
-}
-
-export type ForumPostReactionEdge = {
-  node: ForumPostReaction
-  cursor: Scalars['String']
-}
-
-export enum ForumPostReactionOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  MemberAsc = 'member_ASC',
-  MemberDesc = 'member_DESC',
-  PostAsc = 'post_ASC',
-  PostDesc = 'post_DESC',
-  ReactionAsc = 'reaction_ASC',
-  ReactionDesc = 'reaction_DESC',
-}
-
-export type ForumPostReactionUpdateInput = {
-  member?: Maybe<Scalars['ID']>
-  post?: Maybe<Scalars['ID']>
-  reaction?: Maybe<PostReaction>
-}
-
-export type ForumPostReactionWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  reaction_eq?: Maybe<PostReaction>
-  reaction_in?: Maybe<Array<PostReaction>>
-  member?: Maybe<MembershipWhereInput>
-  post?: Maybe<ForumPostWhereInput>
-  AND?: Maybe<Array<ForumPostReactionWhereInput>>
-  OR?: Maybe<Array<ForumPostReactionWhereInput>>
-  NOT?: Maybe<Array<ForumPostReactionWhereInput>>
-}
-
-export type ForumPostReactionWhereUniqueInput = {
-  id: Scalars['ID']
 }
 
 export type ForumPostUpdateInput = {
@@ -10858,9 +10774,6 @@ export type ForumPostWhereInput = {
   edits_none?: Maybe<PostTextUpdatedEventWhereInput>
   edits_some?: Maybe<PostTextUpdatedEventWhereInput>
   edits_every?: Maybe<PostTextUpdatedEventWhereInput>
-  reactions_none?: Maybe<ForumPostReactionWhereInput>
-  reactions_some?: Maybe<ForumPostReactionWhereInput>
-  reactions_every?: Maybe<ForumPostReactionWhereInput>
   deletedInEvent?: Maybe<PostDeletedEventWhereInput>
   forumpostrepliesTo_none?: Maybe<ForumPostWhereInput>
   forumpostrepliesTo_some?: Maybe<ForumPostWhereInput>
@@ -10874,9 +10787,6 @@ export type ForumPostWhereInput = {
   postmoderatedeventpost_none?: Maybe<PostModeratedEventWhereInput>
   postmoderatedeventpost_some?: Maybe<PostModeratedEventWhereInput>
   postmoderatedeventpost_every?: Maybe<PostModeratedEventWhereInput>
-  postreactedeventpost_none?: Maybe<PostReactedEventWhereInput>
-  postreactedeventpost_some?: Maybe<PostReactedEventWhereInput>
-  postreactedeventpost_every?: Maybe<PostReactedEventWhereInput>
   AND?: Maybe<Array<ForumPostWhereInput>>
   OR?: Maybe<Array<ForumPostWhereInput>>
   NOT?: Maybe<Array<ForumPostWhereInput>>
@@ -13614,7 +13524,6 @@ export type Membership = BaseGraphQlObject & {
   englishauctionsettledeventownerMember?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventownerMember?: Maybe<Array<EnglishAuctionStartedEvent>>
   forumpostauthor?: Maybe<Array<ForumPost>>
-  forumpostreactionmember?: Maybe<Array<ForumPostReaction>>
   forumthreadauthor?: Maybe<Array<ForumThread>>
   foundingmembercreatedeventnewMember?: Maybe<Array<FoundingMemberCreatedEvent>>
   invitestransferredeventsourceMember?: Maybe<Array<InvitesTransferredEvent>>
@@ -13641,7 +13550,6 @@ export type Membership = BaseGraphQlObject & {
   openauctionbidacceptedeventwinningBidder?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
   openauctionstartedeventownerMember?: Maybe<Array<OpenAuctionStartedEvent>>
   postdeletedeventactor?: Maybe<Array<PostDeletedEvent>>
-  postreactedeventreactingMember?: Maybe<Array<PostReactedEvent>>
   proposalcreator?: Maybe<Array<Proposal>>
   proposaldiscussionpostauthor?: Maybe<Array<ProposalDiscussionPost>>
   proposaldiscussionpostdeletedeventactor?: Maybe<Array<ProposalDiscussionPostDeletedEvent>>
@@ -14524,9 +14432,6 @@ export type MembershipWhereInput = {
   forumpostauthor_none?: Maybe<ForumPostWhereInput>
   forumpostauthor_some?: Maybe<ForumPostWhereInput>
   forumpostauthor_every?: Maybe<ForumPostWhereInput>
-  forumpostreactionmember_none?: Maybe<ForumPostReactionWhereInput>
-  forumpostreactionmember_some?: Maybe<ForumPostReactionWhereInput>
-  forumpostreactionmember_every?: Maybe<ForumPostReactionWhereInput>
   forumthreadauthor_none?: Maybe<ForumThreadWhereInput>
   forumthreadauthor_some?: Maybe<ForumThreadWhereInput>
   forumthreadauthor_every?: Maybe<ForumThreadWhereInput>
@@ -14605,9 +14510,6 @@ export type MembershipWhereInput = {
   postdeletedeventactor_none?: Maybe<PostDeletedEventWhereInput>
   postdeletedeventactor_some?: Maybe<PostDeletedEventWhereInput>
   postdeletedeventactor_every?: Maybe<PostDeletedEventWhereInput>
-  postreactedeventreactingMember_none?: Maybe<PostReactedEventWhereInput>
-  postreactedeventreactingMember_some?: Maybe<PostReactedEventWhereInput>
-  postreactedeventreactingMember_every?: Maybe<PostReactedEventWhereInput>
   proposalcreator_none?: Maybe<ProposalWhereInput>
   proposalcreator_some?: Maybe<ProposalWhereInput>
   proposalcreator_every?: Maybe<ProposalWhereInput>
@@ -18126,205 +18028,6 @@ export type PostOriginThreadReply = {
   postAddedEvent?: Maybe<PostAddedEvent>
 }
 
-export type PostReactedEvent = Event &
-  BaseGraphQlObject & {
-    id: Scalars['ID']
-    createdAt: Scalars['DateTime']
-    createdById: Scalars['ID']
-    updatedAt?: Maybe<Scalars['DateTime']>
-    updatedById?: Maybe<Scalars['ID']>
-    deletedAt?: Maybe<Scalars['DateTime']>
-    deletedById?: Maybe<Scalars['ID']>
-    version: Scalars['Int']
-    /** Hash of the extrinsic which caused the event to be emitted */
-    inExtrinsic?: Maybe<Scalars['String']>
-    /** Blocknumber of the block in which the event was emitted. */
-    inBlock: Scalars['Int']
-    /** Network the block was produced in */
-    network: Network
-    /** Index of event in block from which it was emitted. */
-    indexInBlock: Scalars['Int']
-    /** Filtering options for interface implementers */
-    type?: Maybe<EventTypeOptions>
-    post: ForumPost
-    postId: Scalars['String']
-    /** The reaction result - new valid reaction, cancelation of previous reaction or invalid reaction (which also cancels the previous one) */
-    reactionResult: PostReactionResult
-    reactingMember: Membership
-    reactingMemberId: Scalars['String']
-  }
-
-export type PostReactedEventConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<PostReactedEventEdge>
-  pageInfo: PageInfo
-}
-
-export type PostReactedEventCreateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock: Scalars['Float']
-  network: Network
-  indexInBlock: Scalars['Float']
-  post: Scalars['ID']
-  reactionResult: Scalars['JSONObject']
-  reactingMember: Scalars['ID']
-}
-
-export type PostReactedEventEdge = {
-  node: PostReactedEvent
-  cursor: Scalars['String']
-}
-
-export enum PostReactedEventOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  InExtrinsicAsc = 'inExtrinsic_ASC',
-  InExtrinsicDesc = 'inExtrinsic_DESC',
-  InBlockAsc = 'inBlock_ASC',
-  InBlockDesc = 'inBlock_DESC',
-  NetworkAsc = 'network_ASC',
-  NetworkDesc = 'network_DESC',
-  IndexInBlockAsc = 'indexInBlock_ASC',
-  IndexInBlockDesc = 'indexInBlock_DESC',
-  PostAsc = 'post_ASC',
-  PostDesc = 'post_DESC',
-  ReactingMemberAsc = 'reactingMember_ASC',
-  ReactingMemberDesc = 'reactingMember_DESC',
-}
-
-export type PostReactedEventUpdateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock?: Maybe<Scalars['Float']>
-  network?: Maybe<Network>
-  indexInBlock?: Maybe<Scalars['Float']>
-  post?: Maybe<Scalars['ID']>
-  reactionResult?: Maybe<Scalars['JSONObject']>
-  reactingMember?: Maybe<Scalars['ID']>
-}
-
-export type PostReactedEventWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  inExtrinsic_eq?: Maybe<Scalars['String']>
-  inExtrinsic_contains?: Maybe<Scalars['String']>
-  inExtrinsic_startsWith?: Maybe<Scalars['String']>
-  inExtrinsic_endsWith?: Maybe<Scalars['String']>
-  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
-  inBlock_eq?: Maybe<Scalars['Int']>
-  inBlock_gt?: Maybe<Scalars['Int']>
-  inBlock_gte?: Maybe<Scalars['Int']>
-  inBlock_lt?: Maybe<Scalars['Int']>
-  inBlock_lte?: Maybe<Scalars['Int']>
-  inBlock_in?: Maybe<Array<Scalars['Int']>>
-  network_eq?: Maybe<Network>
-  network_in?: Maybe<Array<Network>>
-  indexInBlock_eq?: Maybe<Scalars['Int']>
-  indexInBlock_gt?: Maybe<Scalars['Int']>
-  indexInBlock_gte?: Maybe<Scalars['Int']>
-  indexInBlock_lt?: Maybe<Scalars['Int']>
-  indexInBlock_lte?: Maybe<Scalars['Int']>
-  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
-  reactionResult_json?: Maybe<Scalars['JSONObject']>
-  post?: Maybe<ForumPostWhereInput>
-  reactingMember?: Maybe<MembershipWhereInput>
-  AND?: Maybe<Array<PostReactedEventWhereInput>>
-  OR?: Maybe<Array<PostReactedEventWhereInput>>
-  NOT?: Maybe<Array<PostReactedEventWhereInput>>
-}
-
-export type PostReactedEventWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
-export enum PostReaction {
-  Like = 'LIKE',
-}
-
-export type PostReactionResult = PostReactionResultCancel | PostReactionResultValid | PostReactionResultInvalid
-
-export type PostReactionResultCancel = {
-  phantom?: Maybe<Scalars['Int']>
-}
-
-export type PostReactionResultInvalid = {
-  reactionId: Scalars['String']
-}
-
-export type PostReactionResultValid = {
-  reaction: PostReaction
-  reactionId: Scalars['Int']
-}
-
-export type PostReactionResultValidCreateInput = {
-  reaction: PostReaction
-}
-
-export type PostReactionResultValidUpdateInput = {
-  reaction?: Maybe<PostReaction>
-}
-
-export type PostReactionResultValidWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  reaction_eq?: Maybe<PostReaction>
-  reaction_in?: Maybe<Array<PostReaction>>
-  AND?: Maybe<Array<PostReactionResultValidWhereInput>>
-  OR?: Maybe<Array<PostReactionResultValidWhereInput>>
-  NOT?: Maybe<Array<PostReactionResultValidWhereInput>>
-}
-
-export type PostReactionResultValidWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type PostStatus = PostStatusActive | PostStatusLocked | PostStatusModerated | PostStatusRemoved
 
 export type PostStatusActive = {
@@ -20715,9 +20418,6 @@ export type Query = {
   forumCategories: Array<ForumCategory>
   forumCategoryByUniqueInput?: Maybe<ForumCategory>
   forumCategoriesConnection: ForumCategoryConnection
-  forumPostReactions: Array<ForumPostReaction>
-  forumPostReactionByUniqueInput?: Maybe<ForumPostReaction>
-  forumPostReactionsConnection: ForumPostReactionConnection
   forumPosts: Array<ForumPost>
   forumPostByUniqueInput?: Maybe<ForumPost>
   forumPostsConnection: ForumPostConnection
@@ -20868,9 +20568,6 @@ export type Query = {
   postModeratedEvents: Array<PostModeratedEvent>
   postModeratedEventByUniqueInput?: Maybe<PostModeratedEvent>
   postModeratedEventsConnection: PostModeratedEventConnection
-  postReactedEvents: Array<PostReactedEvent>
-  postReactedEventByUniqueInput?: Maybe<PostReactedEvent>
-  postReactedEventsConnection: PostReactedEventConnection
   postTextUpdatedEvents: Array<PostTextUpdatedEvent>
   postTextUpdatedEventByUniqueInput?: Maybe<PostTextUpdatedEvent>
   postTextUpdatedEventsConnection: PostTextUpdatedEventConnection
@@ -22604,26 +22301,6 @@ export type QueryForumCategoriesConnectionArgs = {
   orderBy?: Maybe<Array<ForumCategoryOrderByInput>>
 }
 
-export type QueryForumPostReactionsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ForumPostReactionWhereInput>
-  orderBy?: Maybe<Array<ForumPostReactionOrderByInput>>
-}
-
-export type QueryForumPostReactionByUniqueInputArgs = {
-  where: ForumPostReactionWhereUniqueInput
-}
-
-export type QueryForumPostReactionsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ForumPostReactionWhereInput>
-  orderBy?: Maybe<Array<ForumPostReactionOrderByInput>>
-}
-
 export type QueryForumPostsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -23622,26 +23299,6 @@ export type QueryPostModeratedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<PostModeratedEventWhereInput>
   orderBy?: Maybe<Array<PostModeratedEventOrderByInput>>
-}
-
-export type QueryPostReactedEventsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<PostReactedEventWhereInput>
-  orderBy?: Maybe<Array<PostReactedEventOrderByInput>>
-}
-
-export type QueryPostReactedEventByUniqueInputArgs = {
-  where: PostReactedEventWhereUniqueInput
-}
-
-export type QueryPostReactedEventsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<PostReactedEventWhereInput>
-  orderBy?: Maybe<Array<PostReactedEventOrderByInput>>
 }
 
 export type QueryPostTextUpdatedEventsArgs = {
@@ -29763,7 +29420,7 @@ export type Video = BaseGraphQlObject & {
   licenseId?: Maybe<Scalars['String']>
   media?: Maybe<StorageDataObject>
   mediaId?: Maybe<Scalars['String']>
-  /** Video state bloat bond */
+  /** Value of video state bloat bond fee paid by channel owner */
   videoStateBloatBond: Scalars['BigInt']
   mediaMetadata?: Maybe<VideoMediaMetadata>
   mediaMetadataId?: Maybe<Scalars['String']>

@@ -42,13 +42,6 @@ import {
   CategoryMembershipOfModeratorUpdatedEvent,
   PostModeratedEvent,
   PostStatusModerated,
-  ForumPostReaction,
-  PostReaction,
-  PostReactedEvent,
-  PostReactionResult,
-  PostReactionResultCancel,
-  PostReactionResultValid,
-  PostReactionResultInvalid,
   PostTextUpdatedEvent,
   PostDeletedEvent,
   PostStatusRemoved,
@@ -56,12 +49,7 @@ import {
 } from 'query-node/dist/model'
 import { Forum } from '../generated/types'
 import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
-import { ForumPostReactionId } from '@joystream/types/primitives'
-import {
-  ForumPostMetadata,
-  ForumPostReaction as SupportedPostReactions,
-  ForumThreadMetadata,
-} from '@joystream/metadata-protobuf'
+import { ForumPostMetadata, ForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { MAX_TAGS_PER_FORUM_THREAD } from '@joystream/metadata-protobuf/consts'
 import { Not, In } from 'typeorm'
@@ -158,27 +146,6 @@ async function unsetThreadTags({ store }: StoreContext & EventContext, tags: For
       await store.save<ForumThreadTag>(forumTag)
     })
   )
-}
-
-// Get standarized PostReactionResult by PostReactionId
-function parseReaction(reactionId: ForumPostReactionId): typeof PostReactionResult {
-  switch (toNumber(reactionId)) {
-    case SupportedPostReactions.Reaction.CANCEL: {
-      return new PostReactionResultCancel()
-    }
-    case SupportedPostReactions.Reaction.LIKE: {
-      const result = new PostReactionResultValid()
-      result.reaction = PostReaction.LIKE
-      result.reactionId = reactionId.toNumber()
-      return result
-    }
-    default: {
-      console.warn(`Invalid post reaction id: ${reactionId.toString()}`)
-      const result = new PostReactionResultInvalid()
-      result.reactionId = reactionId.toString()
-      return result
-    }
-  }
 }
 
 export async function forum_CategoryCreated({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -519,41 +486,6 @@ export async function forum_PostModerated({ event, store }: EventContext & Store
   const { thread } = post
   --thread.visiblePostsCount
   await store.save<ForumThread>(thread)
-}
-
-export async function forum_PostReacted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [userId, postId, reactionId] = new Forum.PostReactedEvent(event).params
-
-  const reactionResult = parseReaction(reactionId)
-  const postReactedEvent = new PostReactedEvent({
-    ...genericEventFields(event),
-    post: new ForumPost({ id: postId.toString() }),
-    reactingMember: new Membership({ id: userId.toString() }),
-    reactionResult,
-  })
-  await store.save<PostReactedEvent>(postReactedEvent)
-
-  const existingUserPostReaction = await store.get(ForumPostReaction, {
-    where: { post: { id: postId.toString() }, member: { id: userId.toString() } },
-  })
-
-  if (reactionResult.isTypeOf === 'PostReactionResultValid') {
-    const { reaction } = reactionResult as PostReactionResultValid
-
-    if (existingUserPostReaction) {
-      existingUserPostReaction.reaction = reaction
-      await store.save<ForumPostReaction>(existingUserPostReaction)
-    } else {
-      const newUserPostReaction = new ForumPostReaction({
-        post: new ForumPost({ id: postId.toString() }),
-        member: new Membership({ id: userId.toString() }),
-        reaction,
-      })
-      await store.save<ForumPostReaction>(newUserPostReaction)
-    }
-  } else if (existingUserPostReaction) {
-    await store.remove<ForumPostReaction>(existingUserPostReaction)
-  }
 }
 
 export async function forum_PostTextUpdated({ event, store }: EventContext & StoreContext): Promise<void> {

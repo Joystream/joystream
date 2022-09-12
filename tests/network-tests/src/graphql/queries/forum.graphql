@@ -82,13 +82,6 @@ fragment ForumPostFields on ForumPost {
   edits {
     id
   }
-  reactions {
-    id
-    member {
-      id
-    }
-    reaction
-  }
 }
 
 fragment ForumThreadWithInitialPost on ForumThread {

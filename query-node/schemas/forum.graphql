@@ -126,25 +126,6 @@ type ForumThreadTag @entity {
   visibleThreadsCount: Int!
 }
 
-enum PostReaction {
-  LIKE
-  # We may support some other ones in the future...
-}
-
-type ForumPostReaction @entity {
-  "{memberId}-{postId}"
-  id: ID!
-
-  "The member that reacted"
-  member: Membership!
-
-  "The post that has been reacted to"
-  post: ForumPost!
-
-  "The reaction"
-  reaction: PostReaction!
-}
-
 "The post is visible and editable (unless belongs to archived category)"
 type PostStatusActive @variant {
   # No additional information required
@@ -212,9 +193,6 @@ type ForumPost @entity {
 
   "List of all text update events (edits)"
   edits: [PostTextUpdatedEvent!] @derivedFrom(field: "post")
-
-  "List of all current post reactions"
-  reactions: [ForumPostReaction!] @derivedFrom(field: "post")
 
   # Required for PostDeletedEvent One-to-Many relation
   "The event the post was deleted in (if any)"

@@ -569,7 +569,7 @@ export default {
     applyRootAccountInvitationLock: 'Option<u128>'
   },
   /**
-   * Lookup77: pallet_forum::RawEvent<CategoryId, ModeratorId, ThreadId, PostId, primitive_types::H256, ForumUserId, PostReactionId, pallet_forum::PrivilegedActor<T>, pallet_forum::ExtendedPostIdObject<CategoryId, ThreadId, PostId>>
+   * Lookup77: pallet_forum::RawEvent<CategoryId, ModeratorId, ThreadId, PostId, primitive_types::H256, ForumUserId, pallet_forum::PrivilegedActor<T>, pallet_forum::ExtendedPostIdObject<CategoryId, ThreadId, PostId>>
    **/
   PalletForumRawEvent: {
     _enum: {
@@ -588,7 +588,6 @@ export default {
       PostModerated: '(u64,Bytes,PalletForumPrivilegedActor,u64,u64)',
       PostDeleted: '(Bytes,u64,BTreeMap<PalletForumExtendedPostIdObject, bool>)',
       PostTextUpdated: '(u64,u64,u64,u64,Bytes)',
-      PostReacted: '(u64,u64,u64,u64,u64)',
       CategoryStickyThreadUpdate: '(u64,Vec<u64>,PalletForumPrivilegedActor)',
       CategoryMembershipOfModeratorUpdated: '(u64,u64,bool)'
     }
@@ -2752,13 +2751,6 @@ export default {
         threadId: 'u64',
         text: 'Bytes',
         editable: 'bool',
-      },
-      react_post: {
-        forumUserId: 'u64',
-        categoryId: 'u64',
-        threadId: 'u64',
-        postId: 'u64',
-        react: 'u64',
       },
       edit_post_text: {
         forumUserId: 'u64',

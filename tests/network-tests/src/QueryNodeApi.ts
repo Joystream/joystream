@@ -263,10 +263,6 @@ import {
   GetPostModeratedEventsByEventIdsQuery,
   GetPostModeratedEventsByEventIdsQueryVariables,
   GetPostModeratedEventsByEventIds,
-  PostReactedEventFieldsFragment,
-  GetPostReactedEventsByEventIdsQuery,
-  GetPostReactedEventsByEventIdsQueryVariables,
-  GetPostReactedEventsByEventIds,
   PostTextUpdatedEventFieldsFragment,
   GetPostTextUpdatedEventsByEventIdsQuery,
   GetPostTextUpdatedEventsByEventIdsQueryVariables,
@@ -1109,14 +1105,6 @@ export class QueryNodeApi {
       GetPostModeratedEventsByEventIdsQuery,
       GetPostModeratedEventsByEventIdsQueryVariables
     >(GetPostModeratedEventsByEventIds, { eventIds }, 'postModeratedEvents')
-  }
-
-  public async getPostReactedEvents(events: EventDetails[]): Promise<PostReactedEventFieldsFragment[]> {
-    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
-    return this.multipleEntitiesQuery<
-      GetPostReactedEventsByEventIdsQuery,
-      GetPostReactedEventsByEventIdsQueryVariables
-    >(GetPostReactedEventsByEventIds, { eventIds }, 'postReactedEvents')
   }
 
   public async getPostTextUpdatedEvents(events: EventDetails[]): Promise<PostTextUpdatedEventFieldsFragment[]> {

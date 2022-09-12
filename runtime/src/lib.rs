@@ -1101,7 +1101,6 @@ impl forum::Config for Runtime {
     type ThreadId = ThreadId;
     type PostId = PostId;
     type CategoryId = u64;
-    type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
     type ThreadDeposit = ThreadDeposit;
     type PostDeposit = PostDeposit;
