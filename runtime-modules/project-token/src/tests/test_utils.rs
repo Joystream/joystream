@@ -277,15 +277,7 @@ impl<Balance, Account: Ord> Transfers<Account, Payment<Balance>> {
     pub fn new(v: Vec<(Account, Balance)>) -> Self {
         Transfers::<_, _>(
             v.into_iter()
-                .map(|(acc, amount)| {
-                    (
-                        acc,
-                        Payment::<Balance> {
-                            remark: vec![],
-                            amount,
-                        },
-                    )
-                })
+                .map(|(acc, amount)| (acc, Payment::<Balance> { amount }))
                 .collect::<BTreeMap<_, _>>(),
         )
     }
@@ -301,7 +293,6 @@ impl<Balance, MemberId: Ord, VestingScheduleParams>
                     (
                         member_id,
                         PaymentWithVesting {
-                            remark: vec![],
                             amount,
                             vesting_schedule,
                         },
@@ -336,7 +327,6 @@ where
                             validated_acc,
                             ValidatedPayment {
                                 payment: PaymentWithVesting::<Balance, VestingScheduleParams> {
-                                    remark: vec![],
                                     amount,
                                     vesting_schedule,
                                 },

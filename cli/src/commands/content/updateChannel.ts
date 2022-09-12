@@ -130,6 +130,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       collaborators: collaborators?.length
         ? new Map(collaborators?.map(({ memberId, permissions }) => [memberId, permissions]))
         : null,
+      storageBucketsNumWitness: await this.getStorageBucketsNumWitness(channelId),
     })
     this.jsonPrettyPrint(
       JSON.stringify({

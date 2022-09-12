@@ -1,13 +1,20 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 #![recursion_limit = "512"]
 #![allow(clippy::unused_unit)]
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarks;
 
 mod errors;
 mod nft;
 mod permissions;
-mod tests;
 mod types;
+pub mod weights;
 
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
@@ -16,6 +23,7 @@ use project_token::types::{
     UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
+pub use weights::WeightInfo;
 
 pub use errors::*;
 pub use nft::*;
@@ -24,10 +32,10 @@ use scale_info::TypeInfo;
 pub use types::*;
 
 use codec::{Codec, Decode, Encode};
-
+use frame_support::weights::Weight;
 pub use storage::{
-    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
-    DynamicBagIdType, StaticBagId, UploadParameters,
+    BagId, BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
+    DynamicBagId, DynamicBagIdType, StaticBagId, UploadParameters,
 };
 
 pub use common::{
@@ -39,7 +47,7 @@ pub use common::{
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
-    MembershipTypes, StorageOwnership, Url,
+    MembershipTypes, Side, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -48,6 +56,8 @@ use frame_support::{
     traits::{Currency, ExistenceRequirement, Get},
     PalletId, Parameter,
 };
+
+use sp_std::convert::TryInto;
 
 use frame_system::{ensure_root, ensure_signed};
 
@@ -60,6 +70,8 @@ use sp_arithmetic::{
 use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
+type WeightInfoContent<T> = <T as Config>::WeightInfo;
+
 /// Module configuration trait for Content Directory Module
 pub trait Config:
     frame_system::Config
@@ -70,6 +82,9 @@ pub trait Config:
     + storage::Config
     + project_token::Config
 {
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
+
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
@@ -96,6 +111,15 @@ pub trait Config:
 
     /// Max number of keys per curator_group.permissions_by_level map instance
     type MaxKeysPerCuratorGroupPermissionsByLevelMap: Get<u8>;
+
+    /// The maximum number of assets that can be assigned to a single channel
+    type MaxNumberOfAssetsPerChannel: Get<MaxNumber>;
+
+    /// The maximum number of assets that can be assigned to a signle video
+    type MaxNumberOfAssetsPerVideo: Get<MaxNumber>;
+
+    /// The maximum number of collaborators per channel
+    type MaxNumberOfCollaboratorsPerChannel: Get<MaxNumber>;
 
     // Channel's privilege level
     type ChannelPrivilegeLevel: Parameter
@@ -246,7 +270,7 @@ decl_storage! {
 
         /// Global weekly NFT limit.
         pub GlobalWeeklyNftLimit get(fn global_weekly_nft_limit):
-        LimitPerPeriod<T::BlockNumber>;
+            LimitPerPeriod<T::BlockNumber>;
 
         /// NFT limits enabled or not
         /// Can be updated in flight by the Council
@@ -301,7 +325,16 @@ decl_module! {
         // ======
 
         /// Add new curator group to runtime storage
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `permissions_by_level` map
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::create_curator_group(permissions_by_level.len() as u32)]
         pub fn create_curator_group(
             origin,
             is_active: bool,
@@ -331,7 +364,16 @@ decl_module! {
         }
 
         /// Update existing curator group's permissions
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `permissions_by_level` map
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_curator_group_permissions(permissions_by_level.len() as u32)]
         pub fn update_curator_group_permissions(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -359,7 +401,15 @@ decl_module! {
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::set_curator_group_status()]
         pub fn set_curator_group_status(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -388,7 +438,15 @@ decl_module! {
         }
 
         /// Add curator to curator group under given `curator_group_id`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::add_curator_to_group()]
         pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -428,7 +486,15 @@ decl_module! {
         }
 
         /// Remove curator from a given curator group
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::remove_curator_from_group()]
         pub fn remove_curator_from_group(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -460,7 +526,19 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D + E)` where:
+        /// - `A` is the number of entries in `params.collaborators`
+        /// - `B` is the number of items in `params.storage_buckets`
+        /// - `C` is the number of items in `params.distribution_buckets`
+        /// - `D` is the number of items in `params.assets.object_creation_list`
+        /// - `E` is the length of  `params.meta`
+        /// - DB:
+        ///    - `O(A + B + C + D)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::create_channel_weight(params)]
         pub fn create_channel(
             origin,
             channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -505,6 +583,12 @@ decl_module! {
                 Error::<T>::InsufficientBalanceForChannelCreation
             );
 
+            ensure!(
+                storage_assets.object_creation_list.len()
+                    <= T::MaxNumberOfAssetsPerChannel::get() as usize,
+                Error::<T>::MaxNumberOfChannelAssetsExceeded
+            );
+
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
                 object_creation_list: storage_assets.object_creation_list,
@@ -514,6 +598,12 @@ decl_module! {
                 storage_buckets: params.storage_buckets.clone(),
                 distribution_buckets: params.distribution_buckets.clone(),
             };
+
+            let collaborators: ChannelCollaboratorsMap<T> = params
+                .collaborators
+                .clone()
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))?;
 
             // retrieve channel account
             let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
@@ -533,15 +623,18 @@ decl_module! {
             NextChannelId::<T>::mutate(|id| *id += T::ChannelId::one());
 
             // channel creation
+            let data_objects = data_objects_ids
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelAssetsExceeded))?;
             let channel: Channel<T> = ChannelRecord {
                 owner: channel_owner,
                 num_videos: 0u64,
-                collaborators: params.collaborators.clone(),
+                collaborators,
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
                 transfer_status: ChannelTransferStatus::NoActiveTransfer,
                 privilege_level: Zero::zero(),
                 paused_features: BTreeSet::new(),
-                data_objects: data_objects_ids,
+                data_objects,
                 daily_nft_limit: T::DefaultChannelDailyNftLimit::get(),
                 weekly_nft_limit: T::DefaultChannelWeeklyNftLimit::get(),
                 daily_nft_counter: Default::default(),
@@ -556,7 +649,19 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params, channel_account));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D + E)` where:
+        /// - `A` is the number of entries in `params.collaborators`
+        /// - `B` is the number of items in `params.assets_to_upload.object_creation_list` (if provided)
+        /// - `C` is the number of items in `params.assets_to_remove`
+        /// - `D` is the length `params.new_meta`
+        /// - `E` is `params.storage_buckets_num_witness` (if provided)
+        /// - DB:
+        ///    - `O(A + B + C + E)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::update_channel_weight(params)]
         pub fn update_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -584,39 +689,84 @@ decl_module! {
                 Self::validate_member_set(&new_collabs.keys().cloned().collect())?;
             }
 
-            Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
+            let new_collabs: Option<ChannelCollaboratorsMap<T>> = params
+                .collaborators
+                .clone()
+                .map(|c| c
+                    .try_into()
+                    .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))
+                ).transpose()?;
+
+            let upload_parameters =
+                if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
+                    // verify storage buckets witness
+                    match params.storage_buckets_num_witness {
+                        Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
+                        None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
+                    }?;
+
+                    Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
+
+                    let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+
+                    Self::ensure_max_channel_assets_not_exceeded(&channel.data_objects, &assets_to_upload, &params.assets_to_remove)?;
+
+                    let upload_parameters = UploadParameters::<T> {
+                        bag_id: Self::bag_id_for_channel(&channel_id),
+                        object_creation_list: assets_to_upload.object_creation_list,
+                        state_bloat_bond_source_account_id: sender,
+                        expected_data_size_fee: assets_to_upload.expected_data_size_fee,
+                        expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond};
+
+                    Some(upload_parameters)
+                }
+                else {
+                    None
+                };
 
             //
             // == MUTATION SAFE ==
             //
 
-            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+            let new_data_object_ids = if let Some(upload_parameters) = upload_parameters {
+                // Upload/remove data objects and update channel assets set
+                let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
+                    upload_parameters,
+                    params.assets_to_remove.clone(),
+                )?;
+                let updated_assets_set = Self::create_updated_channel_assets_set(
+                    &channel.data_objects,
+                    &new_data_object_ids,
+                    &params.assets_to_remove
+                )?;
+                ChannelById::<T>::mutate(channel_id, |channel| {
+                    channel.data_objects = updated_assets_set;
+                });
+                new_data_object_ids
+            } else {
+                BTreeSet::new()
+            };
 
-            let upload_parameters = UploadParameters::<T> {
-                bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: assets_to_upload.object_creation_list,
-                state_bloat_bond_source_account_id: sender,
-                expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond            };
-
-            let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
-                upload_parameters,
-                params.assets_to_remove.clone(),
-            )?;
-
-            // Update the channel
+            // Update channel collaborators
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.data_objects = Self::create_updated_data_objects_set(&channel.data_objects, &new_data_object_ids, &params.assets_to_remove);
-                if let Some(new_collabs) = params.collaborators.as_ref() {
-                    channel.collaborators = new_collabs.clone();
+                if let Some(new_collabs) = new_collabs {
+                    channel.collaborators = new_collabs;
                 }
             });
 
             Self::deposit_event(RawEvent::ChannelUpdated(actor, channel_id, params, new_data_object_ids));
         }
 
-        // Extrinsic for updating channel privilege level (requires lead access)
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Extrinsic for updating channel privilege level (requires lead access)
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_channel_privilege_level()]
         pub fn update_channel_privilege_level(
             origin,
             channel_id: T::ChannelId,
@@ -639,8 +789,17 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
         }
 
-        // extrinsics for pausing/re-enabling channel features
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Extrinsic for pausing/re-enabling channel features
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T>::set_channel_paused_features_as_moderator_weight(rationale)]
         pub fn set_channel_paused_features_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -662,6 +821,7 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
             ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features.clone() });
 
 
@@ -672,17 +832,32 @@ decl_module! {
         }
 
         // extrinsics for channel deletion
-        #[weight = 10_000_000] // TODO: adjust weight
+
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is `num_objects_to_delete`
+        /// - `B` is `channel_bag_witness.storage_buckets_num`
+        /// - `C` is `channel_bag_witness.distribution_buckets_num`
+        /// - DB:
+        ///    - `O(A + B + C)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::delete_channel_weight(channel_bag_witness, num_objects_to_delete)]
         pub fn delete_channel(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // ensure no creator token is issued for the channel
             channel.ensure_creator_token_not_issued::<T>()?;
@@ -709,14 +884,26 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is the length of `assets_to_remove`
+        /// - `B` is the value of `storage_buckets_num_witness`
+        /// - `C` is the length of `rationale`
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::delete_channel_assets_as_moderator_weight(assets_to_remove, storage_buckets_num_witness, rationale)]
         pub fn delete_channel_assets_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
+            storage_buckets_num_witness: u32,
             rationale: Vec<u8>,
         ) {
+
             let sender = ensure_signed(origin)?;
 
             // check that channel exists
@@ -726,25 +913,36 @@ decl_module! {
             let actions_to_perform = vec![ContentModerationAction::DeleteNonVideoChannelAssets];
             ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
+            ensure!(
+                !assets_to_remove.is_empty(),
+                Error::<T>::NumberOfAssetsToRemoveIsZero
+            );
+
             // ensure provided assets belong to the channel
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &channel.data_objects)?;
+
+            let updated_assets = Self::create_updated_channel_assets_set(
+                &channel.data_objects,
+                &BTreeSet::new(),
+                &assets_to_remove
+            )?;
+
+            // verify storage buckets witness
+            Self::verify_storage_buckets_num_witness(channel_id, storage_buckets_num_witness)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // remove the assets
-            if !assets_to_remove.is_empty() {
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone(),
-                )?;
-            }
+            Storage::<T>::delete_data_objects(
+                sender,
+                Self::bag_id_for_channel(&channel_id),
+                assets_to_remove.clone(),
+            )?;
 
             // update channel's data_objects set
             ChannelById::<T>::mutate(channel_id, |channel| {
-                channel.data_objects = Self::create_updated_data_objects_set(&channel.data_objects, &BTreeSet::new(), &assets_to_remove)
+                channel.data_objects = updated_assets;
             });
 
             // emit the event
@@ -752,11 +950,12 @@ decl_module! {
         }
 
         // extrinsics for channel deletion as moderator
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::delete_channel_as_moderator_weight(channel_bag_witness, num_objects_to_delete, rationale)]
         pub fn delete_channel_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
+            channel_bag_witness: ChannelBagWitness,
             num_objects_to_delete: u64,
             rationale: Vec<u8>,
         ) -> DispatchResult {
@@ -765,6 +964,9 @@ decl_module! {
 
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // verify channel bag witness
+            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteChannel];
@@ -789,8 +991,17 @@ decl_module! {
             Ok(())
         }
 
-        // extrinsics for channel visibility status (hidden/visible) setting by moderator
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Extrinsic for setting channel visibility status (hidden/visible) by moderator
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T>::set_channel_visibility_as_moderator_weight(rationale)]
         pub fn set_channel_visibility_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -817,7 +1028,18 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D)` where:
+        /// - `A` is the number of items in `params.assets.object_creation_list`
+        /// - `B` is `params.storage_buckets_num_witness`
+        /// - `C` is the length of open auction / english auction whitelist (if provided)
+        /// - `D` is the length of `params.meta` (if provided)
+        /// - DB:
+        ///    - `O(A + B + C)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::create_video_weight(params)]
         pub fn create_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -837,6 +1059,9 @@ decl_module! {
             if params.auto_issue_nft.is_some() {
                 channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
+
+            // verify storage buckets num witness
+            Self::verify_storage_buckets_num_witness(channel_id, params.storage_buckets_num_witness)?;
 
             // next video id
             let video_id = NextVideoId::<T>::get();
@@ -862,6 +1087,11 @@ decl_module! {
             let storage_assets = params.assets.clone().unwrap_or_default();
             let num_objs = storage_assets.object_creation_list.len();
 
+            ensure!(
+                storage_assets.object_creation_list.len() <= T::MaxNumberOfAssetsPerVideo::get() as usize,
+                Error::<T>::MaxNumberOfVideoAssetsExceeded
+            );
+
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
             let upload_fee = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
 
@@ -877,6 +1107,11 @@ decl_module! {
                 Self::check_nft_limits(&channel)?;
             }
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Upload data objects
             let data_objects_ids = if let Some(upload_assets) = params.assets.as_ref() {
                 let params = Self::construct_upload_parameters(
                     upload_assets,
@@ -889,6 +1124,11 @@ decl_module! {
                 Ok(BTreeSet::new())
             }?;
 
+            let data_objects = data_objects_ids
+                .clone()
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfVideoAssetsExceeded))?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -899,7 +1139,7 @@ decl_module! {
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
                 nft_status: nft_status.clone(),
-                data_objects: data_objects_ids.clone(),
+                data_objects,
                 video_state_bloat_bond: repayable_bloat_bond,
             };
 
@@ -922,7 +1162,19 @@ decl_module! {
 
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C + D + E)` where:
+        /// - `A` is params.assets_to_upload.object_creation_list.len() (if provided)
+        /// - `B` is params.assets_to_remove.len()
+        /// - `C` is `params.storage_buckets_num_witness` (if provided)
+        /// - `D` is the length of open auction / english auction whitelist (if provided)
+        /// - `E` is the length of `params.new_meta` (if provided)
+        /// - DB:
+        ///    - `O(A + B + C + D)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::update_video_weight(params)]
         pub fn update_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -955,9 +1207,39 @@ decl_module! {
                 channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
             }
 
-            Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &video.data_objects)?;
+            let upload_parameters =
+                if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
+                    // verify storage buckets num witness
+                    match params.storage_buckets_num_witness {
+                        Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
+                        None => Err(Error::<T>::MissingStorageBucketsNumWitness.into())
+                    }?;
+                    // ensure assets to remove are part of the existing video assets set
+                    Self::ensure_assets_to_remove_are_part_of_assets_set(
+                        &params.assets_to_remove,
+                        &video.data_objects
+                    )?;
 
-            let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+                    // ensure max number of assets not exceeded
+                    let assets_to_upload = params.assets_to_upload.clone().unwrap_or_default();
+                    Self::ensure_max_video_assets_not_exceeded(
+                        &video.data_objects,
+                        &assets_to_upload,
+                        &params.assets_to_remove
+                    )?;
+
+                    let upload_parameters = UploadParameters::<T> {
+                        bag_id: Self::bag_id_for_channel(&channel_id),
+                        object_creation_list: assets_to_upload.object_creation_list,
+                        state_bloat_bond_source_account_id: sender,
+                        expected_data_size_fee: assets_to_upload.expected_data_size_fee,
+                        expected_data_object_state_bloat_bond:
+                            params.expected_data_object_state_bloat_bond,
+                    };
+                    Some(upload_parameters)
+                } else {
+                    None
+                };
 
             let nft_status = params.auto_issue_nft
                 .as_ref()
@@ -976,19 +1258,25 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // upload/delete video assets from storage with commit or rollback semantics
-            let upload_parameters = UploadParameters::<T> {
-                bag_id: Self::bag_id_for_channel(&channel_id),
-                object_creation_list: assets_to_upload.object_creation_list,
-                state_bloat_bond_source_account_id: sender,
-                expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-            };
-
-            let new_data_object_ids = Storage::<T>::upload_and_delete_data_objects(
-                upload_parameters,
-                params.assets_to_remove.clone(),
+            let new_data_objects_ids = if let Some(upload_parameters) = upload_parameters {
+                // upload/delete video assets from storage with commit or rollback semantics
+                let new_data_objects_ids = Storage::<T>::upload_and_delete_data_objects(
+                    upload_parameters,
+                    params.assets_to_remove.clone(),
                 )?;
+                // update video assets set
+                let updated_assets = Self::create_updated_video_assets_set(
+                    &video.data_objects,
+                    &new_data_objects_ids,
+                    &params.assets_to_remove
+                )?;
+                VideoById::<T>::mutate(video_id, |video| {
+                    video.data_objects = updated_assets;
+                });
+                new_data_objects_ids
+            } else {
+                BTreeSet::new()
+            };
 
             if nft_status.is_some() {
                 ChannelById::<T>::mutate(channel_id, |channel| {
@@ -997,20 +1285,28 @@ decl_module! {
                 VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
             }
 
-            // Update the video
-            VideoById::<T>::mutate(video_id, |video| {
-                video.data_objects = Self::create_updated_data_objects_set(&video.data_objects, &new_data_object_ids, &params.assets_to_remove)
-            });
-
-            Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_object_ids));
+            Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_objects_ids));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B)` where:
+        /// - `A` is num_objects_to_delete
+        /// - `B` is `params.storage_buckets_num_witness` (if provided)
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::delete_video_weight(
+            num_objects_to_delete,
+            storage_buckets_num_witness
+        )]
         pub fn delete_video(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             num_objects_to_delete: u64,
+            storage_buckets_num_witness: Option<u32>
         ) {
             let sender = ensure_signed(origin)?;
 
@@ -1038,7 +1334,7 @@ decl_module! {
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
             // Try removing the video, repay the bloat bond
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, false)?;
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, false, storage_buckets_num_witness)?;
 
             //
             // == MUTATION SAFE ==
@@ -1047,11 +1343,22 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is the length of `assets_to_remove`
+        /// - `B` is the value of `storage_buckets_num_witness`
+        /// - `C` is the length of `rationale`
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::delete_video_assets_as_moderator_weight(assets_to_remove, storage_buckets_num_witness, rationale)]
         pub fn delete_video_assets_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
+            storage_buckets_num_witness: u32,
             assets_to_remove: BTreeSet<DataObjectId<T>>,
             rationale: Vec<u8>,
         ) {
@@ -1069,36 +1376,59 @@ decl_module! {
             let actions_to_perform = vec![ContentModerationAction::DeleteVideoAssets(is_nft)];
             ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
 
+            ensure!(
+                !assets_to_remove.is_empty(),
+                Error::<T>::NumberOfAssetsToRemoveIsZero
+            );
+
             // ensure provided assets belong to the video
             Self::ensure_assets_to_remove_are_part_of_assets_set(&assets_to_remove, &video.data_objects)?;
+
+            let updated_assets = Self::create_updated_video_assets_set(
+                &video.data_objects,
+                &BTreeSet::new(),
+                &assets_to_remove
+            )?;
+
+            // verify storage buckets witness
+            Self::verify_storage_buckets_num_witness(channel_id, storage_buckets_num_witness)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // remove the assets
-            if !assets_to_remove.is_empty() {
-                Storage::<T>::delete_data_objects(
-                    sender,
-                    Self::bag_id_for_channel(&channel_id),
-                    assets_to_remove.clone(),
-                )?;
-            }
+            Storage::<T>::delete_data_objects(
+                sender,
+                Self::bag_id_for_channel(&channel_id),
+                assets_to_remove.clone(),
+            )?;
 
             // update video's data_objects set
             VideoById::<T>::mutate(video_id, |video| {
-                video.data_objects = Self::create_updated_data_objects_set(&video.data_objects, &BTreeSet::new(), &assets_to_remove)
+                video.data_objects = updated_assets;
             });
 
             // emit the event
             Self::deposit_event(RawEvent::VideoAssetsDeletedByModerator(actor, video_id, assets_to_remove, is_nft, rationale));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B + C)` where:
+        /// - `A` is the value of `num_objects_to_delete`
+        /// - `B` is the value of `storage_buckets_num_witness`
+        /// - `C` is the length of `rationale`
+        /// - DB:
+        ///    - `O(A + B)` - from the the generated weights
+        /// # </weight>
+        #[weight = Module::<T>::delete_video_as_moderator_weight(num_objects_to_delete, storage_buckets_num_witness, rationale)]
         pub fn delete_video_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
+            storage_buckets_num_witness: Option<u32>,
             num_objects_to_delete: u64,
             rationale: Vec<u8>,
         ) {
@@ -1121,8 +1451,9 @@ decl_module! {
             // ensure provided num_objects_to_delete is valid
             Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
 
+
             // Try removing the video, slash the bloat bond
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, true)?;
+            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, true, storage_buckets_num_witness)?;
 
             //
             // == MUTATION SAFE ==
@@ -1131,8 +1462,17 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
 
-        // extrinsics for video visibility status (hidden/visible) setting by moderator
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Extrinsic for video visibility status (hidden/visible) setting by moderator
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `rationale`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T>::set_video_visibility_as_moderator_weight(rationale)]
         pub fn set_video_visibility_as_moderator(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1163,7 +1503,16 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Update channel payouts
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` where:
+        /// - DB:
+        /// - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_channel_payouts()]
         pub fn update_channel_payouts(
             origin,
             params: UpdateChannelPayoutsParameters<T>
@@ -1223,7 +1572,17 @@ decl_module! {
             ));
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Claim reward in JOY from channel account
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the lenght of the provided merkle `proof`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::claim_channel_reward(proof.len() as u32)]
         pub fn claim_channel_reward(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1246,7 +1605,17 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Withdraw JOY from channel account
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::withdraw_from_member_channel_balance()
+            .max(WeightInfoContent::<T>::withdraw_from_curator_channel_balance())]
         pub fn withdraw_from_channel_balance(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1298,7 +1667,15 @@ decl_module! {
 
         /// Updates channel state bloat bond value.
         /// Only lead can upload this value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_channel_state_bloat_bond()]
         pub fn update_channel_state_bloat_bond(
             origin,
             new_channel_state_bloat_bond: BalanceOf<T>,
@@ -1323,7 +1700,15 @@ decl_module! {
 
         /// Updates video state bloat bond value.
         /// Only lead can upload this value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_video_state_bloat_bond()]
         pub fn update_video_state_bloat_bond(
             origin,
             new_video_state_bloat_bond: BalanceOf<T>,
@@ -1341,7 +1726,21 @@ decl_module! {
                     new_video_state_bloat_bond));
         }
 
-        #[weight = 10_000_000] // TODO: adjust Weight
+        /// Claim and withdraw reward in JOY from channel account
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the lenght of the provided merkle `proof`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight =
+            WeightInfoContent::<T>::claim_and_withdraw_member_channel_reward(proof.len() as u32)
+                .max(WeightInfoContent::<T>::claim_and_withdraw_curator_channel_reward(
+                    proof.len() as u32
+                ))]
         pub fn claim_and_withdraw_channel_reward(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1376,7 +1775,18 @@ decl_module! {
         }
 
         /// Issue NFT
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W + B)`
+        /// - DB:
+        ///    - O(W)
+        /// where:
+        ///    - W : member whitelist length in case nft initial status is auction
+        ///    - B : bytelength of metadata parameter
+        /// # </weight>
+        #[weight = Module::<T>::create_issue_nft_weight(params)]
         pub fn issue_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1429,7 +1839,15 @@ decl_module! {
         }
 
         /// Destroy NFT
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::destroy_nft()]
         pub fn destroy_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1464,7 +1882,15 @@ decl_module! {
         }
 
         /// Start video nft open auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - W : member whitelist length
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::start_open_auction(auction_params.whitelist.len() as u32)]
         pub fn start_open_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1520,7 +1946,15 @@ decl_module! {
         }
 
         /// Start video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - W : whitelist member list length
+        /// - DB:
+        ///    - O(W)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::start_english_auction(auction_params.whitelist.len() as u32)]
         pub fn start_english_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1574,8 +2008,15 @@ decl_module! {
             );
         }
 
-        // Cancel video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Cancel video nft english auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_english_auction()]
         pub fn cancel_english_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1615,8 +2056,15 @@ decl_module! {
             Self::deposit_event(RawEvent::AuctionCanceled(owner_id, video_id));
         }
 
-        // Cancel video nft english auction
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Cancel video nft open auction
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_open_auction()]
         pub fn cancel_open_auction(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1656,7 +2104,15 @@ decl_module! {
         }
 
         /// Cancel Nft offer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_offer()]
         pub fn cancel_offer(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1667,7 +2123,6 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
-
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
@@ -1696,7 +2151,15 @@ decl_module! {
         }
 
         /// Cancel Nft sell order
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// </weight>
+        #[weight = WeightInfoContent::<T>::cancel_buy_now()]
         pub fn cancel_buy_now(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1735,7 +2198,15 @@ decl_module! {
         }
 
         /// Update Buy now nft price
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_buy_now_price()]
         pub fn update_buy_now_price(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1778,7 +2249,14 @@ decl_module! {
 
 
         /// Make auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::make_open_auction_bid()]
         pub fn make_open_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -1805,7 +2283,7 @@ decl_module! {
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Validate parameters & return english auction
-            let open_auction =  Self::ensure_in_open_auction_state(&nft)?;
+            let open_auction = Self::ensure_in_open_auction_state(&nft)?;
 
             // check whitelisted participant
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
@@ -1872,8 +2350,15 @@ decl_module! {
 
         }
 
-        /// Make auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Make english auction bid
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::make_english_auction_bid()]
         pub fn make_english_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -1892,7 +2377,7 @@ decl_module! {
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Validate parameters & return english auction
-            let eng_auction =  Self::ensure_in_english_auction_state(&nft)?;
+            let eng_auction = Self::ensure_in_english_auction_state(&nft)?;
 
             // Balance check
             let old_bid_value = eng_auction.top_bid.as_ref().map(|bid| {
@@ -1988,7 +2473,14 @@ decl_module! {
         }
 
         /// Cancel open auction bid
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_open_auction_bid()]
         pub fn cancel_open_auction_bid(
             origin,
             participant_id: T::MemberId,
@@ -2032,7 +2524,14 @@ decl_module! {
 
         /// Claim won english auction
         /// Can be called by anyone
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::settle_english_auction()]
         pub fn settle_english_auction(
             origin,
             video_id: T::VideoId,
@@ -2081,7 +2580,14 @@ decl_module! {
 
         /// Accept open auction bid
         /// Should only be called by auctioneer
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::pick_open_auction_winner()]
         pub fn pick_open_auction_winner(
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2144,7 +2650,15 @@ decl_module! {
         }
 
         /// Offer Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::offer_nft()]
         pub fn offer_nft(
             origin,
             video_id: T::VideoId,
@@ -2198,18 +2712,28 @@ decl_module! {
         }
 
         /// Return Nft back to the original artist at no cost
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::sling_nft_back()]
         pub fn sling_nft_back(
             origin,
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) {
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // extr. makes no sense if nft already channel owned
+            ensure!(nft.owner != NftOwner::ChannelOwner, Error::<T>::NftAlreadyOwnedByChannel);
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
@@ -2243,7 +2767,15 @@ decl_module! {
         }
 
         /// Accept incoming Nft offer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::accept_incoming_offer()]
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
@@ -2285,7 +2817,14 @@ decl_module! {
         }
 
         /// Sell Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::sell_nft()]
         pub fn sell_nft(
             origin,
             video_id: T::VideoId,
@@ -2331,14 +2870,21 @@ decl_module! {
         }
 
         /// Buy Nft
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::buy_nft()]
         pub fn buy_nft(
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
             witness_price: BalanceOf<T>, // in order to avoid front running
         ) {
-
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
@@ -2379,7 +2925,14 @@ decl_module! {
         }
 
         /// Only Council can toggle nft issuance limits constraints
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::toggle_nft_limits()]
         pub fn toggle_nft_limits(
             origin,
             enabled: bool
@@ -2396,7 +2949,16 @@ decl_module! {
         }
 
         /// Channel owner remark
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (B)`
+        /// - DB:
+        ///    - O(1)
+        /// where:
+        /// - B is the byte lenght of `msg`
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::channel_owner_remark(msg.len() as u32)]
         pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2410,7 +2972,16 @@ decl_module! {
         }
 
         /// Channel collaborator remark
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (B)`
+        /// - DB:
+        ///    - O(1)
+        /// where:
+        ///   - B is the byte lenght of `msg`
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::channel_agent_remark(msg.len() as u32)]
         pub fn channel_agent_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2423,7 +2994,16 @@ decl_module! {
         }
 
         /// NFT owner remark
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (B)`
+        /// - DB:
+        ///   - O(1)
+        /// where:
+        ///   - B is the byte lenght of `msg`
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::nft_owner_remark(msg.len() as u32)]
         pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -2437,7 +3017,18 @@ decl_module! {
         }
 
         /// Start a channel transfer with specified characteristics
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `transfer_params.new_collaborators` map
+        /// - DB:
+        ///    - O(A) - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::initialize_channel_transfer(
+            transfer_params.new_collaborators.len() as u32
+        )]
         pub fn initialize_channel_transfer(
             origin,
             channel_id: T::ChannelId,
@@ -2470,7 +3061,7 @@ decl_module! {
 
             ChannelById::<T>::mutate(
                 &channel_id,
-                |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer::<_,_,_,_>(pending_transfer.clone())
+                |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
             );
 
             NextTransferId::<T>::mutate(|id| *id = id.saturating_add(T::TransferId::one()));
@@ -2481,7 +3072,15 @@ decl_module! {
         }
 
         /// cancel channel transfer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::cancel_channel_transfer()]
         pub fn cancel_channel_transfer(
             origin,
             channel_id: T::ChannelId,
@@ -2511,11 +3110,22 @@ decl_module! {
 
         /// Accepts channel transfer.
         /// `commitment_params` is required to prevent changing the transfer conditions.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `commitment_params.new_collaborators` map
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T>::accept_channel_transfer_weight(
+            commitment_params.new_collaborators.len() as u32
+        )]
         pub fn accept_channel_transfer(
             origin,
             channel_id: T::ChannelId,
-            commitment_params: TransferCommitmentParameters<T::MemberId, BalanceOf<T>, T::TransferId>
+            commitment_params: TransferCommitmentWitnessOf<T>
         ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2529,7 +3139,11 @@ decl_module! {
             }?;
 
             let new_owner = params.new_owner.clone();
-            let new_collaborators = commitment_params.new_collaborators.clone();
+            let new_collaborators: ChannelCollaboratorsMap<T> = commitment_params
+                .new_collaborators
+                .clone()
+                .try_into()
+                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))?;
 
             //
             // == MUTATION SAFE ==
@@ -2550,8 +3164,15 @@ decl_module! {
             );
         }
 
-        /// Updates global NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// Updates global NFT limit
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_global_nft_limit()]
         pub fn update_global_nft_limit(
             origin,
             nft_limit_period: NftLimitPeriod,
@@ -2574,7 +3195,14 @@ decl_module! {
         }
 
         /// Updates channel's NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1)
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_channel_nft_limit()]
         pub fn update_channel_nft_limit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2600,7 +3228,18 @@ decl_module! {
         }
 
         /// Issue creator token
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the number of entries in `params.initial_allocation` map
+        /// - DB:
+        ///    - `O(A)` - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::issue_creator_token(
+            params.initial_allocation.len() as u32
+        )]
         pub fn issue_creator_token(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2647,7 +3286,18 @@ decl_module! {
         }
 
         /// Initialize creator token sale
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A)` where:
+        /// - `A` is the length of `params.metadata` (or 0 if not provided)
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::init_creator_token_sale(
+            params.metadata.as_ref().map_or(0u32, |v| v.len() as u32)
+        )]
         pub fn init_creator_token_sale(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2691,7 +3341,15 @@ decl_module! {
         }
 
         /// Update upcoming creator token sale
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::update_upcoming_creator_token_sale()]
         pub fn update_upcoming_creator_token_sale(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2734,12 +3392,26 @@ decl_module! {
         }
 
         /// Perform transfer of tokens as creator token issuer
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (A + B)` where:
+        /// - `A` is the number of entries in `outputs`
+        /// - `B` is the length of the `metadata`
+        /// - DB:
+        ///    - `O(A)` - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::creator_token_issuer_transfer(
+            outputs.0.len() as u32,
+            metadata.len() as u32
+        )]
         pub fn creator_token_issuer_transfer(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
             outputs: TransfersWithVestingOf<T>,
+            metadata: Vec<u8>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -2763,13 +3435,22 @@ decl_module! {
                 token_id,
                 member_id,
                 sender,
-                outputs
+                outputs,
+                metadata
             )?;
         }
 
 
         /// Make channel's creator token permissionless
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::make_creator_token_permissionless()]
         pub fn make_creator_token_permissionless(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2794,7 +3475,15 @@ decl_module! {
         }
 
         /// Reduce channel's creator token patronage rate to given value
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::reduce_creator_token_patronage_rate_to()]
         pub fn reduce_creator_token_patronage_rate_to(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2820,7 +3509,15 @@ decl_module! {
         }
 
         /// Claim channel's creator token patronage credit
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::claim_creator_token_patronage_credit()]
         pub fn claim_creator_token_patronage_credit(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2857,7 +3554,15 @@ decl_module! {
         }
 
         /// Issue revenue split for a channel
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::issue_revenue_split()]
         pub fn issue_revenue_split(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2901,7 +3606,15 @@ decl_module! {
         }
 
         /// Finalize an ended revenue split
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::finalize_revenue_split()]
         pub fn finalize_revenue_split(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2932,7 +3645,15 @@ decl_module! {
         }
 
         /// Finalize an ended creator token sale
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::finalize_creator_token_sale()]
         pub fn finalize_creator_token_sale(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2978,7 +3699,15 @@ decl_module! {
         }
 
         /// Deissue channel's creator token
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoContent::<T>::deissue_creator_token()]
         pub fn deissue_creator_token(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3158,11 +3887,15 @@ impl<T: Config> Module<T> {
         Self::validate_member_set(&params.new_collaborators.keys().cloned().collect())?;
         Self::validate_channel_owner(&params.new_owner)?;
         let transfer_id = Self::next_transfer_id();
+        let new_collaborators: ChannelCollaboratorsMap<T> =
+            params.new_collaborators.try_into().map_err(|_| {
+                DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded)
+            })?;
         Ok(PendingTransferOf::<T> {
             new_owner: params.new_owner,
             transfer_params: TransferCommitmentOf::<T> {
                 price: params.price,
-                new_collaborators: params.new_collaborators,
+                new_collaborators,
                 transfer_id,
             },
         })
@@ -3190,13 +3923,20 @@ impl<T: Config> Module<T> {
         video_id: T::VideoId,
         video: &Video<T>,
         slash_bloat_bond: bool,
+        storage_buckets_num_witness: Option<u32>,
     ) -> DispatchResult {
         // delete assets from storage with upload and rollback semantics
         if !video.data_objects.is_empty() {
+            // verify storage buckets witness
+            match storage_buckets_num_witness {
+                Some(witness) => Self::verify_storage_buckets_num_witness(channel_id, witness),
+                None => Err(Error::<T>::MissingStorageBucketsNumWitness.into()),
+            }?;
+
             Storage::<T>::delete_data_objects(
                 sender.clone(),
                 Self::bag_id_for_channel(&channel_id),
-                video.data_objects.clone(),
+                video.data_objects.clone().into(),
             )?;
         }
 
@@ -3325,11 +4065,27 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn create_updated_data_objects_set(
-        current_set: &BTreeSet<DataObjectId<T>>,
+    fn ensure_max_channel_assets_not_exceeded(
+        current_set: &ChannelAssetsSet<T>,
+        assets_to_upload: &StorageAssets<T>,
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        ensure!(
+            current_set
+                .len()
+                .saturating_sub(assets_to_remove.len())
+                .saturating_add(assets_to_upload.object_creation_list.len())
+                <= T::MaxNumberOfAssetsPerChannel::get() as usize,
+            Error::<T>::MaxNumberOfChannelAssetsExceeded
+        );
+        Ok(())
+    }
+
+    fn create_updated_channel_assets_set(
+        current_set: &ChannelAssetsSet<T>,
         ids_to_add: &BTreeSet<DataObjectId<T>>,
         ids_to_remove: &BTreeSet<DataObjectId<T>>,
-    ) -> BTreeSet<DataObjectId<T>> {
+    ) -> Result<ChannelAssetsSet<T>, DispatchError> {
         current_set
             .union(ids_to_add)
             .cloned()
@@ -3337,6 +4093,40 @@ impl<T: Config> Module<T> {
             .difference(ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
+            .try_into()
+            .map_err(|_| Error::<T>::MaxNumberOfChannelAssetsExceeded.into())
+    }
+
+    fn ensure_max_video_assets_not_exceeded(
+        current_set: &VideoAssetsSet<T>,
+        assets_to_upload: &StorageAssets<T>,
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> DispatchResult {
+        ensure!(
+            current_set
+                .len()
+                .saturating_sub(assets_to_remove.len())
+                .saturating_add(assets_to_upload.object_creation_list.len())
+                <= T::MaxNumberOfAssetsPerVideo::get() as usize,
+            Error::<T>::MaxNumberOfVideoAssetsExceeded
+        );
+        Ok(())
+    }
+
+    fn create_updated_video_assets_set(
+        current_set: &VideoAssetsSet<T>,
+        ids_to_add: &BTreeSet<DataObjectId<T>>,
+        ids_to_remove: &BTreeSet<DataObjectId<T>>,
+    ) -> Result<VideoAssetsSet<T>, DispatchError> {
+        current_set
+            .union(ids_to_add)
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            .difference(ids_to_remove)
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            .try_into()
+            .map_err(|_| Error::<T>::MaxNumberOfVideoAssetsExceeded.into())
     }
 
     fn ensure_sufficient_balance_for_channel_transfer(
@@ -3363,11 +4153,14 @@ impl<T: Config> Module<T> {
 
     // Validates channel transfer acceptance parameters: commitment params, new owner balance.
     fn validate_channel_transfer_acceptance(
-        commitment_params: &TransferCommitmentParameters<T::MemberId, BalanceOf<T>, T::TransferId>,
-        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
+        witness: &TransferCommitmentWitnessOf<T>,
+        params: &PendingTransferOf<T>,
     ) -> DispatchResult {
         ensure!(
-            params.transfer_params == *commitment_params,
+            witness.transfer_id == params.transfer_params.transfer_id
+                && witness.new_collaborators
+                    == params.transfer_params.new_collaborators.clone().into()
+                && witness.price == params.transfer_params.price,
             Error::<T>::InvalidChannelTransferCommitmentParams
         );
 
@@ -3638,6 +4431,181 @@ impl<T: Config> Module<T> {
         }
     }
 
+    fn verify_channel_bag_witness(
+        channel_id: T::ChannelId,
+        witness: &ChannelBagWitness,
+    ) -> DispatchResult {
+        let bag_id = Self::bag_id_for_channel(&channel_id);
+        let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+
+        ensure!(
+            channel_bag.stored_by.len() == witness.storage_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+        ensure!(
+            channel_bag.distributed_by.len() == witness.distribution_buckets_num as usize,
+            Error::<T>::InvalidChannelBagWitnessProvided
+        );
+
+        Ok(())
+    }
+
+    fn extract_nft_auction_whitelist_size_len(nft_params: &NftIssuanceParameters<T>) -> u32 {
+        (match &nft_params.init_transactional_status {
+            InitTransactionalStatus::<T>::EnglishAuction(params) => params.whitelist.len(),
+            InitTransactionalStatus::<T>::OpenAuction(params) => params.whitelist.len(),
+            _ => 0,
+        }) as u32
+    }
+
+    fn verify_storage_buckets_num_witness(
+        channel_id: T::ChannelId,
+        witness_num: u32,
+    ) -> DispatchResult {
+        let bag_id = Self::bag_id_for_channel(&channel_id);
+        let channel_bag = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id)?;
+
+        ensure!(
+            channel_bag.stored_by.len() as u32 == witness_num,
+            Error::<T>::InvalidStorageBucketsNumWitnessProvided
+        );
+
+        Ok(())
+    }
+
+    //Weight functions
+
+    // Calculates weight for create_channel extrinsic.
+    fn create_channel_weight(params: &ChannelCreationParameters<T>) -> Weight {
+        //collaborators
+        let a = params.collaborators.len() as u32;
+
+        //storage_buckets
+        let b = params.storage_buckets.len() as u32;
+
+        //distribution_buckets
+        let c = params.distribution_buckets.len() as u32;
+
+        // assets
+        let d = params
+            .assets
+            .as_ref()
+            .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+        //metadata
+        let e = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+        WeightInfoContent::<T>::create_channel(a, b, c, d, e)
+    }
+
+    // Calculates weight for update_channel extrinsic.
+    fn update_channel_weight(params: &ChannelUpdateParameters<T>) -> Weight {
+        let assets_touched =
+            !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some();
+
+        if assets_touched {
+            //collaborators
+            let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
+
+            // assets_to_upload
+            let b = params
+                .assets_to_upload
+                .as_ref()
+                .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+            //assets_to_remove
+            let c = params.assets_to_remove.len() as u32;
+
+            //new metadata
+            let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+            // storage_buckets_num witness
+            let e = params.storage_buckets_num_witness.unwrap_or(0);
+
+            WeightInfoContent::<T>::channel_update_with_assets(a, b, c, d, e)
+        } else {
+            //collaborators
+            let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
+
+            //new metadata
+            let b = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+            WeightInfoContent::<T>::channel_update_without_assets(a, b)
+        }
+    }
+
+    // Calculates weight for delete_channel extrinsic.
+    fn delete_channel_weight(
+        channel_bag_witness: &ChannelBagWitness,
+        num_objects_to_delete: &u64,
+    ) -> Weight {
+        //num_objects_to_delete
+        let a = (*num_objects_to_delete) as u32;
+
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
+
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
+
+        WeightInfoContent::<T>::delete_channel(a, b, c)
+    }
+
+    // Calculates weight for create_video extrinsic.
+    fn create_video_weight(params: &VideoCreationParameters<T>) -> Weight {
+        // assets
+        let a = params
+            .assets
+            .as_ref()
+            .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+        // storage buckets in channel bag
+        let b = params.storage_buckets_num_witness;
+
+        if let Some(nft_params) = params.auto_issue_nft.as_ref() {
+            let c = Self::extract_nft_auction_whitelist_size_len(nft_params);
+            let d = params.meta.as_ref().map_or(0, |m| m.len() as u32);
+            WeightInfoContent::<T>::create_video_with_nft(a, b, c, d)
+        } else {
+            let c = params.meta.as_ref().map_or(0, |m| m.len() as u32);
+            WeightInfoContent::<T>::create_video_without_nft(a, b, c)
+        }
+    }
+
+    // Calculates weight for update_video extrinsic.
+    fn update_video_weight(params: &VideoUpdateParameters<T>) -> Weight {
+        let assets_touched =
+            !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some();
+
+        match (assets_touched, params.auto_issue_nft.as_ref()) {
+            (false, None) => {
+                let a = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                WeightInfoContent::<T>::update_video_without_assets_without_nft(a)
+            }
+            (false, Some(nft_params)) => {
+                let a = Self::extract_nft_auction_whitelist_size_len(nft_params);
+                let b = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                WeightInfoContent::<T>::update_video_without_assets_with_nft(a, b)
+            }
+            (true, nft_params) => {
+                let a = params
+                    .assets_to_upload
+                    .as_ref()
+                    .map_or(0u32, |v| v.object_creation_list.len() as u32);
+                let b = params.assets_to_remove.len() as u32;
+                let c = params.storage_buckets_num_witness.unwrap_or(0u32);
+                if let Some(nft_params) = nft_params {
+                    let d = Self::extract_nft_auction_whitelist_size_len(nft_params);
+                    let e = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                    WeightInfoContent::<T>::update_video_with_assets_with_nft(a, b, c, d, e)
+                } else {
+                    let d = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                    WeightInfoContent::<T>::update_video_with_assets_without_nft(a, b, c, d)
+                }
+            }
+        }
+    }
+
     fn validate_channel_owner(
         channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
     ) -> DispatchResult {
@@ -3656,6 +4624,20 @@ impl<T: Config> Module<T> {
                 );
                 Ok(())
             }
+        }
+    }
+
+    // Calculates weight for delete_video extrinsic.
+    fn delete_video_weight(
+        num_objects_to_delete: &u64,
+        storage_buckets_num_witness: &Option<u32>,
+    ) -> Weight {
+        if !num_objects_to_delete.is_zero() {
+            let a = *num_objects_to_delete as u32;
+            let b = storage_buckets_num_witness.unwrap_or(0u32);
+            WeightInfoContent::<T>::delete_video_with_assets(a, b)
+        } else {
+            WeightInfoContent::<T>::delete_video_without_assets()
         }
     }
 
@@ -3700,6 +4682,125 @@ impl<T: Config> Module<T> {
             false => RepayableBloatBond::new(amount, Some(from.clone())),
         })
     }
+
+    // calculates nft issuance weights
+    fn create_issue_nft_weight(params: &NftIssuanceParameters<T>) -> Weight {
+        let whitelist_size = Self::extract_nft_auction_whitelist_size_len(params);
+        let metadata_size = params.nft_metadata.len() as u32;
+        WeightInfoContent::<T>::issue_nft(whitelist_size, metadata_size)
+    }
+
+    // Calculates weight for set_channel_paused_features_as_moderator extrinsic.
+    fn set_channel_paused_features_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
+        let a = (*rationale).len() as u32;
+
+        WeightInfoContent::<T>::set_channel_paused_features_as_moderator(a)
+    }
+
+    // Calculates weight for delete_channel_assets_as_moderator extrinsic.
+    fn delete_channel_assets_as_moderator_weight(
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+        storage_buckets_num_witness: &u32,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        //assets_to_remove
+        let a = (*assets_to_remove).len() as u32;
+        //storage_buckets_num_witness storage_buckets_num
+        let b = *storage_buckets_num_witness;
+        //rationale
+        let c = (*rationale).len() as u32;
+        WeightInfoContent::<T>::delete_channel_assets_as_moderator(a, b, c)
+    }
+
+    // Calculates weight for delete_channel_as_moderator extrinsic.
+    fn delete_channel_as_moderator_weight(
+        channel_bag_witness: &ChannelBagWitness,
+        num_objects_to_delete: &u64,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        //num_objects_to_delete
+        let a = (*num_objects_to_delete) as u32;
+
+        //channel_bag_witness storage_buckets_num
+        let b = (*channel_bag_witness).storage_buckets_num;
+
+        //channel_bag_witness distribution_buckets_num
+        let c = (*channel_bag_witness).distribution_buckets_num;
+
+        //rationale
+        let d = (*rationale).len() as u32;
+        WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c, d)
+    }
+
+    // Calculates weight for set_channel_visibility_as_moderator extrinsic.
+    fn set_channel_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
+        let a = (*rationale).len() as u32;
+
+        WeightInfoContent::<T>::set_channel_visibility_as_moderator(a)
+    }
+
+    // Calculates weight for set_video_visibility_as_moderator extrinsic.
+    fn set_video_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
+        let a = (*rationale).len() as u32;
+
+        WeightInfoContent::<T>::set_video_visibility_as_moderator(a)
+    }
+
+    // Calculates weight for delete_video_assets_as_moderator extrinsic.
+    fn delete_video_assets_as_moderator_weight(
+        assets_to_remove: &BTreeSet<DataObjectId<T>>,
+        storage_buckets_num_witness: &u32,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        //assets_to_remove
+        let a = (*assets_to_remove).len() as u32;
+
+        //storage_buckets_num_witness storage_buckets_num
+        let b = *storage_buckets_num_witness;
+
+        //rationale
+        let c = (*rationale).len() as u32;
+
+        WeightInfoContent::<T>::delete_video_assets_as_moderator(a, b, c)
+    }
+
+    // Calculates weight for delete_video_as_moderator extrinsic.
+    fn delete_video_as_moderator_weight(
+        num_objects_to_delete: &u64,
+        storage_buckets_num_witness: &Option<u32>,
+        rationale: &Vec<u8>,
+    ) -> Weight {
+        if (*num_objects_to_delete) > 0 {
+            //assets_to_remove
+            let a = (*num_objects_to_delete) as u32;
+
+            //storage_buckets_num_witness storage_buckets_num
+            let b = storage_buckets_num_witness.map_or(0, |v| v);
+
+            //rationale
+            let c = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_video_as_moderator_with_assets(a, b, c)
+        } else {
+            //rationale
+            let a = (*rationale).len() as u32;
+
+            WeightInfoContent::<T>::delete_video_as_moderator_without_assets(a)
+        }
+    }
+
+    // Calculates weight for accept_channel_transfer extrinsic.
+    fn accept_channel_transfer_weight(collaborators_len: u32) -> Weight {
+        WeightInfoContent::<T>::accept_channel_transfer_curator_to_curator(collaborators_len)
+            .max(
+                WeightInfoContent::<T>::accept_channel_transfer_member_to_curator(
+                    collaborators_len,
+                ),
+            )
+            .max(
+                WeightInfoContent::<T>::accept_channel_transfer_member_to_member(collaborators_len),
+            )
+    }
 }
 
 decl_event!(
@@ -3728,7 +4829,7 @@ decl_event!(
         VideoUpdateParameters = VideoUpdateParameters<T>,
         ChannelPrivilegeLevel = <T as Config>::ChannelPrivilegeLevel,
         ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
-        TransferCommitment = TransferCommitmentOf<T>,
+        TransferCommitmentWitness = TransferCommitmentWitnessOf<T>,
         PendingTransfer = PendingTransferOf<T>,
         AccountId = <T as frame_system::Config>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
@@ -3835,7 +4936,7 @@ decl_event!(
         // Channel transfer
         InitializedChannelTransfer(ChannelId, ContentActor, PendingTransfer),
         CancelChannelTransfer(ChannelId, ContentActor),
-        ChannelTransferAccepted(ChannelId, TransferCommitment),
+        ChannelTransferAccepted(ChannelId, TransferCommitmentWitness),
 
         // Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),

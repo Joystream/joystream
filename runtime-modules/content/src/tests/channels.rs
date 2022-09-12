@@ -18,7 +18,7 @@ use storage::ModuleAccount as StorageModuleAccount;
 fn successful_channel_creation_with_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
@@ -40,7 +40,8 @@ fn successful_channel_creation_with_member_context() {
 fn successful_curator_group_channel_creation_with_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND);
 
         create_initial_storage_buckets_helper();
@@ -288,7 +289,7 @@ fn successful_channel_creation_with_collaborators_set() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
@@ -339,6 +340,26 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
 }
 
 #[test]
+fn unsuccessful_channel_creation_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+        );
+        CreateChannelFixture::default()
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerChannel::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfChannelAssetsExceeded.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_channel_creation_with_invalid_owner() {
     with_default_mock_builder(|| {
         let invalid_curator_group_id = 111;
@@ -371,7 +392,7 @@ fn successful_channel_creation_with_invitation_lock() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
         set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()
@@ -403,6 +424,26 @@ fn successful_channel_creation_with_invitation_lock() {
 }
 
 #[test]
+fn unsuccessful_channel_creation_with_number_of_collaborators_exceeded() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ed() + DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+        );
+        CreateChannelFixture::default()
+            .with_collaborators(
+                (0..(<Test as Config>::MaxNumberOfCollaboratorsPerChannel::get() + 1) as usize)
+                    .map(|i| (MEMBER_IDS[i], ChannelAgentPermissions::new()))
+                    .collect(),
+            )
+            .call_and_assert(Err(
+                Error::<Test>::MaxNumberOfChannelCollaboratorsExceeded.into()
+            ))
+    })
+}
+
+#[test]
 fn unsuccessful_channel_creation_with_locks_and_insufficient_balance() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -422,7 +463,7 @@ fn unsuccessful_channel_creation_with_locks_and_insufficient_balance() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
         set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()
@@ -465,7 +506,7 @@ fn unsuccessful_channel_creation_with_not_allowed_lock() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
         set_staking_candidate_lock(&DEFAULT_MEMBER_ACCOUNT_ID, member_balance);
 
-        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
         create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()
@@ -694,6 +735,40 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
 }
 
 #[test]
+fn unsuccessful_channel_update_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerChannel::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfChannelAssetsExceeded.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_update_with_number_of_collaborators_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        UpdateChannelFixture::default()
+            .with_collaborators(
+                (0..(<Test as Config>::MaxNumberOfCollaboratorsPerChannel::get() + 1) as usize)
+                    .map(|i| (MEMBER_IDS[i], ChannelAgentPermissions::new()))
+                    .collect(),
+            )
+            .call_and_assert(Err(
+                Error::<Test>::MaxNumberOfChannelCollaboratorsExceeded.into()
+            ));
+    })
+}
+
+#[test]
 fn successful_channel_update_with_invitation_lock() {
     with_default_mock_builder(|| {
         let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
@@ -735,6 +810,38 @@ fn successful_channel_update_with_invitation_lock() {
 }
 
 #[test]
+fn unsuccessful_channel_update_with_assets_to_upload_and_invalid_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channels_update_with_assets_to_upload_and_missing_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        UpdateChannelFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_channel_update_with_locks_and_insufficient_balance() {
     with_default_mock_builder(|| {
         let (data_size_fee, data_obj_bloat_bond, channel_state_bloat_bond) = (10u64, 20u64, ed());
@@ -764,6 +871,18 @@ fn unsuccessful_channel_update_with_locks_and_insufficient_balance() {
         UpdateChannelFixture::default()
             .with_assets_to_upload(create_default_assets_helper())
             .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channels_update_with_assets_to_remove_and_missing_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        UpdateChannelFixture::default()
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
     })
 }
 
@@ -869,8 +988,6 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        assert!(DATA_OBJECTS_NUMBER > 0);
-
         DeleteChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -888,6 +1005,21 @@ fn unsuccessful_channel_deletion_with_creator_token_issued() {
 
         DeleteChannelFixture::default()
             .call_and_assert(Err(Error::<Test>::CreatorTokenAlreadyIssued.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_deletion_with_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        DeleteChannelFixture::default()
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
     })
 }
 
@@ -981,7 +1113,7 @@ fn successful_channel_deletion_with_bloat_bonds_repaid_to_correct_accounts() {
             increase_account_balance_helper(DEFAULT_MEMBER_ALT_ACCOUNT_ID, ed());
             set_invitation_lock(&DEFAULT_MEMBER_ACCOUNT_ID, locked_balance);
 
-            set_dynamic_bag_creation_policy_for_storage_numbers(0);
+            set_dynamic_bag_creation_policy_for_storage_numbers(1);
             create_initial_storage_buckets_helper();
 
             CreateChannelFixture::default()
@@ -1182,6 +1314,30 @@ fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_d
         DeleteChannelAsModeratorFixture::default()
             .with_num_objects_to_delete(DATA_OBJECTS_NUMBER as u64 - 1)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_deletion_and_invalid_channel_bag_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteChannel]),
+            )]),
+        );
+
+        let invalid_witness = ChannelBagWitness {
+            storage_buckets_num: 0,
+            distribution_buckets_num: 0,
+        };
+
+        DeleteChannelAsModeratorFixture::default()
+            .with_channel_bag_witness(invalid_witness)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelBagWitnessProvided.into()));
     })
 }
 
@@ -1716,6 +1872,41 @@ fn unsuccessful_moderation_action_non_existing_channel_assets_deletion() {
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
             .with_channel_id(2)
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_and_invalid_storage_buckets_num_witness()
+{
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
+            )]),
+        );
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(0)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_with_zero_number_of_assets_to_delete() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_assets_to_remove(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::NumberOfAssetsToRemoveIsZero.into()));
     })
 }
 

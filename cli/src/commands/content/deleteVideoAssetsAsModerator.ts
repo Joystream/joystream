@@ -82,6 +82,7 @@ export default class DeleteVideoAssetsAsModeratorCommand extends ContentDirector
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideoAssetsAsModerator', [
       actor,
       videoId,
+      await this.getStorageBucketsNumWitness(inChannel),
       createType(
         'BTreeSet<u64>',
         dataObjectsInfo.map(([id]) => Number(id))

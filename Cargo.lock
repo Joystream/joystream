@@ -4482,6 +4482,7 @@ version = "6.0.0"
 dependencies = [
  "derive-fixture",
  "derive-new",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

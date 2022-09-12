@@ -143,6 +143,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assetsToUpload,
       newMeta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
       assetsToRemove,
+      storageBucketsNumWitness: await this.getStorageBucketsNumWitness(video.inChannel),
     }
 
     this.jsonPrettyPrint(

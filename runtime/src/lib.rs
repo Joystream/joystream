@@ -794,6 +794,9 @@ parameter_types! {
     };  // TODO: update
     pub const MinimumCashoutAllowedLimit: Balance = ExistentialDeposit::get() + 1; // TODO: update
     pub const MaximumCashoutAllowedLimit: Balance = 1_000_000 * currency::DOLLARS; // TODO: update
+    pub const MaxNumberOfAssetsPerChannel: MaxNumber = 10;
+    pub const MaxNumberOfAssetsPerVideo: MaxNumber = 20;
+    pub const MaxNumberOfCollaboratorsPerChannel: MaxNumber = 10;
 }
 
 impl content::Config for Runtime {
@@ -802,9 +805,13 @@ impl content::Config for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
+    type WeightInfo = content::weights::SubstrateWeight<Runtime>;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+    type MaxNumberOfAssetsPerChannel = MaxNumberOfAssetsPerChannel;
+    type MaxNumberOfAssetsPerVideo = MaxNumberOfAssetsPerVideo;
+    type MaxNumberOfCollaboratorsPerChannel = MaxNumberOfCollaboratorsPerChannel;
     type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
     type CouncilBudgetManager = Council;
     type ContentWorkingGroup = ContentWorkingGroup;
