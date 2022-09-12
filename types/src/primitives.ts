@@ -4,7 +4,6 @@ import { u8, u32, u64 } from '@polkadot/types'
 export type ForumCategoryId = u64
 export type ForumThreadId = u64
 export type ForumPostId = u64
-export type ForumPostReactionId = u64
 
 // Proposals
 export type ProposalId = u32
