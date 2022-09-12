@@ -113,6 +113,7 @@ mod benches {
         [bounty, Bounty]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
+        [content, Content]
         [project_token, ProjectToken]
     );
 }

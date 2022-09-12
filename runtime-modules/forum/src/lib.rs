@@ -128,17 +128,6 @@ pub trait Config:
         + Into<u64>
         + MaxEncodedLen;
 
-    type PostReactionId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq
-        + From<u64>
-        + Into<u64>;
-
     /// Base deposit for any thread (note: thread creation also needs a `PostDeposit` since
     /// creating a thread means also creating a post)
     type ThreadDeposit: Get<Self::Balance>;
@@ -413,7 +402,6 @@ decl_event!(
         <T as Config>::PostId,
         <T as frame_system::Config>::Hash,
         ForumUserId = ForumUserId<T>,
-        <T as Config>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
         ExtendedPostId = ExtendedPostId<T>,
     {
@@ -467,9 +455,6 @@ decl_event!(
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
         PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Vec<u8>),
-
-        /// Thumb up post
-        PostReacted(ForumUserId, PostId, PostReactionId, CategoryId, ThreadId),
 
         /// Sticky thread updated for category
         CategoryStickyThreadUpdate(CategoryId, BTreeSet<ThreadId>, PrivilegedActor),
@@ -1104,39 +1089,6 @@ decl_module! {
             // Generate event
             Self::deposit_event(
                 RawEvent::PostAdded(post_id, forum_user_id, category_id, thread_id, text, editable)
-            );
-
-            Ok(())
-        }
-
-        /// Like or unlike a post.
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (W)` where:
-        /// - `W` is the category depth,
-        /// - DB:
-        ///    - O(W)
-        /// # </weight>
-        #[weight = WeightInfoForum::<T>::react_post(
-            T::MaxCategoryDepth::get() as u32,
-        )]
-        fn react_post(origin, forum_user_id: ForumUserId<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, react: T::PostReactionId) -> DispatchResult {
-            let account_id = ensure_signed(origin)?;
-
-            // Check that account is forum member
-            Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
-
-            // Make sure the thread exists and is mutable
-            Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deposit_event(
-                RawEvent::PostReacted(forum_user_id, post_id, react, category_id, thread_id)
             );
 
             Ok(())

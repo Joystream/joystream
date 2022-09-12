@@ -6,7 +6,9 @@ use super::curators;
 pub use super::mock::Event as MetaEvent;
 use super::mock::*;
 use crate::*;
-use common::council::CouncilBudgetManager;
+use common::{
+    build_merkle_path_helper, council::CouncilBudgetManager, generate_merkle_root_helper,
+};
 use frame_support::{assert_noop, assert_ok};
 use frame_support::{
     storage_root,
@@ -29,6 +31,27 @@ use strum::IntoEnumIterator;
 
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
+
+pub type ActorContextResult = (
+    AccountId,
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    Error<Test>,
+);
+
+fn channel_bag_witness(channel_id: ChannelId) -> ChannelBagWitness {
+    let bag_id = Content::bag_id_for_channel(&channel_id);
+    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
+    ChannelBagWitness {
+        storage_buckets_num: channel_bag.stored_by.len() as u32,
+        distribution_buckets_num: channel_bag.distributed_by.len() as u32,
+    }
+}
+
+fn storage_buckets_num_witness(channel_id: ChannelId) -> u32 {
+    let bag_id = Content::bag_id_for_channel(&channel_id);
+    let channel_bag = <Test as Config>::DataObjectStorage::bag(&bag_id);
+    channel_bag.stored_by.len() as u32
+}
 
 // fixtures
 
@@ -264,12 +287,14 @@ impl CreateChannelFixture {
                     channel_id,
                     Channel::<Test> {
                         owner: self.channel_owner.clone(),
-                        collaborators: self.params.collaborators.clone(),
+                        collaborators: self.params.collaborators.clone().try_into().unwrap(),
                         num_videos: Zero::zero(),
                         cumulative_reward_claimed: Zero::zero(),
                         privilege_level: Zero::zero(),
                         paused_features: BTreeSet::new(),
-                        data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id),
+                        data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id)
+                            .try_into()
+                            .unwrap(),
                         transfer_status: Default::default(),
                         daily_nft_limit: DefaultChannelDailyNftLimit::get(),
                         weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
@@ -330,8 +355,19 @@ impl CreateVideoFixture {
                 expected_data_object_state_bloat_bond:
                     Storage::<Test>::data_object_state_bloat_bond_value(),
                 expected_video_state_bloat_bond: Content::video_state_bloat_bond_value(),
+                storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             },
             channel_id: ChannelId::one(), // channel index starts at 1
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                storage_buckets_num_witness,
+                ..self.params
+            },
+            ..self
         }
     }
 
@@ -378,7 +414,14 @@ impl CreateVideoFixture {
     }
 
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
+        Self {
+            channel_id,
+            params: VideoCreationParameters::<Test> {
+                storage_buckets_num_witness: storage_buckets_num_witness(channel_id),
+                ..self.params
+            },
+            ..self
+        }
     }
 
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
@@ -534,6 +577,7 @@ impl UpdateChannelFixture {
                 collaborators: None,
                 expected_data_object_state_bloat_bond:
                     Storage::<Test>::data_object_state_bloat_bond_value(),
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             },
         }
     }
@@ -555,6 +599,19 @@ impl UpdateChannelFixture {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 expected_data_object_state_bloat_bond,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                storage_buckets_num_witness,
                 ..self.params.clone()
             },
             ..self
@@ -666,7 +723,7 @@ impl UpdateChannelFixture {
                     self.params
                         .collaborators
                         .clone()
-                        .unwrap_or(channel_pre.collaborators)
+                        .map_or(channel_pre.collaborators, |c| c.try_into().unwrap())
                 );
 
                 assert_eq!(
@@ -782,6 +839,7 @@ impl UpdateVideoFixture {
                 auto_issue_nft: Default::default(),
                 expected_data_object_state_bloat_bond:
                     Storage::<Test>::data_object_state_bloat_bond_value(),
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             },
         }
     }
@@ -828,7 +886,28 @@ impl UpdateVideoFixture {
     }
 
     pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
+        let video = Content::video_by_id(video_id);
+        Self {
+            video_id,
+            params: VideoUpdateParameters::<Test> {
+                storage_buckets_num_witness: Some(storage_buckets_num_witness(video.in_channel)),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                storage_buckets_num_witness,
+                ..self.params
+            },
+            ..self
+        }
     }
 
     pub fn with_assets_to_upload(self, assets: StorageAssets<Test>) -> Self {
@@ -948,6 +1027,7 @@ pub struct DeleteChannelAssetsAsModeratorFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    storage_buckets_num_witness: u32,
     rationale: Vec<u8>,
 }
 
@@ -958,6 +1038,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
             assets_to_remove: BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER),
+            storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             rationale: b"rationale".to_vec(),
         }
     }
@@ -980,6 +1061,14 @@ impl DeleteChannelAssetsAsModeratorFixture {
             ..self
         }
     }
+
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
+        Self {
+            storage_buckets_num_witness,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -1003,6 +1092,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             self.actor,
             self.channel_id,
             self.assets_to_remove.clone(),
+            self.storage_buckets_num_witness,
             self.rationale.clone(),
         );
 
@@ -1139,6 +1229,7 @@ pub struct DeleteChannelFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
+    channel_bag_witness: ChannelBagWitness,
     num_objects_to_delete: u64,
 }
 
@@ -1148,6 +1239,7 @@ impl DeleteChannelFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
+            channel_bag_witness: channel_bag_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
         }
     }
@@ -1170,6 +1262,13 @@ impl DeleteChannelFixture {
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
         Self { channel_id, ..self }
     }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+        Self {
+            channel_bag_witness,
+            ..self
+        }
+    }
 }
 
 impl ChannelDeletion for DeleteChannelFixture {
@@ -1191,6 +1290,7 @@ impl ChannelDeletion for DeleteChannelFixture {
             Origin::signed(self.sender),
             self.actor,
             self.channel_id,
+            self.channel_bag_witness.clone(),
             self.num_objects_to_delete,
         )
     }
@@ -1217,6 +1317,7 @@ pub struct DeleteChannelAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
+    channel_bag_witness: ChannelBagWitness,
     num_objects_to_delete: u64,
     rationale: Vec<u8>,
 }
@@ -1227,6 +1328,7 @@ impl DeleteChannelAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
+            channel_bag_witness: channel_bag_witness(ChannelId::one()),
             num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
             rationale: b"rationale".to_vec(),
         }
@@ -1243,6 +1345,13 @@ impl DeleteChannelAsModeratorFixture {
     pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
         Self {
             num_objects_to_delete,
+            ..self
+        }
+    }
+
+    pub fn with_channel_bag_witness(self, channel_bag_witness: ChannelBagWitness) -> Self {
+        Self {
+            channel_bag_witness,
             ..self
         }
     }
@@ -1267,6 +1376,7 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.channel_id,
+            self.channel_bag_witness.clone(),
             self.num_objects_to_delete,
             self.rationale.clone(),
         )
@@ -1483,6 +1593,7 @@ pub struct DeleteVideoAssetsAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
+    storage_buckets_num_witness: u32,
     assets_to_remove: BTreeSet<DataObjectId<Test>>,
     rationale: Vec<u8>,
 }
@@ -1493,6 +1604,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
+            storage_buckets_num_witness: storage_buckets_num_witness(ChannelId::one()),
             assets_to_remove: BTreeSet::from_iter(DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)),
             rationale: b"rationale".to_vec(),
         }
@@ -1516,6 +1628,14 @@ impl DeleteVideoAssetsAsModeratorFixture {
             ..self
         }
     }
+
+    pub fn with_storage_buckets_num_witness(self, storage_buckets_num_witness: u32) -> Self {
+        Self {
+            storage_buckets_num_witness,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -1538,6 +1658,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             origin,
             self.actor,
             self.video_id,
+            self.storage_buckets_num_witness,
             self.assets_to_remove.clone(),
             self.rationale.clone(),
         );
@@ -1674,6 +1795,7 @@ pub struct DeleteVideoFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
     num_objects_to_delete: u64,
+    storage_buckets_num_witness: Option<u32>,
 }
 
 impl DeleteVideoFixture {
@@ -1683,6 +1805,7 @@ impl DeleteVideoFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
             num_objects_to_delete: DATA_OBJECTS_NUMBER,
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
         }
     }
 
@@ -1702,7 +1825,22 @@ impl DeleteVideoFixture {
     }
 
     pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
+        let video = Content::video_by_id(video_id);
+        Self {
+            video_id,
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(video.in_channel)),
+            ..self
+        }
+    }
+
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
+        Self {
+            storage_buckets_num_witness,
+            ..self
+        }
     }
 }
 
@@ -1723,6 +1861,7 @@ impl VideoDeletion for DeleteVideoFixture {
             self.actor,
             self.video_id,
             self.num_objects_to_delete,
+            self.storage_buckets_num_witness,
         )
     }
 
@@ -1748,6 +1887,7 @@ pub struct DeleteVideoAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
+    storage_buckets_num_witness: Option<u32>,
     num_objects_to_delete: u64,
     rationale: Vec<u8>,
 }
@@ -1758,6 +1898,7 @@ impl DeleteVideoAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
+            storage_buckets_num_witness: Some(storage_buckets_num_witness(ChannelId::one())),
             num_objects_to_delete: DATA_OBJECTS_NUMBER,
             rationale: b"rationale".to_vec(),
         }
@@ -1769,6 +1910,16 @@ impl DeleteVideoAsModeratorFixture {
 
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
+    }
+
+    pub fn with_storage_buckets_num_witness(
+        self,
+        storage_buckets_num_witness: Option<u32>,
+    ) -> Self {
+        Self {
+            storage_buckets_num_witness,
+            ..self
+        }
     }
 }
 
@@ -1788,6 +1939,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
             Origin::signed(self.sender),
             self.actor,
             self.video_id,
+            self.storage_buckets_num_witness,
             self.num_objects_to_delete,
             self.rationale.clone(),
         )
@@ -2036,7 +2188,7 @@ impl ClaimChannelRewardFixture {
         let proof = if self.payments.is_empty() {
             vec![]
         } else {
-            build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
+            build_merkle_path_helper::<Test, _>(&self.payments, DEFAULT_PROOF_INDEX)
         };
 
         let actual_result = Content::claim_channel_reward(origin, self.actor, proof, self.item);
@@ -2252,7 +2404,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let proof = if self.payments.is_empty() {
             vec![]
         } else {
-            build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
+            build_merkle_path_helper::<Test, _>(&self.payments, DEFAULT_PROOF_INDEX)
         };
 
         let actual_result =
@@ -2525,6 +2677,7 @@ pub struct CreatorTokenIssuerTransferFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     outputs: TransfersWithVestingOf<Test>,
+    metadata: Vec<u8>,
 }
 
 impl CreatorTokenIssuerTransferFixture {
@@ -2539,13 +2692,13 @@ impl CreatorTokenIssuerTransferFixture {
                     PaymentWithVestingOf::<Test> {
                         amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
                         vesting_schedule: None,
-                        remark: Vec::new(),
                     },
                 )]
                 .iter()
                 .cloned()
                 .collect(),
             ),
+            metadata: b"metadata".to_vec(),
         }
     }
 
@@ -2565,6 +2718,7 @@ impl CreatorTokenIssuerTransferFixture {
             self.actor,
             self.channel_id,
             self.outputs.clone(),
+            self.metadata.clone(),
         );
 
         if expected_result.is_ok() {
@@ -3129,7 +3283,7 @@ impl InitializeChannelTransferFixture {
 pub struct AcceptChannelTransferFixture {
     origin: RawOrigin<U256>,
     channel_id: u64,
-    params: TransferCommitmentParameters<MemberId, BalanceOf<Test>, TransferId>,
+    params: TransferCommitmentWitnessOf<Test>,
 }
 
 impl AcceptChannelTransferFixture {
@@ -3153,13 +3307,13 @@ impl AcceptChannelTransferFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_transfer_params(self, params: TransferCommitmentOf<Test>) -> Self {
+    pub fn with_transfer_params(self, params: TransferCommitmentWitnessOf<Test>) -> Self {
         Self { params, ..self }
     }
 
     pub fn with_price(self, price: u64) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferCommitmentOf::<Test> {
+        self.with_transfer_params(TransferCommitmentWitnessOf::<Test> {
             price,
             ..old_transfer_params
         })
@@ -3167,7 +3321,7 @@ impl AcceptChannelTransferFixture {
 
     pub fn with_transfer_id(self, id: u64) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferCommitmentOf::<Test> {
+        self.with_transfer_params(TransferCommitmentWitnessOf::<Test> {
             transfer_id: id,
             ..old_transfer_params
         })
@@ -3178,7 +3332,7 @@ impl AcceptChannelTransferFixture {
         new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     ) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferCommitmentOf::<Test> {
+        self.with_transfer_params(TransferCommitmentWitnessOf::<Test> {
             new_collaborators,
             ..old_transfer_params
         })
@@ -3741,7 +3895,7 @@ impl MakeOpenAuctionBidFixture {
                         );
                     }
                 }
-                _ => assert!(false),
+                _ => panic!(),
             }
         } else {
             assert_eq!(bid_post, bid_pre);
@@ -4588,7 +4742,8 @@ impl SuccessfulChannelCollaboratorsManagementFlow {
 
     pub fn run(&self) {
         let default_collaborators = Module::<Test>::channel_by_id(ChannelId::one()).collaborators;
-        let mut updated_collaborators = default_collaborators;
+        let mut updated_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> =
+            default_collaborators.into();
 
         // Add collaborator (as owner) will full permissions
         updated_collaborators.insert(
@@ -4965,101 +5120,6 @@ pub fn pause_channel_feature(channel_id: ChannelId, feature: PausableChannelFeat
         .call_and_assert(Ok(()));
 }
 
-#[derive(Debug)]
-struct IndexItem {
-    index: usize,
-    side: Side,
-}
-
-fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
-    // used as a helper function to generate the correct sequence of indexes used to
-    // construct the merkle path necessary for membership proof
-    let mut idx = index;
-    assert!(idx > 0); // index starting at 1
-    let floor_2 = |x: usize| (x >> 1) + (x % 2);
-    let mut path = Vec::new();
-    let mut prev_len: usize = 0;
-    let mut el = len;
-    while el != 1 {
-        if idx % 2 == 1 && idx == el {
-            path.push(IndexItem {
-                index: prev_len + idx,
-                side: Side::Left,
-            });
-        } else {
-            match idx % 2 {
-                1 => path.push(IndexItem {
-                    index: prev_len + idx + 1,
-                    side: Side::Right,
-                }),
-                _ => path.push(IndexItem {
-                    index: prev_len + idx - 1,
-                    side: Side::Left,
-                }),
-            };
-        }
-        prev_len += el;
-        idx = floor_2(idx);
-        el = floor_2(el);
-    }
-    path
-}
-
-pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
-    // generates merkle root from the ordered sequence collection.
-    // The resulting vector is structured as follows: elements in range
-    // [0..collection.len()) will be the tree leaves (layer 0), elements in range
-    // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
-    // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
-    assert!(!collection.is_empty());
-    let mut out = Vec::new();
-    for e in collection.iter() {
-        out.push(Hashing::hash(&e.encode()));
-    }
-
-    let mut start: usize = 0;
-    let mut last_len = out.len();
-    //let mut new_len = out.len();
-    let mut max_len = last_len >> 1;
-    let mut rem = last_len % 2;
-
-    // range [last..(maxlen >> 1) + (maxlen % 2)]
-    while max_len != 0 {
-        last_len = out.len();
-        for i in 0..max_len {
-            out.push(Hashing::hash(
-                &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
-            ));
-        }
-        if rem == 1 {
-            out.push(Hashing::hash(
-                &[out[last_len - 1], out[last_len - 1]].encode(),
-            ));
-        }
-        let new_len: usize = out.len() - last_len;
-        rem = new_len % 2;
-        max_len = new_len >> 1;
-        start = last_len;
-    }
-    out
-}
-
-fn build_merkle_path_helper<E: Encode + Clone>(
-    collection: &[E],
-    idx: usize,
-) -> Vec<ProofElement<Test>> {
-    let merkle_tree = generate_merkle_root_helper(collection);
-    // builds the actual merkle path with the hashes needed for the proof
-    let index_path = index_path_helper(collection.len(), idx + 1);
-    index_path
-        .iter()
-        .map(|idx_item| ProofElement::<Test> {
-            hash: merkle_tree[idx_item.index - 1],
-            side: idx_item.side,
-        })
-        .collect()
-}
-
 // generate some payments claims
 pub fn create_some_pull_payments_helper_with_rewards(
     cumulative_reward_earned: u64,
@@ -5080,7 +5140,9 @@ pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
 }
 
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
-    let commit = generate_merkle_root_helper(payments).pop().unwrap();
+    let commit = generate_merkle_root_helper::<Test, _>(payments)
+        .pop()
+        .unwrap();
     UpdateChannelPayoutsFixture::default()
         .with_commitment(Some(commit))
         .call_and_assert(Ok(()));
@@ -5161,7 +5223,7 @@ impl ContentTest {
         collaborators: &[(u64, BTreeSet<ChannelActionPermission>)],
     ) -> Self {
         Self {
-            collaborators: Some(collaborators.iter().cloned().collect::<BTreeMap<_, _>>()),
+            collaborators: Some(collaborators.iter().cloned().collect()),
             ..self
         }
     }
@@ -5242,7 +5304,7 @@ impl ContentTest {
                     &agent_permissions,
                 )
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
 
         // Setup claimable reward (optionally)
@@ -5329,11 +5391,7 @@ pub fn agent_permissions(permissions: &[ChannelActionPermission]) -> ChannelAgen
     permissions.iter().cloned().collect()
 }
 
-pub fn get_default_member_channel_invalid_contexts() -> Vec<(
-    AccountId,
-    ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    Error<Test>,
-)> {
+pub fn get_default_member_channel_invalid_contexts() -> Vec<ActorContextResult> {
     vec![
         // collaborator as owner
         (
@@ -5380,11 +5438,7 @@ pub fn get_default_member_channel_invalid_contexts() -> Vec<(
     ]
 }
 
-pub fn get_default_curator_channel_invalid_contexts() -> Vec<(
-    AccountId,
-    ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    Error<Test>,
-)> {
+pub fn get_default_curator_channel_invalid_contexts() -> Vec<ActorContextResult> {
     vec![
         // collaborator as lead
         (
@@ -5443,13 +5497,7 @@ pub fn get_default_curator_channel_invalid_contexts() -> Vec<(
     ]
 }
 
-pub fn run_all_fixtures_with_contexts(
-    contexts: Vec<(
-        AccountId,
-        ContentActor<CuratorGroupId, CuratorId, MemberId>,
-        Error<Test>,
-    )>,
-) {
+pub fn run_all_fixtures_with_contexts(contexts: Vec<ActorContextResult>) {
     for (sender, actor, error) in contexts {
         let expected_err = Err(error.into());
         UpdateChannelFixture::default()

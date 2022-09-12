@@ -1,5 +1,8 @@
 use crate::*;
-use common::bloat_bond::RepayableBloatBond;
+use common::{bloat_bond::RepayableBloatBondOf, ProofElementRecord, Side};
+use frame_support::storage::{
+    bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet,
+};
 use frame_support::PalletId;
 use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
@@ -229,10 +232,11 @@ pub struct ChannelRecord<
     CuratorGroupId: PartialEq,
     Balance: PartialEq + Zero,
     ChannelPrivilegeLevel,
-    DataObjectId: Ord,
     BlockNumber: BaseArithmetic + Copy,
     TokenId,
     TransferId: PartialEq + Copy,
+    ChannelAssetsSet,
+    ChannelCollaboratorsMap: PartialEq,
     RepayableBloatBond,
 > {
     /// The owner of a channel
@@ -240,7 +244,7 @@ pub struct ChannelRecord<
     /// The videos under this channel
     pub num_videos: u64,
     /// Map from collaborator's MemberId to collaborator's ChannelAgentPermissions
-    pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    pub collaborators: ChannelCollaboratorsMap,
     /// Cumulative cashout
     pub cumulative_reward_claimed: Balance,
     /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
@@ -248,9 +252,15 @@ pub struct ChannelRecord<
     /// List of channel features that have been paused by a curator
     pub paused_features: BTreeSet<PausableChannelFeature>,
     /// Transfer status of the channel. Requires to be explicitly accepted.
-    pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>,
+    pub transfer_status: ChannelTransferStatus<
+        MemberId,
+        CuratorGroupId,
+        Balance,
+        TransferId,
+        ChannelCollaboratorsMap,
+    >,
     /// Set of associated data objects
-    pub data_objects: BTreeSet<DataObjectId>,
+    pub data_objects: ChannelAssetsSet,
     /// Channel daily NFT limit.
     pub daily_nft_limit: LimitPerPeriod<BlockNumber>,
     /// Channel weekly NFT limit.
@@ -273,12 +283,15 @@ pub enum ChannelTransferStatus<
     CuratorGroupId: PartialEq,
     Balance: PartialEq + Zero,
     TransferId: PartialEq + Copy,
+    ChannelCollaboratorsMap: PartialEq,
 > {
     /// Default transfer status: no pending transfers.
     NoActiveTransfer,
 
     /// There is ongoing transfer with parameters.
-    PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId>),
+    PendingTransfer(
+        PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId, ChannelCollaboratorsMap>,
+    ),
 }
 
 impl<
@@ -286,7 +299,15 @@ impl<
         CuratorGroupId: PartialEq,
         Balance: PartialEq + Zero,
         TransferId: PartialEq + Copy,
-    > Default for ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>
+        ChannelCollaboratorsMap: PartialEq,
+    > Default
+    for ChannelTransferStatus<
+        MemberId,
+        CuratorGroupId,
+        Balance,
+        TransferId,
+        ChannelCollaboratorsMap,
+    >
 {
     fn default() -> Self {
         ChannelTransferStatus::NoActiveTransfer
@@ -298,7 +319,9 @@ impl<
         CuratorGroupId: PartialEq,
         Balance: PartialEq + Zero,
         TransferId: PartialEq + Copy,
-    > ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>
+        ChannelCollaboratorsMap: PartialEq,
+    >
+    ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId, ChannelCollaboratorsMap>
 {
     pub(crate) fn is_pending(&self) -> bool {
         matches!(&self, &ChannelTransferStatus::PendingTransfer(_))
@@ -313,11 +336,12 @@ pub struct PendingTransfer<
     CuratorGroupId,
     Balance: Zero,
     TransferId: PartialEq + Copy,
+    ChannelCollaboratorsMap,
 > {
     /// New channel owner.
     pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// Transfer parameters.
-    pub transfer_params: TransferCommitmentParameters<MemberId, Balance, TransferId>,
+    pub transfer_params: TransferCommitmentParameters<ChannelCollaboratorsMap, Balance, TransferId>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -335,10 +359,13 @@ pub struct InitTransferParameters<MemberId: Ord + Clone, CuratorGroupId, Balance
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Contains parameters for the pending transfer.
-pub struct TransferCommitmentParameters<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy>
-{
+pub struct TransferCommitmentParameters<
+    ChannelCollaboratorsMap,
+    Balance,
+    TransferId: PartialEq + Copy,
+> {
     /// Channel's new collaborators along with their respective permissions
-    pub new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    pub new_collaborators: ChannelCollaboratorsMap,
     /// Transfer price: can be 0, which means free.
     pub price: Balance,
     /// Transaction nonce
@@ -359,10 +386,11 @@ impl<
         CuratorGroupId: PartialEq,
         Balance: PartialEq + Zero,
         ChannelPrivilegeLevel,
-        DataObjectId: Ord,
         BlockNumber: BaseArithmetic + Copy,
         TokenId: Clone,
         TransferId: PartialEq + Copy,
+        DataObjectsSet,
+        CollaboratorsMap: PartialEq,
         RepayableBloatBond,
     >
     ChannelRecord<
@@ -370,10 +398,11 @@ impl<
         CuratorGroupId,
         Balance,
         ChannelPrivilegeLevel,
-        DataObjectId,
         BlockNumber,
         TokenId,
         TransferId,
+        DataObjectsSet,
+        CollaboratorsMap,
         RepayableBloatBond,
     >
 {
@@ -403,15 +432,6 @@ impl<
         self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
 
-    pub fn get_existing_collaborator_permissions<T: Config>(
-        &self,
-        member_id: &MemberId,
-    ) -> Result<&ChannelAgentPermissions, DispatchError> {
-        self.collaborators
-            .get(member_id)
-            .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
-    }
-
     pub fn increment_channel_nft_counters(&mut self, current_block: BlockNumber) {
         self.daily_nft_counter
             .update_for_current_period(current_block, self.daily_nft_limit.block_number_period);
@@ -435,17 +455,27 @@ impl<
     }
 }
 
+pub type ChannelAssetsSet<T> =
+    BoundedBTreeSet<DataObjectId<T>, <T as Config>::MaxNumberOfAssetsPerChannel>;
+
+pub type ChannelCollaboratorsMap<T> = BoundedBTreeMap<
+    <T as MembershipTypes>::MemberId,
+    ChannelAgentPermissions,
+    <T as Config>::MaxNumberOfCollaboratorsPerChannel,
+>;
+
 // Channel alias type for simplification.
 pub type Channel<T> = ChannelRecord<
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
     <T as Config>::ChannelPrivilegeLevel,
-    DataObjectId<T>,
     <T as frame_system::Config>::BlockNumber,
     <T as project_token::Config>::TokenId,
     <T as Config>::TransferId,
-    RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
+    ChannelAssetsSet<T>,
+    ChannelCollaboratorsMap<T>,
+    RepayableBloatBondOf<T>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -513,6 +543,9 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    /// Required if assets_to_upload or assets_to_remove are provided.
+    pub storage_buckets_num_witness: Option<u32>,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -549,6 +582,17 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub expected_video_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    pub storage_buckets_num_witness: u32,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub struct ChannelBagWitness {
+    /// Number of storage buckets assigned to channel's storage bag
+    pub storage_buckets_num: u32,
+    /// Number of distribution buckets assigned to channel's storage bag
+    pub distribution_buckets_num: u32,
 }
 
 pub type VideoCreationParameters<T> =
@@ -573,6 +617,9 @@ pub struct VideoUpdateParametersRecord<
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
+    /// Witnessed number of storage buckets assigned to store the channel bag.
+    /// Required if assets_to_upload or assets_to_remove are provided.
+    pub storage_buckets_num_witness: Option<u32>,
 }
 
 pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
@@ -585,48 +632,27 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord, RepayableBloatBond> {
+pub struct VideoRecord<ChannelId, OwnedNft, VideoAssetsSet, RepayableBloatBond> {
     pub in_channel: ChannelId,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNft>,
     /// Set of associated data objects
-    pub data_objects: BTreeSet<DataObjectId>,
+    pub data_objects: VideoAssetsSet,
     /// State bloat bond paid for storing the video
     pub video_state_bloat_bond: RepayableBloatBond,
 }
 
+pub type VideoAssetsSet<T> =
+    BoundedBTreeSet<DataObjectId<T>, <T as Config>::MaxNumberOfAssetsPerVideo>;
+
 pub type Video<T> = VideoRecord<
     <T as storage::Config>::ChannelId,
     Nft<T>,
-    DataObjectId<T>,
-    RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
+    VideoAssetsSet<T>,
+    RepayableBloatBondOf<T>,
 >;
 
 pub type DataObjectId<T> = <T as storage::Config>::DataObjectId;
-
-/// Side used to construct hash values during merkle proof verification
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo)]
-pub enum Side {
-    Left,
-    Right,
-}
-
-impl Default for Side {
-    fn default() -> Self {
-        Side::Right
-    }
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-/// Element used in for channel payout
-pub struct ProofElementRecord<Hash, Side> {
-    // Node hash
-    pub hash: Hash,
-    // side in which *self* must be adjoined during proof verification
-    pub side: Side,
-}
 
 // alias for the proof element
 pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Config>::Hash, Side>;
@@ -646,8 +672,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Config>::Hash,
 >;
 
-impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord, RepayableBloatBond>
-    VideoRecord<ChannelId, OwnedNft, DataObjectId, RepayableBloatBond>
+impl<ChannelId: Clone, OwnedNft: Clone, VideoAssetsSet, RepayableBloatBond>
+    VideoRecord<ChannelId, OwnedNft, VideoAssetsSet, RepayableBloatBond>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Config>(&self) -> DispatchResult {
@@ -794,9 +820,16 @@ pub type PendingTransferOf<T> = PendingTransfer<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
     <T as Config>::TransferId,
+    ChannelCollaboratorsMap<T>,
 >;
 pub type TransferCommitmentOf<T> = TransferCommitmentParameters<
-    <T as common::MembershipTypes>::MemberId,
+    ChannelCollaboratorsMap<T>,
+    BalanceOf<T>,
+    <T as Config>::TransferId,
+>;
+
+pub type TransferCommitmentWitnessOf<T> = TransferCommitmentParameters<
+    BTreeMap<<T as MembershipTypes>::MemberId, ChannelAgentPermissions>,
     BalanceOf<T>,
     <T as Config>::TransferId,
 >;

@@ -2336,61 +2336,6 @@ fn edit_non_editable_post_text() {
 }
 
 /*
- ** react_post
- */
-#[test]
-// test if post react take effect
-fn react_post() {
-    // three reations to post, test them one by one.
-    let reactions = vec![0, 1, 2];
-    for index in 0..reactions.len() {
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = FORUM_LEAD_ORIGIN;
-        let initial_balance = 10_000_000;
-
-        with_test_externalities(|| {
-            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                good_thread_metadata(),
-                good_thread_text(),
-                Ok(()),
-            );
-            let post_id = create_post_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                thread_id,
-                good_post_text(),
-                true,
-                Ok(()),
-            );
-            react_post_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                thread_id,
-                post_id,
-                reactions[index],
-                Ok(()),
-            );
-        });
-    }
-}
-
-/*
  ** moderate_post
  */
 

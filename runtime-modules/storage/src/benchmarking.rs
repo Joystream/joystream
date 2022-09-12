@@ -19,14 +19,14 @@ use frame_system::Pallet as System;
 use membership::Module as Membership;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
-    StakeParameters, StakePolicy, WorkerById,
+    StakeParameters, StakePolicy, WorkerById, WorkerId,
 };
 
 use crate::{
     BagId, Balances, Base58Multihash, Blacklist, Call, Config, DataObjectCreationParameters,
     DataObjectStorage, DistributionBucketByFamilyIdById, DistributionBucketFamilyById,
     DistributionBucketId, DynamicBagType, Module, Module as Pallet, RawEvent, StaticBagId,
-    StorageBucketById, StorageBucketOperatorStatus, UploadParameters, WorkerId,
+    StorageBucketById, StorageBucketOperatorStatus, UploadParameters,
 };
 use frame_support::sp_runtime::SaturatedConversion;
 

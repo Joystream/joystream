@@ -1344,43 +1344,6 @@ benchmarks! {
         );
     }
 
-    react_post {
-
-        let forum_user_id = 0;
-        let caller_id =
-            insert_a_leader::<T>(forum_user_id);
-
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
-
-        // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
-        // Create thread
-
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
-
-        let thread_id = create_new_thread::<T>(
-            caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text.clone()
-        );
-
-        let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text);
-
-        let react = T::PostReactionId::one();
-
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, post_id, react)
-    verify {
-        assert_last_event::<T>(
-            RawEvent::PostReacted(
-                forum_user_id.saturated_into(),
-                post_id,
-                react,
-                category_id,
-                thread_id
-            ).into()
-        );
-    }
-
     edit_post_text {
         let forum_user_id = 0;
         let caller_id =
@@ -1798,13 +1761,6 @@ mod tests {
     fn test_add_post() {
         with_test_externalities(|| {
             assert_ok!(TestForumModule::test_benchmark_add_post());
-        });
-    }
-
-    #[test]
-    fn test_react_post() {
-        with_test_externalities(|| {
-            assert_ok!(TestForumModule::test_benchmark_react_post());
         });
     }
 

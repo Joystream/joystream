@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, WrapperKeepOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentProofElementRecord, PalletContentPullPaymentElement, PalletContentTransferCommitmentParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
+import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonProofElementRecord, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -360,203 +360,787 @@ declare module '@polkadot/api-base/types/submittable' {
       /**
        * Accepts channel transfer.
        * `commitment_params` is required to prevent changing the transfer conditions.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the number of entries in `commitment_params.new_collaborators` map
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
-      acceptChannelTransfer: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, commitmentParams: PalletContentTransferCommitmentParameters | { newCollaborators?: any; price?: any; transferId?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentTransferCommitmentParameters]>;
+      acceptChannelTransfer: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, commitmentParams: PalletContentTransferCommitmentParametersBTreeMap | { newCollaborators?: any; price?: any; transferId?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentTransferCommitmentParametersBTreeMap]>;
       /**
        * Accept incoming Nft offer
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       acceptIncomingOffer: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, witnessPrice: Option<u128> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<u128>]>;
       /**
        * Add curator to curator group under given `curator_group_id`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       addCuratorToGroup: AugmentedSubmittable<(curatorGroupId: u64 | AnyNumber | Uint8Array, curatorId: u64 | AnyNumber | Uint8Array, permissions: BTreeSet<PalletContentChannelActionPermission>) => SubmittableExtrinsic<ApiType>, [u64, u64, BTreeSet<PalletContentChannelActionPermission>]>;
       /**
        * Buy Nft
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       buyNft: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, participantId: u64 | AnyNumber | Uint8Array, witnessPrice: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
        * Cancel Nft sell order
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * </weight>
        **/
       cancelBuyNow: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * cancel channel transfer
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       cancelChannelTransfer: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor]>;
+      /**
+       * Cancel video nft english auction
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
       cancelEnglishAuction: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Cancel Nft offer
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       cancelOffer: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
+      /**
+       * Cancel video nft open auction
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
       cancelOpenAuction: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Cancel open auction bid
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       cancelOpenAuctionBid: AugmentedSubmittable<(participantId: u64 | AnyNumber | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
       /**
        * Channel collaborator remark
+       * <weight>
+       * 
+       * ## Weight
+       * `O (B)`
+       * - DB:
+       * - O(1)
+       * where:
+       * - B is the byte lenght of `msg`
+       * # </weight>
        **/
       channelAgentRemark: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Bytes]>;
       /**
        * Channel owner remark
+       * <weight>
+       * 
+       * ## Weight
+       * `O (B)`
+       * - DB:
+       * - O(1)
+       * where:
+       * - B is the byte lenght of `msg`
+       * # </weight>
        **/
       channelOwnerRemark: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
-      claimChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
+      /**
+       * Claim and withdraw reward in JOY from channel account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (H)` where:
+       * - `H` is the lenght of the provided merkle `proof`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
+      claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletCommonProofElementRecord> | (PalletCommonProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletCommonProofElementRecord>, PalletContentPullPaymentElement]>;
+      /**
+       * Claim reward in JOY from channel account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (H)` where:
+       * - `H` is the lenght of the provided merkle `proof`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
+      claimChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletCommonProofElementRecord> | (PalletCommonProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletCommonProofElementRecord>, PalletContentPullPaymentElement]>;
       /**
        * Claim channel's creator token patronage credit
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       claimCreatorTokenPatronageCredit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C + D + E)` where:
+       * - `A` is the number of entries in `params.collaborators`
+       * - `B` is the number of items in `params.storage_buckets`
+       * - `C` is the number of items in `params.distribution_buckets`
+       * - `D` is the number of items in `params.assets.object_creation_list`
+       * - `E` is the length of  `params.meta`
+       * - DB:
+       * - `O(A + B + C + D)` - from the the generated weights
+       * # </weight>
+       **/
       createChannel: AugmentedSubmittable<(channelOwner: PalletContentChannelOwner | { Member: any } | { CuratorGroup: any } | string | Uint8Array, params: PalletContentChannelCreationParametersRecord | { assets?: any; meta?: any; collaborators?: any; storageBuckets?: any; distributionBuckets?: any; expectedChannelStateBloatBond?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentChannelOwner, PalletContentChannelCreationParametersRecord]>;
       /**
        * Add new curator group to runtime storage
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the number of entries in `permissions_by_level` map
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       createCuratorGroup: AugmentedSubmittable<(isActive: bool | boolean | Uint8Array, permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>) => SubmittableExtrinsic<ApiType>, [bool, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
-      createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedVideoStateBloatBond?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C + D)` where:
+       * - `A` is the number of items in `params.assets.object_creation_list`
+       * - `B` is `params.storage_buckets_num_witness`
+       * - `C` is the length of open auction / english auction whitelist (if provided)
+       * - `D` is the length of `params.meta` (if provided)
+       * - DB:
+       * - `O(A + B + C)` - from the the generated weights
+       * # </weight>
+       **/
+      createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedVideoStateBloatBond?: any; expectedDataObjectStateBloatBond?: any; storageBucketsNumWitness?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
       /**
        * Perform transfer of tokens as creator token issuer
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B)` where:
+       * - `A` is the number of entries in `outputs`
+       * - `B` is the length of the `metadata`
+       * - DB:
+       * - `O(A)` - from the the generated weights
+       * # </weight>
        **/
-      creatorTokenIssuerTransfer: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPaymentWithVesting) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting]>;
+      creatorTokenIssuerTransfer: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPaymentWithVesting, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting, Bytes]>;
       /**
        * Deissue channel's creator token
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       deissueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
-      deleteChannel: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64]>;
-      deleteChannelAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64, Bytes]>;
-      deleteChannelAssetsAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, assetsToRemove: BTreeSet<u64>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, Bytes]>;
-      deleteVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64]>;
-      deleteVideoAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64, Bytes]>;
-      deleteVideoAssetsAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, assetsToRemove: BTreeSet<u64>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, Bytes]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C)` where:
+       * - `A` is `num_objects_to_delete`
+       * - `B` is `channel_bag_witness.storage_buckets_num`
+       * - `C` is `channel_bag_witness.distribution_buckets_num`
+       * - DB:
+       * - `O(A + B + C)` - from the the generated weights
+       * # </weight>
+       **/
+      deleteChannel: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, channelBagWitness: PalletContentChannelBagWitness | { storageBucketsNum?: any; distributionBucketsNum?: any } | string | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentChannelBagWitness, u64]>;
+      deleteChannelAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, channelBagWitness: PalletContentChannelBagWitness | { storageBucketsNum?: any; distributionBucketsNum?: any } | string | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentChannelBagWitness, u64, Bytes]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C)` where:
+       * - `A` is the length of `assets_to_remove`
+       * - `B` is the value of `storage_buckets_num_witness`
+       * - `C` is the length of `rationale`
+       * - DB:
+       * - `O(A + B)` - from the the generated weights
+       * # </weight>
+       **/
+      deleteChannelAssetsAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, assetsToRemove: BTreeSet<u64>, storageBucketsNumWitness: u32 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, u32, Bytes]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B)` where:
+       * - `A` is num_objects_to_delete
+       * - `B` is `params.storage_buckets_num_witness` (if provided)
+       * - DB:
+       * - `O(A + B)` - from the the generated weights
+       * # </weight>
+       **/
+      deleteVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, storageBucketsNumWitness: Option<u32> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64, Option<u32>]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C)` where:
+       * - `A` is the value of `num_objects_to_delete`
+       * - `B` is the value of `storage_buckets_num_witness`
+       * - `C` is the length of `rationale`
+       * - DB:
+       * - `O(A + B)` - from the the generated weights
+       * # </weight>
+       **/
+      deleteVideoAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, storageBucketsNumWitness: Option<u32> | null | object | string | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Option<u32>, u64, Bytes]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C)` where:
+       * - `A` is the length of `assets_to_remove`
+       * - `B` is the value of `storage_buckets_num_witness`
+       * - `C` is the length of `rationale`
+       * - DB:
+       * - `O(A + B)` - from the the generated weights
+       * # </weight>
+       **/
+      deleteVideoAssetsAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, storageBucketsNumWitness: u32 | AnyNumber | Uint8Array, assetsToRemove: BTreeSet<u64>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u32, BTreeSet<u64>, Bytes]>;
       /**
        * Destroy NFT
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       destroyNft: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Finalize an ended creator token sale
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       finalizeCreatorTokenSale: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Finalize an ended revenue split
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       finalizeRevenueSplit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Initialize creator token sale
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `params.metadata` (or 0 if not provided)
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       initCreatorTokenSale: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenSaleParams | { unitPrice?: any; upperBoundQuantity?: any; startsAt?: any; duration?: any; vestingScheduleParams?: any; capPerMember?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenSaleParams]>;
       /**
        * Start a channel transfer with specified characteristics
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the number of entries in `transfer_params.new_collaborators` map
+       * - DB:
+       * - O(A) - from the the generated weights
+       * # </weight>
        **/
       initializeChannelTransfer: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, transferParams: PalletContentInitTransferParameters | { newCollaborators?: any; price?: any; newOwner?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor, PalletContentInitTransferParameters]>;
       /**
        * Issue creator token
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the number of entries in `params.initial_allocation` map
+       * - DB:
+       * - `O(A)` - from the the generated weights
+       * # </weight>
        **/
       issueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenIssuanceParameters | { initialAllocation?: any; symbol?: any; transferPolicy?: any; patronageRate?: any; revenueSplitRate?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenIssuanceParameters]>;
       /**
        * Issue NFT
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W + B)`
+       * - DB:
+       * - O(W)
+       * where:
+       * - W : member whitelist length in case nft initial status is auction
+       * - B : bytelength of metadata parameter
+       * # </weight>
        **/
       issueNft: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, params: PalletContentNftTypesNftIssuanceParametersRecord | { royalty?: any; nftMetadata?: any; nonChannelOwner?: any; initTransactionalStatus?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesNftIssuanceParametersRecord]>;
       /**
        * Issue revenue split for a channel
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       issueRevenueSplit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, start: Option<u32> | null | object | string | Uint8Array, duration: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Option<u32>, u32]>;
       /**
        * Make channel's creator token permissionless
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       makeCreatorTokenPermissionless: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
-       * Make auction bid
+       * Make english auction bid
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       makeEnglishAuctionBid: AugmentedSubmittable<(participantId: u64 | AnyNumber | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, bidAmount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
        * Make auction bid
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       makeOpenAuctionBid: AugmentedSubmittable<(participantId: u64 | AnyNumber | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, bidAmount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
        * NFT owner remark
+       * <weight>
+       * 
+       * ## Weight
+       * `O (B)`
+       * - DB:
+       * - O(1)
+       * where:
+       * - B is the byte lenght of `msg`
+       * # </weight>
        **/
       nftOwnerRemark: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Bytes]>;
       /**
        * Offer Nft
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       offerNft: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, to: u64 | AnyNumber | Uint8Array, price: Option<u128> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor, u64, Option<u128>]>;
       /**
        * Accept open auction bid
        * Should only be called by auctioneer
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       pickOpenAuctionWinner: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, winnerId: u64 | AnyNumber | Uint8Array, commit: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64, u128]>;
       /**
        * Reduce channel's creator token patronage rate to given value
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       reduceCreatorTokenPatronageRateTo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, targetRate: Permill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Permill]>;
       /**
        * Remove curator from a given curator group
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       removeCuratorFromGroup: AugmentedSubmittable<(curatorGroupId: u64 | AnyNumber | Uint8Array, curatorId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
       /**
        * Sell Nft
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       sellNft: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, price: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor, u128]>;
+      /**
+       * Extrinsic for pausing/re-enabling channel features
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `rationale`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
       setChannelPausedFeaturesAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, newPausedFeatures: BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, Bytes]>;
+      /**
+       * Extrinsic for setting channel visibility status (hidden/visible) by moderator
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `rationale`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
       setChannelVisibilityAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, isHidden: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       /**
        * Set `is_active` status for curator group under given `curator_group_id`
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       setCuratorGroupStatus: AugmentedSubmittable<(curatorGroupId: u64 | AnyNumber | Uint8Array, isActive: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, bool]>;
       /**
        * Claim won english auction
        * Can be called by anyone
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       settleEnglishAuction: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Extrinsic for video visibility status (hidden/visible) setting by moderator
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `rationale`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
       setVideoVisibilityAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, isHidden: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       /**
        * Return Nft back to the original artist at no cost
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       slingNftBack: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor]>;
       /**
        * Start video nft english auction
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W)` where:
+       * - W : whitelist member list length
+       * - DB:
+       * - O(W)
+       * # </weight>
        **/
       startEnglishAuction: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, auctionParams: PalletContentNftTypesEnglishAuctionParamsRecord | { startingPrice?: any; buyNowPrice?: any; whitelist?: any; startsAt?: any; duration?: any; extensionPeriod?: any; minBidStep?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesEnglishAuctionParamsRecord]>;
       /**
        * Start video nft open auction
+       * <weight>
+       * 
+       * ## Weight
+       * `O (W)` where:
+       * - W : member whitelist length
+       * - DB:
+       * - O(W)
+       * # </weight>
        **/
       startOpenAuction: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, auctionParams: PalletContentNftTypesOpenAuctionParamsRecord | { startingPrice?: any; buyNowPrice?: any; startsAt?: any; whitelist?: any; bidLockDuration?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesOpenAuctionParamsRecord]>;
       /**
        * Only Council can toggle nft issuance limits constraints
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       toggleNftLimits: AugmentedSubmittable<(enabled: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
       /**
        * Update Buy now nft price
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       updateBuyNowPrice: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, newPrice: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128]>;
-      updateChannel: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentChannelUpdateParametersRecord | { assetsToUpload?: any; newMeta?: any; assetsToRemove?: any; collaborators?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C + D + E)` where:
+       * - `A` is the number of entries in `params.collaborators`
+       * - `B` is the number of items in `params.assets_to_upload.object_creation_list` (if provided)
+       * - `C` is the number of items in `params.assets_to_remove`
+       * - `D` is the length `params.new_meta`
+       * - `E` is `params.storage_buckets_num_witness` (if provided)
+       * - DB:
+       * - `O(A + B + C + E)` - from the the generated weights
+       * # </weight>
+       **/
+      updateChannel: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentChannelUpdateParametersRecord | { assetsToUpload?: any; newMeta?: any; assetsToRemove?: any; collaborators?: any; expectedDataObjectStateBloatBond?: any; storageBucketsNumWitness?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord]>;
       /**
        * Updates channel's NFT limit.
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       updateChannelNftLimit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, nftLimitPeriod: PalletContentNftLimitPeriod | 'Daily' | 'Weekly' | number | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, limit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, PalletContentNftLimitPeriod, u64, u64]>;
+      /**
+       * Update channel payouts
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)` where:
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
       updateChannelPayouts: AugmentedSubmittable<(params: PalletContentUpdateChannelPayoutsParametersRecord | { commitment?: any; payload?: any; minCashoutAllowed?: any; maxCashoutAllowed?: any; channelCashoutsEnabled?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentUpdateChannelPayoutsParametersRecord]>;
+      /**
+       * Extrinsic for updating channel privilege level (requires lead access)
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
       updateChannelPrivilegeLevel: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, newPrivilegeLevel: u8 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u8]>;
       /**
        * Updates channel state bloat bond value.
        * Only lead can upload this value
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       updateChannelStateBloatBond: AugmentedSubmittable<(newChannelStateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
       /**
        * Update existing curator group's permissions
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the number of entries in `permissions_by_level` map
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateCuratorGroupPermissions: AugmentedSubmittable<(curatorGroupId: u64 | AnyNumber | Uint8Array, permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>) => SubmittableExtrinsic<ApiType>, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
       /**
-       * Updates global NFT limit.
+       * Updates global NFT limit
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       updateGlobalNftLimit: AugmentedSubmittable<(nftLimitPeriod: PalletContentNftLimitPeriod | 'Daily' | 'Weekly' | number | Uint8Array, limit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentNftLimitPeriod, u64]>;
       /**
        * Update upcoming creator token sale
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateUpcomingCreatorTokenSale: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, newStartBlock: Option<u32> | null | object | string | Uint8Array, newDuration: Option<u32> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Option<u32>, Option<u32>]>;
-      updateVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoUpdateParametersRecord | { assetsToUpload?: any; newMeta?: any; assetsToRemove?: any; autoIssueNft?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord]>;
+      /**
+       * <weight>
+       * 
+       * ## Weight
+       * `O (A + B + C + D + E)` where:
+       * - `A` is params.assets_to_upload.object_creation_list.len() (if provided)
+       * - `B` is params.assets_to_remove.len()
+       * - `C` is `params.storage_buckets_num_witness` (if provided)
+       * - `D` is the length of open auction / english auction whitelist (if provided)
+       * - `E` is the length of `params.new_meta` (if provided)
+       * - DB:
+       * - `O(A + B + C + D)` - from the the generated weights
+       * # </weight>
+       **/
+      updateVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoUpdateParametersRecord | { assetsToUpload?: any; newMeta?: any; assetsToRemove?: any; autoIssueNft?: any; expectedDataObjectStateBloatBond?: any; storageBucketsNumWitness?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord]>;
       /**
        * Updates video state bloat bond value.
        * Only lead can upload this value
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
        **/
       updateVideoStateBloatBond: AugmentedSubmittable<(newVideoStateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
+      /**
+       * Withdraw JOY from channel account
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1)
+       * # </weight>
+       **/
       withdrawFromChannelBalance: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128]>;
     };
     contentWorkingGroup: {
@@ -1412,19 +1996,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       moveThreadToCategory: AugmentedSubmittable<(actor: PalletForumPrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, newCategoryId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletForumPrivilegedActor, u64, u64, u64]>;
-      /**
-       * Like or unlike a post.
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (W)` where:
-       * - `W` is the category depth,
-       * - DB:
-       * - O(W)
-       * # </weight>
-       **/
-      reactPost: AugmentedSubmittable<(forumUserId: u64 | AnyNumber | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, postId: u64 | AnyNumber | Uint8Array, react: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, u64, u64]>;
       /**
        * Set stickied threads for category
        * 
@@ -3628,13 +4199,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * <weight>
        * 
        * ## Weight
-       * `O (T)` where:
+       * `O (T + M)` where:
        * - `T` is the length of `outputs`
+       * - `M` is the length of `metadata`
        * - DB:
        * - `O(T)` - from the the generated weights
        * # </weight>
        **/
-      transfer: AugmentedSubmittable<(srcMemberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPayment) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenTransfersPayment]>;
+      transfer: AugmentedSubmittable<(srcMemberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPayment, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenTransfersPayment, Bytes]>;
     };
     proposalsCodex: {
       /**

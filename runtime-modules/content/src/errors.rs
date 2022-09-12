@@ -17,6 +17,25 @@ decl_error! {
         /// Attempt to set minimum cashout allowed above the limit
         MaxCashoutValueTooHigh,
 
+        /// Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
+        MaxNumberOfChannelCollaboratorsExceeded,
+
+        /// Number of channel assets exceeds MaxNumberOfAssetsPerChannel
+        MaxNumberOfChannelAssetsExceeded,
+
+        /// Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
+        MaxNumberOfVideoAssetsExceeded,
+
+        /// Channel bag witness parameters don't match the current runtime state
+        InvalidChannelBagWitnessProvided,
+
+        /// Storage buckets number witness parameter does not match the current runtime state
+        InvalidStorageBucketsNumWitnessProvided,
+
+        /// Storage buckets number witness parameter must be provided when channel/video assets
+        /// are being updated.
+        MissingStorageBucketsNumWitness,
+
         /// Provided channel owner (member) does not exist
         ChannelOwnerMemberDoesNotExist,
 
@@ -26,6 +45,9 @@ decl_error! {
         /// Channel state bloat bond cannot be lower than existential deposit,
         /// because it must secure the channel module account against dusting
         ChannelStateBloatBondBelowExistentialDeposit,
+
+        ///Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
+        NumberOfAssetsToRemoveIsZero,
 
         // Curator Management Errors
         // -------------------------
@@ -83,6 +105,9 @@ decl_error! {
 
         /// Actor cannot Own channel
         ActorCannotOwnChannel,
+
+        /// Attempt to sling back a channel owned nft
+        NftAlreadyOwnedByChannel,
 
         // Auction Errors
         // ---------------------
