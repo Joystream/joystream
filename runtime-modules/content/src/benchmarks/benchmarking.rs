@@ -2084,7 +2084,7 @@ benchmarks! {
                 uploader_account: account_id,
                 object_creation_params: storage::DataObjectCreationParameters {
                     size: 1u64,
-                    ipfs_content_id: 1u32.to_be_bytes().as_slice().to_vec(),
+                    ipfs_content_id: vec![1u8; 46],
                 },
                 expected_data_object_state_bloat_bond: Storage::<T>::data_object_state_bloat_bond_value(),
                 expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),

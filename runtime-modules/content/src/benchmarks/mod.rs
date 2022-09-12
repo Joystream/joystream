@@ -634,7 +634,7 @@ pub fn create_data_object_candidates_helper(
         .into_iter()
         .map(|_| DataObjectCreationParameters {
             size,
-            ipfs_content_id: vec![1u8],
+            ipfs_content_id: vec![1u8; 46],
         })
         .collect()
 }
