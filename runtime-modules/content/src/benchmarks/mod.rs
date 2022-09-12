@@ -509,7 +509,7 @@ where
 
 fn set_dyn_bag_creation_storage_bucket_numbers<T>(
     lead_account_id: T::AccountId,
-    storage_bucket_number: u64,
+    storage_bucket_number: u32,
     bag_type: DynamicBagType,
 ) where
     T: RuntimeConfig,
@@ -1025,8 +1025,8 @@ where
 {
     setup_worst_case_scenario_curator_channel::<T>(
         T::MaxNumberOfAssetsPerChannel::get(),
-        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        T::MaxStorageBucketsPerBag::get(),
+        T::MaxDistributionBucketsPerBag::get(),
         with_transfer,
     )
 }
@@ -1040,8 +1040,8 @@ where
 {
     setup_worst_case_scenario_member_channel::<T>(
         T::MaxNumberOfAssetsPerChannel::get(),
-        T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-        T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+        T::MaxStorageBucketsPerBag::get(),
+        T::MaxDistributionBucketsPerBag::get(),
         with_transfer,
     )
 }
@@ -1172,7 +1172,7 @@ where
         setup_worst_case_scenario_curator_channel::<T>(
             T::MaxNumberOfAssetsPerChannel::get(),
             storage_buckets_num,
-            T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxDistributionBucketsPerBag::get(),
             false,
         )?;
     let actor = ContentActor::Curator(group_id, curator_id);
@@ -1292,7 +1292,7 @@ fn setup_account_with_max_number_of_locks<T: Config>(
 ) {
     AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
         (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
-            a.add_or_update_vesting_schedule(
+            a.add_or_update_vesting_schedule::<T>(
                 VestingSource::Sale(i),
                 VestingSchedule::from_params(
                     frame_system::Pallet::<T>::block_number(),
@@ -1304,7 +1304,8 @@ fn setup_account_with_max_number_of_locks<T: Config>(
                     },
                 ),
                 None,
-            );
+            )
+            .unwrap();
         });
         a.stake(0u32, TokenBalanceOf::<T>::one());
     });

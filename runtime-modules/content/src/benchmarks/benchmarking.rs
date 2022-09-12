@@ -49,12 +49,9 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
-        let c in
-            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+        let c in (T::MinDistributionBucketsPerBag::get()) .. (T::MaxDistributionBucketsPerBag::get());
 
         let d in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
@@ -112,8 +109,7 @@ benchmarks! {
 
         let d in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
 
-        let e in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let e in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
@@ -127,7 +123,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel::<T>(
                 c,
                 e,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                T::MaxDistributionBucketsPerBag::get(),
                 false
             ).unwrap();
 
@@ -207,8 +203,8 @@ benchmarks! {
              curator_account_id) =
             setup_worst_case_scenario_curator_channel::<T>(
                 T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                T::MaxStorageBucketsPerBag::get(),
+                T::MaxDistributionBucketsPerBag::get(),
                 false
             ).unwrap();
 
@@ -268,12 +264,9 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
-        let c in
-            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+        let c in (T::MinDistributionBucketsPerBag::get()) .. (T::MaxDistributionBucketsPerBag::get());
 
         let (
             channel_id,
@@ -317,8 +310,8 @@ benchmarks! {
         ) =
             setup_worst_case_scenario_curator_channel::<T>(
                 T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                T::MaxStorageBucketsPerBag::get(),
+                T::MaxDistributionBucketsPerBag::get(),
                 true
             ).unwrap();
 
@@ -352,8 +345,8 @@ benchmarks! {
         ) =
             setup_worst_case_scenario_curator_channel::<T>(
                 T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                T::MaxStorageBucketsPerBag::get(),
+                T::MaxDistributionBucketsPerBag::get(),
                 true
             ).unwrap();
 
@@ -382,8 +375,7 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
         let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
@@ -400,7 +392,7 @@ benchmarks! {
             setup_worst_case_scenario_curator_channel::<T>(
                 a,
                 b,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                T::MaxDistributionBucketsPerBag::get(),
                 true).unwrap();
 
         let origin = RawOrigin::Signed(curator_account_id);
@@ -434,12 +426,9 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
-        let c in
-            (T::DistributionBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
+        let c in (T::MinDistributionBucketsPerBag::get()) .. (T::MaxDistributionBucketsPerBag::get());
 
         let d in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
@@ -489,8 +478,8 @@ benchmarks! {
         ) =
             setup_worst_case_scenario_curator_channel::<T>(
                 T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().max() as u32,
+                T::MaxStorageBucketsPerBag::get(),
+                T::MaxDistributionBucketsPerBag::get(),
                 true
             ).unwrap();
 
@@ -518,8 +507,7 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfAssetsPerVideo::get(); //max objs number
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
         let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
@@ -567,8 +555,7 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfAssetsPerVideo::get(); //max objs number
 
-        let b in (T::StorageBucketsPerBagValueConstraint::get().min as u32) ..
-            (T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
         let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
 
@@ -602,7 +589,7 @@ benchmarks! {
         let (video_id, (curator_acc_id, actor, channel_id, _)) =
             setup_worst_case_scenario_mutable_video::<T>(
                 None,
-                T::StorageBucketsPerBagValueConstraint::get().max() as u32
+                T::MaxStorageBucketsPerBag::get()
             )?;
 
         let rationale = vec![1u8].repeat(a as usize);
@@ -636,7 +623,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
         let rationale = vec![0u8].repeat(a as usize);
 
@@ -794,9 +781,7 @@ benchmarks! {
      */
     create_video_without_nft {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
-        let b in
-            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
-            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
         let c in 1..MAX_BYTES_METADATA;
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
@@ -843,9 +828,7 @@ benchmarks! {
     // Worst case scenario: initial state - EnglishAuction
     create_video_with_nft {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
-        let b in
-            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
-            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
         let c in 2..MAX_AUCTION_WHITELIST_LENGTH;
         let d in 1..MAX_BYTES_METADATA;
 
@@ -909,7 +892,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
         let params = VideoUpdateParameters::<T> {
             assets_to_upload: None,
@@ -955,9 +938,7 @@ benchmarks! {
     update_video_with_assets_without_nft {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in 1..T::MaxNumberOfAssetsPerVideo::get();
-        let c in
-            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
-            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
         let d in 1..MAX_BYTES_METADATA;
 
         // As many assets as possible, but leaving room for "a" additional assets,
@@ -1030,7 +1011,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
         let params = VideoUpdateParameters::<T> {
             assets_to_upload: None,
@@ -1087,9 +1068,7 @@ benchmarks! {
     update_video_with_assets_with_nft {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in 1..T::MaxNumberOfAssetsPerVideo::get();
-        let c in
-            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
-            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let c in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
         let d in 2..MAX_AUCTION_WHITELIST_LENGTH;
         let e in 1..MAX_BYTES_METADATA;
 
@@ -1171,7 +1150,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             None,
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         set_all_channel_paused_features::<T>(channel_id);
@@ -1195,9 +1174,7 @@ benchmarks! {
 
     delete_video_with_assets {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
-        let b in
-            (T::StorageBucketsPerBagValueConstraint::get().min as u32)
-            ..(T::StorageBucketsPerBagValueConstraint::get().max() as u32);
+        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
@@ -2136,8 +2113,8 @@ benchmarks! {
         let (channel_id, member_id, member_account_id, lead_account_id) =
             setup_worst_case_scenario_member_channel::<T>(
                 T::MaxNumberOfAssetsPerChannel::get(),
-                T::StorageBucketsPerBagValueConstraint::get().min as u32,
-                T::DistributionBucketsPerBagValueConstraint::get().min as u32,
+                T::MaxStorageBucketsPerBag::get(),
+                T::MaxDistributionBucketsPerBag::get(),
                 false,
             ).unwrap();
 
@@ -2320,7 +2297,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::VideoNftIssuance]);
@@ -2352,7 +2329,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let origin = RawOrigin::Signed(curator_account_id.clone());
@@ -2389,7 +2366,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
@@ -2430,7 +2407,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let _ = setup_idle_nft::<T>(
@@ -2475,7 +2452,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let (_, to_member) = member_funded_account::<T>();
@@ -2524,7 +2501,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         ).unwrap();
 
         let (to_member_account, to_member) = member_funded_account::<T>();
@@ -2579,7 +2556,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let price = nft_buy_now_price::<T>();
@@ -2622,7 +2599,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let (_, to_member) = member_funded_account::<T>();
@@ -2667,7 +2644,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let price = nft_buy_now_price::<T>();
@@ -2715,7 +2692,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let (buyer_account_id, buyer_id) = member_funded_account::<T>();
@@ -2819,7 +2796,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let (nft_owner_actor, owner_account) = setup_idle_nft::<T>(
@@ -2873,7 +2850,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         ).unwrap();
 
         let ((nft_owner_actor, owner_account),
@@ -2921,7 +2898,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let ((nft_owner_actor, owner_account), bidders) = setup_nft_in_english_auction::<T>(
@@ -2977,7 +2954,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let ((nft_owner_actor, owner_account), bidders) = setup_nft_in_english_auction::<T>(
@@ -3033,7 +3010,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let (_, to_member) = member_funded_account::<T>();
@@ -3090,7 +3067,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
@@ -3133,7 +3110,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let (owner_account, owner_id) = member_funded_account::<T>();
@@ -3183,7 +3160,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         ).unwrap();
 
         let ((nft_owner_actor, owner_account), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
@@ -3238,7 +3215,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let ((nft_owner_actor, account_id), participant_id, participant_account_id) = setup_nft_in_open_auction::<T>(
@@ -3363,7 +3340,7 @@ benchmarks! {
             (curator_account_id, actor, channel_id, _)
         ) = setup_worst_case_scenario_mutable_video::<T>(
             Some(T::MaxNumberOfAssetsPerVideo::get()),
-            T::StorageBucketsPerBagValueConstraint::get().max() as u32,
+            T::MaxStorageBucketsPerBag::get(),
         )?;
 
         let ((nft_owner_actor, owner_account), _) = setup_nft_in_english_auction::<T>(
