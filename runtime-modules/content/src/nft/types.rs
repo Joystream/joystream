@@ -1,4 +1,5 @@
 use super::*;
+use frame_support::BoundedBTreeSet;
 use scale_info::TypeInfo;
 
 /// Metadata for NFT issuance
@@ -9,7 +10,7 @@ pub type Royalty = Perbill;
 
 /// Nft transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum TransactionalStatusRecord<MemberId, Balance, EnglishAuctionType, OpenAuctionType> {
     Idle,
     InitiatedOfferToMember(MemberId, Option<Balance>),
@@ -28,7 +29,7 @@ impl<MemberId, Balance, EnglishAuction, OpenAuction> Default
 
 /// Owned Nft representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct OwnedNft<TransactionalStatus, MemberId, AuctionId> {
     pub owner: NftOwner<MemberId>,
     pub transactional_status: TransactionalStatus,
@@ -79,7 +80,7 @@ impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic>
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum NftOwner<MemberId> {
     ChannelOwner,
     Member(MemberId),
@@ -131,11 +132,11 @@ impl<EnglishAuctionParams, OpenAuctionParams, MemberId, Balance> Default
 
 /// English Auction
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct EnglishAuctionRecord<BlockNumber, Balance, MemberId: Ord> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct EnglishAuctionRecord<BlockNumber, Balance, MemberId: Ord, NftAuctionWhitelist> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
-    pub whitelist: BTreeSet<MemberId>,
+    pub whitelist: NftAuctionWhitelist,
     pub end: BlockNumber,
     pub start: BlockNumber, // starting block
     pub extension_period: BlockNumber,
@@ -147,23 +148,35 @@ impl<
         BlockNumber: Copy + PartialOrd + Saturating + Zero,
         Balance: Copy + PartialOrd + Saturating,
         MemberId: Ord + Copy,
-    > EnglishAuctionRecord<BlockNumber, Balance, MemberId>
+        MaxWhitelistSize: Get<u32>,
+    >
+    EnglishAuctionRecord<
+        BlockNumber,
+        Balance,
+        MemberId,
+        BoundedBTreeSet<MemberId, MaxWhitelistSize>,
+    >
 {
-    pub fn new(
+    pub fn try_new<T: Config>(
         params: EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>,
         current_block: BlockNumber,
-    ) -> Self {
+    ) -> Result<Self, DispatchError> {
         let start = params.starts_at.unwrap_or(current_block);
-        Self {
+        let english_auction = Self {
             starting_price: params.starting_price,
             buy_now_price: params.buy_now_price,
-            whitelist: params.whitelist.clone(),
+            whitelist: params
+                .whitelist
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::MaxAuctionWhiteListLengthUpperBoundExceeded)?,
             start,
             end: start.saturating_add(params.duration),
             extension_period: params.extension_period,
             min_bid_step: params.min_bid_step,
             top_bid: None,
-        }
+        };
+        Ok(english_auction)
     }
 
     pub(crate) fn ensure_whitelisted_participant<T: Config>(
@@ -261,11 +274,11 @@ impl<
 
 /// Open Auction
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId: Ord> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct OpenAuctionRecord<BlockNumber, AuctionId, Balance, NftAuctionWhitelist> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
-    pub whitelist: BTreeSet<MemberId>,
+    pub whitelist: NftAuctionWhitelist,
     pub bid_lock_duration: BlockNumber,
     pub auction_id: AuctionId,
     pub start: BlockNumber, // starting block
@@ -275,8 +288,10 @@ impl<
         BlockNumber: Copy + Saturating + PartialOrd,
         AuctionId: Copy + PartialEq,
         Balance: Copy + PartialOrd + Saturating,
-        MemberId: Ord + Copy,
-    > OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>
+        MemberId: Ord + Clone,
+        MaxWhitelistSize: Get<u32>,
+    >
+    OpenAuctionRecord<BlockNumber, AuctionId, Balance, BoundedBTreeSet<MemberId, MaxWhitelistSize>>
 {
     pub(crate) fn ensure_can_make_bid<T: Config>(
         &self,
@@ -320,20 +335,25 @@ impl<
         }
     }
 
-    pub fn new(
+    pub fn try_new<T: Config>(
         params: OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>,
         auction_nonce: AuctionId,
         current_block: BlockNumber,
-    ) -> Self {
+    ) -> Result<Self, DispatchError> {
         let start = params.starts_at.unwrap_or(current_block);
-        Self {
+        let open_auction = Self {
             starting_price: params.starting_price,
             buy_now_price: params.buy_now_price,
-            whitelist: params.whitelist.clone(),
+            whitelist: params
+                .whitelist
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::MaxAuctionWhiteListLengthUpperBoundExceeded)?,
             bid_lock_duration: params.bid_lock_duration,
             start,
             auction_id: auction_nonce,
-        }
+        };
+        Ok(open_auction)
     }
 
     pub(crate) fn ensure_auction_started<T: Config>(&self, now: BlockNumber) -> DispatchResult {
@@ -386,7 +406,7 @@ impl<
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct OpenAuctionBidRecord<Balance, BlockNumber, AuctionId> {
     pub amount: Balance,
     pub made_at_block: BlockNumber,
@@ -433,7 +453,7 @@ impl<
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct EnglishAuctionBid<Balance, MemberId> {
     pub amount: Balance,
     pub bidder_id: MemberId,
@@ -465,17 +485,23 @@ pub struct OpenAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
 }
 
 // Aliases
+pub type NftAuctionWhitelist<T> = BoundedBTreeSet<
+    <T as common::MembershipTypes>::MemberId,
+    <T as Config>::MaxNftAuctionWhitelistLength,
+>;
+
 pub type EnglishAuction<T> = EnglishAuctionRecord<
     <T as frame_system::Config>::BlockNumber,
     BalanceOf<T>,
     <T as common::MembershipTypes>::MemberId,
+    NftAuctionWhitelist<T>,
 >;
 
 pub type OpenAuction<T> = OpenAuctionRecord<
     <T as frame_system::Config>::BlockNumber,
     <T as Config>::OpenAuctionId,
     BalanceOf<T>,
-    <T as common::MembershipTypes>::MemberId,
+    NftAuctionWhitelist<T>,
 >;
 
 pub type EnglishAuctionParams<T> = EnglishAuctionParamsRecord<

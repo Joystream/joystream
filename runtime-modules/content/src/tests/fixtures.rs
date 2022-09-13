@@ -287,11 +287,14 @@ impl CreateChannelFixture {
                     channel_id,
                     Channel::<Test> {
                         owner: self.channel_owner.clone(),
-                        collaborators: self.params.collaborators.clone().try_into().unwrap(),
+                        collaborators: try_into_stored_collaborators_map::<Test>(
+                            &self.params.collaborators
+                        )
+                        .unwrap(),
                         num_videos: Zero::zero(),
                         cumulative_reward_claimed: Zero::zero(),
                         privilege_level: Zero::zero(),
-                        paused_features: BTreeSet::new(),
+                        paused_features: Default::default(),
                         data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id)
                             .try_into()
                             .unwrap(),
@@ -723,7 +726,9 @@ impl UpdateChannelFixture {
                     self.params
                         .collaborators
                         .clone()
-                        .map_or(channel_pre.collaborators, |c| c.try_into().unwrap())
+                        .map_or(channel_pre.collaborators, |c| {
+                            try_into_stored_collaborators_map::<Test>(&c).unwrap()
+                        })
                 );
 
                 assert_eq!(
@@ -3364,7 +3369,10 @@ impl AcceptChannelTransferFixture {
             };
 
             assert_eq!(new_channel.owner, channel_owner);
-            assert_eq!(new_channel.collaborators, self.params.new_collaborators);
+            assert_eq!(
+                new_channel.collaborators,
+                try_into_stored_collaborators_map::<Test>(&self.params.new_collaborators).unwrap()
+            );
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::Content(RawEvent::ChannelTransferAccepted(
@@ -3453,30 +3461,31 @@ impl IssueNftFixture {
 
         let video_post = Content::video_by_id(self.video_id);
 
-        let expected_nft_status = match self.params.init_transactional_status.clone() {
-            InitTransactionalStatus::<Test>::Idle => TransactionalStatus::<Test>::Idle,
-            InitTransactionalStatus::<Test>::InitiatedOfferToMember(member, balance) => {
-                TransactionalStatus::<Test>::InitiatedOfferToMember(member, balance)
-            }
-            InitTransactionalStatus::<Test>::BuyNow(balance) => {
-                TransactionalStatus::<Test>::BuyNow(balance)
-            }
-            InitTransactionalStatus::<Test>::EnglishAuction(params) => {
-                TransactionalStatus::<Test>::EnglishAuction(EnglishAuction::<Test>::new(
-                    params,
-                    System::block_number(),
-                ))
-            }
-            InitTransactionalStatus::<Test>::OpenAuction(params) => {
-                TransactionalStatus::<Test>::OpenAuction(OpenAuction::<Test>::new(
-                    params,
-                    Zero::zero(),
-                    System::block_number(),
-                ))
-            }
-        };
-
         if actual_result.is_ok() {
+            let expected_nft_status = match self.params.init_transactional_status.clone() {
+                InitTransactionalStatus::<Test>::Idle => TransactionalStatus::<Test>::Idle,
+                InitTransactionalStatus::<Test>::InitiatedOfferToMember(member, balance) => {
+                    TransactionalStatus::<Test>::InitiatedOfferToMember(member, balance)
+                }
+                InitTransactionalStatus::<Test>::BuyNow(balance) => {
+                    TransactionalStatus::<Test>::BuyNow(balance)
+                }
+                InitTransactionalStatus::<Test>::EnglishAuction(params) => {
+                    let english_auction =
+                        EnglishAuction::<Test>::try_new::<Test>(params, System::block_number())
+                            .unwrap();
+                    TransactionalStatus::<Test>::EnglishAuction(english_auction)
+                }
+                InitTransactionalStatus::<Test>::OpenAuction(params) => {
+                    let open_auction = OpenAuction::<Test>::try_new::<Test>(
+                        params,
+                        Zero::zero(),
+                        System::block_number(),
+                    )
+                    .unwrap();
+                    TransactionalStatus::<Test>::OpenAuction(open_auction)
+                }
+            };
             assert!(video_post.nft_status.is_some());
             let nft_status = video_post.nft_status.unwrap();
             assert_eq!(
@@ -3568,13 +3577,14 @@ impl StartOpenAuctionFixture {
             assert_eq!(
                 nft_status,
                 Nft::<Test> {
-                    transactional_status: TransactionalStatus::<Test>::OpenAuction(OpenAuction::<
-                        Test,
-                    >::new(
-                        self.params.clone(),
-                        pre_nft_status.open_auctions_nonce.saturating_add(1),
-                        System::block_number()
-                    )),
+                    transactional_status: TransactionalStatus::<Test>::OpenAuction(
+                        OpenAuction::<Test>::try_new::<Test>(
+                            self.params.clone(),
+                            pre_nft_status.open_auctions_nonce.saturating_add(1),
+                            System::block_number()
+                        )
+                        .unwrap()
+                    ),
                     open_auctions_nonce: pre_nft_status.open_auctions_nonce.saturating_add(1),
                     ..pre_nft_status
                 }
@@ -3680,7 +3690,11 @@ impl StartEnglishAuctionFixture {
                 nft_status,
                 Nft::<Test> {
                     transactional_status: TransactionalStatus::<Test>::EnglishAuction(
-                        EnglishAuction::<Test>::new(self.params.clone(), System::block_number())
+                        EnglishAuction::<Test>::try_new::<Test>(
+                            self.params.clone(),
+                            System::block_number()
+                        )
+                        .unwrap()
                     ),
                     ..pre_nft_status
                 }
@@ -4743,7 +4757,11 @@ impl SuccessfulChannelCollaboratorsManagementFlow {
     pub fn run(&self) {
         let default_collaborators = Module::<Test>::channel_by_id(ChannelId::one()).collaborators;
         let mut updated_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> =
-            default_collaborators.into();
+            default_collaborators
+                .into_inner()
+                .iter()
+                .map(|(k, v)| (*k, v.clone().into_inner()))
+                .collect();
 
         // Add collaborator (as owner) will full permissions
         updated_collaborators.insert(
@@ -4800,7 +4818,7 @@ pub fn assert_group_has_permissions_for_actions(
 ) {
     if !allowed_actions.is_empty() {
         assert_eq!(
-            group.ensure_group_member_can_perform_moderation_actions(
+            group.ensure_group_member_can_perform_moderation_actions::<Test>(
                 allowed_actions,
                 privilege_level
             ),
@@ -4818,7 +4836,7 @@ pub fn assert_group_has_permissions_for_actions(
                         &ContentModerationAction::ChangeChannelFeatureStatus(feature),
                     ) {
                         assert_eq!(
-                                group.ensure_group_member_can_perform_moderation_actions(
+                                group.ensure_group_member_can_perform_moderation_actions::<Test>(
                                     &[ContentModerationAction::ChangeChannelFeatureStatus(feature)],
                                     privilege_level
                                 ),
@@ -4833,7 +4851,7 @@ pub fn assert_group_has_permissions_for_actions(
             _ => {
                 if !allowed_actions.contains(&action) {
                     assert_eq!(
-                            group.ensure_group_member_can_perform_moderation_actions(
+                            group.ensure_group_member_can_perform_moderation_actions::<Test>(
                                 &[action.clone()],
                                 privilege_level
                             ),

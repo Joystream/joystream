@@ -797,6 +797,7 @@ parameter_types! {
     pub const MaxNumberOfAssetsPerChannel: MaxNumber = 10;
     pub const MaxNumberOfAssetsPerVideo: MaxNumber = 20;
     pub const MaxNumberOfCollaboratorsPerChannel: MaxNumber = 10;
+    pub const MaxNftAuctionWhitelistLength: MaxNumber = 100;
 }
 
 impl content::Config for Runtime {
@@ -823,6 +824,7 @@ impl content::Config for Runtime {
     type TransferId = TransferId;
     type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
+    type MaxNftAuctionWhitelistLength = MaxNftAuctionWhitelistLength;
 }
 
 parameter_types! {

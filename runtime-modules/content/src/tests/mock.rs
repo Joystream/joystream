@@ -371,10 +371,9 @@ parameter_types! {
         block_number_period: 1000,
         limit: 500,
     };
-
     pub const MinimumCashoutAllowedLimit: u64 = 1;
-
     pub const MaximumCashoutAllowedLimit: u64 = 1_000_000;
+    pub const MaxNftAuctionWhitelistLength: u32 = 5;
 }
 
 impl Config for Test {
@@ -445,6 +444,9 @@ impl Config for Test {
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
+
+    /// Max nft auction whitelist length
+    type MaxNftAuctionWhitelistLength = MaxNftAuctionWhitelistLength;
 }
 
 pub const COUNCIL_INITIAL_BUDGET: u64 = 0;
@@ -588,7 +590,6 @@ pub struct ExtBuilder {
     max_bid_step: u64,
     platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
-    max_auction_whitelist_length: u32,
     nft_limits_enabled: bool,
     channel_state_bloat_bond_value: BalanceOf<Test>,
     video_state_bloat_bond_value: BalanceOf<Test>,
@@ -619,7 +620,6 @@ impl Default for ExtBuilder {
             max_bid_step: 100,
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
-            max_auction_whitelist_length: 100,
             nft_limits_enabled: true,
             channel_state_bloat_bond_value: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
             video_state_bloat_bond_value: DEFAULT_VIDEO_STATE_BLOAT_BOND,
@@ -684,7 +684,6 @@ impl ExtBuilder {
             max_bid_step: self.max_bid_step,
             platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
-            max_auction_whitelist_length: self.max_auction_whitelist_length,
             nft_limits_enabled: self.nft_limits_enabled,
             channel_state_bloat_bond_value: self.channel_state_bloat_bond_value,
             video_state_bloat_bond_value: self.video_state_bloat_bond_value,

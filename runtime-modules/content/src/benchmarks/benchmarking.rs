@@ -27,7 +27,6 @@ use sp_runtime::SaturatedConversion;
 use sp_std::{
     cmp::min,
     collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    convert::TryInto,
     vec,
 };
 use storage::Module as Storage;
@@ -669,7 +668,7 @@ benchmarks! {
     )
         verify {
             let group = Pallet::<T>::curator_group_by_id(group_id);
-            assert!(group == CuratorGroup::create(true, &permissions_by_level));
+            assert!(group == CuratorGroupRecord::try_create::<T>(true, &permissions_by_level).unwrap());
             assert_last_event::<T>(
                 <T as Config>::Event::from(
                     Event::<T>::CuratorGroupCreated(group_id)
@@ -694,7 +693,7 @@ benchmarks! {
     )
         verify {
             let group = Pallet::<T>::curator_group_by_id(group_id);
-            assert_eq!(group.get_permissions_by_level(), &permissions_by_level);
+            assert_eq!(group.get_permissions_by_level(), permissions_by_level);
             assert_last_event::<T>(
                 <T as Config>::Event::from(
                     Event::<T>::CuratorGroupPermissionsUpdated(
@@ -735,7 +734,7 @@ benchmarks! {
         )?;
         let (curator_id, _) = insert_curator::<T>();
         let group = Pallet::<T>::curator_group_by_id(group_id);
-        assert_eq!(group.get_curators().get(&curator_id), None);
+        assert!(group.get_curators().get(&curator_id).is_none());
     }: _ (
         RawOrigin::Signed(lead_account),
         group_id,
@@ -744,7 +743,10 @@ benchmarks! {
     )
         verify {
             let group = Pallet::<T>::curator_group_by_id(group_id);
-            assert_eq!(group.get_curators().get(&curator_id), Some(&permissions));
+            assert_eq!(
+                group.get_curators().get(&curator_id).map(|p| p.clone().into_inner()),
+                Some(permissions.clone())
+            );
             assert_last_event::<T>(
                 <T as Config>::Event::from(
                     Event::<T>::CuratorAdded(group_id, curator_id, permissions)
@@ -809,7 +811,7 @@ benchmarks! {
         verify {
             let video = Pallet::<T>::video_by_id(expected_video_id);
             assert_eq!(video.in_channel, channel_id);
-            assert_eq!(video.nft_status, None);
+            assert!(video.nft_status.is_none());
             assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
             assert_eq!(video.video_state_bloat_bond.amount, Pallet::<T>::video_state_bloat_bond_value());
             assert_last_event::<T>(
@@ -829,7 +831,7 @@ benchmarks! {
     create_video_with_nft {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-        let c in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let c in 2..T::MaxNftAuctionWhitelistLength::get();
         let d in 1..MAX_BYTES_METADATA;
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
@@ -1003,7 +1005,7 @@ benchmarks! {
         }
 
     update_video_without_assets_with_nft {
-        let a in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let a in 2..T::MaxNftAuctionWhitelistLength::get();
         let b in 1..MAX_BYTES_METADATA;
 
         let (
@@ -1069,7 +1071,7 @@ benchmarks! {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in 1..T::MaxNumberOfAssetsPerVideo::get();
         let c in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-        let d in 2..MAX_AUCTION_WHITELIST_LENGTH;
+        let d in 2..T::MaxNftAuctionWhitelistLength::get();
         let e in 1..MAX_BYTES_METADATA;
 
         // As many assets as possible, but leaving room for "a" additional assets,
@@ -1236,7 +1238,7 @@ benchmarks! {
             new_owner,
             transfer_params: TransferCommitmentParameters {
                 price,
-                new_collaborators: new_collaborators.try_into().unwrap(),
+                new_collaborators: try_into_stored_collaborators_map::<T>(&new_collaborators).unwrap(),
                 transfer_id
             }
         };
@@ -2289,7 +2291,7 @@ benchmarks! {
     //   - buy now price is some
     //   - starts at is some
     issue_nft {
-        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+        let w in 2..(T::MaxNftAuctionWhitelistLength::get());
         let b in 1..MAX_BYTES_METADATA;
 
         let (
@@ -2789,7 +2791,7 @@ benchmarks! {
     // - starts at price is some
 
     start_english_auction {
-        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+        let w in 2..(T::MaxNftAuctionWhitelistLength::get());
 
         let (
             video_id,
@@ -3003,7 +3005,7 @@ benchmarks! {
     // - starts_at is some to trigger checks
     // - open auction params Member whitelist : w
     start_open_auction {
-        let w in 2..(Pallet::<T>::max_auction_whitelist_length() as u32);
+        let w in 2..(T::MaxNftAuctionWhitelistLength::get());
 
         let (
             video_id,

@@ -75,11 +75,6 @@ pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u64 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004; // must match the mocks
-/**
- * FIXME: Since we have no bounds for this in the runtime, as this value relies solely on the
- * genesis config, we use this arbitrary constant for benchmarking purposes
- */
-const MAX_AUCTION_WHITELIST_LENGTH: u32 = 50;
 const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksize available for regular extrinsics
 
 // Creator tokens
@@ -706,7 +701,7 @@ where
 {
     set_dyn_bag_creation_storage_bucket_numbers::<T>(
         storage_wg_lead_account_id.clone(),
-        storage_bucket_num.into(),
+        storage_bucket_num,
         DynamicBagType::Channel,
     );
     set_storage_buckets_voucher_max_limits::<T>(
@@ -1058,15 +1053,15 @@ where
     Pallet::<T>::create_curator_group(
         RawOrigin::Signed(lead_acc_id.clone()).into(),
         group.is_active(),
-        group.get_permissions_by_level().clone(),
+        group.get_permissions_by_level(),
     )?;
 
-    for (curator_id, permissions) in group.get_curators() {
+    for (curator_id, permissions) in group.get_curators().as_ref() {
         Pallet::<T>::add_curator_to_group(
             RawOrigin::Signed(lead_acc_id.clone()).into(),
             new_group_id,
             *curator_id,
-            permissions.clone(),
+            permissions.clone().into_inner(),
         )?;
     }
 
@@ -1291,7 +1286,7 @@ fn setup_account_with_max_number_of_locks<T: Config>(
     member_id: &T::MemberId,
 ) {
     AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
-        (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
+        (0u32..T::MaxVestingSchedulesPerAccountPerToken::get()).for_each(|i| {
             a.add_or_update_vesting_schedule::<T>(
                 VestingSource::Sale(i),
                 VestingSchedule::from_params(
@@ -1540,7 +1535,7 @@ where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-    let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
+    let whitelist_size = T::MaxNftAuctionWhitelistLength::get();
     assert!(whitelist_size > 1);
     let whitelisted_members = (0..(whitelist_size as usize))
         .map(|_| member_funded_account::<T>())
@@ -1578,7 +1573,7 @@ where
     T::AccountId: CreateAccountId,
     T: RuntimeConfig,
 {
-    let whitelist_size = Pallet::<T>::max_auction_whitelist_length();
+    let whitelist_size = T::MaxNftAuctionWhitelistLength::get();
     assert!(whitelist_size > 1);
     let whitelisted_members = (0..(whitelist_size as usize))
         .map(|_| member_funded_account::<T>())

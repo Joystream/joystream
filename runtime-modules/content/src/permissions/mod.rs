@@ -50,7 +50,8 @@ pub trait ContentActorAuthenticator: frame_system::Config + common::MembershipTy
         + Eq
         + PartialEq
         + Ord
-        + From<u64>;
+        + From<u64>
+        + MaxEncodedLen;
 
     /// Curator group identifier
     type CuratorGroupId: Parameter
@@ -63,7 +64,8 @@ pub trait ContentActorAuthenticator: frame_system::Config + common::MembershipTy
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
-        + Ord;
+        + Ord
+        + MaxEncodedLen;
 
     /// Authorize actor as lead
     fn is_lead(account_id: &Self::AccountId) -> bool;
@@ -135,7 +137,11 @@ pub fn ensure_actor_auth_success<T: Config>(
     match actor {
         ContentActor::Lead => ensure_lead_auth_success::<T>(sender),
         ContentActor::Curator(curator_group_id, curator_id) => {
-            CuratorGroup::<T>::perform_curator_in_group_auth(curator_id, curator_group_id, sender)
+            CuratorGroup::<T>::perform_curator_in_group_auth::<T>(
+                curator_id,
+                curator_group_id,
+                sender,
+            )
         }
         ContentActor::Member(member_id) => ensure_member_auth_success::<T>(sender, member_id),
     }
@@ -217,7 +223,7 @@ pub fn ensure_actor_authorized_to_perform_channel_update<T: Config>(
                     let old_permissions = channel
                         .collaborators
                         .get(&member_id)
-                        .map_or(BTreeSet::new(), |v| v.clone());
+                        .map_or(BTreeSet::new(), |v| v.clone().into_inner());
                     old_permissions.is_subset(agent_permissions)
                         && new_permissions.is_subset(agent_permissions)
                 }),
@@ -349,10 +355,10 @@ pub fn get_existing_collaborator_permissions<'a, T: Config>(
     channel: &'a Channel<T>,
     member_id: &T::MemberId,
 ) -> Result<&'a ChannelAgentPermissions, DispatchError> {
-    channel
-        .collaborators
-        .get(member_id)
-        .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
+    channel.collaborators.get(member_id).map_or_else(
+        || Err(Error::<T>::ActorNotAuthorized.into()),
+        |p| Ok(p.as_ref()),
+    )
 }
 
 pub fn ensure_actor_has_channel_permissions<T: Config>(
@@ -368,9 +374,9 @@ pub fn ensure_actor_has_channel_permissions<T: Config>(
             ensure_channel_is_owned_by_curator_group::<T>(channel, curator_group_id)?;
             let group = Module::<T>::curator_group_by_id(&curator_group_id);
             let agent_permissions =
-                group.get_existing_group_member_channel_agent_permissions(curator_id)?;
+                group.get_existing_group_member_channel_agent_permissions::<T>(curator_id)?;
             ensure_agent_has_required_permissions::<T>(agent_permissions, required_permissions)?;
-            Ok(Some(agent_permissions.clone()))
+            Ok(Some(agent_permissions.clone().into_inner()))
         }
         ContentActor::Member(member_id) => {
             ensure_channel_is_owned_by_member::<T>(channel, member_id).map_or_else(
@@ -525,7 +531,7 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
         ContentActor::Lead => Ok(()),
         ContentActor::Curator(curator_group_id, ..) => {
             let group = Module::<T>::curator_group_by_id(&curator_group_id);
-            group.ensure_group_member_can_perform_moderation_actions(
+            group.ensure_group_member_can_perform_moderation_actions::<T>(
                 actions,
                 channel_privilege_level,
             )?;
