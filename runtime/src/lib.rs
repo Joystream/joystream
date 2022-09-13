@@ -1593,7 +1593,7 @@ construct_runtime!(
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Pallet, Call, Storage, Event<T>},
         Bounty: bounty::{Pallet, Call, Storage, Event<T>},
-        JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
+        JoystreamUtility: joystream_utility::{Pallet, Call, Storage, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
