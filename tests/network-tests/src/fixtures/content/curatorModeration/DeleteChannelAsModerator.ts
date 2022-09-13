@@ -39,12 +39,15 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.deleteChannelAsModeratorParams.map(({ asCurator, channelId, numOfObjectsToDelete, rationale }) =>
-      this.api.tx.content.deleteChannelAsModerator(
-        createType('PalletContentPermissionsContentActor', { Curator: asCurator }),
-        channelId,
-        numOfObjectsToDelete,
-        rationale
+    return Promise.all(
+      this.deleteChannelAsModeratorParams.map(async ({ asCurator, channelId, numOfObjectsToDelete, rationale }) =>
+        this.api.tx.content.deleteChannelAsModerator(
+          createType('PalletContentPermissionsContentActor', { Curator: asCurator }),
+          channelId,
+          await this.api.channelBagWitness(channelId),
+          numOfObjectsToDelete,
+          rationale
+        )
       )
     )
   }

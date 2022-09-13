@@ -90,7 +90,8 @@ export default class DeleteVideoAsModeratorCommand extends ContentDirectoryComma
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideoAsModerator', [
       actor,
       videoId,
-      createType('u64', dataObjectsInfo.length),
+      createType('Option<u32>', await this.getStorageBucketsNumWitness(inChannel)),
+      dataObjectsInfo.length,
       rationale,
     ])
   }

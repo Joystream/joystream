@@ -456,7 +456,7 @@ fn start_nft_auction_invalid_params() {
         // Failure checked
         assert_err!(
             start_nft_auction_result,
-            Error::<Test>::BuyNowIsLessThenStartingPrice
+            Error::<Test>::BuyNowMustBeGreaterThanStartingPrice,
         );
 
         // Make an attempt to start nft auction if auction whitelist provided consists only 1 member

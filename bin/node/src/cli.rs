@@ -41,24 +41,16 @@ pub struct Cli {
 /// Possible subcommands of the main binary.
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
-    // /// The custom inspect subcommmand for decoding blocks and extrinsics.
-    // #[clap(
-    //     name = "inspect",
-    //     about = "Decode given block or extrinsic using current native runtime."
-    // )]
-    // Inspect(node_inspect::cli::InspectCmd),
+    /// The custom inspect subcommmand for decoding blocks and extrinsics.
+    #[clap(
+        name = "inspect",
+        about = "Decode given block or extrinsic using current native runtime."
+    )]
+    Inspect(node_inspect::cli::InspectCmd),
     /// Sub-commands concerned with benchmarking.
     /// The pallet benchmarking moved to the `pallet` sub-command.
     #[clap(subcommand)]
     Benchmark(frame_benchmarking_cli::BenchmarkCmd),
-
-    /// Try some command against runtime state.
-    #[cfg(feature = "try-runtime")]
-    TryRuntime(try_runtime_cli::TryRuntimeCmd),
-
-    /// Try some command against runtime state. Note: `try-runtime` feature must be enabled.
-    #[cfg(not(feature = "try-runtime"))]
-    TryRuntime,
 
     /// Key management cli utilities
     #[clap(subcommand)]

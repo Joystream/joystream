@@ -34,7 +34,8 @@ pub const MILLISECS_PER_BLOCK: Moment = 1000;
 pub const SLOT_DURATION: Moment = 1000;
 
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-pub const BONDING_DURATION: u32 = 24 * 7;
+pub const BONDING_DURATION: u32 = 24 * 28;
+pub const SLASH_DEFER_DURATION: u32 = 24 * 7; // 1/4 the bonding duration.
 
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {

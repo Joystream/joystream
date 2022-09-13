@@ -199,7 +199,7 @@ impl<
         amount: Balance,
     ) -> DispatchResult {
         if let Some(buy_now) = &self.buy_now_price {
-            if amount > *buy_now {
+            if amount >= *buy_now {
                 return Ok(());
             }
         }

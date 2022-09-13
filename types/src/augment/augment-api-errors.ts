@@ -317,7 +317,7 @@ declare module '@polkadot/api-base/types/errors' {
       /**
        * Auction buy now is less then starting price
        **/
-      BuyNowIsLessThenStartingPrice: AugmentedError<ApiType>;
+      BuyNowMustBeGreaterThanStartingPrice: AugmentedError<ApiType>;
       /**
        * Cannot directly withdraw funds from a channel account when the channel has
        * a creator token issued
@@ -489,6 +489,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Channel bag witness parameters don't match the current runtime state
+       **/
+      InvalidChannelBagWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Incorrect channel owner for an operation.
        **/
       InvalidChannelOwner: AugmentedError<ApiType>;
@@ -514,6 +518,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Storage buckets number witness parameter does not match the current runtime state
+       **/
+      InvalidStorageBucketsNumWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Invalid number of objects to delete provided for delete_video
        **/
       InvalidVideoDataObjectsCountProvided: AugmentedError<ApiType>;
@@ -537,6 +545,18 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to set minimum cashout allowed above the limit
        **/
       MaxCashoutValueTooHigh: AugmentedError<ApiType>;
+      /**
+       * Number of channel assets exceeds MaxNumberOfAssetsPerChannel
+       **/
+      MaxNumberOfChannelAssetsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
+       **/
+      MaxNumberOfChannelCollaboratorsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
+       **/
+      MaxNumberOfVideoAssetsExceeded: AugmentedError<ApiType>;
       /**
        * Member authentication failed
        **/
@@ -567,9 +587,18 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MinCashoutValueTooLow: AugmentedError<ApiType>;
       /**
+       * Storage buckets number witness parameter must be provided when channel/video assets
+       * are being updated.
+       **/
+      MissingStorageBucketsNumWitness: AugmentedError<ApiType>;
+      /**
        * Nft for given video id already exists
        **/
       NftAlreadyExists: AugmentedError<ApiType>;
+      /**
+       * Attempt to sling back a channel owned nft
+       **/
+      NftAlreadyOwnedByChannel: AugmentedError<ApiType>;
       /**
        * Nft auction is already expired
        **/
@@ -598,6 +627,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Nft is not in auction state
        **/
       NotInAuctionState: AugmentedError<ApiType>;
+      /**
+       * Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
+       **/
+      NumberOfAssetsToRemoveIsZero: AugmentedError<ApiType>;
       /**
        * Overflow or underflow error happened
        **/

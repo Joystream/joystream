@@ -131,6 +131,7 @@ pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
 /// This runtime version.
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
@@ -247,6 +248,7 @@ fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
             ..
         }) => false,
         Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+        Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
         Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
         Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
             general_proposal_parameters: _,
@@ -538,7 +540,7 @@ pallet_staking_reward_curve::build! {
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
-    pub const SlashDeferDuration: sp_staking::EraIndex = BONDING_DURATION - 1;
+    pub const SlashDeferDuration: sp_staking::EraIndex = SLASH_DEFER_DURATION;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
@@ -795,6 +797,9 @@ parameter_types! {
     };  // TODO: update
     pub const MinimumCashoutAllowedLimit: Balance = ExistentialDeposit::get() + 1; // TODO: update
     pub const MaximumCashoutAllowedLimit: Balance = 1_000_000 * currency::DOLLARS; // TODO: update
+    pub const MaxNumberOfAssetsPerChannel: MaxNumber = 10;
+    pub const MaxNumberOfAssetsPerVideo: MaxNumber = 20;
+    pub const MaxNumberOfCollaboratorsPerChannel: MaxNumber = 10;
 }
 
 impl content::Config for Runtime {
@@ -803,9 +808,13 @@ impl content::Config for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
+    type WeightInfo = content::weights::SubstrateWeight<Runtime>;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+    type MaxNumberOfAssetsPerChannel = MaxNumberOfAssetsPerChannel;
+    type MaxNumberOfAssetsPerVideo = MaxNumberOfAssetsPerVideo;
+    type MaxNumberOfCollaboratorsPerChannel = MaxNumberOfCollaboratorsPerChannel;
     type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
     type CouncilBudgetManager = Council;
     type ContentWorkingGroup = ContentWorkingGroup;
@@ -1102,7 +1111,6 @@ impl forum::Config for Runtime {
     type ThreadId = ThreadId;
     type PostId = PostId;
     type CategoryId = u64;
-    type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
     type ThreadDeposit = ThreadDeposit;
     type PostDeposit = PostDeposit;
