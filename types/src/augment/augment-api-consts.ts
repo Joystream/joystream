@@ -135,11 +135,15 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       defaultGlobalWeeklyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
       /**
-       * Exports const -  max number of keys per curator_group.permissions_by_level map instance
+       * Exports const - max number of keys per curator_group.permissions_by_level map instance
        **/
-      maxKeysPerCuratorGroupPermissionsByLevelMap: u8 & AugmentedConst<ApiType>;
+      maxKeysPerCuratorGroupPermissionsByLevelMap: u32 & AugmentedConst<ApiType>;
       /**
-       * Exports const -  max number of curators per group
+       * Exports const - max nft auction whitelist length
+       **/
+      maxNftAuctionWhitelistLength: u32 & AugmentedConst<ApiType>;
+      /**
+       * Exports const - max number of curators per group
        **/
       maxNumberOfCuratorsPerGroup: u32 & AugmentedConst<ApiType>;
     };

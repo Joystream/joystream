@@ -546,6 +546,14 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MaxCashoutValueTooHigh: AugmentedError<ApiType>;
       /**
+       * Maximum number of curator permissions per given channel privilege level exceeded
+       **/
+      MaxCuratorPermissionsPerLevelExceeded: AugmentedError<ApiType>;
+      /**
+       * Maximum number of channel agent permissions for channel agent exceeded
+       **/
+      MaxNumberOfChannelAgentPermissionsExceeded: AugmentedError<ApiType>;
+      /**
        * Number of channel assets exceeds MaxNumberOfAssetsPerChannel
        **/
       MaxNumberOfChannelAssetsExceeded: AugmentedError<ApiType>;
@@ -553,6 +561,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
        **/
       MaxNumberOfChannelCollaboratorsExceeded: AugmentedError<ApiType>;
+      /**
+       * Maximum number of paused features per channel exceeded
+       **/
+      MaxNumberOfPausedFeaturesPerChannelExceeded: AugmentedError<ApiType>;
       /**
        * Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
        **/

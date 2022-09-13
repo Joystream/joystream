@@ -20,7 +20,7 @@ import { Option, UInt, u64 } from '@polkadot/types'
 import { Balance, AccountId, LockIdentifier, StakingLedger } from '@polkadot/types/interfaces'
 import {
   PalletContentChannelRecord as Channel,
-  PalletContentPermissionsCuratorGroup as CuratorGroup,
+  PalletContentPermissionsCuratorGroupCuratorGroupRecord as CuratorGroup,
   PalletContentVideoRecord as Video,
   PalletForumCategory as Category,
   PalletForumPost as Post,
