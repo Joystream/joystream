@@ -45,7 +45,6 @@ import {
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
-import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
