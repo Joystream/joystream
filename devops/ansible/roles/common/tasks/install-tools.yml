@@ -12,6 +12,7 @@
   become: true
   apt:
     pkg:
+      - coreutils
       - apt-transport-https
       - ca-certificates
       - curl
@@ -23,7 +24,6 @@
       - unzip
       - jq
       - cmake
-      - coreutils
       - clang
       - llvm
       - gcc
@@ -35,30 +35,44 @@
       - libssl-dev
       - python3
       - cmake
+      - dpkg
+      - lsb-release
     state: latest
 
-- name: Add Docker GPG apt Key
+- name: Add Docker GPG Key and repo
   become: true
-  apt_key:
-    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
-    state: present
-
-- name: Add Docker Repository
-  become: true
-  apt_repository:
-    repo: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
-    state: present
+  shell:
+    cmd: |
+      bash -c "
+        mkdir -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg | gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+        echo 'deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+            https://download.docker.com/linux/{{ ansible_distribution | lower }} \
+              $(lsb_release -cs) stable' | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      "
+    creates: /etc/apt/sources.list.d/docker.list
 
 - name: Update apt and install docker
   become: true
   apt:
     name:
-      - docker
-      - docker.io
-      - docker-compose
-      - docker-registry
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
     state: latest
     update_cache: true
+
+- name: Install newer version of docker-compose
+  become: true
+  shell:
+    cmd: |
+      bash -c "
+        curl -L 'https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+        ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+      "
 
 - name: Install Docker Module for Python
   pip:
