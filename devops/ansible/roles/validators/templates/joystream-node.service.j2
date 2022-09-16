@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/joystream/
-ExecStart=/home/ubuntu/joystream/target/release/joystream-node \
-        --chain {{ template_remote_chain_spec_path }} \
+User={{ template_user }}
+WorkingDirectory={{ template_working_dir }}
+ExecStart={{ template_working_dir }}/bin/joystream-node \
+        --chain bin/chain/chainspec-raw.json \
         --pruning archive \
         --node-key-file {{ template_node_secret_path }} \
         --keystore-path {{ template_keystore_path }} \

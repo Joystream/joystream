@@ -111,19 +111,19 @@ then
   echo -e "\n\n=========== Compile joystream-node on build server ==========="
   ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml \
     --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE
-                  data_path=$DATA_PATH runtime_profile=$RUNTIME_PROFILE"
+                  runtime_profile=$RUNTIME_PROFILE"
 fi
+
+echo -e "\n\n=========== Fetching compiled joystream-node from build server ==========="
+ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH fetch-binaries.yml \
+  --extra-vars "data_path=$DATA_PATH"
 
 echo -e "\n\n=========== Configure and start validators, rpc node, and query node ==========="
 ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.yml \
-  --extra-vars "local_dir=$LOCAL_CODE_PATH network_name=$NETWORK_NAME
+  --extra-vars "network_name=$NETWORK_NAME
                 data_path=$DATA_PATH
                 deployment_type=$DEPLOYMENT_TYPE
                 initial_balances_file=$INITIAL_BALANCES_PATH
-                initial_members_file=$INITIAL_MEMBERS_PATH
-                number_of_validators=$NUMBER_OF_VALIDATORS
-                number_of_storage_nodes=$NUMBER_OF_STORAGE_NODES
-                number_of_distributor_nodes=$NUMBER_OF_DISTRIBUTOR_NODES
                 endow_accounts=$ENDOW_ACCOUNTS
                 "
 

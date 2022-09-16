@@ -4,18 +4,16 @@ After=network.target
 
 [Service]
 Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/joystream/
-ExecStart=/home/ubuntu/joystream/target/release/joystream-node \
-        --chain {{ template_remote_chain_spec_path }} \
+User={{ template_user }}
+WorkingDirectory={{ template_working_dir }}
+ExecStart={{ template_working_dir }}/bin/joystream-node \
+        --chain bin/chain/chainspec-raw.json \
         --ws-external \
         --rpc-cors all \
         --pruning archive \
         --ws-max-connections 512 \
         --telemetry-url "wss://telemetry.joystream.org/submit/ 0" \
-        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-        --reserved-nodes \
-                {{ boot_nodes|join(" ") }}
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
 
 Restart=on-failure
 RestartSec=3

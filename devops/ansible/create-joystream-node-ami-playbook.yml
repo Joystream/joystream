@@ -1,19 +1,29 @@
 ---
 # Setup joystream code, build and Create AMI
 
-- name: Setup instance
+- name: Build joystream apps and binary on host
   hosts: all
 
   tasks:
+    - name: Install tools
+      include_role:
+        name: common
+        tasks_from: install-tools
+  
     - name: Get code from git repo
       include_role:
         name: common
         tasks_from: get-code-git
 
-    - name: Run build
+    - name: Run apps build
       include_role:
         name: common
-        tasks_from: run-build
+        tasks_from: build-apps
+  
+    - name: Run binaires build
+      include_role:
+        name: common
+        tasks_from: build-apps
 
     - name: Basic AMI Creation
       amazon.aws.ec2_ami:

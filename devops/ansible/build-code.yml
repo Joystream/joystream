@@ -1,0 +1,28 @@
+---
+
+- name: Setup Joystream repo
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Get code from local or git repo
+      include_role:
+        name: common
+        tasks_from: "{{ 'get-code-local' if build_local_code|length > 0 else 'get-code-git' }}"
+
+- name: Build packages
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Build joystream apps
+      include_role:
+        name: common
+        tasks_from: build-apps
+
+- name: Build binaries on build host
+  hosts: build[0]
+  gather_facts: no
+  tasks:
+    - name: Build binaries
+      include_role:
+        name: common
+        tasks_from: build-binaries

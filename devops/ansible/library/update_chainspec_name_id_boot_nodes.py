@@ -2,7 +2,7 @@
 
 import json
 from ansible.module_utils.basic import AnsibleModule
-
+import ipaddress
 
 def main():
     fields = {
@@ -29,7 +29,14 @@ def main():
     for key in all_nodes:
         if "validators" in all_nodes[key]["group_names"]:
             public_key = all_nodes[key]["generate_node_keys_output"]["stderr"]
-            boot_node_list.append(f"/ip4/{key}/tcp/30333/p2p/{public_key}")
+            try:
+                ip = ipaddress.ip_address(key)
+                if ip.version == 6:
+                    boot_node_list.append(f"/ip6/{key}/tcp/30333/p2p/{public_key}")
+                else:
+                    boot_node_list.append(f"/ip4/{key}/tcp/30333/p2p/{public_key}")
+            except ValueError:
+                boot_node_list.append(f"/dns4/{key}/tcp/30333/p2p/{public_key}")
 
     telemetry_endpoints = data["telemetryEndpoints"]
     telemetry_endpoints.append([

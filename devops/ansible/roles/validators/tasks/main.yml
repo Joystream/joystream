@@ -2,7 +2,7 @@
 # Configure chain spec and start joystream-node service on the servers
 
 - set_fact:
-    chain_path: "{{ remote_code_path }}/chains/{{ result.result.id }}"
+    chain_path: "bin/chain"
 
 - set_fact:
     network_path: "{{ chain_path }}/network"
@@ -11,21 +11,29 @@
 - set_fact:
     node_secret_path: "{{ network_path }}/secret"
 
-- name: Creating chains directory
+- set_fact:
+    node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
+
+- name: Creating chain directory
   file:
     path: "{{ item }}"
     state: directory
   loop:
     - "{{ network_path }}"
 
+- name: Copying raw chain spec file
+  copy:
+    src: '{{ data_path }}/chain/chainspec-raw.json'
+    dest: '{{ chain_path }}/chainspec-raw.json'
+
 - name: Copy node key to remote host
   copy:
     dest: "{{ node_secret_path }}"
-    content: "{{ generate_node_keys_output.stdout }}"
+    src: "{{ data_path }}/chain/node-key-{{ node_index }}"
 
 - name: Copy auth directory to remote host
   copy:
-    src: "{{ data_path }}/auth-{{ ansible_play_batch.index(inventory_hostname) }}/"
+    src: "{{ data_path }}/chain/auth-{{ node_index }}/"
     dest: "{{ keystore_path }}"
 
 - name: Create a service file
@@ -35,12 +43,14 @@
   vars:
     template_keystore_path: "{{ keystore_path }}"
     template_node_secret_path: "{{ node_secret_path }}"
-    template_remote_chain_spec_path: "{{ remote_chain_spec_path }}"
-  become: yes
+    template_chain_spec_path: "{{ chain_path }}/chainspec-raw.json"
+    template_user: "{{ ansible_user }}"
+    template_working_dir: "{{ ansible_env.HOME }}"
+  become: true
 
 - name: Start service joystream-node, if not started
   service:
     name: joystream-node
     state: started
     enabled: yes
-  become: yes
+  become: true

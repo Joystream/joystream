@@ -130,12 +130,11 @@ jobs:
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          playbook: build-arm64-playbook.yml
-          directory: devops/aws
+          playbook: build-joystream-node-docker.yml
+          directory: devops/ansible
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           inventory: |
-            [all]
             ${{ steps.deploy_stack.outputs.PublicIp }}
           options: |
             --extra-vars "git_repo=https://github.com/${{ github.repository }} \
@@ -144,7 +143,8 @@ jobs:
                           docker_password=${{ secrets.DOCKERHUB_PASSWORD }} \
                           tag_name=${{ steps.compute_shasum.outputs.shasum }}-${{ matrix.platform_tag }} \
                           repository=${{ env.REPOSITORY }} dockerfile=${{ matrix.file }} \
-                          platform=${{ matrix.platform }}"
+                          platform=${{ matrix.platform }}
+                          cargo_features=''"
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
       - name: Delete CloudFormation Stack

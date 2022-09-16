@@ -4,6 +4,6 @@
 - name: Git checkout
   git:
     repo: '{{ git_repo }}'
-    dest: '{{ remote_code_path }}'
     version: '{{ branch_name }}'
+    dest: '{{ remote_code_path }}'
     force: yes

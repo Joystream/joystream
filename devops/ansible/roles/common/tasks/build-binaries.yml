@@ -4,16 +4,24 @@
 - name: Ensure Rust toolchains installed
   shell:
     cmd: |
-      . ~/.cargo/env
-      rustup install nightly-2022-05-11
-      rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
-      rustup component add --toolchain nightly-2022-05-11 clippy
-      rustup component add rustfmt
+      bash -ic "
+        rustup install nightly-2022-05-11
+        rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
+        rustup component add --toolchain nightly-2022-05-11 clippy
+        rustup component add rustfmt
+      "
+  args:
+    executable: /bin/bash
 
-- name: Build joystream apps
-  shell: . ~/.bash_profile && yarn cargo-build && yarn build:packages
+- name: Build joystream node
+  shell: 
+    cmd: |
+      bash -ic "yarn cargo-build"
   args:
     chdir: '{{ remote_code_path }}'
+    # Always try to rebuild incase code has been updated for existing repo
+    # creates: 'target/release/joystream-node'
+    executable: /bin/bash
   environment:
     RUNTIME_PROFILE: '{{ runtime_profile }}'
   # Run in async fashion for max duration of 1 hr

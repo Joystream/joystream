@@ -1,0 +1,10 @@
+---
+
+- name: Get binaries from build host
+  hosts: build[0]
+  gather_facts: no
+  tasks:
+    - name: Get joystream-node and chain-spec-builder
+      include_role:
+        name: common
+        tasks_from: fetch-binaries
