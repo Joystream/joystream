@@ -129,6 +129,9 @@
       },
       "staking": {
         "description": "Staking and validation commands"
+      },
+      "fee-profile": {
+        "description": "Commands for generating the fee profiles of some common extrinsics"
       }
     }
   },
