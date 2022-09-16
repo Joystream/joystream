@@ -99,6 +99,7 @@
       bash -ic "curl https://get.volta.sh | bash -i"
   args:
     executable: /bin/bash
+  when: ansible_machine == "x86_64"
 
 - name: Install yarn and node with volta
   shell: 
@@ -108,3 +109,4 @@
       "
   args:
     executable: /bin/bash
+  when: ansible_machine == "x86_64"
