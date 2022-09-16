@@ -8,16 +8,12 @@
     - name: Install tools
       include_role:
         name: common
-        tasks_from: install-docker-tools
+        tasks_from: install-tools
 
     - name: Get code from git repo
       include_role:
         name: common
         tasks_from: get-code-git
-
-    - name: Install Docker Module for Python
-      pip:
-        name: docker
 
     - name: Log into DockerHub
       community.docker.docker_login:

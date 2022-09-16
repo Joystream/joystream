@@ -40,26 +40,23 @@
 - name: Add Docker GPG apt Key
   become: true
   apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
+    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
     state: present
 
 - name: Add Docker Repository
   become: true
   apt_repository:
-    repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    repo: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
     state: present
 
-- name: Update apt and install docker-ce
+- name: Update apt and install docker
   become: true
   apt:
-    name: docker-ce
-    state: latest
-    update_cache: true
-
-- name: Update apt and install docker-compose
-  become: true
-  apt:
-    name: docker-compose
+    name:
+      - docker
+      - docker.io
+      - docker-compose
+      - docker-registry
     state: latest
     update_cache: true
 
