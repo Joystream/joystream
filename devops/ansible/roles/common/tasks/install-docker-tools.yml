@@ -8,35 +8,6 @@
     state: latest
     update_cache: true
 
-- name: Install required system packages
-  become: true
-  apt:
-    pkg:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - software-properties-common
-      - python3-pip
-      - virtualenv
-      - python3-setuptools
-      - tar
-      - unzip
-      - jq
-      - cmake
-      - coreutils
-      - clang
-      - llvm
-      - gcc
-      - xz-utils
-      - sudo
-      - pkg-config
-      - libc6-dev
-      - make
-      - libssl-dev
-      - python3
-      - cmake
-    state: latest
-
 - name: Add Docker GPG apt Key
   become: true
   apt_key:
@@ -46,7 +17,7 @@
 - name: Add Docker Repository
   become: true
   apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
     state: present
 
 - name: Update apt and install docker-ce
@@ -66,26 +37,3 @@
 - name: Install Docker Module for Python
   pip:
     name: docker
-
-- name: Install rustup
-  shell: 
-    cmd: |
-      bash -ic "curl https://getsubstrate.io -sSf | bash -s -- --fast"
-  args:
-    executable: /bin/bash
-
-- name: Install volta
-  shell: 
-    cmd: |
-      bash -ic "curl https://get.volta.sh | bash -i"
-  args:
-    executable: /bin/bash
-
-- name: Install yarn and node with volta
-  shell: 
-    cmd: |
-      bash -ic "
-        volta install node@14 && volta install yarn
-      "
-  args:
-    executable: /bin/bash
