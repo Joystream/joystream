@@ -64,6 +64,13 @@
     state: latest
     update_cache: true
 
+- name: Remove old docker-compose
+  become: true
+  apt:
+    name:
+      - docker-compose
+    state: absent
+
 - name: Install newer version of docker-compose
   become: true
   shell:
@@ -73,7 +80,7 @@
         chmod +x /usr/local/bin/docker-compose
         ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
       "
-    creates: /usr/bin/docker-compose
+    creates: /usr/local/bin/docker-compose
 
 - name: Install Docker Module for Python
   pip:
