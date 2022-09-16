@@ -89,7 +89,7 @@
       graphql_server: https://{{ hostname }}/query-node/server/graphql
       graphql_server_websocket: wss://{{ hostname }}/query-node/server/graphql
       indexer: https://{{ hostname }}/query-node/indexer/graphql
-      member_faucet: https://{{ hostname }}/member-faucet/register
+      # member_faucet: https://{{ hostname }}/member-faucet/register
       config: https://{{ hostname }}/network/config.json
   run_once: true
 

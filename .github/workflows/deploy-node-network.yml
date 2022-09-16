@@ -10,7 +10,7 @@ on:
 
 defaults:
   run:
-    working-directory: devops/aws
+    working-directory: devops/ansible
 
 jobs:
   deploy-node-network:
@@ -110,13 +110,16 @@ jobs:
           echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}" >> inventory
           cat inventory
 
+      # Install tools
+
+      # Build
       - name: Run playbook to setup all hosts and compile joystream-node
         uses: dawidd6/action-ansible-playbook@v2
         # Build binaries if AMI not specified
         if: steps.network_config.outputs.joystreamAmi == ''
         with:
           playbook: build-code.yml
-          directory: devops/aws
+          directory: devops/ansible
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
@@ -126,22 +129,21 @@ jobs:
                           runtime_profile=${{ steps.network_config.outputs.runtimeProfile }}"
             --verbose
 
+      # Fetch binaries
+
+      # Configure and start chain
       - name: Run playbook to configure chain-spec
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          playbook: configure-network.yml
-          directory: devops/aws
+          playbook: deploy-network.yml
+          directory: devops/ansible
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
             --inventory inventory
-            --extra-vars "network_name=${{ steps.network_config.outputs.networkName }} data_path=deploy_artifacts \
-                          number_of_validators=${{ steps.network_config.outputs.numberOfValidators }} \
-                          number_of_storage_nodes=0 \
-                          number_of_distributor_nodes=0 \
-                          git_repo=${{ steps.network_config.outputs.gitRepo }} \
+            --extra-vars "network_name=${{ steps.network_config.outputs.networkName }} \
+                          data_path=deploy_artifacts \
                           deployment_type=${{ steps.network_config.outputs.deploymentType }} \
-                          branch_name=${{ steps.network_config.outputs.branchName }} \
                           initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
                           endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
             --verbose
@@ -160,7 +162,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: data-chainspec-auth
-          path: devops/aws/chain-data.7z
+          path: devops/ansible/chain-data.7z
 
       - name: Delete CloudFormation Stack if any step failed
         # Skip only if stack already existed or all steps passed succesfully

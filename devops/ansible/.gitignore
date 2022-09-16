@@ -3,3 +3,4 @@ bash-config.cfg
 inventory
 data-*
 chain_spec_output.txt
+endpoints.json

@@ -10,7 +10,7 @@
         tasks_from: "{{ 'get-code-local' if build_local_code|length > 0 else 'get-code-git' }}"
 
 - name: Build packages
-  hosts: all
+  hosts: rpc,storage,distribution
   gather_facts: no
   tasks:
     - name: Build joystream apps

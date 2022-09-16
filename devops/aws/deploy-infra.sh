@@ -50,7 +50,7 @@ aws cloudformation deploy \
     VolumeSize=$VOLUME_SIZE
 
 # Install additional Ansible roles from requirements
-ansible-galaxy install -r requirements.yml
+ansible-galaxy install -r ../ansible/requirements.yml
 
 ASG=$(get_aws_export $STACK_NAME "ValidatorsGroup")
 VALIDATORS=""
@@ -108,18 +108,21 @@ echo -e "
 # Build binaries and packages if no pre-built AMI was specified
 if [ -z "$JOYSTREAM_AMI" ]
 then
-  echo -e "\n\n=========== Compile joystream-node on build server ==========="
-  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml \
+  echo -e "\n\n=========== Install Developer Tools ==========="
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/install-tools.yml
+
+  echo -e "\n\n=========== Build Apps & Binaries ==============="
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/build-code.yml \
     --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE
                   runtime_profile=$RUNTIME_PROFILE"
 fi
 
-echo -e "\n\n=========== Fetching compiled joystream-node from build server ==========="
-ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH fetch-binaries.yml \
+echo -e "\n\n======= Fetching binaries from Build server ======"
+ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/fetch-binaries.yml \
   --extra-vars "data_path=$DATA_PATH"
 
-echo -e "\n\n=========== Configure and start validators, rpc node, and query node ==========="
-ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.yml \
+echo -e "\n\n========== Configure And Start Network ==========="
+ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/deploy-network.yml \
   --extra-vars "network_name=$NETWORK_NAME
                 data_path=$DATA_PATH
                 deployment_type=$DEPLOYMENT_TYPE
