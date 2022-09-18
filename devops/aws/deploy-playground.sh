@@ -48,7 +48,7 @@ if [ $? -eq 0 ]; then
   echo -e "New Node Public IP: $SERVER_IP"
 
   echo -e "\n\n=========== Configuring node ==========="
-  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-playground-playbook.yml \
+  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH ../ansible/deploy-playground-playbook.yml \
     --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO skip_chain_setup=$SKIP_CHAIN_SETUP
                   stack_name=$STACK_NAME runtime_profile=$RUNTIME_PROFILE
                   ssh_pub_key='${SSH_PUB_KEY}'

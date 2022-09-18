@@ -80,6 +80,7 @@
     caddy_config: "{{ lookup('template', 'templates/Caddyfile.j2') }}"
     caddy_systemd_capabilities_enabled: true
     caddy_update: false
+    caddy_home: "/home/caddy"
 
 - name: Set endpoints
   set_fact:
@@ -102,6 +103,8 @@
   copy:
     content: '{{ all_services | from_yaml | to_json }}'
     dest: '/home/caddy/endpoints.json'
+    mode: a+r
+  become: true
 
 - name: Save output as file on local
   copy:
