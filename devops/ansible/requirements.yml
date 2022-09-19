@@ -5,3 +5,4 @@ collections:
   - community.aws
   - amazon.aws
   - community.docker
+  - ansible.utils
