@@ -69,7 +69,7 @@
   set_fact:
     hostname: '{{ inventory_hostname }}.nip.io'
   run_once: true
-  when: inventory_hostname | ipaddr
+  when: inventory_hostname | ansible.utils.ipaddr
 
 - name: Install and configure Caddy
   include_role:
