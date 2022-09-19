@@ -57,9 +57,7 @@ jobs:
       - name: Install python netaddr
         run: sudo apt install -y --no-install-recommends python-netaddr
 
-      - name: Install Ansible dependencies
-        # run: pipx inject ansible-core boto3 botocore
-        # run: pipx install --include-deps ansible
+      - name: Install Ansible
         run: |
           pip3 install --upgrade --user ansible
           pipx inject ansible-core boto3 botocore
@@ -147,7 +145,6 @@ jobs:
             --extra-vars "branch_name=${{ steps.network_config.outputs.branchName }} \
                           git_repo=${{ steps.network_config.outputs.gitRepo }} data_path=deploy_artifacts \
                           runtime_profile=${{ steps.network_config.outputs.runtimeProfile }}"
-            --verbose
 
       # Always Fetch binaries
       - name: Fetch binaries from build host
@@ -160,7 +157,6 @@ jobs:
           options: |
             --inventory inventory
             --extra-vars "data_path=deploy_artifacts"
-            --verbose
 
       - name: Terminate Build instance
         continue-on-error: true
@@ -183,10 +179,10 @@ jobs:
                           deployment_type=${{ steps.network_config.outputs.deploymentType }} \
                           initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
                           endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
-            --verbose
 
       - name: Encrpyt the artifacts
         run: |
+          cp inventory deploy_artifacts/
           7z a -p${{ steps.network_config.outputs.encryptionKey }} chain-data.7z deploy_artifacts/*
 
       - name: Save the output as an artifact
