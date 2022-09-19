@@ -15,15 +15,15 @@
         name: common
         tasks_from: get-code-git
 
-    - name: Run apps build
+    - name: Build Apps
       include_role:
         name: common
         tasks_from: build-apps
   
-    - name: Run binaires build
+    - name: Build Binaries
       include_role:
         name: common
-        tasks_from: build-apps
+        tasks_from: build-binaries
 
     - name: Basic AMI Creation
       amazon.aws.ec2_ami:
