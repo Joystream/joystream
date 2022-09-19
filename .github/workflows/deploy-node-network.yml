@@ -111,11 +111,21 @@ jobs:
           cat inventory
 
       # Install tools
+      - name: Install tools on all hosts
+        uses: dawidd6/action-ansible-playbook@v2
+        if: steps.network_config.outputs.joystreamAmi == ''
+        with:
+          playbook: install-tools.yml
+          directory: devops/ansible
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
 
       # Build
-      - name: Run playbook to setup all hosts and compile joystream-node
+      - name: Build code
         uses: dawidd6/action-ansible-playbook@v2
-        # Build binaries if AMI not specified
+        # if joystreamAmi was specified we assume that has all the code already built
         if: steps.network_config.outputs.joystreamAmi == ''
         with:
           playbook: build-code.yml
@@ -129,7 +139,24 @@ jobs:
                           runtime_profile=${{ steps.network_config.outputs.runtimeProfile }}"
             --verbose
 
-      # Fetch binaries
+      # Always Fetch binaries
+      - name: Fetch binaries from build host
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: fetch-binaries.yml
+          directory: devops/ansible
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+            --extra-vars "data_path=deploy_artifacts"
+            --verbose
+
+      - name: Terminate Build instance
+        continue-on-error: true
+        run: |
+          echo "Deleting build instance with id ${{ steps.deploy_stack.outputs.BuildInstanceId }}"
+          aws ec2 terminate-instances --instance-ids ${{ steps.deploy_stack.outputs.BuildInstanceId }}
 
       # Configure and start chain
       - name: Run playbook to configure chain-spec
@@ -147,12 +174,6 @@ jobs:
                           initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
                           endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
             --verbose
-
-      - name: Terminate Build instance
-        continue-on-error: true
-        run: |
-          echo "Deleting build instance with id ${{ steps.deploy_stack.outputs.BuildInstanceId }}"
-          aws ec2 terminate-instances --instance-ids ${{ steps.deploy_stack.outputs.BuildInstanceId }}
 
       - name: Encrpyt the artifacts
         run: |
