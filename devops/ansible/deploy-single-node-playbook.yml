@@ -2,8 +2,6 @@
 
 - name: Setup joystream full node
   hosts: all
-  gather_facts: no
-
   tasks:
     - name: Download chain spec file using link
       get_url:
