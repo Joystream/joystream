@@ -41,7 +41,7 @@ aws cloudformation deploy \
 # If the deploy succeeded, get the IP and configure the created instance
 if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
-  ansible-galaxy install -r requirements.yml
+  ansible-galaxy install -r ../ansible/requirements.yml
 
   SERVER_IP=$(get_aws_export $STACK_NAME "PublicIp")
 
