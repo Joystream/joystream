@@ -37,7 +37,6 @@
       - cmake
       - dpkg
       - lsb-release
-      - python3-netaddr
     state: latest
 
 - name: Add Docker GPG Key and repo
