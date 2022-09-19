@@ -110,10 +110,9 @@ jobs:
           echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}" >> inventory
           cat inventory
 
-      # Install tools
+      # Always Install tools
       - name: Install tools on all hosts
         uses: dawidd6/action-ansible-playbook@v2
-        if: steps.network_config.outputs.joystreamAmi == ''
         with:
           playbook: install-tools.yml
           directory: devops/ansible
