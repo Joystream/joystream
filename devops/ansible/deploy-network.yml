@@ -3,7 +3,7 @@
 
 # Make sure we are using same binaries on all hosts
 - name: Copy joystream-node binary to all hosts
-  hosts: all
+  hosts: validators,rpc,storage,distribution
   gather_facts: no
   tasks:
     - name: Push joystream-node
