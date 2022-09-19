@@ -14,7 +14,7 @@ defaults:
 
 jobs:
   deploy-node-network:
-    name: Create CloudFormation stack and run Ansible playbook
+    name: Deploy New Joystream Chain
     runs-on: ubuntu-latest
     env:
       STACK_NAME: network-deployment-${{ github.run_number }}
@@ -51,13 +51,15 @@ jobs:
             echo ::set-output name=initialBalancesFilePath::'initial-balances.json'
           fi
 
-      - name: Install Ansible dependencies
-        run: pipx inject ansible-core boto3 botocore
-
       - name: Install python3 netaddr
         run: sudo apt-get install -y --no-install-recommends python3-netaddr
+
       - name: Install python netaddr
         run: sudo apt install -y --no-install-recommends python-netaddr
+
+      - name: Install Ansible dependencies
+        # run: pipx inject ansible-core boto3 botocore
+        run: pipx install --include-deps ansible
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
