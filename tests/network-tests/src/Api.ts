@@ -27,6 +27,7 @@ import {
   PalletContentNftTypesEnglishAuctionParamsRecord as EnglishAuctionParams,
   PalletContentNftTypesOpenAuctionParamsRecord as OpenAuctionParams,
   PalletProposalsEngineProposalParameters as ProposalParameters,
+  PalletContentChannelBagWitness,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -1093,6 +1094,33 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId, price), accountFrom)
   }
 
+  async channelBagWitness(channelId: ChannelId | number): Promise<PalletContentChannelBagWitness> {
+    const channelBag = await this.api.query.storage.bags(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+    return createType('PalletContentChannelBagWitness', {
+      storageBucketsNum: channelBag.storedBy.size,
+      distributionBucketsNum: channelBag.distributedBy.size,
+    })
+  }
+
+  async channelBagWitnessByVideoId(videoId: VideoId | number): Promise<PalletContentChannelBagWitness> {
+    const video = await this.api.query.content.videoById(videoId)
+    return this.channelBagWitness(video.inChannel)
+  }
+
+  async storageBucketsNumWitness(channelId: ChannelId | number): Promise<number> {
+    const channelBag = await this.api.query.storage.bags(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+    return channelBag.storedBy.size
+  }
+
+  async storageBucketsNumWitnessByVideoId(videoId: VideoId | number): Promise<number> {
+    const video = await this.api.query.content.videoById(videoId)
+    return this.storageBucketsNumWitness(video.inChannel)
+  }
+
   async createVideoWithNft(
     accountFrom: string,
     ownerId: number,
@@ -1123,6 +1151,7 @@ export class Api {
         nonChannelOwner: ownerId,
         initTransactionalStatus,
       },
+      storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
     })
 
     return await this.sender.signAndSend(
@@ -1153,6 +1182,7 @@ export class Api {
           BuyNow: price,
         },
       },
+      storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
     })
 
     return await this.sender.signAndSend(
@@ -1186,6 +1216,7 @@ export class Api {
         nonChannelOwner: ownerId,
         initTransactionalStatus,
       }),
+      storageBucketsNumWitness: await this.storageBucketsNumWitnessByVideoId(videoId),
     })
 
     return await this.sender.signAndSend(
@@ -1223,6 +1254,7 @@ export class Api {
         nonChannelOwner: ownerId,
         initTransactionalStatus,
       }),
+      storageBucketsNumWitness: await this.storageBucketsNumWitnessByVideoId(videoId),
     })
 
     return await this.sender.signAndSend(

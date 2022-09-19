@@ -490,12 +490,45 @@ type VideoVisibilitySetByModeratorEvent @entity {
   "Actor that deleted the channel assets."
   actor: ContentActor!
 
-  "Video whose visiblity/censorship status is changed"
+  "Video whose visibility/censorship status is changed"
   videoId: Int!
 
   "Is video being censored/hidden (yes if true)"
   isHidden: Boolean!
 
-  "Why video's visibality status was set"
+  "Why video's visibility status was set"
+  rationale: String!
+}
+
+type ChannelVisibilitySetByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the channel assets."
+  actor: ContentActor!
+
+  "Channel whose visibility/censorship status is changed"
+  channelId: Int!
+
+  "Is channel being censored/hidden (yes if true)"
+  isHidden: Boolean!
+
+  "Why channel's visibility status was set"
   rationale: String!
 }

@@ -3,6 +3,7 @@ use frame_support::dispatch::DispatchError;
 use frame_support::Parameter;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
+use sp_std::convert::Into;
 
 /// Member id type alias
 pub type MemberId<T> = <T as MembershipTypes>::MemberId;
@@ -21,7 +22,8 @@ pub trait MembershipTypes: frame_system::Config {
         + Copy
         + MaybeSerialize
         + Ord
-        + PartialEq;
+        + PartialEq
+        + Into<u128>;
 
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter
@@ -33,7 +35,8 @@ pub trait MembershipTypes: frame_system::Config {
         + MaybeSerialize
         + MaybeSerializeDeserialize
         + Ord
-        + PartialEq;
+        + PartialEq
+        + Into<u128>;
 }
 
 /// Validates staking account ownership for a member.

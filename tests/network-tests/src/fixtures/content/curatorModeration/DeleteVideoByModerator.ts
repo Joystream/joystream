@@ -39,12 +39,15 @@ export class DeleteVideoAsModeratorFixture extends StandardizedFixture {
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.deleteVideoAsModeratorParams.map(({ asCurator, videoId, numOfObjectsToDelete, rationale }) =>
-      this.api.tx.content.deleteVideoAsModerator(
-        createType('PalletContentPermissionsContentActor', { Curator: asCurator }),
-        videoId,
-        numOfObjectsToDelete,
-        rationale
+    return Promise.all(
+      this.deleteVideoAsModeratorParams.map(async ({ asCurator, videoId, numOfObjectsToDelete, rationale }) =>
+        this.api.tx.content.deleteVideoAsModerator(
+          createType('PalletContentPermissionsContentActor', { Curator: asCurator }),
+          videoId,
+          createType('Option<u32>', await this.api.storageBucketsNumWitnessByVideoId(videoId)),
+          numOfObjectsToDelete,
+          rationale
+        )
       )
     )
   }

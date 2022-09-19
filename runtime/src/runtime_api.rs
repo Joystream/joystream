@@ -113,6 +113,7 @@ mod benches {
         [bounty, Bounty]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
+        [content, Content]
         [project_token, ProjectToken]
     );
 }
@@ -377,7 +378,7 @@ impl_runtime_apis! {
                         member_id,
                         account_id.clone(),
                         account_id,
-                        <Runtime as council::Config>::MinCandidateStake::get().into(),
+                        <Runtime as council::Config>::MinCandidateStake::get(),
                     ).expect(
                         "Should pass a valid member associated to the account and the account
                         should've enough

@@ -616,7 +616,6 @@ export type ForumPostFieldsFragment = {
     | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'PostOriginThreadReply'; postAddedEvent?: Types.Maybe<{ id: string }> }
   edits: Array<{ id: string }>
-  reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
 }
 
 export type ForumThreadWithInitialPostFragment = {
@@ -882,27 +881,6 @@ export type GetPostModeratedEventsByEventIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetPostModeratedEventsByEventIdsQuery = { postModeratedEvents: Array<PostModeratedEventFieldsFragment> }
-
-export type PostReactedEventFieldsFragment = {
-  id: string
-  createdAt: any
-  inBlock: number
-  network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
-  indexInBlock: number
-  post: { id: string }
-  reactionResult:
-    | { __typename: 'PostReactionResultCancel' }
-    | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
-    | { __typename: 'PostReactionResultInvalid'; invalidReactionId: string }
-  reactingMember: { id: string }
-}
-
-export type GetPostReactedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetPostReactedEventsByEventIdsQuery = { postReactedEvents: Array<PostReactedEventFieldsFragment> }
 
 export type PostTextUpdatedEventFieldsFragment = {
   id: string
@@ -3128,13 +3106,6 @@ export const ForumPostFields = gql`
     edits {
       id
     }
-    reactions {
-      id
-      member {
-        id
-      }
-      reaction
-    }
   }
 `
 export const ForumThreadWithInitialPost = gql`
@@ -3380,32 +3351,6 @@ export const PostModeratedEventFields = gql`
     }
     rationale
     actor {
-      id
-    }
-  }
-`
-export const PostReactedEventFields = gql`
-  fragment PostReactedEventFields on PostReactedEvent {
-    id
-    createdAt
-    inBlock
-    network
-    inExtrinsic
-    indexInBlock
-    post {
-      id
-    }
-    reactionResult {
-      __typename
-      ... on PostReactionResultValid {
-        reaction
-        reactionId
-      }
-      ... on PostReactionResultInvalid {
-        invalidReactionId: reactionId
-      }
-    }
-    reactingMember {
       id
     }
   }
@@ -5184,14 +5129,6 @@ export const GetPostModeratedEventsByEventIds = gql`
     }
   }
   ${PostModeratedEventFields}
-`
-export const GetPostReactedEventsByEventIds = gql`
-  query getPostReactedEventsByEventIds($eventIds: [ID!]) {
-    postReactedEvents(where: { id_in: $eventIds }) {
-      ...PostReactedEventFields
-    }
-  }
-  ${PostReactedEventFields}
 `
 export const GetPostTextUpdatedEventsByEventIds = gql`
   query getPostTextUpdatedEventsByEventIds($eventIds: [ID!]) {

@@ -79,7 +79,6 @@ typegen:
     - forum.PostModerated
     - forum.PostDeleted
     - forum.PostTextUpdated
-    - forum.PostReacted
     - forum.CategoryStickyThreadUpdate
     - forum.CategoryMembershipOfModeratorUpdated
     # Content directory
@@ -99,6 +98,7 @@ typegen:
     - content.ChannelAssetsDeletedByModerator
     - content.VideoAssetsDeletedByModerator
     - content.VideoVisibilitySetByModerator
+    - content.ChannelVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
     # Storage
@@ -694,8 +694,6 @@ mappings:
       handler: forum_PostDeleted
     - event: forum.PostTextUpdated
       handler: forum_PostTextUpdated
-    - event: forum.PostReacted
-      handler: forum_PostReacted
     - event: forum.CategoryStickyThreadUpdate
       handler: forum_CategoryStickyThreadUpdate
     - event: forum.CategoryMembershipOfModeratorUpdated
@@ -733,6 +731,8 @@ mappings:
       handler: content_VideoAssetsDeletedByModerator
     - event: content.VideoVisibilitySetByModerator
       handler: content_VideoVisibilitySetByModerator
+    - event: content.ChannelVisibilitySetByModerator
+      handler: content_ChannelVisibilitySetByModerator
 
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked
