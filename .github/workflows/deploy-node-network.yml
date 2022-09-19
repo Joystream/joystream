@@ -59,7 +59,11 @@ jobs:
 
       - name: Install Ansible dependencies
         # run: pipx inject ansible-core boto3 botocore
-        run: pipx install --include-deps ansible
+        # run: pipx install --include-deps ansible
+        run: |
+          pip3 install --upgrade --user ansible
+          pipx inject ansible-core boto3 botocore
+          ansible-playbook --version
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
