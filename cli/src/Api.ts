@@ -487,6 +487,10 @@ export default class Api {
     return await this._api.query.storage.dataObjectStateBloatBondValue()
   }
 
+  async dataObjectPerMegabyteFee(): Promise<BN> {
+    return await this._api.query.storage.dataObjectPerMegabyteFee()
+  }
+
   async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {
     return this._api.query.storage.dataObjectsById.multi(ids.map((id) => [bagId, id]))
   }
