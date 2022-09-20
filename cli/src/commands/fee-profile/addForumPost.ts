@@ -23,7 +23,7 @@ export default class FeeProfileAddForumPost extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const { postLen, editable = false } = this.parse(FeeProfileAddForumPost).flags
     const { postDeposit } = api.consts.forum
 

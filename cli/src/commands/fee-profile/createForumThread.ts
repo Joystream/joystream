@@ -39,7 +39,7 @@ export default class FeeProfileCreateForumThread extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const { titleLen, initialPostLen, tagsNum, tagLen } = this.parse(FeeProfileCreateForumThread).flags
     const { threadDeposit, postDeposit } = api.consts.forum
 

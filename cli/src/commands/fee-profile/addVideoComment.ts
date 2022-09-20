@@ -20,7 +20,7 @@ export default class FeeProfileAddVideoComment extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const { commentLen } = this.parse(FeeProfileAddVideoComment).flags
 
     this.log('Parameters:')

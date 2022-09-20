@@ -88,7 +88,7 @@ export default class FeeProfileCreateChannel extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const {
       collaboratorsNum,
       storageBucketsNum: forcedStorageBucketsNum,
@@ -100,9 +100,9 @@ export default class FeeProfileCreateChannel extends FeeProfileCommandBase {
       titleLen,
       descriptionLen,
     } = this.parse(FeeProfileCreateChannel).flags
-    const dataSizeFee = await api.query.storage.dataObjectPerMegabyteFee()
-    const dataObjectBloatBond = await api.query.storage.dataObjectStateBloatBondValue()
-    const channelBloatBond = await api.query.content.channelStateBloatBondValue()
+    const dataSizeFee = await this.getApi().dataObjectPerMegabyteFee()
+    const dataObjectBloatBond = await this.getApi().dataObjectStateBloatBond()
+    const channelBloatBond = await this.getApi().channelStateBloatBond()
 
     const channelBagPolicy = await api.query.storage.dynamicBagCreationPolicies('Channel')
     const storageBucketsNum = forcedStorageBucketsNum || channelBagPolicy.numberOfStorageBuckets.toNumber()

@@ -20,7 +20,7 @@ export default class FeeProfileDeleteForumPost extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const { postDeposit } = api.consts.forum
     const { rationaleLen } = this.parse(FeeProfileDeleteForumPost).flags
 

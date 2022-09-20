@@ -106,7 +106,7 @@ export default class FeeProfileCreateVideo extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const {
       storageBucketsNum: forcedStorageBucketsNum,
       thumbnailSize: inputThumbnailSize,
@@ -121,9 +121,9 @@ export default class FeeProfileCreateVideo extends FeeProfileCommandBase {
       withNft = false,
       nftAuctionWhitelistSize,
     } = this.parse(FeeProfileCreateVideo).flags
-    const dataSizeFee = await api.query.storage.dataObjectPerMegabyteFee()
-    const dataObjectBloatBond = await api.query.storage.dataObjectStateBloatBondValue()
-    const videoBloatBond = await api.query.content.videoStateBloatBondValue()
+    const dataSizeFee = await this.getApi().dataObjectPerMegabyteFee()
+    const dataObjectBloatBond = await this.getApi().dataObjectStateBloatBond()
+    const videoBloatBond = await this.getApi().videoStateBloatBond()
     const mockMetadata: IVideoMetadata = {
       thumbnailPhoto: noThumbnail ? undefined : 0,
       video: noMedia ? undefined : 0,

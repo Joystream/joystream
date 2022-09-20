@@ -25,10 +25,10 @@ export default class FeeProfileDeleteVideo extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const { assetsNum, storageBucketsNum: forcedStorageBucketsNum } = this.parse(FeeProfileDeleteVideo).flags
-    const dataObjectBloatBond = await api.query.storage.dataObjectStateBloatBondValue()
-    const videoBloatBond = await api.query.content.videoStateBloatBondValue()
+    const dataObjectBloatBond = await this.getApi().dataObjectStateBloatBond()
+    const videoBloatBond = await this.getApi().videoStateBloatBond()
 
     const channelBagPolicy = await api.query.storage.dynamicBagCreationPolicies('Channel')
     const storageBucketsNum = forcedStorageBucketsNum || channelBagPolicy.numberOfStorageBuckets.toNumber()

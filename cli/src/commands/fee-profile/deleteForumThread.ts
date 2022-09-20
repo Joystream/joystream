@@ -10,7 +10,7 @@ export default class FeeProfileDeleteForumThread extends FeeProfileCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const { threadDeposit } = api.consts.forum
 
     this.log(`Thread deposit: ${chalk.cyanBright(formatBalance(threadDeposit))}`)
