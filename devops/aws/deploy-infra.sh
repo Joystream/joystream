@@ -25,6 +25,9 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
+# Install additional Ansible roles from requirements
+ansible-galaxy install -r ../ansible/requirements.yml
+
 # Deploy the CloudFormation template
 echo -e "Deploying AWS Resources"
 aws cloudformation deploy \
@@ -40,16 +43,11 @@ aws cloudformation deploy \
     JoystreamAmi=$JOYSTREAM_AMI \
     VolumeSize=$VOLUME_SIZE
 
-# Install additional Ansible roles from requirements
-ansible-galaxy install -r ../ansible/requirements.yml
-
-
 VAL1=$(get_aws_export $STACK_NAME "Val1PublicIp")
 VAL2=$(get_aws_export $STACK_NAME "Val2PublicIp")
 VAL3=$(get_aws_export $STACK_NAME "Val3PublicIp")
 RPC_NODE=$(get_aws_export $STACK_NAME "RpcPublicIp")
 BUILD_SERVER=$(get_aws_export $STACK_NAME "BuildPublicIp")
-BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
 
 mkdir -p $DATA_PATH
 
@@ -92,5 +90,6 @@ ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/deploy-ne
                 "
 
 echo -e "\n\n=========== Delete Build instance ==========="
+BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
 DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)
 echo $DELETE_RESULT
