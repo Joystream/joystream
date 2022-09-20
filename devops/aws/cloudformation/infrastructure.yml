@@ -1,6 +1,6 @@
 # Deploy inftrastructure required to run a new joystream chain.
 # This is comprised of:
-#   - N validators
+#   - Three validators
 #   - One RPC node
 #   - One Build instance
 
@@ -9,19 +9,8 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   EC2InstanceType:
     Type: String
-    Default: t2.xlarge
-  ValidatorEC2InstanceType:
-    Type: String
-    Default: t2.xlarge
-  RPCEC2InstanceType:
-    Type: String
-    Default: t2.xlarge
-  BuildEC2InstanceType:
-    Type: String
-    Default: c4.2xlarge
-  StorageEc2InstanceType:
-    Type: String
-    Default: t2.xlarge
+    Default: t2.large
+    AllowedValues: [ t2.large, t2.xlarge ]
   JoystreamAmi:
     Type: String
   DefaultAMI:
@@ -32,26 +21,12 @@ Parameters:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  NumberOfValidators:
-    Description: Number of validator instances to launch
-    Type: Number
-    Default: 2
-  NumberOfStorageNodes:
-    Description: Number of storage node instances to launch
-    Type: Number
-    Default: 0
-  NumberOfDistributorNodes:
-    Description: Number of distributor node instances to launch
-    Type: Number
-    Default: 0
-  TotalNumberOfInstancesInGroups:
-    Description: Sum of NumberOfValidators,NumberOfStorageNodes,NumberOfDistributorNodes
-    Type: Number
-    Default: 2
   VolumeSize:
     Description: volume size in GB for all instances
     Type: Number
     Default: 200
+    MinValue: 64
+    MaxValue: 500
 
 Conditions:
   HasAMIId: !Not [!Equals [!Ref JoystreamAmi, '']]
@@ -61,7 +36,7 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: !Sub 'Internal Security group for RPC nodes ${AWS::StackName}'
+      GroupDescription: !Sub 'Internal Security group for Validator and RPC nodes ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 9933
@@ -89,7 +64,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}_rpc'
+          Value: !Sub '${AWS::StackName}_sc'
 
   InstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -133,75 +108,63 @@ Resources:
 
             /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
 
-  ValidatorsGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      MinSize: '1'
-      MaxSize: '4'
-      DesiredCapacity: !Ref NumberOfValidators
-      AvailabilityZones:
-        Fn::GetAZs:
-          Ref: 'AWS::Region'
-      MixedInstancesPolicy:
-        LaunchTemplate:
-          LaunchTemplateSpecification:
-            LaunchTemplateId: !Ref InstanceLaunchTemplate
-            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
-          Overrides:
-            - InstanceType: !Ref ValidatorEC2InstanceType
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}'
-          PropagateAtLaunch: 'true'
-
-  StorageNodesGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      MinSize: '0'
-      MaxSize: '4'
-      DesiredCapacity: !Ref NumberOfStorageNodes
-      AvailabilityZones:
-        Fn::GetAZs:
-          Ref: 'AWS::Region'
-      MixedInstancesPolicy:
-        LaunchTemplate:
-          LaunchTemplateSpecification:
-            LaunchTemplateId: !Ref InstanceLaunchTemplate
-            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
-          Overrides:
-            - InstanceType: !Ref RPCEC2InstanceType
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}'
-          PropagateAtLaunch: 'true'
-
-  DistributorNodesGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      MinSize: '0'
-      MaxSize: '4'
-      DesiredCapacity: !Ref NumberOfDistributorNodes
-      AvailabilityZones:
-        Fn::GetAZs:
-          Ref: 'AWS::Region'
-      MixedInstancesPolicy:
-        LaunchTemplate:
-          LaunchTemplateSpecification:
-            LaunchTemplateId: !Ref InstanceLaunchTemplate
-            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
-          Overrides:
-            - InstanceType: !Ref RPCEC2InstanceType
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}'
-          PropagateAtLaunch: 'true'
-
-  RPCInstance:
+  ValInstance1:
     Type: AWS::EC2::Instance
     Properties:
+      InstanceType: !Ref EC2InstanceType
       SecurityGroupIds:
         - !GetAtt SecurityGroup.GroupId
-      InstanceType: !Ref RPCEC2InstanceType
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_val1'
+
+  ValInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref EC2InstanceType
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_val2'
+
+  ValInstance3:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref EC2InstanceType
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_val3'
+
+  RpcInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref EC2InstanceType
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
@@ -216,7 +179,7 @@ Resources:
   BuildInstance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: !Ref BuildEC2InstanceType
+      InstanceType: c4.4xlarge
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
@@ -232,32 +195,32 @@ Resources:
     Properties:
       Handle: !Ref 'WaitHandle'
       Timeout: '1000'
-      Count: !Ref TotalNumberOfInstancesInGroups
+      Count: 5
 
 Outputs:
-  ValidatorsAutoScalingId:
-    Description: The Auto Scaling ID
-    Value: !Ref ValidatorsGroup
-    Export:
-      Name: !Sub '${AWS::StackName}ValidatorsGroup'
-
-  StorageNodesAutoScalingId:
-    Description: The Auto Scaling ID
-    Value: !Ref StorageNodesGroup
-    Export:
-      Name: !Sub '${AWS::StackName}StorageNodesGroup'
-
-  DistributorNodesAutoScalingId:
-    Description: The Auto Scaling ID
-    Value: !Ref DistributorNodesGroup
-    Export:
-      Name: !Sub '${AWS::StackName}DistributorNodesGroup'
-
-  RPCPublicIp:
+  Val1PublicIp:
     Description: The DNS name for the created instance
-    Value: !Sub '${RPCInstance.PublicIp}'
+    Value: !Sub '${ValInstance1.PublicIp}'
     Export:
-      Name: !Sub '${AWS::StackName}RPCPublicIp'
+      Name: !Sub '${AWS::StackName}Val1PublicIp'
+
+  Val2PublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${ValInstance2.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}Val2PublicIp'
+
+  Val3PublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${ValInstance3.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}Val3PublicIp'
+
+  RpcPublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${RpcInstance.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}RpcPublicIp'
 
   BuildPublicIp:
     Description: The DNS name for the created instance

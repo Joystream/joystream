@@ -1,7 +1,7 @@
 ---
 
 - name: Setup Joystream repo
-  hosts: all
+  hosts: build,rpc
   gather_facts: no
   tasks:
     - name: Get code from local or git repo
@@ -10,7 +10,7 @@
         tasks_from: "{{ 'get-code-local' if build_local_code|length > 0 else 'get-code-git' }}"
 
 - name: Build packages
-  hosts: rpc,storage,distribution
+  hosts: rpc
   gather_facts: no
   tasks:
     - name: Build joystream apps

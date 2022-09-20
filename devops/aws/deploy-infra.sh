@@ -25,8 +25,6 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
-let TotalNumberOfInstancesInGroups=$NUMBER_OF_VALIDATORS+$NUMBER_OF_STORAGE_NODES+$NUMBER_OF_DISTRIBUTOR_NODES
-
 # Deploy the CloudFormation template
 echo -e "Deploying AWS Resources"
 aws cloudformation deploy \
@@ -37,72 +35,35 @@ aws cloudformation deploy \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    EC2InstanceType=$DEFAULT_EC2_INSTANCE_TYPE \
-    ValidatorEC2InstanceType=$VALIDATOR_EC2_INSTANCE_TYPE \
-    RPCEC2InstanceType=$RPC_EC2_INSTANCE_TYPE \
-    BuildEC2InstanceType=$BUILD_EC2_INSTANCE_TYPE \
+    EC2InstanceType=$EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
     JoystreamAmi=$JOYSTREAM_AMI \
-    NumberOfValidators=$NUMBER_OF_VALIDATORS \
-    NumberOfStorageNodes=$NUMBER_OF_STORAGE_NODES \
-    NumberOfDistributorNodes=$NUMBER_OF_DISTRIBUTOR_NODES \
-    TotalNumberOfInstancesInGroups=$TotalNumberOfInstancesInGroups \
     VolumeSize=$VOLUME_SIZE
 
 # Install additional Ansible roles from requirements
 ansible-galaxy install -r ../ansible/requirements.yml
 
-ASG=$(get_aws_export $STACK_NAME "ValidatorsGroup")
-VALIDATORS=""
-INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-for ID in $INSTANCES
-do
-  IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
-  VALIDATORS+="$IP\n"
-done
 
-ASG=$(get_aws_export $STACK_NAME "StorageNodesGroup")
-STORAGE_NODES=""
-INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-for ID in $INSTANCES
-do
-  IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
-  STORAGE_NODES+="$IP\n"
-done
-
-ASG=$(get_aws_export $STACK_NAME "DistributorNodesGroup")
-DISTRIBUTOR_NODES=""
-INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-for ID in $INSTANCES
-do
-  IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
-  DISTRIBUTOR_NODES+="$IP\n"
-done
-
-RPC_NODE=$(get_aws_export $STACK_NAME "RPCPublicIp")
+VAL1=$(get_aws_export $STACK_NAME "Val1PublicIp")
+VAL2=$(get_aws_export $STACK_NAME "Val2PublicIp")
+VAL3=$(get_aws_export $STACK_NAME "Val3PublicIp")
+RPC_NODE=$(get_aws_export $STACK_NAME "RpcPublicIp")
 BUILD_SERVER=$(get_aws_export $STACK_NAME "BuildPublicIp")
 BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
 
 mkdir -p $DATA_PATH
 
 echo -e "
-  [build]
-  $BUILD_SERVER
+[build]
+$BUILD_SERVER
 
-  [validators]
-  $VALIDATORS
+[validators]
+$VAL1
+$VAL2
+$VAL3
 
-  [rpc]
-  $RPC_NODE
-
-  [storage]
-  $STORAGE_NODES
-
-  [distribution]
-  $DISTRIBUTOR_NODES
+[rpc]
+$RPC_NODE
 " > $INVENTORY_PATH
 
 # Build binaries and packages if no pre-built AMI was specified

@@ -31,10 +31,7 @@ jobs:
           echo "::add-mask::$ENCRYPTION_KEY"
           echo ::set-output name=gitRepo::$(echo $jsonInput | jq -r '.gitRepo.value')
           echo ::set-output name=branchName::$(echo $jsonInput | jq -r '.branchName.value')
-          echo ::set-output name=numberOfValidators::$(echo $jsonInput | jq -r '.numberOfValidators.value')
-          echo ::set-output name=validatorInstanceType::$(echo $jsonInput | jq -r '.validatorInstanceType.value')
-          echo ::set-output name=buildInstanceType::$(echo $jsonInput | jq -r '.buildInstanceType.value')
-          echo ::set-output name=rpcInstanceType::$(echo $jsonInput | jq -r '.rpcInstanceType.value')
+          echo ::set-output name=instanceType::$(echo $jsonInput | jq -r '.instanceType.value')
           echo ::set-output name=joystreamAmi::$(echo $jsonInput | jq -r '.joystreamAmi.value')
           echo ::set-output name=networkName::$(echo $jsonInput | jq -r '.networkName.value')
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
@@ -89,34 +86,18 @@ jobs:
           no-fail-on-empty-changeset: '1'
           parameter-overrides: >-
             KeyName=joystream-github-action-key-new,
-            ValidatorEC2InstanceType=${{ steps.network_config.outputs.validatorInstanceType }},
-            RPCEC2InstanceType=${{ steps.network_config.outputs.rpcInstanceType }},
-            BuildEC2InstanceType=${{ steps.network_config.outputs.buildInstanceType }},
+            EC2InstanceType=${{ steps.network_config.outputs.instanceType }},
             JoystreamAmi=${{ steps.network_config.outputs.joystreamAmi }},
-            NumberOfValidators=${{ steps.network_config.outputs.numberOfValidators }},
-            VolumeSize=${{ steps.network_config.outputs.volumeSize }},
-            NumberOfStorageNodes=0,
-            NumberOfDistributorNodes=0,
-            TotalNumberOfInstancesInGroups=${{ steps.network_config.outputs.numberOfValidators }}
+            VolumeSize=${{ steps.network_config.outputs.volumeSize }}
 
       - name: Prepare inventory for Ansible
         run: |
-          ASG=${{ steps.deploy_stack.outputs.ValidatorsAutoScalingId }}
-
-          VALIDATORS=""
-
-          INSTANCES=$(aws autoscaling describe-auto-scaling-instances \
-            --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-
-          for ID in $INSTANCES
-          do
-            IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --output text)
-            VALIDATORS+="$IP\n"
-          done
-
-          echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n" >> inventory
-          echo -e "[validators]\n$VALIDATORS" >> inventory
-          echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}" >> inventory
+          VAL1="${{ steps.deploy_stack.outputs.Val1PublicIp }}"
+          VAL2="${{ steps.deploy_stack.outputs.Val2PublicIp }}"
+          VAL3="${{ steps.deploy_stack.outputs.Val3PublicIp }}"
+          echo -e "[validators]\n$VAL1\n$VAL2\n$VAL3\n\n" >> inventory
+          echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n\n" >> inventory
+          echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}\n" >> inventory
           cat inventory
 
       # Always Install tools
