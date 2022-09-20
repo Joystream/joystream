@@ -96,7 +96,7 @@ The actual data distribution (serving to end-users) is done via Argus - the dist
 ### Comments
 
 - Colossus relies on the [Query Node (Hydra)](https://www.joystream.org/hydra/) to get the blockchain data in a structured form.
-- Using Colossus as a functioning Storage Provider requires providing [account URI or key file and password](https://wiki.polkadot.network/docs/learn-accounts) as well as active `WorkerId` from the Storage Working group.
+- Using Colossus as a functioning Storage Provider requires providing [account URI or key file and password](https://wiki.polkadot.network/docs/learn-accounts) of a transactor account associated with the assigned storage bucket, as well as active `WorkerId` from the Storage Working group.
 
 # Installation
 
@@ -134,8 +134,8 @@ $ yarn storage-node server --apiUrl ws://localhost:9944  -w 0 --accountUri //Ali
 
 ### Prerequisites
 
-- accountURI or keyfile and password
-- workerId from the Storage working group that matches with the account above
+- accountURI or keyfile and password of the transactor account
+- workerId from the Storage working group that matches with the transactor account above
 - Joystream node websocket endpoint URL
 - QueryNode URL
 - (optional) ElasticSearch URL
