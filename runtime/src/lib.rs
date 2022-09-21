@@ -466,6 +466,12 @@ impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for Dea
     }
 }
 
+pub struct DealWithFeesPoA<R>(PhantomData<R>);
+impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFeesPoA<R> {
+    fn on_unbalanceds<B>(mut _fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
+    }
+}
+
 parameter_types! {
     pub const TransactionByteFee: Balance = 2 * currency::MILLICENTS; // TODO: adjust value
     /// This value increases the priority of `Operational` transactions by adding
@@ -474,7 +480,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Author>>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFeesPoA<Author>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
