@@ -53,10 +53,10 @@ thread_local! {
 }
 
 parameter_types! {
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 27;
-    pub const CouncilSize: u64 = 3;
+    pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
@@ -93,7 +93,7 @@ impl Config for Runtime {
     type WeightInfo = ();
 
     fn new_council_elected(elected_members: &[CouncilMemberOf<Self>]) {
-        let is_ok = elected_members == CouncilMembers::<Runtime>::get();
+        let is_ok = elected_members == CouncilMembers::<Runtime>::get().to_vec();
 
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (is_ok,);
@@ -143,7 +143,7 @@ frame_support::construct_runtime!(
         System: frame_system, // ::{Module, Call, Config, Storage, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>},
         Membership: membership::{Pallet, Call, Storage, Event<T>},
-        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
     }
 );
@@ -203,7 +203,7 @@ parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
@@ -425,8 +425,8 @@ pub struct VoterInfo<T: Config> {
 
 #[derive(Clone)]
 pub struct CouncilSettings<T: Config> {
-    pub council_size: u64,
-    pub min_candidate_count: u64,
+    pub council_size: u32,
+    pub min_candidate_count: u32,
     pub min_candidate_stake: Balance<T>,
     pub announcing_stage_duration: T::BlockNumber,
     pub voting_stage_duration: T::BlockNumber,
@@ -766,8 +766,7 @@ where
     }
 
     pub fn check_referendum_revealing(
-        //        candidate_count: u64,
-        winning_target_count: u64,
+        winning_target_count: u32,
         intermediate_winners: Vec<
             OptionResult<
                 T::MemberId,
@@ -797,7 +796,9 @@ where
                         option_id: <T::MemberId as Into<u64>>::into(item.option_id),
                         vote_power: item.vote_power.into(),
                     })
-                    .collect(),
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap(),
                 current_cycle_id: AnnouncementPeriodNr::get(),
                 ends_at:
                     <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get()
@@ -1249,7 +1250,7 @@ where
         Self::check_election_period(
             params.cycle_start_block_number + settings.announcing_stage_duration,
             CouncilStageElection {
-                candidates_count: params.expected_candidates.len() as u64,
+                candidates_count: params.expected_candidates.len() as u32,
             },
         );
 

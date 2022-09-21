@@ -362,7 +362,7 @@ decl_error! {
 }
 
 // Storage for the proposals codex module
-decl_storage! {
+decl_storage! { generate_storage_info
     pub trait Store for Module<T: Config> as ProposalsCodex {
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
@@ -524,7 +524,6 @@ decl_module! {
             )?;
 
             let initial_thread_mode = ThreadMode::Open;
-            <proposals_discussion::Module<T>>::ensure_can_create_thread(&initial_thread_mode)?;
 
             let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
                 general_proposal_parameters.member_id,

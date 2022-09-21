@@ -9,6 +9,7 @@ use common::council::CouncilBudgetManager;
 use common::council::CouncilOriginValidator;
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
+use frame_support::WeakBoundedVec;
 use frame_support::{assert_err, assert_ok, StorageValue};
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
@@ -348,7 +349,7 @@ fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdra
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0..council_settings.min_candidate_count)
-            .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
+            .map(|i| MockUtils::generate_candidate(i as u64, council_settings.min_candidate_stake))
             .collect();
 
         let params = CouncilCycleParams {
@@ -1681,7 +1682,7 @@ fn council_origin_validator_succeeds() {
             unpaid_reward: 0,
         };
 
-        CouncilMembers::<Runtime>::put(vec![councilor1]);
+        CouncilMembers::<Runtime>::put(WeakBoundedVec::force_from(vec![councilor1], None));
 
         let origin = RawOrigin::Signed(councilor1_account_id);
 

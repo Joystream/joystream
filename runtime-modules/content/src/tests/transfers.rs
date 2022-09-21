@@ -31,7 +31,10 @@ fn initialize_channel_transfer_ok_with_status_correctly_changed() {
                 transfer_params: TransferCommitmentParameters {
                     transfer_id: TransferId::one(),
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
-                    new_collaborators: new_collaborators.clone().try_into().unwrap(),
+                    new_collaborators: try_into_stored_collaborators_map::<Test>(
+                        &new_collaborators
+                    )
+                    .unwrap(),
                 }
             }),
             "transfer parameters not correctly updated when activating a transfer"
@@ -60,7 +63,10 @@ fn initialize_channel_transfer_ok_with_event_deposited() {
                 new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
                 transfer_params: TransferCommitmentOf::<Test> {
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
-                    new_collaborators: new_collaborators.try_into().unwrap(),
+                    new_collaborators: try_into_stored_collaborators_map::<Test>(
+                        &new_collaborators
+                    )
+                    .unwrap(),
                     transfer_id: TransferId::one(),
                 }
             }
