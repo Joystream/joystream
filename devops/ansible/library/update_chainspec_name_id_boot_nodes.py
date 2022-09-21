@@ -9,10 +9,12 @@ def main():
         "chain_spec_path": {"required": True, "type": "str"},
         "file_content": {"required": False, "type": "str" },
         "network_name": {"required": False, "type": "str" },
+        "network_id": {"required": False, "type": "str" },
         "all_nodes": {"required": False, "type": "dict" }
     }
     module = AnsibleModule(argument_spec=fields)
     network_name = module.params["network_name"]
+    network_id = module.params["network_id"]
     chain_spec_path = module.params["chain_spec_path"]
     all_nodes = module.params["all_nodes"]
 
@@ -21,8 +23,8 @@ def main():
 
     response = {
         "name": f'{network_name}',
-        "id": f'{network_name}',
-        "protocolId": f'{network_name}'
+        "id": f'{network_id}',
+        "protocolId": f'{network_id}'
     }
 
     boot_node_list = data["bootNodes"]

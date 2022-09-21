@@ -34,6 +34,7 @@ jobs:
           echo ::set-output name=instanceType::$(echo $jsonInput | jq -r '.instanceType.value')
           echo ::set-output name=joystreamAmi::$(echo $jsonInput | jq -r '.joystreamAmi.value')
           echo ::set-output name=networkName::$(echo $jsonInput | jq -r '.networkName.value')
+          echo ::set-output name=networkId::$(echo $jsonInput | jq -r '.networkId.value')
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
           echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
           echo ::set-output name=runtimeProfile::$(echo $jsonInput | jq -r '.runtimeProfile.value')
@@ -156,6 +157,7 @@ jobs:
           options: |
             --inventory inventory
             --extra-vars "network_name=${{ steps.network_config.outputs.networkName }} \
+                          network_id=${{ steps.network_config.outputs.networkId }} \
                           data_path=deploy_artifacts \
                           deployment_type=${{ steps.network_config.outputs.deploymentType }} \
                           initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \

@@ -61,6 +61,7 @@
   update_chainspec_name_id_boot_nodes:
     chain_spec_path: '{{ remote_data_path }}/chainspec.json'
     network_name: '{{ network_name }}'
+    network_id: '{{ network_id }}'
     all_nodes: '{{ hostvars }}'
   delegate_to: '{{ first_validator }}'
   register: chain_config_result

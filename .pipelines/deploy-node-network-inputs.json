@@ -20,7 +20,11 @@
     "value": "200"
   },
   "networkName": {
-    "description": "Network name used for chain-id, protocol-id, and display in telemetry",
+    "description": "Chain network name displayed in telemetry",
+    "value": "Joystream Testnet 123"
+  },
+  "networkId": {
+    "description": "Id used as chain-id and protocol-id in chainsepc config",
     "value": "joystream_test_carthage_123"
   },
   "initialBalancesFile": {

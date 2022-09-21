@@ -83,6 +83,7 @@ ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/fetch-bin
 echo -e "\n\n========== Configure And Start Network ==========="
 ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/deploy-network.yml \
   --extra-vars "network_name=$NETWORK_NAME
+                network_id=$NETWORK_ID
                 data_path=$DATA_PATH
                 deployment_type=$DEPLOYMENT_TYPE
                 initial_balances_file=$INITIAL_BALANCES_PATH
