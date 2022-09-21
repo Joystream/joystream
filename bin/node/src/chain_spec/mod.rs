@@ -42,6 +42,7 @@ use serde::{Deserialize, Serialize};
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
+use pallet_staking::Forcing;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
@@ -258,6 +259,7 @@ pub fn testnet_genesis(
             minimum_validator_count: initial_authorities.len() as u32,
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
+            force_era: Forcing::ForceNone,
             stakers,
             min_nominator_bond,
             min_validator_bond,
