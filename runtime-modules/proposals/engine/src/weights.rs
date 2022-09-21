@@ -39,7 +39,7 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
-use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
+use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
 
 /// Weight functions needed for proposals_engine.
