@@ -25,7 +25,8 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
-let TotalNumberOfInstancesInGroups=$NUMBER_OF_VALIDATORS+$NUMBER_OF_STORAGE_NODES+$NUMBER_OF_DISTRIBUTOR_NODES
+# Install additional Ansible roles from requirements
+ansible-galaxy install -r ../ansible/requirements.yml
 
 # Deploy the CloudFormation template
 echo -e "Deploying AWS Resources"
@@ -37,96 +38,59 @@ aws cloudformation deploy \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    EC2InstanceType=$DEFAULT_EC2_INSTANCE_TYPE \
-    ValidatorEC2InstanceType=$VALIDATOR_EC2_INSTANCE_TYPE \
-    RPCEC2InstanceType=$RPC_EC2_INSTANCE_TYPE \
-    BuildEC2InstanceType=$BUILD_EC2_INSTANCE_TYPE \
+    EC2InstanceType=$EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
     JoystreamAmi=$JOYSTREAM_AMI \
-    NumberOfValidators=$NUMBER_OF_VALIDATORS \
-    NumberOfStorageNodes=$NUMBER_OF_STORAGE_NODES \
-    NumberOfDistributorNodes=$NUMBER_OF_DISTRIBUTOR_NODES \
-    TotalNumberOfInstancesInGroups=$TotalNumberOfInstancesInGroups \
     VolumeSize=$VOLUME_SIZE
 
-# Install additional Ansible roles from requirements
-ansible-galaxy install -r requirements.yml
-
-ASG=$(get_aws_export $STACK_NAME "ValidatorsGroup")
-VALIDATORS=""
-INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-for ID in $INSTANCES
-do
-  IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
-  VALIDATORS+="$IP\n"
-done
-
-ASG=$(get_aws_export $STACK_NAME "StorageNodesGroup")
-STORAGE_NODES=""
-INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-for ID in $INSTANCES
-do
-  IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
-  STORAGE_NODES+="$IP\n"
-done
-
-ASG=$(get_aws_export $STACK_NAME "DistributorNodesGroup")
-DISTRIBUTOR_NODES=""
-INSTANCES=$(aws autoscaling describe-auto-scaling-instances --profile $CLI_PROFILE \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-for ID in $INSTANCES
-do
-  IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --profile $CLI_PROFILE --output text)
-  DISTRIBUTOR_NODES+="$IP\n"
-done
-
-RPC_NODE=$(get_aws_export $STACK_NAME "RPCPublicIp")
+VAL1=$(get_aws_export $STACK_NAME "Val1PublicIp")
+VAL2=$(get_aws_export $STACK_NAME "Val2PublicIp")
+VAL3=$(get_aws_export $STACK_NAME "Val3PublicIp")
+RPC_NODE=$(get_aws_export $STACK_NAME "RpcPublicIp")
 BUILD_SERVER=$(get_aws_export $STACK_NAME "BuildPublicIp")
-BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
 
 mkdir -p $DATA_PATH
 
 echo -e "
-  [build]
-  $BUILD_SERVER
+[build]
+$BUILD_SERVER
 
-  [validators]
-  $VALIDATORS
+[validators]
+$VAL1
+$VAL2
+$VAL3
 
-  [rpc]
-  $RPC_NODE
-
-  [storage]
-  $STORAGE_NODES
-
-  [distribution]
-  $DISTRIBUTOR_NODES
+[rpc]
+$RPC_NODE
 " > $INVENTORY_PATH
 
 # Build binaries and packages if no pre-built AMI was specified
 if [ -z "$JOYSTREAM_AMI" ]
 then
-  echo -e "\n\n=========== Compile joystream-node on build server ==========="
-  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH build-code.yml \
+  echo -e "\n\n=========== Install Developer Tools ==========="
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/install-tools.yml
+
+  echo -e "\n\n=========== Build Apps & Binaries ==============="
+  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/build-code.yml \
     --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE
-                  data_path=$DATA_PATH runtime_profile=$RUNTIME_PROFILE"
+                  runtime_profile=$RUNTIME_PROFILE"
 fi
 
-echo -e "\n\n=========== Configure and start validators, rpc node, and query node ==========="
-ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH configure-network.yml \
-  --extra-vars "local_dir=$LOCAL_CODE_PATH network_name=$NETWORK_NAME
+echo -e "\n\n======= Fetching binaries from Build server ======"
+ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/fetch-binaries.yml \
+  --extra-vars "data_path=$DATA_PATH"
+
+echo -e "\n\n========== Configure And Start Network ==========="
+ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/deploy-network.yml \
+  --extra-vars "network_name='$NETWORK_NAME'
+                network_id=$NETWORK_ID
                 data_path=$DATA_PATH
                 deployment_type=$DEPLOYMENT_TYPE
                 initial_balances_file=$INITIAL_BALANCES_PATH
-                initial_members_file=$INITIAL_MEMBERS_PATH
-                number_of_validators=$NUMBER_OF_VALIDATORS
-                number_of_storage_nodes=$NUMBER_OF_STORAGE_NODES
-                number_of_distributor_nodes=$NUMBER_OF_DISTRIBUTOR_NODES
                 endow_accounts=$ENDOW_ACCOUNTS
                 "
 
 echo -e "\n\n=========== Delete Build instance ==========="
+BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
 DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)
 echo $DELETE_RESULT

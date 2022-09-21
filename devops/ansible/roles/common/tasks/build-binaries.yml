@@ -1,0 +1,40 @@
+---
+# Build code
+
+- name: Ensure Rust toolchains installed
+  shell:
+    cmd: |
+      bash -ic "
+        rustup install nightly-2022-05-11
+        rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
+        rustup component add --toolchain nightly-2022-05-11 clippy
+        rustup component add rustfmt
+      "
+  args:
+    executable: /bin/bash
+
+- name: Build joystream node
+  shell: 
+    cmd: |
+      bash -ic "yarn cargo-build"
+  args:
+    chdir: '{{ remote_code_path }}'
+    # Always try to rebuild incase code has been updated for existing repo
+    # creates: 'target/release/joystream-node'
+    executable: /bin/bash
+  environment:
+    RUNTIME_PROFILE: '{{ runtime_profile }}'
+  # Run in async fashion for max duration of 1 hr
+  async: 3600
+  poll: 0
+  register: build_result
+
+- name: Check on build async task
+  async_status:
+    jid: '{{ build_result.ansible_job_id }}'
+  register: job_result
+  until: job_result.finished
+  # Max number of times to check for status
+  retries: 36
+  # Check for the status every 100s
+  delay: 100

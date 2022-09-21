@@ -89,11 +89,10 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: deploy-playground-playbook.yml
-          directory: devops/aws
+          directory: devops/ansible
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           inventory: |
-            [all]
             ${{ steps.deploy_stack.outputs.PublicIp }}
           options: |
             --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
@@ -112,7 +111,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: endpoints
-          path: devops/aws/endpoints.json
+          path: devops/ansible/endpoints.json
 
       - name: Delete CloudFormation Stack if any step failed
         # Skip only if stack already existed or all steps passed successfully

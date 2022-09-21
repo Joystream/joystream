@@ -1,0 +1,112 @@
+---
+# Install developer tools
+
+- name: Install aptitude
+  become: true
+  apt:
+    name: aptitude
+    state: latest
+    update_cache: true
+
+- name: Install required system packages
+  become: true
+  apt:
+    pkg:
+      - coreutils
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3-pip
+      - virtualenv
+      - python3-setuptools
+      - tar
+      - unzip
+      - jq
+      - cmake
+      - clang
+      - llvm
+      - gcc
+      - xz-utils
+      - sudo
+      - pkg-config
+      - libc6-dev
+      - make
+      - libssl-dev
+      - python3
+      - cmake
+      - dpkg
+      - lsb-release
+    state: latest
+
+- name: Add Docker GPG Key and repo
+  become: true
+  shell:
+    cmd: |
+      bash -c "
+        mkdir -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg | gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+        echo 'deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+            https://download.docker.com/linux/{{ ansible_distribution | lower }} \
+              $(lsb_release -cs) stable' | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      "
+    creates: /etc/apt/sources.list.d/docker.list
+
+- name: Update apt and install docker
+  become: true
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: latest
+    update_cache: true
+
+- name: Remove old docker-compose
+  become: true
+  apt:
+    name:
+      - docker-compose
+    state: absent
+
+- name: Install newer version of docker-compose
+  become: true
+  shell:
+    cmd: |
+      bash -c "
+        curl -L 'https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+        ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+      "
+    creates: /usr/local/bin/docker-compose
+
+- name: Install Docker Module for Python
+  pip:
+    name: docker
+
+- name: Install rustup
+  shell: 
+    cmd: |
+      bash -ic "curl https://getsubstrate.io -sSf | bash -s -- --fast"
+  args:
+    executable: /bin/bash
+
+- name: Install volta
+  shell: 
+    cmd: |
+      bash -ic "curl https://get.volta.sh | bash -i"
+  args:
+    executable: /bin/bash
+  when: ansible_machine == "x86_64"
+
+- name: Install yarn and node with volta
+  shell: 
+    cmd: |
+      bash -ic "
+        volta install node@14 && volta install yarn
+      "
+  args:
+    executable: /bin/bash
+  when: ansible_machine == "x86_64"

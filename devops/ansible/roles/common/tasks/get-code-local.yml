@@ -1,0 +1,23 @@
+---
+# Get the latest code
+
+- name: Archive the current Git repository
+  shell: git archive --format=zip HEAD --output {{ data_path }}/code-archive.zip
+  args:  
+    chdir: "{{ build_local_code }}"
+  delegate_to: localhost
+
+# - name: Delete remote code directory if exists
+#   file:
+#     state: absent
+#     path: "{{ remote_code_path }}"
+
+- name: create directory for unarchiving
+  file:
+    path: "{{ remote_code_path }}"
+    state: directory
+
+- name: Extract code into path
+  unarchive:
+    src: "{{ data_path }}/code-archive.zip"
+    dest: "{{ remote_code_path }}"

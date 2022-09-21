@@ -55,11 +55,10 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: create-joystream-node-ami-playbook.yml
-          directory: devops/aws
+          directory: devops/ansible
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           inventory: |
-            [all]
             ${{ steps.deploy_stack.outputs.PublicIp }}
           options: |
             --extra-vars "git_repo=https://github.com/${{ github.repository }} \
