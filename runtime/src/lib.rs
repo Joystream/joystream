@@ -471,8 +471,7 @@ impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for Dea
 
 pub struct DealWithFeesPoA<R>(PhantomData<R>);
 impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFeesPoA<R> {
-    fn on_unbalanceds<B>(mut _fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
-    }
+    fn on_unbalanceds<B>(mut _fees_then_tips: impl Iterator<Item = NegativeImbalance>) {}
 }
 
 parameter_types! {
