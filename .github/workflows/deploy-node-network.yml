@@ -156,7 +156,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
             --inventory inventory
-            --extra-vars "network_name=${{ steps.network_config.outputs.networkName }} \
+            --extra-vars "network_name='${{ steps.network_config.outputs.networkName }}' \
                           network_id=${{ steps.network_config.outputs.networkId }} \
                           data_path=deploy_artifacts \
                           deployment_type=${{ steps.network_config.outputs.deploymentType }} \
