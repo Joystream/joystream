@@ -2649,6 +2649,7 @@ dependencies = [
  "node-inspect",
  "pallet-balances",
  "pallet-im-online",
+ "pallet-staking",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
