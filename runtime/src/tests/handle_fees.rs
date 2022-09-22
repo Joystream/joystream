@@ -80,7 +80,7 @@ fn block_author_receives_no_tips() {
             }
         }
 
-        DealWithFees::<Recipient>::on_unbalanceds(vec![fees, tips].into_iter());
+        BurnAllTxFees::<Recipient>::on_unbalanceds(vec![fees, tips].into_iter());
 
         // Author only receive tips
         assert!(Balances::free_balance(&author()).is_zero());
