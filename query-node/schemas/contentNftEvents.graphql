@@ -96,6 +96,10 @@ type NftIssuedEvent implements Event @entity {
   "Video represented via NFT."
   video: Video!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
+  "Reference to a NFT's video category"
+  videoCategory: VideoCategory
+
   "Royalty for the NFT/video."
   royalty: Float
 

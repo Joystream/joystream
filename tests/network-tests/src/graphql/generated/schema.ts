@@ -15438,6 +15438,8 @@ export type NftIssuedEvent = Event &
     contentActor: ContentActor
     video: Video
     videoId: Scalars['String']
+    videoCategory?: Maybe<VideoCategory>
+    videoCategoryId?: Maybe<Scalars['String']>
     /** Royalty for the NFT/video. */
     royalty?: Maybe<Scalars['Float']>
     /** NFT's metadata. */
@@ -15461,6 +15463,7 @@ export type NftIssuedEventCreateInput = {
   indexInBlock: Scalars['Float']
   contentActor: Scalars['JSONObject']
   video: Scalars['ID']
+  videoCategory?: Maybe<Scalars['ID']>
   royalty?: Maybe<Scalars['Float']>
   metadata: Scalars['String']
   ownerMember?: Maybe<Scalars['ID']>
@@ -15489,6 +15492,8 @@ export enum NftIssuedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  VideoCategoryAsc = 'videoCategory_ASC',
+  VideoCategoryDesc = 'videoCategory_DESC',
   RoyaltyAsc = 'royalty_ASC',
   RoyaltyDesc = 'royalty_DESC',
   MetadataAsc = 'metadata_ASC',
@@ -15506,6 +15511,7 @@ export type NftIssuedEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   contentActor?: Maybe<Scalars['JSONObject']>
   video?: Maybe<Scalars['ID']>
+  videoCategory?: Maybe<Scalars['ID']>
   royalty?: Maybe<Scalars['Float']>
   metadata?: Maybe<Scalars['String']>
   ownerMember?: Maybe<Scalars['ID']>
@@ -15569,6 +15575,7 @@ export type NftIssuedEventWhereInput = {
   metadata_endsWith?: Maybe<Scalars['String']>
   metadata_in?: Maybe<Array<Scalars['String']>>
   video?: Maybe<VideoWhereInput>
+  videoCategory?: Maybe<VideoCategoryWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<NftIssuedEventWhereInput>>
@@ -17423,6 +17430,8 @@ export type OwnedNft = BaseGraphQlObject & {
   deletedById?: Maybe<Scalars['ID']>
   version: Scalars['Int']
   video: Video
+  videoCategory?: Maybe<VideoCategory>
+  videoCategoryId?: Maybe<Scalars['String']>
   auctions: Array<Auction>
   ownerMember?: Maybe<Membership>
   ownerMemberId?: Maybe<Scalars['String']>
@@ -17455,6 +17464,7 @@ export type OwnedNftConnection = {
 }
 
 export type OwnedNftCreateInput = {
+  videoCategory?: Maybe<Scalars['ID']>
   ownerMember?: Maybe<Scalars['ID']>
   metadata: Scalars['String']
   transactionalStatus: Scalars['JSONObject']
@@ -17479,6 +17489,8 @@ export enum OwnedNftOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  VideoCategoryAsc = 'videoCategory_ASC',
+  VideoCategoryDesc = 'videoCategory_DESC',
   OwnerMemberAsc = 'ownerMember_ASC',
   OwnerMemberDesc = 'ownerMember_DESC',
   MetadataAsc = 'metadata_ASC',
@@ -17500,6 +17512,7 @@ export enum OwnedNftOrderByInput {
 }
 
 export type OwnedNftUpdateInput = {
+  videoCategory?: Maybe<Scalars['ID']>
   ownerMember?: Maybe<Scalars['ID']>
   metadata?: Maybe<Scalars['String']>
   transactionalStatus?: Maybe<Scalars['JSONObject']>
@@ -17563,6 +17576,7 @@ export type OwnedNftWhereInput = {
   lastSaleDate_gt?: Maybe<Scalars['DateTime']>
   lastSaleDate_gte?: Maybe<Scalars['DateTime']>
   video?: Maybe<VideoWhereInput>
+  videoCategory?: Maybe<VideoCategoryWhereInput>
   auctions_none?: Maybe<AuctionWhereInput>
   auctions_some?: Maybe<AuctionWhereInput>
   auctions_every?: Maybe<AuctionWhereInput>
@@ -29653,7 +29667,9 @@ export type VideoCategory = BaseGraphQlObject & {
   parentCategory?: Maybe<VideoCategory>
   parentCategoryId?: Maybe<Scalars['String']>
   videos: Array<Video>
+  nfts: Array<OwnedNft>
   createdInBlock: Scalars['Int']
+  nftissuedeventvideoCategory?: Maybe<Array<NftIssuedEvent>>
   videocategoryparentCategory?: Maybe<Array<VideoCategory>>
 }
 
@@ -29754,6 +29770,12 @@ export type VideoCategoryWhereInput = {
   videos_none?: Maybe<VideoWhereInput>
   videos_some?: Maybe<VideoWhereInput>
   videos_every?: Maybe<VideoWhereInput>
+  nfts_none?: Maybe<OwnedNftWhereInput>
+  nfts_some?: Maybe<OwnedNftWhereInput>
+  nfts_every?: Maybe<OwnedNftWhereInput>
+  nftissuedeventvideoCategory_none?: Maybe<NftIssuedEventWhereInput>
+  nftissuedeventvideoCategory_some?: Maybe<NftIssuedEventWhereInput>
+  nftissuedeventvideoCategory_every?: Maybe<NftIssuedEventWhereInput>
   videocategoryparentCategory_none?: Maybe<VideoCategoryWhereInput>
   videocategoryparentCategory_some?: Maybe<VideoCategoryWhereInput>
   videocategoryparentCategory_every?: Maybe<VideoCategoryWhereInput>

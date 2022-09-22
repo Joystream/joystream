@@ -87,6 +87,8 @@ type VideoCategory @entity {
 
   videos: [Video!]! @derivedFrom(field: "category")
 
+  nfts: [OwnedNft!]! @derivedFrom(field: "videoCategory")
+
   createdInBlock: Int!
 }
 
@@ -390,7 +392,7 @@ type Collaborator @entity {
 
   # unfortunately permissions can't be modeled as ist of enums
   # `permissions: [ChannelActionPermission!]!`
-  # rework it after this feature is available https://github.com/Joystream/hydra/issues/507
+  # TODO: rework it after this feature is available https://github.com/Joystream/hydra/issues/507
   "List of member's permissions"
   permissions: [String!]!
 }
