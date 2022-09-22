@@ -33,8 +33,7 @@ fn runtime_upgrade_total_fee_is_correct() {
         // due to rounding errors can't get the diff down to zero..
         assert_eq!(x.max(y) - x.min(y), 1);
 
-        // between 88 and 89 DOLLARS
-        assert!(y.lt(&DOLLARS.saturating_mul(89)));
-        assert!(y.gt(&DOLLARS.saturating_mul(88)));
+        assert!(y.lt(&DOLLARS.saturating_mul(80)));
+        assert!(y.gt(&DOLLARS.saturating_mul(77)));
     });
 }
