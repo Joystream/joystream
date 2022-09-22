@@ -10,7 +10,7 @@ Parameters:
     Default: t2.xlarge
   EC2AMI:
     Type: String
-    Default: 'ami-09e67e426f25ce0d7'
+    Default: 'ami-0149b2da6ceec4bb0'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
