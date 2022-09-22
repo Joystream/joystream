@@ -87,8 +87,11 @@ jobs:
         with:
           node-version: '14.x'
 
-      - name: Install Ansible dependencies
-        run: pipx inject ansible-core boto3 botocore
+      - name: Install Ansible
+        run: |
+          pip3 install --upgrade --user ansible
+          pipx inject ansible-core boto3 botocore
+          ansible-playbook --version
 
       - id: compute_shasum
         name: Compute runtime code shasum

@@ -30,6 +30,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Install Ansible
+        run: |
+          pip3 install --upgrade --user ansible
+          pipx inject ansible-core boto3 botocore
+          ansible-playbook --version
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -47,9 +53,6 @@ jobs:
           parameter-overrides: >-
             KeyName=${{ env.KEY_NAME }},
             EC2InstanceType=c6id.2xlarge
-
-      - name: Install Ansible dependencies
-        run: pipx inject ansible-core boto3 botocore
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
