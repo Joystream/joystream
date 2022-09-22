@@ -2,7 +2,7 @@
 version: '3.4'
 services:
   joystream-node:
-    image: joystream/node:$JOYSTREAM_NODE_TAG
+    image: joystream/node$JOYSTREAM_NODE_TAG
     restart: unless-stopped
     container_name: joystream-node
     volumes:
