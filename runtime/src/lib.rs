@@ -466,10 +466,9 @@ impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for Dea
     }
 }
 
-pub struct DealWithFeesPoA<R>(PhantomData<R>);
-impl<R: OnUnbalanced<NegativeImbalance>> OnUnbalanced<NegativeImbalance> for DealWithFeesPoA<R> {
-    fn on_unbalanceds<B>(mut _fees_then_tips: impl Iterator<Item = NegativeImbalance>) {
-    }
+pub struct BurnAllTxFees();
+impl OnUnbalanced<NegativeImbalance> for BurnAllTxFees {
+    fn on_unbalanceds<B>(mut _fees_then_tips: impl Iterator<Item = NegativeImbalance>) {}
 }
 
 parameter_types! {
@@ -480,7 +479,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFeesPoA<Author>>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, BurnAllTxFees>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
