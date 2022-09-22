@@ -16,22 +16,22 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-09-07 (Y/M/D)
+//! DATE: 2022-09-21 (Y/M/D)
 //!
 //! DATABASE: `RocksDb`, RUNTIME: `Development`
 //! BLOCK-NUM: `BlockId::Number(0)`
 //! SKIP-WRITE: `false`, SKIP-READ: `false`, WARMUPS: `100`
 //! STATE-VERSION: `V1`, STATE-CACHE-SIZE: `0`
-//! WEIGHT-PATH: `./scripts/../runtime/src/weights/`
+//! WEIGHT-PATH: `./../runtime/src/weights/`
 //! METRIC: `Average`, WEIGHT-MUL: `1`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./scripts/../target/release/joystream-node
+//   ./../target/release/joystream-node
 //   benchmark
 //   storage
 //   --chain=dev
 //   --warmups=100
-//   --weight-path=./scripts/../runtime/src/weights/
+//   --weight-path=./../runtime/src/weights/
 //   --state-version
 //   1
 
@@ -48,13 +48,33 @@ pub mod constants {
         pub const RocksDbWeight: RuntimeDbWeight = RuntimeDbWeight {
             /// Time to read one storage item.
             /// Calculated by multiplying the *Average* of all values with `1` and adding `0`.
-            /// Overriding with substrate values for now.
-            read: 25_000 * constants::WEIGHT_PER_NANOS,
+            ///
+            /// Stats nanoseconds:
+            ///   Min, Max: 7_650, 273_714
+            ///   Average:  13_282
+            ///   Median:   11_067
+            ///   Std-Dev:  19744.83
+            ///
+            /// Percentiles nanoseconds:
+            ///   99th: 29_980
+            ///   95th: 15_898
+            ///   75th: 13_524
+            read: 13_282 * constants::WEIGHT_PER_NANOS,
 
             /// Time to write one storage item.
             /// Calculated by multiplying the *Average* of all values with `1` and adding `0`.
-            /// Overriding with substrate values for now.
-            write: 100_000 * constants::WEIGHT_PER_NANOS,
+            ///
+            /// Stats nanoseconds:
+            ///   Min, Max: 15_781, 4_518_794
+            ///   Average:  55_820
+            ///   Median:   29_598
+            ///   Std-Dev:  335568.91
+            ///
+            /// Percentiles nanoseconds:
+            ///   99th: 74_386
+            ///   95th: 47_492
+            ///   75th: 34_690
+            write: 55_820 * constants::WEIGHT_PER_NANOS,
         };
     }
 
