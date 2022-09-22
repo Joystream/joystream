@@ -16,7 +16,7 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-09-07 (Y/M/D)
+//! DATE: 2022-09-21 (Y/M/D)
 //!
 //! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
@@ -34,47 +34,41 @@
 //   --weight-path=./../runtime/src/weights
 
 use frame_support::{
-    parameter_types,
-    weights::{constants::WEIGHT_PER_NANOS, Weight},
+	parameter_types,
+	weights::{constants::WEIGHT_PER_NANOS, Weight},
 };
 
 parameter_types! {
-    /// Time to execute a NO-OP extrinsic, for example `System::remark`.
-    /// Calculated by multiplying the *Average* with `1` and adding `0`.
-    ///
-    /// Stats nanoseconds:
-    ///   Min, Max: 69_094, 71_157
-    ///   Average:  70_231
-    ///   Median:   70_588
-    ///   Std-Dev:  637.37
-    ///
-    /// Percentiles nanoseconds:
-    ///   99th: 71_020
-    ///   95th: 70_883
-    ///   75th: 70_707
-    pub const ExtrinsicBaseWeight: Weight = 70_231 * WEIGHT_PER_NANOS;
+	/// Time to execute a NO-OP extrinsic, for example `System::remark`.
+	/// Calculated by multiplying the *Average* with `1` and adding `0`.
+	///
+	/// Stats nanoseconds:
+	///   Min, Max: 105_519, 106_226
+	///   Average:  105_770
+	///   Median:   105_744
+	///   Std-Dev:  155.11
+	///
+	/// Percentiles nanoseconds:
+	///   99th: 106_097
+	///   95th: 106_057
+	///   75th: 105_880
+	pub const ExtrinsicBaseWeight: Weight = 105_770 * WEIGHT_PER_NANOS;
 }
 
 #[cfg(test)]
 mod test_weights {
-    use frame_support::weights::constants;
+	use frame_support::weights::constants;
 
-    /// Checks that the weight exists and is sane.
-    // NOTE: If this test fails but you are sure that the generated values are fine,
-    // you can delete it.
-    #[test]
-    fn sane() {
-        let w = super::ExtrinsicBaseWeight::get();
+	/// Checks that the weight exists and is sane.
+	// NOTE: If this test fails but you are sure that the generated values are fine,
+	// you can delete it.
+	#[test]
+	fn sane() {
+		let w = super::ExtrinsicBaseWeight::get();
 
-        // At least 10 µs.
-        assert!(
-            w >= 10 * constants::WEIGHT_PER_MICROS,
-            "Weight should be at least 10 µs."
-        );
-        // At most 1 ms.
-        assert!(
-            w <= constants::WEIGHT_PER_MILLIS,
-            "Weight should be at most 1 ms."
-        );
-    }
+		// At least 10 µs.
+		assert!(w >= 10 * constants::WEIGHT_PER_MICROS, "Weight should be at least 10 µs.");
+		// At most 1 ms.
+		assert!(w <= constants::WEIGHT_PER_MILLIS, "Weight should be at most 1 ms.");
+	}
 }
