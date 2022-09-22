@@ -17,7 +17,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription:
-        !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
+        !Sub 'Internal Security group for full nodes ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -31,9 +31,21 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9933
+          ToPort: 9933
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9944
+          ToPort: 9944
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 30333
+          ToPort: 30333
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}_validator'
+          Value: !Sub '${AWS::StackName}_substrate_node'
 
   InstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate

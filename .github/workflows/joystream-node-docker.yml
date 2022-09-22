@@ -8,6 +8,7 @@ env:
   KEY_NAME: joystream-github-action-key-new
 
 jobs:
+  # Drop this job, add linux/amd64 to matrix in push-arm job instead
   push-amd64:
     name: Build joystream/node Docker image for amd64
     runs-on: ubuntu-latest
