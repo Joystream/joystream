@@ -1,13 +1,14 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import {
   bytesToString,
   deserializeMetadata,
   genericEventFields,
   getWorker,
   inconsistentState,
+  invalidMetadata,
   perpareString,
   toNumber,
 } from './common'
@@ -80,6 +81,56 @@ async function getPost(store: DatabaseManager, postId: string, relations?: 'thre
   }
 
   return post
+}
+
+type ModerationType = 'runtime' | 'leadRemark' | 'workerRemark'
+
+async function canModerate(store: DatabaseManager, actorId: string, categoryId: string): Promise<boolean> {
+  const category = await getCategory(store, categoryId, ['moderators'])
+  return (
+    category.moderators.some(({ id }) => id === actorId) ||
+    (category.parentId ? canModerate(store, actorId, category.parentId) : false)
+  )
+}
+
+export async function moderatePost(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  type: ModerationType,
+  postId: string,
+  actor: Worker,
+  rationale: string
+): Promise<void> {
+  const post = await getPost(store, postId, ['thread'])
+
+  if (type !== 'runtime' && post.status.isTypeOf !== 'PostStatusLocked') {
+    return invalidMetadata(
+      `Trying to moderate forum post ${post.id}, with status ${post.status.isTypeOf}. Only locked forum post can be moderated with remark`
+    )
+  }
+  if (type === 'workerRemark' && !(await canModerate(store, actor.id, post.thread.categoryId))) {
+    return invalidMetadata(`The worker ${actor.id} can not moderate the post: ${post.id}`)
+  }
+
+  const postModeratedEvent = new PostModeratedEvent({
+    ...genericEventFields(event),
+    actor,
+    post,
+    rationale,
+  })
+
+  await store.save<PostModeratedEvent>(postModeratedEvent)
+
+  const newStatus = new PostStatusModerated()
+  newStatus.postModeratedEventId = postModeratedEvent.id
+
+  post.status = newStatus
+  post.isVisible = false
+  await store.save<ForumPost>(post)
+
+  const { thread } = post
+  --thread.visiblePostsCount
+  await store.save<ForumThread>(thread)
 }
 
 async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): Promise<Worker> {
@@ -463,27 +514,7 @@ export async function forum_CategoryMembershipOfModeratorUpdated({
 export async function forum_PostModerated({ event, store }: EventContext & StoreContext): Promise<void> {
   const [postId, rationaleBytes, privilegedActor] = new Forum.PostModeratedEvent(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
-  const post = await getPost(store, postId.toString(), ['thread'])
-
-  const postModeratedEvent = new PostModeratedEvent({
-    ...genericEventFields(event),
-    actor: actorWorker,
-    post,
-    rationale: bytesToString(rationaleBytes),
-  })
-
-  await store.save<PostModeratedEvent>(postModeratedEvent)
-
-  const newStatus = new PostStatusModerated()
-  newStatus.postModeratedEventId = postModeratedEvent.id
-
-  post.status = newStatus
-  post.isVisible = false
-  await store.save<ForumPost>(post)
-
-  const { thread } = post
-  --thread.visiblePostsCount
-  await store.save<ForumThread>(thread)
+  await moderatePost(store, event, 'runtime', postId.toString(), actorWorker, bytesToString(rationaleBytes))
 }
 
 export async function forum_PostTextUpdated({ event, store }: EventContext & StoreContext): Promise<void> {

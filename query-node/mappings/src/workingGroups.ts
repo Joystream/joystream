@@ -13,6 +13,7 @@ import {
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
   OpeningMetadata,
+  RemarkMetadataAction,
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
@@ -26,6 +27,7 @@ import {
   INT32MAX,
   inconsistentState,
   getWorkingGroupByName,
+  invalidMetadata,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -86,6 +88,7 @@ import {
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
+import { moderatePost } from './forum'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -669,6 +672,28 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   // Now we can set the "real" result
   statusTextChangedEvent.result = result
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
+}
+
+export async function workingGroups_WorkerRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [workerId, metadataByte] = new WorkingGroups.WorkerRemarkedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata?.moderatePost ?? {}
+    if (!postId) {
+      return invalidMetadata('No valid forum post id was provided')
+    }
+
+    const actor = await getWorker(store, group.name, workerId)
+
+    await moderatePost(store, event, 'workerRemark', postId, actor, rationale ?? '')
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated({

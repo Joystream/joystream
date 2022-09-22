@@ -53,6 +53,7 @@ typegen:
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
     - storageWorkingGroup.LeadRemarked
+    - storageWorkingGroup.WorkerRemarked
     # Proposals
     - proposalsCodex.ProposalCreated
     - proposalsEngine.ProposalStatusUpdated
@@ -332,6 +333,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: forumWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: forumWorkingGroup.WorkerRemarked
+      handler: workingGroups_WorkerRemarked
     # Membership working group
     - event: membershipWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
