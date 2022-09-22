@@ -10,7 +10,7 @@ Parameters:
   EC2InstanceType:
     Type: String
     Default: t2.large
-    AllowedValues: [ t2.large, t2.xlarge ]
+    AllowedValues: [ t2.micro, t2.large, t2.xlarge ]
   JoystreamAmi:
     Type: String
   DefaultAMI:
@@ -19,7 +19,6 @@ Parameters:
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
-    Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
   VolumeSize:
     Description: volume size in GB for all instances
@@ -179,7 +178,7 @@ Resources:
   BuildInstance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: c4.4xlarge
+      InstanceType: c6id.2xlarge
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber

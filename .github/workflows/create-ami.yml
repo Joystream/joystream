@@ -46,7 +46,7 @@ jobs:
           no-fail-on-empty-changeset: '1'
           parameter-overrides: >-
             KeyName=${{ env.KEY_NAME }},
-            EC2InstanceType=c4.4xlarge
+            EC2InstanceType=c6id.2xlarge
 
       - name: Install Ansible dependencies
         run: pipx inject ansible-core boto3 botocore
