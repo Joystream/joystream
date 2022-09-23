@@ -1,7 +1,7 @@
 use super::{
     account_from_member_id, increase_total_balance_issuance_using_account_id, initial_test_ext,
 };
-use crate::{currency, AccountId, Balances, DealWithFees, NegativeImbalance};
+use crate::{currency, AccountId, Balances, DealWithFees, BurnAllTxFees, NegativeImbalance};
 use frame_support::traits::{Currency, Imbalance, OnUnbalanced};
 use sp_runtime::traits::Zero;
 
@@ -80,7 +80,7 @@ fn block_author_receives_no_tips() {
             }
         }
 
-        BurnAllTxFees::<Recipient>::on_unbalanceds(vec![fees, tips].into_iter());
+        BurnAllTxFees::on_unbalanceds(vec![fees, tips].into_iter());
 
         // Author only receive tips
         assert!(Balances::free_balance(&author()).is_zero());

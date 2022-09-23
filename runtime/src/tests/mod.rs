@@ -6,6 +6,7 @@ mod proposals_integration;
 mod fee_tests;
 mod handle_fees;
 mod locks;
+mod poa;
 
 use crate::constants::currency;
 use crate::primitives::{Balance, MemberId};
@@ -14,6 +15,7 @@ use frame_support::traits::{Currency, GenesisBuild, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{traits::One, AccountId32, BuildStorage};
+use pallet_staking::Forcing;
 
 type Membership = membership::Module<Runtime>;
 type System = frame_system::Pallet<Runtime>;
@@ -36,6 +38,7 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
     let staking_config = pallet_staking::GenesisConfig::<crate::Runtime> {
         min_nominator_bond: currency::MIN_NOMINATOR_BOND,
         min_validator_bond: currency::MIN_VALIDATOR_BOND,
+        force_era: Forcing::ForceNone,
         ..Default::default()
     }
     .build_storage()
