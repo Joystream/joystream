@@ -62,9 +62,13 @@ jobs:
           - platform: 'linux/amd64'
             platform_tag: 'amd64'
             file: 'joystream-node.Dockerfile'
+            ec2ami: 'ami-0149b2da6ceec4bb0'
+            ec2type: 'c6id.2xlarge'
           - platform: 'linux/arm64'
             platform_tag: 'arm64'
             file: 'joystream-node.Dockerfile'
+            ec2ami: 'ami-00266f51b6b22db58'
+            ec2type: 't4g.2xlarge'
           # - platform: 'linux/arm/v7'
           #   platform_tag: 'arm'
           #   file: 'joystream-node-armv7.Dockerfile'
@@ -107,7 +111,7 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: devops/aws/cloudformation/single-instance-ami-base.yml
           no-fail-on-empty-changeset: '1'
-          parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=ami-00d1ab6b335f217cf,EC2InstanceType=c6id.2xlarge'
+          parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI={{ matrix.ec2ami }},EC2InstanceType={{ matrix.ec2type }}'
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
       - name: Run playbook
