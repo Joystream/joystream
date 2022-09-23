@@ -4,6 +4,7 @@ on:
     types: [opened, synchronize]
 
   workflow_dispatch:
+  push:
 
 jobs:
   tests_build_ubuntu:
