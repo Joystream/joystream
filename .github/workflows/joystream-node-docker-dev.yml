@@ -2,7 +2,9 @@
 # Only built for amd64 on ubuntu
 name: joystream-node-docker(dev)
 
-on: [push, workflow_dispatch]
+on:
+  - push
+  - workflow_dispatch
 
 env:
   REPOSITORY: joystream/node

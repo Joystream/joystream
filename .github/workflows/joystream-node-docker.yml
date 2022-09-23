@@ -1,7 +1,9 @@
 # Production runtime build of joystream-node
 name: joystream-node-docker
 
-on: [push, workflow_dispatch]
+on:
+  - push
+  - workflow_dispatch
 
 env:
   REPOSITORY: joystream/node
