@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, BTreeSet, Option } from '@polkadot/types'
+import { u32, u64, BTreeSet, Option, Vec, AuthorityId } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -309,6 +309,10 @@ export class Api {
 
   public getBlockDuration(): BN {
     return this.api.consts.babe.expectedBlockTime
+  }
+
+  public getAuthorities(): Vec<AuthorityId> {
+    return this.api.call.authorityDiscoveryApi.authorities
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {

@@ -1,7 +1,7 @@
-import validatorSet from '../flows/carthage/validatorSet'
+import constantAuthorities from '../flows/carthage/constantAuthorities'
 import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Carthage', async ({ job }) => {
-  job('validator set is constant', validatorSet)
+    job('authority set is constant', constantAuthorities)
 })
