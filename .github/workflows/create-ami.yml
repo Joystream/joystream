@@ -32,8 +32,7 @@ jobs:
 
       - name: Install Ansible
         run: |
-          pip3 install --upgrade --user ansible
-          pipx inject ansible-core boto3 botocore
+          pip3 install --upgrade --user ansible ansible-core boto3 botocore
           ansible-playbook --version
 
       - name: Configure AWS credentials
