@@ -35,8 +35,9 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
   // TODO: claim payouts
 
   // each payout (positive number) must be zero iff the sum is zero
-  let totalReward: BN = (await Promise.all(
-    stakerAccounts.map((account) => api.getBalance(account))
-  )).reduce((rewardAmount, accumulator: BN) => accumulator.add(new BN(rewardAmount)), 0)
+  let totalReward: BN = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))).reduce(
+    (rewardAmount, accumulator: BN) => accumulator.add(new BN(rewardAmount)),
+    0
+  )
   assert.equal(totalReward, new BN(0))
 }

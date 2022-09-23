@@ -28,6 +28,7 @@ import {
   PalletContentNftTypesOpenAuctionParamsRecord as OpenAuctionParams,
   PalletProposalsEngineProposalParameters as ProposalParameters,
   PalletContentChannelBagWitness,
+  PalletStakingForcing,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -313,6 +314,14 @@ export class Api {
 
   public getAuthorities(): Vec<AuthorityId> {
     return this.api.call.authorityDiscoveryApi.authorities
+  }
+
+  public getCurrentEra(): Option<u32> {
+    return this.api.query.staking.currentEra()
+  }
+
+  public getForceEra(): PalletStakingForcing {
+    return this.api.query.staking.forceEra()
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {
