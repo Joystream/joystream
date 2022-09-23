@@ -21,7 +21,7 @@ RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
     cargo test --release --all --features "${CARGO_FEATURES}" && \
     cargo build --release --features "${CARGO_FEATURES}"
 
-FROM ubuntu:21.04
+FROM ubuntu:22.04
 LABEL description="Joystream node"
 WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node
