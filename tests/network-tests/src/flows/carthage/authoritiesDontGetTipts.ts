@@ -15,7 +15,7 @@ export default async function authoritiesDontGetTips({ api, query, env }: FlowPr
 
   // get authorities
   const authorities = await api.getAuthorities()
-  const initialBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
+  const initialFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
 
   // create 1 account and issue a bond Tx
   const stakerAccount = (await api.createKeyPairs(1)).map(({ key }) => key.address)[0]
@@ -29,6 +29,6 @@ export default async function authoritiesDontGetTips({ api, query, env }: FlowPr
   // wait 10 blocks
   await api.untilBlock(nBlocks)
 
-  const currentBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
-  assert.deepEqual(initialBalances, currentBalances)
+  const currentFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
+  assert.deepEqual(initialFreeBalances, currentFreeBalances)
 }

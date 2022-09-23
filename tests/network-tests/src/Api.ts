@@ -29,6 +29,7 @@ import {
   PalletProposalsEngineProposalParameters as ProposalParameters,
   PalletContentChannelBagWitness,
   PalletStakingForcing,
+  PalletBalancesAccountData,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
