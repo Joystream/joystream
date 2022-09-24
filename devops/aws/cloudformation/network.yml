@@ -10,16 +10,13 @@ Parameters:
   EC2InstanceType:
     Type: String
     Default: t2.large
-    AllowedValues: [ t2.large, t2.xlarge ]
-  JoystreamAmi:
-    Type: String
-  DefaultAMI:
+    AllowedValues: [ t2.micro, t2.large, t2.xlarge ]
+  EC2AMI:
     Type: String
     Default: 'ami-0a8273bdc1bfaedf7'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
-    Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
   VolumeSize:
     Description: volume size in GB for all instances
@@ -28,15 +25,12 @@ Parameters:
     MinValue: 64
     MaxValue: 500
 
-Conditions:
-  HasAMIId: !Not [!Equals [!Ref JoystreamAmi, '']]
-
 Resources:
   # Common security group for all instances
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: !Sub 'Internal Security group for Validator and RPC nodes ${AWS::StackName}'
+      GroupDescription: !Sub 'Internal Security group for full node ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 9933
@@ -64,7 +58,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}_sc'
+          Value: !Sub '${AWS::StackName}_substrate_node'
 
   InstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -78,7 +72,7 @@ Resources:
     Properties:
       LaunchTemplateName: !Sub 'LaunchTemplate_${AWS::StackName}'
       LaunchTemplateData:
-        ImageId: !If [HasAMIId, !Ref JoystreamAmi, !Ref DefaultAMI]
+        ImageId: !Ref EC2AMI
         InstanceType: !Ref EC2InstanceType
         KeyName: !Ref KeyName
         SecurityGroupIds:
@@ -179,7 +173,7 @@ Resources:
   BuildInstance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: c4.4xlarge
+      InstanceType: c6id.2xlarge
       LaunchTemplate:
         LaunchTemplateId: !Ref InstanceLaunchTemplate
         Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber

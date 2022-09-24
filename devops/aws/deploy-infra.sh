@@ -34,13 +34,12 @@ aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
   --stack-name $STACK_NAME \
-  --template-file cloudformation/infrastructure.yml \
+  --template-file cloudformation/network.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
     EC2InstanceType=$EC2_INSTANCE_TYPE \
     KeyName=$AWS_KEY_PAIR_NAME \
-    JoystreamAmi=$JOYSTREAM_AMI \
     VolumeSize=$VOLUME_SIZE
 
 VAL1=$(get_aws_export $STACK_NAME "Val1PublicIp")
@@ -64,21 +63,23 @@ $VAL3
 $RPC_NODE
 " > $INVENTORY_PATH
 
-# Build binaries and packages if no pre-built AMI was specified
-if [ -z "$JOYSTREAM_AMI" ]
-then
-  echo -e "\n\n=========== Install Developer Tools ==========="
-  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/install-tools.yml
+# Build binaries and packages
+echo -e "\n\n=========== Install Developer Tools ==========="
+ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/install-tools.yml
 
-  echo -e "\n\n=========== Build Apps & Binaries ==============="
-  ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/build-code.yml \
-    --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE
-                  runtime_profile=$RUNTIME_PROFILE"
-fi
+echo -e "\n\n=========== Build Apps & Binaries ==============="
+ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/build-code.yml \
+  --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO build_local_code=$BUILD_LOCAL_CODE
+                runtime_profile=$RUNTIME_PROFILE"
 
 echo -e "\n\n======= Fetching binaries from Build server ======"
 ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/fetch-binaries.yml \
   --extra-vars "data_path=$DATA_PATH"
+
+echo -e "\n\n=========== Delete Build instance ==========="
+BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
+DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)
+echo $DELETE_RESULT
 
 echo -e "\n\n========== Configure And Start Network ==========="
 ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/deploy-network.yml \
@@ -89,8 +90,3 @@ ansible-playbook -i $INVENTORY_PATH --private-key $KEY_PATH ../ansible/deploy-ne
                 initial_balances_file=$INITIAL_BALANCES_PATH
                 endow_accounts=$ENDOW_ACCOUNTS
                 "
-
-echo -e "\n\n=========== Delete Build instance ==========="
-BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
-DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)
-echo $DELETE_RESULT

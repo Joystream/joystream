@@ -30,6 +30,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Install Ansible
+        run: |
+          pip3 install --upgrade --user ansible ansible-core boto3 botocore
+          ansible-playbook --version
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -42,14 +47,11 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/aws/cloudformation/single-instance.yml
+          template: devops/aws/cloudformation/single-instance-ami-base.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: >-
             KeyName=${{ env.KEY_NAME }},
-            EC2InstanceType=c4.4xlarge
-
-      - name: Install Ansible dependencies
-        run: pipx inject ansible-core boto3 botocore
+            EC2InstanceType=c6id.2xlarge
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2

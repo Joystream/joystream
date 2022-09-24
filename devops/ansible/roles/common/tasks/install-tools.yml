@@ -86,6 +86,14 @@
   pip:
     name: docker
 
+# usermod -aG docker username
+- name: Add {{ ansible_user }} to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker,
+    append: yes
+
 - name: Install rustup
   shell: 
     cmd: |
