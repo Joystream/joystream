@@ -13,6 +13,7 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
   const nAccounts = 10
   const nBlocks = 100
   const bondAmount = new BN(100000)
+  const claimingEra = 10
 
   // create n accounts
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
@@ -35,15 +36,13 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
   await api.untilBlock(nBlocks)
 
   // attempt to claim payout
-  const currentEra = 0
   const claimingResult = await Promise.all(
     stakerAccounts.map(async (account) => {
-      const claimTx = api.tx.staking.payoutStakers(account, currentEra)
+      const claimTx = api.tx.staking.payoutStakers(account, claimingEra)
       const claimFees = await api.estimateTxFee(claimTx, account)
       await api.treasuryTransferBalance(account, claimFees)
       await api.signAndSend(claimTx, account)
     }))
-
 
   // each payout (positive number) must be zero iff the sum is zero
   let totalReward: BN = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))).reduce(
