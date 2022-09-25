@@ -8,37 +8,53 @@
     - [BountyWorkData](#.BountyWorkData)
   
 - [proto/Channel.proto](#proto/Channel.proto)
-    - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
+  
+- [proto/ChannelPayouts.proto](#proto/ChannelPayouts.proto)
+    - [ChannelPayoutsMetadata](#.ChannelPayoutsMetadata)
+    - [ChannelPayoutsMetadata.Body](#.ChannelPayoutsMetadata.Body)
+    - [ChannelPayoutsMetadata.Body.ChannelPayout](#.ChannelPayoutsMetadata.Body.ChannelPayout)
+    - [ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement](#.ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement)
+    - [ChannelPayoutsMetadata.Header](#.ChannelPayoutsMetadata.Header)
+    - [ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset](#.ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset)
+  
+    - [ChannelPayoutsMetadata.Body.ChannelPayout.Side](#.ChannelPayoutsMetadata.Body.ChannelPayout.Side)
   
 - [proto/Council.proto](#proto/Council.proto)
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
   
-- [proto/CreatorPayout.proto](#proto/CreatorPayout.proto)
-    - [CreatorPayoutPayload](#.CreatorPayoutPayload)
-    - [CreatorPayoutPayload.Body](#.CreatorPayoutPayload.Body)
-    - [CreatorPayoutPayload.Body.CreatorPayout](#.CreatorPayoutPayload.Body.CreatorPayout)
-    - [CreatorPayoutPayload.Body.CreatorPayout.ProofElement](#.CreatorPayoutPayload.Body.CreatorPayout.ProofElement)
-    - [CreatorPayoutPayload.Header](#.CreatorPayoutPayload.Header)
-    - [CreatorPayoutPayload.Header.CreatorPayoutByteOffset](#.CreatorPayoutPayload.Header.CreatorPayoutByteOffset)
-  
-    - [CreatorPayoutPayload.Body.CreatorPayout.Side](#.CreatorPayoutPayload.Body.CreatorPayout.Side)
-  
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
-    - [ForumPostReaction](#.ForumPostReaction)
     - [ForumThreadMetadata](#.ForumThreadMetadata)
-  
-    - [ForumPostReaction.Reaction](#.ForumPostReaction.Reaction)
   
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
+    - [MembershipMetadata.ExternalResource](#.MembershipMetadata.ExternalResource)
+  
+    - [MembershipMetadata.ExternalResource.ResourceType](#.MembershipMetadata.ExternalResource.ResourceType)
+  
+- [proto/Metaprotocol.proto](#proto/Metaprotocol.proto)
+    - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
+    - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
+    - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
+    - [CreateComment](#.CreateComment)
+    - [CreateVideoCategory](#.CreateVideoCategory)
+    - [DeleteComment](#.DeleteComment)
+    - [EditComment](#.EditComment)
+    - [MemberRemarked](#.MemberRemarked)
+    - [ModerateComment](#.ModerateComment)
+    - [PinOrUnpinComment](#.PinOrUnpinComment)
+    - [ReactComment](#.ReactComment)
+    - [ReactVideo](#.ReactVideo)
+    - [VideoReactionsPreference](#.VideoReactionsPreference)
+  
+    - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
+    - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
+    - [ReactVideo.Reaction](#.ReactVideo.Reaction)
+    - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
   
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
-  
-- [proto/Playlist.proto](#proto/Playlist.proto)
-    - [PlaylistMetadata](#.PlaylistMetadata)
   
 - [proto/ProposalsDiscussion.proto](#proto/ProposalsDiscussion.proto)
     - [ProposalsDiscussionPostMetadata](#.ProposalsDiscussionPostMetadata)
@@ -58,10 +74,11 @@
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
 - [proto/Video.proto](#proto/Video.proto)
+    - [ContentMetadata](#.ContentMetadata)
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
-    - [VideoCategoryMetadata](#.VideoCategoryMetadata)
+    - [SubtitleMetadata](#.SubtitleMetadata)
     - [VideoMetadata](#.VideoMetadata)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
@@ -138,21 +155,6 @@
 
 
 
-<a name=".ChannelCategoryMetadata"></a>
-
-### ChannelCategoryMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category Name |
-
-
-
-
-
-
 <a name=".ChannelMetadata"></a>
 
 ### ChannelMetadata
@@ -167,13 +169,143 @@
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-| category | [uint64](#uint64) | optional | Channel Category Id |
 
 
 
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/ChannelPayouts.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/ChannelPayouts.proto
+
+
+
+<a name=".ChannelPayoutsMetadata"></a>
+
+### ChannelPayoutsMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| header | [ChannelPayoutsMetadata.Header](#ChannelPayoutsMetadata.Header) | required | Payload header |
+| body | [ChannelPayoutsMetadata.Body](#ChannelPayoutsMetadata.Body) | required | Payload body |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Body"></a>
+
+### ChannelPayoutsMetadata.Body
+Channel payout full body structure, it will not be downloaded by clients in full
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_payouts | [ChannelPayoutsMetadata.Body.ChannelPayout](#ChannelPayoutsMetadata.Body.ChannelPayout) | repeated | List of channel payouts |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayout"></a>
+
+### ChannelPayoutsMetadata.Body.ChannelPayout
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [uint32](#uint32) | required | `c_i` |
+| cumulative_reward_earned | [float](#float) | required | `p_i` |
+| merkle_branch | [ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement](#ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement) | repeated |  |
+| payout_rationale | [string](#string) | required | `d_i`; rationale for for reward or deduction for `c_i`; |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement"></a>
+
+### ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| hash | [bytes](#bytes) | required |  |
+| side | [ChannelPayoutsMetadata.Body.ChannelPayout.Side](#ChannelPayoutsMetadata.Body.ChannelPayout.Side) | required |  |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Header"></a>
+
+### ChannelPayoutsMetadata.Header
+Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
+This allows first calculating and then setting the byte offset of each `ChannelPayout` accurately, e.g. 
+`byte_offset` = `size(Header)` &#43; `position_where_record_for_channel_exists_in_Body`
+If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayout` 
+w.r.t the start of the payload would be improbable since the header size won&#39;t be known.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| payload_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of entire payload |
+| header_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of payload header |
+| number_of_channels | [fixed32](#fixed32) | required | Number of channels |
+| channel_payout_byte_offsets | [ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset](#ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset) | repeated | List of byte offsets for all channels |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset"></a>
+
+### ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [fixed32](#fixed32) | required | Channel id; `c_i` |
+| byte_offset | [fixed64](#fixed64) | required | Byte offset from start of payload where payout record for channel `c_i` exists |
+
+
+
+
+
+ 
+
+
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayout.Side"></a>
+
+### ChannelPayoutsMetadata.Body.ChannelPayout.Side
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| Left | 0 |  |
+| Right | 1 |  |
+
 
  
 
@@ -217,137 +349,6 @@
 
 
 
-<a name="proto/CreatorPayout.proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## proto/CreatorPayout.proto
-
-
-
-<a name=".CreatorPayoutPayload"></a>
-
-### CreatorPayoutPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| header | [CreatorPayoutPayload.Header](#CreatorPayoutPayload.Header) | required | Payload header |
-| body | [CreatorPayoutPayload.Body](#CreatorPayoutPayload.Body) | required | Payload body |
-
-
-
-
-
-
-<a name=".CreatorPayoutPayload.Body"></a>
-
-### CreatorPayoutPayload.Body
-Creator payout full body structure, it will not be downloaded by clients in full
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| creator_payouts | [CreatorPayoutPayload.Body.CreatorPayout](#CreatorPayoutPayload.Body.CreatorPayout) | repeated | List of creator payouts |
-
-
-
-
-
-
-<a name=".CreatorPayoutPayload.Body.CreatorPayout"></a>
-
-### CreatorPayoutPayload.Body.CreatorPayout
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| channel_id | [uint32](#uint32) | required | `c_i` |
-| cumulative_payout_owed | [float](#float) | required | `p_i` |
-| merkle_branch | [CreatorPayoutPayload.Body.CreatorPayout.ProofElement](#CreatorPayoutPayload.Body.CreatorPayout.ProofElement) | repeated |  |
-| payout_rationale | [string](#string) | required | `d_i`; rationale for for reward or deduction for `c_i`; |
-
-
-
-
-
-
-<a name=".CreatorPayoutPayload.Body.CreatorPayout.ProofElement"></a>
-
-### CreatorPayoutPayload.Body.CreatorPayout.ProofElement
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| hash | [bytes](#bytes) | required |  |
-| side | [CreatorPayoutPayload.Body.CreatorPayout.Side](#CreatorPayoutPayload.Body.CreatorPayout.Side) | required |  |
-
-
-
-
-
-
-<a name=".CreatorPayoutPayload.Header"></a>
-
-### CreatorPayoutPayload.Header
-Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
-This allows first calculating and then setting the byte offset of each `CreatorPayout` accurately, e.g. 
-`byte_offset` = `size(Header)` &#43; `position_where_record_for_creator_exists_in_Body`
-If varint encoding is used for header fields, then calculating the byte offset of `CreatorPayout` 
-w.r.t the start of the payload would be improbable since the header size won&#39;t be known.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| payload_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of entire payload |
-| header_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of payload header |
-| number_of_channels | [fixed32](#fixed32) | required | Number of channels |
-| creator_payout_byte_offsets | [CreatorPayoutPayload.Header.CreatorPayoutByteOffset](#CreatorPayoutPayload.Header.CreatorPayoutByteOffset) | repeated | List of byte offsets for all channels |
-
-
-
-
-
-
-<a name=".CreatorPayoutPayload.Header.CreatorPayoutByteOffset"></a>
-
-### CreatorPayoutPayload.Header.CreatorPayoutByteOffset
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| channel_id | [fixed32](#fixed32) | required | Channel id; `c_i` |
-| byte_offset | [fixed64](#fixed64) | required | Byte offset from start of payload where payout record for channel `c_i` exists |
-
-
-
-
-
- 
-
-
-<a name=".CreatorPayoutPayload.Body.CreatorPayout.Side"></a>
-
-### CreatorPayoutPayload.Body.CreatorPayout.Side
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| Left | 0 |  |
-| Right | 1 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="proto/Forum.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -371,16 +372,6 @@ w.r.t the start of the payload would be improbable since the header size won&#39
 
 
 
-<a name=".ForumPostReaction"></a>
-
-### ForumPostReaction
-The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
-
-
-
-
-
-
 <a name=".ForumThreadMetadata"></a>
 
 ### ForumThreadMetadata
@@ -397,18 +388,6 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
  
-
-
-<a name=".ForumPostReaction.Reaction"></a>
-
-### ForumPostReaction.Reaction
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CANCEL | 0 | This means cancelling any previous reaction |
-| LIKE | 1 |  |
-
 
  
 
@@ -437,12 +416,330 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | avatar_object | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
 | avatar_uri | [string](#string) | optional | Url to member&#39;s avatar |
 | about | [string](#string) | optional | Member&#39;s md-formatted about text |
+| externalResources | [MembershipMetadata.ExternalResource](#MembershipMetadata.ExternalResource) | repeated |  |
+
+
+
+
+
+
+<a name=".MembershipMetadata.ExternalResource"></a>
+
+### MembershipMetadata.ExternalResource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [MembershipMetadata.ExternalResource.ResourceType](#MembershipMetadata.ExternalResource.ResourceType) | optional |  |
+| value | [string](#string) | optional |  |
 
 
 
 
 
  
+
+
+<a name=".MembershipMetadata.ExternalResource.ResourceType"></a>
+
+### MembershipMetadata.ExternalResource.ResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EMAIL | 0 |  |
+| HYPERLINK | 1 |  |
+| TWITTER | 2 |  |
+| TELEGRAM | 3 |  |
+| DISCORD | 4 |  |
+| FACEBOOK | 5 |  |
+| YOUTUBE | 6 |  |
+| MATRIX | 7 |  |
+| IRC | 8 |  |
+| WECHAT | 9 |  |
+| WHATSAPP | 10 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/Metaprotocol.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Metaprotocol.proto
+
+
+
+<a name=".BanOrUnbanMemberFromChannel"></a>
+
+### BanOrUnbanMemberFromChannel
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member_id | [uint64](#uint64) | required | ID of the member that channel owner wants to ban from participating on any video. |
+| option | [BanOrUnbanMemberFromChannel.Option](#BanOrUnbanMemberFromChannel.Option) | required | Selected option to ban or unban member from the channel |
+
+
+
+
+
+
+<a name=".ChannelModeratorRemarked"></a>
+
+### ChannelModeratorRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
+
+
+
+
+
+
+<a name=".ChannelOwnerRemarked"></a>
+
+### ChannelOwnerRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
+| ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
+| video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
+
+
+
+
+
+
+<a name=".CreateComment"></a>
+
+### CreateComment
+create comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| parent_comment_id | [string](#string) | optional | ID of comment member wants to reply (empty if new comment is parent comment) |
+| body | [string](#string) | required | Comment text |
+
+
+
+
+
+
+<a name=".CreateVideoCategory"></a>
+
+### CreateVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | required |  |
+| description | [string](#string) | optional |  |
+| parent_category_id | [string](#string) | optional |  |
+
+
+
+
+
+
+<a name=".DeleteComment"></a>
+
+### DeleteComment
+delete comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment which will be deleted |
+
+
+
+
+
+
+<a name=".EditComment"></a>
+
+### EditComment
+edit comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment whose text is being edited |
+| new_body | [string](#string) | required | New comment body |
+
+
+
+
+
+
+<a name=".MemberRemarked"></a>
+
+### MemberRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| react_video | [ReactVideo](#ReactVideo) | optional |  |
+| react_comment | [ReactComment](#ReactComment) | optional |  |
+| create_comment | [CreateComment](#CreateComment) | optional |  |
+| edit_comment | [EditComment](#EditComment) | optional |  |
+| delete_comment | [DeleteComment](#DeleteComment) | optional |  |
+| create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
+
+
+
+
+
+
+<a name=".ModerateComment"></a>
+
+### ModerateComment
+delete comment by moderator or channel owner;
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of comment that will be deleted by moderator |
+| rationale | [string](#string) | required | why moderator wants to delete this comment |
+
+
+
+
+
+
+<a name=".PinOrUnpinComment"></a>
+
+### PinOrUnpinComment
+pin comment on a video by channel owner
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [string](#string) | required | ID of the comment which will be pinned |
+| option | [PinOrUnpinComment.Option](#PinOrUnpinComment.Option) | required | Selected option to pin or unpin comment from channel |
+
+
+
+
+
+
+<a name=".ReactComment"></a>
+
+### ReactComment
+reacting, unreacting to a comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment to react |
+| reaction_id | [uint32](#uint32) | required | ID of the selected reaction |
+
+
+
+
+
+
+<a name=".ReactVideo"></a>
+
+### ReactVideo
+reacting, unreacting, and changing reaction to video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video to react |
+| reaction | [ReactVideo.Reaction](#ReactVideo.Reaction) | required | Selected reaction |
+
+
+
+
+
+
+<a name=".VideoReactionsPreference"></a>
+
+### VideoReactionsPreference
+Enable or disable reactions on a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [VideoReactionsPreference.Option](#VideoReactionsPreference.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+ 
+
+
+<a name=".BanOrUnbanMemberFromChannel.Option"></a>
+
+### BanOrUnbanMemberFromChannel.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BAN | 0 | Ban member (nothing happens if member is already banned) |
+| UNBAN | 1 | Unban member (nothing happens if member is already unbanned) |
+
+
+
+<a name=".PinOrUnpinComment.Option"></a>
+
+### PinOrUnpinComment.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PIN | 0 | Pin comment on video (nothing happens if comment is already pinned) |
+| UNPIN | 1 | Unpin comment from video (nothing happens if comment is already unpinned) |
+
+
+
+<a name=".ReactVideo.Reaction"></a>
+
+### ReactVideo.Reaction
+The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
+Reacting again with the same message option will cancel the previous reaction
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LIKE | 0 |  |
+| UNLIKE | 1 |  |
+
+
+
+<a name=".VideoReactionsPreference.Option"></a>
+
+### VideoReactionsPreference.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable reactions (nothing happens if they are already enabled) |
+| DISABLE | 1 | Disable reactions (nothing happens if they are already disabled) |
+
 
  
 
@@ -473,38 +770,6 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | about | [string](#string) | optional |  |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="proto/Playlist.proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## proto/Playlist.proto
-
-
-
-<a name=".PlaylistMetadata"></a>
-
-### PlaylistMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional |  |
-| videos | [uint64](#uint64) | repeated | Videos in the playlist |
 
 
 
@@ -746,6 +1011,21 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
 
+<a name=".ContentMetadata"></a>
+
+### ContentMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_metadata | [VideoMetadata](#VideoMetadata) | optional | ... Other possible metadata standards, e.g. `PlaylistMetadata` |
+
+
+
+
+
+
 <a name=".License"></a>
 
 ### License
@@ -796,15 +1076,18 @@ Publication status before joystream
 
 
 
-<a name=".VideoCategoryMetadata"></a>
+<a name=".SubtitleMetadata"></a>
 
-### VideoCategoryMetadata
+### SubtitleMetadata
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category name |
+| type | [string](#string) | required |  |
+| new_asset | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| language | [string](#string) | required | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
+| mimeType | [string](#string) | required |  |
 
 
 
@@ -834,7 +1117,10 @@ Publication status before joystream
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
-| category | [uint64](#uint64) | optional | Video Category Id |
+| category | [string](#string) | optional | Video Category Id |
+| subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
+| enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
+| clear_subtitles | [bool](#bool) | optional | Remove all subtitles; since protobuf doesn&#39;t distinguish b/w empty array and null field, simply removing all subtitles by overriding list with an empty array wont work |
 
 
 
@@ -901,6 +1187,7 @@ Publication status before joystream
 | expected_ending_timestamp | [uint32](#uint32) | optional | Expected time when the opening will close (Unix timestamp) |
 | application_details | [string](#string) | optional | Md-formatted text explaining the application process |
 | application_form_questions | [OpeningMetadata.ApplicationFormQuestion](#OpeningMetadata.ApplicationFormQuestion) | repeated | List of questions that should be answered during application |
+| title | [string](#string) | optional |  |
 
 
 

@@ -18,28 +18,34 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 pub(crate) mod tests;
 
 mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use common::{working_group::WorkingGroup, BalanceKind};
 use council::Module as Council;
-use frame_support::traits::{Currency, Get};
+use frame_support::dispatch::DispatchResultWithPostInfo;
+use frame_support::traits::Get;
+use frame_support::traits::{Currency, Imbalance};
 use frame_support::weights::{DispatchClass, Weight};
 use frame_support::{decl_error, decl_event, decl_module, ensure, print};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;
+use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
-type BalanceOf<T> = <T as balances::Trait>::Balance;
-type Balances<T> = balances::Module<T>;
+type BalanceOf<T> = <T as balances::Config>::Balance;
+type Balances<T> = balances::Pallet<T>;
 
-pub trait Trait: frame_system::Trait + balances::Trait + council::Trait {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+pub trait Config: frame_system::Config + balances::Config + council::Config {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Gets the budget of the given WorkingGroup
     fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Self>;
@@ -51,20 +57,11 @@ pub trait Trait: frame_system::Trait + balances::Trait + council::Trait {
     type WeightInfo: WeightInfo;
 }
 
-/// Utility WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn execute_signal_proposal(i: u32) -> Weight;
-    fn update_working_group_budget_positive() -> Weight;
-    fn update_working_group_budget_negative() -> Weight;
-    fn burn_account_tokens() -> Weight;
-}
-
-type WeightInfoUtilities<T> = <T as Trait>::WeightInfo;
+type WeightInfoUtilities<T> = <T as Config>::WeightInfo;
 
 decl_error! {
     /// Codex module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Insufficient funds for 'Update Working Group Budget' proposal execution
         InsufficientFundsForBudgetUpdate,
 
@@ -80,7 +77,7 @@ decl_event!(
     pub enum Event<T>
     where
         Balance = BalanceOf<T>,
-        AccountId = <T as frame_system::Trait>::AccountId,
+        AccountId = <T as frame_system::Config>::AccountId,
     {
         /// A signal proposal was executed
         /// Params:
@@ -109,7 +106,7 @@ decl_event!(
 );
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
         /// Predefined errors
@@ -146,20 +143,22 @@ decl_module! {
         /// - `C` is the length of `wasm`
         /// However, we treat this as a full block as `frame_system::Module::set_code` does
         /// # </weight>
-        #[weight = (T::MaximumBlockWeight::get(), DispatchClass::Operational)]
+        /// #[weight = (T::BlockWeights::get().get(DispatchClass::Operational).base_extrinsic, DispatchClass::Operational)]
+        #[weight = (T::BlockWeights::get().max_block, DispatchClass::Operational)]
         pub fn execute_runtime_upgrade_proposal(
             origin,
             wasm: Vec<u8>,
-        ) {
+        ) -> DispatchResultWithPostInfo {
             ensure_root(origin.clone())?;
 
             print("Runtime upgrade proposal execution started.");
 
-            <frame_system::Module<T>>::set_code(origin, wasm.clone())?;
+            let post_info = <frame_system::Pallet<T>>::set_code(origin, wasm.clone())?;
 
             print("Runtime upgrade proposal execution finished.");
 
             Self::deposit_event(RawEvent::RuntimeUpgraded(wasm));
+            Ok(post_info)
         }
 
         /// Update working group budget
@@ -170,7 +169,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T>::get_update_working_group_budget_weight(&balance_kind)]
+        #[weight = Module::<T>::get_update_working_group_budget_weight(balance_kind)]
         pub fn update_working_group_budget(
             origin,
             working_group: WorkingGroup,
@@ -222,15 +221,15 @@ decl_module! {
 
             // == Mutation Safe == //
 
-            let _ = Balances::<T>::slash(&account_id, amount);
+            let (actually_burned, _) = Balances::<T>::slash(&account_id, amount);
 
-            Self::deposit_event(RawEvent::TokensBurned(account_id, amount));
+            Self::deposit_event(RawEvent::TokensBurned(account_id, actually_burned.peek()));
         }
 
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Returns the weigt for update_working_group_budget extrinsic according to parameters
     fn get_update_working_group_budget_weight(balance_kind: &BalanceKind) -> Weight {
         match balance_kind {

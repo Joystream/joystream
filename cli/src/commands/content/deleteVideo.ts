@@ -1,5 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import chalk from 'chalk'
 import { formatBalance } from '@polkadot/util'
@@ -36,30 +37,48 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       })
     }
 
-    return dataObjects.map((o) => [o.id, new BN(o.deletionPrize)])
+    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
   }
 
   async run(): Promise<void> {
-    const {
-      flags: { videoId, force, context },
-    } = this.parse(DeleteVideoCommand)
-    // Context
+    const { videoId, force, context } = this.parse(DeleteVideoCommand).flags
+    // Ensure video exists
     const video = await this.getApi().videoById(videoId)
-    const channel = await this.getApi().channelById(video.in_channel.toNumber())
+    const channel = await this.getApi().channelById(video.inChannel.toNumber())
+    // Context
     const [actor, address] = await this.getChannelManagementActor(channel, context)
 
     const dataObjectsInfo = await this.getDataObjectsInfo(videoId)
+
+    // Ensure actor is authorized to perform video deletion
+    const requiredPermissions: ChannelActionPermission['type'][] = dataObjectsInfo.length
+      ? ['DeleteVideo', 'ManageVideoAssets']
+      : ['DeleteVideo']
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channel owner or collaborator with ${requiredPermissions} permissions can perform this deletion!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
+
     if (dataObjectsInfo.length) {
       if (!force) {
         this.error(`Cannot remove associated data objects unless ${chalk.magentaBright('--force')} flag is used`, {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const deletionPrize = dataObjectsInfo.reduce((sum, [, prize]) => sum.add(prize), new BN(0))
+      const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects deletion prize of ${chalk.cyanBright(
-          formatBalance(deletionPrize)
-        )} will be transferred to ${chalk.magentaBright(address)}`
+        `Video state bloat bond of ${chalk.cyanBright(
+          formatBalance(video.videoStateBloatBond.amount)
+        )} will be transferred to ${chalk.magentaBright(
+          video.videoStateBloatBond.repaymentRestrictedTo.unwrapOr(address).toString()
+        )}\n` +
+          `Data objects state bloat bond of ${chalk.cyanBright(
+            formatBalance(dataObjectsStateBloatBond)
+          )} will be repaid with accordance to the bloat bond policy.`
       )
     }
 
@@ -72,10 +91,8 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideo', [
       actor,
       videoId,
-      createType(
-        'BTreeSet<DataObjectId>',
-        dataObjectsInfo.map(([id]) => id)
-      ),
+      createType('u64', dataObjectsInfo.length),
+      createType('Option<u32>', await this.getStorageBucketsNumWitness(video.inChannel)),
     ])
   }
 }

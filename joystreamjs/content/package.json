@@ -14,7 +14,7 @@
     "@types/long": "^4.0.1",
     "@polkadot/util-crypto": "^7.3.1",
     "merkletreejs": "^0.2.31",
-    "@joystream/types": "^0.19.3"
+    "@joystream/types": "^0.20.2"
   },
   "devDependencies": {
     "@joystream/eslint-config": "^1.0.0",

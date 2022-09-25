@@ -1,5 +1,4 @@
 import { createType } from '@joystream/types'
-import { UpdateChannelPayoutsParameters } from '@joystream/types/content'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
@@ -24,10 +23,7 @@ export default class UpdateChannelPayoutCommitment extends ContentDirectoryComma
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
     const result = await this.sendAndFollowNamedTx(keypair, 'content', 'updateChannelPayouts', [
-      createType<UpdateChannelPayoutsParameters, 'UpdateChannelPayoutsParameters'>(
-        'UpdateChannelPayoutsParameters',
-        commitment
-      ),
+      createType('PalletContentUpdateChannelPayoutsParametersRecord', commitment),
     ])
 
     const commitmentUpdatedEvent = this.findEvent(result, 'content', 'ChannelPayoutsUpdated')

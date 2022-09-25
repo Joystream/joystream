@@ -6,6 +6,7 @@ import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
 import { scenario } from '../Scenario'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Olympia', async ({ job }) => {
   job('creating members', creatingMemberships)
   job('updating member profile', updatingMemberProfile)

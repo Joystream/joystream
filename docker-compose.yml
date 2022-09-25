@@ -7,7 +7,7 @@ services:
     container_name: joystream-node
     volumes:
       - chain-data:/data
-    command: --dev --alice --validator --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
+    command: --dev --alice --validator --pruning=archive --unsafe-ws-external --unsafe-rpc-external --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data
     ports:
       - 9944:9944
       - 9933:9933
@@ -208,7 +208,7 @@ services:
     command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
-    image: joystream/hydra-indexer:3.0.0
+    image: joystream/hydra-indexer:v4.0.0-alpha.0
     container_name: indexer
     restart: unless-stopped
     env_file:
@@ -218,7 +218,6 @@ services:
       - DB_NAME=${INDEXER_DB_NAME}
       - INDEXER_WORKERS=5
       - REDIS_URI=redis://redis:6379/0
-      - TYPES_JSON=types.json
       - WS_PROVIDER_ENDPOINT_URI=${JOYSTREAM_NODE_WS}
       - DB_HOST=db
     depends_on:
@@ -230,7 +229,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:3.0.0
+    image: joystream/hydra-indexer-gateway:4.0.0-alpha.0
     container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:
@@ -260,19 +259,21 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:rhodes
-    restart: on-failure
+    image: joystream/faucet:carthage
+    restart: unless-stopped
     container_name: faucet
     env_file:
       - .env
     environment:
-      - SCREENING_AUTHORITY_SEED=${SCREENING_AUTHORITY_SEED}
+      - INVITER_KEY=${INVITER_KEY}
       - PORT=3002
-      - INVITING_MEMBER_ID=${INVITING_MEMBER_ID}
       - PROVIDER=${JOYSTREAM_NODE_WS}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - HCAPTCHA_SECRET=${HCAPTCHA_SECRET}
       - ALERT_TO_EMAIL=${ALERT_TO_EMAIL}
       - ALERT_FROM_EMAIL=${ALERT_FROM_EMAIL}
+      - BALANCE_CREDIT=${BALANCE_CREDIT}
+      - BALANCE_LOCKED=${BALANCE_LOCKED}
     ports:
       - "3002:3002"
 
@@ -283,6 +284,7 @@ services:
       - ORION_PORT=6116
       - ORION_MONGO_HOSTNAME=mongo
       - ORION_FEATURED_CONTENT_SECRET=password123
+      - ORION_ADMIN_SECRET=password123
       - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
     ports:
       - "6116:6116"

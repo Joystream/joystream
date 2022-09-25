@@ -1,7 +1,7 @@
-version: '3.0'
-description: Joystream query-node manifest file for Olympia
+version: '4.0'
+description: Joystream query-node manifest file
 repository: https://github.com/Joystream/joystream
-hydraVersion: "3"
+hydraVersion: '4'
 dataSource:
   kind: substrate
   chain: joystream
@@ -13,6 +13,8 @@ typegen:
   events:
     # Membership
     - members.MembershipBought
+    - members.MembershipGifted
+    - members.FoundingMemberCreated
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
     - members.MemberVerificationStatusUpdated
@@ -26,6 +28,7 @@ typegen:
     - members.ReferralCutUpdated
     - members.InitialInvitationBalanceUpdated
     - members.LeaderInvitationQuotaUpdated
+    - members.MemberRemarked
     # Working groups - use Storage Working Group as a reference group (all groups emit the same events)
     - storageWorkingGroup.OpeningAdded
     - storageWorkingGroup.AppliedOnOpening
@@ -49,6 +52,7 @@ typegen:
     - storageWorkingGroup.BudgetSpending
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
+    - storageWorkingGroup.LeadRemarked
     # Proposals
     - proposalsCodex.ProposalCreated
     - proposalsEngine.ProposalStatusUpdated
@@ -71,12 +75,10 @@ typegen:
     - forum.ThreadMetadataUpdated
     - forum.ThreadDeleted
     - forum.ThreadMoved
-    - forum.VoteOnPoll
     - forum.PostAdded
     - forum.PostModerated
     - forum.PostDeleted
     - forum.PostTextUpdated
-    - forum.PostReacted
     - forum.CategoryStickyThreadUpdate
     - forum.CategoryMembershipOfModeratorUpdated
     # Content directory
@@ -87,38 +89,33 @@ typegen:
     - content.ChannelCreated
     - content.ChannelUpdated
     - content.ChannelAssetsRemoved
-    - content.ChannelCensorshipStatusUpdated
-    - content.ChannelCategoryCreated
-    - content.ChannelCategoryUpdated
-    - content.ChannelCategoryDeleted
-    - content.VideoCategoryCreated
-    - content.VideoCategoryUpdated
-    - content.VideoCategoryDeleted
     - content.VideoCreated
     - content.VideoUpdated
     - content.VideoDeleted
-    - content.VideoCensorshipStatusUpdated
-    - content.FeaturedVideosSet
     - content.ChannelDeleted
+    - content.ChannelDeletedByModerator
+    - content.VideoDeletedByModerator
+    - content.ChannelAssetsDeletedByModerator
+    - content.VideoAssetsDeletedByModerator
+    - content.VideoVisibilitySetByModerator
+    - content.ChannelVisibilitySetByModerator
+    - content.ChannelOwnerRemarked
+    - content.ChannelAgentRemarked
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
     - storage.StorageBucketsUpdatedForBag
     - storage.DataObjectsUploaded
+    - storage.DataObjectsUpdated
     - storage.StorageOperatorMetadataSet
     - storage.StorageBucketVoucherLimitsSet
     - storage.PendingDataObjectsAccepted
     - storage.StorageBucketInvitationCancelled
     - storage.StorageBucketOperatorInvited
     - storage.StorageBucketOperatorRemoved
-    - storage.UploadingBlockStatusUpdated
-    - storage.DataObjectPerMegabyteFeeUpdated
-    - storage.StorageBucketsPerBagLimitUpdated
-    - storage.StorageBucketsVoucherMaxLimitsUpdated
     - storage.DataObjectsMoved
     - storage.DataObjectsDeleted
     - storage.StorageBucketStatusUpdated
-    - storage.UpdateBlacklist
     - storage.DynamicBagDeleted
     - storage.DynamicBagCreated
     - storage.VoucherChanged
@@ -129,7 +126,6 @@ typegen:
     - storage.DistributionBucketStatusUpdated
     - storage.DistributionBucketDeleted
     - storage.DistributionBucketsUpdatedForBag
-    - storage.DistributionBucketsPerBagLimitUpdated
     - storage.DistributionBucketModeUpdated
     - storage.DistributionBucketOperatorInvited
     - storage.DistributionBucketInvitationCancelled
@@ -137,9 +133,6 @@ typegen:
     - storage.DistributionBucketMetadataSet
     - storage.DistributionBucketOperatorRemoved
     - storage.DistributionBucketFamilyMetadataSet
-    # Not required:
-    # - storage.NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated
-    # - storage.FamiliesInDynamicBagCreationPolicyUpdated
 
     # Council
     - council.AnnouncingPeriodStarted
@@ -167,20 +160,21 @@ typegen:
     - referendum.VoteRevealed
     - referendum.StakeReleased
     # Bounty
-    - bounty.BountyCreated
-    - bounty.BountyCanceled
-    - bounty.BountyVetoed
-    - bounty.BountyFunded
-    - bounty.BountyMaxFundingReached
-    - bounty.BountyFundingWithdrawal
-    - bounty.BountyCreatorCherryWithdrawal
-    - bounty.BountyRemoved
-    - bounty.WorkEntryAnnounced
-    - bounty.WorkEntryWithdrawn
-    - bounty.WorkEntrySlashed
-    - bounty.WorkSubmitted
-    - bounty.OracleJudgmentSubmitted
-    - bounty.WorkEntrantFundsWithdrawn
+    # TODO: uncomment this + event handlers below after bounties are repaired
+    # - bounty.BountyCreated
+    # - bounty.BountyCanceled
+    # - bounty.BountyVetoed
+    # - bounty.BountyFunded
+    # - bounty.BountyMaxFundingReached
+    # - bounty.BountyFundingWithdrawal
+    # - bounty.BountyCreatorCherryWithdrawal
+    # - bounty.BountyRemoved
+    # - bounty.WorkEntryAnnounced
+    # - bounty.WorkEntryWithdrawn
+    # - bounty.WorkEntrySlashed
+    # - bounty.WorkSubmitted
+    # - bounty.OracleJudgmentSubmitted
+    # - bounty.WorkEntrantFundsWithdrawn
     # content NFTs
     - content.OpenAuctionStarted
     - content.EnglishAuctionStarted
@@ -216,6 +210,10 @@ mappings:
     # Membership module
     - event: members.MembershipBought
       handler: members_MembershipBought
+    - event: members.MembershipGifted
+      handler: members_MembershipGifted
+    - event: members.FoundingMemberCreated
+      handler: members_FoundingMemberCreated
     - event: members.MemberProfileUpdated
       handler: members_MemberProfileUpdated
     - event: members.MemberAccountsUpdated
@@ -242,6 +240,8 @@ mappings:
       handler: members_InitialInvitationBalanceUpdated
     - event: members.LeaderInvitationQuotaUpdated
       handler: members_LeaderInvitationQuotaUpdated
+    - event: members.MemberRemarked
+      handler: members_MemberRemarked
     # Storage working group
     - event: storageWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -694,10 +694,6 @@ mappings:
       handler: forum_PostDeleted
     - event: forum.PostTextUpdated
       handler: forum_PostTextUpdated
-    - event: forum.PostReacted
-      handler: forum_PostReacted
-    - event: forum.VoteOnPoll
-      handler: forum_VoteOnPoll
     - event: forum.CategoryStickyThreadUpdate
       handler: forum_CategoryStickyThreadUpdate
     - event: forum.CategoryMembershipOfModeratorUpdated
@@ -717,33 +713,31 @@ mappings:
       handler: content_ChannelUpdated
     - event: content.ChannelAssetsRemoved
       handler: content_ChannelAssetsRemoved
-    - event: content.ChannelCensorshipStatusUpdated
-      handler: content_ChannelCensorshipStatusUpdated
-    - event: content.ChannelCategoryCreated
-      handler: content_ChannelCategoryCreated
-    - event: content.ChannelCategoryUpdated
-      handler: content_ChannelCategoryUpdated
-    - event: content.ChannelCategoryDeleted
-      handler: content_ChannelCategoryDeleted
-    - event: content.VideoCategoryCreated
-      handler: content_VideoCategoryCreated
-    - event: content.VideoCategoryUpdated
-      handler: content_VideoCategoryUpdated
-    - event: content.VideoCategoryDeleted
-      handler: content_VideoCategoryDeleted
     - event: content.VideoCreated
-      handler: content_VideoCreated
+      handler: content_ContentCreated
     - event: content.VideoUpdated
-      handler: content_VideoUpdated
+      handler: content_ContentUpdated
     - event: content.VideoDeleted
-      handler: content_VideoDeleted
-    - event: content.VideoCensorshipStatusUpdated
-      handler: content_VideoCensorshipStatusUpdated
-    - event: content.FeaturedVideosSet
-      handler: content_FeaturedVideosSet
+      handler: content_ContentDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
+    - event: content.ChannelDeletedByModerator
+      handler: content_ChannelDeletedByModerator
+    - event: content.VideoDeletedByModerator
+      handler: content_VideoDeletedByModerator
+    - event: content.ChannelAssetsDeletedByModerator
+      handler: content_ChannelAssetsDeletedByModerator
+    - event: content.VideoAssetsDeletedByModerator
+      handler: content_VideoAssetsDeletedByModerator
+    - event: content.VideoVisibilitySetByModerator
+      handler: content_VideoVisibilitySetByModerator
+    - event: content.ChannelVisibilitySetByModerator
+      handler: content_ChannelVisibilitySetByModerator
 
+    - event: content.ChannelOwnerRemarked
+      handler: content_ChannelOwnerRemarked
+    - event: content.ChannelAgentRemarked
+      handler: content_ChannelAgentRemarked
     # content NFTs
     - event: content.OpenAuctionStarted
       handler: contentNft_OpenAuctionStarted
@@ -789,6 +783,8 @@ mappings:
       handler: storage_StorageBucketsUpdatedForBag
     - event: storage.DataObjectsUploaded
       handler: storage_DataObjectsUploaded
+    - event: storage.DataObjectsUpdated
+      handler: storage_DataObjectsUpdated
     - event: storage.StorageOperatorMetadataSet
       handler: storage_StorageOperatorMetadataSet
     - event: storage.StorageBucketVoucherLimitsSet
@@ -801,22 +797,12 @@ mappings:
       handler: storage_StorageBucketOperatorInvited
     - event: storage.StorageBucketOperatorRemoved
       handler: storage_StorageBucketOperatorRemoved
-    - event: storage.UploadingBlockStatusUpdated
-      handler: storage_UploadingBlockStatusUpdated
-    - event: storage.DataObjectPerMegabyteFeeUpdated
-      handler: storage_DataObjectPerMegabyteFeeUpdated
-    - event: storage.StorageBucketsPerBagLimitUpdated
-      handler: storage_StorageBucketsPerBagLimitUpdated
-    - event: storage.StorageBucketsVoucherMaxLimitsUpdated
-      handler: storage_StorageBucketsVoucherMaxLimitsUpdated
     - event: storage.DataObjectsMoved
       handler: storage_DataObjectsMoved
     - event: storage.DataObjectsDeleted
       handler: storage_DataObjectsDeleted
     - event: storage.StorageBucketStatusUpdated
       handler: storage_StorageBucketStatusUpdated
-    - event: storage.UpdateBlacklist
-      handler: storage_UpdateBlacklist
     - event: storage.DynamicBagDeleted
       handler: storage_DynamicBagDeleted
     - event: storage.DynamicBagCreated
@@ -837,8 +823,6 @@ mappings:
       handler: storage_DistributionBucketDeleted
     - event: storage.DistributionBucketsUpdatedForBag
       handler: storage_DistributionBucketsUpdatedForBag
-    - event: storage.DistributionBucketsPerBagLimitUpdated
-      handler: storage_DistributionBucketsPerBagLimitUpdated
     - event: storage.DistributionBucketModeUpdated
       handler: storage_DistributionBucketModeUpdated
     - event: storage.DistributionBucketOperatorInvited
@@ -903,39 +887,39 @@ mappings:
     - event: referendum.StakeReleased
       handler: referendum_StakeReleased
     # Bounty
-    - event: bounty.BountyCreated
-      handler: bounty_BountyCreated
-    - event: bounty.BountyCanceled
-      handler: bounty_BountyCanceled
-    - event: bounty.BountyVetoed
-      handler: bounty_BountyVetoed
-    - event: bounty.BountyFunded
-      handler: bounty_BountyFunded
-    - event: bounty.BountyMaxFundingReached
-      handler: bounty_BountyMaxFundingReached
-    - event: bounty.BountyFundingWithdrawal
-      handler: bounty_BountyFundingWithdrawal
-    - event: bounty.BountyCreatorCherryWithdrawal
-      handler: bounty_BountyCreatorCherryWithdrawal
-    - event: bounty.BountyRemoved
-      handler: bounty_BountyRemoved
-    - event: bounty.WorkEntryAnnounced
-      handler: bounty_WorkEntryAnnounced
-    - event: bounty.WorkEntryWithdrawn
-      handler: bounty_WorkEntryWithdrawn
-    - event: bounty.WorkEntrySlashed
-      handler: bounty_WorkEntrySlashed
-    - event: bounty.WorkSubmitted
-      handler: bounty_WorkSubmitted
-    - event: bounty.OracleJudgmentSubmitted
-      handler: bounty_OracleJudgmentSubmitted
-    - event: bounty.WorkEntrantFundsWithdrawn
-      handler: bounty_WorkEntrantFundsWithdrawn
+    # - event: bounty.BountyCreated
+    #   handler: bounty_BountyCreated
+    # - event: bounty.BountyCanceled
+    #   handler: bounty_BountyCanceled
+    # - event: bounty.BountyVetoed
+    #   handler: bounty_BountyVetoed
+    # - event: bounty.BountyFunded
+    #   handler: bounty_BountyFunded
+    # - event: bounty.BountyMaxFundingReached
+    #   handler: bounty_BountyMaxFundingReached
+    # - event: bounty.BountyFundingWithdrawal
+    #   handler: bounty_BountyFundingWithdrawal
+    # - event: bounty.BountyCreatorCherryWithdrawal
+    #   handler: bounty_BountyCreatorCherryWithdrawal
+    # - event: bounty.BountyRemoved
+    #   handler: bounty_BountyRemoved
+    # - event: bounty.WorkEntryAnnounced
+    #   handler: bounty_WorkEntryAnnounced
+    # - event: bounty.WorkEntryWithdrawn
+    #   handler: bounty_WorkEntryWithdrawn
+    # - event: bounty.WorkEntrySlashed
+    #   handler: bounty_WorkEntrySlashed
+    # - event: bounty.WorkSubmitted
+    #   handler: bounty_WorkSubmitted
+    # - event: bounty.OracleJudgmentSubmitted
+    #   handler: bounty_OracleJudgmentSubmitted
+    # - event: bounty.WorkEntrantFundsWithdrawn
+    #   handler: bounty_WorkEntrantFundsWithdrawn
     # ExtrinsicSuccess event handler - we're using an empty handler just for the purpose of triggering
     # preBlock/postBlock hooks for each block (instead of "catching-up" after some event/tx recognized by processor is fired)
     # ExtrinsicSuccess is emitted at least once per block due to timestamp.set extrinsic
-    - event: system.ExtrinsicSuccess
-      handler: system_ExtrinsicSuccess
+    # - event: system.ExtrinsicSuccess
+    #   handler: system_ExtrinsicSuccess
     # Utility
     - event: joystreamUtility.UpdatedWorkingGroupBudget
       handler: joystreamUtility_UpdatedWorkingGroupBudget
@@ -947,6 +931,6 @@ mappings:
   preBlockHooks:
     - handler: bootstrapData
       filter:
-        height: "[0,0]" # will be executed only at genesis
-  postBlockHooks:
-    - handler: runScheduler
+        height: '[0,0]' # will be executed only at genesis
+  # postBlockHooks:
+  #   - handler: runScheduler

@@ -66,6 +66,8 @@ pub fn default_upload_context() -> UploadContext {
 pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParams {
     SingleDataObjectUploadParams {
         expected_data_size_fee: storage::Module::<Test>::data_object_per_mega_byte_fee(),
+        expected_data_object_state_bloat_bond:
+            storage::Module::<Test>::data_object_state_bloat_bond_value(),
         object_creation_params: DataObjectCreationParameters {
             ipfs_content_id: Vec::from_iter(0..46),
             size: 1_000_000,
@@ -92,6 +94,7 @@ impl IssueTokenFixture {
                 patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
+                revenue_split_rate: DEFAULT_SPLIT_RATE,
                 ..Default::default()
             }
             .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
@@ -136,7 +139,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
             Token::token_info_by_id(snapshot_pre.next_token_id),
             TokenData {
                 accounts_number: self.params.initial_allocation.len() as u64,
-                ..TokenData::from_params::<Test>(self.params.clone())
+                ..TokenData::from_params::<Test>(self.params.clone()).unwrap()
             }
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
@@ -748,8 +751,8 @@ pub struct IssueRevenueSplitFixture {
     token_id: TokenId,
     start: Option<BlockNumber>,
     duration: BlockNumber,
-    allocation_source: AccountId,
-    allocation: JoyBalance,
+    revenue_source_account: AccountId,
+    revenue_amount: JoyBalance,
 }
 
 impl IssueRevenueSplitFixture {
@@ -758,8 +761,8 @@ impl IssueRevenueSplitFixture {
             token_id: TokenId::one(),
             start: None,
             duration: BlockNumber::from(DEFAULT_SPLIT_DURATION),
-            allocation_source: member!(1).1,
-            allocation: Balance::from(DEFAULT_SPLIT_ALLOCATION),
+            revenue_source_account: member!(1).1,
+            revenue_amount: Balance::from(DEFAULT_SPLIT_REVENUE),
         }
     }
 
@@ -777,30 +780,30 @@ impl IssueRevenueSplitFixture {
         }
     }
 
-    pub fn with_allocation(self, allocation: u128) -> Self {
+    pub fn with_revenue_amount(self, amount: u128) -> Self {
         Self {
-            allocation: allocation.into(),
+            revenue_amount: amount.into(),
             ..self
         }
     }
 
-    pub fn with_allocation_source(self, account: u64) -> Self {
+    pub fn with_revenue_source_account(self, account: u64) -> Self {
         Self {
-            allocation_source: account.into(),
+            revenue_source_account: account.into(),
             ..self
         }
     }
 
-    pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+    pub fn execute_call(&self) -> Result<JoyBalance, DispatchError> {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::issue_revenue_split(
             self.token_id,
             self.start,
             self.duration,
-            self.allocation_source,
-            self.allocation,
+            self.revenue_source_account,
+            self.revenue_amount,
         );
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -833,9 +836,9 @@ impl FinalizeRevenueSplitFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::finalize_revenue_split(self.token_id, self.account_id);
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -889,14 +892,14 @@ impl ParticipateInSplitFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::participate_in_split(
             Origin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,
         );
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -912,6 +915,7 @@ pub struct TransferFixture {
     token_id: TokenId,
     src_member_id: MemberId,
     outputs: TransfersOf<Test>,
+    metadata: Vec<u8>,
 }
 
 impl TransferFixture {
@@ -920,7 +924,6 @@ impl TransferFixture {
             vec![(
                 member!(2).0,
                 Payment::<Balance> {
-                    remark: "remark".as_bytes().to_vec(),
                     amount: DEFAULT_SPLIT_PARTICIPATION,
                 },
             )]
@@ -932,18 +935,20 @@ impl TransferFixture {
             token_id: 1u64.into(),
             src_member_id: member!(1).0,
             outputs,
+            metadata: "metadata".as_bytes().to_vec(),
         }
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::transfer(
             Origin::signed(self.sender),
             self.src_member_id,
             self.token_id,
             self.outputs.clone(),
+            self.metadata.clone(),
         );
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -988,10 +993,10 @@ impl ExitRevenueSplitFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result =
             Token::exit_revenue_split(Origin::signed(self.sender), self.token_id, self.member_id);
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {

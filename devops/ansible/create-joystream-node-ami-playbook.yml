@@ -1,0 +1,44 @@
+---
+# Setup joystream code, build and Create AMI
+
+- name: Build joystream apps and binary on host
+  hosts: all
+
+  tasks:
+    - name: Install tools
+      include_role:
+        name: common
+        tasks_from: install-tools
+  
+    - name: Get code from git repo
+      include_role:
+        name: common
+        tasks_from: get-code-git
+
+    - name: Build Apps
+      include_role:
+        name: common
+        tasks_from: build-apps
+  
+    - name: Build Binaries
+      include_role:
+        name: common
+        tasks_from: build-binaries
+
+    - name: Basic AMI Creation
+      amazon.aws.ec2_ami:
+        instance_id: '{{ instance_id }}'
+        wait: yes
+        # How long before wait gives up, in seconds
+        wait_timeout: 3600
+        name: '{{ ami_name }}'
+        launch_permissions:
+          group_names: ['all']
+        tags:
+          Name: '{{ ami_name }}'
+      register: ami_data
+      delegate_to: localhost
+
+    - name: Print AMI ID
+      debug:
+        msg: 'AMI ID is: {{ ami_data.image_id }}'

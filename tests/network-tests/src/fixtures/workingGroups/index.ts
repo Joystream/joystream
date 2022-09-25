@@ -4,9 +4,9 @@ export {
   OpeningApplications,
 } from './ApplyOnOpeningsHappyCaseFixture'
 export { CancelOpeningsFixture } from './CancelOpeningsFixture'
-export { DEFAULT_OPENING_PARAMS, OpeningParams, CreateOpeningsFixture } from './CreateOpeningsFixture'
+export { createDefaultOpeningParams, OpeningParams, CreateOpeningsFixture } from './CreateOpeningsFixture'
 export {
-  DEFAULT_UPCOMING_OPENING_META,
+  createDefaultUpcomingMeta,
   UpcomingOpeningParams,
   CreateUpcomingOpeningsFixture,
 } from './CreateUpcomingOpeningsFixture'

@@ -30,6 +30,18 @@ message MediaType {
     optional string mime_media_type = 3;
 }
 
+message SubtitleMetadata {
+  required string type = 1;
+
+  // index into external [assets array](#.Assets)
+  optional uint32 new_asset = 2;
+
+  // ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+  required string language = 3;
+
+  required string mimeType = 4;
+}
+
 message VideoMetadata {
     // Video Title
     optional string title = 1;
@@ -38,7 +50,7 @@ message VideoMetadata {
     optional string description = 2;
 
     // Assets
-    
+
     // index into external [assets array](#.Assets)
     optional uint32 video = 3;
 
@@ -50,7 +62,7 @@ message VideoMetadata {
 
     // Resolution of the video (Height)
     optional uint32 media_pixel_height = 6;
-    
+
     // Resolution of the video (Width)
     optional uint32 media_pixel_width = 7;
 
@@ -79,10 +91,25 @@ message VideoMetadata {
     repeated uint64 persons = 15 [packed=true];
 
     // Video Category Id
-    optional uint64 category = 16;
+    optional string category = 16;
+
+    // Video subtitles
+    repeated SubtitleMetadata subtitles = 17;
+    
+    // Enable/Disable the comment section
+    optional bool enable_comments = 18;
+
+    // Remove all subtitles; since protobuf doesn't distinguish b/w 
+    // empty array and null field, simply removing all subtitles by 
+    // overriding list with an empty array wont work
+    optional bool clear_subtitles = 19;
+
 }
 
-message VideoCategoryMetadata {
-    // Category name
-    optional string name = 1;
+message ContentMetadata {
+    oneof content_metadata {
+        VideoMetadata video_metadata = 1;
+        // ...
+        // Other possible metadata standards, e.g. `PlaylistMetadata`
+    }
 }

@@ -1,10 +1,6 @@
-// @ts-check
-
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { types } from '@joystream/types'
-// import { Seat } from '@joystream/types/council'
-
 import BN from 'bn.js'
+import '@joystream/types'
 
 async function main() {
   // Initialise the provider to connect to the local node
@@ -15,7 +11,7 @@ async function main() {
   let retry = 6
   while (true) {
     try {
-      api = new ApiPromise({ provider, types })
+      api = new ApiPromise({ provider })
       await api.isReadyOrError
       break
     } catch (err) {
@@ -63,7 +59,7 @@ async function main() {
     console.log('Total Validator Locked Balances:', totalValidatorBalances.toString())
   }
 
-  api.disconnect()
+  await api.disconnect()
 }
 
-main()
+main().catch(console.error)

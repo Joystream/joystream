@@ -1,9 +1,8 @@
 import { ChannelPayoutsMetadata, IChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
-import { Hash } from '@joystream/types/common'
-import { ProofElement, Side } from '@joystream/types/content'
 import { asValidatedMetadata, getByteSequenceFromFile } from '@joystreamjs/utils'
 import { ChannelPayoutsVector } from '@joystreamjs/utils/typings/ChannelPayoutsVector.schema'
+import { PalletCommonProofElementRecord as ProofElement } from '@polkadot/types/lookup'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import axios from 'axios'
 import _ from 'lodash'
@@ -253,9 +252,9 @@ export function generateJsonPlayloadFromPayoutsVector(channelPayoutsVector: Chan
     const merkleProof: MerkleProof = tree.getProof(leaves[i])
 
     const merkleBranch = merkleProof.map(({ data, position }) => {
-      return createType<ProofElement, 'ProofElement'>('ProofElement', {
-        hash: createType<Hash, 'Hash'>('Hash', data),
-        side: createType<Side, 'Side'>('Side', position === 'left' ? { Left: null } : { Right: null }),
+      return createType('PalletContentProofElementRecord', {
+        hash_: data,
+        side: position === 'left' ? { Left: null } : { Right: null },
       })
     })
 

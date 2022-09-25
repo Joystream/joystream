@@ -1,0 +1,80 @@
+---
+# Create chain spec files and keys and copy to all the servers
+
+- name: Delete remote data directory
+  file:
+    state: absent
+    path: "{{ remote_data_path }}"
+
+- name: Copying initial balances file to the server
+  copy:
+    src: '{{ initial_balances_file }}'
+    dest: '{{ remote_data_path }}/initial-balances.json'
+  when: initial_balances_file is defined and initial_balances_file|length > 0
+  delegate_to: '{{ first_validator }}'
+  run_once: true
+
+- name: Run chain-spec-builder to generate chainspec.json file (with initial data)
+  shell: >
+    bin/chain-spec-builder generate -a {{ groups['validators'] | length }}
+    --chain-spec-path {{ remote_data_path }}/chainspec.json
+    {% if endow_accounts is defined and endow_accounts|int > 0%}--endowed {{ endow_accounts }}{% endif %}
+    --keystore-path {{ remote_data_path }}
+    {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
+    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_data_path }}/initial-balances.json{% endif %}
+  register: chain_secrets_output
+  delegate_to: '{{ first_validator }}'
+  run_once: true
+
+- name: generate node keys
+  shell: > 
+    bin/joystream-node key generate-node-key --file {{ remote_data_path }}/node-key-{{ ansible_play_batch.index(inventory_hostname) }}
+  delegate_to: '{{ first_validator }}'
+  register: generate_node_keys_output
+
+- name: Save output of chain spec to local file
+  copy:
+    content: '{{ chain_secrets_output.stdout }}'
+    dest: '{{ remote_data_path }}/secrets.txt'
+  delegate_to: '{{ first_validator }}'
+  run_once: true
+
+# - name: Format chain spec output
+#   set_fact:
+#     chain_secrets_output_formatted: '{{ chain_secrets_output.stdout | regex_replace("=", ": ") | from_yaml }}'
+#   run_once: true
+
+# - name: Extract sudo key from chain spec output
+#   set_fact:
+#     sudo_key: '{{ chain_secrets_output_formatted.sudo }}'
+#   delegate_to: '{{ first_validator }}'
+#   run_once: true
+
+# - name: Extract first endowed key from chain spec output
+#   set_fact:
+#     endowed_key: '{{ chain_secrets_output_formatted.endowed_0 }}'
+#   delegate_to: '{{ first_validator }}'
+#   run_once: true
+#   when: endow_accounts is defined and endow_accounts|int > 0
+
+- name: Set chain name, id, protocolId, and bootNodes
+  update_chainspec_name_id_boot_nodes:
+    chain_spec_path: '{{ remote_data_path }}/chainspec.json'
+    network_name: '{{ network_name }}'
+    network_id: '{{ network_id }}'
+    all_nodes: '{{ hostvars }}'
+  delegate_to: '{{ first_validator }}'
+  register: chain_config_result
+  run_once: true
+
+- name: Generate raw chainspec file
+  shell: 'bin/joystream-node build-spec --chain {{ remote_data_path }}/chainspec.json --raw > {{ remote_data_path }}/chainspec-raw.json'
+  delegate_to: '{{ first_validator }}'
+  run_once: true
+
+- name: Copying artifacts
+  synchronize:
+    src: '{{ remote_data_path }}/'
+    dest: '{{ data_path }}/chain/'
+    mode: pull
+  run_once: true

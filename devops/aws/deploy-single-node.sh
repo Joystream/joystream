@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -18,12 +18,15 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
+# Install additional Ansible roles from requirements
+ansible-galaxy install -r ../ansible/requirements.yml
+
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying single node ==========="
 aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
-  --stack-name $SINGLE_NODE_STACK_NAME \
+  --stack-name $STACK_NAME \
   --template-file cloudformation/single-instance.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
@@ -33,14 +36,11 @@ aws cloudformation deploy \
 
 # If the deploy succeeded, get the IP and configure the created instance
 if [ $? -eq 0 ]; then
-  # Install additional Ansible roles from requirements
-  ansible-galaxy install -r requirements.yml
-
-  SERVER_IP=$(get_aws_export $SINGLE_NODE_STACK_NAME "PublicIp")
+  SERVER_IP=$(get_aws_export $STACK_NAME "PublicIp")
 
   echo -e "New Node Public IP: $SERVER_IP"
 
   echo -e "\n\n=========== Configuring node ==========="
-  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-single-node-playbook.yml \
-    --extra-vars "binary_file=$BINARY_FILE chain_spec_file=$CHAIN_SPEC_FILE"
+  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH ../ansible/deploy-single-node-playbook.yml \
+    --extra-vars "joystream_node=$BINARY_FILE chainspec=$CHAIN_SPEC_FILE"
 fi
