@@ -50,4 +50,20 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
     0
   )
   assert.equal(totalReward, new BN(0))
+
+  // attempt to claim payouts by authorities should be zero
+  let authorities = await api.getAuthorities()
+  const claimingResultAuthorities = await Promise.all(
+    authorities.map(async (account) => {
+      const claimTx = api.tx.staking.payoutStakers(account, claimingEra)
+      const claimFees = await api.estimateTxFee(claimTx, account)
+      await api.treasuryTransferBalance(account, claimFees)
+      await api.signAndSend(claimTx, account)
+    }))
+
+  let totalRewardAuthorities: BN = (await Promise.all(authorities.map((account) => api.getBalance(account)))).reduce(
+    (rewardAmount, accumulator: BN) => accumulator.add(new BN(rewardAmount)),
+    0
+  )
+  assert.equal(totalRewardAuthorities, new BN(0))
 }
