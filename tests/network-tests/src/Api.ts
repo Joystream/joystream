@@ -333,6 +333,10 @@ export class Api {
     return this.api.query.staking.validatorCount<u32>()
   }
 
+  public getElectionRounds(): u32 {
+    return this.api.query.elections.electionRounds()
+  }
+
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber()
   }
