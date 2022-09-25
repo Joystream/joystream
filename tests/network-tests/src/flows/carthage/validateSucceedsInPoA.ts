@@ -17,7 +17,7 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
     assert(currentEra.isNone)
 
     // create keys and bonding tx
-    const account = (await api.createKeyPairs(1))[0].key.address
+    const account = (await api.createKeyPairs(nAccounts))[0].key.address
 
     const input = {
         stash: account,
@@ -32,7 +32,7 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
     assert(bondingTxResult.isCompleted)
 
 
-    // attempt to validate
+    // attempt to declare accounts as validators
     const prefs: PalletStakingValidatorPrefs = {
         commission: new Perbill(1),
         blocked: new Boolean(false) // TODO: Ask Leszek

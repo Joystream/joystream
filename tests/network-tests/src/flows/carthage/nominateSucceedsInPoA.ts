@@ -16,23 +16,34 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
     assert(currentEra.isNone)
 
     // create keys and bonding tx
-    const account = (await api.createKeyPairs(1))[0].key.address
+    const [nominatorAccount, validatorAccount] = (await api.createKeyPairs(2)).map(({ key, }) => key.address)
 
+    // bond nominator account
     const input = {
-        stash: account,
-        controller: account,
+        stash: nominatorAccount,
+        controller: nominatorAccount,
         bondAmount: new BN(100000)
     }
-
     const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
     const bondingFees = await api.estimateTxFee(bondTx, input.stash)
     await api.treasuryTransferBalance(input.stash, input.bondAmount.add(bondingFees))
     const bondingTxResult = await api.signAndSend(bondTx, input.stash)
     assert(bondingTxResult.isCompleted)
 
+    // bond and candidate validator
+    const inputValidator = {
+        stash: nominatorAccount,
+        controller: nominatorAccount,
+        bondAmount: new BN(100000)
+    }
+    const validatorBondTx = api.tx.staking.bond(inputValidator.controller, inputValidator.bondAmount, 'Stash')
+    const validatorBondingFees = await api.estimateTxFee(validatorBondTx, inputValidator.stash)
+    await api.treasuryTransferBalance(inputValidator.stash, inputValidator.bondAmount.add(validatorBondingFees))
+    const validatorBondingTxResult = await api.signAndSend(validatorBondTx, inputValidator.stash)
+    assert(validatorBondingTxResult.isCompleted)
 
-    // attempt to validate
-    const nominateTx = api.tx.staking.nominate([account])
+    // attempt to nominate
+    const nominateTx = api.tx.staking.nominate([validatorAccount])
     const nominatingFees = await api.estimateTxFee(nominateTx, input.controller)
     await api.treasuryTransferBalance(input.stash, nominatingFees)
     const nominateTxResult = await api.signAndSend(nominateTx, input.controller)
