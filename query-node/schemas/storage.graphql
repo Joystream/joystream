@@ -173,6 +173,11 @@ type DataObjectTypeVideoSubtitle @variant {
   video: Video!
 }
 
+type DataObjectTypeChannelPayoutsPayload @variant {
+  "Related video entity"
+  council: ElectedCouncil!
+}
+
 type DataObjectTypeUnknown @variant {
   _phantom: Int
 }
@@ -183,6 +188,7 @@ union DataObjectType =
   | DataObjectTypeVideoMedia
   | DataObjectTypeVideoThumbnail
   | DataObjectTypeVideoSubtitle
+  | DataObjectTypeChannelPayoutsPayload
   | DataObjectTypeUnknown
 
 type StorageDataObject @entity {
@@ -219,6 +225,9 @@ type StorageDataObject @entity {
 
   "Video subtitle that has this data object associated as subtitle file."
   videoSubtitle: VideoSubtitle @derivedFrom(field: "asset")
+
+  "Elected Council that proposed this channel payouts payload"
+  channelPayoutsPayloadByCouncil: ElectedCouncil
 }
 
 type DistributionBucketFamilyGeographicArea @entity {

@@ -101,6 +101,9 @@ typegen:
     - content.ChannelVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
+    - content.ChannelPayoutsUpdated
+    - content.ChannelRewardUpdated
+    - content.ChannelRewardClaimedAndWithdrawn
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -733,6 +736,14 @@ mappings:
       handler: content_VideoVisibilitySetByModerator
     - event: content.ChannelVisibilitySetByModerator
       handler: content_ChannelVisibilitySetByModerator
+    - event: content.ChannelPayoutsUpdated
+      handler: content_ChannelPayoutsUpdated
+    - event: content.ChannelRewardUpdated
+      handler: content_ChannelRewardUpdated
+    - event: content.ChannelFundsWithdrawn
+      handler: content_ChannelFundsWithdrawn
+    - event: content.ChannelRewardClaimedAndWithdrawn
+      handler: content_ChannelRewardClaimedAndWithdrawn
 
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked

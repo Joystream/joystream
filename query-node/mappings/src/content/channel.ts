@@ -18,6 +18,10 @@ import {
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
   ChannelVisibilitySetByModeratorEvent,
+  ChannelPayoutParameters,
+  ChannelPayoutsCommitmentUpdatedEvent,
+  ChannelRewardClaimedAndWithdrawnEvent,
+  ChannelRewardClaimedEvent,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -28,7 +32,10 @@ import {
   logger,
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
+  deterministicEntityId,
+  unwrap,
 } from '../common'
+import { getCurrentElectedCouncil } from 'src/council'
 import {
   processBanOrUnbanMemberFromChannelMessage,
   processModerateCommentMessage,
@@ -45,6 +52,7 @@ import {
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
+import BN from 'bn.js'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -411,4 +419,163 @@ async function processModeratorRemark(
   }
 
   return inconsistentState('Unsupported message type in moderator remark action', messageType)
+}
+
+export async function content_ChannelPayoutsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
+  // read event data
+  const [updateChannelPayoutParameters, dataObjectId] = new Content.ChannelPayoutsUpdatedEvent(event).params
+
+  const asDataObjectId = unwrap(dataObjectId)
+
+  const payloadDataObject = await store.get(StorageDataObject, { where: { id: asDataObjectId?.toString() } })
+
+  if (payloadDataObject) {
+    const electedCouncil = await getCurrentElectedCouncil(store)
+    payloadDataObject.channelPayoutsPayloadByCouncil = electedCouncil
+
+    // common event processing - second
+
+    const commitmentUpdatedEvent = new ChannelPayoutsCommitmentUpdatedEvent({
+      ...genericEventFields(event),
+      commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
+      payload: payloadDataObject,
+    })
+
+    await store.save<ChannelPayoutsCommitmentUpdatedEvent>(commitmentUpdatedEvent)
+  }
+
+  // load existing channel payout parameters record (if any)
+  const channelPayoutParameters = await store.get(ChannelPayoutParameters, {
+    where: { isCommitmentValid: true },
+  })
+
+  const asPayload = unwrap(updateChannelPayoutParameters.payload)?.objectCreationParams
+  const payloadSize = asPayload ? new BN(asPayload.size) : undefined
+  const payloadHash = asPayload ? Buffer.from(asPayload.ipfsContentId) : undefined
+  const minCashoutAllowed = unwrap(updateChannelPayoutParameters.minCashoutAllowed)
+  const maxCashoutAllowed = unwrap(updateChannelPayoutParameters.maxCashoutAllowed)
+  const channelCashoutsEnabled = unwrap(updateChannelPayoutParameters.channelCashoutsEnabled)?.valueOf()
+
+  if (updateChannelPayoutParameters.commitment.isSome) {
+    if (channelPayoutParameters) {
+      channelPayoutParameters.isCommitmentValid = false
+
+      // invalidate existing channel payout parameters record
+      await store.save<ChannelPayoutParameters>(channelPayoutParameters)
+    }
+
+    const newChannelPayoutParameters = new ChannelPayoutParameters({
+      id: deterministicEntityId(event),
+      commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
+      payloadSize,
+      payloadHash,
+      minCashoutAllowed,
+      maxCashoutAllowed,
+      channelCashoutsEnabled,
+      createdAt: new Date(event.blockTimestamp),
+      updatedAt: new Date(event.blockTimestamp),
+      isCommitmentValid: true,
+    })
+
+    // save new channel payout parameters record (with new commitment)
+    await store.save<ChannelPayoutParameters>(newChannelPayoutParameters)
+
+    // common event processing - second
+
+    const commitmentUpdatedEvent = new ChannelPayoutsCommitmentUpdatedEvent({
+      ...genericEventFields(event),
+      commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
+      payload: payloadDataObject,
+    })
+
+    await store.save<ChannelPayoutsCommitmentUpdatedEvent>(commitmentUpdatedEvent)
+
+    return
+  }
+
+  if (!channelPayoutParameters) {
+    inconsistentState('Channel payout params update request for non-existing commitment')
+  }
+
+  channelPayoutParameters.payloadHash = payloadHash
+  channelPayoutParameters.payloadSize = payloadSize
+  channelPayoutParameters.minCashoutAllowed = minCashoutAllowed || channelPayoutParameters.minCashoutAllowed
+  channelPayoutParameters.maxCashoutAllowed = maxCashoutAllowed || channelPayoutParameters.maxCashoutAllowed
+  channelPayoutParameters.channelCashoutsEnabled =
+    channelCashoutsEnabled || channelPayoutParameters.channelCashoutsEnabled
+  channelPayoutParameters.updatedAt = new Date(event.blockTimestamp)
+
+  // update existing channel payout parameters record
+  await store.save<ChannelPayoutParameters>(channelPayoutParameters)
+}
+
+function setChannelRewardFields(event: SubstrateEvent, channel: Channel, amount: BN) {
+  // update channel reward fields
+  channel.lastRewardClaimed = amount
+  channel.cumulativeRewardClaimed = channel.cumulativeRewardClaimed?.add(amount)
+  channel.lastRewardClaimedAt = new Date(event.blockTimestamp)
+  channel.updatedAt = new Date(event.blockTimestamp)
+}
+
+export async function content_ChannelRewardUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
+  // load event data
+  const [amount, channelId] = new Content.ChannelRewardUpdatedEvent(event).params
+
+  // load channel
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Non-existing channel reward updated', channelId)
+  }
+
+  // common event processing - second
+
+  const rewardClaimedEvent = new ChannelRewardClaimedEvent({
+    ...genericEventFields(event),
+
+    amount,
+    channel,
+  })
+
+  await store.save<ChannelRewardClaimedEvent>(rewardClaimedEvent)
+
+  setChannelRewardFields(event, channel, amount)
+
+  // save channel
+  await store.save<Channel>(channel)
+}
+
+export async function content_ChannelRewardClaimedAndWithdrawn({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  // load event data
+  const [owner, channelId, amount, accountId] = new Content.ChannelRewardClaimedAndWithdrawnEvent(event).params
+
+  // load channel
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Non-existing channel reward updated', channelId)
+  }
+
+  // common event processing - second
+
+  const rewardClaimedEvent = new ChannelRewardClaimedAndWithdrawnEvent({
+    ...genericEventFields(event),
+
+    amount,
+    channel,
+    account: accountId.toString(),
+    actor: await convertContentActor(store, owner),
+  })
+
+  await store.save<ChannelRewardClaimedEvent>(rewardClaimedEvent)
+
+  setChannelRewardFields(event, channel, amount)
+
+  // save channel
+  await store.save<Channel>(channel)
 }
