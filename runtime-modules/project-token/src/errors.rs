@@ -1,8 +1,9 @@
 use crate::Module;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
-    pub enum Error for Module<T: crate::Trait> {
+    pub enum Error for Module<T: crate::Config> {
         /// Account's transferrable balance is insufficient to perform the transfer or initialize token sale
         InsufficientTransferrableBalance,
 
@@ -11,9 +12,6 @@ decl_error! {
 
         /// Requested account data does not exist
         AccountInformationDoesNotExist,
-
-        /// At least one of the transfer destinations is not an existing member id
-        TransferDestinationMemberDoesNotExist,
 
         /// Merkle proof verification failed
         MerkleProofVerificationFailure,
@@ -24,10 +22,15 @@ decl_error! {
         /// Symbol already in use
         TokenSymbolAlreadyInUse,
 
+        /// At least one of the members provided as part of InitialAllocation does not exist
+        InitialAllocationToNonExistingMember,
+
         /// Account Already exists
         AccountAlreadyExists,
 
-        /// Token's current issuance state is not Idle
+        /// Transfer destination member id invalid
+        TransferDestinationMemberDoesNotExist,
+
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
 
@@ -142,6 +145,9 @@ decl_error! {
 
         /// Attempt to modify supply when revenue split is active
         CannotModifySupplyWhenRevenueSplitsAreActive,
+
+        /// Revenue split rate cannot be 0
+        RevenueSplitRateIsZero,
 
         // ------ Burning ------------------------------------------------------
 

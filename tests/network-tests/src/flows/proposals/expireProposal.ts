@@ -4,6 +4,7 @@ import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { CreateProposalsFixture, ExpireProposalsFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
+import { createType } from '@joystream/types'
 
 export default async function expireProposal({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:expire-proposal')
@@ -20,7 +21,7 @@ export default async function expireProposal({ api, query, lock }: FlowProps): P
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: `Proposal to be Expired`,
+      details: createType('Bytes', `Proposal to be Expired`),
       asMember: memberId,
       title: `Proposal to be Expired`,
       description: `Proposal to be Expired`,

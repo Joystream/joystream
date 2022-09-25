@@ -1,11 +1,7 @@
-import { registry, types } from '@joystream/types'
-import { MemberId } from '@joystream/types/common'
-import { ApplicationId, OpeningId } from '@joystream/types/working-group'
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
-import BN from 'bn.js'
-import { BTreeSet } from '@polkadot/types'
+import { createType } from '@joystream/types'
+import { ApplicationId, MemberId, OpeningId } from '@joystream/types/primitives'
 
 const workingGroupModules = [
   'storageWorkingGroup',
@@ -21,19 +17,18 @@ const workingGroupModules = [
 
 type WorkingGroupModuleName = typeof workingGroupModules[number]
 
-const MIN_APPLICATION_STAKE = new BN(2000)
-
 async function main() {
   // Init api
   const WS_URI = process.env.WS_URI || 'ws://127.0.0.1:9944'
   console.log(`Initializing the api (${WS_URI})...`)
   const provider = new WsProvider(WS_URI)
-  const api = await ApiPromise.create({ provider, types })
+  const api = await ApiPromise.create({ provider })
 
   const Group = process.env.GROUP || 'contentWorkingGroup'
   const LeadKeyPair = process.env.LEAD_URI ? getKeyFromSuri(process.env.LEAD_URI) : getAlicePair()
-  const SudoKeyPair = process.env.SUDO_URI ? getKeyFromSuri(process.env.SUDO_URI) : getAlicePair()
-  const StakeKeyPair = LeadKeyPair.derive(`//stake${Date.now()}`)
+  const StakeKeyPair = process.env.STAKING_URI
+    ? getKeyFromSuri(process.env.STAKING_URI)
+    : LeadKeyPair.derive(`//stake${Date.now()}`)
 
   if (!workingGroupModules.includes(Group as WorkingGroupModuleName)) {
     throw new Error(`Invalid working group: ${Group}`)
@@ -42,14 +37,12 @@ async function main() {
 
   const txHelper = new ExtrinsicsHelper(api)
 
-  const sudo = (tx: SubmittableExtrinsic<'promise'>) => api.tx.sudo.sudo(tx)
-
   // Create membership if not already created
   const memberEntries = await api.query.members.membershipById.entries()
   const matchingEntry = memberEntries.find(
-    ([storageKey, member]) => member.controller_account.toString() === LeadKeyPair.address
+    ([, member]) => member.unwrap().controllerAccount.toString() === LeadKeyPair.address
   )
-  let memberId: MemberId | undefined = matchingEntry?.[0].args[0] as MemberId | undefined
+  let memberId = matchingEntry?.[0].args[0]
 
   // Only buy membership if LEAD_URI is not provided - ie for Alice
   if (!memberId && process.env.LEAD_URI) {
@@ -62,46 +55,51 @@ async function main() {
       LeadKeyPair,
       [
         api.tx.members.buyMembership({
-          root_account: LeadKeyPair.address,
-          controller_account: LeadKeyPair.address,
+          rootAccount: LeadKeyPair.address,
+          controllerAccount: LeadKeyPair.address,
           handle: 'alice',
         }),
       ],
       'Failed to setup member account'
     )
-    memberId = memberRes.findRecord('members', 'MembershipBought')!.event.data[0] as MemberId
+    memberId = memberRes.findRecord('members', 'MembershipBought')?.event.data[0] as MemberId | undefined
+
+    if (!memberId) {
+      throw new Error('MembershipBought event not found')
+    }
   }
 
   // Create a new lead opening
+  const minApplicationStake = api.consts[groupModule].minimumApplicationStake
+  const minUnstakingPeriod = api.consts[groupModule].minUnstakingPeriodLimit
   if ((await api.query[groupModule].currentLead()).isSome) {
     console.log(`${groupModule} lead already exists, aborting...`)
   } else {
     console.log(`Making member id: ${memberId} the ${groupModule} lead.`)
     // Create lead opening
     console.log(`Creating ${groupModule} lead opening...`)
-    const [openingRes] = await txHelper.sendAndCheck(
-      SudoKeyPair,
-      [
-        sudo(
-          api.tx[groupModule].addOpening(
-            '',
-            'Leader',
-            {
-              stake_amount: MIN_APPLICATION_STAKE,
-              leaving_unstaking_period: 99999,
-            },
-            null
-          )
-        ),
-      ],
+    const openingRes = await txHelper.sendAndCheckSudo(
+      api.tx[groupModule].addOpening(
+        '',
+        'Leader',
+        {
+          stakeAmount: minApplicationStake,
+          leavingUnstakingPeriod: minUnstakingPeriod,
+        },
+        null
+      ),
       `Failed to create ${groupModule} lead opening!`
     )
-    const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as OpeningId
+    const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')?.event.data[0] as OpeningId | undefined
+
+    if (!openingId) {
+      throw new Error('OpeningAdded event not found!')
+    }
 
     // Set up stake account
     const addCandidateTx = api.tx.members.addStakingAccountCandidate(memberId)
     const addCandidateFee = (await addCandidateTx.paymentInfo(StakeKeyPair.address)).partialFee
-    const stakingAccountBalance = MIN_APPLICATION_STAKE.add(addCandidateFee)
+    const stakingAccountBalance = minApplicationStake.add(addCandidateFee)
     console.log('Setting up staking account...')
     await txHelper.sendAndCheck(
       LeadKeyPair,
@@ -123,11 +121,11 @@ async function main() {
       LeadKeyPair,
       [
         api.tx[groupModule].applyOnOpening({
-          member_id: memberId,
-          role_account_id: LeadKeyPair.address,
-          opening_id: openingId,
-          stake_parameters: {
-            stake: MIN_APPLICATION_STAKE,
+          memberId: memberId,
+          roleAccountId: LeadKeyPair.address,
+          openingId: openingId,
+          stakeParameters: {
+            stake: minApplicationStake,
             staking_account_id: StakeKeyPair.address,
           },
         }),
@@ -135,13 +133,18 @@ async function main() {
       'Failed to apply on lead opening!'
     )
 
-    const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')!.event.data[1] as ApplicationId
+    const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')?.event.data[1] as
+      | ApplicationId
+      | undefined
+
+    if (!applicationId) {
+      throw new Error('AppliedOnOpening event not found!')
+    }
 
     // Fill opening
     console.log('Filling the opening...')
-    await txHelper.sendAndCheck(
-      LeadKeyPair,
-      [sudo(api.tx[groupModule].fillOpening(openingId, new (BTreeSet.with(ApplicationId))(registry, [applicationId])))],
+    await txHelper.sendAndCheckSudo(
+      api.tx[groupModule].fillOpening(openingId, createType('BTreeSet<u64>', [applicationId])),
       'Failed to fill the opening'
     )
   }

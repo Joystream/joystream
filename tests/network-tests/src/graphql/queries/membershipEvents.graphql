@@ -38,8 +38,7 @@ fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
   }
   newHandle
   newMetadata {
-    name
-    about
+    ...MemberMetadataFields
   }
 }
 
@@ -66,6 +65,54 @@ fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
 query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
   memberAccountsUpdatedEvents(where: { member: { id_eq: $memberId } }) {
     ...MemberAccountsUpdatedEventFields
+  }
+}
+
+fragment FoundingMemberCreatedEventFields on FoundingMemberCreatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+}
+
+query getFoundingMemberCreatedEventsByEventIds($eventIds: [ID!]) {
+  foundingMemberCreatedEvents(where: { id_in: $eventIds }) {
+    ...FoundingMemberCreatedEventFields
+  }
+}
+
+fragment MembershipGiftedEventFields on MembershipGiftedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+}
+
+query getMembershipGiftedEventsByEventIds($eventIds: [ID!]) {
+  membershipGiftedEvents(where: { id_in: $eventIds }) {
+    ...MembershipGiftedEventFields
   }
 }
 

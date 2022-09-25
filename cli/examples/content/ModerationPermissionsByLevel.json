@@ -1,0 +1,18 @@
+[
+  {
+    "channelPrivilegeLevel": 0,
+    "permissions": [
+      { "HideVideo": null },
+      { "ChangeChannelFeatureStatus": "CreatorTokenIssuance" },
+      { "DeleteVideoAssets": true }
+    ]
+  },
+  {
+    "channelPrivilegeLevel": 1,
+    "permissions": [
+      { "HideChannel": null },
+      { "ChangeChannelFeatureStatus": "VideoUpdate" },
+      { "DeleteVideoAssets": false }
+    ]
+  }
+]

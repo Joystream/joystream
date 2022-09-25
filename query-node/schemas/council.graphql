@@ -25,6 +25,9 @@ type CouncilStageUpdate @entity {
 type CouncilStageAnnouncing @variant {
   "Number of candidates aspiring to be elected as council members."
   candidatesCount: BigInt!
+
+  "Block number at which the stage ends"
+  endsAt: Int!
 }
 
 type CouncilStageElection @variant {
@@ -33,10 +36,8 @@ type CouncilStageElection @variant {
 }
 
 type CouncilStageIdle @variant {
-  # no properties
-
-  # TODO: remove me - variant needs to have at least 1 property now
-  dummy: Int
+  "Block number at which the stage ends"
+  endsAt: Int!
 }
 
 union CouncilStage = CouncilStageAnnouncing | CouncilStageElection | CouncilStageIdle | VariantNone
@@ -147,6 +148,9 @@ type ReferendumStageVoting @entity {
 
   "Election round"
   electionRound: ElectionRound!
+
+  "Block number at which the stage ends"
+  endsAt: Int!
 }
 
 type ReferendumStageRevealing @entity {
@@ -158,6 +162,9 @@ type ReferendumStageRevealing @entity {
 
   "Election round."
   electionRound: ElectionRound!
+
+  "Block number at which the stage ends"
+  endsAt: Int!
 }
 
 type CastVote @entity {

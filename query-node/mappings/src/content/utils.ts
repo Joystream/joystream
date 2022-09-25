@@ -1,14 +1,14 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions } from 'typeorm'
 import {
   IVideoMetadata,
   IPublishedBeforeJoystream,
   ILicense,
   IMediaType,
   IChannelMetadata,
+  ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
+import { invalidMetadata, inconsistentState, logger, deterministicEntityId, EntityType } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -22,7 +22,6 @@ import {
   // asset
   Membership,
   VideoMediaEncoding,
-  ChannelCategory,
   StorageDataObject,
   DataObjectTypeChannelAvatar,
   DataObjectTypeChannelCoverPhoto,
@@ -33,12 +32,21 @@ import {
   ContentActorMember,
   ContentActor as ContentActorVariant,
   Curator,
+  DataObjectTypeVideoSubtitle,
+  VideoSubtitle,
 } from 'query-node/dist/model'
 // Joystream types
-import { ContentActor, StorageAssets } from '@joystream/types/augment'
+import {
+  PalletContentChannelOwner as ChannelOwner,
+  PalletContentPermissionsContentActor as ContentActor,
+  PalletContentChannelActionPermission,
+} from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
-import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
+import _ from 'lodash'
+import { getSortedDataObjectsByIds } from '../storage/utils'
+import { BTreeSet } from '@polkadot/types'
+import { DataObjectId } from '@joystream/types/primitives'
 
 const ASSET_TYPES = {
   channel: [
@@ -65,10 +73,15 @@ const ASSET_TYPES = {
       schemaFieldName: 'thumbnailPhoto',
     },
   ],
+  subtitle: {
+    DataObjectTypeConstructor: DataObjectTypeVideoSubtitle,
+    metaFieldName: 'newAsset',
+    schemaFieldName: 'asset',
+  },
 } as const
 
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = ['channel', 'channel.category', 'category', 'thumbnailPhoto', 'media']
+export const videoRelationsForCounters = ['channel', 'category', 'thumbnailPhoto', 'media']
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
@@ -126,22 +139,44 @@ async function processVideoAssets(
   )
 }
 
+async function processVideoSubtitleAssets(
+  { event, store }: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  subtitle: VideoSubtitle,
+  meta: DecodedMetadataObject<ISubtitleMetadata>
+) {
+  const { metaFieldName, schemaFieldName, DataObjectTypeConstructor } = ASSET_TYPES.subtitle
+  const newAssetIndex = meta[metaFieldName]
+  const currentAsset = subtitle[schemaFieldName]
+
+  if (isSet(newAssetIndex)) {
+    const asset = findAssetByIndex(assets, newAssetIndex)
+    if (asset) {
+      if (currentAsset) {
+        currentAsset.unsetAt = new Date(event.blockTimestamp)
+        await store.save<StorageDataObject>(currentAsset)
+      }
+      const dataObjectType = new DataObjectTypeConstructor()
+      dataObjectType.subtitleId = subtitle.id
+      dataObjectType.videoId = subtitle.video.id
+      asset.type = dataObjectType
+      subtitle[schemaFieldName] = asset
+      await store.save<StorageDataObject>(asset)
+    }
+  }
+}
+
 export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   meta: DecodedMetadataObject<IChannelMetadata>,
-  assetsParams?: StorageAssets
+  newAssets: BTreeSet<DataObjectId>
 ): Promise<Channel> {
-  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+  const assets = await getSortedDataObjectsByIds(ctx.store, newAssets)
 
   integrateMeta(channel, meta, ['title', 'description', 'isPublic'])
 
   await processChannelAssets(ctx, assets, channel, meta)
-
-  // prepare channel category if needed
-  if (isSet(meta.category)) {
-    channel.category = await processChannelCategory(ctx, channel.category, parseInt(meta.category))
-  }
 
   // prepare language if needed
   if (isSet(meta.language)) {
@@ -155,9 +190,9 @@ export async function processVideoMetadata(
   ctx: EventContext & StoreContext,
   video: Video,
   meta: DecodedMetadataObject<IVideoMetadata>,
-  assetsParams?: StorageAssets
+  newAssets: BTreeSet<DataObjectId>
 ): Promise<Video> {
-  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+  const assets = await getSortedDataObjectsByIds(ctx.store, newAssets)
 
   integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic'])
 
@@ -165,7 +200,11 @@ export async function processVideoMetadata(
 
   // prepare video category if needed
   if (meta.category) {
-    video.category = await processVideoCategory(ctx, video.category, parseInt(meta.category))
+    video.category = await processVideoCategory(ctx, video.category, meta.category)
+    // if video has NFT assign the category to NFT too.
+    if (video.nft) {
+      video.nft.videoCategory = video.category
+    }
   }
 
   // prepare media meta information if needed
@@ -185,12 +224,22 @@ export async function processVideoMetadata(
     video.language = await processLanguage(ctx, video.language, meta.language)
   }
 
+  // prepare subtitles if needed
+  const subtitles = meta.clearSubtitles ? [] : meta.subtitles
+  if (isSet(subtitles)) {
+    await processVideoSubtitles(ctx, video, assets, subtitles)
+  }
+
   if (isSet(meta.publishedBeforeJoystream)) {
     video.publishedBeforeJoystream = processPublishedBeforeJoystream(
       ctx,
       video.publishedBeforeJoystream,
       meta.publishedBeforeJoystream
     )
+  }
+
+  if (isSet(meta.enableComments)) {
+    video.isCommentSectionEnabled = meta.enableComments
   }
 
   return video
@@ -218,11 +267,9 @@ async function processVideoMediaEncoding(
     existingVideoMediaEncoding ||
     new VideoMediaEncoding({
       id: deterministicEntityId(event),
-      createdAt: new Date(event.blockTimestamp),
     })
   // integrate media encoding-related data
   integrateMeta(encoding, metadata, ['codecName', 'container', 'mimeMediaType'])
-  encoding.updatedAt = new Date(event.blockTimestamp)
   await store.save<VideoMediaEncoding>(encoding)
 
   return encoding
@@ -240,7 +287,6 @@ async function processVideoMediaMetadata(
     new VideoMediaMetadata({
       id: deterministicEntityId(event),
       createdInBlock: event.blockNumber,
-      createdAt: new Date(event.blockTimestamp),
     })
 
   // integrate media-related data
@@ -250,11 +296,48 @@ async function processVideoMediaMetadata(
     pixelHeight: metadata.mediaPixelHeight,
   }
   integrateMeta(videoMedia, mediaMetadata, ['pixelWidth', 'pixelHeight', 'size'])
-  videoMedia.updatedAt = new Date(event.blockTimestamp)
   videoMedia.encoding = await processVideoMediaEncoding(ctx, videoMedia.encoding, metadata.mediaType || {})
   await store.save<VideoMediaMetadata>(videoMedia)
 
   return videoMedia
+}
+
+export async function convertChannelOwnerToMemberOrCuratorGroup(
+  store: DatabaseManager,
+  channelOwner: ChannelOwner
+): Promise<{
+  ownerMember?: Membership
+  ownerCuratorGroup?: CuratorGroup
+}> {
+  if (channelOwner.isMember) {
+    const member = await store.get(Membership, {
+      where: { id: channelOwner.asMember.toString() },
+    })
+
+    // ensure member exists
+    if (!member) {
+      return inconsistentState(`Channel owner is non-existing member`, channelOwner.asMember)
+    }
+
+    return {
+      ownerMember: member,
+      ownerCuratorGroup: undefined,
+    }
+  }
+
+  const curatorGroup = await store.get(CuratorGroup, {
+    where: { id: channelOwner.asCuratorGroup.toString() },
+  })
+
+  // ensure curator group exists
+  if (!curatorGroup) {
+    return inconsistentState('Channel owner is non-existing curator group', channelOwner.asCuratorGroup)
+  }
+
+  return {
+    ownerMember: undefined,
+    ownerCuratorGroup: curatorGroup,
+  }
 }
 
 export async function convertContentActorToChannelOrNftOwner(
@@ -266,7 +349,7 @@ export async function convertContentActorToChannelOrNftOwner(
 }> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -282,7 +365,7 @@ export async function convertContentActorToChannelOrNftOwner(
   if (contentActor.isCurator) {
     const curatorGroupId = contentActor.asCurator[0].toNumber()
     const curatorGroup = await store.get(CuratorGroup, {
-      where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+      where: { id: curatorGroupId.toString() },
     })
 
     // ensure curator group exists
@@ -308,7 +391,7 @@ export async function convertContentActor(
 ): Promise<typeof ContentActorVariant> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -324,7 +407,7 @@ export async function convertContentActor(
   if (contentActor.isCurator) {
     const curatorId = contentActor.asCurator[1].toNumber()
     const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() } as FindConditions<Curator>,
+      where: { id: curatorId.toString() },
     })
 
     // ensure curator group exists
@@ -375,13 +458,6 @@ function processPublishedBeforeJoystream(
   return new Date(timestamp)
 }
 
-async function processNewAssets(ctx: EventContext & StoreContext, assets: StorageAssets): Promise<StorageDataObject[]> {
-  const assetsUploaded = assets.object_creation_list.length
-  // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
-  const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
-  return objects
-}
-
 function extractVideoSize(assets: StorageDataObject[]): BN | undefined {
   const mediaAsset = assets.find((a) => a.type?.isTypeOf === DataObjectTypeVideoMedia.name)
   return mediaAsset ? mediaAsset.size : undefined
@@ -417,13 +493,47 @@ async function processLanguage(
     id: deterministicEntityId(event),
     iso: languageIso,
     createdInBlock: event.blockNumber,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
   })
 
   await store.save<Language>(newLanguage)
 
   return newLanguage
+}
+
+async function processVideoSubtitles(
+  ctx: EventContext & StoreContext,
+  video: Video,
+  assets: StorageDataObject[],
+  subtitlesMeta: ISubtitleMetadata[]
+) {
+  const { store } = ctx
+
+  const subtitlesToRemove = await store.getMany(VideoSubtitle, { where: { video: { id: video.id } } })
+
+  for (const subtitleMeta of subtitlesMeta) {
+    const subtitleId = `${video.id}-${subtitleMeta.type}-${subtitleMeta.language}`
+
+    _.remove(subtitlesToRemove, (sub) => sub.id === subtitleId)
+
+    const subtitle = new VideoSubtitle({
+      id: subtitleId,
+      type: subtitleMeta.type,
+      video,
+      language: await processLanguage(ctx, undefined, subtitleMeta.language),
+      mimeType: subtitleMeta.mimeType,
+    })
+
+    // process subtitle assets
+    await processVideoSubtitleAssets(ctx, assets, subtitle, subtitleMeta)
+
+    await store.save<VideoSubtitle>(subtitle)
+  }
+
+  // Remove all subtitles which are not part of update
+  // metadata, since we are overriding subtitles list
+  for (const subToRemove of subtitlesToRemove) {
+    await store.remove<VideoSubtitle>(subToRemove)
+  }
 }
 
 async function updateVideoLicense(
@@ -446,9 +556,7 @@ async function updateVideoLicense(
       previousLicense ||
       new License({
         id: deterministicEntityId(event),
-        createdAt: new Date(event.blockTimestamp),
       })
-    license.updatedAt = new Date(event.blockTimestamp)
     integrateMeta(license, licenseMetadata, ['attribution', 'code', 'customText'])
     await store.save<License>(license)
   }
@@ -457,7 +565,6 @@ async function updateVideoLicense(
   // FIXME: Note that we MUST to provide "null" here in order to unset a relation,
   // See: https://github.com/Joystream/hydra/issues/435
   video.license = license as License | undefined
-  video.updatedAt = new Date(ctx.event.blockTimestamp)
   await store.save<Video>(video)
 
   // Safely remove previous license if needed
@@ -479,40 +586,27 @@ function isLicenseEmpty(licenseObject: ILicense): boolean {
 async function processVideoCategory(
   ctx: EventContext & StoreContext,
   currentCategory: VideoCategory | undefined,
-  categoryId: number
+  categoryId: string
 ): Promise<VideoCategory | undefined> {
-  const { store } = ctx
+  const { store, event } = ctx
 
   // load video category
   const category = await store.get(VideoCategory, {
     where: { id: categoryId.toString() },
   })
 
-  // ensure video category exists
+  // if category is not found, create new one
   if (!category) {
-    invalidMetadata('Non-existing video category association with video requested', categoryId)
-    return currentCategory
-  }
-
-  return category
-}
-
-async function processChannelCategory(
-  ctx: EventContext & StoreContext,
-  currentCategory: ChannelCategory | undefined,
-  categoryId: number
-): Promise<ChannelCategory | undefined> {
-  const { store } = ctx
-
-  // load video category
-  const category = await store.get(ChannelCategory, {
-    where: { id: categoryId.toString() },
-  })
-
-  // ensure video category exists
-  if (!category) {
-    invalidMetadata('Non-existing channel category association with channel requested', categoryId)
-    return currentCategory
+    logger.info('Creating unknown video category', { categoryId })
+    const newCategory = new VideoCategory({
+      id: categoryId,
+      videos: [],
+      nfts: [],
+      createdInBlock: event.blockNumber,
+      activeVideosCounter: 0,
+    })
+    await store.save<VideoCategory>(newCategory)
+    return newCategory
   }
 
   return category
@@ -522,56 +616,75 @@ async function processChannelCategory(
 export async function unsetAssetRelations(store: DatabaseManager, dataObject: StorageDataObject): Promise<void> {
   const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
   const videoAssets = ['thumbnailPhoto', 'media'] as const
+  const subtitleAssets = ['asset'] as const
+
+  async function unconnectAsset<T extends EntityType<Channel | Video | VideoSubtitle>>(
+    entity: T,
+    targetAsset: string,
+    relations: typeof channelAssets | typeof videoAssets | typeof subtitleAssets
+  ) {
+    // load video/channel
+    const result = await store.get(entity, {
+      where: {
+        [targetAsset]: {
+          id: dataObject.id,
+        },
+      },
+      relations: [...relations],
+    })
+
+    if (!result) {
+      return
+    }
+
+    // unset relation
+    relations.forEach((assetName) => {
+      if (result[assetName] && result[assetName]?.id === dataObject.id) {
+        result[assetName] = null as any
+      }
+    })
+
+    await store.save(result)
+
+    // log event
+    if (result instanceof Video) {
+      logger.info('Asset has been disconnected from Video', {
+        videoId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    } else if (result instanceof Channel) {
+      logger.info('Asset has been disconnected from Channel', {
+        channelId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    } else {
+      // asset belongs to Video Subtitle
+      logger.info('Asset has been disconnected from Video Subtitle', {
+        subtitleId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    }
+  }
 
   // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
   // is allowed to be associated only with one channel/video in runtime
-  const channel = await store.get(Channel, {
-    where: channelAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
-      },
-    })),
-    relations: [...channelAssets],
-  })
-  const video = await store.get(Video, {
-    where: videoAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
-      },
-    })),
-    relations: [...videoRelationsForCounters],
-  })
 
-  if (channel) {
-    channelAssets.forEach((assetName) => {
-      if (channel[assetName] && channel[assetName]?.id === dataObject.id) {
-        channel[assetName] = null as any
-      }
-    })
-    await store.save<Channel>(channel)
-
-    // emit log event
-    logger.info('Content has been disconnected from Channel', {
-      channelId: channel.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+  for (const channelAsset of channelAssets) {
+    await unconnectAsset(Channel, channelAsset, channelAssets)
   }
 
-  if (video) {
-    videoAssets.forEach((assetName) => {
-      if (video[assetName] && video[assetName]?.id === dataObject.id) {
-        video[assetName] = null as any
-      }
-    })
-    await store.save<Video>(video)
+  for (const videoAsset of videoAssets) {
+    await unconnectAsset(Video, videoAsset, videoAssets)
+  }
 
-    // emit log event
-    logger.info('Content has been disconnected from Video', {
-      videoId: video.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+  for (const subtitleAsset of subtitleAssets) {
+    await unconnectAsset(VideoSubtitle, subtitleAsset, subtitleAssets)
   }
 
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
+}
+
+export function mapAgentPermission(permission: PalletContentChannelActionPermission): string {
+  return permission.toString()
 }

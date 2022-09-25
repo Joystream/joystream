@@ -55,21 +55,12 @@ pub type VideoId = u64;
 /// Content Directory Open Auction identifier.
 pub type OpenAuctionId = u64;
 
-/// Content Directory Video Category identifier.
-pub type VideoCategoryId = u64;
-
 /// Curator group identifier.
 pub type CuratorGroupId = u64;
 
-/// Content Directory Reaction Identifier
-pub type ReactionId = u64;
-
-/// Represent a Video Post in the content module
-pub type VideoPostId = u64;
-
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
-/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
+/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Config) and
 /// used in state storage and dispatchable method's argument types,
 /// and are therefore part of the public API/metadata of the runtime.
 /// In the current version the polkadot-js/api that is used and is compatible with the runtime,
@@ -105,8 +96,14 @@ pub type DistributionBucketFamilyId = u64;
 /// Represent relationships between distribution buckets and distribution working group workers.
 pub type DistributionBucketOperatorId = u64;
 
+/// Privilege level of a channel in the content directory.
+pub type ChannelPrivilegeLevel = u8;
+
 /// Represents creator token id
 pub type TokenId = u64;
+
+/// Represents transfer id
+pub type TransferId = u64;
 
 /// BlockNumber to Balance converter
 pub struct BlockNumberToBalance;
@@ -114,36 +111,5 @@ pub struct BlockNumberToBalance;
 impl Convert<BlockNumber, Balance> for BlockNumberToBalance {
     fn convert(block: BlockNumber) -> Balance {
         block as Balance
-    }
-}
-
-/// App-specific crypto used for reporting equivocation/misbehavior in BABE and
-/// GRANDPA. Any rewards for misbehavior reporting will be paid out to this
-/// account.
-pub mod report {
-    use super::{Signature, Verify};
-    use frame_system::offchain::AppCrypto;
-    use sp_core::crypto::{key_types, KeyTypeId};
-
-    /// Key type for the reporting module. Used for reporting BABE and GRANDPA
-    /// equivocations.
-    pub const KEY_TYPE: KeyTypeId = key_types::REPORTING;
-
-    mod app {
-        use sp_application_crypto::{app_crypto, sr25519};
-        app_crypto!(sr25519, super::KEY_TYPE);
-    }
-
-    /// Identity of the equivocation/misbehavior reporter.
-    pub type ReporterId = app::Public;
-
-    /// An `AppCrypto` type to allow submitting signed transactions using the reporting
-    /// application key as signer.
-    pub struct ReporterAppCrypto;
-
-    impl AppCrypto<<Signature as Verify>::Signer, Signature> for ReporterAppCrypto {
-        type RuntimeAppPublic = ReporterId;
-        type GenericSignature = sp_core::sr25519::Signature;
-        type GenericPublic = sp_core::sr25519::Public;
     }
 }

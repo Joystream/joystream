@@ -310,38 +310,6 @@ type SetReferralCutProposalDetails @variant {
   newReferralCut: Int!
 }
 
-type CreateBlogPostProposalDetails @variant {
-  "Blog post title"
-  title: String!
-
-  "Blog post content (md-formatted)"
-  body: String!
-}
-
-type EditBlogPostProposalDetails @variant {
-  "The related blog post"
-  # TODO: Change to relationship once Blog module is supported
-  blogPost: ID!
-
-  "The new blog post title (if should be updated)"
-  newTitle: String
-
-  "The new blog post body (if should be updated)"
-  newBody: String
-}
-
-type LockBlogPostProposalDetails @variant {
-  "The blog post that should be locked"
-  # TODO: Change to relationship once Blog module is supported
-  blogPost: ID!
-}
-
-type UnlockBlogPostProposalDetails @variant {
-  "The blog post that should be unlocked"
-  # TODO: Change to relationship once Blog module is supported
-  blogPost: ID!
-}
-
 type VetoProposalDetails @variant {
   "Proposal to be vetoed"
   proposal: Proposal!
@@ -373,9 +341,5 @@ union ProposalDetails =
   | SetInitialInvitationCountProposalDetails
   | SetMembershipLeadInvitationQuotaProposalDetails
   | SetReferralCutProposalDetails
-  | CreateBlogPostProposalDetails
-  | EditBlogPostProposalDetails
-  | LockBlogPostProposalDetails
-  | UnlockBlogPostProposalDetails
   | VetoProposalDetails
   | UpdateChannelPayoutsProposalDetails

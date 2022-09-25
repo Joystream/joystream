@@ -1,6 +1,4 @@
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
-import { CategoryId } from '@joystream/types/forum'
-import { WorkerId } from '@joystream/types/working-group'
+import { MemberId, ForumPostId, ForumThreadId, ForumCategoryId, WorkerId } from '@joystream/types/primitives'
 import { Api } from '../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
@@ -30,12 +28,13 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
   protected config: InitializeForumConfig
 
   protected forumMemberIds: MemberId[] | undefined
-  protected postIds: PostId[] | undefined
-  protected threadIds: ThreadId[] | undefined
-  protected categoryIds: CategoryId[] | undefined
+  protected postIds: ForumPostId[] | undefined
+  protected threadIds: ForumThreadId[] | undefined
+  protected categoryIds: ForumCategoryId[] | undefined
   protected moderatorIds: WorkerId[] | undefined
-  protected threadIdsByCategoryId: Map<number, ThreadId[]> = new Map()
-  protected postIdsByThreadId: Map<number, PostId[]> = new Map()
+  protected threadIdsByCategoryId: Map<number, ForumThreadId[]> = new Map()
+  protected initialPostIdByThreadId: Map<number, ForumPostId> = new Map()
+  protected postIdsByThreadId: Map<number, ForumPostId[]> = new Map()
   protected moderatorIdsByCategoryId: Map<number, WorkerId[]> = new Map()
 
   constructor(api: Api, query: QueryNodeApi, config: InitializeForumConfig) {
@@ -43,34 +42,40 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
     this.config = config
   }
 
-  public getCreatedPostsIds(): PostId[] {
+  public getCreatedPostsIds(): ForumPostId[] {
     Utils.assert(this.postIds, 'Posts not yet created!')
     return this.postIds
   }
 
-  public getCreatedPostsByThreadId(threadId: ThreadId): PostId[] {
+  public getCreatedInitialPostByThreadId(threadId: ForumThreadId): ForumPostId {
+    const postsId = this.initialPostIdByThreadId.get(threadId.toNumber())
+    Utils.assert(postsId, `No initial post found by threadId ${threadId}`)
+    return postsId
+  }
+
+  public getCreatedPostsByThreadId(threadId: ForumThreadId): ForumPostId[] {
     const postsIds = this.postIdsByThreadId.get(threadId.toNumber())
     Utils.assert(postsIds, `No posts found by threadId ${threadId}`)
     return postsIds
   }
 
-  public getCreatedThreadIds(): ThreadId[] {
+  public getCreatedThreadIds(): ForumThreadId[] {
     Utils.assert(this.threadIds, 'Threads not yet created!')
     return this.threadIds
   }
 
-  public getCreatedThreadsByCategoryId(categoryId: CategoryId): ThreadId[] {
+  public getCreatedThreadsByCategoryId(categoryId: ForumCategoryId): ForumThreadId[] {
     const threadIds = this.threadIdsByCategoryId.get(categoryId.toNumber())
     Utils.assert(threadIds, `No threads found by categoryId ${categoryId}`)
     return threadIds
   }
 
-  public getCreatedCategoryIds(): CategoryId[] {
+  public getCreatedCategoryIds(): ForumCategoryId[] {
     Utils.assert(this.categoryIds, 'Categories not yet created!')
     return this.categoryIds
   }
 
-  public getCreatedForumMemberIds(): CategoryId[] {
+  public getCreatedForumMemberIds(): ForumCategoryId[] {
     Utils.assert(this.forumMemberIds, 'Forum members not yet created!')
     return this.forumMemberIds
   }
@@ -80,7 +85,7 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
     return this.moderatorIds
   }
 
-  public getCreatedForumModeratorsByCategoryId(categoryId: CategoryId): WorkerId[] {
+  public getCreatedForumModeratorsByCategoryId(categoryId: ForumCategoryId): WorkerId[] {
     const moderatorIds = this.moderatorIdsByCategoryId.get(categoryId.toNumber())
     Utils.assert(moderatorIds, `No moderators found by categoryId ${categoryId}`)
     return moderatorIds
@@ -109,13 +114,8 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
 
   public async execute(): Promise<void> {
     const { api, query } = this
-    const {
-      numberOfForumMembers,
-      numberOfCategories,
-      threadsPerCategory,
-      postsPerThread,
-      moderatorsPerCategory,
-    } = this.config
+    const { numberOfForumMembers, numberOfCategories, threadsPerCategory, postsPerThread, moderatorsPerCategory } =
+      this.config
     // Create forum members
     const accounts = (await api.createKeyPairs(numberOfForumMembers)).map(({ key }) => key.address)
     const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, accounts)
@@ -187,6 +187,7 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
       this.createThreadsRunner = new FixtureRunner(createThreadsFixture)
       await this.createThreadsRunner.run()
       this.threadIds = createThreadsFixture.getCreatedThreadsIds()
+      this.initialPostIdByThreadId = createThreadsFixture.getCreatedInitialPostByThreadsIds()
       this.threadIds.forEach((threadId, i) => {
         const categoryId = threads[i].categoryId.toNumber()
         this.threadIdsByCategoryId.set(categoryId, [...(this.threadIdsByCategoryId.get(categoryId) || []), threadId])

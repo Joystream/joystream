@@ -5,6 +5,7 @@
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::Perbill;
@@ -23,7 +24,7 @@ pub use proposal_statuses::{
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum VoteKind {
     /// Pass, an alternative or a ranking, for binary, multiple choice
     /// and ranked choice propositions, respectively.
@@ -47,7 +48,7 @@ impl Default for VoteKind {
 
 /// Proposal parameters required to manage proposal risk.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ProposalParameters<BlockNumber, Balance> {
     /// During this period, votes can be accepted
     pub voting_period: BlockNumber,
@@ -78,7 +79,7 @@ pub struct ProposalParameters<BlockNumber, Balance> {
 
 /// Contains current voting results
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VotingResults {
     /// 'Abstain' votes counter
     pub abstentions: u32,
@@ -117,7 +118,7 @@ impl VotingResults {
 
 /// 'Proposal' contains information necessary for the proposal frame_system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposals parameter, characterize different proposal types.
     pub parameters: ProposalParameters<BlockNumber, Balance>,
@@ -144,6 +145,23 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
 
     /// Optional account id for staking.
     pub staking_account_id: Option<AccountId>,
+}
+
+impl<BlockNumber: Default, ProposerId: Default, Balance: Default, AccountId> Default
+    for Proposal<BlockNumber, ProposerId, Balance, AccountId>
+{
+    fn default() -> Self {
+        Self {
+            parameters: Default::default(),
+            proposer_id: Default::default(),
+            activated_at: Default::default(),
+            status: Default::default(),
+            voting_results: Default::default(),
+            exact_execution_block: Default::default(),
+            nr_of_council_confirmations: Default::default(),
+            staking_account_id: None,
+        }
+    }
 }
 
 impl<BlockNumber, ProposerId, Balance, AccountId>
@@ -289,7 +307,7 @@ where
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes number.
     pub(crate) fn is_approval_quorum_reached(&self) -> bool {
-        let actual_votes_fraction = Perbill::from_rational_approximation(
+        let actual_votes_fraction = Perbill::from_rational(
             self.votes_count_without_abstentions(),
             self.total_voters_count,
         );
@@ -303,7 +321,7 @@ where
     // Compares actual approval votes sum with remaining possible votes number.
     pub(crate) fn is_approval_threshold_achievable(&self) -> bool {
         let remaining_votes_count = self.total_voters_count - self.votes_count;
-        let possible_approval_votes_fraction = Perbill::from_rational_approximation(
+        let possible_approval_votes_fraction = Perbill::from_rational(
             self.approvals + remaining_votes_count,
             self.votes_count_without_abstentions() + remaining_votes_count,
         );
@@ -323,7 +341,7 @@ where
     // Compares actual slashing votes sum with remaining possible votes number.
     pub(crate) fn is_slashing_threshold_achievable(&self) -> bool {
         let remaining_votes_count = self.total_voters_count - self.votes_count;
-        let possible_slashing_votes_fraction = Perbill::from_rational_approximation(
+        let possible_slashing_votes_fraction = Perbill::from_rational(
             self.slashes + remaining_votes_count,
             self.votes_count_without_abstentions() + remaining_votes_count,
         );
@@ -337,7 +355,7 @@ where
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes number.
     pub fn is_slashing_quorum_reached(&self) -> bool {
-        let actual_votes_fraction = Perbill::from_rational_approximation(
+        let actual_votes_fraction = Perbill::from_rational(
             self.votes_count_without_abstentions(),
             self.total_voters_count,
         );
@@ -350,10 +368,8 @@ where
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes number.
     pub fn is_approval_threshold_reached(&self) -> bool {
-        let approval_votes_fraction = Perbill::from_rational_approximation(
-            self.approvals,
-            self.votes_count_without_abstentions(),
-        );
+        let approval_votes_fraction =
+            Perbill::from_rational(self.approvals, self.votes_count_without_abstentions());
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
 
@@ -363,10 +379,8 @@ where
     // Slashing threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_slashing_threshold_reached(&self) -> bool {
-        let slashing_votes_fraction = Perbill::from_rational_approximation(
-            self.slashes,
-            self.votes_count_without_abstentions(),
-        );
+        let slashing_votes_fraction =
+            Perbill::from_rational(self.slashes, self.votes_count_without_abstentions());
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
 
@@ -391,7 +405,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder<T: frame_system::Trait> {
+pub trait ProposalCodeDecoder<T: frame_system::Config> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,
@@ -428,12 +442,12 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
 }
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 // Simplification of the 'Proposal' type
 pub(crate) type ProposalOf<T> = Proposal<
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     MemberId<T>,
     BalanceOf<T>,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
 >;

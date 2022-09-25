@@ -35,7 +35,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
       await this.getDecodedPair(lead.roleAccount),
       apiModuleByGroup[this.group],
       'fillOpening',
-      [openingId, createType('BTreeSet<ApplicationId>', applicationIds)]
+      [openingId, createType('BTreeSet<u64>', applicationIds)]
     )
 
     this.log(chalk.green(`Opening ${chalk.magentaBright(openingId.toString())} successfully filled!`))

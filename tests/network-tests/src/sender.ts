@@ -51,7 +51,7 @@ export class Sender {
     const senderKeyPair: KeyringPair = this.keyring.getPair(addr)
 
     let finalized: { (result: ISubmittableResult): void }
-    const whenFinalized: Promise<ISubmittableResult> = new Promise(async (resolve, reject) => {
+    const whenFinalized: Promise<ISubmittableResult> = new Promise((resolve, reject) => {
       finalized = resolve
     })
 

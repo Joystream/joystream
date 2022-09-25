@@ -1,11 +1,10 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { Utils } from '../../../utils'
 import { assertNftOwner, ensureMemberOpenAuctionBidsAreCancelled } from './utils'
-import BN from 'bn.js'
 
 export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
   private videoId: number
@@ -29,12 +28,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     // SCENARIO 1: Cancel bid during auction
     {
       this.debug('Start NFT auction')
-      const {
-        auctionParams,
-        startingPrice,
-        minimalBidStep,
-        bidLockDuration,
-      } = await this.api.createOpenAuctionParameters()
+      const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } =
+        await this.api.createOpenAuctionParameters()
       await this.api.startOpenAuction(
         this.author.keyringPair.address,
         this.author.memberId.toNumber(),
@@ -63,7 +58,7 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
       await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
       // ensure bid has been canceled
-      ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
+      await ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
 
       this.debug('Cancel auction')
       await this.api.cancelOpenAuction(this.author.account, this.author.memberId.toNumber(), this.videoId)
@@ -74,12 +69,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
 
     // SCENARIO 2: Cancel bid by re-bidding auction
     {
-      const {
-        auctionParams,
-        startingPrice,
-        minimalBidStep,
-        bidLockDuration,
-      } = await this.api.createOpenAuctionParameters()
+      const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } =
+        await this.api.createOpenAuctionParameters()
 
       this.debug('Start NFT auction')
       await this.api.startOpenAuction(
@@ -128,7 +119,7 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
       await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
       // ensure bids has been canceled
-      ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
+      await ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
 
       this.debug('Cancel auction')
       await this.api.cancelOpenAuction(this.author.account, this.author.memberId.toNumber(), this.videoId)
@@ -140,12 +131,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     // SCENARIO 3: Cancel bid after auction
     {
       this.debug('Start NFT auction')
-      const {
-        auctionParams,
-        startingPrice,
-        minimalBidStep,
-        bidLockDuration,
-      } = await this.api.createOpenAuctionParameters()
+      const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } =
+        await this.api.createOpenAuctionParameters()
       await this.api.startOpenAuction(
         this.author.keyringPair.address,
         this.author.memberId.toNumber(),
@@ -177,7 +164,7 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
       await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
       // ensure bid has been canceled
-      ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
+      await ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
 
       this.debug(`Check NFT ownership haven't change`)
       await assertNftOwner(this.query, this.videoId, this.author)

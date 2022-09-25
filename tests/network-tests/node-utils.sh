@@ -11,19 +11,19 @@ cd $SCRIPT_PATH
 # Only output from this script should be the container id of the node at the very end
 
 # Location that will be mounted as the /data volume in containers
-# This is where the initial members and balances files and generated chainspec files will be located.
+# This is where the initial balances files and generated chainspec files will be located.
 export DATA_PATH=${DATA_PATH:=$(pwd)/data}
 mkdir -p ${DATA_PATH}
 
 # Initial account balance for sudo account
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=100000000}
 SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
-SUDO_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=100000000}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:=$SUDO_ACCOUNT_URI}
-TREASURY_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 >&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
@@ -34,7 +34,7 @@ export AUTO_CONFIRM=true
 export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
 
 #######################################
-# create initial-balances.json & initial-members.json files
+# create initial-balances.json files
 # Globals:
 #   SUDO_INITIAL_BALANCES
 #   SUDO_ACCOUNT
@@ -45,31 +45,13 @@ export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
 #   None
 #######################################
 function create_initial_config {
-    echo "{
-  \"balances\":[
-    [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
-    [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
-  ]
-}" > ${DATA_PATH}/initial-balances.json
+  echo "{
+    \"balances\":[
+      [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
+      [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
+    ]
+  }" > ${DATA_PATH}/initial-balances.json
 
-    # Remember if there are initial members at genesis query-node needs to be bootstrapped
-    # or any events processed for this member will cause processor to fail.
-    if [ "${MAKE_SUDO_MEMBER}" == true ]
-    then
-	echo "
-    [{
-      \"member_id\":0,
-      \"root_account\":\"$SUDO_ACCOUNT\",
-      \"controller_account\":\"$SUDO_ACCOUNT\",
-      \"handle\":\"sudosudo\",
-      \"avatar_uri\":\"https://sudo.com/avatar.png\",
-      \"about\":\"Sudo\",
-      \"registered_at_time\":0
-    }]
-  " > ${DATA_PATH}/initial-members.json
-    else
-	echo "[]" > ${DATA_PATH}/initial-members.json
-    fi
 }
 
 #######################################
@@ -89,8 +71,7 @@ function create_chainspec_file {
 	   --sudo-account ${SUDO_ACCOUNT} \
 	   --deployment dev \
 	   --chain-spec-path /data/chain-spec.json \
-	   --initial-balances-path /data/initial-balances.json \
-	   --initial-members-path /data/initial-members.json
+	   --initial-balances-path /data/initial-balances.json
 }
 
 #######################################

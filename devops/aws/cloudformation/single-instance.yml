@@ -6,11 +6,10 @@ Parameters:
     Default: t2.xlarge
   EC2AMI:
     Type: String
-    Default: 'ami-09e67e426f25ce0d7'
+    Default: 'ami-0a8273bdc1bfaedf7'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
-    Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
 
 Resources:
@@ -18,15 +17,35 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription:
-        !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
+        !Sub 'Internal Security group for full nodes ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9933
+          ToPort: 9933
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9944
+          ToPort: 9944
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 30333
+          ToPort: 30333
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}_validator'
+          Value: !Sub '${AWS::StackName}_substrate_node'
 
   InstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -48,7 +67,7 @@ Resources:
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
-              VolumeSize: '120'
+              VolumeSize: '200'
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
@@ -56,14 +75,11 @@ Resources:
             # send script output to /tmp so we can debug boot failures
             exec > /tmp/userdata.log 2>&1
 
-            # Update all packages
-            apt-get update -y
-
-            # Prevent interactive prompts that would interrupt the installation
+            # Prevent interactive prompts
             export DEBIAN_FRONTEND=noninteractive
 
-            # Install the updates
-            apt-get upgrade -y
+            # Update all packages
+            apt-get update -y
 
             # Get latest cfn scripts and install them;
             apt-get install -y python3-setuptools
@@ -90,7 +106,7 @@ Resources:
     Type: AWS::CloudFormation::WaitCondition
     Properties:
       Handle: !Ref 'WaitHandle'
-      Timeout: '600'
+      Timeout: '1000'
       Count: 1
 
 Outputs:

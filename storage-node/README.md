@@ -1,5 +1,4 @@
-Colossus v2
-===============
+# Colossus v2
 
 Joystream storage subsystem.
 
@@ -7,21 +6,22 @@ Joystream storage subsystem.
 ![License](https://img.shields.io/github/license/Joystream/joystream)
 
 <!-- toc -->
-* [Description](#description)
-  * [API](#api)
-  * [CLI](#cli)
-  * [Metadata](#metadata)
-  * [Data](#data)
-    * [Uploading](#uploading)
-    * [Synchronization](#synchronization)
-    * [Distribution](#distribution)
-  * [Comments](#comments)
-* [Installation](#installation)
-* [Usage](#usage)
-  * [Prerequisites](#prerequisites)
-  * [CLI Command](#cli-command)
-  * [Docker](#docker)
-* [CLI Commands](#cli-commands)
+
+- [Description](#description)
+  - [API](#api)
+  - [CLI](#cli)
+  - [Metadata](#metadata)
+  - [Data](#data)
+    - [Uploading](#uploading)
+    - [Synchronization](#synchronization)
+    - [Distribution](#distribution)
+  - [Comments](#comments)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Prerequisites](#prerequisites)
+  - [CLI Command](#cli-command)
+  - [Docker](#docker)
+- [CLI Commands](#cli-commands)
 <!-- tocstop -->
 
 # Description
@@ -37,43 +37,49 @@ The full description of the blockchain smart contracts could be found [here](htt
 Colossus provides REST API for its clients and other Colossus instances. It's based on the OpenAPI Specification v3. Here is the complete [spec](./src/api-spec/openapi.yaml) (work in progress).
 
 API endpoints:
+
 - files
-    - get - get the data file by its ID
-    - head - get the data file headers by its ID
-    - post - upload a file
+  - get - get the data file by its ID
+  - head - get the data file headers by its ID
+  - post - upload a file
 - state
-    - version - Colossus version and system environment
-    - all data objects IDs
-    - data objects IDs for bag
-    - data statistics - total data folder size and data object number
+  - version - Colossus version and system environment
+  - all data objects IDs
+  - data objects IDs for bag
+  - data statistics - total data folder size and data object number
+
 ### CLI
 
 There is a command-line interface to manage Storage Working Group operations like create a bucket or change storage settings. Full description could be found [below](#cli-commands).
 
 There are several groups of command:
-- *leader* - manages the Storage Working group in the blockchain. Requires leader privileges.
-- *operator* - Storage Provider group - it manages data object uploads and storage provider metadata(endpoint is the most important). Requires active Storage Working group membership.
-- *dev* - development support commands. Requires development blockchain setup with Alice account.
-- *ungroupped* - server and help commands. `server` starts Colossus and `help` shows the full command list.
+
+- _leader_ - manages the Storage Working group in the blockchain. Requires leader privileges.
+- _operator_ - Storage Provider group - it manages data object uploads and storage provider metadata(endpoint is the most important). Requires active Storage Working group membership.
+- _dev_ - development support commands. Requires development blockchain setup with Alice account.
+- _ungroupped_ - server and help commands. `server` starts Colossus and `help` shows the full command list.
 
 ### Metadata
-The storage provider should provide *metadata* for Colossus instance to be discoverable by other Colossus or
+
+The storage provider should provide _metadata_ for Colossus instance to be discoverable by other Colossus or
 Argus (distributor node) instances. At the very least an endpoint should be registered in the blockchain.
 For some complex scenarios, Colossus should provide its geolocation.
 
 Metadata could be registered using [operator:set-metadata](#storage-node-operatorset-metadata) command.
 A simple endpoint could be set using the `--endpoint` flag of the command. Complex metadata requires JSON file ([example](./scripts/operatorMetadata.json)).
-JSON file format based on the *protobuf* format described [here](../metadata-protobuf/proto/Storage.proto).
+JSON file format based on the _protobuf_ format described [here](../metadata-protobuf/proto/Storage.proto).
 
 ### Data
+
 #### Uploading
 
 Colossus accepts files using its API. The data must be uploaded using POST http method with `multipart/form-data`.
 Simplified process (file uploading):
-   - accepting the data upload in the temp folder
-   - data hash & size verification
-   - moving the data to the data folder
-   - registering the data object as `accepted` in the blockchain
+
+- accepting the data upload in the temp folder
+- data hash & size verification
+- moving the data to the data folder
+- registering the data object as `accepted` in the blockchain
 
 #### Synchronization
 
@@ -88,10 +94,12 @@ data object from the initial receiver) using REST API.
 The actual data distribution (serving to end-users) is done via Argus - the distributor node. It gets data from Colossus using the same `get` endpoint on a single data object basis.
 
 ### Comments
+
 - Colossus relies on the [Query Node (Hydra)](https://www.joystream.org/hydra/) to get the blockchain data in a structured form.
-- Using Colossus as a functioning Storage Provider requires providing [account URI or key file and password](https://wiki.polkadot.network/docs/learn-accounts) as well as active `WorkerId` from the Storage Working group.
+- Using Colossus as a functioning Storage Provider requires providing [account URI or key file and password](https://wiki.polkadot.network/docs/learn-accounts) of a transactor account associated with the assigned storage bucket, as well as active `WorkerId` from the Storage Working group.
 
 # Installation
+
 ```shell
 # Ubuntu Linux
 
@@ -117,6 +125,7 @@ yarn workspace storage-node build
 cd storage-node
 yarn storage-node version
 ```
+
 # Usage
 
 ```sh-session
@@ -124,19 +133,24 @@ $ yarn storage-node server --apiUrl ws://localhost:9944  -w 0 --accountUri //Ali
 ```
 
 ### Prerequisites
-- accountURI or keyfile and password
-- workerId from the Storage working group that matches with the account above
+
+- accountURI or keyfile and password of the transactor account
+- workerId from the Storage working group that matches with the transactor account above
 - Joystream node websocket endpoint URL
 - QueryNode URL
 - (optional) ElasticSearch URL
 - created directory for data uploading
 
 ### CLI command
- Full command description could be find [below](#storage-node-server).
+
+Full command description could be find [below](#storage-node-server).
+
 ### Docker
+
 There is also an option to run Colossus as [Docker container](../colossus.Dockerfile).
 
 # CLI Commands
+
 <!-- commands -->
 * [`storage-node dev:multihash`](#storage-node-devmultihash)
 * [`storage-node dev:sync`](#storage-node-devsync)
@@ -155,6 +169,7 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 * [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
 * [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
+* [`storage-node leader:update-data-object-bloat-bond`](#storage-node-leaderupdate-data-object-bloat-bond)
 * [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
 * [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
@@ -216,6 +231,7 @@ USAGE
 OPTIONS
   -c, --cid=cid                (required) Data object IPFS content ID.
   -h, --help                   show CLI help
+  -i, --bagId=bagId            (required) BagId for uploading the Data object.
   -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
   -m, --dev                    Use development mode
   -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
@@ -242,16 +258,16 @@ OPTIONS
 
   -i, --bagId=bagId
       (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
-           - Bag types: 'static', 'dynamic'
-           - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-           - Id:
-             - absent for 'static:council'
-             - working group name for 'static:wg'
-             - integer for 'dynamic:member' and 'dynamic:channel'
-           Examples:
-           - static:council
-           - static:wg:storage
-           - dynamic:member:4
+      - Bag types: 'static', 'dynamic'
+      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+      - Id:
+      - absent for 'static:council'
+      - working group name for 'static:wg'
+      - integer for 'dynamic:member' and 'dynamic:channel'
+      Examples:
+      - static:council
+      - static:wg:storage
+      - dynamic:member:4
 ```
 
 _See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/verify-bag-id.ts)_
@@ -271,7 +287,7 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.3.1/src/commands/help.ts)_
 
 ## `storage-node leader:cancel-invite`
 
@@ -443,23 +459,23 @@ USAGE
 
 OPTIONS
   -a, --add=add
-      [default: ] ID of a bucket to add to bag
+      [default: ] ID/s of a bucket/s to add to bag
 
   -h, --help
       show CLI help
 
   -i, --bagId=bagId
       (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
-           - Bag types: 'static', 'dynamic'
-           - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-           - Id:
-             - absent for 'static:council'
-             - working group name for 'static:wg'
-             - integer for 'dynamic:member' and 'dynamic:channel'
-           Examples:
-           - static:council
-           - static:wg:storage
-           - dynamic:member:4
+      - Bag types: 'static', 'dynamic'
+      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+      - Id:
+      - absent for 'static:council'
+      - working group name for 'static:wg'
+      - integer for 'dynamic:member' and 'dynamic:channel'
+      Examples:
+      - static:council
+      - static:wg:storage
+      - dynamic:member:4
 
   -k, --keyFile=keyFile
       Key file for the account. Mandatory in non-dev environment.
@@ -471,7 +487,7 @@ OPTIONS
       Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
 
   -r, --remove=remove
-      [default: ] ID of a bucket to remove from bag
+      [default: ] ID/s of a bucket/s to remove from bag
 
   -u, --apiUrl=apiUrl
       [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
@@ -572,6 +588,28 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-fee.ts)_
+
+## `storage-node leader:update-data-object-bloat-bond`
+
+Update data object bloat bond value. Requires storage working group leader permissions.
+
+```
+USAGE
+  $ storage-node leader:update-data-object-bloat-bond
+
+OPTIONS
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -m, --dev                    Use development mode
+  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+  -v, --value=value            (required) New data object bloat bond value
+
+  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
+                               overriden by ACCOUNT_URI environment variable.
+```
+
+_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-object-bloat-bond.ts)_
 
 ## `storage-node leader:update-dynamic-bag-policy`
 

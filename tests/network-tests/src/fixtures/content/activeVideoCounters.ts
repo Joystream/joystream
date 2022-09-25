@@ -4,6 +4,7 @@ import { BaseQueryNodeFixture } from '../../Fixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Utils } from '../../utils'
 import { JoystreamCLI, ICreatedVideoData } from '../../cli/joystream'
+import { Maybe } from '../../graphql/generated/schema'
 
 /**
   Fixture that test Joystream content can be created, is reflected in query node,
@@ -16,8 +17,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
   private channelIds: number[]
   private videosData: ICreatedVideoData[]
-  private channelCategoryIds: number[]
-  private videoCategoryIds: number[]
+  private videoCategoryIds: string[]
 
   constructor(
     api: Api,
@@ -25,14 +25,12 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     cli: JoystreamCLI,
     channelIds: number[],
     videosData: ICreatedVideoData[],
-    channelCategoryIds: number[],
-    videoCategoryIds: number[]
+    videoCategoryIds: string[]
   ) {
     super(api, query)
     this.cli = cli
     this.channelIds = channelIds
     this.videosData = videosData
-    this.channelCategoryIds = channelCategoryIds
     this.videoCategoryIds = videoCategoryIds
   }
 
@@ -50,19 +48,12 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     this.debug('Checking channels active video counters')
     await this.assertCounterMatch('channel', this.channelIds[0], videoCount)
 
-    this.debug('Checking channel categories active video counters')
-    await this.assertCounterMatch('channelCategory', this.channelCategoryIds[0], videoCount)
-
     this.debug('Checking video categories active video counters')
     await this.assertCounterMatch('videoCategory', this.videoCategoryIds[0], videoCount)
 
     // move channel to different channel category and video to different videoCategory
 
     const oneMovedItemCount = 1
-    this.debug('Move channel to different channel category')
-    await this.cli.updateChannel(this.channelIds[0], {
-      category: this.channelCategoryIds[1], // move from category 1 to category 2
-    })
 
     this.debug('Move video to different video category')
     await this.cli.updateVideo(this.videosData[0].videoId, {
@@ -70,9 +61,6 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     })
 
     // check counters of channel category and video category with newly moved in video/channel
-
-    this.debug('Checking channel categories active video counters (2)')
-    await this.assertCounterMatch('channelCategory', this.channelCategoryIds[1], videoCount)
 
     this.debug('Checking video categories active video counters (2)')
     await this.assertCounterMatch('videoCategory', this.videoCategoryIds[1], oneMovedItemCount)
@@ -111,13 +99,13 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     in Query node.
   */
   private async assertCounterMatch(
-    entityName: 'channel' | 'channelCategory' | 'videoCategory',
-    entityId: number,
+    entityName: 'channel' | 'videoCategory',
+    entityId: number | string,
     expectedCount: number
   ) {
-    const getterName = `${entityName}ById` as 'channelById' | 'channelCategoryById' | 'videoCategoryById'
+    const getterName = `${entityName}ById` as 'channelById' | 'videoCategoryById'
     await this.query.tryQueryWithTimeout(
-      () => this.query[getterName](entityId.toString()),
+      () => this.query[getterName](entityId.toString()) as Promise<Maybe<{ id: string; activeVideosCounter: number }>>,
       (entity) => {
         Utils.assert(entity)
         assert.equal(entity.activeVideosCounter, expectedCount)

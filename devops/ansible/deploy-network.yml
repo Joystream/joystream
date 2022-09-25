@@ -1,0 +1,38 @@
+---
+# Configure chain spec, start joystream-node and other services on the servers
+
+# Make sure we are using same binaries on all hosts
+- name: Copy joystream-node binary to all hosts
+  hosts: validators,rpc
+  gather_facts: no
+  tasks:
+    - name: Push joystream-node
+      include_role:
+        name: common
+        tasks_from: push-binaries
+
+- name: Generate genesis config and secrets
+  hosts: validators
+  tasks:
+    - name: Generate chain-spec file and node keys on first validator
+      include_role:
+        name: common
+        tasks_from: create-chain-config
+      vars:
+        first_validator: "{{ groups['validators'][0] }}"
+
+- name: Configure and start Validators
+  hosts: validators
+  tasks:
+    - name: DeployValidators
+      include_role:
+        name: validators
+        tasks_from: main
+
+- name: Configure and start RPC and QueryNode services
+  hosts: rpc
+  tasks:
+    - name: DeployRpc
+      include_role:
+        name: rpc
+        tasks_from: main

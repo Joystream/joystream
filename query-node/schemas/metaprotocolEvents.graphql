@@ -1,0 +1,56 @@
+type MetaprotocolTransactionSuccessful @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  "ID of the created comment (if any)"
+  commentCreated: Comment
+
+  "ID of the edited comment (if any)"
+  commentEdited: Comment
+
+  "ID of the deleted comment (if any)"
+  commentDeleted: Comment
+
+  "ID of the moderated comment (if any)"
+  commentModerated: Comment
+
+  "ID of the created video category (if any)"
+  videoCategoryCreated: Video
+
+  "ID of the updated video category (if any)"
+  videoCategoryUpdated: Video
+
+  # TODO: deletion event will need rework - can't have relation to no longer existing record
+  "ID of the delete video category (if any)"
+  videoCategoryDeleted: Video
+}
+
+type MetaprotocolTransactionErrored @variant {
+  message: String!
+}
+
+union MetaprotocolTransactionStatus = MetaprotocolTransactionSuccessful | MetaprotocolTransactionErrored
+
+type MetaprotocolTransactionStatusEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The status of metaprotocol action"
+  status: MetaprotocolTransactionStatus!
+}

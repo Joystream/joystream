@@ -8,4 +8,4 @@ enum ExitCodes {
 
   // NOTE: never exceed exit code 255 or it will be modulated by `256` and create problems
 }
-export = ExitCodes
+export default ExitCodes

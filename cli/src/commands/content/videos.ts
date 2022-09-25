@@ -1,6 +1,8 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { Video, VideoId } from '@joystream/types/content'
+import { VideoId } from '@joystream/types/primitives'
+import { PalletContentVideoRecord as Video } from '@polkadot/types/lookup'
 import { displayTable } from '../../helpers/display'
+import { formatBalance } from '@polkadot/util'
 
 export default class VideosCommand extends ContentDirectoryCommandBase {
   static description = 'List existing content directory videos.'
@@ -22,17 +24,16 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
 
     let videos: [VideoId, Video][] = await this.getApi().availableVideos()
     if (channelId) {
-      videos = videos.filter(([, v]) => v.in_channel.eqn(parseInt(channelId)))
+      videos = videos.filter(([, v]) => v.inChannel.eqn(parseInt(channelId)))
     }
 
     if (videos.length > 0) {
       displayTable(
         videos.map(([id, v]) => ({
           'ID': id.toString(),
-          'InChannel': v.in_channel.toString(),
-          'IsCensored': v.is_censored.toString(),
-          'CommentsEnabled': v.enable_comments.toString(),
-          'PostId': v.video_post_id.toString(),
+          'InChannel': v.inChannel.toString(),
+          'VideoStateBloatBond': formatBalance(v.videoStateBloatBond.amount),
+          'DataObjects': v.dataObjects.toString(),
         })),
         3
       )

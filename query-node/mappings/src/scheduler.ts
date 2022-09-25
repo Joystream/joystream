@@ -1,12 +1,12 @@
 import { In } from 'typeorm'
 import { BlockContext, DatabaseManager, StoreContext } from '@joystream/hydra-common'
 import { Bounty, BountyStage } from 'query-node/dist/model'
-import {
-  bountyScheduleWorkSubmissionEnd,
-  bountyScheduleFundingEnd,
-  bountyScheduleJudgmentEnd,
-  scheduledFundingEnd,
-} from './bounty'
+// import {
+//   bountyScheduleWorkSubmissionEnd,
+//   bountyScheduleFundingEnd,
+//   bountyScheduleJudgmentEnd,
+//   scheduledFundingEnd,
+// } from './bounty'
 
 type Job = (store: DatabaseManager) => Promise<void>
 
@@ -48,19 +48,17 @@ async function runScheduledJobs(store: DatabaseManager, currentBlock: number): P
 
 async function scheduleMissedMappings(store: DatabaseManager): Promise<void> {
   // Reschedule mappings lost while the processor was off
-
-  // Bounty stage updates
-  const bounties = await store.getMany(Bounty, {
-    where: { stage: In([BountyStage.Funding, BountyStage.WorkSubmission, BountyStage.Judgment]) },
-    relations: ['createdInEvent', 'maxFundingReachedEvent'],
-  })
-
-  bounties.forEach((bounty) => {
-    const scheduledFundingPeriodEnd = scheduledFundingEnd(bounty, bounty.createdInEvent.inBlock)
-    const fundingPeriodEnd = bounty.maxFundingReachedEvent?.inBlock ?? scheduledFundingPeriodEnd
-
-    bountyScheduleFundingEnd(bounty, scheduledFundingPeriodEnd)
-    bountyScheduleWorkSubmissionEnd(bounty, fundingPeriodEnd)
-    bountyScheduleJudgmentEnd(bounty, fundingPeriodEnd && fundingPeriodEnd + bounty.judgingPeriod)
-  })
+  // TODO: uncomment this + event handlers below after bounties are repaired
+  // // Bounty stage updates
+  // const bounties = await store.getMany(Bounty, {
+  //   where: { stage: In([BountyStage.Funding, BountyStage.WorkSubmission, BountyStage.Judgment]) },
+  //   relations: ['createdInEvent', 'maxFundingReachedEvent'],
+  // })
+  // bounties.forEach((bounty) => {
+  //   const scheduledFundingPeriodEnd = scheduledFundingEnd(bounty, bounty.createdInEvent.inBlock)
+  //   const fundingPeriodEnd = bounty.maxFundingReachedEvent?.inBlock ?? scheduledFundingPeriodEnd
+  //   bountyScheduleFundingEnd(bounty, scheduledFundingPeriodEnd)
+  //   bountyScheduleWorkSubmissionEnd(bounty, fundingPeriodEnd)
+  //   bountyScheduleJudgmentEnd(bounty, fundingPeriodEnd && fundingPeriodEnd + bounty.judgingPeriod)
+  // })
 }

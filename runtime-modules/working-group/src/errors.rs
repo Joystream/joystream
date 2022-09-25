@@ -1,11 +1,13 @@
 #![warn(missing_docs)]
 
-use crate::{Instance, Module, Trait};
+use crate::{Config, Instance, Module};
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Discussion module predefined errors
-    pub enum Error for Module<T: Trait<I>, I: Instance>{
+    // #[derive(PartialEq)]
+    pub enum Error for Module<T: Config<I>, I: Instance>{
         /// Provided stake balance cannot be zero.
         StakeBalanceCannotBeZero,
 
@@ -89,6 +91,12 @@ decl_error! {
 
         /// Worker storage text is too long.
         WorkerStorageValueTooLong,
+
+        /// Insufficient tokens for funding (on member controller account)
+        InsufficientTokensForFunding,
+
+        /// Trying to fund with zero tokens
+        ZeroTokensFunding,
 
         /// Cannot withdraw: insufficient budget balance.
         InsufficientBalanceForTransfer,
