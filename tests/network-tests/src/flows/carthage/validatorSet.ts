@@ -18,21 +18,32 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
 
   // such accounts becomes stakers
-  await Promise.all(
-    stakerAccounts.map((account) => {
-      const bondingRestrictedFixture = new BondingRestrictedFixture(api, {
+  const bondingResult = await Promise.all(
+    stakerAccounts.map(async (account) => {
+      const input = {
         stash: account,
         controller: account,
         bondAmount: bondAmount,
-      })
-      new FixtureRunner(bondingRestrictedFixture).run()
-    })
-  )
+      }
+      const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
+      const bondingFees = await api.estimateTxFee(bondTx, input.stash)
+      await api.treasuryTransferBalance(input.stash, input.bondAmount.add(bondingFees))
+      await api.signAndSend(bondTx, input.stash)
+    }))
 
   // wait k = 10 blocks
   await api.untilBlock(nBlocks)
 
-  // TODO: claim payouts
+  // attempt to claim payout
+  const currentEra = 0
+  const claimingResult = await Promise.all(
+    stakerAccounts.map(async (account) => {
+      const claimTx = api.tx.staking.payoutStakers(account, currentEra)
+      const claimFees = await api.estimateTxFee(claimTx, account)
+      await api.treasuryTransferBalance(account, claimFees)
+      await api.signAndSend(claimTx, account)
+    }))
+
 
   // each payout (positive number) must be zero iff the sum is zero
   let totalReward: BN = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))).reduce(

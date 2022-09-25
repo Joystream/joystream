@@ -31,7 +31,6 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
     const bondingTxResult = await api.signAndSend(bondTx, input.stash)
     assert(bondingTxResult.isCompleted)
 
-
     // attempt to declare accounts as validators
     const prefs: PalletStakingValidatorPrefs = {
         commission: new Perbill(1),
@@ -42,5 +41,4 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
     await api.treasuryTransferBalance(input.stash, validateingFees)
     const validateTxResult = await api.signAndSend(validateTx, input.controller)
     assert(validateTxResult.isCompleted)
-
 }
