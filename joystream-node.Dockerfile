@@ -12,21 +12,29 @@ RUN apt-get update && \
 FROM rust AS planner
 LABEL description="Cargo chef prepare"
 WORKDIR /joystream
-COPY . .
+COPY Cargo.toml .
+COPY Cargo.lock .
+COPY bin ./bin
+COPY runtime ./runtime
+COPY runtime-modules ./runtime-modules
 RUN cargo chef prepare --recipe-path /joystream/recipe.json
 
 FROM rust AS cacher
 LABEL description="Cargo chef cook dependencies"
 WORKDIR /joystream
-COPY --from=planner /joystream/recipe.json recipe.json
+COPY --from=planner /joystream/recipe.json /joystream/recipe.json
 ENV WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
 # Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook --release --recipe-path /joystream/recipe.json
 
 FROM rust AS builder
 LABEL description="Compiles all workspace artifacts"
 WORKDIR /joystream
-COPY . .
+COPY Cargo.toml .
+COPY Cargo.lock .
+COPY bin ./bin
+COPY runtime ./runtime
+COPY runtime-modules ./runtime-modules
 # Copy over the cached dependencies
 COPY --from=cacher /joystream/target target
 COPY --from=cacher $CARGO_HOME $CARGO_HOME
