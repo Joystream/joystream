@@ -1034,6 +1034,12 @@ parameter_types! {
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 1;
 }
 
+// Assertions
+const_assert!(MinStorageBucketsPerBag::get() > 0);
+const_assert!(MaxStorageBucketsPerBag::get() >= MinStorageBucketsPerBag::get());
+const_assert!(MinDistributionBucketsPerBag::get() > 0);
+const_assert!(MaxDistributionBucketsPerBag::get() >= MinDistributionBucketsPerBag::get());
+
 impl storage::Config for Runtime {
     type Event = Event;
     type DataObjectId = DataObjectId;
