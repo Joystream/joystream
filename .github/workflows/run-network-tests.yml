@@ -129,6 +129,7 @@ jobs:
 
       - name: Save joystream/node image to cache
         run: |
+          docker buildx build --load -t joystream/node --builder=container .
           docker save --output joystream-node-docker-image.tar joystream/node
           gzip joystream-node-docker-image.tar
           cp joystream-node-docker-image.tar.gz ~/docker-images/
