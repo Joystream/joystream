@@ -56,6 +56,4 @@ jobs:
           build-args: CARGO_FEATURES=${{ matrix.cargo_features }}
           push: true
           tags: ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
