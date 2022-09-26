@@ -6,7 +6,7 @@ import { expect } from 'chai'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { ClaimingPayoutStakersSucceedsFixture } from 'src/fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 
-export default async function claimingPayoutsDisabled({ api, query, env }: FlowProps): Promise<void> {
+export default async function claimingPayoutsEnabled({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: claiming staking rewards is disabled in PoA ')
   debug('started')
   api.enableDebugTxLogs()
@@ -49,7 +49,7 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
     })
   )
 
-  // each payout (positive number) must be zero iff the sum is zero
+  // each payout (positive pnumber) must be zero iff the sum is zero
   const currentBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
 
   const result = previousBalances.map((past, i) => past > currentBalances[i]).reduce((accumulator, iter) => iter || accumulator, false)
