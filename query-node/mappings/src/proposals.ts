@@ -2,10 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import {
-  PalletProposalsCodexProposalDetails as RuntimeProposalDetails,
-  PalletContentUpdateChannelPayoutsParametersRecord as UpdateChannelPayoutsParameters,
-} from '@polkadot/types/lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import {
   Proposal,
@@ -60,11 +57,9 @@ import {
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
   UpdateChannelPayoutsProposalDetails,
-  ChannelPayoutsParameters,
 } from 'query-node/dist/model'
 import {
   bytesToString,
-  deterministicEntityId,
   genericEventFields,
   getWorkingGroupModuleName,
   INT32MAX,
@@ -97,30 +92,6 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
     await store.save<RuntimeWasmBytecode>(wasmBytecode)
   }
   return wasmBytecode
-}
-
-async function saveChannelPayoutsParameters(
-  event: SubstrateEvent,
-  store: DatabaseManager,
-  updateChannelPayoutsParameters: UpdateChannelPayoutsParameters
-): Promise<ChannelPayoutsParameters> {
-  const { commitment, payload, maxCashoutAllowed, minCashoutAllowed, channelCashoutsEnabled } =
-    updateChannelPayoutsParameters
-  const asPayload = unwrap(payload)?.objectCreationParams
-
-  const newChannelPayoutsParameters = new ChannelPayoutsParameters({
-    id: deterministicEntityId(event),
-    commitment: commitment.isSome ? Buffer.from(commitment.unwrap()) : undefined, // TODO: .toU8a(true) ?
-    payloadSize: asPayload ? new BN(asPayload.size) : undefined,
-    payloadHash: asPayload ? Buffer.from(asPayload.ipfsContentId) : undefined,
-    minCashoutAllowed: unwrap(minCashoutAllowed),
-    maxCashoutAllowed: unwrap(maxCashoutAllowed),
-    channelCashoutsEnabled: unwrap(channelCashoutsEnabled)?.valueOf(),
-    createdAt: new Date(event.blockTimestamp),
-  })
-
-  await store.save<ChannelPayoutsParameters>(newChannelPayoutsParameters)
-  return newChannelPayoutsParameters
 }
 
 async function parseProposalDetails(
@@ -313,7 +284,11 @@ async function parseProposalDetails(
   else if (proposalDetails.isUpdateChannelPayouts) {
     const details = new UpdateChannelPayoutsProposalDetails()
     const specificDetails = proposalDetails.asUpdateChannelPayouts
-    details.channelPayoutsParametersId = (await saveChannelPayoutsParameters(event, store, specificDetails)).id
+
+    details.commitment = unwrap(specificDetails.commitment)?.toString()
+    details.minCashoutAllowed = unwrap(specificDetails.minCashoutAllowed)
+    details.maxCashoutAllowed = unwrap(specificDetails.maxCashoutAllowed)
+    details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
     return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
@@ -485,7 +460,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
     newStatus = new ProposalStatusExecuted()
   } else if (executionStatus.isExecutionFailed) {
     const status = new ProposalStatusExecutionFailed()
-    status.errorMessage = executionStatus.asExecutionFailed.error.toString()
+    status.errorMessage = executionStatus.asExecutionFailed.error.toHuman() as string
     newStatus = status
   } else {
     throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)

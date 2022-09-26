@@ -103,6 +103,7 @@ typegen:
     - content.ChannelAgentRemarked
     - content.ChannelPayoutsUpdated
     - content.ChannelRewardUpdated
+    - content.ChannelFundsWithdrawn
     - content.ChannelRewardClaimedAndWithdrawn
     # Storage
     - storage.StorageBucketCreated

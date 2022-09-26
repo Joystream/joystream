@@ -174,8 +174,7 @@ type DataObjectTypeVideoSubtitle @variant {
 }
 
 type DataObjectTypeChannelPayoutsPayload @variant {
-  "Related video entity"
-  council: ElectedCouncil!
+  _phantom: Int
 }
 
 type DataObjectTypeUnknown @variant {
@@ -225,9 +224,6 @@ type StorageDataObject @entity {
 
   "Video subtitle that has this data object associated as subtitle file."
   videoSubtitle: VideoSubtitle @derivedFrom(field: "asset")
-
-  "Elected Council that proposed this channel payouts payload"
-  channelPayoutsPayloadByCouncil: ElectedCouncil
 }
 
 type DistributionBucketFamilyGeographicArea @entity {

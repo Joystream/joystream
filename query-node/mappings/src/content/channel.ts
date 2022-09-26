@@ -18,10 +18,10 @@ import {
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
   ChannelVisibilitySetByModeratorEvent,
-  ChannelPayoutParameters,
-  ChannelPayoutsCommitmentUpdatedEvent,
+  ChannelPayoutsUpdatedEvent,
   ChannelRewardClaimedAndWithdrawnEvent,
   ChannelRewardClaimedEvent,
+  DataObjectTypeChannelPayoutsPayload,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -35,7 +35,7 @@ import {
   deterministicEntityId,
   unwrap,
 } from '../common'
-import { getCurrentElectedCouncil } from 'src/council'
+import { getCurrentElectedCouncil } from '../council'
 import {
   processBanOrUnbanMemberFromChannelMessage,
   processModerateCommentMessage,
@@ -426,28 +426,11 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
   const [updateChannelPayoutParameters, dataObjectId] = new Content.ChannelPayoutsUpdatedEvent(event).params
 
   const asDataObjectId = unwrap(dataObjectId)
-
   const payloadDataObject = await store.get(StorageDataObject, { where: { id: asDataObjectId?.toString() } })
 
   if (payloadDataObject) {
-    const electedCouncil = await getCurrentElectedCouncil(store)
-    payloadDataObject.channelPayoutsPayloadByCouncil = electedCouncil
-
-    // common event processing - second
-
-    const commitmentUpdatedEvent = new ChannelPayoutsCommitmentUpdatedEvent({
-      ...genericEventFields(event),
-      commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
-      payload: payloadDataObject,
-    })
-
-    await store.save<ChannelPayoutsCommitmentUpdatedEvent>(commitmentUpdatedEvent)
+    payloadDataObject.type = new DataObjectTypeChannelPayoutsPayload()
   }
-
-  // load existing channel payout parameters record (if any)
-  const channelPayoutParameters = await store.get(ChannelPayoutParameters, {
-    where: { isCommitmentValid: true },
-  })
 
   const asPayload = unwrap(updateChannelPayoutParameters.payload)?.objectCreationParams
   const payloadSize = asPayload ? new BN(asPayload.size) : undefined
@@ -456,57 +439,20 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
   const maxCashoutAllowed = unwrap(updateChannelPayoutParameters.maxCashoutAllowed)
   const channelCashoutsEnabled = unwrap(updateChannelPayoutParameters.channelCashoutsEnabled)?.valueOf()
 
-  if (updateChannelPayoutParameters.commitment.isSome) {
-    if (channelPayoutParameters) {
-      channelPayoutParameters.isCommitmentValid = false
+  const newChannelPayoutsUpdatedEvent = new ChannelPayoutsUpdatedEvent({
+    ...genericEventFields(event),
+    commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
+    payloadSize,
+    payloadHash,
+    minCashoutAllowed,
+    maxCashoutAllowed,
+    channelCashoutsEnabled,
+    payloadDataObject,
+    isCommitmentValid: true,
+  })
 
-      // invalidate existing channel payout parameters record
-      await store.save<ChannelPayoutParameters>(channelPayoutParameters)
-    }
-
-    const newChannelPayoutParameters = new ChannelPayoutParameters({
-      id: deterministicEntityId(event),
-      commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
-      payloadSize,
-      payloadHash,
-      minCashoutAllowed,
-      maxCashoutAllowed,
-      channelCashoutsEnabled,
-      createdAt: new Date(event.blockTimestamp),
-      updatedAt: new Date(event.blockTimestamp),
-      isCommitmentValid: true,
-    })
-
-    // save new channel payout parameters record (with new commitment)
-    await store.save<ChannelPayoutParameters>(newChannelPayoutParameters)
-
-    // common event processing - second
-
-    const commitmentUpdatedEvent = new ChannelPayoutsCommitmentUpdatedEvent({
-      ...genericEventFields(event),
-      commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
-      payload: payloadDataObject,
-    })
-
-    await store.save<ChannelPayoutsCommitmentUpdatedEvent>(commitmentUpdatedEvent)
-
-    return
-  }
-
-  if (!channelPayoutParameters) {
-    inconsistentState('Channel payout params update request for non-existing commitment')
-  }
-
-  channelPayoutParameters.payloadHash = payloadHash
-  channelPayoutParameters.payloadSize = payloadSize
-  channelPayoutParameters.minCashoutAllowed = minCashoutAllowed || channelPayoutParameters.minCashoutAllowed
-  channelPayoutParameters.maxCashoutAllowed = maxCashoutAllowed || channelPayoutParameters.maxCashoutAllowed
-  channelPayoutParameters.channelCashoutsEnabled =
-    channelCashoutsEnabled || channelPayoutParameters.channelCashoutsEnabled
-  channelPayoutParameters.updatedAt = new Date(event.blockTimestamp)
-
-  // update existing channel payout parameters record
-  await store.save<ChannelPayoutParameters>(channelPayoutParameters)
+  // save new channel payout parameters record (with new commitment)
+  await store.save<ChannelPayoutsUpdatedEvent>(newChannelPayoutsUpdatedEvent)
 }
 
 function setChannelRewardFields(event: SubstrateEvent, channel: Channel, amount: BN) {
@@ -578,4 +524,8 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
 
   // save channel
   await store.save<Channel>(channel)
+}
+
+export async function content_ChannelFundsWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
+  // load event data
 }

@@ -227,8 +227,6 @@ type ElectedCouncil @entity {
 
   "Sign if council is already resigned."
   isResigned: Boolean!
-
-  proposedChannelPayoutsPayloads: [StorageDataObject!] @derivedFrom(field: "channelPayoutsPayloadByCouncil")
 }
 
 type ElectionRound @entity {

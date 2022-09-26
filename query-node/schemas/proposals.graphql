@@ -316,8 +316,17 @@ type VetoProposalDetails @variant {
 }
 
 type UpdateChannelPayoutsProposalDetails @variant {
-  "Proposed Channel Payouts Parameters"
-  channelPayoutsParameters: ChannelPayoutsParameters!
+  "Merkle root of the channel payouts"
+  commitment: String
+
+  "Minimum amount of channel reward cashout allowed at a time"
+  minCashoutAllowed: BigInt
+
+  "Maximum amount of channel reward cashout allowed at a time"
+  maxCashoutAllowed: BigInt
+
+  "Can channel cashout the rewards"
+  channelCashoutsEnabled: Boolean
 }
 
 union ProposalDetails =

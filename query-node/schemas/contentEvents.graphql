@@ -593,33 +593,7 @@ type ChannelRewardClaimedAndWithdrawnEvent implements Event @entity {
   actor: ContentActor!
 }
 
-# TODO: not really necessary?
-
-# type ChannelPayoutParametersUpdatedEvent implements Event @entity {
-#   ### GENERIC DATA ###
-
-#   "(network}-{blockNumber}-{indexInBlock}."
-#   id: ID!
-
-#   "Hash of the extrinsic which caused the event to be emitted."
-#   inExtrinsic: String
-
-#   "Blocknumber of the block in which the event was emitted."
-#   inBlock: Int!
-
-#   "Network the block was produced in."
-#   network: Network!
-
-#   "Index of event in block from which it was emitted."
-#   indexInBlock: Int!
-
-#   ### SPECIFIC DATA ###
-
-#   "Merkle root of the channel payouts"
-#   commitment: Bytes!
-# }
-
-type ChannelPayoutsCommitmentUpdatedEvent implements Event @entity {
+type ChannelPayoutsUpdatedEvent @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}."
@@ -639,9 +613,27 @@ type ChannelPayoutsCommitmentUpdatedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Merkle root of the channel payouts payload"
-  commitment: Bytes!
+  "Merkle root of the channel payouts"
+  commitment: Bytes
 
   "Storage data object corresponding to the channel payouts payload"
-  payload: StorageDataObject!
+  payloadDataObject: StorageDataObject!
+
+  "Size of the serialized channel payouts payload"
+  payloadSize: BigInt
+
+  "Hash of the serialized channel payouts payload"
+  payloadHash: Bytes
+
+  "Minimum amount of channel reward cashout allowed at a time"
+  minCashoutAllowed: BigInt
+
+  "Maximum amount of channel reward cashout allowed at a time"
+  maxCashoutAllowed: BigInt
+
+  "Can channel cashout the rewards"
+  channelCashoutsEnabled: Boolean
+
+  "Is the commitment valid. Most recent commitment would be considered valid"
+  isCommitmentValid: Boolean!
 }
