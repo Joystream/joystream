@@ -124,8 +124,7 @@ async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): P
   const worker = await store.get(Worker, {
     where: {
       group: { id: 'forumWorkingGroup' },
-      ...(actor.isLead ? { isLead: true } : { runtimeId: actor.asModerator.toNumber() }),
-      ...(actor.isLead ? { id: workingGroup.leader?.id} : {})
+      ...(actor.isLead ? { id: workingGroup.leader?.id } : { runtimeId: actor.asModerator.toNumber() }),
     },
     relations: ['group'],
   })
