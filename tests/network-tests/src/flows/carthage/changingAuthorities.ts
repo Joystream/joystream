@@ -2,7 +2,7 @@ import { extendDebug } from 'src/Debugger'
 import { FlowProps } from 'src/Flow'
 import { expect } from 'chai'
 
-export default async function constantAuthorities({ api, query, env }: FlowProps): Promise<void> {
+export default async function changingAuthorities({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: authority set is changing after swith to NPoS')
   debug('started')
   api.enableDebugTxLogs()

@@ -5,7 +5,7 @@ import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixt
 import { FlowProps } from 'src/Flow'
 import { expect } from 'chai'
 
-export default async function authoritiesDontGetTips({ api, query, env }: FlowProps): Promise<void> {
+export default async function authoritiesDoGetTips({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug("flow: authorities don't get tips in PoA")
   debug('started')
   api.enableDebugTxLogs()

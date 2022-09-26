@@ -22,8 +22,6 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   // get authorities
   const authorities = api.getAuthorities()
 
-  const previousBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
-
   // such accounts becomes stakers
   await Promise.all(
     stakerAccounts.map(async (account) => {
@@ -37,6 +35,8 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
     })
   )
 
+  const previousBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
+
   // wait k = 10 blocks
   await api.untilBlock(nBlocks)
 
@@ -49,11 +49,10 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
     })
   )
 
+  // each payout (positive number) must be zero iff the sum is zero
   const currentBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
 
-
-  const result = previousBalances.map((past, i) => past == currentBalances[i]).reduce((accumulator, iter) => iter && accumulator, true)
+  const result = previousBalances.map((past, i) => past > currentBalances[i]).reduce((accumulator, iter) => iter || accumulator, false)
 
   expect(result).to.be.true
-
 }

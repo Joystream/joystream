@@ -8,7 +8,7 @@ import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixt
 import { ValidatingSucceedsFixture } from 'src/fixtures/staking/ValidatingSucceedsFixture'
 import { NominatingSucceedsFixture } from 'src/fixtures/staking/NominatingSucceedsFixture'
 
-export default async function validateSucceedsInPoA({ api, query, env }: FlowProps): Promise<void> {
+export default async function nominateSucceedsInPoA({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: validator-set')
   debug('started')
   api.enableDebugTxLogs()
