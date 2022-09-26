@@ -2,15 +2,15 @@ import { Command, flags } from '@oclif/command'
 import { WsProvider } from '@polkadot/api'
 import { readFileSync } from 'fs'
 import path from 'path'
-import { MembershipMigration } from '../../giza-olympia/MembershipMigration'
-import { MembershipsSnapshot } from '../../giza-olympia/SnapshotManager'
+import { MembershipMigration } from '../../olympia-carthage/MembershipMigration'
+import { MembershipsSnapshot } from '../../olympia-carthage/SnapshotManager'
 import { RuntimeApi } from '../../RuntimeApi'
 
 export class MigrateMembersCommand extends Command {
   static flags = {
     snapshotFilePath: flags.string({
       required: true,
-      description: 'Path to giza memberships snapshot (json)',
+      description: 'Path to olympia memberships snapshot (json)',
     }),
     wsProviderEndpointUri: flags.string({
       description: 'WS provider endpoint uri (Olympia)',
@@ -26,7 +26,7 @@ export class MigrateMembersCommand extends Command {
     }),
     migrationStatePath: flags.string({
       description: 'Path to migration results directory',
-      default: path.join(__dirname, '../../../results/giza-olympia'),
+      default: path.join(__dirname, '../../../results/olympia-carthage'),
     }),
   }
 
