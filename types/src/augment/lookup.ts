@@ -712,14 +712,14 @@ export default {
     _enum: {
       Signaled: 'Bytes',
       RuntimeUpgraded: 'Bytes',
-      UpdatedWorkingGroupBudget: '(PalletCommonWorkingGroup,u128,PalletCommonBalanceKind)',
+      UpdatedWorkingGroupBudget: '(PalletCommonWorkingGroupIterableEnumsWorkingGroup,u128,PalletCommonBalanceKind)',
       TokensBurned: '(AccountId32,u128)'
     }
   },
   /**
-   * Lookup95: pallet_common::working_group::WorkingGroup
+   * Lookup95: pallet_common::working_group::iterable_enums::WorkingGroup
    **/
-  PalletCommonWorkingGroup: {
+  PalletCommonWorkingGroupIterableEnumsWorkingGroup: {
     _enum: ['Forum', 'Storage', 'Content', 'OperationsAlpha', 'Gateway', 'Distribution', 'OperationsBeta', 'OperationsGamma', 'Membership']
   },
   /**
@@ -729,14 +729,14 @@ export default {
     _enum: ['Positive', 'Negative']
   },
   /**
-   * Lookup97: pallet_content::RawEvent<pallet_content::permissions::ContentActor<CuratorGroupId, CuratorId, MemberId>, MemberId, CuratorGroupId, CuratorId, VideoId, ChannelId, pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, BlockNumber, TokenId, TransferId, frame_support::storage::bounded_btree_set::BoundedBTreeSet<T, S>, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>, S>, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>, DataObjectId, pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, OpenAuctionId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance, pallet_content::types::ChannelCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, MemberId, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, Balance>, pallet_content::types::ChannelUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, MemberId, Balance>, pallet_content::types::VideoCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, pallet_content::types::VideoUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, ChannelPrivilegeLevel, BTreeMap<K, BTreeSet<pallet_content::permissions::curator_group::ContentModerationAction>>, pallet_content::types::TransferCommitmentParameters<BTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>>, Balance, TransferId>, pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>, S>>, sp_core::crypto::AccountId32, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>, TokenId, pallet_content::types::ChannelFundsDestination<sp_core::crypto::AccountId32>>
+   * Lookup97: pallet_content::RawEvent<pallet_content::permissions::ContentActor<CuratorGroupId, CuratorId, MemberId>, MemberId, CuratorGroupId, CuratorId, VideoId, ChannelId, pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, BlockNumber, TokenId, TransferId, frame_support::storage::bounded_btree_set::BoundedBTreeSet<T, S>, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>, S>, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>, DataObjectId, pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, OpenAuctionId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance, pallet_content::types::ChannelCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, MemberId, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, Balance>, pallet_content::types::ChannelUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, MemberId, Balance>, pallet_content::types::VideoCreationParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, pallet_content::types::VideoUpdateParametersRecord<pallet_content::types::StorageAssetsRecord<Balance>, DataObjectId, pallet_content::nft::types::NftIssuanceParametersRecord<MemberId, pallet_content::nft::types::InitTransactionalStatusRecord<pallet_content::nft::types::EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>, MemberId, Balance>>, Balance>, ChannelPrivilegeLevel, BTreeMap<K, BTreeSet<pallet_content::permissions::curator_group::iterable_enums::ContentModerationAction>>, pallet_content::types::TransferCommitmentParameters<BTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>>, Balance, TransferId>, pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>, S>>, sp_core::crypto::AccountId32, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>, TokenId, pallet_content::types::ChannelFundsDestination<sp_core::crypto::AccountId32>>
    **/
   PalletContentRawEvent: {
     _enum: {
       CuratorGroupCreated: 'u64',
-      CuratorGroupPermissionsUpdated: '(u64,BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>)',
+      CuratorGroupPermissionsUpdated: '(u64,BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>)',
       CuratorGroupStatusSet: '(u64,bool)',
-      CuratorAdded: '(u64,u64,BTreeSet<PalletContentChannelActionPermission>)',
+      CuratorAdded: '(u64,u64,BTreeSet<PalletContentIterableEnumsChannelActionPermission>)',
       CuratorRemoved: '(u64,u64)',
       ChannelCreated: '(u64,PalletContentChannelRecord,PalletContentChannelCreationParametersRecord,AccountId32)',
       ChannelUpdated: '(PalletContentPermissionsContentActor,u64,PalletContentChannelUpdateParametersRecord,BTreeSet<u64>)',
@@ -747,7 +747,7 @@ export default {
       ChannelDeleted: '(PalletContentPermissionsContentActor,u64)',
       ChannelDeletedByModerator: '(PalletContentPermissionsContentActor,u64,Bytes)',
       ChannelVisibilitySetByModerator: '(PalletContentPermissionsContentActor,u64,bool,Bytes)',
-      ChannelPausedFeaturesUpdatedByModerator: '(PalletContentPermissionsContentActor,u64,BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>,Bytes)',
+      ChannelPausedFeaturesUpdatedByModerator: '(PalletContentPermissionsContentActor,u64,BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>,Bytes)',
       ChannelAssetsDeletedByModerator: '(PalletContentPermissionsContentActor,u64,BTreeSet<u64>,Bytes)',
       ChannelFundsWithdrawn: '(PalletContentPermissionsContentActor,u64,u128,PalletContentChannelFundsDestination)',
       ChannelRewardClaimedAndWithdrawn: '(PalletContentPermissionsContentActor,u64,u128,PalletContentChannelFundsDestination)',
@@ -801,15 +801,15 @@ export default {
     }
   },
   /**
-   * Lookup99: pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, BlockNumber, TokenId, TransferId, frame_support::storage::bounded_btree_set::BoundedBTreeSet<T, S>, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>, S>, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
+   * Lookup99: pallet_content::types::ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, BlockNumber, TokenId, TransferId, frame_support::storage::bounded_btree_set::BoundedBTreeSet<T, S>, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>, S>, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletContentChannelRecord: {
     owner: 'PalletContentChannelOwner',
     numVideos: 'u64',
-    collaborators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
+    collaborators: 'BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>',
     cumulativeRewardClaimed: 'u128',
     privilegeLevel: 'u8',
-    pausedFeatures: 'BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>',
+    pausedFeatures: 'BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>',
     transferStatus: 'PalletContentChannelTransferStatus',
     dataObjects: 'BTreeSet<u64>',
     dailyNftLimit: 'PalletContentLimitPerPeriod',
@@ -820,9 +820,9 @@ export default {
     channelStateBloatBond: 'PalletCommonBloatBondRepayableBloatBond'
   },
   /**
-   * Lookup103: pallet_content::types::ChannelActionPermission
+   * Lookup103: pallet_content::types::iterable_enums::ChannelActionPermission
    **/
-  PalletContentChannelActionPermission: {
+  PalletContentIterableEnumsChannelActionPermission: {
     _enum: ['UpdateChannelMetadata', 'ManageNonVideoChannelAssets', 'ManageChannelCollaborators', 'UpdateVideoMetadata', 'AddVideo', 'ManageVideoAssets', 'DeleteChannel', 'DeleteVideo', 'ManageVideoNfts', 'AgentRemark', 'TransferChannel', 'ClaimChannelReward', 'WithdrawFromChannelBalance', 'IssueCreatorToken', 'ClaimCreatorTokenPatronage', 'InitAndManageCreatorTokenSale', 'CreatorTokenIssuerTransfer', 'MakeCreatorTokenPermissionless', 'ReduceCreatorTokenPatronageRate', 'ManageRevenueSplits', 'DeissueCreatorToken']
   },
   /**
@@ -842,13 +842,13 @@ export default {
     }
   },
   /**
-   * Lookup111: pallet_content::permissions::curator_group::PausableChannelFeature
+   * Lookup111: pallet_content::permissions::curator_group::iterable_enums::PausableChannelFeature
    **/
-  PalletContentPermissionsCuratorGroupPausableChannelFeature: {
+  PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature: {
     _enum: ['ChannelFundsTransfer', 'CreatorCashout', 'VideoNftIssuance', 'VideoCreation', 'VideoUpdate', 'ChannelUpdate', 'CreatorTokenIssuance']
   },
   /**
-   * Lookup113: pallet_content::types::ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>, S>>
+   * Lookup113: pallet_content::types::ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>, S>>
    **/
   PalletContentChannelTransferStatus: {
     _enum: {
@@ -857,17 +857,17 @@ export default {
     }
   },
   /**
-   * Lookup114: pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>, S>>
+   * Lookup114: pallet_content::types::PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId, frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>, S>>
    **/
   PalletContentPendingTransfer: {
     newOwner: 'PalletContentChannelOwner',
     transferParams: 'PalletContentTransferCommitmentParametersBoundedBTreeMap'
   },
   /**
-   * Lookup115: pallet_content::types::TransferCommitmentParameters<frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>, S>, Balance, TransferId>
+   * Lookup115: pallet_content::types::TransferCommitmentParameters<frame_support::storage::bounded_btree_map::BoundedBTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>, S>, Balance, TransferId>
    **/
   PalletContentTransferCommitmentParametersBoundedBTreeMap: {
-    newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
+    newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>',
     price: 'u128',
     transferId: 'u64'
   },
@@ -934,7 +934,7 @@ export default {
   PalletContentChannelCreationParametersRecord: {
     assets: 'Option<PalletContentStorageAssetsRecord>',
     meta: 'Option<Bytes>',
-    collaborators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
+    collaborators: 'BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>',
     storageBuckets: 'BTreeSet<u64>',
     distributionBuckets: 'BTreeSet<PalletStorageDistributionBucketIdRecord>',
     expectedChannelStateBloatBond: 'u128',
@@ -971,7 +971,7 @@ export default {
     assetsToUpload: 'Option<PalletContentStorageAssetsRecord>',
     newMeta: 'Option<Bytes>',
     assetsToRemove: 'BTreeSet<u64>',
-    collaborators: 'Option<BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>>',
+    collaborators: 'Option<BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>>',
     expectedDataObjectStateBloatBond: 'u128',
     storageBucketsNumWitness: 'Option<u32>'
   },
@@ -998,13 +998,13 @@ export default {
     storageBucketsNumWitness: 'Option<u32>'
   },
   /**
-   * Lookup139: pallet_content::permissions::curator_group::ContentModerationAction
+   * Lookup139: pallet_content::permissions::curator_group::iterable_enums::ContentModerationAction
    **/
-  PalletContentPermissionsCuratorGroupContentModerationAction: {
+  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction: {
     _enum: {
       HideVideo: 'Null',
       HideChannel: 'Null',
-      ChangeChannelFeatureStatus: 'PalletContentPermissionsCuratorGroupPausableChannelFeature',
+      ChangeChannelFeatureStatus: 'PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature',
       DeleteVideo: 'Null',
       DeleteChannel: 'Null',
       DeleteVideoAssets: 'bool',
@@ -1013,10 +1013,10 @@ export default {
     }
   },
   /**
-   * Lookup143: pallet_content::types::TransferCommitmentParameters<BTreeMap<K, BTreeSet<pallet_content::types::ChannelActionPermission>>, Balance, TransferId>
+   * Lookup143: pallet_content::types::TransferCommitmentParameters<BTreeMap<K, BTreeSet<pallet_content::types::iterable_enums::ChannelActionPermission>>, Balance, TransferId>
    **/
   PalletContentTransferCommitmentParametersBTreeMap: {
-    newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
+    newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>',
     price: 'u128',
     transferId: 'u64'
   },
@@ -1128,7 +1128,7 @@ export default {
   PalletStorageStaticBagId: {
     _enum: {
       Council: 'Null',
-      WorkingGroup: 'PalletCommonWorkingGroup'
+      WorkingGroup: 'PalletCommonWorkingGroupIterableEnumsWorkingGroup'
     }
   },
   /**
@@ -1408,13 +1408,13 @@ export default {
       SetMaxValidatorCount: 'u32',
       CreateWorkingGroupLeadOpening: 'PalletProposalsCodexCreateOpeningParameters',
       FillWorkingGroupLeadOpening: 'PalletProposalsCodexFillOpeningParameters',
-      UpdateWorkingGroupBudget: '(u128,PalletCommonWorkingGroup,PalletCommonBalanceKind)',
-      DecreaseWorkingGroupLeadStake: '(u64,u128,PalletCommonWorkingGroup)',
-      SlashWorkingGroupLead: '(u64,u128,PalletCommonWorkingGroup)',
-      SetWorkingGroupLeadReward: '(u64,Option<u128>,PalletCommonWorkingGroup)',
+      UpdateWorkingGroupBudget: '(u128,PalletCommonWorkingGroupIterableEnumsWorkingGroup,PalletCommonBalanceKind)',
+      DecreaseWorkingGroupLeadStake: '(u64,u128,PalletCommonWorkingGroupIterableEnumsWorkingGroup)',
+      SlashWorkingGroupLead: '(u64,u128,PalletCommonWorkingGroupIterableEnumsWorkingGroup)',
+      SetWorkingGroupLeadReward: '(u64,Option<u128>,PalletCommonWorkingGroupIterableEnumsWorkingGroup)',
       TerminateWorkingGroupLead: 'PalletProposalsCodexTerminateRoleParameters',
       AmendConstitution: 'Bytes',
-      CancelWorkingGroupLeadOpening: '(u64,PalletCommonWorkingGroup)',
+      CancelWorkingGroupLeadOpening: '(u64,PalletCommonWorkingGroupIterableEnumsWorkingGroup)',
       SetMembershipPrice: 'u128',
       SetCouncilBudgetIncrement: 'u128',
       SetCouncilorReward: 'u128',
@@ -1441,7 +1441,7 @@ export default {
     description: 'Bytes',
     stakePolicy: 'PalletWorkingGroupStakePolicy',
     rewardPerBlock: 'Option<u128>',
-    group: 'PalletCommonWorkingGroup'
+    group: 'PalletCommonWorkingGroupIterableEnumsWorkingGroup'
   },
   /**
    * Lookup204: pallet_working_group::types::StakePolicy<BlockNumber, Balance>
@@ -1456,7 +1456,7 @@ export default {
   PalletProposalsCodexFillOpeningParameters: {
     openingId: 'u64',
     applicationId: 'u64',
-    workingGroup: 'PalletCommonWorkingGroup'
+    workingGroup: 'PalletCommonWorkingGroupIterableEnumsWorkingGroup'
   },
   /**
    * Lookup206: pallet_proposals_codex::types::TerminateRoleParameters<WorkerId, Balance>
@@ -1464,7 +1464,7 @@ export default {
   PalletProposalsCodexTerminateRoleParameters: {
     workerId: 'u64',
     slashingAmount: 'Option<u128>',
-    group: 'PalletCommonWorkingGroup'
+    group: 'PalletCommonWorkingGroupIterableEnumsWorkingGroup'
   },
   /**
    * Lookup207: pallet_working_group::RawEvent<OpeningId, ApplicationId, BTreeMap<K, V>, WorkerId, sp_core::crypto::AccountId32, Balance, pallet_working_group::types::OpeningType, pallet_working_group::types::StakePolicy<BlockNumber, Balance>, pallet_working_group::types::ApplyOnOpeningParams<MemberId, OpeningId, sp_core::crypto::AccountId32, Balance>, MemberId, pallet_working_group::Instance1>
@@ -2881,11 +2881,11 @@ export default {
     _enum: {
       create_curator_group: {
         isActive: 'bool',
-        permissionsByLevel: 'BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
+        permissionsByLevel: 'BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>',
       },
       update_curator_group_permissions: {
         curatorGroupId: 'u64',
-        permissionsByLevel: 'BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
+        permissionsByLevel: 'BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>',
       },
       set_curator_group_status: {
         curatorGroupId: 'u64',
@@ -2894,7 +2894,7 @@ export default {
       add_curator_to_group: {
         curatorGroupId: 'u64',
         curatorId: 'u64',
-        permissions: 'BTreeSet<PalletContentChannelActionPermission>',
+        permissions: 'BTreeSet<PalletContentIterableEnumsChannelActionPermission>',
       },
       remove_curator_from_group: {
         curatorGroupId: 'u64',
@@ -2916,7 +2916,7 @@ export default {
       set_channel_paused_features_as_moderator: {
         actor: 'PalletContentPermissionsContentActor',
         channelId: 'u64',
-        newPausedFeatures: 'BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>',
+        newPausedFeatures: 'BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>',
         rationale: 'Bytes',
       },
       delete_channel: {
@@ -2986,7 +2986,7 @@ export default {
       },
       claim_channel_reward: {
         actor: 'PalletContentPermissionsContentActor',
-        proof: 'Vec<PalletCommonProofElementRecord>',
+        proof: 'Vec<PalletCommonMerkleTreeProofElementRecord>',
         item: 'PalletContentPullPaymentElement',
       },
       withdraw_from_channel_balance: {
@@ -3002,7 +3002,7 @@ export default {
       },
       claim_and_withdraw_channel_reward: {
         actor: 'PalletContentPermissionsContentActor',
-        proof: 'Vec<PalletCommonProofElementRecord>',
+        proof: 'Vec<PalletCommonMerkleTreeProofElementRecord>',
         item: 'PalletContentPullPaymentElement',
       },
       issue_nft: {
@@ -3195,19 +3195,19 @@ export default {
     distributionBucketsNum: 'u32'
   },
   /**
-   * Lookup382: pallet_common::ProofElementRecord<primitive_types::H256, pallet_common::Side>
+   * Lookup382: pallet_common::merkle_tree::ProofElementRecord<primitive_types::H256, pallet_common::merkle_tree::Side>
    **/
-  PalletCommonProofElementRecord: {
+  PalletCommonMerkleTreeProofElementRecord: {
     _alias: {
       hash_: 'hash'
     },
     hash_: 'H256',
-    side: 'PalletCommonSide'
+    side: 'PalletCommonMerkleTreeSide'
   },
   /**
-   * Lookup383: pallet_common::Side
+   * Lookup383: pallet_common::merkle_tree::Side
    **/
-  PalletCommonSide: {
+  PalletCommonMerkleTreeSide: {
     _enum: ['Left', 'Right']
   },
   /**
@@ -3222,7 +3222,7 @@ export default {
    * Lookup385: pallet_content::types::InitTransferParameters<MemberId, CuratorGroupId, Balance>
    **/
   PalletContentInitTransferParameters: {
-    newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
+    newCollaborators: 'BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>',
     price: 'u128',
     newOwner: 'PalletContentChannelOwner'
   },
@@ -4049,7 +4049,7 @@ export default {
    * Lookup523: pallet_council::Error<T>
    **/
   PalletCouncilError: {
-    _enum: ['BadOrigin', 'CantCandidateNow', 'CantReleaseStakeNow', 'CandidacyStakeTooLow', 'CantCandidateTwice', 'ConflictingStake', 'StakeStillNeeded', 'NoStake', 'InsufficientBalanceForStaking', 'CantVoteForYourself', 'MemberIdNotMatchAccount', 'InvalidAccountToStakeReuse', 'NotCandidatingNow', 'CantWithdrawCandidacyNow', 'NotCouncilor', 'InsufficientFundsForFundingRequest', 'ZeroBalanceFundRequest', 'RepeatedFundRequestAccount', 'EmptyFundingRequests', 'InsufficientTokensForFunding', 'ZeroTokensFunding', 'CandidateDoesNotExist', 'InsufficientBalanceForTransfer']
+    _enum: ['ArithmeticError', 'BadOrigin', 'CantCandidateNow', 'CantReleaseStakeNow', 'CandidacyStakeTooLow', 'CantCandidateTwice', 'ConflictingStake', 'StakeStillNeeded', 'NoStake', 'InsufficientBalanceForStaking', 'CantVoteForYourself', 'MemberIdNotMatchAccount', 'InvalidAccountToStakeReuse', 'NotCandidatingNow', 'CantWithdrawCandidacyNow', 'NotCouncilor', 'InsufficientFundsForFundingRequest', 'ZeroBalanceFundRequest', 'RepeatedFundRequestAccount', 'EmptyFundingRequests', 'InsufficientTokensForFunding', 'ZeroTokensFunding', 'CandidateDoesNotExist', 'InsufficientBalanceForTransfer']
   },
   /**
    * Lookup524: pallet_referendum::ReferendumStage<BlockNumber, MemberId, VotePower>
@@ -4154,7 +4154,7 @@ export default {
    * Lookup535: pallet_forum::Error<T>
    **/
   PalletForumError: {
-    _enum: ['OriginNotForumLead', 'ForumUserIdNotMatchAccount', 'ModeratorIdNotMatchAccount', 'AccountDoesNotMatchThreadAuthor', 'ThreadDoesNotExist', 'ModeratorModerateOriginCategory', 'ModeratorModerateDestinationCategory', 'ThreadMoveInvalid', 'ThreadNotBeingUpdated', 'InsufficientBalanceForThreadCreation', 'CannotDeleteThreadWithOutstandingPosts', 'PostDoesNotExist', 'AccountDoesNotMatchPostAuthor', 'InsufficientBalanceForPost', 'CategoryNotBeingUpdated', 'AncestorCategoryImmutable', 'MaxValidCategoryDepthExceeded', 'CategoryDoesNotExist', 'CategoryModeratorDoesNotExist', 'CategoryNotEmptyThreads', 'CategoryNotEmptyCategories', 'ModeratorCantDeleteCategory', 'ModeratorCantUpdateCategory', 'StickiedThreadIdsDuplicates', 'MapSizeLimit', 'PathLengthShouldBeGreaterThanZero']
+    _enum: ['ArithmeticError', 'OriginNotForumLead', 'ForumUserIdNotMatchAccount', 'ModeratorIdNotMatchAccount', 'AccountDoesNotMatchThreadAuthor', 'ThreadDoesNotExist', 'ModeratorModerateOriginCategory', 'ModeratorModerateDestinationCategory', 'ThreadMoveInvalid', 'ThreadNotBeingUpdated', 'InsufficientBalanceForThreadCreation', 'CannotDeleteThreadWithOutstandingPosts', 'PostDoesNotExist', 'AccountDoesNotMatchPostAuthor', 'InsufficientBalanceForPost', 'CategoryNotBeingUpdated', 'AncestorCategoryImmutable', 'MaxValidCategoryDepthExceeded', 'CategoryDoesNotExist', 'CategoryModeratorDoesNotExist', 'CategoryNotEmptyThreads', 'CategoryNotEmptyCategories', 'ModeratorCantDeleteCategory', 'ModeratorCantUpdateCategory', 'StickiedThreadIdsDuplicates', 'MapSizeLimit', 'PathLengthShouldBeGreaterThanZero']
   },
   /**
    * Lookup536: pallet_constitution::ConstitutionInfo
@@ -4209,7 +4209,7 @@ export default {
    * Lookup542: pallet_bounty::Error<T>
    **/
   PalletBountyError: {
-    _enum: ['MinFundingAmountCannotBeGreaterThanMaxAmount', 'BountyDoesntExist', 'SwitchOracleOriginIsRoot', 'InvalidStageUnexpectedFunding', 'InvalidStageUnexpectedNoFundingContributed', 'InvalidStageUnexpectedCancelled', 'InvalidStageUnexpectedWorkSubmission', 'InvalidStageUnexpectedJudgment', 'InvalidStageUnexpectedSuccessfulBountyWithdrawal', 'InvalidStageUnexpectedFailedBountyWithdrawal', 'InsufficientBalanceForBounty', 'NoBountyContributionFound', 'InsufficientBalanceForStake', 'ConflictingStakes', 'WorkEntryDoesntExist', 'CherryLessThenMinimumAllowed', 'CannotSubmitWorkToClosedContractBounty', 'ClosedContractMemberListIsEmpty', 'ClosedContractMemberListIsTooLarge', 'ClosedContractMemberNotFound', 'InvalidOracleMemberId', 'InvalidStakingAccountForMember', 'ZeroWinnerReward', 'TotalRewardShouldBeEqualToTotalFunding', 'EntrantStakeIsLessThanMininum', 'FundingAmountCannotBeZero', 'FundingPeriodCannotBeZero', 'WinnerShouldHasWorkSubmission', 'InvalidContributorActorSpecified', 'InvalidOracleActorSpecified', 'InvalidEntrantWorkerSpecified', 'InvalidCreatorActorSpecified', 'WorkEntryDoesntBelongToWorker', 'OracleRewardAlreadyWithdrawn']
+    _enum: ['ArithmeticError', 'MinFundingAmountCannotBeGreaterThanMaxAmount', 'BountyDoesntExist', 'SwitchOracleOriginIsRoot', 'InvalidStageUnexpectedFunding', 'InvalidStageUnexpectedNoFundingContributed', 'InvalidStageUnexpectedCancelled', 'InvalidStageUnexpectedWorkSubmission', 'InvalidStageUnexpectedJudgment', 'InvalidStageUnexpectedSuccessfulBountyWithdrawal', 'InvalidStageUnexpectedFailedBountyWithdrawal', 'InsufficientBalanceForBounty', 'NoBountyContributionFound', 'InsufficientBalanceForStake', 'ConflictingStakes', 'WorkEntryDoesntExist', 'CherryLessThenMinimumAllowed', 'CannotSubmitWorkToClosedContractBounty', 'ClosedContractMemberListIsEmpty', 'ClosedContractMemberListIsTooLarge', 'ClosedContractMemberNotFound', 'InvalidOracleMemberId', 'InvalidStakingAccountForMember', 'ZeroWinnerReward', 'TotalRewardShouldBeEqualToTotalFunding', 'EntrantStakeIsLessThanMininum', 'FundingAmountCannotBeZero', 'FundingPeriodCannotBeZero', 'WinnerShouldHasWorkSubmission', 'InvalidContributorActorSpecified', 'InvalidOracleActorSpecified', 'InvalidEntrantWorkerSpecified', 'InvalidCreatorActorSpecified', 'WorkEntryDoesntBelongToWorker', 'OracleRewardAlreadyWithdrawn']
   },
   /**
    * Lookup544: pallet_content::types::VideoRecord<ChannelId, pallet_content::nft::types::OwnedNft<pallet_content::nft::types::TransactionalStatusRecord<MemberId, Balance, pallet_content::nft::types::EnglishAuctionRecord<BlockNumber, Balance, MemberId>, pallet_content::nft::types::OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId>>, MemberId, AuctionId>, frame_support::storage::bounded_btree_set::BoundedBTreeSet<T, S>, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
@@ -4285,9 +4285,9 @@ export default {
    * Lookup554: pallet_content::permissions::curator_group::CuratorGroup<T>
    **/
   PalletContentPermissionsCuratorGroup: {
-    curators: 'BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>',
+    curators: 'BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>',
     active: 'bool',
-    permissionsByLevel: 'BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>'
+    permissionsByLevel: 'BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>'
   },
   /**
    * Lookup555: pallet_content::nft::types::OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>
@@ -4459,7 +4459,7 @@ export default {
    * Lookup583: pallet_project_token::errors::Error<T>
    **/
   PalletProjectTokenErrorsError: {
-    _enum: ['InsufficientTransferrableBalance', 'TokenDoesNotExist', 'AccountInformationDoesNotExist', 'MerkleProofVerificationFailure', 'TargetPatronageRateIsHigherThanCurrentRate', 'TokenSymbolAlreadyInUse', 'InitialAllocationToNonExistingMember', 'AccountAlreadyExists', 'TransferDestinationMemberDoesNotExist', 'TokenIssuanceNotInIdleState', 'InsufficientJoyBalance', 'JoyTransferSubjectToDusting', 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode', 'AttemptToRemoveNonEmptyAccount', 'CannotJoinWhitelistInPermissionlessMode', 'CannotDeissueTokenWithOutstandingAccounts', 'NoUpcomingSale', 'NoActiveSale', 'InsufficientBalanceForTokenPurchase', 'NotEnoughTokensOnSale', 'SaleStartingBlockInThePast', 'SaleAccessProofRequired', 'SaleAccessProofParticipantIsNotSender', 'SalePurchaseCapExceeded', 'MaxVestingSchedulesPerAccountPerTokenReached', 'PreviousSaleNotFinalized', 'NoTokensToRecover', 'SaleDurationTooShort', 'SaleDurationIsZero', 'SaleUpperBoundQuantityIsZero', 'SaleCapPerMemberIsZero', 'SaleUnitPriceIsZero', 'SalePurchaseAmountIsZero', 'RevenueSplitTimeToStartTooShort', 'RevenueSplitDurationTooShort', 'RevenueSplitAlreadyActiveForToken', 'RevenueSplitNotActiveForToken', 'RevenueSplitDidNotEnd', 'RevenueSplitNotOngoing', 'UserAlreadyParticipating', 'InsufficientBalanceForSplitParticipation', 'UserNotParticipantingInAnySplit', 'CannotParticipateInSplitWithZeroAmount', 'CannotIssueSplitWithZeroAllocationAmount', 'CannotModifySupplyWhenRevenueSplitsAreActive', 'RevenueSplitRateIsZero', 'BurnAmountIsZero', 'BurnAmountGreaterThanAccountTokensAmount']
+    _enum: ['ArithmeticError', 'InsufficientTransferrableBalance', 'TokenDoesNotExist', 'AccountInformationDoesNotExist', 'MerkleProofVerificationFailure', 'TargetPatronageRateIsHigherThanCurrentRate', 'TokenSymbolAlreadyInUse', 'InitialAllocationToNonExistingMember', 'AccountAlreadyExists', 'TransferDestinationMemberDoesNotExist', 'TokenIssuanceNotInIdleState', 'InsufficientJoyBalance', 'JoyTransferSubjectToDusting', 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode', 'AttemptToRemoveNonEmptyAccount', 'CannotJoinWhitelistInPermissionlessMode', 'CannotDeissueTokenWithOutstandingAccounts', 'NoUpcomingSale', 'NoActiveSale', 'InsufficientBalanceForTokenPurchase', 'NotEnoughTokensOnSale', 'SaleStartingBlockInThePast', 'SaleAccessProofRequired', 'SaleAccessProofParticipantIsNotSender', 'SalePurchaseCapExceeded', 'MaxVestingSchedulesPerAccountPerTokenReached', 'PreviousSaleNotFinalized', 'NoTokensToRecover', 'SaleDurationTooShort', 'SaleDurationIsZero', 'SaleUpperBoundQuantityIsZero', 'SaleCapPerMemberIsZero', 'SaleUnitPriceIsZero', 'SalePurchaseAmountIsZero', 'RevenueSplitTimeToStartTooShort', 'RevenueSplitDurationTooShort', 'RevenueSplitAlreadyActiveForToken', 'RevenueSplitNotActiveForToken', 'RevenueSplitDidNotEnd', 'RevenueSplitNotOngoing', 'UserAlreadyParticipating', 'InsufficientBalanceForSplitParticipation', 'UserNotParticipantingInAnySplit', 'CannotParticipateInSplitWithZeroAmount', 'CannotIssueSplitWithZeroAllocationAmount', 'CannotModifySupplyWhenRevenueSplitsAreActive', 'RevenueSplitRateIsZero', 'BurnAmountIsZero', 'BurnAmountGreaterThanAccountTokensAmount']
   },
   /**
    * Lookup584: pallet_proposals_engine::types::Proposal<BlockNumber, ProposerId, Balance, sp_core::crypto::AccountId32>
@@ -4500,7 +4500,7 @@ export default {
    * Lookup588: pallet_proposals_engine::Error<T>
    **/
   PalletProposalsEngineError: {
-    _enum: ['EmptyTitleProvided', 'EmptyDescriptionProvided', 'TitleIsTooLong', 'DescriptionIsTooLong', 'ProposalNotFound', 'ProposalFinalized', 'AlreadyVoted', 'NotAuthor', 'MaxActiveProposalNumberExceeded', 'EmptyStake', 'StakeShouldBeEmpty', 'StakeDiffersFromRequired', 'InvalidParameterApprovalThreshold', 'InvalidParameterSlashingThreshold', 'RequireRootOrigin', 'ProposalHasVotes', 'ZeroExactExecutionBlock', 'InvalidExactExecutionBlock', 'InsufficientBalanceForStake', 'ConflictingStakes', 'InvalidStakingAccountForMember']
+    _enum: ['ArithmeticError', 'EmptyTitleProvided', 'EmptyDescriptionProvided', 'TitleIsTooLong', 'DescriptionIsTooLong', 'ProposalNotFound', 'ProposalFinalized', 'AlreadyVoted', 'NotAuthor', 'MaxActiveProposalNumberExceeded', 'EmptyStake', 'StakeShouldBeEmpty', 'StakeDiffersFromRequired', 'InvalidParameterApprovalThreshold', 'InvalidParameterSlashingThreshold', 'RequireRootOrigin', 'ProposalHasVotes', 'ZeroExactExecutionBlock', 'InvalidExactExecutionBlock', 'InsufficientBalanceForStake', 'ConflictingStakes', 'InvalidStakingAccountForMember']
   },
   /**
    * Lookup589: pallet_proposals_discussion::types::DiscussionThread<MemberId, BlockNumber>
@@ -4522,7 +4522,7 @@ export default {
    * Lookup591: pallet_proposals_discussion::Error<T>
    **/
   PalletProposalsDiscussionError: {
-    _enum: ['ThreadDoesntExist', 'PostDoesntExist', 'RequireRootOrigin', 'CannotPostOnClosedThread', 'NotAuthorOrCouncilor', 'MaxWhiteListSizeExceeded', 'WhitelistedMemberDoesNotExist', 'InsufficientBalanceForPost', 'CannotDeletePost']
+    _enum: ['ArithmeticError', 'ThreadDoesntExist', 'PostDoesntExist', 'RequireRootOrigin', 'CannotPostOnClosedThread', 'NotAuthorOrCouncilor', 'MaxWhiteListSizeExceeded', 'WhitelistedMemberDoesNotExist', 'InsufficientBalanceForPost', 'CannotDeletePost']
   },
   /**
    * Lookup592: pallet_proposals_codex::Error<T>
@@ -4570,7 +4570,7 @@ export default {
    * Lookup596: pallet_working_group::errors::Error<T, I>
    **/
   PalletWorkingGroupErrorsError: {
-    _enum: ['StakeBalanceCannotBeZero', 'OpeningDoesNotExist', 'CannotHireMultipleLeaders', 'WorkerApplicationDoesNotExist', 'MaxActiveWorkerNumberExceeded', 'SuccessfulWorkerApplicationDoesNotExist', 'CannotHireLeaderWhenLeaderExists', 'IsNotLeadAccount', 'CurrentLeadNotSet', 'WorkerDoesNotExist', 'InvalidMemberOrigin', 'SignerIsNotWorkerRoleAccount', 'BelowMinimumStakes', 'InsufficientBalanceToCoverStake', 'ApplicationStakeDoesntMatchOpening', 'OriginIsNotApplicant', 'WorkerIsLeaving', 'CannotRewardWithZero', 'InvalidStakingAccountForMember', 'ConflictStakesOnAccount', 'WorkerHasNoReward', 'UnstakingPeriodLessThanMinimum', 'CannotSpendZero', 'InsufficientBudgetForSpending', 'NoApplicationsProvided', 'CannotDecreaseStakeDeltaGreaterThanStake', 'ApplicationsNotForOpening', 'WorkerStorageValueTooLong', 'InsufficientTokensForFunding', 'ZeroTokensFunding', 'InsufficientBalanceForTransfer']
+    _enum: ['ArithmeticError', 'StakeBalanceCannotBeZero', 'OpeningDoesNotExist', 'CannotHireMultipleLeaders', 'WorkerApplicationDoesNotExist', 'MaxActiveWorkerNumberExceeded', 'SuccessfulWorkerApplicationDoesNotExist', 'CannotHireLeaderWhenLeaderExists', 'IsNotLeadAccount', 'CurrentLeadNotSet', 'WorkerDoesNotExist', 'InvalidMemberOrigin', 'SignerIsNotWorkerRoleAccount', 'BelowMinimumStakes', 'InsufficientBalanceToCoverStake', 'ApplicationStakeDoesntMatchOpening', 'OriginIsNotApplicant', 'WorkerIsLeaving', 'CannotRewardWithZero', 'InvalidStakingAccountForMember', 'ConflictStakesOnAccount', 'WorkerHasNoReward', 'UnstakingPeriodLessThanMinimum', 'CannotSpendZero', 'InsufficientBudgetForSpending', 'NoApplicationsProvided', 'CannotDecreaseStakeDeltaGreaterThanStake', 'ApplicationsNotForOpening', 'WorkerStorageValueTooLong', 'InsufficientTokensForFunding', 'ZeroTokensFunding', 'InsufficientBalanceForTransfer']
   },
   /**
    * Lookup606: sp_runtime::MultiSignature

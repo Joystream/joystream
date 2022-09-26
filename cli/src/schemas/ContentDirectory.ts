@@ -1,8 +1,8 @@
 import { keysOf } from '@joystream/types'
 import {
-  PalletContentChannelActionPermission,
-  PalletContentPermissionsCuratorGroupContentModerationAction,
-  PalletContentPermissionsCuratorGroupPausableChannelFeature,
+  PalletContentIterableEnumsChannelActionPermission,
+  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction,
+  PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature,
 } from '@polkadot/types/lookup'
 import {
   ChannelCreationInputParameters,
@@ -53,9 +53,10 @@ export const ChannelCreationInputSchema: JsonSchema<ChannelCreationInputParamete
             type: 'array',
             items: {
               type: 'string',
-              enum: keysOf<PalletContentChannelActionPermission, 'PalletContentChannelActionPermission'>(
-                'PalletContentChannelActionPermission'
-              ),
+              enum: keysOf<
+                PalletContentIterableEnumsChannelActionPermission,
+                'PalletContentIterableEnumsChannelActionPermission'
+              >('PalletContentIterableEnumsChannelActionPermission'),
             },
           },
         },
@@ -70,16 +71,16 @@ const contentModerationActionsEnumOptions = [
   { DeleteVideoAssets: false },
 
   ...keysOf<
-    PalletContentPermissionsCuratorGroupContentModerationAction,
-    'PalletContentPermissionsCuratorGroupContentModerationAction'
-  >('PalletContentPermissionsCuratorGroupContentModerationAction')
+    PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction,
+    'PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction'
+  >('PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction')
     .filter((e) => e !== 'DeleteVideoAssets' && e !== 'ChangeChannelFeatureStatus')
     .map((e) => ({ [e]: null } as ContentModerationActionNullEnum)),
 
   ...keysOf<
-    PalletContentPermissionsCuratorGroupPausableChannelFeature,
-    'PalletContentPermissionsCuratorGroupPausableChannelFeature'
-  >('PalletContentPermissionsCuratorGroupPausableChannelFeature').map((c) => ({
+    PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature,
+    'PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature'
+  >('PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature').map((c) => ({
     ChangeChannelFeatureStatus: c,
   })),
 ]

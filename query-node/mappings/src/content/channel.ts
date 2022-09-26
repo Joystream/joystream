@@ -44,7 +44,7 @@ import {
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
-import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -310,7 +310,7 @@ export async function content_ChannelAgentRemarked(ctx: EventContext & StoreCont
 async function updateChannelAgentsPermissions(
   store: DatabaseManager,
   channel: Channel,
-  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>
+  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>
 ) {
   // safest way to update permission is to delete existing and creating new ones
 
