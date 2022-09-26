@@ -2016,11 +2016,12 @@ fn fund_council_budget_fails_with_zero_amount() {
 
 #[test]
 fn councilor_remark_successful() {
-    let config = augmented_genesis_config();
+    let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let account_id = 1;
-        let member_id = 1;
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
+        let member_id = params.expected_final_council_members[0].membership_id;
+        let account_id = member_id;
         let msg = b"test".to_vec();
         let origin = RawOrigin::Signed(account_id);
 
@@ -2030,11 +2031,12 @@ fn councilor_remark_successful() {
 
 #[test]
 fn councilor_remark_unsuccessful_with_invalid_origin() {
-    let config = augmented_genesis_config();
+    let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let account_id = 21;
-        let member_id = 1;
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
+        let member_id = params.expected_final_council_members[0].membership_id;
+        let account_id = member_id + 1;
         let msg = b"test".to_vec();
         let origin = RawOrigin::Signed(account_id);
 

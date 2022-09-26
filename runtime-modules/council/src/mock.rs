@@ -3,10 +3,10 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate as council;
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, Candidate, CandidateOf, Candidates,
-    Config, CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing,
-    CouncilStageElection, CouncilStageIdle, CouncilStageUpdate, CouncilorReward, Error, Module,
-    NextBudgetRefill, RawEvent, ReferendumConnection, Stage,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates, Config,
+    CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
+    CouncilStageIdle, CouncilStageUpdate, CouncilorReward, Error, Module, NextBudgetRefill,
+    RawEvent, ReferendumConnection, Stage,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
@@ -527,39 +527,6 @@ macro_rules! escape_checkpoint {
 pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
     council::GenesisConfig::<Runtime> {
         stage: CouncilStageUpdate::default(),
-        council_members: vec![],
-        candidates: vec![],
-        announcement_period_nr: 0,
-        budget: 0,
-        next_reward_payments: 0,
-        next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
-        budget_increment: 1,
-        councilor_reward: 100,
-    }
-}
-
-pub fn augmented_genesis_config() -> council::GenesisConfig<Runtime> {
-    council::GenesisConfig::<Runtime> {
-        stage: CouncilStageUpdate::default(),
-        council_members: vec![CouncilMemberOf::<Runtime> {
-            membership_id: 1,
-            staking_account_id: 0,
-            reward_account_id: 0,
-            stake: 0,
-            last_payment_block: 0,
-            unpaid_reward: 0,
-        }],
-        candidates: vec![(
-            2,
-            Candidate {
-                staking_account_id: 1,
-                reward_account_id: 1,
-                cycle_id: 0,
-                stake: 0,
-                vote_power: 0,
-                note_hash: None,
-            },
-        )],
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,

@@ -324,7 +324,7 @@ decl_storage! { generate_storage_info
         pub CouncilMembers get(fn council_members): WeakBoundedVec<CouncilMemberOf<T>, T::CouncilSize>;
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
-        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat)
+        pub Candidates get(fn candidates): map hasher(blake2_128_concat)
             T::MemberId => Option<Candidate<T::AccountId, Balance<T>, T::Hash, VotePowerOf::<T>>>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period
@@ -345,20 +345,6 @@ decl_storage! { generate_storage_info
 
         /// Councilor reward per block
         pub CouncilorReward get(fn councilor_reward) config(): Balance<T>;
-    }
-
-    add_extra_genesis {
-        config(council_members): Vec<CouncilMemberOf<T>>;
-
-        build(|s| {
-            // Set initial council members
-            CouncilMembers::<T>::put(
-                WeakBoundedVec::force_from(
-                    s.council_members.clone(),
-                    Some("ConcilMembers genesis")
-                )
-            );
-        });
     }
 }
 
