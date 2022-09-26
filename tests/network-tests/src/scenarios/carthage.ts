@@ -10,6 +10,7 @@ import constantAuthorities from '../flows/carthage/constantAuthorities'
 import { scenario } from '../Scenario'
 import forceEraIsForceNew from 'src/flows/carthage/forceEraForceNew'
 import claimingPayoutsEnabled from 'src/flows/carthage/claimingPayoutEnabled'
+import setForceNewEra from 'src/flows/carthage/setForceNewEra'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Carthage PoA setup', async ({ job }) => {
@@ -23,6 +24,7 @@ scenario('Carthage PoA setup', async ({ job }) => {
 })
 
 scenario('Carthage NPoS switch', async ({ job }) => {
+  job('set force era to force new', setForceNewEra)
   job('current era is none', forceEraIsForceNew)
   job('authority set is changing', changingAuthorities)
   job('authorities do not get tips', authoritiesDoGetTips)
