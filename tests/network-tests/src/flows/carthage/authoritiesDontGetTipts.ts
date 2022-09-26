@@ -14,17 +14,21 @@ export default async function authoritiesDontGetTips({ api, query, env }: FlowPr
   const bondAmount = new BN(100000)
 
   // get authorities
-  const authorities = await api.getAuthorities()
+  const authorities = api.getAuthorities()
   const initialFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
 
   // create 1 account and issue a bond Tx
   const stakerAccount = (await api.createKeyPairs(1)).map(({ key }) => key.address)[0]
-  const bondingRestrictedFixture = new BondingRestrictedFixture(api, {
+  const input = {
     stash: stakerAccount,
     controller: stakerAccount,
-    bondAmount: bondAmount,
-  })
-  new FixtureRunner(bondingRestrictedFixture).run()
+    bondAmount: new BN(100000),
+  }
+  const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
+  const bondingFees = await api.estimateTxFee(bondTx, input.stash)
+  await api.treasuryTransferBalance(input.stash, input.bondAmount.add(bondingFees))
+  const bondingTxResult = await api.signAndSend(bondTx, input.stash)
+  assert(bondingTxResult.isCompleted)
 
   // wait 10 blocks
   await api.untilBlock(nBlocks)

@@ -30,7 +30,8 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
       const bondingFees = await api.estimateTxFee(bondTx, input.stash)
       await api.treasuryTransferBalance(input.stash, input.bondAmount.add(bondingFees))
       await api.signAndSend(bondTx, input.stash)
-    }))
+    })
+  )
 
   // wait k = 10 blocks
   await api.untilBlock(nBlocks)
@@ -42,7 +43,8 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
       const claimFees = await api.estimateTxFee(claimTx, account)
       await api.treasuryTransferBalance(account, claimFees)
       await api.signAndSend(claimTx, account)
-    }))
+    })
+  )
 
   // each payout (positive number) must be zero iff the sum is zero
   let totalReward: BN = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))).reduce(
@@ -59,7 +61,8 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
       const claimFees = await api.estimateTxFee(claimTx, account)
       await api.treasuryTransferBalance(account, claimFees)
       await api.signAndSend(claimTx, account)
-    }))
+    })
+  )
 
   let totalRewardAuthorities: BN = (await Promise.all(authorities.map((account) => api.getBalance(account)))).reduce(
     (rewardAmount, accumulator: BN) => accumulator.add(new BN(rewardAmount)),

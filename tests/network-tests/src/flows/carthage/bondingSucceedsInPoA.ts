@@ -6,28 +6,28 @@ import { assert } from 'chai'
 import BN from 'bn.js'
 
 export default async function bondingSucceedsInPoA({ api, query, env }: FlowProps): Promise<void> {
-    const debug = extendDebug('flow: validator-set')
-    debug('started')
-    api.enableDebugTxLogs()
+  const debug = extendDebug('flow: validator-set')
+  debug('started')
+  api.enableDebugTxLogs()
 
-    // we are in poa
-    const currentEra = api.getCurrentEra()
-    assert(currentEra.isNone)
+  // we are in poa
+  const currentEra = api.getCurrentEra()
+  assert(currentEra.isNone)
 
-    // create keys and bonding tx
-    const account = (await api.createKeyPairs(1))[0].key.address
+  // create keys and bonding tx
+  const account = (await api.createKeyPairs(1))[0].key.address
 
-    const input = {
-        stash: account,
-        controller: account,
-        bondAmount: new BN(100000)
-    }
+  const input = {
+    stash: account,
+    controller: account,
+    bondAmount: new BN(100000),
+  }
 
-    const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
-    const fees = await api.estimateTxFee(bondTx, input.stash)
-    await api.treasuryTransferBalance(input.stash, input.bondAmount.add(fees))
+  const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
+  const fees = await api.estimateTxFee(bondTx, input.stash)
+  await api.treasuryTransferBalance(input.stash, input.bondAmount.add(fees))
 
-    const result = await api.signAndSend(bondTx, input.stash)
+  const result = await api.signAndSend(bondTx, input.stash)
 
-    assert(result.isCompleted)
+  assert(result.isCompleted)
 }

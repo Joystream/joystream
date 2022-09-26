@@ -3,7 +3,7 @@ import { FixtureRunner } from 'src/Fixture'
 import BN from 'bn.js'
 import { BondingRestrictedFixture } from 'src/fixtures/staking/BondingRestrictedFixture'
 import { FlowProps } from 'src/Flow'
-import { assert } from 'chai'
+import { assert, expect } from 'chai'
 
 export default async function authoritiesDontGetTips({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: validator-set')
@@ -20,10 +20,10 @@ export default async function authoritiesDontGetTips({ api, query, env }: FlowPr
   // create 1 account and issue a bond Tx
   const stakerAccount = (await api.createKeyPairs(1)).map(({ key }) => key.address)[0]
   const input = {
-        stash: stakerAccount,
-        controller: stakerAccount,
-        bondAmount: new BN(100000)
-    }
+    stash: stakerAccount,
+    controller: stakerAccount,
+    bondAmount: new BN(100000),
+  }
   const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
   const bondingFees = await api.estimateTxFee(bondTx, input.stash)
   await api.treasuryTransferBalance(input.stash, input.bondAmount.add(bondingFees))
@@ -35,5 +35,9 @@ export default async function authoritiesDontGetTips({ api, query, env }: FlowPr
 
   const currentFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
 
-  // TODO: check that currentFreeBalances > initialbalancesg
+  expect(
+    currentFreeBalances
+      .map((currentBalance, i) => currentBalance > initialFreeBalances[i])
+      .reduce((val: boolean, acc: boolean) => val && acc, true)
+  ).to.be.true
 }
