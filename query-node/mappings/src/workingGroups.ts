@@ -476,7 +476,8 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
 async function removeIsLeadFromGroup(store: DatabaseManager, groupId: string) {
   const groupWorkers = await store.getMany(Worker, {
     where: {
-      group: { id: groupId }
+      group: { id: groupId },
+      isLead: true
     },
     relations: ['group']
   })
@@ -552,8 +553,8 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
             }
 
             if (opening.type === WorkingGroupOpeningType.LEADER) {
-              // setting isLead of other workers to false.
-              await removeIsLeadFromGroup(store, 'forumWorkingGroup')
+              // setting isLead of existing leader to false.
+              await removeIsLeadFromGroup(store, group.id)
             }
 
             const worker = new Worker({
