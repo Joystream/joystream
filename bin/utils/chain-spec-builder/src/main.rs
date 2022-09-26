@@ -121,6 +121,9 @@ enum ChainSpecBuilder {
         /// Deployment type: dev, local, staging, live
         #[clap(long, short, default_value = "live")]
         deployment: String,
+        /// Do not generate sudo key, use custom address
+        #[clap(long, short)]
+        sudo_account: Option<String>,
     },
 }
 
@@ -305,7 +308,7 @@ fn print_seeds(
     authority_seeds: &[String],
     nominator_seeds: &[String],
     endowed_seeds: &[String],
-    sudo_seed: &str,
+    sudo_seed: &Option<std::string::String>,
 ) {
     println!("# Authority seeds");
 
@@ -333,8 +336,10 @@ fn print_seeds(
         println!();
     }
 
-    println!("# Sudo seed");
-    println!("sudo=//{}", sudo_seed);
+    if let Some(seed) = sudo_seed {
+        println!("# Sudo seed");
+        println!("sudo=//{}", seed);
+    }
 }
 
 #[async_std::main]
@@ -359,6 +364,7 @@ async fn main() -> Result<(), String> {
             nominators,
             endowed,
             keystore_path,
+            sudo_account,
             ..
         } => {
             let authorities = authorities.max(1);
@@ -373,7 +379,11 @@ async fn main() -> Result<(), String> {
             let authority_seeds = (0..authorities).map(|_| rand_str()).collect::<Vec<_>>();
             let nominator_seeds = (0..nominators).map(|_| rand_str()).collect::<Vec<_>>();
             let endowed_seeds = (0..endowed).map(|_| rand_str()).collect::<Vec<_>>();
-            let sudo_seed = rand_str();
+            let sudo_seed = if sudo_account.is_some() {
+                None
+            } else {
+                Some(rand_str())
+            };
 
             print_seeds(
                 &authority_seeds,
@@ -400,8 +410,10 @@ async fn main() -> Result<(), String> {
                 })
                 .collect();
 
-            let sudo_account =
-                chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed).to_ss58check();
+            let sudo_account = sudo_account.unwrap_or_else(|| {
+                chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed.unwrap())
+                    .to_ss58check()
+            });
 
             (
                 authority_seeds,
