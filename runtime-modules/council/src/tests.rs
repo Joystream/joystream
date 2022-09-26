@@ -74,7 +74,7 @@ fn council_candidacy_invalid_time() {
             late_candidate.origin.clone(),
             late_candidate.account_id,
             late_candidate.candidate.stake,
-            Err(Error::CantCandidateNow),
+            Err(Error::<Runtime>::CantCandidateNow.into()),
         );
     });
 }
@@ -94,7 +94,7 @@ fn council_candidacy_stake_too_low() {
             candidate.origin.clone(),
             candidate.account_id,
             candidate.candidate.stake,
-            Err(Error::CandidacyStakeTooLow),
+            Err(Error::<Runtime>::CandidacyStakeTooLow.into()),
         );
     });
 }
@@ -598,7 +598,7 @@ fn council_cant_candidate_repeatedly() {
             candidate.origin.clone(),
             candidate.membership_id,
             council_settings.min_candidate_stake,
-            Err(Error::CantCandidateTwice),
+            Err(Error::<Runtime>::CantCandidateTwice.into()),
         );
     });
 }
@@ -1523,7 +1523,7 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id, // second candidate's account id
             candidate1.candidate.reward_account_id,
             candidate1.candidate.stake,
-            Err(Error::MemberIdNotMatchAccount),
+            Err(Error::<Runtime>::MemberIdNotMatchAccount.into()),
         );
 
         // test that reward_account_id not associated with membership_id can be used

@@ -199,6 +199,7 @@ runtime-benchmarks = [
     "pallet-elections-phragmen/runtime-benchmarks",
 
     # Joystream
+    "common/runtime-benchmarks",
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
     "proposals-codex/runtime-benchmarks",

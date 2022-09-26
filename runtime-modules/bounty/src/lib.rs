@@ -59,6 +59,22 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -732,6 +748,8 @@ decl_event! {
 decl_error! {
     /// Bounty pallet predefined errors
     pub enum Error for Module<T: Config> {
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
 
         /// Min funding amount cannot be greater than max amount.
         MinFundingAmountCannotBeGreaterThanMaxAmount,
@@ -2293,11 +2311,15 @@ impl<T: Config> Module<T> {
             judgment_map.iter().fold(
                 (0u32, 0u32, 0u32),
                 |(w, r, k), (_, judgment)| match judgment {
-                    OracleWorkEntryJudgment::Winner { .. } => (w + 1, r, k),
+                    OracleWorkEntryJudgment::Winner { .. } => (w.saturating_add(1), r, k),
                     OracleWorkEntryJudgment::Rejected {
                         action_justification,
                         ..
-                    } => (w, r + 1, k + action_justification.len() as u32),
+                    } => (
+                        w,
+                        r.saturating_add(1),
+                        k.saturating_add(action_justification.len() as u32),
+                    ),
                 },
             );
 

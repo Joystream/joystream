@@ -31,6 +31,22 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 #![allow(clippy::result_unit_err)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
@@ -44,7 +60,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member, Saturating};
+use sp_runtime::traits::{MaybeSerialize, Member, Saturating, Zero};
 use sp_runtime::SaturatedConversion;
 use sp_std::convert::TryInto;
 use sp_std::vec;
@@ -588,7 +604,7 @@ impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Me
         extra_winning_target_count: u64,
         cycle_id: u64,
     ) -> Result<(), ()> {
-        let winning_target_count = extra_winning_target_count + 1;
+        let winning_target_count = extra_winning_target_count.saturating_add(1);
 
         // ensure action can be started
         EnsureChecks::<T, I>::can_start_referendum(origin)?;
@@ -617,7 +633,7 @@ impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Me
     // If an election is running before calling this function, it will be discontinued without any
     // winners selected.
     fn force_start(extra_winning_target_count: u64, cycle_id: u64) {
-        let winning_target_count = extra_winning_target_count + 1;
+        let winning_target_count = extra_winning_target_count.saturating_add(1);
 
         // If a greater than the max allowed target count is used the max will be used in its place
         let winning_target_count = winning_target_count.min(T::MaxWinnerTargetCount::get());
@@ -802,6 +818,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
             winning_target_count: u64,
         ) -> (Vec<OptionResultOf<T, I>>, Option<usize>) {
             let current_winners_count = current_winners.len();
+            debug_assert!(current_winners_count != 0);
 
             // check if option is already somewhere in list
             let current_winners_index_of_vote_recipient: Option<usize> = current_winners
@@ -812,9 +829,12 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
 
             // espace when item is currently not in winning list and still has not enough vote
             // power to make it to already full list
+            let lowest_winner_score = current_winners
+                .get(current_winners_count.saturating_sub(1))
+                .map_or(T::VotePower::zero(), |w| w.vote_power);
             if current_winners_index_of_vote_recipient.is_none()
                 && current_winners_count as u64 == winning_target_count
-                && option_result.vote_power <= current_winners[current_winners_count - 1].vote_power
+                && option_result.vote_power <= lowest_winner_score
             {
                 return (current_winners.to_vec(), None);
             }
@@ -823,7 +843,10 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
 
             // update record in list when it is already present
             if let Some(index) = current_winners_index_of_vote_recipient {
-                new_winners[index] = option_result;
+                match new_winners.get_mut(index) {
+                    Some(w) => *w = option_result,
+                    None => debug_assert!(false),
+                }
 
                 return (new_winners, Some(index));
             }
@@ -832,8 +855,11 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
 
             // replace last winner if list is already full
             if current_winners_count as u64 == winning_target_count {
-                let last_index = current_winners_count - 1;
-                new_winners[last_index] = option_result;
+                let last_index = current_winners_count.saturating_sub(1);
+                match new_winners.get_mut(last_index) {
+                    Some(w) => *w = option_result,
+                    None => debug_assert!(false),
+                }
 
                 return (new_winners, Some(last_index));
             }
@@ -859,11 +885,17 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
         // resort list in case it was updated
         if let Some(index) = current_record_index {
             for i in (1..=index).rev() {
-                if new_winners[i].vote_power <= new_winners[i - 1].vote_power {
-                    break;
+                let maybe_curr = new_winners.get(i);
+                let maybe_prev = new_winners.get(i.saturating_sub(1));
+                if let (Some(curr), Some(prev)) = (maybe_curr, maybe_prev) {
+                    if curr.vote_power <= prev.vote_power {
+                        break;
+                    }
+                } else {
+                    debug_assert!(false);
                 }
 
-                new_winners.swap(i, i - 1);
+                new_winners.swap(i, i.saturating_sub(1));
             }
         }
 

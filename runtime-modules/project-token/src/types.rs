@@ -925,7 +925,7 @@ where
     ) -> DispatchResult {
         if let Some(split_info) = self.split_staking_status {
             ensure!(
-                split_info.split_id < next_split_id - 1,
+                split_info.split_id < next_split_id.saturating_sub(1),
                 Error::<T>::UserAlreadyParticipating,
             );
         }

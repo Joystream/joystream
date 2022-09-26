@@ -33,6 +33,7 @@ randomness-collective-flip = { package = 'pallet-randomness-collective-flip', de
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
 derive-fixture = { package = 'derive-fixture', default-features = false, path = '../support/derive-fixture'}
+common = { package = 'pallet-common', default-features = false, features = ['test'], path = '../common'}
 derive-new = "0.5"
 
 [features]
@@ -42,6 +43,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"membership/runtime-benchmarks",
 	"storage/runtime-benchmarks",
+	"common/runtime-benchmarks",
 	"working-group",
 ]
 std = [

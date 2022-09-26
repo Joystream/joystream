@@ -126,6 +126,22 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 use types::ProposalOf;
 
@@ -255,7 +271,6 @@ decl_event!(
         MemberId = MemberId<T>,
         <T as frame_system::Config>::BlockNumber,
     {
-
         /// Emits on proposal creation.
         /// Params:
         /// - Id of a proposal.
@@ -299,6 +314,9 @@ decl_event!(
 decl_error! {
     /// Engine module predefined errors
     pub enum Error for Module<T: Config>{
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Proposal cannot have an empty title"
         EmptyTitleProvided,
 
@@ -604,7 +622,9 @@ impl<T: Config> Module<T> {
         // == MUTATION SAFE ==
         //
 
-        let next_proposal_count_value = Self::proposal_count() + 1;
+        let next_proposal_count_value = Self::proposal_count()
+            .checked_add(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
@@ -632,7 +652,7 @@ impl<T: Config> Module<T> {
             creation_params.encoded_dispatchable_call_code,
         );
         ProposalCount::put(next_proposal_count_value);
-        Self::increase_active_proposal_counter();
+        Self::increase_active_proposal_counter()?;
 
         Ok(proposal_id)
     }
@@ -871,7 +891,7 @@ impl<T: Config> Module<T> {
 
         Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));
 
-        Self::remove_proposal_data(&proposal_id);
+        let _ = Self::remove_proposal_data(&proposal_id);
 
         execution_code_weight
     }
@@ -929,7 +949,7 @@ impl<T: Config> Module<T> {
                 <Proposals<T>>::insert(proposal_id, finalized_proposal);
             }
         } else {
-            Self::remove_proposal_data(&proposal_id);
+            let _ = Self::remove_proposal_data(&proposal_id);
         }
 
         executed_weight
@@ -966,19 +986,22 @@ impl<T: Config> Module<T> {
     }
 
     // Increases active proposal counter.
-    fn increase_active_proposal_counter() {
-        let next_active_proposal_count_value = Self::active_proposal_count() + 1;
+    fn increase_active_proposal_counter() -> DispatchResult {
+        let next_active_proposal_count_value = Self::active_proposal_count()
+            .checked_add(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
         ActiveProposalCount::put(next_active_proposal_count_value);
+        Ok(())
     }
 
     // Decreases active proposal counter down to zero. Decreasing below zero has no effect.
-    fn decrease_active_proposal_counter() {
+    fn decrease_active_proposal_counter() -> DispatchResult {
         let current_active_proposal_counter = Self::active_proposal_count();
-
-        if current_active_proposal_counter > 0 {
-            let next_active_proposal_count_value = current_active_proposal_counter - 1;
-            ActiveProposalCount::put(next_active_proposal_count_value);
-        };
+        let next_active_proposal_count_value = current_active_proposal_counter
+            .checked_sub(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        ActiveProposalCount::put(next_active_proposal_count_value);
+        Ok(())
     }
 
     // Parse dispatchable execution result.
@@ -991,13 +1014,14 @@ impl<T: Config> Module<T> {
     }
 
     // Clean proposal data. Remove proposal, votes from the storage.
-    fn remove_proposal_data(proposal_id: &T::ProposalId) {
+    fn remove_proposal_data(proposal_id: &T::ProposalId) -> DispatchResult {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
         <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
-        Self::decrease_active_proposal_counter();
+        let _ = Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);
+        Ok(())
     }
 
     /// Perform voting period check, vote result tally, approved proposals

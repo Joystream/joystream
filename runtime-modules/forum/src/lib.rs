@@ -2,6 +2,22 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::type_complexity)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{burn_from_usable, has_sufficient_balance_for_fees, pay_fee};
@@ -259,6 +275,9 @@ type CategoryTreePathArg<CategoryId, ThreadId, Hash> =
 decl_error! {
     /// Forum predefined errors
     pub enum Error for Module<T: Config> {
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Origin doesn't correspond to any lead account
         OriginNotForumLead,
 
@@ -496,11 +515,21 @@ decl_module! {
             if new_value {
                 <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
 
-                <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators += 1);
+                <CategoryById<T>>::try_mutate(category_id, |category| {
+                    category.num_direct_moderators = category.num_direct_moderators
+                        .checked_add(1)
+                        .ok_or(Error::<T>::ArithmeticError)?;
+                    DispatchResult::Ok(())
+                })?;
             } else {
                 <CategoryByModerator<T>>::remove(category_id, moderator_id);
 
-                <CategoryById<T>>::mutate(category_id, |category| category.num_direct_moderators -= 1);
+                <CategoryById<T>>::try_mutate(category_id, |category| {
+                    category.num_direct_moderators = category.num_direct_moderators
+                        .checked_sub(1)
+                        .ok_or(Error::<T>::ArithmeticError)?;
+                    DispatchResult::Ok(())
+                })?;
             }
 
             // Generate event
@@ -562,9 +591,12 @@ decl_module! {
 
             // If not root, increase parent's subcategories counter
             if let Some(tmp_parent_category_id) = parent_category_id {
-                <CategoryById<T>>::mutate(tmp_parent_category_id, |c| {
-                    c.num_direct_subcategories += 1;
-                });
+                <CategoryById<T>>::try_mutate(tmp_parent_category_id, |c| {
+                    c.num_direct_subcategories = c.num_direct_subcategories
+                        .checked_add(1)
+                        .ok_or(Error::<T>::ArithmeticError)?;
+                    DispatchResult::Ok(())
+                })?;
             }
 
             // Generate event
@@ -738,7 +770,12 @@ decl_module! {
             // Delete category
             <CategoryById<T>>::remove(category_id);
             if let Some(parent_category_id) = category.parent_category_id {
-                <CategoryById<T>>::mutate(parent_category_id, |tmp_category| tmp_category.num_direct_subcategories -= 1);
+                <CategoryById<T>>::try_mutate(parent_category_id, |tmp_category| {
+                    tmp_category.num_direct_subcategories = tmp_category.num_direct_subcategories
+                        .checked_sub(1)
+                        .ok_or(Error::<T>::ArithmeticError)?;
+                    DispatchResult::Ok(())
+                })?;
             }
 
             // Update total category count
@@ -815,7 +852,12 @@ decl_module! {
             <NextThreadId<T>>::mutate(|n| *n += One::one());
 
             // Update category's thread counter
-            <CategoryById<T>>::mutate(category_id, |c| c.num_direct_threads += 1);
+            <CategoryById<T>>::try_mutate(category_id, |c| {
+                c.num_direct_threads = c.num_direct_threads
+                    .checked_add(1)
+                    .ok_or(Error::<T>::ArithmeticError)?;
+                DispatchResult::Ok(())
+            })?;
 
             // Generate event
             Self::deposit_event(
@@ -911,7 +953,7 @@ decl_module! {
             thread.cleanup_pay_off.repay::<T>(&thread_account_id, &account_id, true)?;
 
             // Delete thread
-            Self::delete_thread_inner(thread.category_id, thread_id);
+            Self::delete_thread_inner(thread.category_id, thread_id)?;
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(
@@ -962,8 +1004,18 @@ decl_module! {
 
             <ThreadById<T>>::remove(thread.category_id, thread_id);
             <ThreadById<T>>::insert(new_category_id, thread_id, updated_thread);
-            <CategoryById<T>>::mutate(thread.category_id, |category| category.num_direct_threads -= 1);
-            <CategoryById<T>>::mutate(new_category_id, |category| category.num_direct_threads += 1);
+            <CategoryById<T>>::try_mutate(thread.category_id, |category| {
+                category.num_direct_threads = category.num_direct_threads
+                    .checked_sub(1)
+                    .ok_or(Error::<T>::ArithmeticError)?;
+                DispatchResult::Ok(())
+            })?;
+            <CategoryById<T>>::try_mutate(new_category_id, |category| {
+                category.num_direct_threads = category.num_direct_threads
+                    .checked_add(1)
+                    .ok_or(Error::<T>::ArithmeticError)?;
+                DispatchResult::Ok(())
+            })?;
 
             // Store the event
             Self::deposit_event(
@@ -1007,7 +1059,7 @@ decl_module! {
             Self::slash_thread_account(thread_id, thread.cleanup_pay_off.amount)?;
 
             // Delete thread
-            Self::delete_thread_inner(thread.category_id, thread_id);
+            Self::delete_thread_inner(thread.category_id, thread_id)?;
 
             // Generate event
             Self::deposit_event(
@@ -1377,12 +1429,20 @@ impl<T: Config> Module<T> {
         new_post_id
     }
 
-    fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
+    fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) -> DispatchResult {
         // Delete thread
         <ThreadById<T>>::remove(category_id, thread_id);
 
         // decrease category's thread counter
-        <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+        <CategoryById<T>>::try_mutate(category_id, |category| {
+            category.num_direct_threads = category
+                .num_direct_threads
+                .checked_sub(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
+            DispatchResult::Ok(())
+        })?;
+
+        Ok(())
     }
 
     fn delete_post_inner(category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId) {
@@ -1648,11 +1708,12 @@ impl<T: Config> Module<T> {
     fn ensure_category_is_mutable(
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+        let category = Self::ensure_category_exists(category_id)?;
         let category_tree_path = Self::build_category_tree_path(category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
-        Ok(category_tree_path[0].1.clone())
+        Ok(category)
     }
 
     fn ensure_can_mutate_in_path_leaf(
@@ -1673,7 +1734,7 @@ impl<T: Config> Module<T> {
         parent_category_id: &T::CategoryId,
     ) -> Result<(), Error<T>> {
         // Get the path from parent category to root
-        let category_tree_path =
+        let (_, category_tree_path) =
             Self::ensure_valid_category_and_build_category_tree_path(parent_category_id)?;
 
         let max_category_depth: u64 = T::MaxCategoryDepth::get();
@@ -1691,11 +1752,14 @@ impl<T: Config> Module<T> {
     /// Build category tree path and validate them
     fn ensure_valid_category_and_build_category_tree_path(
         category_id: &T::CategoryId,
-    ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
-        ensure!(
-            <CategoryById<T>>::contains_key(category_id),
-            Error::<T>::CategoryDoesNotExist
-        );
+    ) -> Result<
+        (
+            Category<T::CategoryId, T::ThreadId, T::Hash>,
+            CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>,
+        ),
+        Error<T>,
+    > {
+        let category = Self::ensure_category_exists(category_id)?;
 
         // Get path from parent to root of category tree.
         let category_tree_path = Self::build_category_tree_path(category_id);
@@ -1708,7 +1772,7 @@ impl<T: Config> Module<T> {
             );
             Err(Error::<T>::PathLengthShouldBeGreaterThanZero)
         } else {
-            Ok(category_tree_path)
+            Ok((category, category_tree_path))
         }
     }
 
@@ -1739,7 +1803,7 @@ impl<T: Config> Module<T> {
 
         // Make recursive call on parent if we are not at root
         if let Some(parent_category_id) = category.parent_category_id {
-            assert!(<CategoryById<T>>::contains_key(parent_category_id));
+            debug_assert!(<CategoryById<T>>::contains_key(parent_category_id));
 
             Self::_build_category_tree_path(&parent_category_id, path);
         }
@@ -1811,7 +1875,7 @@ impl<T: Config> Module<T> {
             Err(Error::<T>::ModeratorCantUpdateCategory)
         }
 
-        let category_tree_path =
+        let (category, category_tree_path) =
             Self::ensure_valid_category_and_build_category_tree_path(category_id)?;
 
         match actor {
@@ -1820,8 +1884,6 @@ impl<T: Config> Module<T> {
                 check_moderator::<T>(&category_tree_path, moderator_id)?
             }
         };
-
-        let category = category_tree_path[0].1.clone();
 
         Ok(category)
     }
@@ -1900,8 +1962,6 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, forum_user_id)?;
-
-        Self::ensure_category_exists(category_id)?;
 
         Self::ensure_category_is_mutable(category_id)?;
 

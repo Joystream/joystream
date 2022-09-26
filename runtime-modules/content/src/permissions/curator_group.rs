@@ -1,76 +1,87 @@
 use super::*;
 use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
-#[cfg(feature = "std")]
-use strum_macros::EnumIter;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
-pub enum PausableChannelFeature {
-    // Affects:
-    // -`withdraw_from_channel_balance`
-    // -`claim_and_withdraw_channel_reward`
-    ChannelFundsTransfer,
-    // Affects:
-    // - `claim_channel_reward`
-    // - `claim_and_withdraw_channel_reward`
-    CreatorCashout,
-    // Affects:
-    // - `issue_nft`
-    // - `create_video` (if `auto_issue_nft` provided)
-    // - `update_video` (if `auto_issue_nft` provided)
-    VideoNftIssuance,
-    // Affects:
-    // - `create_video`
-    VideoCreation,
-    // Affects:
-    // - `update_video`
-    VideoUpdate,
-    // Affects:
-    // - `update_channel`
-    ChannelUpdate,
-    // Affects:
-    // - `issue_creator_token`
-    CreatorTokenIssuance,
+// Proc macro (EnumIter) clippy::integer_arithmetic disable hack
+#[allow(clippy::integer_arithmetic)]
+pub mod iterable_enums {
+    use codec::{Decode, Encode};
+    use scale_info::TypeInfo;
+    #[cfg(feature = "std")]
+    use serde::{Deserialize, Serialize};
+    #[cfg(feature = "std")]
+    use strum_macros::EnumIter;
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
+    pub enum ContentModerationAction {
+        // Related extrinsics:
+        // - `set_video_visibility_as_moderator`
+        HideVideo,
+        // Related extrinsics:
+        // - `set_channel_visibility_as_moderator`
+        HideChannel,
+        // Related extrinsics:
+        // - `set_channel_paused_features_as_moderator` - each change of `PausableChannelFeature` `x` requires permissions
+        //   for executing `ChangeChannelFeatureStatus(x)` action
+        ChangeChannelFeatureStatus(PausableChannelFeature),
+        // Related extrinsics:
+        // - `delete_video_as_moderator`
+        DeleteVideo,
+        // Related extrinsics:
+        // - `delete_channel_as_moderator`
+        DeleteChannel,
+        // DeleteVideoAssets(is_video_nft_status_set)
+        // Related extrinsics:
+        // - `delete_video_assets_as_moderator` - deletion of assets belonging to a video which has an NFT issued
+        //   requires permissions for `DeleteVideoAssets(true)` action, deleting other video assets requires permissions for
+        //   `DeleteVideoAssets(false)`.
+        DeleteVideoAssets(bool),
+        // Related extrinsics:
+        // - `delete_channel_assets_as_moderator`
+        DeleteNonVideoChannelAssets,
+        // Related extrinsics:
+        // - `update_channel_nft_limit`
+        UpdateChannelNftLimits,
+    }
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+    #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
+    pub enum PausableChannelFeature {
+        // Affects:
+        // -`withdraw_from_channel_balance`
+        // -`claim_and_withdraw_channel_reward`
+        ChannelFundsTransfer,
+        // Affects:
+        // - `claim_channel_reward`
+        // - `claim_and_withdraw_channel_reward`
+        CreatorCashout,
+        // Affects:
+        // - `issue_nft`
+        // - `create_video` (if `auto_issue_nft` provided)
+        // - `update_video` (if `auto_issue_nft` provided)
+        VideoNftIssuance,
+        // Affects:
+        // - `create_video`
+        VideoCreation,
+        // Affects:
+        // - `update_video`
+        VideoUpdate,
+        // Affects:
+        // - `update_channel`
+        ChannelUpdate,
+        // Affects:
+        // - `issue_creator_token`
+        CreatorTokenIssuance,
+    }
 }
+
+pub use iterable_enums::{ContentModerationAction, PausableChannelFeature};
 
 impl Default for PausableChannelFeature {
     fn default() -> Self {
         Self::ChannelFundsTransfer
     }
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
-pub enum ContentModerationAction {
-    // Related extrinsics:
-    // - `set_video_visibility_as_moderator`
-    HideVideo,
-    // Related extrinsics:
-    // - `set_channel_visibility_as_moderator`
-    HideChannel,
-    // Related extrinsics:
-    // - `set_channel_paused_features_as_moderator` - each change of `PausableChannelFeature` `x` requires permissions
-    //   for executing `ChangeChannelFeatureStatus(x)` action
-    ChangeChannelFeatureStatus(PausableChannelFeature),
-    // Related extrinsics:
-    // - `delete_video_as_moderator`
-    DeleteVideo,
-    // Related extrinsics:
-    // - `delete_channel_as_moderator`
-    DeleteChannel,
-    // DeleteVideoAssets(is_video_nft_status_set)
-    // Related extrinsics:
-    // - `delete_video_assets_as_moderator` - deletion of assets belonging to a video which has an NFT issued
-    //   requires permissions for `DeleteVideoAssets(true)` action, deleting other video assets requires permissions for
-    //   `DeleteVideoAssets(false)`.
-    DeleteVideoAssets(bool),
-    // Related extrinsics:
-    // - `delete_channel_assets_as_moderator`
-    DeleteNonVideoChannelAssets,
-    // Related extrinsics:
-    // - `update_channel_nft_limit`
-    UpdateChannelNftLimits,
 }
 
 pub type ModerationPermissionsByLevel<T> =
