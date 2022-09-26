@@ -5,7 +5,7 @@ message ChannelPayoutsMetadata {
  Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
  This allows first calculating and then setting the byte offset of each `ChannelPayout` accurately, e.g. 
  `byte_offset` = `size(Header)` + `position_where_record_for_channel_exists_in_Body`
- If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayout` 
+ If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutRecord` 
  w.r.t the start of the payload would be improbable since the header size won't be known.
 **/
   message Header {
@@ -32,7 +32,7 @@ message ChannelPayoutsMetadata {
 
   // Channel payout full body structure, it will not be downloaded by clients in full
   message Body {
-    message ChannelPayout {
+    message ChannelPayoutRecord {
       required uint32 channel_id = 1; // `c_i`
     
       required float cumulative_reward_earned = 2; // `p_i`
@@ -54,7 +54,7 @@ message ChannelPayoutsMetadata {
     }
     
     // List of channel payouts
-    repeated ChannelPayout channel_payouts = 1; 
+    repeated ChannelPayoutRecord channel_payouts = 1; 
   }
 
   required Header header = 1; // Payload header

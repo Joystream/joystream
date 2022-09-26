@@ -13,12 +13,12 @@
 - [proto/ChannelPayouts.proto](#proto/ChannelPayouts.proto)
     - [ChannelPayoutsMetadata](#.ChannelPayoutsMetadata)
     - [ChannelPayoutsMetadata.Body](#.ChannelPayoutsMetadata.Body)
-    - [ChannelPayoutsMetadata.Body.ChannelPayout](#.ChannelPayoutsMetadata.Body.ChannelPayout)
-    - [ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement](#.ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutRecord](#.ChannelPayoutsMetadata.Body.ChannelPayoutRecord)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement](#.ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement)
     - [ChannelPayoutsMetadata.Header](#.ChannelPayoutsMetadata.Header)
     - [ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset](#.ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset)
   
-    - [ChannelPayoutsMetadata.Body.ChannelPayout.Side](#.ChannelPayoutsMetadata.Body.ChannelPayout.Side)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side](#.ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side)
   
 - [proto/Council.proto](#proto/Council.proto)
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
@@ -215,16 +215,16 @@ Channel payout full body structure, it will not be downloaded by clients in full
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| channel_payouts | [ChannelPayoutsMetadata.Body.ChannelPayout](#ChannelPayoutsMetadata.Body.ChannelPayout) | repeated | List of channel payouts |
+| channel_payouts | [ChannelPayoutsMetadata.Body.ChannelPayoutRecord](#ChannelPayoutsMetadata.Body.ChannelPayoutRecord) | repeated | List of channel payouts |
 
 
 
 
 
 
-<a name=".ChannelPayoutsMetadata.Body.ChannelPayout"></a>
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutRecord"></a>
 
-### ChannelPayoutsMetadata.Body.ChannelPayout
+### ChannelPayoutsMetadata.Body.ChannelPayoutRecord
 
 
 
@@ -232,7 +232,7 @@ Channel payout full body structure, it will not be downloaded by clients in full
 | ----- | ---- | ----- | ----------- |
 | channel_id | [uint32](#uint32) | required | `c_i` |
 | cumulative_reward_earned | [float](#float) | required | `p_i` |
-| merkle_branch | [ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement](#ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement) | repeated |  |
+| merkle_branch | [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement](#ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement) | repeated |  |
 | payout_rationale | [string](#string) | required | `d_i`; rationale for for reward or deduction for `c_i`; |
 
 
@@ -240,16 +240,16 @@ Channel payout full body structure, it will not be downloaded by clients in full
 
 
 
-<a name=".ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement"></a>
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement"></a>
 
-### ChannelPayoutsMetadata.Body.ChannelPayout.ProofElement
+### ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | hash | [bytes](#bytes) | required |  |
-| side | [ChannelPayoutsMetadata.Body.ChannelPayout.Side](#ChannelPayoutsMetadata.Body.ChannelPayout.Side) | required |  |
+| side | [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side](#ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side) | required |  |
 
 
 
@@ -262,7 +262,7 @@ Channel payout full body structure, it will not be downloaded by clients in full
 Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
 This allows first calculating and then setting the byte offset of each `ChannelPayout` accurately, e.g. 
 `byte_offset` = `size(Header)` &#43; `position_where_record_for_channel_exists_in_Body`
-If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayout` 
+If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutRecord` 
 w.r.t the start of the payload would be improbable since the header size won&#39;t be known.
 
 
@@ -296,9 +296,9 @@ w.r.t the start of the payload would be improbable since the header size won&#39
  
 
 
-<a name=".ChannelPayoutsMetadata.Body.ChannelPayout.Side"></a>
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side"></a>
 
-### ChannelPayoutsMetadata.Body.ChannelPayout.Side
+### ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side
 
 
 | Name | Number | Description |
