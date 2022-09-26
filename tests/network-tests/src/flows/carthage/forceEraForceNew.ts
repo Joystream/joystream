@@ -1,16 +1,12 @@
 import { extendDebug } from 'src/Debugger'
-import { FixtureRunner } from 'src/Fixture'
 import { FlowProps } from 'src/Flow'
-import { Option } from '@polkadot/types'
-import { assert } from 'chai'
+import { expect } from 'chai'
 
-export default async function forceEraIsNone({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow: validator-set')
+export default async function forceEraIsForceNew({ api, query, env }: FlowProps): Promise<void> {
+  const debug = extendDebug('flow: current era era must be some in NPoS')
   debug('started')
   api.enableDebugTxLogs()
 
-  const currentEra = api.getCurrentEra()
-  const forceEra = api.getForceEra()
-  assert(currentEra.isSome)
-  assert(forceEra.isForceNew)
+  expect(api.getForceEra().isForceNew).to.be.true
+  expect(api.getCurrentEra().isSome).to.be.true
 }

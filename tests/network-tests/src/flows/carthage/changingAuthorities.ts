@@ -1,10 +1,9 @@
 import { extendDebug } from 'src/Debugger'
 import { FlowProps } from 'src/Flow'
-import { assert } from 'chai'
-import BN from 'bn.js'
+import { expect } from 'chai'
 
 export default async function constantAuthorities({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow: validator-set')
+  const debug = extendDebug('flow: authority set is changing after swith to NPoS')
   debug('started')
   api.enableDebugTxLogs()
 
@@ -13,5 +12,5 @@ export default async function constantAuthorities({ api, query, env }: FlowProps
   // checking whether election have happened so far
   await api.untilBlock(nBlocks)
   const electionRounds = api.getElectionRounds()
-  assert.isTrue(electionRounds > new BN(0))
+  expect(electionRounds).to.be.above(0)
 }

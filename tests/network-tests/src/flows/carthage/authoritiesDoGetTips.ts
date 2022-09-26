@@ -1,12 +1,12 @@
 import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import BN from 'bn.js'
-import { BondingRestrictedFixture } from 'src/fixtures/staking/BondingRestrictedFixture'
+import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { FlowProps } from 'src/Flow'
-import { assert, expect } from 'chai'
+import { expect } from 'chai'
 
 export default async function authoritiesDontGetTips({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow: validator-set')
+  const debug = extendDebug("flow: authorities don't get tips in PoA")
   debug('started')
   api.enableDebugTxLogs()
 
@@ -14,21 +14,20 @@ export default async function authoritiesDontGetTips({ api, query, env }: FlowPr
   const bondAmount = new BN(100000)
 
   // get authorities
-  const authorities = await api.getAuthorities()
+  const authorities = api.getAuthorities()
   const initialFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
 
-  // create 1 account and issue a bond Tx
+  // create 1 account
   const stakerAccount = (await api.createKeyPairs(1)).map(({ key }) => key.address)[0]
-  const input = {
+
+  // issue a bond Tx
+  const bondingSucceedsFixture = new BondingSucceedsFixture(api, {
     stash: stakerAccount,
     controller: stakerAccount,
-    bondAmount: new BN(100000),
-  }
-  const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
-  const bondingFees = await api.estimateTxFee(bondTx, input.stash)
-  await api.treasuryTransferBalance(input.stash, input.bondAmount.add(bondingFees))
-  const bondingTxResult = await api.signAndSend(bondTx, input.stash)
-  assert(bondingTxResult.isCompleted)
+    bondAmount: bondAmount,
+  })
+  const fixtureRunner = new FixtureRunner(bondingSucceedsFixture)
+  await fixtureRunner.run()
 
   // wait 10 blocks
   await api.untilBlock(nBlocks)

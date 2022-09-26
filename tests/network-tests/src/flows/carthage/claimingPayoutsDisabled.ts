@@ -1,12 +1,13 @@
 import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import { FlowProps } from 'src/Flow'
-import { BondingRestrictedFixture } from 'src/fixtures/staking/BondingRestrictedFixture'
-import BN from 'bn.js'
-import { assert } from 'chai'
+import { BN } from 'bn.js'
+import { expect } from 'chai'
+import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
+import { ClaimingPayoutStakersSucceedsFixture } from 'src/fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 
-export default async function validatorSet({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow: validator-set')
+export default async function claimingPayoutsDisabled({ api, query, env }: FlowProps): Promise<void> {
+  const debug = extendDebug('flow: claiming staking rewards is disabled in PoA ')
   debug('started')
   api.enableDebugTxLogs()
 
@@ -18,55 +19,38 @@ export default async function validatorSet({ api, query, env }: FlowProps): Prom
   // create n accounts
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
 
+  // get authorities
+  const authorities = api.getAuthorities()
+
   // such accounts becomes stakers
-  const bondingResult = await Promise.all(
+  await Promise.all(
     stakerAccounts.map(async (account) => {
-      const input = {
+      const bondingSucceedsFixture = new BondingSucceedsFixture(api, {
         stash: account,
         controller: account,
         bondAmount: bondAmount,
-      }
-      const bondTx = api.tx.staking.bond(input.controller, input.bondAmount, 'Stash')
-      const bondingFees = await api.estimateTxFee(bondTx, input.stash)
-      await api.treasuryTransferBalance(input.stash, input.bondAmount.add(bondingFees))
-      await api.signAndSend(bondTx, input.stash)
+      })
+      const fixtureRunner = new FixtureRunner(bondingSucceedsFixture)
+      fixtureRunner.run()
     })
   )
 
   // wait k = 10 blocks
   await api.untilBlock(nBlocks)
 
-  // attempt to claim payout
-  const claimingResult = await Promise.all(
-    stakerAccounts.map(async (account) => {
-      const claimTx = api.tx.staking.payoutStakers(account, claimingEra)
-      const claimFees = await api.estimateTxFee(claimTx, account)
-      await api.treasuryTransferBalance(account, claimFees)
-      await api.signAndSend(claimTx, account)
+  // attempt to claim payout for ALL validators
+  await Promise.all(
+    stakerAccounts.concat(authorities).map(async (account) => {
+      const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, claimingEra)
+      const fixtureRunner = new FixtureRunner(claimingPayoutStakersSucceedsFixture)
+      fixtureRunner.run()
     })
   )
 
   // each payout (positive number) must be zero iff the sum is zero
-  let totalReward: BN = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))).reduce(
-    (rewardAmount, accumulator: BN) => accumulator.add(new BN(rewardAmount)),
-    0
-  )
-  assert.equal(totalReward, new BN(0))
+  const result = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
+    .map((balance) => balance.isZero())
+    .reduce((accumulator, next) => accumulator && next, true)
 
-  // attempt to claim payouts by authorities should be zero
-  let authorities = await api.getAuthorities()
-  const claimingResultAuthorities = await Promise.all(
-    authorities.map(async (account) => {
-      const claimTx = api.tx.staking.payoutStakers(account, claimingEra)
-      const claimFees = await api.estimateTxFee(claimTx, account)
-      await api.treasuryTransferBalance(account, claimFees)
-      await api.signAndSend(claimTx, account)
-    })
-  )
-
-  let totalRewardAuthorities: BN = (await Promise.all(authorities.map((account) => api.getBalance(account)))).reduce(
-    (rewardAmount, accumulator: BN) => accumulator.add(new BN(rewardAmount)),
-    0
-  )
-  assert.equal(totalRewardAuthorities, new BN(0))
+  expect(result).to.be.true
 }

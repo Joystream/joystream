@@ -3,7 +3,7 @@ import { BaseFixture } from '../../Fixture'
 import { Vec } from '@polkadot/types/codec'
 import { AccountId32 } from '@polkadot/types/interfaces'
 
-export class ValidatingSucceedsFixture extends BaseFixture {
+export class NominatingSucceedsFixture extends BaseFixture {
   protected targets: Vec<AccountId32>
   protected controller: string
 
