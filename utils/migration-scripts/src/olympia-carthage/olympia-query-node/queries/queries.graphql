@@ -1,0 +1,40 @@
+fragment MembershipFields on Membership {
+  id
+  handle
+  metadata {
+    name
+    about
+    # We will only support avatarUri to bootstrap, since there will be no storage
+    # infra to upload data objects..
+    avatar {
+      ... on AvatarUri {
+        avatarUri
+      }
+    }
+    # Was this properly implemented on olympia? Is there any valuable info there?
+    externalResources {
+      value
+    }
+  }
+  controllerAccount
+  rootAccount
+  isFoundingMember # Is this even populated?
+}
+
+fragment MembershipConnectionFields on MembershipConnection {
+  edges {
+    node {
+      ...MembershipFields
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+}
+
+query getMembershipsPage($limit: Int!, $lastCursor: String) {
+  membershipsConnection(first: $limit, after: $lastCursor) {
+    ...MembershipConnectionFields
+  }
+}
