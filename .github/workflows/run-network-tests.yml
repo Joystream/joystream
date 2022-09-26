@@ -97,17 +97,42 @@ jobs:
             cp joystream-node-docker-image.tar.gz ~/docker-images/
           fi
 
-      - name: Build new joystream/node image
+      - name: Check we now have an image
+        id: check_files
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "joystream-node-docker-image.tar.gz"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
+        if: steps.check_files.outputs.files_exists == 'false'
+  
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+         path: /tmp/.buildx-cache
+         key: ${{ runner.os }}-buildx
+        if: steps.check_files.outputs.files_exists == 'false'
+
+      - name: Build
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: joystream-node.Dockerfile
+          platforms: linux/amd64
+          build-args: CARGO_FEATURES=testing_runtime
+          push: false
+          tags: joystream/node
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+        if: steps.check_files.outputs.files_exists == 'false'
+
+      - name: Save joystream/node image to cache
         run: |
-          if ! [ -f joystream-node-docker-image.tar.gz ]; then
-            docker build .\
-              --file joystream-node.Dockerfile\
-              --tag joystream/node\
-              --build-arg CARGO_FEATURES="testing_runtime"
-            docker save --output joystream-node-docker-image.tar joystream/node
-            gzip joystream-node-docker-image.tar
-            cp joystream-node-docker-image.tar.gz ~/docker-images/
-          fi
+          docker save --output joystream-node-docker-image.tar joystream/node
+          gzip joystream-node-docker-image.tar
+          cp joystream-node-docker-image.tar.gz ~/docker-images/
+        if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Save joystream/node image to Artifacts
         uses: actions/upload-artifact@v2
