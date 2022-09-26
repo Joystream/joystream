@@ -670,6 +670,10 @@ export class Api {
     return (await this.api.query.storage.dataObjectStateBloatBondValue()).toNumber()
   }
 
+  public async getDataObjectPerMegabyteFee(): Promise<number> {
+    return (await this.api.query.storage.dataObjectPerMegabyteFee()).toNumber()
+  }
+
   // Create a mock channel, throws on failure
   async createMockChannel(
     memberId: number,

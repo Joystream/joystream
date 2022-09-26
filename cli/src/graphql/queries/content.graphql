@@ -11,3 +11,27 @@ query getChannelById($channelId: ID!) {
     ...ChannelFields
   }
 }
+
+fragment ChannelPayoutsUpdatedEvent on ChannelPayoutsUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  commitment
+  payloadSize
+  payloadHash
+  minCashoutAllowed
+  maxCashoutAllowed
+  channelCashoutsEnabled
+  payloadDataObject {
+    id
+  }
+}
+
+query getChannelPayoutsUpdatedEventByCommitment($commitment: Bytes!) {
+  channelPayoutsUpdatedEvents(where: { commitment_eq: $commitment }, orderBy: [createdAt_DESC], limit: 1) {
+    ...ChannelPayoutsUpdatedEvent
+  }
+}

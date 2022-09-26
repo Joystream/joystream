@@ -26,6 +26,10 @@ type DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment = {
   subtitle?: Types.Maybe<{ id: string; video: { id: string } }>
 }
 
+type DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment = {
+  __typename: 'DataObjectTypeChannelPayoutsPayload'
+}
+
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
 
 export type DataObjectTypeFieldsFragment =
@@ -34,6 +38,7 @@ export type DataObjectTypeFieldsFragment =
   | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
+  | DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment
   | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 
 export type StorageDataObjectFieldsFragment = {
@@ -50,6 +55,7 @@ export type StorageDataObjectFieldsFragment = {
     | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
+    | DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment
     | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 }
 
@@ -519,6 +525,28 @@ export type GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables = Typ
 
 export type GetVideoVisibilitySetByModeratorEventsByEventIdsQuery = {
   videoVisibilitySetByModeratorEvents: Array<VideoVisibilitySetByModeratorEventFieldsFragment>
+}
+
+export type ChannelPayoutsUpdatedEventFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  commitment?: Types.Maybe<any>
+  payloadSize?: Types.Maybe<any>
+  payloadHash?: Types.Maybe<any>
+  minCashoutAllowed?: Types.Maybe<any>
+  maxCashoutAllowed?: Types.Maybe<any>
+  channelCashoutsEnabled?: Types.Maybe<boolean>
+  payloadDataObject: { id: string }
+}
+
+export type GetMostRecentChannelPayoutsUpdatedEventQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetMostRecentChannelPayoutsUpdatedEventQuery = {
+  channelPayoutsUpdatedEvents: Array<ChannelPayoutsUpdatedEventFragment>
 }
 
 export type EnglishAuctionStartedEventFieldsFragment = {
@@ -1514,6 +1542,14 @@ type ProposalDetailsFields_VetoProposalDetails_Fragment = {
   proposal?: Types.Maybe<{ id: string }>
 }
 
+type ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment = {
+  __typename: 'UpdateChannelPayoutsProposalDetails'
+  commitment?: Types.Maybe<string>
+  minCashoutAllowed?: Types.Maybe<number>
+  maxCashoutAllowed?: Types.Maybe<number>
+  channelCashoutsEnabled?: Types.Maybe<boolean>
+}
+
 export type ProposalDetailsFieldsFragment =
   | ProposalDetailsFields_SignalProposalDetails_Fragment
   | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
@@ -1536,6 +1572,7 @@ export type ProposalDetailsFieldsFragment =
   | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
   | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
   | ProposalDetailsFields_VetoProposalDetails_Fragment
+  | ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment
 
 export type ProposalFieldsFragment = {
   id: string
@@ -1569,6 +1606,7 @@ export type ProposalFieldsFragment = {
     | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
     | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
     | ProposalDetailsFields_VetoProposalDetails_Fragment
+    | ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment
   creator: { id: string }
   proposalStatusUpdates: Array<{
     id: string
@@ -2949,6 +2987,25 @@ export const VideoVisibilitySetByModeratorEventFields = gql`
     rationale
   }
 `
+export const ChannelPayoutsUpdatedEvent = gql`
+  fragment ChannelPayoutsUpdatedEvent on ChannelPayoutsUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    commitment
+    payloadSize
+    payloadHash
+    minCashoutAllowed
+    maxCashoutAllowed
+    channelCashoutsEnabled
+    payloadDataObject {
+      id
+    }
+  }
+`
 export const EnglishAuctionStartedEventFields = gql`
   fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
     video {
@@ -3810,6 +3867,12 @@ export const ProposalDetailsFields = gql`
       proposal {
         id
       }
+    }
+    ... on UpdateChannelPayoutsProposalDetails {
+      commitment
+      minCashoutAllowed
+      maxCashoutAllowed
+      channelCashoutsEnabled
     }
   }
   ${OpeningMetadataFields}
@@ -4965,6 +5028,14 @@ export const GetVideoVisibilitySetByModeratorEventsByEventIds = gql`
     }
   }
   ${VideoVisibilitySetByModeratorEventFields}
+`
+export const GetMostRecentChannelPayoutsUpdatedEvent = gql`
+  query getMostRecentChannelPayoutsUpdatedEvent {
+    channelPayoutsUpdatedEvents(orderBy: [createdAt_DESC], limit: 1) {
+      ...ChannelPayoutsUpdatedEvent
+    }
+  }
+  ${ChannelPayoutsUpdatedEvent}
 `
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {

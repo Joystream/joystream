@@ -424,6 +424,10 @@ import {
   GetVideoByIdQuery,
   GetVideoByIdQueryVariables,
   GetVideoById,
+  GetMostRecentChannelPayoutsUpdatedEventQueryVariables,
+  GetMostRecentChannelPayoutsUpdatedEventQuery,
+  GetMostRecentChannelPayoutsUpdatedEvent,
+  ChannelPayoutsUpdatedEventFragment,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1465,5 +1469,12 @@ export class QueryNodeApi {
       GetDistributionFamiliesAdndBucketsQuery,
       GetDistributionFamiliesAdndBucketsQueryVariables
     >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
+  }
+
+  async mostRecentChannelPayoutsUpdatedEvent(): Promise<ChannelPayoutsUpdatedEventFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetMostRecentChannelPayoutsUpdatedEventQuery,
+      GetMostRecentChannelPayoutsUpdatedEventQueryVariables
+    >(GetMostRecentChannelPayoutsUpdatedEvent, {}, 'channelPayoutsUpdatedEvents')
   }
 }

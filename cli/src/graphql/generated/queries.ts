@@ -9,6 +9,30 @@ export type GetChannelByIdQueryVariables = Types.Exact<{
 
 export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
 
+export type ChannelPayoutsUpdatedEventFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  commitment?: Types.Maybe<any>
+  payloadSize?: Types.Maybe<any>
+  payloadHash?: Types.Maybe<any>
+  minCashoutAllowed?: Types.Maybe<any>
+  maxCashoutAllowed?: Types.Maybe<any>
+  channelCashoutsEnabled?: Types.Maybe<boolean>
+  payloadDataObject: { id: string }
+}
+
+export type GetChannelPayoutsUpdatedEventByCommitmentQueryVariables = Types.Exact<{
+  commitment: Types.Scalars['Bytes']
+}>
+
+export type GetChannelPayoutsUpdatedEventByCommitmentQuery = {
+  channelPayoutsUpdatedEvents: Array<ChannelPayoutsUpdatedEventFragment>
+}
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = { id: string; handle: string; metadata: MemberMetadataFieldsFragment }
@@ -66,6 +90,7 @@ export type DataObjectInfoFragment = {
         video?: Types.Maybe<{ id: string }>
         subtitle?: Types.Maybe<{ id: string }>
       }
+    | { __typename: 'DataObjectTypeChannelPayoutsPayload' }
     | { __typename: 'DataObjectTypeUnknown' }
 }
 
@@ -158,6 +183,25 @@ export const ChannelFields = gql`
     videos {
       id
       videoStateBloatBond
+    }
+  }
+`
+export const ChannelPayoutsUpdatedEvent = gql`
+  fragment ChannelPayoutsUpdatedEvent on ChannelPayoutsUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    commitment
+    payloadSize
+    payloadHash
+    minCashoutAllowed
+    maxCashoutAllowed
+    channelCashoutsEnabled
+    payloadDataObject {
+      id
     }
   }
 `
@@ -287,6 +331,14 @@ export const GetChannelById = gql`
     }
   }
   ${ChannelFields}
+`
+export const GetChannelPayoutsUpdatedEventByCommitment = gql`
+  query getChannelPayoutsUpdatedEventByCommitment($commitment: Bytes!) {
+    channelPayoutsUpdatedEvents(where: { commitment_eq: $commitment }, orderBy: [createdAt_DESC], limit: 1) {
+      ...ChannelPayoutsUpdatedEvent
+    }
+  }
+  ${ChannelPayoutsUpdatedEvent}
 `
 export const GetMembersByIds = gql`
   query getMembersByIds($ids: [ID!]) {

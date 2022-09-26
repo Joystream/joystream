@@ -270,3 +270,27 @@ query getVideoVisibilitySetByModeratorEventsByEventIds($eventIds: [ID!]) {
     ...VideoVisibilitySetByModeratorEventFields
   }
 }
+
+fragment ChannelPayoutsUpdatedEvent on ChannelPayoutsUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  commitment
+  payloadSize
+  payloadHash
+  minCashoutAllowed
+  maxCashoutAllowed
+  channelCashoutsEnabled
+  payloadDataObject {
+    id
+  }
+}
+
+query getMostRecentChannelPayoutsUpdatedEvent {
+  channelPayoutsUpdatedEvents(orderBy: [createdAt_DESC], limit: 1) {
+    ...ChannelPayoutsUpdatedEvent
+  }
+}
