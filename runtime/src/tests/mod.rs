@@ -12,9 +12,9 @@ use crate::primitives::{Balance, MemberId};
 use crate::{BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, GenesisBuild, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
+use pallet_staking::Forcing;
 use referendum::ReferendumManager;
 use sp_runtime::{traits::One, AccountId32, BuildStorage};
-use pallet_staking::Forcing;
 
 type Membership = membership::Module<Runtime>;
 type System = frame_system::Pallet<Runtime>;

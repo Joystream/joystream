@@ -19,5 +19,4 @@ export default async function constantAuthorities({ api, query, env }: FlowProps
   const sessionAuthorities = await api.getSessionAuthorities()
   const queuedKeys = (await api.getQueuedKeys()).map((key) => key[0])
   expect(queuedKeys).to.be.deep.equal(sessionAuthorities)
-
 }
