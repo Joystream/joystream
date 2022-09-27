@@ -1,9 +1,10 @@
-import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayCollapsedRow } from '../../helpers/display'
 import { channelPayoutRecord } from '@joystreamjs/content'
+import UploadCommandBase from '../../base/UploadCommandBase'
+import BN from 'bn.js'
 
-export default class ChannelPayoutRecord extends ContentDirectoryCommandBase {
-  static description = 'Show payout information for channel given a channel id.'
+export default class ChannelPayoutRecord extends UploadCommandBase {
+  static description = 'Show payout information for a channel.'
   static args = [
     {
       name: 'channelId',
@@ -14,7 +15,21 @@ export default class ChannelPayoutRecord extends ContentDirectoryCommandBase {
 
   async run(): Promise<void> {
     const { channelId } = this.parse(ChannelPayoutRecord).args
-    const payoutRecord = await channelPayoutRecord(channelId)
+
+    const storageNodeInfo = await this.getRandomActiveStorageNodeInfo('static:council')
+    if (!storageNodeInfo) {
+      this.error('No active storage node found')
+    }
+
+    const commitment = await this.getOriginalApi().query.content.commitment()
+    const [{ payloadDataObject }] = await this.getQNApi().getChannelPayoutsUpdatedEventByCommitment(
+      commitment.toString()
+    )
+    const payoutRecord = await channelPayoutRecord(
+      channelId,
+      `${storageNodeInfo.apiEndpoint}/files`,
+      new BN(payloadDataObject.id)
+    )
 
     if (payoutRecord) {
       displayCollapsedRow({

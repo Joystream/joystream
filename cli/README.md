@@ -24,7 +24,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.8.0 darwin-x64 node-v14.19.1
+@joystream/cli/0.8.0 darwin-x64 node-v14.16.1
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -94,7 +94,8 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
 * [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
 * [`joystream-cli content:channelPayoutRecord CHANNELID`](#joystream-cli-contentchannelpayoutrecord-channelid)
-* [`joystream-cli content:channelPayoutRecordAtByteOffset BTYEOFFSET`](#joystream-cli-contentchannelpayoutrecordatbyteoffset-btyeoffset)
+* [`joystream-cli content:channelPayoutRecordAtByteOffset BYTEOFFSET`](#joystream-cli-contentchannelpayoutrecordatbyteoffset-byteoffset)
+* [`joystream-cli content:channelPayoutsPayloadHeader`](#joystream-cli-contentchannelpayoutspayloadheader)
 * [`joystream-cli content:channels`](#joystream-cli-contentchannels)
 * [`joystream-cli content:claimChannelPayoutReward CHANNELID`](#joystream-cli-contentclaimchannelpayoutreward-channelid)
 * [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
@@ -109,8 +110,8 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
 * [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
 * [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
-* [`joystream-cli content:generateChannelPayoutMerkleRoot`](#joystream-cli-contentgeneratechannelpayoutmerkleroot)
-* [`joystream-cli content:generateChannelPayoutPayload`](#joystream-cli-contentgeneratechannelpayoutpayload)
+* [`joystream-cli content:generateChannelPayoutsMerkleRoot`](#joystream-cli-contentgeneratechannelpayoutsmerkleroot)
+* [`joystream-cli content:generateChannelPayoutsPayload`](#joystream-cli-contentgeneratechannelpayoutspayload)
 * [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
 * [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
 * [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
@@ -118,7 +119,7 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
 * [`joystream-cli content:setVideoVisibilityAsModerator`](#joystream-cli-contentsetvideovisibilityasmoderator)
 * [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
-* [`joystream-cli content:updateChannelPayoutCommitment COMMITMENT`](#joystream-cli-contentupdatechannelpayoutcommitment-commitment)
+* [`joystream-cli content:updateChannelPayoutsCommitment COMMITMENT`](#joystream-cli-contentupdatechannelpayoutscommitment-commitment)
 * [`joystream-cli content:updateChannelStateBloatBond VALUE`](#joystream-cli-contentupdatechannelstatebloatbond-value)
 * [`joystream-cli content:updateCuratorGroupPermissions [ID]`](#joystream-cli-contentupdatecuratorgrouppermissions-id)
 * [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
@@ -455,7 +456,7 @@ _See code: [src/commands/content/channel.ts](https://github.com/Joystream/joystr
 
 ## `joystream-cli content:channelPayoutRecord CHANNELID`
 
-Show payout information for channel given a channel id.
+Show payout information for a channel.
 
 ```
 USAGE
@@ -471,22 +472,38 @@ OPTIONS
 
 _See code: [src/commands/content/channelPayoutRecord.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutRecord.ts)_
 
-## `joystream-cli content:channelPayoutRecordAtByteOffset BTYEOFFSET`
+## `joystream-cli content:channelPayoutRecordAtByteOffset BYTEOFFSET`
 
-Get channel payout record from serialized payload file at given byte.
+Get channel payout record from serialized payload at given byte.
 
 ```
 USAGE
-  $ joystream-cli content:channelPayoutRecordAtByteOffset BTYEOFFSET
+  $ joystream-cli content:channelPayoutRecordAtByteOffset BYTEOFFSET
 
 ARGUMENTS
-  BTYEOFFSET  Byte offset of payout record from start of payload
+  BYTEOFFSET  Byte offset of payout record from start of payload
 
 OPTIONS
-  -i, --input=input  (required) Path to serialized payload file containing channel payouts
+  --path=path  Path to the serialized payload file
+  --url=url    URL to the serialized payload file
 ```
 
 _See code: [src/commands/content/channelPayoutRecordAtByteOffset.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutRecordAtByteOffset.ts)_
+
+## `joystream-cli content:channelPayoutsPayloadHeader`
+
+Get header from serialized payload file.
+
+```
+USAGE
+  $ joystream-cli content:channelPayoutsPayloadHeader
+
+OPTIONS
+  --path=path  Path to the serialized payload file
+  --url=url    URL to the serialized payload file
+```
+
+_See code: [src/commands/content/channelPayoutsPayloadHeader.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutsPayloadHeader.ts)_
 
 ## `joystream-cli content:channels`
 
@@ -742,34 +759,39 @@ OPTIONS
 
 _See code: [src/commands/content/deleteVideoAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAssetsAsModerator.ts)_
 
-## `joystream-cli content:generateChannelPayoutMerkleRoot`
+## `joystream-cli content:generateChannelPayoutsMerkleRoot`
 
 Generate merkle root from channel payouts payload.
 
 ```
 USAGE
-  $ joystream-cli content:generateChannelPayoutMerkleRoot
+  $ joystream-cli content:generateChannelPayoutsMerkleRoot
 
 OPTIONS
-  -i, --input=input  (required) Path to serialized channel payouts payload file
+  --path=path                Path to the serialized payload file
+  --url=url                  URL to the serialized payload file
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/generateChannelPayoutMerkleRoot.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutMerkleRoot.ts)_
+_See code: [src/commands/content/generateChannelPayoutsMerkleRoot.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutsMerkleRoot.ts)_
 
-## `joystream-cli content:generateChannelPayoutPayload`
+## `joystream-cli content:generateChannelPayoutsPayload`
 
-Create serialized channel payouts payload from JSON input.
+Generate serialized channel payouts payload from JSON input.
 
 ```
 USAGE
-  $ joystream-cli content:generateChannelPayoutPayload
+  $ joystream-cli content:generateChannelPayoutsPayload
 
 OPTIONS
-  -i, --input=input  (required) Path to JSON file containing channel payouts
-  -o, --out=out      (required) Path to file where serialized channel payouts payload will be stored
+  -i, --input=input          (required) Path to JSON file containing channel payouts vector
+  -o, --out=out              (required) Path to output file where serialized channel payouts payload will be saved
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/generateChannelPayoutPayload.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutPayload.ts)_
+_See code: [src/commands/content/generateChannelPayoutsPayload.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutsPayload.ts)_
 
 ## `joystream-cli content:removeChannelAssets`
 
@@ -901,13 +923,13 @@ OPTIONS
 
 _See code: [src/commands/content/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannel.ts)_
 
-## `joystream-cli content:updateChannelPayoutCommitment COMMITMENT`
+## `joystream-cli content:updateChannelPayoutsCommitment COMMITMENT`
 
 Update channel payouts payload commitment hash in the runtime storage.
 
 ```
 USAGE
-  $ joystream-cli content:updateChannelPayoutCommitment COMMITMENT
+  $ joystream-cli content:updateChannelPayoutsCommitment COMMITMENT
 
 ARGUMENTS
   COMMITMENT  commitment hash/Merkle root of the channel payouts payload
@@ -917,7 +939,7 @@ OPTIONS
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/updateChannelPayoutCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelPayoutCommitment.ts)_
+_See code: [src/commands/content/updateChannelPayoutsCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelPayoutsCommitment.ts)_
 
 ## `joystream-cli content:updateChannelStateBloatBond VALUE`
 

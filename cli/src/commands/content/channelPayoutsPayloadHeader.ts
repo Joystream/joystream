@@ -1,29 +1,38 @@
 import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { serializedPayloadHeader } from '@joystreamjs/content'
-import { Bytes } from '@polkadot/types'
 import { Command, flags } from '@oclif/command'
 import chalk from 'chalk'
-import { metadataFromBytes } from 'src/helpers/serialization'
 import { displayCollapsedRow, displayTable } from '../../helpers/display'
 
 export default class ChannelPayoutPayloadHeader extends Command {
   static description = 'Get header from serialized payload file.'
   static flags = {
-    input: flags.string({
-      char: 'i',
-      required: true,
-      description: `Path to serialized payload file containing channel payouts`,
+    path: flags.string({
+      required: false,
+      description: 'Path to the serialized payload file',
+      exclusive: ['url'],
+    }),
+    url: flags.string({
+      required: false,
+      description: 'URL to the serialized payload file',
+      exclusive: ['path'],
     }),
   }
 
   async run(): Promise<void> {
-    const { input } = this.parse(ChannelPayoutPayloadHeader).flags
-    const serializedHeader = await serializedPayloadHeader(input)
+    const { path, url } = this.parse(ChannelPayoutPayloadHeader).flags
+    if (!(path || url)) {
+      this.error('One of path or url should be provided')
+    }
 
     try {
-      const header = metadataFromBytes(ChannelPayoutsMetadata.Header, (serializedHeader.toString() as unknown) as Bytes)
+      const serializedHeader = path
+        ? await serializedPayloadHeader('PATH', path)
+        : await serializedPayloadHeader('URL', url!)
+
+      const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
       this.log(
-        chalk.green(`Serialized payout header is ${chalk.cyanBright(Buffer.from(serializedHeader).toString('hex'))}!`)
+        chalk.green(`Serialized payout header is ${chalk.cyanBright(Buffer.from(serializedHeader).toString('hex'))}\n`)
       )
 
       displayCollapsedRow({

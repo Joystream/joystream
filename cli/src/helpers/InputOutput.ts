@@ -79,7 +79,6 @@ export function saveOutputJsonToFile(outputFilePath: string, data: any): void {
 export function saveOutputToFile(outputFilePath: string, data: any): void {
   try {
     fs.writeFileSync(outputFilePath, data)
-    fs.createReadStream(outputFilePath, { start: 9 })
   } catch (e) {
     throw new CLIError(`Could not save the output to: ${outputFilePath}. Check permissions...`, {
       exit: ExitCodes.FsOperationFailed,
