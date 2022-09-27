@@ -18,8 +18,6 @@ export default async function claimingPayoutsEnabled({ api, query, env }: FlowPr
 
   // create n accounts
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
-
-  // get authorities
   const authorities = (await api.getSessionAuthorities()).map((key) => key.toString())
 
   // such accounts becomes stakers
