@@ -1,6 +1,7 @@
 pub mod chain_spec;
 mod cli;
 pub mod command;
+pub mod overrides;
 #[macro_use]
 mod service;
 mod command_helper;

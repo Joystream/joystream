@@ -19,6 +19,7 @@
 //! Service implementation. Specialized wrapper over substrate service.
 
 use crate::node_executor::ExecutorDispatch;
+use crate::overrides::DEFAULT_HEAP_PAGES;
 use codec::Encode;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
@@ -163,7 +164,7 @@ pub fn new_partial(
 
     let executor = NativeElseWasmExecutor::<ExecutorDispatch>::new(
         config.wasm_method,
-        config.default_heap_pages,
+        config.default_heap_pages.or(Some(DEFAULT_HEAP_PAGES)),
         config.max_runtime_instances,
         config.runtime_cache_size,
     );
