@@ -39,6 +39,4 @@ export default async function authoritiesDoGetTips({ api, query, env }: FlowProp
       .map((currentBalance, i) => currentBalance > initialFreeBalances[i])
       .reduce((val: boolean, acc: boolean) => val && acc, true)
   )
-
-
 }
