@@ -1,5 +1,3 @@
-import authoritiesDontGetTips from 'src/flows/carthage/authoritiesDontGetTips'
-import authoritiesDoGetTips from 'src/flows/carthage/authoritiesDoGetTips'
 import bondingSucceedsInPoA from 'src/flows/carthage/bondingSucceedsInPoA'
 import changingAuthorities from 'src/flows/carthage/changingAuthorities'
 import claimingPayoutsDisabled from 'src/flows/carthage/claimingPayoutsDisabled'
@@ -15,7 +13,6 @@ import currentEraIsSomeInPoS from 'src/flows/carthage/currentEraIsSomeInPoS'
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Carthage PoA setup', async ({ job }) => {
   job('authority set is constant', constantAuthorities)
-  job('authorities do not get tips', authoritiesDontGetTips)
   job('current era is none', currentEraIsNoneInPoA)
   job('nominate succeeds in PoA', nominateSucceedsInPoA)
   job('validate succeeds in PoA', validateSucceedsInPoA)
@@ -27,6 +24,5 @@ scenario('Carthage NPoS switch', async ({ job }) => {
   job('set force era to force new', setForceNewEra)
   job('current era is none', currentEraIsSomeInPoS)
   job('authority set is changing', changingAuthorities)
-  job('authorities do not get tips', authoritiesDoGetTips)
   job('claiming payout disabled in PoA', claimingPayoutsEnabled)
 })
