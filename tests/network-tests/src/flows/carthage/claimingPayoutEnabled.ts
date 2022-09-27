@@ -18,10 +18,10 @@ export default async function claimingPayoutsEnabled({ api, query, env }: FlowPr
 
   // create n accounts
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
-  const authorities = (await api.getSessionAuthorities()).map((key) => key.toString())
+  const authorities = await api.getSessionAuthorities()
 
   // such accounts becomes stakers
-  await Promise.all(
+  (await Promise.all(
     stakerAccounts.map(async (account) => {
       const bondingSucceedsFixture = new BondingSucceedsFixture(api, {
         stash: account,
@@ -31,21 +31,21 @@ export default async function claimingPayoutsEnabled({ api, query, env }: FlowPr
       const fixtureRunner = new FixtureRunner(bondingSucceedsFixture)
       fixtureRunner.run()
     })
-  )
+  )).map(() => {})
 
   const previousBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
   // wait k = 10 blocks
-  await api.untilBlock(nBlocks)
+  await api.untilBlock(nBlocks).then(() => {})
 
   // attempt to claim payout for ALL validators
-  await Promise.all(
+  (await Promise.all(
     stakerAccounts.concat(authorities).map(async (account) => {
       const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, claimingEra)
       const fixtureRunner = new FixtureRunner(claimingPayoutStakersSucceedsFixture)
       fixtureRunner.run()
     })
-  )
+  )).map(() => {})
 
   // each payout (positive pnumber) must be zero iff the sum is zero
   const currentBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
