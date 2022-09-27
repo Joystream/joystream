@@ -7,12 +7,10 @@ export default async function constantAuthorities({ api, query, env }: FlowProps
   debug('started')
   api.enableDebugTxLogs()
 
-  const nBlocks = 10
+  const forceEra = await api.getForceEra()
+  expect(forceEra.isForceNone).to.be.true
 
-  expect(api.getForceEra().isForceNone).to.be.true
-
-  const pastAuthorities = api.getAuthorities()
-  await api.untilBlock(nBlocks)
-  const currentAuthorities = api.getAuthorities()
-  expect(pastAuthorities).to.be.deep.equal(currentAuthorities)
+  const currentAuthorities = await api.getAuthorities()
+  const nextAuthorities = await api.getNextAuthorities()
+  expect(nextAuthorities).to.be.deep.equal(currentAuthorities)
 }

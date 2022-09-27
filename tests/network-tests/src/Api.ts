@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, BTreeSet, Option, Vec, AuthorityId } from '@polkadot/types'
+import { u32, u64, BTreeSet, Option, Vec } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -20,7 +20,9 @@ import {
   BlockNumber,
   BlockHash,
   LockIdentifier,
+  AuthorityId,
 } from '@polkadot/types/interfaces'
+import { ITuple } from '@polkadot/types-codec/interfaces'
 import {
   PalletWorkingGroupGroupWorker as Worker,
   PalletWorkingGroupOpening as Opening,
@@ -30,6 +32,7 @@ import {
   PalletContentChannelBagWitness,
   PalletStakingForcing,
   PalletBalancesAccountData,
+  SpConsensusBabeAppPublic,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -313,16 +316,12 @@ export class Api {
     return this.api.consts.babe.expectedBlockTime
   }
 
-  public getAuthorities(): Vec<AuthorityId> {
-    return this.api.call.authorityDiscoveryApi.authorities
+  public async getAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
+    return await this.api.query.babe.authorities()
   }
 
-  public getCurrentEra(): Option<u32> {
-    return this.api.query.staking.currentEra()
-  }
-
-  public getForceEra(): PalletStakingForcing {
-    return this.api.query.staking.forceEra()
+  public async getNextAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
+    return await this.api.query.babe.nextAuthorities()
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {
@@ -333,12 +332,20 @@ export class Api {
     return this.api.query.staking.validatorCount<u32>()
   }
 
-  public getElectionRounds(): u32 {
+  public getBestBlock(): Promise<BN> {
+    return this.api.derive.chain.bestNumber()
+  }
+
+  public async getElectionRounds(): Promise<u32> {
     return this.api.query.elections.electionRounds()
   }
 
-  public getBestBlock(): Promise<BN> {
-    return this.api.derive.chain.bestNumber()
+  public async getCurrentEra(): Promise<Option<u32>> {
+    return this.api.query.staking.currentEra()
+  }
+
+  public async getForceEra(): Promise<PalletStakingForcing> {
+    return this.api.query.staking.forceEra()
   }
 
   public async getBlockHash(blockNumber: number | BlockNumber): Promise<BlockHash> {
