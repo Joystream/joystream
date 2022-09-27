@@ -1,6 +1,5 @@
 import { extendDebug } from 'src/Debugger'
 import { FlowProps } from 'src/Flow'
-import { Option } from '@polkadot/types'
 import { assert } from 'chai'
 
 export default async function currentEraIsNoneInPoA({ api, query, env }: FlowProps): Promise<void> {
@@ -8,8 +7,9 @@ export default async function currentEraIsNoneInPoA({ api, query, env }: FlowPro
   debug('started')
   api.enableDebugTxLogs()
 
-  assert(api.getForceEra().isForceNone)
+  const forceEra = await api.getForceEra()
+  assert(forceEra.isForceNone)
 
-  const currentEra = api.getCurrentEra()
+  const currentEra = await api.getCurrentEra()
   assert(currentEra.isNone)
 }
