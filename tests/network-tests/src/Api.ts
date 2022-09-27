@@ -32,6 +32,7 @@ import {
   PalletContentChannelBagWitness,
   PalletStakingForcing,
   SpConsensusBabeAppPublic,
+  JoystreamNodeRuntimeSessionKeys,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -325,6 +326,10 @@ export class Api {
 
   public async getSessionAuthorities(): Promise<Vec<AccountId32>> {
     return await this.api.query.session.validators()
+  }
+
+  public async getQueuedKeys(): Promise<Vec<ITuple<[AccountId32, JoystreamNodeRuntimeSessionKeys]>> {
+    return await this.api.query.session.queuedKeys()
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {
