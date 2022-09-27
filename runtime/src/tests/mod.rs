@@ -6,7 +6,6 @@ mod proposals_integration;
 mod fee_tests;
 mod handle_fees;
 mod locks;
-mod poa;
 
 use crate::constants::currency;
 use crate::primitives::{Balance, MemberId};
