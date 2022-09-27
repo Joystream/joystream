@@ -5,8 +5,6 @@ import { assert } from 'chai'
 import BN from 'bn.js'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { ValidatingSucceedsFixture } from 'src/fixtures/staking/ValidatingSucceedsFixture'
-import { Perbill } from '@polkadot/types/interfaces/runtime'
-import { Bool } from '@polkadot/types-codec';
 
 export default async function validateSucceedsInPoA({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: validator-set')
@@ -35,8 +33,8 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
   const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(
     api,
     {
-      commission: Perbill.with(1),
-      blocked: false,
+      'commission': 1,
+      'blocked': false,
     },
     account
   )

@@ -1,6 +1,6 @@
 import { extendDebug } from 'src/Debugger'
 import { FlowProps } from 'src/Flow'
-import { expect } from 'chai'
+import { expect, assert } from 'chai'
 
 export default async function constantAuthorities({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: constant Authorities in PoA')
@@ -8,7 +8,7 @@ export default async function constantAuthorities({ api, query, env }: FlowProps
   api.enableDebugTxLogs()
 
   const forceEra = await api.getForceEra()
-  expect(forceEra.isForceNone).to.be.true
+  assert(forceEra.isForceNone)
 
   // babe authorities
   const currentAuthorities = await api.getBabeAuthorities()
@@ -17,6 +17,6 @@ export default async function constantAuthorities({ api, query, env }: FlowProps
 
   // make sure that next Session keys are none
   const sessionAuthorities = await api.getSessionAuthorities()
-  const queuedKeys = (await api.getQueuedKeys()).map((key) => key[0])
+  const queuedKeys = await api.getQueuedKeys()
   expect(queuedKeys).to.be.deep.equal(sessionAuthorities)
 }

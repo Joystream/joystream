@@ -2,7 +2,6 @@ import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import { FlowProps } from 'src/Flow'
 import { assert } from 'chai'
-import { AccountId32 } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { ValidatingSucceedsFixture } from 'src/fixtures/staking/ValidatingSucceedsFixture'
@@ -16,7 +15,8 @@ export default async function nominateSucceedsInPoA({ api, query, env }: FlowPro
   const bondAmount = new BN(100000)
 
   // we are in poa
-  assert(api.getCurrentEra().isNone)
+  const currentEra = await api.getCurrentEra()
+  assert(currentEra.isNone)
 
   // create keys and bonding tx
   const [nominatorAccount, validatorAccount] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
@@ -40,19 +40,19 @@ export default async function nominateSucceedsInPoA({ api, query, env }: FlowPro
   await validatorFixture.run()
 
   // candidate validator
-  const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(api, {
-    commission: 1,
-    blocked: false,
-  })
+  const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(
+    api,
+    {
+      'commission': 10,
+      'blocked': false,
+    },
+    validatorAccount
+  )
   const candidationFixture = new FixtureRunner(validatorCandidatingSucceedsFixture)
   await candidationFixture.run()
 
   // attempt to nominate
-  const nominatorCandidatingSucceedsFixture = new NominatingSucceedsFixture(
-    api,
-    [validatorAccount as AccountId32],
-    nominatorAccount
-  )
+  const nominatorCandidatingSucceedsFixture = new NominatingSucceedsFixture(api, [validatorAccount], nominatorAccount)
   const nominationFixture = new FixtureRunner(nominatorCandidatingSucceedsFixture)
   await nominationFixture.run()
 }

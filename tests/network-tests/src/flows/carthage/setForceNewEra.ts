@@ -1,6 +1,6 @@
 import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
-import { SetForceEraForcingNewFixture } from 'src/fixtures/staking/setForceEraForcingNewFixture'
+import { SetForceEraForcingNewFixture } from 'src/fixtures/staking/SetForceEraForcingNewFixture'
 import { FlowProps } from 'src/Flow'
 
 export default async function setForceNewEra({ api, query, env }: FlowProps): Promise<void> {

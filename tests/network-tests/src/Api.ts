@@ -316,20 +316,20 @@ export class Api {
     return this.api.consts.babe.expectedBlockTime
   }
 
-  public async getBabeAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
-    return await this.api.query.babe.authorities()
+  public async getBabeAuthorities(): Promise<string[]> {
+    return await this.api.query.babe.authorities().then((key) => key.map(([k]) => k.toString()))
   }
 
-  public async getNextBabeAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
-    return await this.api.query.babe.nextAuthorities()
+  public async getNextBabeAuthorities(): Promise<string[]> {
+    return await this.api.query.babe.nextAuthorities().then((key) => key.map(([k]) => k.toString()))
   }
 
-  public async getSessionAuthorities(): Promise<Vec<AccountId32>> {
-    return await this.api.query.session.validators()
+  public async getSessionAuthorities(): Promise<string[]> {
+    return await this.api.query.session.validators().then((key) => key.map((k) => k.toString()))
   }
 
-  public async getQueuedKeys(): Promise<Vec<ITuple<[AccountId32, JoystreamNodeRuntimeSessionKeys]>>> {
-    return await this.api.query.session.queuedKeys()
+  public async getQueuedKeys(): Promise<string[]> {
+    return await this.api.query.session.queuedKeys().then((key) => key.map(([k]) => k.toString()))
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {

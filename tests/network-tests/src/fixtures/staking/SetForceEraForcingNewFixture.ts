@@ -1,11 +1,6 @@
-import { Api } from '../../Api'
 import { BaseFixture } from '../../Fixture'
 
 export class SetForceEraForcingNewFixture extends BaseFixture {
-  public constructor(api: Api) {
-    super(api)
-  }
-
   async execute(): Promise<void> {
     const sudoKey = (await this.api.query.sudo.key()).value.toString()
     const forceTx = this.api.tx.staking.forceNewEra()

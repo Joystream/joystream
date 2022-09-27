@@ -1,13 +1,11 @@
 import { Api } from '../../Api'
 import { BaseFixture } from '../../Fixture'
-import { Vec } from '@polkadot/types/codec'
-import { AccountId32 } from '@polkadot/types/interfaces'
 
 export class NominatingSucceedsFixture extends BaseFixture {
-  protected targets: Vec<AccountId32>
+  protected targets: string[]
   protected controller: string
 
-  public constructor(api: Api, targets: Vec<AccountId32>, controller: string) {
+  public constructor(api: Api, targets: string[], controller: string) {
     super(api)
     this.controller = controller
     this.targets = targets

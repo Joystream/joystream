@@ -1,9 +1,9 @@
 import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import BN from 'bn.js'
-import { BondingSucceedsFixture } from '../fixtures/staking/BondingSucceedsFixture'
 import { FlowProps } from 'src/Flow'
 import { expect } from 'chai'
+import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 
 export default async function authoritiesDoGetTips({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug("flow: authorities don't get tips in PoA")
@@ -14,8 +14,8 @@ export default async function authoritiesDoGetTips({ api, query, env }: FlowProp
   const bondAmount = new BN(100000)
 
   // get authorities
-  const authorities = api.getAuthorities()
-  //const initialFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
+  const authorities = (await api.getSessionAuthorities()).map((account) => account.toString())
+  const initialFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
 
   // create 1 account
   const stakerAccount = (await api.createKeyPairs(1)).map(({ key }) => key.address)[0]
@@ -32,11 +32,11 @@ export default async function authoritiesDoGetTips({ api, query, env }: FlowProp
   // wait 10 blocks
   await api.untilBlock(nBlocks)
 
-  // const currentFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
+  const currentFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
 
-  // expect(
-  //   currentFreeBalances
-  //     .map((currentBalance, i) => currentBalance > initialFreeBalances[i])
-  //     .reduce((val: boolean, acc: boolean) => val && acc, true)
-  // ).to.be.true
+  expect(
+    currentFreeBalances
+      .map((currentBalance, i) => currentBalance > initialFreeBalances[i])
+      .reduce((val: boolean, acc: boolean) => val && acc, true)
+  ).to.be.true
 }
