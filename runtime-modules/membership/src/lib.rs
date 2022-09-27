@@ -234,9 +234,9 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
     pub metadata: Vec<u8>,
 }
 
-/// Parameters for the create_founding_member extrinsic.
+/// Parameters for the create_member extrinsic.
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
-pub struct CreateFoundingMemberParameters<AccountId> {
+pub struct CreateMemberParameters<AccountId> {
     /// New member root account.
     pub root_account: AccountId,
 
@@ -368,7 +368,7 @@ decl_event! {
             <T as frame_system::Config>::AccountId,
             <T as common::membership::MembershipTypes>::MemberId,
         >,
-        CreateFoundingMemberParameters = CreateFoundingMemberParameters<
+        CreateMemberParameters = CreateMemberParameters<
             <T as frame_system::Config>::AccountId
         >,
       GiftMembershipParameters = GiftMembershipParameters<
@@ -396,7 +396,8 @@ decl_event! {
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
         MemberRemarked(MemberId, Vec<u8>),
-        FoundingMemberCreated(MemberId, CreateFoundingMemberParameters, u32),
+        FoundingMemberCreated(MemberId, CreateMemberParameters, u32),
+        MemberCreated(MemberId, CreateMemberParameters, u32),
     }
 }
 
@@ -1186,13 +1187,13 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoMembership::<T>::create_founding_member(
+        #[weight = WeightInfoMembership::<T>::create_member(
             params.handle.len() as u32,
             params.metadata.len() as u32
         )]
         pub fn create_founding_member(
             origin,
-            params: CreateFoundingMemberParameters<T::AccountId>
+            params: CreateMemberParameters<T::AccountId>
         ) {
             ensure_root(origin)?;
 
@@ -1214,6 +1215,48 @@ decl_module! {
             // Fire the event.
             Self::deposit_event(
                 RawEvent::FoundingMemberCreated(member_id, params, initial_invitation_count)
+            );
+        }
+
+        /// Create a member profile as root.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (I + J)` where:
+        /// - `I` is the length of the handle
+        /// - `J` is the length of the metadata
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::create_member(
+            params.handle.len() as u32,
+            params.metadata.len() as u32
+        )]
+        pub fn create_member(
+            origin,
+            params: CreateMemberParameters<T::AccountId>
+        ) {
+            ensure_root(origin)?;
+
+            let handle_hash = Self::get_handle_hash(&Some(params.handle.clone()))?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+            let initial_invitation_count = Self::initial_invitation_count();
+
+            let member_id = Self::insert_member(
+                &params.root_account,
+                &params.controller_account,
+                handle_hash,
+                initial_invitation_count,
+                false
+            );
+
+            // Fire the event.
+            Self::deposit_event(
+                RawEvent::MemberCreated(member_id, params, initial_invitation_count)
             );
         }
     }

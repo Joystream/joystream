@@ -761,7 +761,7 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
     }
 
-    create_founding_member{
+    create_member{
 
         let i in 1 .. MAX_BYTES;
 
@@ -775,7 +775,7 @@ benchmarks! {
 
         let metadata = vec![0u8].repeat(j as usize);
 
-        let params = CreateFoundingMemberParameters {
+        let params = CreateMemberParameters {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             handle: handle.clone(),
@@ -795,7 +795,7 @@ benchmarks! {
             handle_hash: handle_hash.clone(),
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
-            verified: true,
+            verified: false,
             invites,
         };
 
@@ -804,7 +804,7 @@ benchmarks! {
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
         assert_last_event::<T>(
-            RawEvent::FoundingMemberCreated(member_id, params, invites).into()
+            RawEvent::MemberCreated(member_id, params, invites).into()
         );
     }
 

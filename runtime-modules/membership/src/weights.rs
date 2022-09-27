@@ -64,7 +64,7 @@ pub trait WeightInfo {
 	fn confirm_staking_account() -> Weight;
 	fn remove_staking_account() -> Weight;
 	fn member_remark() -> Weight;
-	fn create_founding_member(_i: u32, _j: u32, ) -> Weight;
+	fn create_member(_i: u32, _j: u32, ) -> Weight;
 }
 
 /// Weights for membership using the Substrate node and recommended hardware.
@@ -235,7 +235,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc0d3094b474c99662ab2c5f2e2f8c27b6] (r:1 w:0)
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc4560c4f4db6b0f2ccd9ba01ebd9f4757] (r:1 w:1)
 	// Storage: unknown [0x2ce461329fdf4be12bce01afc0af09bc13020dc69e85870ac7b4c755bb8753c2] (r:0 w:1)
-	fn create_founding_member(i: u32, j: u32, ) -> Weight {
+	fn create_member(i: u32, j: u32, ) -> Weight {
 		(29_171_000 as Weight)
 			// Standard Error: 0
 			.saturating_add((2_000 as Weight).saturating_mul(i as Weight))
@@ -308,7 +308,7 @@ impl WeightInfo for () {
 	fn member_remark() -> Weight {
 		0
 	}
-	fn create_founding_member(i: u32, j: u32, ) -> Weight {
+	fn create_member(i: u32, j: u32, ) -> Weight {
 		0
 	}
 }
