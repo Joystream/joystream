@@ -1,8 +1,9 @@
 use super::{
     account_from_member_id, increase_total_balance_issuance_using_account_id, initial_test_ext,
 };
-use crate::{currency, AccountId, Balances, DealWithFees, NegativeImbalance};
+use crate::{currency, AccountId, Balances, BurnAllTxFees, DealWithFees, NegativeImbalance};
 use frame_support::traits::{Currency, Imbalance, OnUnbalanced};
+use sp_runtime::traits::Zero;
 
 #[test]
 fn block_author_only_receives_tips() {
@@ -44,6 +45,43 @@ fn block_author_only_receives_tips() {
         assert_eq!(
             Balances::total_issuance(),
             starting_total_issuance - fees_amount
+        );
+    });
+}
+
+#[test]
+fn all_tx_fees_are_burned() {
+    initial_test_ext().execute_with(|| {
+        fn author() -> AccountId {
+            account_from_member_id(0).into()
+        }
+
+        fn user() -> AccountId {
+            account_from_member_id(1).into()
+        }
+
+        let user_starting_balance = currency::DOLLARS * 5000;
+        increase_total_balance_issuance_using_account_id(user(), user_starting_balance);
+
+        let starting_total_issuance = Balances::total_issuance();
+
+        let fees_amount = currency::DOLLARS * 1000;
+        let tips_amount = currency::DOLLARS * 500;
+        let (fees, _) = Balances::slash(&user(), fees_amount);
+        let (tips, _) = Balances::slash(&user(), tips_amount);
+
+        assert_eq!(fees.peek(), fees_amount,);
+        assert_eq!(tips.peek(), tips_amount,);
+
+        BurnAllTxFees::on_unbalanceds(vec![fees, tips].into_iter());
+
+        // Author doesn't receive tips
+        assert!(Balances::free_balance(&author()).is_zero());
+
+        // Transaction fees have been burned
+        assert_eq!(
+            Balances::total_issuance(),
+            starting_total_issuance - fees_amount - tips_amount
         );
     });
 }
