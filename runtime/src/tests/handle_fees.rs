@@ -1,7 +1,7 @@
 use super::{
     account_from_member_id, increase_total_balance_issuance_using_account_id, initial_test_ext,
 };
-use crate::{currency, AccountId, Balances, BurnAllTxFees, DealWithFees, NegativeImbalance};
+use crate::{currency, AccountId, Balances, DealWithFees, NegativeImbalance};
 use frame_support::traits::{Currency, Imbalance, OnUnbalanced};
 use sp_runtime::traits::Zero;
 
