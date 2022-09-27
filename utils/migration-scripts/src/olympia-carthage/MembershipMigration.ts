@@ -7,7 +7,7 @@ import { Logger } from 'winston'
 import { createLogger } from '../logging'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipsSnapshot } from './SnapshotManager'
-import { BuyMembershipParameters } from '@joystream/types/members'
+import BN from 'bn.js'
 
 export type MembershipMigrationConfig = BaseMigrationConfig & {
   batchSize: number
@@ -33,10 +33,21 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
     members: MembershipFieldsFragment[]
   ): Promise<void> {
     const { api } = this
-    const result = await api.sendExtrinsic(this.sudo, tx)
-    const membershipBoughtEvents = api.findEvents(result, 'members', 'MembershipBought')
-    const newMemberIds: MemberId[] = membershipBoughtEvents.map((e) => e.data[0])
-    if (membershipBoughtEvents.length !== members.length) {
+    // we use sudo to bypass the system call filter present in initial deployment stage
+    const result = await api.sendExtrinsic(this.sudo, api.tx.sudo.sudo(tx))
+    const indexedMembershipBoughtId = api
+      .findEvents(result, 'members', 'MembershipBought')
+      .map((e) => ({ index: e.index, id: e.data[0] }))
+    const indexedFoundingMemberCreatedIds = api
+      .findEvents(result, 'members', 'FoundingMemberCreated')
+      .map((e) => ({ index: e.index, id: e.data[0] }))
+    const allIds = indexedMembershipBoughtId.concat(indexedFoundingMemberCreatedIds)
+    // Ids sorted as per emitted events order
+    const sortedIds = allIds.sort((a, b) => new BN(a.index).cmp(new BN(b.index)))
+
+    const newMemberIds: MemberId[] = sortedIds.map((e) => e.id)
+
+    if (allIds.length !== members.length) {
       this.extractFailedMigrations(result, members, 1, false)
     }
     const newMembersMapEntries: [number, number][] = []
@@ -81,22 +92,38 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
 
   private async prepareMember(member: MembershipFieldsFragment) {
     const { api } = this
-    const { handle, rootAccount, controllerAccount, about, avatarUri } = member
+    const { handle, rootAccount, controllerAccount, metadata, isFoundingMember } = member
+    const { name, about, avatar } = metadata
 
     const meta = new MembershipMetadata({
       about,
-      avatarUri,
+      name,
     })
-    const buyMembershipParams = createType<BuyMembershipParameters, 'BuyMembershipParameters'>(
-      'BuyMembershipParameters',
-      {
-        handle,
-        controller_account: controllerAccount,
-        root_account: rootAccount,
-        metadata: `0x${Buffer.from(MembershipMetadata.encode(meta).finish()).toString('hex')}`,
-      }
-    )
 
-    return api.tx.members.buyMembership(buyMembershipParams)
+    if (avatar && avatar.avatarUri) {
+      meta.avatarUri = avatar.avatarUri
+    }
+
+    if (isFoundingMember) {
+      const createFoundingMemberParams = createType('PalletMembershipCreateFoundingMemberParameters', {
+        handle,
+        controllerAccount,
+        rootAccount,
+        metadata: `0x${Buffer.from(MembershipMetadata.encode(meta).finish()).toString('hex')}`,
+      })
+      return api.tx.members.createFoundingMember(createFoundingMemberParams)
+    } else {
+      // sudo buy membership -> no membership lock
+      // sudo pays for membership (set membership price to 0) initially
+      // using sudoAs to bypass call filter
+      const buyMembershipParams = createType('PalletMembershipBuyMembershipParameters', {
+        handle,
+        controllerAccount,
+        rootAccount,
+        referrerId: null,
+        metadata: `0x${Buffer.from(MembershipMetadata.encode(meta).finish()).toString('hex')}`,
+      })
+      return api.tx.members.buyMembership(buyMembershipParams)
+    }
   }
 }

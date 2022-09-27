@@ -84,9 +84,9 @@ export abstract class BaseMigration<T> {
   protected onExit(exitCode: number | null, signal: string | null): void | false {
     nodeCleanup.uninstall() // don't call cleanup handler again
     this.logger.info('Exitting...')
-    if (signal && this.pendingMigrationIteration) {
+    if (signal && this.pendingMigrationIteration !== undefined) {
       this.logger.info('Waiting for currently pending migration iteration to finalize...')
-      this.pendingMigrationIteration.then(() => {
+      void this.pendingMigrationIteration.then(() => {
         this.saveMigrationState(true)
         this.logger.info('Done.')
         process.kill(process.pid, signal)
@@ -107,7 +107,7 @@ export abstract class BaseMigration<T> {
 
   private async loadSudoKey() {
     const { sudoUri } = this.config
-    const keyring = new Keyring({ type: 'sr25519' })
+    const keyring = new Keyring({ type: 'sr25519', ss58Format: 126 })
     this.sudo = keyring.createFromUri(sudoUri)
     const sudoKey = await this.api.query.sudo.key()
     if (sudoKey.toString() !== this.sudo.address) {
@@ -130,7 +130,7 @@ export abstract class BaseMigration<T> {
   /**
    * Extract failed migrations (entity ids) from batch transaction result.
    * Assumptions:
-   * - Each entity is migrated with a constant number of calls (2 by default: balnces.transferKeepAlive and sudo.sudoAs)
+   * - Each entity is migrated with a constant number of calls (1 by default: balnces.transferKeepAlive and sudo.sudoAs)
    * - Ordering of the entities in the `batch` array matches the ordering of the batched calls through which they are migrated
    * - If `usesSudoAs===true`: Last call for each entity is always sudo.sudoAs
    * - If `usesSudoAs===true`: There is only one sudo.sudoAs call per entity
@@ -165,7 +165,7 @@ export abstract class BaseMigration<T> {
     const failedIds: number[] = []
     batch.forEach((entity, i) => {
       const entityId = parseInt(entity.id)
-      if (i >= numberOfMigratedEntites || (usesSudoAs && sudoAsDoneEvents[i].data[0].isFalse)) {
+      if (i >= numberOfMigratedEntites || (usesSudoAs && sudoAsDoneEvents[i].data[0].isErr)) {
         failedIds.push(entityId)
         this.failedMigrations.add(entityId)
       }
@@ -173,9 +173,7 @@ export abstract class BaseMigration<T> {
 
     if (batchInterruptedEvent) {
       this.logger.error(
-        `Batch interrupted at call ${numberOfSuccesfulCalls}: ${this.api.formatDispatchError(
-          batchInterruptedEvent.data[1]
-        )}`
+        `Batch interrupted at call ${numberOfSuccesfulCalls}: ${batchInterruptedEvent.data[1].asModule.toHuman()}`
       )
     }
 
