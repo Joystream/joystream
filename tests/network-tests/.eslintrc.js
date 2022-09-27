@@ -8,5 +8,6 @@ module.exports = {
     'new-cap': 'off',
     // Disabled because of the false positive bug: https://github.com/eslint/eslint/issues/11899
     'require-atomic-updates': 'off',
+    'ignoreVoid': true,
   },
 }

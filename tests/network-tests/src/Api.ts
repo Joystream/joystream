@@ -20,7 +20,7 @@ import {
   BlockNumber,
   BlockHash,
   LockIdentifier,
-  AuthorityId,
+  AccountId32,
 } from '@polkadot/types/interfaces'
 import { ITuple } from '@polkadot/types-codec/interfaces'
 import {
@@ -31,7 +31,6 @@ import {
   PalletProposalsEngineProposalParameters as ProposalParameters,
   PalletContentChannelBagWitness,
   PalletStakingForcing,
-  PalletBalancesAccountData,
   SpConsensusBabeAppPublic,
 } from '@polkadot/types/lookup'
 
@@ -316,12 +315,16 @@ export class Api {
     return this.api.consts.babe.expectedBlockTime
   }
 
-  public async getAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
+  public async getBabeAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
     return await this.api.query.babe.authorities()
   }
 
-  public async getNextAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
+  public async getNextBabeAuthorities(): Promise<Vec<ITuple<[SpConsensusBabeAppPublic, u64]>>> {
     return await this.api.query.babe.nextAuthorities()
+  }
+
+  public async getSessionAuthorities(): Promise<Vec<AccountId32>> {
+    return await this.api.query.session.validators()
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {

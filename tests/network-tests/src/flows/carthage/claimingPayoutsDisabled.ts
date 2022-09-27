@@ -2,7 +2,7 @@ import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import { FlowProps } from 'src/Flow'
 import { BN } from 'bn.js'
-import { expect } from 'chai'
+import { assert } from 'chai'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { ClaimingPayoutStakersSucceedsFixture } from 'src/fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 
@@ -20,7 +20,7 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
 
   // get authorities
-  const authorities = api.getAuthorities()
+  const authorities = (await api.getSessionAuthorities()).map((account) => account.toString())
 
   const previousBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
@@ -51,9 +51,9 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
 
   const currentBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
-  const result = previousBalances
-    .map((past, i) => past == currentBalances[i])
-    .reduce((accumulator, iter) => iter && accumulator, true)
-
-  expect(result).to.be.true
+  assert(
+    previousBalances
+      .map((past, i) => past === currentBalances[i])
+      .reduce((accumulator, iter) => iter && accumulator, true)
+  )
 }
