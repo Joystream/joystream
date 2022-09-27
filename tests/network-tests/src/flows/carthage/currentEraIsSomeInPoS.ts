@@ -1,6 +1,6 @@
 import { extendDebug } from 'src/Debugger'
 import { FlowProps } from 'src/Flow'
-import { expect } from 'chai'
+import { assert } from 'chai'
 
 export default async function currentEraIsSomeInPoS({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: current era era must be some in NPoS')
@@ -8,8 +8,8 @@ export default async function currentEraIsSomeInPoS({ api, query, env }: FlowPro
   api.enableDebugTxLogs()
 
   const forceEra = await api.getForceEra()
-  expect(forceEra.isForceNew).to.be.true
+  assert(forceEra.isForceNew)
 
   const currentEra = await api.getCurrentEra()
-  expect(currentEra.isSome).to.be.true
+  assert(currentEra.isSome)
 }

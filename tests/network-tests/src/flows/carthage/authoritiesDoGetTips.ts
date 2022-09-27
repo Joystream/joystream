@@ -2,7 +2,7 @@ import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import BN from 'bn.js'
 import { FlowProps } from 'src/Flow'
-import { expect } from 'chai'
+import { assert } from 'chai'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 
 export default async function authoritiesDoGetTips({ api, query, env }: FlowProps): Promise<void> {
@@ -34,9 +34,11 @@ export default async function authoritiesDoGetTips({ api, query, env }: FlowProp
 
   const currentFreeBalances = await Promise.all(authorities.map((account) => api.getBalance(account)))
 
-  expect(
+  assert(
     currentFreeBalances
       .map((currentBalance, i) => currentBalance > initialFreeBalances[i])
       .reduce((val: boolean, acc: boolean) => val && acc, true)
-  ).to.be.true
+  )
+
+
 }
