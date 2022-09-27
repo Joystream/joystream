@@ -1,5 +1,5 @@
 use crate::{
-    ApplicationId, BalanceOf, Config, Instance, Opening, OpeningId, OpeningType, StakePolicy,
+    ApplicationId, BalanceOf, Config, Instance, OpeningId, OpeningOf, OpeningType, StakePolicy,
     Worker, WorkerId,
 };
 
@@ -61,7 +61,7 @@ pub(crate) fn ensure_stake_for_opening_type<T: Config<I>, I: Instance>(
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Config<I>, I: Instance>(
     opening_id: OpeningId,
-) -> Result<Opening<T::BlockNumber, BalanceOf<T>>, Error<T, I>> {
+) -> Result<OpeningOf<T>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
         Error::<T, I>::OpeningDoesNotExist
@@ -235,7 +235,7 @@ pub(crate) fn ensure_valid_reward_per_block<T: Config<I>, I: Instance>(
 
 // Check application: verifies that proposed stake is enough for the opening.
 pub(crate) fn ensure_application_stake_match_opening<T: Config<I>, I: Instance>(
-    opening: &Opening<T::BlockNumber, BalanceOf<T>>,
+    opening: &OpeningOf<T>,
     stake_parameters: &StakeParameters<T::AccountId, BalanceOf<T>>,
 ) -> DispatchResult {
     ensure!(
@@ -253,15 +253,4 @@ pub(crate) fn ensure_worker_has_recurring_reward<T: Config<I>, I: Instance>(
     worker
         .reward_per_block
         .map_or(Err(Error::<T, I>::WorkerHasNoReward.into()), |_| Ok(()))
-}
-
-// Validates storage text.
-pub(crate) fn ensure_worker_role_storage_text_is_valid<T: Config<I>, I: Instance>(
-    text: &[u8],
-) -> DispatchResult {
-    ensure!(
-        text.len() as u16 <= <crate::WorkerStorageSize>::get(),
-        Error::<T, I>::WorkerStorageValueTooLong
-    );
-    Ok(())
 }

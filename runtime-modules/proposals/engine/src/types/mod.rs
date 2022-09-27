@@ -3,7 +3,7 @@
 
 #![warn(missing_docs)]
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::dispatch::DispatchResult;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
@@ -24,7 +24,7 @@ pub use proposal_statuses::{
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum VoteKind {
     /// Pass, an alternative or a ranking, for binary, multiple choice
     /// and ranked choice propositions, respectively.
@@ -48,7 +48,7 @@ impl Default for VoteKind {
 
 /// Proposal parameters required to manage proposal risk.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct ProposalParameters<BlockNumber, Balance> {
     /// During this period, votes can be accepted
     pub voting_period: BlockNumber,
@@ -79,7 +79,7 @@ pub struct ProposalParameters<BlockNumber, Balance> {
 
 /// Contains current voting results
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct VotingResults {
     /// 'Abstain' votes counter
     pub abstentions: u32,
@@ -118,7 +118,7 @@ impl VotingResults {
 
 /// 'Proposal' contains information necessary for the proposal frame_system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposals parameter, characterize different proposal types.
     pub parameters: ProposalParameters<BlockNumber, Balance>,

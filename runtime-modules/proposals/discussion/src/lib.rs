@@ -35,7 +35,7 @@
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
 //!             let thread_mode = ThreadMode::Open;
-//!             <discussions::Module<T>>::ensure_can_create_thread(&thread_mode)?;
+//!             <discussions::Module<T>>::ensure_thread_mode_ok(&thread_mode)?;
 //!             <discussions::Module<T>>::create_thread(author_id, thread_mode)?;
 //!         }
 //!     }
@@ -56,6 +56,8 @@ mod types;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use codec::MaxEncodedLen;
+
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Currency;
@@ -65,6 +67,7 @@ use frame_support::{
 };
 use sp_runtime::traits::{AccountIdConversion, Saturating, Zero};
 use sp_std::clone::Clone;
+use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
@@ -72,7 +75,7 @@ use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
-use common::MemberId;
+use common::{MemberId, MembershipTypes};
 use types::*;
 
 pub use types::ThreadMode;
@@ -102,7 +105,7 @@ decl_event!(
         PostUpdated(PostId, MemberId, ThreadId, Vec<u8>),
 
         /// Emits on thread mode change.
-        ThreadModeChanged(ThreadId, ThreadMode<MemberId>, MemberId),
+        ThreadModeChanged(ThreadId, ThreadMode<BTreeSet<MemberId>>, MemberId),
 
         /// Emits on post deleted
         PostDeleted(MemberId, ThreadId, PostId, bool),
@@ -136,10 +139,10 @@ pub trait Config:
     >;
 
     /// Discussion thread Id type
-    type ThreadId: From<u64> + Into<u64> + Parameter + Default + Copy;
+    type ThreadId: From<u64> + Into<u64> + Parameter + Default + Copy + MaxEncodedLen;
 
     /// Post Id type
-    type PostId: From<u64> + Parameter + Default + Copy;
+    type PostId: From<u64> + Parameter + Default + Copy + MaxEncodedLen;
 
     /// Defines author list size limit for the Closed discussion.
     type MaxWhiteListSize: Get<u32>;
@@ -191,7 +194,7 @@ decl_error! {
 }
 
 // Storage for the proposals discussion module
-decl_storage! {
+decl_storage! { generate_storage_info
     pub trait Store for Module<T: Config> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
         pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
@@ -405,24 +408,13 @@ decl_module! {
             origin,
             member_id: MemberId<T>,
             thread_id : T::ThreadId,
-            mode : ThreadMode<MemberId<T>>
+            mode : ThreadMode<BTreeSet<<T as MembershipTypes>::MemberId>>
         ) {
             T::AuthorOriginValidator::ensure_member_controller_account_origin(origin.clone(), member_id)?;
 
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
 
-            if let ThreadMode::Closed(ref list) = mode{
-                ensure!(
-                    list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
-                    Error::<T>::MaxWhiteListSizeExceeded
-                );
-                for member_id in list {
-                    ensure!(
-                        T::MembershipInfoProvider::controller_account_id(*member_id).is_ok(),
-                        Error::<T>::WhitelistedMemberDoesNotExist
-                    )
-                }
-            }
+            let thread_mode = Self::ensure_thread_mode_ok(&mode)?;
 
             let thread = Self::thread_by_id(&thread_id);
 
@@ -436,7 +428,7 @@ decl_module! {
             // mutation
 
             <ThreadById<T>>::mutate(thread_id, |thread| {
-                thread.mode = mode.clone();
+                thread.mode = thread_mode;
             });
 
             Self::deposit_event(RawEvent::ThreadModeChanged(thread_id, mode, member_id));
@@ -449,9 +441,9 @@ impl<T: Config> Module<T> {
     /// times in a row by the same author.
     pub fn create_thread(
         thread_author_id: MemberId<T>,
-        mode: ThreadMode<MemberId<T>>,
+        mode: ThreadMode<BTreeSet<<T as MembershipTypes>::MemberId>>,
     ) -> Result<T::ThreadId, DispatchError> {
-        Self::ensure_can_create_thread(&mode)?;
+        let thread_mode = Self::ensure_thread_mode_ok(&mode)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
@@ -459,7 +451,7 @@ impl<T: Config> Module<T> {
         let new_thread = DiscussionThread {
             activated_at: Self::current_block(),
             author_id: thread_author_id,
-            mode,
+            mode: thread_mode,
         };
 
         // mutation
@@ -472,18 +464,28 @@ impl<T: Config> Module<T> {
         Ok(thread_id)
     }
 
-    /// Ensures thread can be created.
-    /// Checks:
-    /// - max allowed authors for the Closed thread mode
-    pub fn ensure_can_create_thread(mode: &ThreadMode<MemberId<T>>) -> DispatchResult {
-        if let ThreadMode::Closed(list) = mode {
-            ensure!(
-                list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
-                Error::<T>::MaxWhiteListSizeExceeded
-            );
-        }
+    /// Ensures thread mode is valid and converts it to a thread mode with bounded whitelist.
+    pub fn ensure_thread_mode_ok(
+        mode: &ThreadMode<BTreeSet<<T as MembershipTypes>::MemberId>>,
+    ) -> Result<ThreadMode<ThreadWhitelistOf<T>>, DispatchError> {
+        let thread_mode = match mode {
+            ThreadMode::Open => ThreadMode::Open,
+            ThreadMode::Closed(whitelist) => {
+                let whiltelist_bounded: ThreadWhitelistOf<T> = whitelist
+                    .clone()
+                    .try_into()
+                    .map_err(|_| Error::<T>::MaxWhiteListSizeExceeded)?;
+                for member_id in whiltelist_bounded.as_ref() {
+                    ensure!(
+                        T::MembershipInfoProvider::controller_account_id(*member_id).is_ok(),
+                        Error::<T>::WhitelistedMemberDoesNotExist
+                    )
+                }
+                ThreadMode::Closed(whiltelist_bounded)
+            }
+        };
 
-        Ok(())
+        Ok(thread_mode)
     }
 }
 

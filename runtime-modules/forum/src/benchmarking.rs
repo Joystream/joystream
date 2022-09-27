@@ -50,7 +50,6 @@ pub type BalanceOf<T> = <T as balances::Config>::Balance;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 const MAX_POSTS: u32 = 500;
-const MAX_THREADS: u32 = 500;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
@@ -377,11 +376,11 @@ benchmarks! {
                 num_direct_threads: 0,
                 num_direct_moderators: 0,
                 parent_category_id,
-                sticky_thread_ids: vec![],
+                sticky_thread_ids: BoundedBTreeSet::default(),
             };
 
             let category_id = Module::<T>::next_category_id() - T::CategoryId::one();
-            assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+            assert!(Module::<T>::category_by_id(category_id) == new_category);
             assert_eq!(<Module<T>>::category_counter(), category_counter + T::CategoryId::one());
 
             if let (Some(parent_category), Some(parent_category_id)) = (parent_category, parent_category_id) {
@@ -427,10 +426,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators,
             parent_category_id: None,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert!(<CategoryByModerator<T>>::contains_key(category_id, ModeratorId::<T>::from((moderator_id).try_into().unwrap())));
 
         assert_last_event::<T>(
@@ -473,10 +472,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators,
             parent_category_id: None,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert!(!<CategoryByModerator<T>>::contains_key(category_id, ModeratorId::<T>::from((moderator_id).try_into().unwrap())));
 
         assert_last_event::<T>(
@@ -512,10 +511,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 0,
             parent_category_id,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert_last_event::<T>(
             RawEvent::CategoryArchivalStatusUpdated(
                 category_id,
@@ -557,10 +556,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 1,
             parent_category_id,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert_last_event::<T>(
             RawEvent::CategoryArchivalStatusUpdated(
                 category_id,
@@ -599,10 +598,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 0,
             parent_category_id,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert_last_event::<T>(
             RawEvent::CategoryTitleUpdated(
                 category_id,
@@ -648,10 +647,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 1,
             parent_category_id,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert_last_event::<T>(
             RawEvent::CategoryTitleUpdated(
                 category_id,
@@ -690,10 +689,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 0,
             parent_category_id,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert_last_event::<T>(
             RawEvent::CategoryDescriptionUpdated(
                 category_id,
@@ -739,10 +738,10 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 1,
             parent_category_id,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
-        assert_eq!(Module::<T>::category_by_id(category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == new_category);
         assert_last_event::<T>(
             RawEvent::CategoryDescriptionUpdated(
                 category_id,
@@ -770,7 +769,7 @@ benchmarks! {
     verify {
         let text = vec![0u8].repeat(MAX_BYTES as usize);
 
-        let new_category: Category<T::CategoryId, T::ThreadId, <T as frame_system::Config>::Hash> = Category {
+        let new_category = CategoryOf::<T> {
             title_hash: T::calculate_hash(text.as_slice()),
             description_hash: T::calculate_hash(text.as_slice()),
             archived: false,
@@ -778,7 +777,7 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 0,
             parent_category_id: None,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
         if let Some(parent_category_id) = parent_category_id {
@@ -816,7 +815,7 @@ benchmarks! {
     verify {
         let text = vec![0u8].repeat(MAX_BYTES as usize);
 
-        let new_category: Category<T::CategoryId, T::ThreadId, <T as frame_system::Config>::Hash> = Category {
+        let new_category = CategoryOf::<T> {
             title_hash: T::calculate_hash(text.as_slice()),
             description_hash: T::calculate_hash(text.as_slice()),
             archived: false,
@@ -824,7 +823,7 @@ benchmarks! {
             num_direct_threads: 0,
             num_direct_moderators: 1,
             parent_category_id: None,
-            sticky_thread_ids: vec![],
+            sticky_thread_ids: BoundedBTreeSet::default(),
         };
 
         if let Some(parent_category_id) = parent_category_id {
@@ -875,7 +874,7 @@ benchmarks! {
 
         // Ensure category num_direct_threads updated successfully.
         category.num_direct_threads+=1;
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
+        assert!(Module::<T>::category_by_id(category_id) == category);
 
         // Ensure initial post added successfully
         let new_post = Post {
@@ -1002,7 +1001,7 @@ benchmarks! {
 
         // Ensure category num_direct_threads updated successfully.
         category.num_direct_threads-=1;
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
+        assert!(Module::<T>::category_by_id(category_id) == category);
 
         // Ensure thread was successfully deleted
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
@@ -1063,8 +1062,8 @@ benchmarks! {
         category.num_direct_threads-=1;
         new_category.num_direct_threads+=1;
 
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
-        assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == category);
+        assert!(Module::<T>::category_by_id(new_category_id) == new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(
@@ -1140,8 +1139,8 @@ benchmarks! {
         category.num_direct_threads-=1;
         new_category.num_direct_threads+=1;
 
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
-        assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
+        assert!(Module::<T>::category_by_id(category_id) == category);
+        assert!(Module::<T>::category_by_id(new_category_id) == new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
         assert_eq!(
@@ -1204,7 +1203,7 @@ benchmarks! {
 
         // Ensure category num_direct_threads updated successfully.
         category.num_direct_threads-=1;
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
+        assert!(Module::<T>::category_by_id(category_id) == category);
 
         // Ensure thread was successfully deleted
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
@@ -1273,7 +1272,7 @@ benchmarks! {
 
         // Ensure category num_direct_threads updated successfully.
         category.num_direct_threads-=1;
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
+        assert!(Module::<T>::category_by_id(category_id) == category);
 
         // Ensure thread was successfully deleted
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
@@ -1577,7 +1576,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_THREADS;
+        let j in 0 .. T::MaxStickiedThreads::get();
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1585,25 +1584,23 @@ benchmarks! {
         // Create threads
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
-        let stickied_ids: Vec<T::ThreadId> = (0..j)
+        let stickied_ids: BTreeSet<T::ThreadId> = (0..j)
             .into_iter()
             .map(|_| create_new_thread::<T>(
                 caller_id.clone(), forum_user_id.saturated_into(), category_id,
                 text.clone(), text.clone()
             )).collect();
 
-        let mut category =  Module::<T>::category_by_id(category_id);
-
     }: set_stickied_threads(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, stickied_ids.clone())
     verify {
+        let category = Module::<T>::category_by_id(category_id);
         // Ensure category stickied_ids updated successfully.
-        category.sticky_thread_ids = stickied_ids;
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
+        assert_eq!(BTreeSet::<_>::from(category.sticky_thread_ids), stickied_ids);
 
         assert_last_event::<T>(
             RawEvent::CategoryStickyThreadUpdate(
                 category_id,
-                category.sticky_thread_ids,
+                stickied_ids,
                 PrivilegedActor::Lead
             ).into()
         );
@@ -1616,7 +1613,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_THREADS;
+        let j in 0 .. T::MaxStickiedThreads::get();
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1624,7 +1621,7 @@ benchmarks! {
         // Create threads
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
-        let stickied_ids: Vec<T::ThreadId> = (0..j)
+        let stickied_ids: BTreeSet<T::ThreadId> = (0..j)
             .into_iter()
             .map(|_| create_new_thread::<T>(
                 caller_id.clone(), forum_user_id.saturated_into(), category_id,
@@ -1637,19 +1634,16 @@ benchmarks! {
         Module::<T>::update_category_membership_of_moderator(
             RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
         ).unwrap();
-
-        let mut category =  Module::<T>::category_by_id(category_id);
-
     }: set_stickied_threads(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, stickied_ids.clone())
     verify {
+        let category =  Module::<T>::category_by_id(category_id);
         // Ensure category stickied_ids updated successfully.
-        category.sticky_thread_ids = stickied_ids;
-        assert_eq!(Module::<T>::category_by_id(category_id), category);
+        assert_eq!(BTreeSet::from(category.sticky_thread_ids), stickied_ids);
 
         assert_last_event::<T>(
             RawEvent::CategoryStickyThreadUpdate(
                 category_id,
-                category.sticky_thread_ids,
+                stickied_ids,
                 PrivilegedActor::Moderator(moderator_id)
             ).into()
         );

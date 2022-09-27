@@ -4504,6 +4504,7 @@ dependencies = [
  "sp-std",
  "strum 0.19.5",
  "strum_macros 0.19.4",
+ "variant_count",
 ]
 
 [[package]]
@@ -9326,6 +9327,16 @@ checksum = "2209b78d1249f7e6f3293657c9779fe31ced465df091bbd433a1cf88e916ec55"
 dependencies = [
  "ctor",
  "version_check",
+]
+
+[[package]]
+name = "variant_count"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aae2faf80ac463422992abf4de234731279c058aaf33171ca70277c98406b124"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

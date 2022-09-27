@@ -144,9 +144,9 @@ mod tests;
 pub mod weights;
 pub use weights::WeightInfo;
 
-use codec::Decode;
+use codec::{Decode, MaxEncodedLen};
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
-use frame_support::storage::IterableStorageMap;
+use frame_support::storage::{bounded_vec::BoundedVec, IterableStorageMap};
 use frame_support::traits::{Get, LockIdentifier};
 use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::{
@@ -192,7 +192,7 @@ pub trait Config:
     type TotalVotersCounter: VotersParameters;
 
     /// Proposal Id type
-    type ProposalId: From<u32> + Parameter + Default + Copy;
+    type ProposalId: From<u32> + Parameter + Default + Copy + MaxEncodedLen;
 
     /// Provides stake logic implementation.
     type StakingHandler: StakingHandler<
@@ -216,6 +216,9 @@ pub trait Config:
 
     /// Defines max simultaneous active proposals number.
     type MaxActiveProposalLimit: Get<u32>;
+
+    /// Defines max size of encoded dispatchable call (to be executed through a proposal)
+    type DispatchableCallCodeMaxLen: Get<u32>;
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
     type DispatchableCallCode: Parameter
@@ -361,11 +364,14 @@ decl_error! {
 
         /// Staking account doesn't belong to a member.
         InvalidStakingAccountForMember,
+
+        /// The size of encoded dispatchable call to be executed by the proposal is too big
+        MaxDispatchableCallCodeSizeExceeded,
     }
 }
 
 // Storage for the proposals engine module
-decl_storage! {
+decl_storage! { generate_storage_info
     pub trait Store for Module<T: Config> as ProposalEngine{
         /// Map proposal by its id.
         pub Proposals get(fn proposals): map hasher(blake2_128_concat)
@@ -376,7 +382,7 @@ decl_storage! {
 
         /// Map proposal executable code by proposal id.
         pub DispatchableCallCode get(fn proposal_codes): map hasher(blake2_128_concat)
-            T::ProposalId => Vec<u8>;
+            T::ProposalId => BoundedVec<u8, T::DispatchableCallCodeMaxLen>;
 
         /// Count of active proposals.
         pub ActiveProposalCount get(fn active_proposal_count): u32;
@@ -600,6 +606,12 @@ impl<T: Config> Module<T> {
             creation_params.proposer_id,
         )?;
 
+        let encoded_dispatchable_call_code: BoundedVec<u8, T::DispatchableCallCodeMaxLen> =
+            creation_params
+                .encoded_dispatchable_call_code
+                .try_into()
+                .map_err(|_| Error::<T>::MaxDispatchableCallCodeSizeExceeded)?;
+
         //
         // == MUTATION SAFE ==
         //
@@ -627,10 +639,7 @@ impl<T: Config> Module<T> {
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
-        <DispatchableCallCode<T>>::insert(
-            proposal_id,
-            creation_params.encoded_dispatchable_call_code,
-        );
+        <DispatchableCallCode<T>>::insert(proposal_id, encoded_dispatchable_call_code);
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
 

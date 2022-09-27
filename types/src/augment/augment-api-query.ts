@@ -2,10 +2,10 @@
 /* eslint-disable */
 
 import type { ApiTypes } from '@polkadot/api-base/types';
-import type { BTreeMap, Bytes, Null, Option, U8aFixed, Vec, WrapperKeepOpaque, WrapperOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
+import type { BTreeMap, Bytes, Null, Option, U8aFixed, Vec, WrapperKeepOpaque, WrapperOpaque, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportWeightsPerDispatchClassU64, FrameSystemAccountInfo, FrameSystemEventRecord, FrameSystemLastRuntimeUpgradeInfo, FrameSystemPhase, JoystreamNodeRuntimeSessionKeys, PalletAuthorshipUncleEntryItem, PalletBagsListListBag, PalletBagsListListNode, PalletBalancesAccountData, PalletBalancesBalanceLock, PalletBalancesReleases, PalletBalancesReserveData, PalletBountyBountyActor, PalletBountyBountyRecord, PalletBountyContribution, PalletBountyEntryRecord, PalletConstitutionConstitutionInfo, PalletContentChannelRecord, PalletContentLimitPerPeriod, PalletContentNftCounter, PalletContentNftTypesOpenAuctionBidRecord, PalletContentPermissionsCuratorGroup, PalletContentVideoRecord, PalletCouncilCandidate, PalletCouncilCouncilMember, PalletCouncilCouncilStageUpdate, PalletElectionProviderMultiPhasePhase, PalletElectionProviderMultiPhaseReadySolution, PalletElectionProviderMultiPhaseRoundSnapshot, PalletElectionProviderMultiPhaseSignedSignedSubmission, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumCategory, PalletForumPost, PalletForumThread, PalletGrandpaStoredPendingChange, PalletGrandpaStoredState, PalletImOnlineBoundedOpaqueNetworkState, PalletImOnlineSr25519AppSr25519Public, PalletMembershipMembershipObject, PalletMembershipStakingAccountMemberBinding, PalletMultisigMultisig, PalletProjectTokenAccountData, PalletProjectTokenTokenData, PalletProposalsDiscussionDiscussionPost, PalletProposalsDiscussionDiscussionThread, PalletProposalsEngineProposal, PalletProposalsEngineVoteKind, PalletReferendumCastVote, PalletReferendumReferendumStage, PalletStakingActiveEraInfo, PalletStakingEraRewardPoints, PalletStakingExposure, PalletStakingForcing, PalletStakingNominations, PalletStakingReleases, PalletStakingRewardDestination, PalletStakingSlashingSlashingSpans, PalletStakingSlashingSpanRecord, PalletStakingStakingLedger, PalletStakingUnappliedSlash, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageBagRecord, PalletStorageDataObject, PalletStorageDistributionBucketFamilyRecord, PalletStorageDistributionBucketRecord, PalletStorageDynamicBagCreationPolicy, PalletStorageDynamicBagType, PalletStorageStorageBucketRecord, PalletTransactionPaymentReleases, PalletVestingReleases, PalletVestingVestingInfo, PalletWorkingGroupGroupWorker, PalletWorkingGroupJobApplication, PalletWorkingGroupOpening, SpAuthorityDiscoveryAppPublic, SpConsensusBabeAppPublic, SpConsensusBabeBabeEpochConfiguration, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusBabeDigestsPreDigest, SpCoreCryptoKeyTypeId, SpNposElectionsElectionScore, SpRuntimeDigest, SpStakingOffenceOffenceDetails } from '@polkadot/types/lookup';
+import type { FrameSupportWeightsPerDispatchClassU64, FrameSystemAccountInfo, FrameSystemEventRecord, FrameSystemLastRuntimeUpgradeInfo, FrameSystemPhase, JoystreamNodeRuntimeSessionKeys, PalletAuthorshipUncleEntryItem, PalletBagsListListBag, PalletBagsListListNode, PalletBalancesAccountData, PalletBalancesBalanceLock, PalletBalancesReleases, PalletBalancesReserveData, PalletBountyBountyActor, PalletBountyBountyRecord, PalletBountyContribution, PalletBountyEntryRecord, PalletConstitutionConstitutionInfo, PalletContentChannelRecord, PalletContentLimitPerPeriod, PalletContentNftCounter, PalletContentNftTypesOpenAuctionBidRecord, PalletContentPermissionsCuratorGroupCuratorGroupRecord, PalletContentVideoRecord, PalletCouncilCandidate, PalletCouncilCouncilMember, PalletCouncilCouncilStageUpdate, PalletElectionProviderMultiPhasePhase, PalletElectionProviderMultiPhaseReadySolution, PalletElectionProviderMultiPhaseRoundSnapshot, PalletElectionProviderMultiPhaseSignedSignedSubmission, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumCategory, PalletForumPost, PalletForumThread, PalletGrandpaStoredPendingChange, PalletGrandpaStoredState, PalletImOnlineBoundedOpaqueNetworkState, PalletImOnlineSr25519AppSr25519Public, PalletMembershipMembershipObject, PalletMembershipStakingAccountMemberBinding, PalletMultisigMultisig, PalletProjectTokenAccountData, PalletProjectTokenTokenData, PalletProposalsDiscussionDiscussionPost, PalletProposalsDiscussionDiscussionThread, PalletProposalsEngineProposal, PalletProposalsEngineVoteKind, PalletReferendumCastVote, PalletReferendumReferendumStage, PalletStakingActiveEraInfo, PalletStakingEraRewardPoints, PalletStakingExposure, PalletStakingForcing, PalletStakingNominations, PalletStakingReleases, PalletStakingRewardDestination, PalletStakingSlashingSlashingSpans, PalletStakingSlashingSpanRecord, PalletStakingStakingLedger, PalletStakingUnappliedSlash, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageBagRecord, PalletStorageDataObject, PalletStorageDistributionBucketFamilyRecord, PalletStorageDistributionBucketRecord, PalletStorageDynamicBagCreationPolicy, PalletStorageDynamicBagType, PalletStorageStorageBucketRecord, PalletTransactionPaymentReleases, PalletVestingReleases, PalletVestingVestingInfo, PalletWorkingGroupGroupWorker, PalletWorkingGroupJobApplication, PalletWorkingGroupOpening, SpAuthorityDiscoveryAppPublic, SpConsensusBabeAppPublic, SpConsensusBabeBabeEpochConfiguration, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusBabeDigestsPreDigest, SpCoreCryptoKeyTypeId, SpNposElectionsElectionScore, SpRuntimeDigest, SpStakingOffenceOffenceDetails } from '@polkadot/types/lookup';
 import type { Observable } from '@polkadot/types/types';
 
 declare module '@polkadot/api-base/types/storage' {
@@ -235,7 +235,7 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       channelStateBloatBondValue: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       commitment: AugmentedQuery<ApiType, () => Observable<H256>, []>;
-      curatorGroupById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentPermissionsCuratorGroup>, [u64]>;
+      curatorGroupById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentPermissionsCuratorGroupCuratorGroupRecord>, [u64]>;
       /**
        * Global daily NFT counter.
        **/
@@ -260,10 +260,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Max auction extension period
        **/
       maxAuctionExtensionPeriod: AugmentedQuery<ApiType, () => Observable<u32>, []>;
-      /**
-       * Max nft auction whitelist length
-       **/
-      maxAuctionWhiteListLength: AugmentedQuery<ApiType, () => Observable<u32>, []>;
       /**
        * Max bid lock duration
        **/
@@ -365,19 +361,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     council: {
       /**
@@ -454,19 +442,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     electionProviderMultiPhase: {
       /**
@@ -613,19 +593,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     gatewayWorkingGroup: {
       /**
@@ -663,19 +635,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     grandpa: {
       /**
@@ -747,6 +711,8 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       receivedHeartbeats: AugmentedQuery<ApiType, (arg1: u32 | AnyNumber | Uint8Array, arg2: u32 | AnyNumber | Uint8Array) => Observable<Option<WrapperOpaque<PalletImOnlineBoundedOpaqueNetworkState>>>, [u32, u32]>;
     };
+    joystreamUtility: {
+    };
     members: {
       /**
        * Initial invitation balance for the invited member.
@@ -759,7 +725,7 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Registered unique handles hash and their mapping to their owner.
        **/
-      memberIdByHandleHash: AugmentedQuery<ApiType, (arg: Bytes | string | Uint8Array) => Observable<u64>, [Bytes]>;
+      memberIdByHandleHash: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<u64>, [H256]>;
       /**
        * Mapping of member's id to their membership profile.
        **/
@@ -818,19 +784,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     multisig: {
       calls: AugmentedQuery<ApiType, (arg: U8aFixed | string | Uint8Array) => Observable<Option<ITuple<[WrapperKeepOpaque<Call>, AccountId32, u128]>>>, [U8aFixed]>;
@@ -894,19 +852,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     operationsWorkingGroupBeta: {
       /**
@@ -944,19 +894,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     operationsWorkingGroupGamma: {
       /**
@@ -994,19 +936,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     projectToken: {
       /**
@@ -1433,7 +1367,7 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * "Distribution buckets per bag" number limit.
        **/
-      distributionBucketsPerBagLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      distributionBucketsPerBagLimit: AugmentedQuery<ApiType, () => Observable<u32>, []>;
       /**
        * DynamicBagCreationPolicy by bag type storage map.
        **/
@@ -1457,7 +1391,7 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * "Storage buckets per bag" number limit.
        **/
-      storageBucketsPerBagLimit: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      storageBucketsPerBagLimit: AugmentedQuery<ApiType, () => Observable<u32>, []>;
       /**
        * Defines whether all new uploads blocked
        **/
@@ -1507,19 +1441,11 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Status text hash.
        **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<Bytes>, []>;
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       /**
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-      /**
-       * Maps identifier to corresponding worker storage.
-       **/
-      workerStorage: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Bytes>, [u64]>;
-      /**
-       * Worker storage size upper bound.
-       **/
-      workerStorageSize: AugmentedQuery<ApiType, () => Observable<u16>, []>;
     };
     sudo: {
       /**

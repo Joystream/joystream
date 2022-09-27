@@ -9,7 +9,6 @@ import {
   getWorker,
   inconsistentState,
   perpareString,
-  TIMESTAMPMAX,
   toNumber,
 } from './common'
 import {
@@ -217,7 +216,6 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
   const { event, store } = ctx
   const [categoryId, threadId, postId, memberId, threadMetaBytes, postTextBytes] = new Forum.ThreadCreatedEvent(event)
     .params
-  const eventTime = new Date(event.blockTimestamp)
   const author = new Membership({ id: memberId.toString() })
 
   const { title, tags } = parseThreadMetadata(threadMetaBytes)
@@ -405,9 +403,9 @@ export async function forum_PostAdded({ event, store }: EventContext & StoreCont
 }
 
 export async function forum_CategoryStickyThreadUpdate({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [categoryId, newStickyThreadsIdsVec, privilegedActor] = new Forum.CategoryStickyThreadUpdateEvent(event).params
+  const [categoryId, newStickyThreadsIdsSet, privilegedActor] = new Forum.CategoryStickyThreadUpdateEvent(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
-  const newStickyThreadsIds = newStickyThreadsIdsVec.map((id) => id.toString())
+  const newStickyThreadsIds = Array.from(newStickyThreadsIdsSet.values()).map((id) => id.toString())
   const threadsToSetSticky = await store.getMany(ForumThread, {
     where: { category: { id: categoryId.toString() }, id: In(newStickyThreadsIds) },
   })

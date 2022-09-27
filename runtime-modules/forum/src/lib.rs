@@ -5,10 +5,11 @@
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{burn_from_usable, has_sufficient_balance_for_fees, pay_fee};
+use frame_support::BoundedBTreeSet;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
-use codec::{Codec, Decode, Encode};
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
 pub use frame_support::dispatch::DispatchResult;
 
 use frame_support::{
@@ -49,6 +50,14 @@ type WeightInfoForum<T> = <T as Config>::WeightInfo;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
+
+/// Alias for stckied thread ids (bounded btreeset)
+pub type StickiedThreadIds<T> =
+    BoundedBTreeSet<<T as Config>::ThreadId, <T as Config>::MaxStickiedThreads>;
+
+/// Alias for the category
+pub type CategoryOf<T> =
+    Category<<T as Config>::CategoryId, <T as frame_system::Config>::Hash, StickiedThreadIds<T>>;
 
 /// Alias for the thread
 pub type ThreadOf<T> = Thread<ForumUserId<T>, <T as Config>::CategoryId, RepayableBloatBondOf<T>>;
@@ -92,7 +101,8 @@ pub trait Config:
         + MaybeSerialize
         + PartialEq
         + From<u64>
-        + Into<u64>;
+        + Into<u64>
+        + MaxEncodedLen;
 
     type ThreadId: Parameter
         + Member
@@ -103,7 +113,8 @@ pub trait Config:
         + MaybeSerialize
         + PartialEq
         + From<u64>
-        + Into<u64>;
+        + Into<u64>
+        + MaxEncodedLen;
 
     type PostId: Parameter
         + Member
@@ -114,7 +125,8 @@ pub trait Config:
         + MaybeSerialize
         + PartialEq
         + From<u64>
-        + Into<u64>;
+        + Into<u64>
+        + MaxEncodedLen;
 
     /// Base deposit for any thread (note: thread creation also needs a `PostDeposit` since
     /// creating a thread means also creating a post)
@@ -125,6 +137,9 @@ pub trait Config:
 
     /// Maximum depth for nested categories
     type MaxCategoryDepth: Get<u64>;
+
+    /// Maximum number of category's stickied threads
+    type MaxStickiedThreads: Get<u32>;
 
     /// Maximum number of blocks before a post can be erased by anyone
     type PostLifeTime: Get<Self::BlockNumber>;
@@ -167,7 +182,9 @@ pub trait StorageLimits {
 
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
+#[derive(
+    Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo, MaxEncodedLen,
+)]
 pub struct Post<ForumUserId, ThreadId, Hash, BlockNumber, RepayableBloatBond> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
@@ -187,7 +204,7 @@ pub struct Post<ForumUserId, ThreadId, Hash, BlockNumber, RepayableBloatBond> {
 
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo, MaxEncodedLen)]
 pub struct Thread<ForumUserId, CategoryId, RepayableBloatBond> {
     /// Category in which this thread lives
     pub category_id: CategoryId,
@@ -204,8 +221,8 @@ pub struct Thread<ForumUserId, CategoryId, RepayableBloatBond> {
 
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct Category<CategoryId, ThreadId, Hash> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct Category<CategoryId, Hash, StickiedThreadIds> {
     /// Title
     pub title_hash: Hash,
 
@@ -227,7 +244,7 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     pub parent_category_id: Option<CategoryId>,
 
     /// Sticky threads list
-    pub sticky_thread_ids: Vec<ThreadId>,
+    pub sticky_thread_ids: StickiedThreadIds,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo)]
@@ -250,11 +267,9 @@ impl<T: Config> core::fmt::Debug for PrivilegedActor<T> {
 
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
-type CategoryTreePath<CategoryId, ThreadId, Hash> =
-    Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>;
+type CategoryTreePath<T> = Vec<(<T as Config>::CategoryId, CategoryOf<T>)>;
 
-type CategoryTreePathArg<CategoryId, ThreadId, Hash> =
-    [(CategoryId, Category<CategoryId, ThreadId, Hash>)];
+type CategoryTreePathArg<T> = [(<T as Config>::CategoryId, CategoryOf<T>)];
 
 decl_error! {
     /// Forum predefined errors
@@ -334,9 +349,6 @@ decl_error! {
         /// No permissions to update category.
         ModeratorCantUpdateCategory,
 
-        /// Duplicates for the stickied thread id collection.
-        StickiedThreadIdsDuplicates,
-
         // Error for limited size
 
         /// Maximum size of storage map exceeded
@@ -344,13 +356,16 @@ decl_error! {
 
         /// Category path len should be greater than zero
         PathLengthShouldBeGreaterThanZero,
+
+        /// Maximum number of stickied threads per category exceeded
+        MaxNumberOfStickiedThreadsExceeded,
     }
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Forum_1_1 {
         /// Map category identifier to corresponding category.
-        pub CategoryById get(fn category_by_id): map hasher(blake2_128_concat) T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
+        pub CategoryById get(fn category_by_id): map hasher(blake2_128_concat) T::CategoryId => CategoryOf<T>;
 
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(fn next_category_id) config(): T::CategoryId;
@@ -442,7 +457,7 @@ decl_event!(
         PostTextUpdated(PostId, ForumUserId, CategoryId, ThreadId, Vec<u8>),
 
         /// Sticky thread updated for category
-        CategoryStickyThreadUpdate(CategoryId, Vec<ThreadId>, PrivilegedActor),
+        CategoryStickyThreadUpdate(CategoryId, BTreeSet<ThreadId>, PrivilegedActor),
 
         /// An moderator ability to moderate a category and its subcategories updated
         CategoryMembershipOfModeratorUpdated(ModeratorId, CategoryId, bool),
@@ -548,7 +563,7 @@ decl_module! {
                 num_direct_threads: 0,
                 num_direct_moderators: 0,
                 parent_category_id,
-                sticky_thread_ids: vec![],
+                sticky_thread_ids: BoundedBTreeSet::default(),
             };
 
             // Insert category in map
@@ -1264,9 +1279,13 @@ decl_module! {
                 stickied_ids.len().saturated_into(),
             )
         )]
-        fn set_stickied_threads(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> DispatchResult {
+        fn set_stickied_threads(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, stickied_ids: BTreeSet<T::ThreadId>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
 
+            let stickied_ids_bounded: StickiedThreadIds<T> = stickied_ids
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::MaxNumberOfStickiedThreadsExceeded)?;
             Self::ensure_can_set_stickied_threads(account_id, &actor, &category_id, &stickied_ids)?;
 
             //
@@ -1274,7 +1293,7 @@ decl_module! {
             //
 
             // Update category
-            <CategoryById<T>>::mutate(category_id, |category| category.sticky_thread_ids = stickied_ids.clone());
+            <CategoryById<T>>::mutate(category_id, |category| category.sticky_thread_ids = stickied_ids_bounded);
 
             // Generate event
             Self::deposit_event(
@@ -1482,7 +1501,7 @@ impl<T: Config> Module<T> {
     fn ensure_thread_is_mutable(
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<(Category<T::CategoryId, T::ThreadId, T::Hash>, ThreadOf<T>), Error<T>> {
+    ) -> Result<(CategoryOf<T>, ThreadOf<T>), Error<T>> {
         // Make sure thread exists
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
@@ -1645,9 +1664,7 @@ impl<T: Config> Module<T> {
         Ok(thread)
     }
 
-    fn ensure_category_is_mutable(
-        category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+    fn ensure_category_is_mutable(category_id: &T::CategoryId) -> Result<CategoryOf<T>, Error<T>> {
         let category_tree_path = Self::build_category_tree_path(category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
@@ -1656,13 +1673,13 @@ impl<T: Config> Module<T> {
     }
 
     fn ensure_can_mutate_in_path_leaf(
-        category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
+        category_tree_path: &CategoryTreePathArg<T>,
     ) -> Result<(), Error<T>> {
         // Is parent category directly or indirectly deleted or archived category
         ensure!(
             !category_tree_path
                 .iter()
-                .any(|(_, c): &(_, Category<T::CategoryId, T::ThreadId, T::Hash>)| c.archived),
+                .any(|(_, c): &(_, CategoryOf<T>)| c.archived),
             Error::<T>::AncestorCategoryImmutable
         );
 
@@ -1691,7 +1708,7 @@ impl<T: Config> Module<T> {
     /// Build category tree path and validate them
     fn ensure_valid_category_and_build_category_tree_path(
         category_id: &T::CategoryId,
-    ) -> Result<CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<CategoryTreePath<T>, Error<T>> {
         ensure!(
             <CategoryById<T>>::contains_key(category_id),
             Error::<T>::CategoryDoesNotExist
@@ -1714,9 +1731,7 @@ impl<T: Config> Module<T> {
 
     /// Builds path and populates in `path`.
     /// Requires that `category_id` is valid
-    fn build_category_tree_path(
-        category_id: &T::CategoryId,
-    ) -> CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash> {
+    fn build_category_tree_path(category_id: &T::CategoryId) -> CategoryTreePath<T> {
         // Get path from parent to root of category tree.
         let mut category_tree_path = vec![];
 
@@ -1727,10 +1742,7 @@ impl<T: Config> Module<T> {
 
     /// Builds path and populates in `path`.
     /// Requires that `category_id` is valid
-    fn _build_category_tree_path(
-        category_id: &T::CategoryId,
-        path: &mut CategoryTreePath<T::CategoryId, T::ThreadId, T::Hash>,
-    ) {
+    fn _build_category_tree_path(category_id: &T::CategoryId, path: &mut CategoryTreePath<T>) {
         // Grab category
         let category = <CategoryById<T>>::get(*category_id);
 
@@ -1749,7 +1761,7 @@ impl<T: Config> Module<T> {
         account_id: T::AccountId,
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<CategoryOf<T>, Error<T>> {
         // Check actor's role
         Self::ensure_actor_role(&account_id, actor)?;
 
@@ -1786,7 +1798,7 @@ impl<T: Config> Module<T> {
         account_id: &T::AccountId,
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<CategoryOf<T>, Error<T>> {
         // Ensure actor's role
         Self::ensure_actor_role(account_id, actor)?;
 
@@ -1797,9 +1809,9 @@ impl<T: Config> Module<T> {
     fn ensure_can_moderate_category_path(
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+    ) -> Result<CategoryOf<T>, Error<T>> {
         fn check_moderator<T: Config>(
-            category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
+            category_tree_path: &CategoryTreePathArg<T>,
             moderator_id: &ModeratorId<T>,
         ) -> Result<(), Error<T>> {
             for item in category_tree_path {
@@ -1854,9 +1866,7 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn ensure_category_exists(
-        category_id: &T::CategoryId,
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+    fn ensure_category_exists(category_id: &T::CategoryId) -> Result<CategoryOf<T>, Error<T>> {
         ensure!(
             <CategoryById<T>>::contains_key(&category_id),
             Error::<T>::CategoryDoesNotExist
@@ -1868,7 +1878,7 @@ impl<T: Config> Module<T> {
     fn ensure_can_create_category(
         account_id: T::AccountId,
         parent_category_id: &Option<T::CategoryId>,
-    ) -> Result<Option<Category<T::CategoryId, T::ThreadId, T::Hash>>, Error<T>> {
+    ) -> Result<Option<CategoryOf<T>>, Error<T>> {
         // Not signed by forum LEAD
         Self::ensure_is_forum_lead_account(&account_id)?;
 
@@ -1920,7 +1930,7 @@ impl<T: Config> Module<T> {
         forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<(Category<T::CategoryId, T::ThreadId, T::Hash>, ThreadOf<T>), Error<T>> {
+    ) -> Result<(CategoryOf<T>, ThreadOf<T>), Error<T>> {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
@@ -1933,24 +1943,13 @@ impl<T: Config> Module<T> {
         account_id: T::AccountId,
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
-        stickied_ids: &[T::ThreadId],
-    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
+        stickied_ids: &BTreeSet<T::ThreadId>,
+    ) -> Result<CategoryOf<T>, Error<T>> {
         // Ensure actor can moderate the category
         let category = Self::ensure_can_moderate_category(&account_id, actor, category_id)?;
 
         // Ensure all thread id valid and is under the category
-        // Helps to prevent thread ID duplicates.
-        let mut unique_stickied_ids = BTreeSet::<T::ThreadId>::new();
-
-        // Ensure all thread id valid and is under the category
         for thread_id in stickied_ids {
-            // Check for ID duplicates.
-            if unique_stickied_ids.contains(thread_id) {
-                return Err(Error::<T>::StickiedThreadIdsDuplicates);
-            } else {
-                unique_stickied_ids.insert(*thread_id);
-            }
-
             Self::ensure_thread_exists(category_id, thread_id)?;
         }
 

@@ -11,9 +11,8 @@ import {
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import { MemberId, ProposalDiscussionThreadId as ThreadId } from '@joystream/types/primitives'
-import { PalletProposalsDiscussionThreadMode as ThreadMode } from '@polkadot/types/lookup'
+import { PalletProposalsDiscussionThreadModeBTreeSet as ThreadMode } from '@polkadot/types/lookup'
 import _ from 'lodash'
-import { createType } from '@joystream/types'
 
 export type ThreadModeChangeParams = {
   threadId: ThreadId | number
@@ -58,7 +57,7 @@ export class ChangeThreadsModeFixture extends StandardizedFixture {
         qEvents.filter((e) => e.thread.id === qThread.id).map((e) => e.id)
       )
       Utils.assert(finalUpdate)
-      const newMode = createType('PalletProposalsDiscussionThreadMode', finalUpdate.newMode)
+      const { newMode } = finalUpdate
       if (newMode.isClosed) {
         Utils.assert(
           qThread.mode.__typename === 'ProposalDiscussionThreadModeClosed',
@@ -67,7 +66,7 @@ export class ChangeThreadsModeFixture extends StandardizedFixture {
         Utils.assert(qThread.mode.whitelist, 'Query node: Missing thread.mode.whitelist')
         assert.sameDeepMembers(
           qThread.mode.whitelist.members.map((m) => m.id),
-          newMode.asClosed.map((memberId) => memberId.toString())
+          Array.from(newMode.asClosed.values()).map((memberId) => memberId.toString())
         )
       } else if (newMode.isOpen) {
         assert.equal(qThread.mode.__typename, 'ProposalDiscussionThreadModeOpen')

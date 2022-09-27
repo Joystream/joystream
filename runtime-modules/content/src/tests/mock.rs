@@ -295,15 +295,15 @@ parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 20;
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 1, max_min_diff: 19};
-    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-    storage::StorageBucketsPerBagValueConstraint {min: 1, max_min_diff: 19};
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
+    pub const MinStorageBucketsPerBag: u32 = 1;
+    pub const MaxStorageBucketsPerBag: u32 = 20;
+    pub const MinDistributionBucketsPerBag: u32 = 1;
+    pub const MaxDistributionBucketsPerBag: u32 = 20;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
     pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: U256 = U256([100001, 0, 0, 0]);
@@ -325,15 +325,18 @@ impl storage::Config for Test {
     type ChannelId = u64;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
     type StorageWorkingGroup = StorageWG;
@@ -368,10 +371,9 @@ parameter_types! {
         block_number_period: 1000,
         limit: 500,
     };
-
     pub const MinimumCashoutAllowedLimit: u64 = 1;
-
     pub const MaximumCashoutAllowedLimit: u64 = 1_000_000;
+    pub const MaxNftAuctionWhitelistLength: u32 = 5;
 }
 
 impl Config for Test {
@@ -442,6 +444,9 @@ impl Config for Test {
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
+
+    /// Max nft auction whitelist length
+    type MaxNftAuctionWhitelistLength = MaxNftAuctionWhitelistLength;
 }
 
 pub const COUNCIL_INITIAL_BUDGET: u64 = 0;
@@ -585,7 +590,6 @@ pub struct ExtBuilder {
     max_bid_step: u64,
     platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
-    max_auction_whitelist_length: u32,
     nft_limits_enabled: bool,
     channel_state_bloat_bond_value: BalanceOf<Test>,
     video_state_bloat_bond_value: BalanceOf<Test>,
@@ -616,7 +620,6 @@ impl Default for ExtBuilder {
             max_bid_step: 100,
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
-            max_auction_whitelist_length: 100,
             nft_limits_enabled: true,
             channel_state_bloat_bond_value: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
             video_state_bloat_bond_value: DEFAULT_VIDEO_STATE_BLOAT_BOND,
@@ -681,7 +684,6 @@ impl ExtBuilder {
             max_bid_step: self.max_bid_step,
             platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
-            max_auction_whitelist_length: self.max_auction_whitelist_length,
             nft_limits_enabled: self.nft_limits_enabled,
             channel_state_bloat_bond_value: self.channel_state_bloat_bond_value,
             video_state_bloat_bond_value: self.video_state_bloat_bond_value,
@@ -1058,7 +1060,7 @@ impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for Distributio
 // pallet_project_token trait implementation and related stuff
 parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
-    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
+    pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
 }
 

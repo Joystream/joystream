@@ -12,6 +12,7 @@ import { assert } from 'chai'
 import { WorkerId, ForumThreadId, ForumCategoryId } from '@joystream/types/primitives'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
 import _ from 'lodash'
+import { createType } from '@joystream/types'
 
 export type StickyThreadsParams = {
   categoryId: ForumCategoryId
@@ -38,7 +39,7 @@ export class SetStickyThreadsFixture extends WithForumWorkersFixture {
       this.api.tx.forum.setStickiedThreads(
         p.asWorker ? { Moderator: p.asWorker } : { Lead: null },
         p.categoryId,
-        p.stickyTreads
+        createType('BTreeSet<u64>', p.stickyTreads)
       )
     )
   }

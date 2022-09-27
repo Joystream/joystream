@@ -1413,10 +1413,11 @@ fn setup_council(start_id: u64) {
     let council_size = <Test as council::Config>::CouncilSize::get();
     let candidates_number =
         council_size + <Test as council::Config>::MinNumberOfExtraCandidates::get();
-    let candidates: Vec<_> = (start_id..start_id + candidates_number).collect();
-    let council: Vec<_> = (start_id..start_id + council_size).collect();
-    let voters: Vec<_> =
-        (candidates.last().unwrap() + 1..candidates.last().unwrap() + 1 + council_size).collect();
+    let candidates: Vec<_> = (start_id..start_id + candidates_number as u64).collect();
+    let council: Vec<_> = (start_id..start_id + council_size as u64).collect();
+    let voters: Vec<_> = (candidates.last().unwrap() + 1
+        ..candidates.last().unwrap() + 1 + council_size as u64)
+        .collect();
     for id in candidates {
         increase_total_balance_issuance_using_account_id(id, BalanceOf::<Test>::max_value());
         council::Module::<Test>::announce_candidacy(
