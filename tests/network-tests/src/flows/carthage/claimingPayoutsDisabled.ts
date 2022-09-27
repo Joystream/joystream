@@ -2,7 +2,7 @@ import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import { FlowProps } from 'src/Flow'
 import { BN } from 'bn.js'
-import { assert } from 'chai'
+import { expect } from 'chai'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { ClaimingPayoutStakersSucceedsFixture } from 'src/fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 
@@ -25,7 +25,7 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   const previousBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
   // such accounts becomes stakers
-  await Promise.all(
+  (await Promise.all(
     stakerAccounts.map(async (account) => {
       const bondingSucceedsFixture = new BondingSucceedsFixture(api, {
         stash: account,
@@ -35,25 +35,23 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
       const fixtureRunner = new FixtureRunner(bondingSucceedsFixture)
       fixtureRunner.run()
     })
-  )
+  )).map(() => {})
 
   // wait k = 10 blocks
-  await api.untilBlock(nBlocks)
+  await api.untilBlock(nBlocks).then(() => {})
 
   // attempt to claim payout for ALL validators
-  await Promise.all(
+  (await Promise.all(
     stakerAccounts.concat(authorities).map(async (account) => {
       const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, claimingEra)
       const fixtureRunner = new FixtureRunner(claimingPayoutStakersSucceedsFixture)
       fixtureRunner.run()
     })
-  )
+  )).map(() => {})
 
   const currentBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
-  assert(
-    previousBalances
-      .map((past, i) => past === currentBalances[i])
-      .reduce((accumulator, iter) => iter && accumulator, true)
-  )
+  // previous balances is equal to current balances
+  expect(previousBalances).to.be.deep.equal(currentBalances)
+
 }
