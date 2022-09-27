@@ -2,7 +2,7 @@ import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import { FlowProps } from 'src/Flow'
 import { BN } from 'bn.js'
-import { expect } from 'chai'
+import { assert } from 'chai'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { ClaimingPayoutStakersSucceedsFixture } from 'src/fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 
@@ -56,5 +56,5 @@ export default async function claimingPayoutsEnabled({ api, query, env }: FlowPr
     .map((past, i) => past > currentBalances[i])
     .reduce((accumulator, iter) => iter || accumulator, false)
 
-  expect(result).to.be.true
+  assert(result)
 }
