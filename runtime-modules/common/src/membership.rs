@@ -1,4 +1,4 @@
-use codec::Codec;
+use codec::{Codec, MaxEncodedLen};
 use frame_support::dispatch::DispatchError;
 use frame_support::Parameter;
 use sp_arithmetic::traits::BaseArithmetic;
@@ -23,6 +23,7 @@ pub trait MembershipTypes: frame_system::Config {
         + MaybeSerialize
         + Ord
         + PartialEq
+        + MaxEncodedLen
         + Into<u128>;
 
     /// Describes the common type for the working group members (workers).
@@ -36,6 +37,7 @@ pub trait MembershipTypes: frame_system::Config {
         + MaybeSerializeDeserialize
         + Ord
         + PartialEq
+        + MaxEncodedLen
         + Into<u128>;
 }
 

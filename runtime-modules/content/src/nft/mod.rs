@@ -170,7 +170,7 @@ impl<T: Config> Module<T> {
             1 => Err(Error::<T>::WhitelistHasOnlyOneMember.into()),
             length => {
                 ensure!(
-                    length <= Self::max_auction_whitelist_length() as usize,
+                    length as u32 <= T::MaxNftAuctionWhitelistLength::get(),
                     Error::<T>::MaxAuctionWhiteListLengthUpperBoundExceeded
                 );
                 Ok(())

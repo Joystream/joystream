@@ -26,6 +26,12 @@ decl_error! {
         /// Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
         MaxNumberOfVideoAssetsExceeded,
 
+        /// Maximum number of channel agent permissions for channel agent exceeded
+        MaxNumberOfChannelAgentPermissionsExceeded,
+
+        /// Maximum number of paused features per channel exceeded
+        MaxNumberOfPausedFeaturesPerChannelExceeded,
+
         /// Channel bag witness parameters don't match the current runtime state
         InvalidChannelBagWitnessProvided,
 
@@ -315,6 +321,9 @@ decl_error! {
 
         /// Curator does not have permissions to perform given moderation action
         CuratorModerationActionNotAllowed,
+
+        /// Maximum number of curator permissions per given channel privilege level exceeded
+        MaxCuratorPermissionsPerLevelExceeded,
 
         /// Curator group's permissions by level map exceeded the maximum allowed size
         CuratorGroupMaxPermissionsByLevelMapSizeExceeded,

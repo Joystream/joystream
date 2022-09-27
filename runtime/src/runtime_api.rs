@@ -305,7 +305,7 @@ impl_runtime_apis! {
             Vec<frame_support::traits::StorageInfo>,
         ) {
             use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
-            // use frame_support::traits::StorageInfoTrait;
+            use frame_support::traits::StorageInfoTrait;
             use crate::*;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
@@ -320,13 +320,8 @@ impl_runtime_apis! {
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
 
-            // StorageInfoTrait trait bound not satisfied
-            // This may be because we are using old style decl_storage macro
-            // instead of new syntax?
-            // let storage_info = AllPalletsWithSystem::storage_info();
-            // (list, storage_info)
-
-            (list, vec![])
+            let storage_info = AllPalletsWithSystem::storage_info();
+            (list, storage_info)
         }
 
         fn dispatch_benchmark(

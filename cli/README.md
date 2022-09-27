@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.8.0 darwin-arm64 node-v16.15.0
+@joystream/cli/0.8.0 linux-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -173,7 +173,6 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
 - [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
 - [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
-- [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
 - [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
 
 ## `joystream-cli account:create`
@@ -2086,32 +2085,6 @@ OPTIONS
 ```
 
 _See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
-
-## `joystream-cli working-groups:updateRoleStorage STORAGE`
-
-Updates the associated worker storage
-
-```
-USAGE
-  $ joystream-cli working-groups:updateRoleStorage STORAGE
-
-ARGUMENTS
-  STORAGE  Worker storage
-
-OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
-      The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
-      distributors.
-
-  --useMemberId=useMemberId
-      Try using the specified member id as context whenever possible
-
-  --useWorkerId=useWorkerId
-      Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/working-groups/updateRoleStorage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleStorage.ts)_
 
 ## `joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`
 

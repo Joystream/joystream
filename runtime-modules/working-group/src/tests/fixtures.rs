@@ -7,9 +7,7 @@ use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{
-    Balances, Event, LockId, System, Test, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID,
-};
+use super::mock::{Balances, Event, LockId, System, Test, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, BalanceOf, Config, DefaultInstance, Opening,
@@ -42,6 +40,7 @@ impl EventFixture {
             StakePolicy<u64, u64>,
             ApplyOnOpeningParameters<Test>,
             u64,
+            <Test as frame_system::Config>::Hash,
             DefaultInstance,
         >,
     ) {
@@ -72,6 +71,7 @@ impl EventFixture {
             StakePolicy<u64, u64>,
             ApplyOnOpeningParameters<Test>,
             u64,
+            <Test as frame_system::Config>::Hash,
             DefaultInstance,
         >,
     ) {
@@ -135,7 +135,7 @@ impl AddOpeningFixture {
             let expected_hash = <Test as frame_system::Config>::Hashing::hash(&self.description);
             let expected_opening = Opening {
                 created: self.starting_block,
-                description_hash: expected_hash.as_ref().to_vec(),
+                description_hash: expected_hash,
                 opening_type: self.opening_type,
                 stake_policy: self.stake_policy.clone(),
                 reward_per_block: self.reward_per_block,
@@ -308,7 +308,7 @@ impl ApplyOnOpeningFixture {
                 reward_account_id: self.reward_account_id,
                 staking_account_id: self.stake_parameters.staking_account_id,
                 member_id: self.member_id,
-                description_hash: expected_hash.as_ref().to_vec(),
+                description_hash: expected_hash,
                 opening_id: self.opening_id,
             };
 
@@ -1152,7 +1152,7 @@ impl SetStatusTextFixture {
                 &self.new_status_text.clone().unwrap(),
             );
 
-            assert_eq!(new_text_hash, expected_hash.as_ref().to_vec());
+            assert_eq!(new_text_hash, expected_hash);
         } else {
             assert_eq!(new_text_hash, old_text_hash);
         }
@@ -1216,40 +1216,6 @@ impl SpendFromBudgetFixture {
         } else {
             assert_eq!(old_budget, new_budget);
             assert_eq!(old_balance, new_balance);
-        }
-    }
-}
-
-pub struct UpdateWorkerStorageFixture {
-    worker_id: u64,
-    storage_field: Vec<u8>,
-    origin: RawOrigin<u64>,
-}
-
-impl UpdateWorkerStorageFixture {
-    pub fn default_with_storage_field(worker_id: u64, storage_field: Vec<u8>) -> Self {
-        Self {
-            worker_id,
-            storage_field,
-            origin: RawOrigin::Signed(DEFAULT_WORKER_ACCOUNT_ID),
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = TestWorkingGroup::update_role_storage(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.storage_field.clone(),
-        );
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            let storage = TestWorkingGroup::worker_storage(self.worker_id);
-
-            assert_eq!(storage, self.storage_field);
         }
     }
 }

@@ -28,7 +28,7 @@ use working_group::{
 };
 
 const SEED: u32 = 0;
-const MAX_BYTES: u32 = 3 * 1024 * 1024;
+const MAX_BYTES: u32 = 2 * 1024 * 1024;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
