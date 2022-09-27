@@ -13,6 +13,6 @@ export default async function constantAuthorities({ api, query, env }: FlowProps
 
   const pastAuthorities = api.getAuthorities()
   await api.untilBlock(nBlocks)
-  const currentAuthorities = api.getAuthorities()
+  const currentAuthorities =  api.getAuthorities()
   expect(pastAuthorities).to.be.deep.equal(currentAuthorities)
 }
