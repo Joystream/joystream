@@ -35,7 +35,7 @@ export default async function claimingPayoutsEnabled({ api, query, env }: FlowPr
     })
   )
 
-  const previousBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
+  const previousBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
   // wait k = 10 blocks
   await api.untilBlock(nBlocks)
@@ -50,9 +50,11 @@ export default async function claimingPayoutsEnabled({ api, query, env }: FlowPr
   )
 
   // each payout (positive pnumber) must be zero iff the sum is zero
-  const currentBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
+  const currentBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
-  const result = previousBalances.map((past, i) => past > currentBalances[i]).reduce((accumulator, iter) => iter || accumulator, false)
+  const result = previousBalances
+    .map((past, i) => past > currentBalances[i])
+    .reduce((accumulator, iter) => iter || accumulator, false)
 
   expect(result).to.be.true
 }

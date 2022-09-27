@@ -22,7 +22,7 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   // get authorities
   const authorities = api.getAuthorities()
 
-  const previousBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
+  const previousBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
   // such accounts becomes stakers
   await Promise.all(
@@ -49,11 +49,11 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
     })
   )
 
-  const currentBalances = (await Promise.all(stakerAccounts.map((account) => api.getBalance(account))))
+  const currentBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
-
-  const result = previousBalances.map((past, i) => past == currentBalances[i]).reduce((accumulator, iter) => iter && accumulator, true)
+  const result = previousBalances
+    .map((past, i) => past == currentBalances[i])
+    .reduce((accumulator, iter) => iter && accumulator, true)
 
   expect(result).to.be.true
-
 }
