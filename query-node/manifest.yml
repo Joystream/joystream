@@ -333,6 +333,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: forumWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: forumWorkingGroup.LeadRemarked
+      handler: workingGroups_LeadRemarked
     - event: forumWorkingGroup.WorkerRemarked
       handler: workingGroups_WorkerRemarked
     # Membership working group
