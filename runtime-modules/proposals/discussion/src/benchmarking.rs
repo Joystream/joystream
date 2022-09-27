@@ -15,6 +15,7 @@ use referendum::Module as Referendum;
 use referendum::ReferendumManager;
 use sp_runtime::traits::One;
 use sp_std::convert::TryInto;
+use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
 
 type ReferendumInstance = referendum::Instance1;
@@ -215,12 +216,7 @@ fn elect_council<
         council.iter().map(|c| c.member_id).collect::<Vec<_>>()
     );
 
-    (
-        council,
-        (2 * (council_size + number_of_extra_candidates))
-            .try_into()
-            .unwrap(),
-    )
+    (council, (2 * (council_size + number_of_extra_candidates)))
 }
 
 const MAX_BYTES: u32 = 16384;
@@ -239,13 +235,13 @@ benchmarks! {
         let (_, _) = member_account::<T>("member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
-        let mut whitelisted_members = vec![caller_member_id];
+        let mut whitelisted_members = BTreeSet::from_iter(vec![caller_member_id]);
 
         // We start from 2 since we have previously created id 0 and not used it
         // and used id 1 for the caller (see comment above)
         for id in 2 .. T::MaxWhiteListSize::get() + 1 {
             let (_, member_id) = member_account::<T>("member", id);
-            whitelisted_members.push(member_id);
+            whitelisted_members.insert(member_id);
         }
 
         // Worst case scenario there is a council
@@ -361,24 +357,24 @@ benchmarks! {
 
         assert!(ThreadById::<T>::contains_key(thread_id), "Thread not created");
 
-        let mut whitelisted_members = vec![caller_member_id];
+        let mut whitelisted_members = BTreeSet::from_iter(vec![caller_member_id]);
 
         // We start from 2 since we have previously created id 0 and not used it
         // and used id 1 for the caller (see comment above)
         for id in 2 .. i + 1 {
             let (_, member_id) = member_account::<T>("member", id);
-            whitelisted_members.push(member_id);
+            whitelisted_members.insert(member_id);
         }
 
         // Worst case scenario there is a council
         elect_council::<T>(i+1);
 
-        let mode = ThreadMode::Closed(whitelisted_members);
+        let mode = ThreadMode::Closed(whitelisted_members.clone());
     }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, mode.clone())
     verify {
-        assert_eq!(
-            ProposalsDiscussion::<T>::thread_by_id(thread_id).mode,
-            mode,
+        assert!(
+            ProposalsDiscussion::<T>::thread_by_id(thread_id).mode ==
+            ThreadMode::Closed(whitelisted_members.try_into().unwrap()),
             "Thread not correctly updated"
         );
 

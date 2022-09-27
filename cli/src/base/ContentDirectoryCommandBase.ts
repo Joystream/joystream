@@ -3,7 +3,7 @@ import { WorkingGroups } from '../Types'
 import {
   PalletContentChannelActionPermission as ChannelActionPermission,
   PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
-  PalletContentPermissionsCuratorGroup as CuratorGroup,
+  PalletContentPermissionsCuratorGroupCuratorGroupRecord as CuratorGroup,
   PalletWorkingGroupGroupWorker as Worker,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentChannelRecord as Channel,

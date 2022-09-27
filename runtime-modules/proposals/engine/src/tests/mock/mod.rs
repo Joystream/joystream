@@ -54,7 +54,7 @@ parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VotingLockId: LockIdentifier = *b"referend";
     pub const MinimumPeriod: u64 = 5;
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
@@ -207,6 +207,10 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     }
 }
 
+parameter_types! {
+    pub const DispatchableCallCodeMaxLen: u32 = 1024 * 1024;
+}
+
 impl crate::Config for Test {
     type Event = Event;
     type ProposerOriginValidator = ();
@@ -223,6 +227,7 @@ impl crate::Config for Test {
     type ProposalObserver = ();
     type WeightInfo = ();
     type StakingAccountValidator = ();
+    type DispatchableCallCodeMaxLen = DispatchableCallCodeMaxLen;
 }
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
@@ -326,10 +331,10 @@ impl balances::Config for Test {
 }
 
 parameter_types! {
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 27;
-    pub const CouncilSize: u64 = 4;
+    pub const CouncilSize: u32 = 4;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";

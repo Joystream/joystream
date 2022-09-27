@@ -1,4 +1,4 @@
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
     dispatch::DispatchResult,
     pallet_prelude::MaybeSerializeDeserialize,
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use sp_std::fmt::Debug;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct RepayableBloatBond<AccountId, Balance> {
     /// Account where the bloat should be repaid (if restricted).
     /// This restriction only applies if an account with an invitation lock is used to pay

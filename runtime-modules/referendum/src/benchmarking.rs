@@ -31,15 +31,15 @@ fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>:
 }
 
 fn start_voting_cycle<T: Config<I>, I: Instance>(winning_target_count: u32) {
-    Referendum::<T, I>::force_start(winning_target_count.into(), 1);
-    assert_eq!(
-        Stage::<T, I>::get(),
-        ReferendumStage::Voting(ReferendumStageVoting {
-            started: System::<T>::block_number(),
-            winning_target_count: (winning_target_count + 1).into(),
-            current_cycle_id: 1,
-            ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
-        }),
+    Referendum::<T, I>::force_start(winning_target_count, 1);
+    assert!(
+        Stage::<T, I>::get()
+            == ReferendumStage::Voting(ReferendumStageVoting {
+                started: System::<T>::block_number(),
+                winning_target_count: winning_target_count + 1,
+                current_cycle_id: 1,
+                ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
+            }),
         "Vote cycle not started"
     );
 }
@@ -185,7 +185,7 @@ fn create_account_and_vote<
 
 fn move_to_block<T: Config<I>, I: Instance>(
     target_block: T::BlockNumber,
-    target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
+    target_stage: ReferendumStage<T::BlockNumber, IntermediateWinnersOf<T, I>>,
 ) {
     let mut current_block_number = System::<T>::block_number();
 
@@ -198,12 +198,12 @@ fn move_to_block<T: Config<I>, I: Instance>(
         Referendum::<T, I>::on_initialize(current_block_number);
     }
 
-    assert_eq!(Stage::<T, I>::get(), target_stage, "Stage not reached");
+    assert!(Stage::<T, I>::get() == target_stage, "Stage not reached");
 }
 
 fn move_to_block_before_initialize<T: Config<I>, I: Instance>(
     target_block: T::BlockNumber,
-    target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
+    target_stage: ReferendumStage<T::BlockNumber, IntermediateWinnersOf<T, I>>,
 ) {
     let mut current_block_number = System::<T>::block_number();
 
@@ -221,7 +221,7 @@ fn move_to_block_before_initialize<T: Config<I>, I: Instance>(
     current_block_number = System::<T>::block_number() + One::one();
     System::<T>::set_block_number(current_block_number);
 
-    assert_eq!(Stage::<T, I>::get(), target_stage, "Stage not reached");
+    assert!(Stage::<T, I>::get() == target_stage, "Stage not reached");
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
@@ -328,8 +328,8 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 
     let target_stage = ReferendumStage::Revealing(ReferendumStageRevealingOf::<T, I> {
         started: target_block_number,
-        winning_target_count: (target_winners + 1).into(),
-        intermediate_winners: vec![],
+        winning_target_count: target_winners + 1,
+        intermediate_winners: WeakBoundedVec::default(),
         current_cycle_id: cycle_id.into(),
         ends_at: target_block_number + T::RevealStageDuration::get(),
     });
@@ -349,16 +349,19 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
     });
 
     let current_stage = ReferendumStage::Revealing(ReferendumStageRevealingOf::<T, I> {
-        intermediate_winners: multiple_votes.intermediate_winners.clone(),
+        intermediate_winners: multiple_votes
+            .intermediate_winners
+            .clone()
+            .try_into()
+            .unwrap(),
         started: target_block_number,
-        winning_target_count: (target_winners + 1).into(),
+        winning_target_count: target_winners + 1,
         current_cycle_id: cycle_id.into(),
         ends_at: target_block_number + T::RevealStageDuration::get(),
     });
 
-    assert_eq!(
-        Referendum::<T, I>::stage(),
-        current_stage,
+    assert!(
+        Referendum::<T, I>::stage() == current_stage,
         "Votes not revealed",
     );
 
@@ -400,9 +403,9 @@ benchmarks_instance! {
 
         let target_stage = ReferendumStage::Revealing(
             ReferendumStageRevealingOf::<T, I> {
-                intermediate_winners: multiple_votes_with_extra.intermediate_winners.clone(),
+                intermediate_winners: multiple_votes_with_extra.intermediate_winners.clone().try_into().unwrap(),
                 started: started_voting_block_number + T::VoteStageDuration::get(),
-                winning_target_count: (i + 1).into(),
+                winning_target_count: i + 1,
                 current_cycle_id: cycle_id,
                 ends_at: started_voting_block_number + T::VoteStageDuration::get() + T::RevealStageDuration::get()
             }
@@ -414,9 +417,8 @@ benchmarks_instance! {
         );
     }: { Referendum::<T, I>::on_initialize(System::<T>::block_number()); }
     verify {
-        assert_eq!(
-            Referendum::<T, I>::stage(),
-            ReferendumStage::Inactive,
+        assert!(
+            Referendum::<T, I>::stage() == ReferendumStage::Inactive,
             "Reveal perdiod hasn't ended",
         );
 
@@ -436,7 +438,7 @@ benchmarks_instance! {
 
         let target_stage = ReferendumStage::Voting(ReferendumStageVoting {
                 started: System::<T>::block_number(),
-                winning_target_count: (winning_target_count + 1).into(),
+                winning_target_count: winning_target_count + 1,
                 current_cycle_id: cycle_id,
                 ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
         });
@@ -448,14 +450,13 @@ benchmarks_instance! {
         let current_stage = ReferendumStage::Revealing(ReferendumStageRevealing {
             started: target_block_number,
             winning_target_count: 1,
-            intermediate_winners: vec![],
+            intermediate_winners: WeakBoundedVec::default(),
             current_cycle_id: cycle_id,
             ends_at: revealing_ends_at
         });
 
-        assert_eq!(
-            Referendum::<T, I>::stage(),
-            current_stage,
+        assert!(
+            Referendum::<T, I>::stage() == current_stage,
             "Voting period not ended"
         );
 
@@ -529,11 +530,11 @@ benchmarks_instance! {
             }
         );
 
-        assert_eq!(
-            Referendum::<T, I>::stage(),
-            ReferendumStage::Revealing(ReferendumStageRevealing{
-                intermediate_winners: multiple_votes_with_extra.intermediate_winners,
-                winning_target_count: (i+1).into(),
+        assert!(
+            Referendum::<T, I>::stage()
+            == ReferendumStage::Revealing(ReferendumStageRevealing{
+                intermediate_winners: multiple_votes_with_extra.intermediate_winners.clone().try_into().unwrap(),
+                winning_target_count: i + 1,
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
                 ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
@@ -584,11 +585,11 @@ benchmarks_instance! {
         let stake = T::MinimumStake::get() + One::one();
         let cycle_id = 1;
 
-        assert_eq!(
-            Referendum::<T, I>::stage(),
-            ReferendumStage::Revealing(ReferendumStageRevealing{
-                intermediate_winners: multiple_votes_with_extra.intermediate_winners,
-                winning_target_count: (i+1).into(),
+        assert!(
+            Referendum::<T, I>::stage()
+            == ReferendumStage::Revealing(ReferendumStageRevealing{
+                intermediate_winners: multiple_votes_with_extra.intermediate_winners.clone().try_into().unwrap(),
+                winning_target_count: i + 1,
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
                 ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
@@ -646,11 +647,11 @@ benchmarks_instance! {
                 T::calculate_vote_power(&multiple_votes_with_extra.account_id.clone(), &stake),
         });
 
-        assert_eq!(
-            Referendum::<T, I>::stage(),
-            ReferendumStage::Revealing(ReferendumStageRevealing{
-                intermediate_winners: multiple_votes_with_extra.intermediate_winners,
-                winning_target_count: (i+1).into(),
+        assert!(
+            Referendum::<T, I>::stage()
+            == ReferendumStage::Revealing(ReferendumStageRevealing{
+                intermediate_winners: multiple_votes_with_extra.intermediate_winners.clone().try_into().unwrap(),
+                winning_target_count: i + 1,
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
                 ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
@@ -711,11 +712,11 @@ benchmarks_instance! {
 
         let last_winner = multiple_votes_with_extra.intermediate_winners.pop().unwrap();
         multiple_votes_with_extra.intermediate_winners.insert(0, last_winner);
-        assert_eq!(
-            Referendum::<T, I>::stage(),
-            ReferendumStage::Revealing(ReferendumStageRevealing{
-                intermediate_winners: multiple_votes_with_extra.intermediate_winners,
-                winning_target_count: (i+1).into(),
+        assert!(
+            Referendum::<T, I>::stage()
+            == ReferendumStage::Revealing(ReferendumStageRevealing{
+                intermediate_winners: multiple_votes_with_extra.intermediate_winners.clone().try_into().unwrap(),
+                winning_target_count: i + 1,
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
                 ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
@@ -778,7 +779,7 @@ benchmarks_instance! {
 
     impl_benchmark_test_suite!(
         Module,
-        crate::mock::build_test_externalities(crate::mock::default_genesis_config()),
+        crate::mock::build_test_externalities(),
         crate::mock::Runtime
     )
 }
