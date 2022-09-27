@@ -7,6 +7,9 @@ export default async function currentEraIsSomeInPoS({ api, query, env }: FlowPro
   debug('started')
   api.enableDebugTxLogs()
 
-  expect(api.getForceEra().isForceNew).to.be.true
-  expect(api.getCurrentEra().isSome).to.be.true
+  const forceEra = await api.getForceEra()
+  expect(forceEra.isForceNew).to.be.true
+
+  const currentEra = await api.getCurrentEra()
+  expect(currentEra.isSome).to.be.true
 }

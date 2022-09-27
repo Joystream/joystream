@@ -22,7 +22,7 @@ import {
   LockIdentifier,
   AccountId32,
 } from '@polkadot/types/interfaces'
-import { ITuple } from '@polkadot/types-codec/interfaces'
+import { ITuple, Codec } from '@polkadot/types-codec/types'
 import {
   PalletWorkingGroupGroupWorker as Worker,
   PalletWorkingGroupOpening as Opening,
@@ -328,7 +328,7 @@ export class Api {
     return await this.api.query.session.validators()
   }
 
-  public async getQueuedKeys(): Promise<Vec<ITuple<[AccountId32, JoystreamNodeRuntimeSessionKeys]>> {
+  public async getQueuedKeys(): Promise<Vec<ITuple<[AccountId32, JoystreamNodeRuntimeSessionKeys]>>> {
     return await this.api.query.session.queuedKeys()
   }
 
@@ -345,7 +345,7 @@ export class Api {
   }
 
   public async getElectionRounds(): Promise<u32> {
-    return this.api.query.elections.electionRounds()
+    return this.api.query.electionProviderMultiPhase.round()
   }
 
   public async getCurrentEra(): Promise<Option<u32>> {

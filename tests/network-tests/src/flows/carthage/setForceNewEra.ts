@@ -7,7 +7,7 @@ export default async function setForceNewEra({ api, query, env }: FlowProps): Pr
   const debug = extendDebug('flow: setting ForceEra to ForceNew ')
   debug('started')
   api.enableDebugTxLogs()
-  const setForceEraForcingNewFixture = new SetForceEraForcingNewFixture()
+  const setForceEraForcingNewFixture = new SetForceEraForcingNewFixture(api)
   const fixtureRunner = new FixtureRunner(setForceEraForcingNewFixture)
   await fixtureRunner.run()
 }
