@@ -5,6 +5,8 @@ import { assert } from 'chai'
 import BN from 'bn.js'
 import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
 import { ValidatingSucceedsFixture } from 'src/fixtures/staking/ValidatingSucceedsFixture'
+import { Perbill } from '@polkadot/types/interfaces/runtime'
+import { Bool } from '@polkadot/types-codec';
 
 export default async function validateSucceedsInPoA({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: validator-set')
@@ -14,7 +16,7 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
   const bondAmount = new BN(100000)
 
   // we are in poa
-  const currentEra = api.getCurrentEra()
+  const currentEra = await api.getCurrentEra()
   assert(currentEra.isNone)
 
   // create keys
@@ -30,10 +32,14 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
   await fixtureRunner.run()
 
   // candidate validator
-  const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(api, {
-    commission: 1,
-    blocked: false,
-  })
+  const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(
+    api,
+    {
+      commission: Perbill.with(1),
+      blocked: false,
+    },
+    account
+  )
   const candidationFixture = new FixtureRunner(validatorCandidatingSucceedsFixture)
   await candidationFixture.run()
 }

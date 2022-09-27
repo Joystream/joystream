@@ -1,7 +1,7 @@
 import { extendDebug } from 'src/Debugger'
 import { FixtureRunner } from 'src/Fixture'
 import BN from 'bn.js'
-import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
+import { BondingSucceedsFixture } from '../fixtures/staking/BondingSucceedsFixture'
 import { FlowProps } from 'src/Flow'
 import { expect } from 'chai'
 
