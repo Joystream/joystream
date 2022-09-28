@@ -13,19 +13,24 @@ export type MembershipMigrationConfig = BaseMigrationConfig & {
   batchSize: number
 }
 
+export type FoundingMembers = Array<number>
+
 export type MembershipMigrationParams = BaseMigrationParams<MembershipsSnapshot> & {
   config: MembershipMigrationConfig
+  foundingMembers: FoundingMembers
 }
 
 export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
   name = 'Membership migration'
   protected config: MembershipMigrationConfig
   protected logger: Logger
+  protected foundingMembers: FoundingMembers
 
   public constructor(params: MembershipMigrationParams) {
     super(params)
     this.config = params.config
     this.logger = createLogger(this.name)
+    this.foundingMembers = params.foundingMembers.slice()
   }
 
   protected async migrateBatch(
@@ -92,7 +97,7 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
 
   private async prepareMember(member: MembershipFieldsFragment) {
     const { api } = this
-    const { handle, rootAccount, controllerAccount, metadata, isFoundingMember } = member
+    const { handle, rootAccount, controllerAccount, metadata, id } = member
     const { name, about, avatar } = metadata
 
     const meta = new MembershipMetadata({
@@ -104,6 +109,8 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
       meta.avatarUri = avatar.avatarUri
     }
 
+    const isFoundingMember = this.foundingMembers.indexOf(parseInt(id)) !== -1
+
     if (isFoundingMember) {
       const createFoundingMemberParams = createType('PalletMembershipCreateFoundingMemberParameters', {
         handle,
@@ -113,9 +120,7 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
       })
       return api.tx.members.createFoundingMember(createFoundingMemberParams)
     } else {
-      // sudo buy membership -> no membership lock
-      // sudo pays for membership (set membership price to 0) initially
-      // using sudoAs to bypass call filter
+      // Change this to use createMember()
       const buyMembershipParams = createType('PalletMembershipBuyMembershipParameters', {
         handle,
         controllerAccount,

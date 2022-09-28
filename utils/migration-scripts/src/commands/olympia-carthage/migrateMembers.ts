@@ -2,7 +2,7 @@ import { Command, flags } from '@oclif/command'
 import { WsProvider } from '@polkadot/api'
 import { readFileSync } from 'fs'
 import path from 'path'
-import { MembershipMigration } from '../../olympia-carthage/MembershipMigration'
+import { MembershipMigration, FoundingMembers } from '../../olympia-carthage/MembershipMigration'
 import { MembershipsSnapshot } from '../../olympia-carthage/SnapshotManager'
 import { RuntimeApi } from '../../RuntimeApi'
 
@@ -11,6 +11,9 @@ export class MigrateMembersCommand extends Command {
     snapshotFilePath: flags.string({
       required: true,
       description: 'Path to olympia memberships snapshot (json)',
+    }),
+    foundingMembersFilePath: flags.string({
+      description: 'Path to list of founding member ids (json)',
     }),
     wsProviderEndpointUri: flags.string({
       description: 'WS provider endpoint uri (Olympia)',
@@ -36,9 +39,13 @@ export class MigrateMembersCommand extends Command {
       const api = new RuntimeApi({ provider: new WsProvider(opts.wsProviderEndpointUri) })
       await api.isReadyOrError
       const snapshot = JSON.parse(readFileSync(opts.snapshotFilePath).toString()) as MembershipsSnapshot
+      const foundingMembers = opts.foundingMembersFilePath
+        ? (JSON.parse(readFileSync(opts.foundingMembersFilePath!).toString()) as FoundingMembers)
+        : []
       const migration = new MembershipMigration({
         api,
         snapshot,
+        foundingMembers,
         config: opts,
       })
       await migration.run()
