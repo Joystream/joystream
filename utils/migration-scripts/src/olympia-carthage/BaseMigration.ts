@@ -145,7 +145,8 @@ export abstract class BaseMigration<T> {
     result: SubmittableResult,
     batch: T[],
     callsPerEntity = 2,
-    usesSudoAs = true
+    usesSudoAs = true,
+    usesSudo = true
   ): void {
     const { api } = this
     const batchInterruptedEvent = api.findEvent(result, 'utility', 'BatchInterrupted')
@@ -155,11 +156,16 @@ export abstract class BaseMigration<T> {
     const numberOfMigratedEntites = Math.floor(numberOfSuccesfulCalls / callsPerEntity)
 
     const sudoAsDoneEvents = api.findEvents(result, 'sudo', 'SudoAsDone')
+    const sudoSudidEvent = api.findEvent(result, 'sudo', 'Sudid')
     if (usesSudoAs && sudoAsDoneEvents.length !== numberOfMigratedEntites) {
       throw new Error(
         `Unexpected number of SudoAsDone events (expected: ${numberOfMigratedEntites}, got: ${sudoAsDoneEvents.length})! ` +
           `Could not extract failed migrations from: ${JSON.stringify(result.toHuman())}`
       )
+    }
+
+    if (usesSudo && sudoSudidEvent && sudoSudidEvent.data[0].isErr) {
+      throw new Error(`Sudo call failed ${JSON.stringify(result.toHuman())}`)
     }
 
     const failedIds: number[] = []
@@ -172,8 +178,9 @@ export abstract class BaseMigration<T> {
     })
 
     if (batchInterruptedEvent) {
+      const spRuntimeError = batchInterruptedEvent.data[1]
       this.logger.error(
-        `Batch interrupted at call ${numberOfSuccesfulCalls}: ${batchInterruptedEvent.data[1].asModule.toHuman()}`
+        `Batch interrupted at call ${numberOfSuccesfulCalls}: ${JSON.stringify(spRuntimeError.toHuman())}`
       )
     }
 

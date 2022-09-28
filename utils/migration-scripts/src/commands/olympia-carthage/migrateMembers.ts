@@ -13,6 +13,7 @@ export class MigrateMembersCommand extends Command {
       description: 'Path to olympia memberships snapshot (json)',
     }),
     foundingMembersFilePath: flags.string({
+      required: true,
       description: 'Path to list of founding member ids (json)',
     }),
     wsProviderEndpointUri: flags.string({
