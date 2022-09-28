@@ -60,7 +60,7 @@ fn join_whitelist_fails_with_existing_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
         .with_bloat_bond(bloat_bond)
         .build();
 
@@ -490,8 +490,8 @@ fn dust_account_fails_with_invalid_token_id() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
-        .with_account(other_user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
+        .with_account(other_user_id, ConfigAccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -510,8 +510,8 @@ fn dust_account_fails_with_invalid_member_id() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
-        .with_account(other_user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
+        .with_account(other_user_id, ConfigAccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -530,7 +530,7 @@ fn dust_account_fails_with_permissionless_mode_and_non_empty_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::new_with_amount(balance!(10)))
+        .with_account(user_id, ConfigAccountData::new_with_amount(balance!(10)))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -553,8 +553,8 @@ fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
-        .with_account(other_user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
+        .with_account(other_user_id, ConfigAccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -582,7 +582,7 @@ fn dust_account_ok_with_permissioned_mode_and_empty_owned_account() {
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
         .with_account(
             user_id,
-            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
+            ConfigAccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
         )
         .build();
 
@@ -605,11 +605,11 @@ fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
         .with_account(
             user_id,
-            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
+            ConfigAccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
         )
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
+            ConfigAccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
         )
         .build();
 
@@ -632,11 +632,11 @@ fn dust_account_ok_with_event_deposit() {
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
         .with_account(
             user_id,
-            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
+            ConfigAccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
         )
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
+            ConfigAccountData::new_with_amount_and_bond(0, RepayableBloatBond::new(0, None)),
         )
         .build();
 
@@ -662,8 +662,8 @@ fn dust_account_ok_accounts_number_decremented() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
-        .with_account(other_user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
+        .with_account(other_user_id, ConfigAccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -684,8 +684,8 @@ fn dust_account_ok_with_account_removed() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
-        .with_account(other_user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
+        .with_account(other_user_id, ConfigAccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -711,10 +711,10 @@ fn dust_account_ok_by_user_with_bloat_bond_refunded_to_controller() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
         .with_bloat_bond(updated_bloat_bond)
-        .with_account(user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(
+            ConfigAccountData::new_with_amount_and_bond(
                 balance!(0),
                 RepayableBloatBond::new(bloat_bond, None),
             ),
@@ -743,10 +743,10 @@ fn dust_account_ok_by_user_with_restricted_bloat_bond_refunded() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
         .with_bloat_bond(updated_bloat_bond)
-        .with_account(user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(
+            ConfigAccountData::new_with_amount_and_bond(
                 balance!(0),
                 RepayableBloatBond::new(bloat_bond, Some(restricted_to)),
             ),
@@ -777,7 +777,7 @@ fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
         .with_bloat_bond(bloat_bond)
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(
+            ConfigAccountData::new_with_amount_and_bond(
                 balance!(0),
                 RepayableBloatBond::new(bloat_bond, None),
             ),
@@ -806,10 +806,10 @@ fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
     let config = GenesisConfigBuilder::new_empty()
         .with_bloat_bond(updated_bloat_bond)
         .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .with_account(user_id, AccountData::default())
+        .with_account(user_id, ConfigAccountData::default())
         .with_account(
             other_user_id,
-            AccountData::new_with_amount_and_bond(
+            ConfigAccountData::new_with_amount_and_bond(
                 balance!(0),
                 RepayableBloatBond::new(bloat_bond, None),
             ),
@@ -1290,7 +1290,7 @@ fn issue_token_ok_with_owner_accounts_data_added() {
         );
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &mem1),
-            AccountData::new_with_vesting_and_bond(
+            AccountData::new_with_vesting_and_bond::<Test>(
                 VestingSource::InitialIssuance,
                 VestingSchedule::from_params(
                     System::block_number(),
@@ -1299,10 +1299,11 @@ fn issue_token_ok_with_owner_accounts_data_added() {
                 ),
                 RepayableBloatBond::new(0, None)
             )
+            .unwrap()
         );
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &mem2),
-            AccountData::new_with_vesting_and_bond(
+            AccountData::new_with_vesting_and_bond::<Test>(
                 VestingSource::InitialIssuance,
                 VestingSchedule::from_params(
                     System::block_number(),
@@ -1311,6 +1312,7 @@ fn issue_token_ok_with_owner_accounts_data_added() {
                 ),
                 RepayableBloatBond::new(0, None)
             )
+            .unwrap()
         );
     })
 }
@@ -1486,7 +1488,7 @@ fn burn_fails_with_invalid_token_id() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1520,7 +1522,7 @@ fn burn_fails_with_invalid_member_controller_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1545,7 +1547,7 @@ fn burn_fails_with_zero_amount() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(100))
+        .with_account(member_id, ConfigAccountData::new_with_amount(100))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1562,7 +1564,10 @@ fn burn_fails_with_amount_exceeding_account_tokens() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount - 1))
+        .with_account(
+            member_id,
+            ConfigAccountData::new_with_amount(burn_amount - 1),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1590,7 +1595,7 @@ fn burn_fails_with_active_revenue_split() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
         .build();
 
     build_test_externalities_with_balances(
@@ -1624,7 +1629,7 @@ fn burn_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1641,7 +1646,7 @@ fn burn_ok_with_account_tokens_amount_decreased() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1660,7 +1665,7 @@ fn burn_ok_with_token_supply_decreased() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1680,7 +1685,7 @@ fn burn_ok_with_event_emitted() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1695,7 +1700,7 @@ fn burn_ok_with_event_emitted() {
 fn burn_ok_with_staked_tokens_burned() {
     let (token_id, (member_id, account)) = (token!(1), member!(1));
     let token_data = TokenDataBuilder::new_empty().build();
-    let init_account_data = AccountData::new_with_amount(200).with_staked(100);
+    let init_account_data = ConfigAccountData::new_with_amount(200).with_staked(100);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -1725,7 +1730,7 @@ fn burn_ok_with_vesting_and_staked_tokens_burned_first() {
         .total_amount()
         .saturating_mul(<Test as Config>::MaxVestingSchedulesPerAccountPerToken::get().into());
     let init_staked_amount = init_vesting_amount + 300;
-    let account_data = AccountData::new_with_amount(1000)
+    let account_data = ConfigAccountData::new_with_amount(1000)
         .with_max_vesting_schedules(vesting_schedule.clone())
         .with_staked(init_staked_amount);
     let (token_id, burn_amount, (member_id, account)) = (token!(1), init_staked_amount, member!(1));
@@ -1751,7 +1756,7 @@ fn burn_ok_with_vesting_and_staked_tokens_burned_first() {
 #[test]
 fn burn_ok_with_vesting_and_staked_tokens_partially_burned() {
     let vesting_schedule = default_vesting_schedule();
-    let account_data = AccountData::default()
+    let account_data = ConfigAccountData::default()
         .with_max_vesting_schedules(vesting_schedule)
         .with_staked(2000);
     let initial_account_amount = account_data.amount;
@@ -1786,7 +1791,7 @@ fn burn_ok_with_vesting_and_staked_tokens_partially_burned() {
 #[test]
 fn burn_ok_with_vesting_schedule_partially_burned_twice() {
     let vesting_schedule = default_vesting_schedule();
-    let account_data = AccountData::default().with_vesting_schedule(vesting_schedule);
+    let account_data = ConfigAccountData::default().with_vesting_schedule(vesting_schedule);
     let initial_account_amount = account_data.amount;
     let (token_id, burn1_amount, burn2_amount, (member_id, account)) =
         (token!(1), balance!(100), balance!(200), member!(1));
@@ -1838,7 +1843,7 @@ fn burn_ok_with_partially_burned_vesting_schedule_amounts_working_as_expected() 
     let vesting_schedule = default_vesting_schedule();
     let vesting_schedule_end_block =
         vesting_schedule.linear_vesting_start_block + vesting_schedule.linear_vesting_duration;
-    let account_data = AccountData::default().with_vesting_schedule(vesting_schedule.clone());
+    let account_data = ConfigAccountData::default().with_vesting_schedule(vesting_schedule.clone());
     let (token_id, (member_id, account)) = (token!(1), member!(1));
     let token_data = TokenDataBuilder::new_empty().build();
 

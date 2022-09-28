@@ -482,7 +482,7 @@ fn start_nft_auction_invalid_params() {
         );
 
         // Make an attempt to start nft auction if length of auction whitelist provided exceeds max allowed length
-        let whitelist: BTreeSet<_> = (0..=Content::max_auction_whitelist_length())
+        let whitelist: BTreeSet<_> = (0..=<Test as Config>::MaxNftAuctionWhitelistLength::get())
             .into_iter()
             .map(|member| member as u64)
             .collect();

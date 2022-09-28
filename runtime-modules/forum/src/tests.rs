@@ -3,6 +3,7 @@
 use super::*;
 use crate::mock::*;
 use frame_support::traits::Currency;
+use sp_std::iter::FromIterator;
 
 /// test cases are arranged as two layers.
 /// first layer is each method in defined in module.
@@ -2713,7 +2714,7 @@ fn set_stickied_threads_ok() {
             origin.clone(),
             moderator_id,
             category_id,
-            vec![thread_id],
+            BTreeSet::from_iter(vec![thread_id]),
             Ok(()),
         );
 
@@ -2749,14 +2750,14 @@ fn set_stickied_threads_ok() {
             origin,
             moderator_id,
             category_id,
-            vec![thread_id, thread_id_deleted],
+            BTreeSet::from_iter(vec![thread_id, thread_id_deleted]),
             Err(Error::<Runtime>::ThreadDoesNotExist.into()),
         );
     });
 }
 
 #[test]
-fn set_stickied_threads_fails_with_duplicated_ids() {
+fn set_stickied_threads_fails_with_max_number_of_stickied_threads_exceeded() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
@@ -2779,21 +2780,25 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
             true,
             Ok(()),
         );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_metadata(),
-            good_thread_text(),
-            Ok(()),
-        );
+        let thread_ids = (0..<Runtime as Config>::MaxStickiedThreads::get() + 1)
+            .map(|_| {
+                create_thread_mock(
+                    origin.clone(),
+                    forum_lead,
+                    forum_lead,
+                    category_id,
+                    good_thread_metadata(),
+                    good_thread_text(),
+                    Ok(()),
+                )
+            })
+            .collect::<BTreeSet<_>>();
         set_stickied_threads_mock(
             origin,
             moderator_id,
             category_id,
-            vec![thread_id, thread_id],
-            Err(Error::<Runtime>::StickiedThreadIdsDuplicates.into()),
+            thread_ids,
+            Err(Error::<Runtime>::MaxNumberOfStickiedThreadsExceeded.into()),
         );
     });
 }
@@ -2828,7 +2833,7 @@ fn set_stickied_threads_wrong_moderator() {
             origin,
             moderator_id,
             category_id,
-            vec![thread_id],
+            BTreeSet::from_iter(vec![thread_id]),
             Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
         );
     });
@@ -2871,7 +2876,7 @@ fn set_stickied_threads_thread_not_exists() {
             origin,
             moderator_id,
             category_id,
-            vec![wrong_thread_id],
+            BTreeSet::from_iter(vec![wrong_thread_id]),
             Err(Error::<Runtime>::ThreadDoesNotExist.into()),
         );
     });
