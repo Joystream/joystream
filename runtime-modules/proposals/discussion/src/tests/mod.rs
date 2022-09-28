@@ -4,6 +4,7 @@ use frame_support::assert_noop;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_system::RawOrigin;
 use frame_system::{EventRecord, Phase};
+use sp_std::iter::FromIterator;
 
 use crate::*;
 
@@ -75,7 +76,7 @@ struct DiscussionFixture {
     pub title: Vec<u8>,
     pub origin: RawOrigin<u64>,
     pub author_id: u64,
-    pub mode: ThreadMode<u64>,
+    pub mode: ThreadMode<BTreeSet<u64>>,
 }
 
 impl Default for DiscussionFixture {
@@ -90,7 +91,7 @@ impl Default for DiscussionFixture {
 }
 
 impl DiscussionFixture {
-    fn with_mode(self, mode: ThreadMode<u64>) -> Self {
+    fn with_mode(self, mode: ThreadMode<BTreeSet<u64>>) -> Self {
         Self { mode, ..self }
     }
 
@@ -488,7 +489,7 @@ struct ChangeThreadModeFixture {
     pub origin: RawOrigin<u128>,
     pub thread_id: u64,
     pub member_id: u64,
-    pub mode: ThreadMode<u64>,
+    pub mode: ThreadMode<BTreeSet<u64>>,
 }
 
 impl ChangeThreadModeFixture {
@@ -501,7 +502,7 @@ impl ChangeThreadModeFixture {
         }
     }
 
-    fn with_mode(self, mode: ThreadMode<u64>) -> Self {
+    fn with_mode(self, mode: ThreadMode<BTreeSet<u64>>) -> Self {
         Self { mode, ..self }
     }
 
@@ -829,7 +830,7 @@ fn change_thread_mode_succeeds() {
             .create_discussion_and_assert(Ok(1))
             .unwrap();
 
-        let thread_mode = ThreadMode::Closed(vec![2, 3]);
+        let thread_mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3]));
         let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
             .with_mode(thread_mode.clone());
         change_thread_mode_fixture.call_and_assert(Ok(()));
@@ -903,7 +904,7 @@ fn change_thread_mode_succeeds_with_councilor() {
 #[test]
 fn create_post_call_succeeds_with_closed_mode_by_author() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 11]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 11]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -921,7 +922,7 @@ fn create_post_call_succeeds_with_closed_mode_by_author() {
 #[test]
 fn create_post_call_succeeds_with_closed_mode_by_councilor() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 11]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 11]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -940,7 +941,7 @@ fn create_post_call_succeeds_with_closed_mode_by_councilor() {
 #[test]
 fn create_post_call_succeeds_with_closed_mode_by_white_listed_member() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 11]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 11]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -959,7 +960,7 @@ fn create_post_call_succeeds_with_closed_mode_by_white_listed_member() {
 #[test]
 fn create_post_call_fails_with_closed_mode_by_not_allowed_member() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 10]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 10]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -984,7 +985,7 @@ fn change_thread_mode_fails_with_exceeded_max_author_list_size() {
             .unwrap();
 
         let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
-            .with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+            .with_mode(ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3, 4, 5, 6])));
         change_thread_mode_fixture
             .call_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
     });
@@ -1000,7 +1001,7 @@ fn change_thread_mode_fails_with_invalid_whitelisted_member_id() {
             .unwrap();
 
         let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
-            .with_mode(ThreadMode::Closed(vec![2, 3, 9999]));
+            .with_mode(ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3, 9999])));
         change_thread_mode_fixture
             .call_and_assert(Err(Error::<Test>::WhitelistedMemberDoesNotExist.into()));
     });
@@ -1009,8 +1010,8 @@ fn change_thread_mode_fails_with_invalid_whitelisted_member_id() {
 #[test]
 fn create_discussion_call_fails_with_exceeded_max_author_list_size() {
     initial_test_ext().execute_with(|| {
-        let discussion_fixture =
-            DiscussionFixture::default().with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+        let discussion_fixture = DiscussionFixture::default()
+            .with_mode(ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3, 4, 5, 6])));
 
         discussion_fixture
             .create_discussion_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));

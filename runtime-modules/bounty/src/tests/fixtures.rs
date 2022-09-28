@@ -1,7 +1,7 @@
 use super::mocks::{Balances, Bounty, Event, System, Test};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Config, Entry, FundingType, OracleJudgmentOf, RawEvent,
+    ClosedContractWhitelist, Config, Entry, FundingType, OracleJudgmentOf, RawEvent,
 };
 use common::council::CouncilBudgetManager;
 use frame_support::dispatch::DispatchResult;
@@ -9,6 +9,7 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 
 // Recommendation from Parity on testing on_finalize
@@ -125,7 +126,7 @@ pub struct CreateBountyFixture {
     oracle_reward: u64,
     expected_milestone: Option<BountyMilestone<u64>>,
     entrant_stake: u64,
-    contract_type: AssuranceContractType<u64>,
+    contract_type: AssuranceContractType<BTreeSet<u64>>,
     oracle: BountyActor<u64>,
 }
 
@@ -272,8 +273,8 @@ impl CreateBountyFixture {
                 },
             };
 
-            let expected_bounty = BountyRecord::<u64, u64, u64> {
-                creation_params: params.clone(),
+            let expected_bounty = BountyRecord::<u64, u64, u64, ClosedContractWhitelist<Test>> {
+                creation_params: params.clone().try_into().unwrap(),
                 total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,

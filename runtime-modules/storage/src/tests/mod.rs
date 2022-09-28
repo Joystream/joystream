@@ -3,7 +3,7 @@
 mod fixtures;
 pub(crate) mod mocks;
 
-use frame_support::dispatch::DispatchError;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::{assert_err, assert_ok, StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
@@ -15,10 +15,10 @@ use sp_std::iter::{repeat, FromIterator};
 use common::working_group::WorkingGroup;
 
 use crate::{
-    BagId, DataObject, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
-    DistributionBucketId, DynamicBagId, DynamicBagType, Error, ModuleAccount, RawEvent,
-    RepayableBloatBond, StaticBagId, StorageBucketOperatorStatus, StorageTreasury,
-    UploadParameters, Voucher,
+    BagId, Base58Multihash, Config, DataObject, DataObjectCreationParameters, DataObjectStorage,
+    DistributionBucketFamily, DistributionBucketId, DynamicBagId, DynamicBagType, Error,
+    ModuleAccount, RawEvent, RepayableBloatBond, StaticBagId, StorageBucketOperatorStatus,
+    StorageTreasury, UploadParameters, Voucher,
 };
 
 use mocks::{
@@ -29,7 +29,7 @@ use mocks::{
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
-    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID, DISTRIBUTION_PROVIDER_IDS,
     DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, ONE_MB, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
@@ -672,7 +672,7 @@ fn update_storage_buckets_for_bags_fails_with_going_beyond_the_buckets_per_bag_l
         let limit = 3;
         set_update_storage_buckets_per_bag_limit(limit);
 
-        let buckets = BTreeSet::from_iter(0..=limit);
+        let buckets = BTreeSet::from_iter(0..=limit as u64);
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         UpdateStorageBucketForBagsFixture::new()
@@ -760,7 +760,9 @@ fn upload_succeeded() {
                 size: upload_params.object_creation_list[0].size,
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
-                    .clone(),
+                    .clone()
+                    .try_into()
+                    .unwrap(),
                 state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
@@ -1158,7 +1160,9 @@ fn upload_succeeded_with_dynamic_bag() {
                 size: upload_params.object_creation_list[0].size,
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
-                    .clone(),
+                    .clone()
+                    .try_into()
+                    .unwrap(),
                 state_bloat_bond: RepayableBloatBond::new(data_object_state_bloat_bond, None),
                 accepted: false,
             }
@@ -2664,7 +2668,7 @@ fn update_storage_bucket_for_bag_fails_with_voucher_limits_overflow() {
     // - add bucket2 to bag1
     let static_bag_id = StaticBagId::Council;
     let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-    pub const NEW_LIMIT: u64 = 7;
+    pub const NEW_LIMIT: u32 = 7;
     pub const OBJECTS_LIMIT: u64 = 10;
     pub const SIZE_LIMIT: u64 = u64::MAX;
 
@@ -2797,7 +2801,9 @@ fn update_blacklist_succeeded() {
             .with_add_hashes(add_hashes)
             .call_and_assert(Ok(()));
 
-        assert!(crate::Blacklist::contains_key(&cid1));
+        assert!(crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid1.clone().try_into().unwrap()
+        ));
         assert_eq!(Storage::current_blacklist_size(), 1);
 
         let remove_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
@@ -2809,8 +2815,12 @@ fn update_blacklist_succeeded() {
             .with_remove_hashes(remove_hashes.clone())
             .call_and_assert(Ok(()));
 
-        assert!(!crate::Blacklist::contains_key(&cid1));
-        assert!(crate::Blacklist::contains_key(&cid2));
+        assert!(!crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid1.try_into().unwrap()
+        ));
+        assert!(crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid2.try_into().unwrap()
+        ));
         assert_eq!(Storage::current_blacklist_size(), 1);
 
         EventFixture::assert_last_crate_event(RawEvent::UpdateBlacklist(remove_hashes, add_hashes));
@@ -2845,9 +2855,15 @@ fn update_blacklist_failed_with_exceeding_size_limit() {
             .with_remove_hashes(remove_hashes)
             .call_and_assert(Err(Error::<Test>::BlacklistSizeLimitExceeded.into()));
 
-        assert!(crate::Blacklist::contains_key(&cid1));
-        assert!(!crate::Blacklist::contains_key(&cid2));
-        assert!(!crate::Blacklist::contains_key(&cid3));
+        assert!(crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid1.try_into().unwrap()
+        ));
+        assert!(!crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid2.try_into().unwrap()
+        ));
+        assert!(!crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid3.try_into().unwrap()
+        ));
     });
 }
 
@@ -2879,9 +2895,15 @@ fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_ha
             .with_remove_hashes(remove_hashes)
             .call_and_assert(Err(Error::<Test>::BlacklistSizeLimitExceeded.into()));
 
-        assert!(crate::Blacklist::contains_key(&cid1));
-        assert!(!crate::Blacklist::contains_key(&cid2));
-        assert!(!crate::Blacklist::contains_key(&cid3));
+        assert!(crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid1.try_into().unwrap()
+        ));
+        assert!(!crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid2.try_into().unwrap()
+        ));
+        assert!(!crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid3.try_into().unwrap()
+        ));
     });
 }
 
@@ -2902,7 +2924,9 @@ fn update_blacklist_succeeds_with_existent_remove_hashes() {
             .with_add_hashes(add_hashes)
             .call_and_assert(Ok(()));
 
-        assert!(crate::Blacklist::contains_key(&cid1));
+        assert!(crate::Blacklist::contains_key::<&Base58Multihash>(
+            &cid1.try_into().unwrap()
+        ));
         assert_eq!(Storage::current_blacklist_size(), 1);
     });
 }
@@ -3029,7 +3053,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
         );
 
         let distributed_by_bag = bag.distributed_by;
-        for distribution_bucket_id in &distributed_by_bag {
+        for distribution_bucket_id in distributed_by_bag.as_ref() {
             let bucket = Storage::distribution_bucket_by_family_id_by_index(
                 distribution_bucket_id.distribution_bucket_family_id,
                 distribution_bucket_id.distribution_bucket_index,
@@ -3043,7 +3067,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
-        for distribution_bucket_id in &distributed_by_bag {
+        for distribution_bucket_id in distributed_by_bag.as_ref() {
             let bucket = Storage::distribution_bucket_by_family_id_by_index(
                 distribution_bucket_id.distribution_bucket_family_id,
                 distribution_bucket_id.distribution_bucket_index,
@@ -3075,7 +3099,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
         assert_eq!(bag.stored_by, storage_buckets);
 
         let stored_by_bag = bag.stored_by;
-        for bucket_id in &stored_by_bag {
+        for bucket_id in stored_by_bag.as_ref() {
             let bucket =
                 Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
@@ -3087,7 +3111,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
-        for bucket_id in &stored_by_bag {
+        for bucket_id in stored_by_bag.as_ref() {
             let bucket =
                 Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
@@ -3638,7 +3662,7 @@ fn create_dynamic_bag_succeeded() {
             total_distributed_buckets_number as usize
         );
 
-        for distribution_bucket_id in &bag.distributed_by {
+        for distribution_bucket_id in bag.distributed_by.as_ref() {
             let bucket = Storage::distribution_bucket_by_family_id_by_index(
                 distribution_bucket_id.distribution_bucket_family_id,
                 distribution_bucket_id.distribution_bucket_index,
@@ -4655,11 +4679,7 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_too_many_buckets_pe
                 .call_and_assert(Ok(()));
         }
 
-        let min_buckets_per_bag: u32 =
-            <Test as crate::Config>::DistributionBucketsPerBagValueConstraint::get()
-                .min
-                .try_into()
-                .unwrap();
+        let min_buckets_per_bag: u32 = <Test as crate::Config>::MinDistributionBucketsPerBag::get();
         let families = BTreeMap::from_iter(vec![
             (Storage::next_distribution_bucket_family_id() - 1, u32::MAX), // u32 overflow case test
             (
@@ -4687,11 +4707,7 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_not_enough_buckets_
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Ok(()));
 
-        let min_buckets_per_bag: u32 =
-            <Test as crate::Config>::DistributionBucketsPerBagValueConstraint::get()
-                .min
-                .try_into()
-                .unwrap();
+        let min_buckets_per_bag: u32 = <Test as crate::Config>::MinDistributionBucketsPerBag::get();
         let families = BTreeMap::from_iter(vec![(
             Storage::next_distribution_bucket_family_id() - 1,
             min_buckets_per_bag.saturating_sub(1),
@@ -5100,6 +5116,48 @@ fn accept_distribution_bucket_operator_invite_fails_with_non_invited_distributio
             .with_family_id(family_id)
             .with_bucket_index(bucket_index)
             .call_and_assert(Err(Error::<Test>::NoDistributionBucketInvitation.into()));
+    });
+}
+
+#[test]
+fn accept_distribution_bucket_operator_invite_fails_with_max_number_of_operators_reached() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let family_id = CreateDistributionBucketFamilyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let bucket_index = CreateDistributionBucketFixture::new()
+            .with_family_id(family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        for i in 0..=<Test as Config>::MaxNumberOfOperatorsPerDistributionBucket::get() {
+            let operator_id = DISTRIBUTION_PROVIDER_IDS[i as usize];
+            let expected_result = match i
+                == <Test as Config>::MaxNumberOfOperatorsPerDistributionBucket::get()
+            {
+                true => Err(Error::<Test>::MaxNumberOfOperatorsPerDistributionBucketReached.into()),
+                false => DispatchResult::Ok(()),
+            };
+            InviteDistributionBucketOperatorFixture::new()
+                .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+                .with_bucket_index(bucket_index)
+                .with_family_id(family_id)
+                .with_operator_worker_id(operator_id)
+                .call_and_assert(Ok(()));
+
+            AcceptDistributionBucketInvitationFixture::new()
+                .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+                .with_family_id(family_id)
+                .with_bucket_index(bucket_index)
+                .with_worker_id(operator_id)
+                .call_and_assert(expected_result);
+        }
     });
 }
 

@@ -113,15 +113,15 @@ parameter_types! {
     pub const DataObjectStateBloatBond: u64 = 10;
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 200;
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
-    pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
-        crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
-    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
-    pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
-        crate::DistributionBucketsPerBagValueConstraint {min: 2, max_min_diff: 7};
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
+    pub const MinStorageBucketsPerBag: u32 = 3;
+    pub const MaxStorageBucketsPerBag: u32 = 10;
+    pub const MinDistributionBucketsPerBag: u32 = 2;
+    pub const MaxDistributionBucketsPerBag: u32 = 9;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
     pub const MaxDataObjectSize: u64 = u64::MAX - 1000;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -137,14 +137,15 @@ pub const BENCHMARKING_STORAGE_PROVIDER_ID1: u64 = 0;
 pub const BENCHMARKING_STORAGE_PROVIDER_ID2: u64 = 1;
 pub const BENCHMARKING_DISTRIBUTION_PROVIDER_ID1: u64 = 0;
 pub const BENCHMARKING_DISTRIBUTION_PROVIDER_ID2: u64 = 1;
-pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
-pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
+pub const DISTRIBUTION_PROVIDER_IDS: [u64; 6] = [12, 13, 14, 15, 16, 17];
+pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = DISTRIBUTION_PROVIDER_IDS[0];
+pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = DISTRIBUTION_PROVIDER_IDS[1];
 pub const INITIAL_BALANCE: u64 = 10_000;
 pub const VOUCHER_SIZE_LIMIT: u64 = 100;
 pub const VOUCHER_OBJECTS_LIMIT: u64 = 20;
 pub const DEFAULT_STORAGE_BUCKET_SIZE_LIMIT: u64 = 100;
 pub const DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT: u64 = 10;
-pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 3;
+pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u32 = 3;
 pub const ONE_MB: u64 = 1_048_576;
 
 impl crate::Config for Test {
@@ -157,15 +158,18 @@ impl crate::Config for Test {
     type ChannelId = u64;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = u64;
     type WeightInfo = ();
@@ -481,11 +485,13 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let allowed_providers = vec![
-            DEFAULT_DISTRIBUTION_PROVIDER_ID,
-            ANOTHER_DISTRIBUTION_PROVIDER_ID,
             BENCHMARKING_DISTRIBUTION_PROVIDER_ID1,
             BENCHMARKING_DISTRIBUTION_PROVIDER_ID2,
-        ];
+        ]
+        .iter()
+        .chain(DISTRIBUTION_PROVIDER_IDS.iter())
+        .cloned()
+        .collect::<Vec<_>>();
 
         if !allowed_providers.contains(worker_id) {
             Err(DispatchError::Other("Invalid worker"))
@@ -523,7 +529,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Distribution
     }
 }
 
-pub(crate) fn create_cid(i: u32) -> crate::Cid {
+pub(crate) fn create_cid(i: u32) -> Vec<u8> {
     let bytes = i.to_be_bytes();
     let mut buffer = Vec::new();
 

@@ -92,6 +92,30 @@ query getFoundingMemberCreatedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
+fragment MemberCreatedEventFields on MemberCreatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+}
+
+query getMemberCreatedEventsByEventIds($eventIds: [ID!]) {
+  memberCreatedEvents(where: { id_in: $eventIds }) {
+    ...MemberCreatedEventFields
+  }
+}
+
 fragment MembershipGiftedEventFields on MembershipGiftedEvent {
   id
   createdAt

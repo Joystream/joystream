@@ -7,17 +7,17 @@ import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { EventDetails, EventType } from '../../types'
-import { FoundingMemberCreatedEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
+import { MemberCreatedEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
 import { SubmittableResult } from '@polkadot/api'
 
-type FoundingMemberCreatedEventDetails = EventDetails<EventType<'members', 'FoundingMemberCreated'>>
+type MemberCreatedEventDetails = EventDetails<EventType<'members', 'MemberCreated'>>
 
-export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
+export class CreateMemberHappyCaseFixture extends StandardizedFixture {
   protected accounts: string[]
   protected memberIds: MemberId[] = []
-  protected events: FoundingMemberCreatedEventDetails[] = []
+  protected events: MemberCreatedEventDetails[] = []
   protected members: Membership[] = []
   protected defaultInviteCount!: number
 
@@ -33,12 +33,12 @@ export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.accounts.map((a) => {
-      return this.api.tx.sudo.sudo(this.api.tx.members.createMember(generateParamsFromAccountId(a, true)))
+      return this.api.tx.sudo.sudo(this.api.tx.members.createMember(generateParamsFromAccountId(a)))
     })
   }
 
-  protected async getEventFromResult(result: SubmittableResult): Promise<FoundingMemberCreatedEventDetails> {
-    return this.api.getEventDetails(result, 'members', 'FoundingMemberCreated')
+  protected async getEventFromResult(result: SubmittableResult): Promise<MemberCreatedEventDetails> {
+    return this.api.getEventDetails(result, 'members', 'MemberCreated')
   }
 
   public getCreatedMembers(): MemberId[] {
@@ -47,7 +47,7 @@ export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
 
   protected assertQueriedMembersAreValid(
     qMembers: MembershipFieldsFragment[],
-    qEvents: FoundingMemberCreatedEventFieldsFragment[]
+    qEvents: MemberCreatedEventFieldsFragment[]
   ): void {
     this.events.forEach((e, i) => {
       const account = this.accounts[i]
@@ -77,18 +77,15 @@ export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
         externalResources ?? [],
         metadata.externalResources?.map(asMembershipExternalResource) ?? []
       )
-      assert.equal(isVerified, true)
-      assert.equal(isFoundingMember, true)
-      Utils.assert(
-        entry.__typename === 'MembershipEntryFoundingMemberCreated',
-        'Query node: Invalid membership entry method'
-      )
-      Utils.assert(entry.foundingMemberCreatedEvent)
-      assert.equal(entry.foundingMemberCreatedEvent.id, qEvent.id)
+      assert.equal(isVerified, false)
+      assert.equal(isFoundingMember, false)
+      Utils.assert(entry.__typename === 'MembershipEntryMemberCreated', 'Query node: Invalid membership entry method')
+      Utils.assert(entry.memberCreatedEvent)
+      assert.equal(entry.memberCreatedEvent.id, qEvent.id)
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: FoundingMemberCreatedEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: MemberCreatedEventFieldsFragment, i: number): void {
     const account = this.accounts[i]
     const eventDetails = this.events[i]
     const txParams = generateParamsFromAccountId(account)
@@ -123,7 +120,7 @@ export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
     await super.runQueryNodeChecks()
 
     const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getFoundingMemberCreatedEvents(this.events),
+      () => this.query.getMemberCreatedEvents(this.events),
       (res) => this.assertQueryNodeEventsAreValid(res)
     )
 

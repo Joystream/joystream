@@ -8,7 +8,7 @@ import {
   PalletMembershipBuyMembershipParameters as BuyMembershipParameters,
   PalletMembershipInviteMembershipParameters as InviteMembershipParameters,
   PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
-  PalletMembershipCreateFoundingMemberParameters as CreateFoundingMemberParameters,
+  PalletMembershipCreateMemberParameters as CreateMemberParameters,
 } from '@polkadot/types/lookup'
 import {
   MembershipMetadata,
@@ -35,6 +35,7 @@ import {
   MembershipBoughtEvent,
   MembershipGiftedEvent,
   FoundingMemberCreatedEvent,
+  MemberCreatedEvent,
   MemberProfileUpdatedEvent,
   MemberAccountsUpdatedEvent,
   MemberInvitedEvent,
@@ -52,6 +53,7 @@ import {
   MembershipEntryInvited,
   MembershipEntryGifted,
   MembershipEntryFoundingMemberCreated,
+  MembershipEntryMemberCreated,
   AvatarUri,
   WorkingGroup,
   MembershipExternalResource,
@@ -155,11 +157,7 @@ async function createNewMemberFromParams(
   event: SubstrateEvent,
   memberId: MemberId,
   entryMethod: typeof MembershipEntryMethod,
-  params:
-    | BuyMembershipParameters
-    | InviteMembershipParameters
-    | GiftMembershipParameters
-    | CreateFoundingMemberParameters,
+  params: BuyMembershipParameters | InviteMembershipParameters | GiftMembershipParameters | CreateMemberParameters,
   inviteCount: number
 ): Promise<Membership> {
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
@@ -328,6 +326,36 @@ export async function members_FoundingMemberCreated({ store, event }: EventConte
 
   // Update the other side of event<->membership relation
   memberEntry.foundingMemberCreatedEventId = foundingMemberCreatedEvent.id
+  await store.save<Membership>(member)
+}
+
+export async function members_MemberCreated({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [memberId, memberParameters, inviteCount] = new Members.MemberCreatedEvent(event).params
+
+  const memberEntry = new MembershipEntryMemberCreated()
+  const member = await createNewMemberFromParams(
+    store,
+    event,
+    memberId,
+    memberEntry,
+    memberParameters,
+    inviteCount.toNumber()
+  )
+
+  const memberCreatedEvent = new MemberCreatedEvent({
+    ...genericEventFields(event),
+    newMember: member,
+
+    controllerAccount: member.controllerAccount,
+    rootAccount: member.rootAccount,
+    handle: member.handle,
+    metadata: await saveMembershipMetadata(store, member),
+  })
+
+  await store.save<MemberCreatedEvent>(memberCreatedEvent)
+
+  // Update the other side of event<->membership relation
+  memberEntry.memberCreatedEventId = memberCreatedEvent.id
   await store.save<Membership>(member)
 }
 

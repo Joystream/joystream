@@ -941,6 +941,7 @@ export type MembershipFieldsFragment = {
     | { __typename: 'MembershipEntryInvited'; memberInvitedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'MembershipEntryGifted'; membershipGiftedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'MembershipEntryFoundingMemberCreated'; foundingMemberCreatedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'MembershipEntryMemberCreated'; memberCreatedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'MembershipEntryGenesis' }
   invitedBy?: Types.Maybe<{ id: string }>
   invitees: Array<{ id: string }>
@@ -1042,6 +1043,26 @@ export type GetFoundingMemberCreatedEventsByEventIdsQueryVariables = Types.Exact
 export type GetFoundingMemberCreatedEventsByEventIdsQuery = {
   foundingMemberCreatedEvents: Array<FoundingMemberCreatedEventFieldsFragment>
 }
+
+export type MemberCreatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rootAccount: string
+  controllerAccount: string
+  handle: string
+  newMember: { id: string }
+  metadata: MemberMetadataFieldsFragment
+}
+
+export type GetMemberCreatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetMemberCreatedEventsByEventIdsQuery = { memberCreatedEvents: Array<MemberCreatedEventFieldsFragment> }
 
 export type MembershipGiftedEventFieldsFragment = {
   id: string
@@ -3432,6 +3453,11 @@ export const MembershipFields = gql`
           id
         }
       }
+      ... on MembershipEntryMemberCreated {
+        memberCreatedEvent {
+          id
+        }
+      }
     }
     isVerified
     isFoundingMember
@@ -3504,6 +3530,26 @@ export const MemberAccountsUpdatedEventFields = gql`
 `
 export const FoundingMemberCreatedEventFields = gql`
   fragment FoundingMemberCreatedEventFields on FoundingMemberCreatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    newMember {
+      id
+    }
+    rootAccount
+    controllerAccount
+    handle
+    metadata {
+      ...MemberMetadataFields
+    }
+  }
+  ${MemberMetadataFields}
+`
+export const MemberCreatedEventFields = gql`
+  fragment MemberCreatedEventFields on MemberCreatedEvent {
     id
     createdAt
     inBlock
@@ -5193,6 +5239,14 @@ export const GetFoundingMemberCreatedEventsByEventIds = gql`
     }
   }
   ${FoundingMemberCreatedEventFields}
+`
+export const GetMemberCreatedEventsByEventIds = gql`
+  query getMemberCreatedEventsByEventIds($eventIds: [ID!]) {
+    memberCreatedEvents(where: { id_in: $eventIds }) {
+      ...MemberCreatedEventFields
+    }
+  }
+  ${MemberCreatedEventFields}
 `
 export const GetMembershipGiftedEventsByEventIds = gql`
   query getMembershipGiftedEventsByEventIds($eventIds: [ID!]) {

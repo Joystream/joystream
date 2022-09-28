@@ -1,4 +1,4 @@
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,9 @@ use strum_macros::EnumIter;
 
 /// Defines well-known working groups.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo)]
+#[derive(
+    Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen,
+)]
 pub enum WorkingGroup {
     /// Forum working group: working_group::Instance1.
     Forum,
