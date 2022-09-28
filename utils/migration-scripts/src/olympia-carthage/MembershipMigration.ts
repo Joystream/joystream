@@ -39,7 +39,7 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
   ): Promise<void> {
     const { api } = this
     // we use sudo to bypass the system call filter present in initial deployment stage
-    const result = await api.sendExtrinsic(this.sudo, api.tx.sudo.sudo(tx))
+    const result = await api.sendExtrinsic(this.sudo, tx)
     const indexedMembershipBoughtId = api
       .findEvents(result, 'members', 'MembershipBought')
       .map((e) => ({ index: e.index, id: e.data[0] }))
@@ -118,9 +118,8 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
         rootAccount,
         metadata: `0x${Buffer.from(MembershipMetadata.encode(meta).finish()).toString('hex')}`,
       })
-      return api.tx.members.createFoundingMember(createFoundingMemberParams)
+      return api.tx.sudo.sudo(api.tx.members.createFoundingMember(createFoundingMemberParams))
     } else {
-      // Change this to use createMember()
       const buyMembershipParams = createType('PalletMembershipBuyMembershipParameters', {
         handle,
         controllerAccount,
@@ -128,7 +127,7 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
         referrerId: null,
         metadata: `0x${Buffer.from(MembershipMetadata.encode(meta).finish()).toString('hex')}`,
       })
-      return api.tx.members.buyMembership(buyMembershipParams)
+      return api.tx.sudo.sudoAs(this.sudo.address, api.tx.members.buyMembership(buyMembershipParams))
     }
   }
 }
