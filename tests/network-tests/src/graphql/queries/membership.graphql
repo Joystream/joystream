@@ -42,6 +42,11 @@ fragment MembershipFields on Membership {
         id
       }
     }
+    ... on MembershipEntryMemberCreated {
+      memberCreatedEvent {
+        id
+      }
+    }
   }
   isVerified
   isFoundingMember
