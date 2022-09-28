@@ -33,7 +33,7 @@ export class CreateFoundingMemberHappyCaseFixture extends StandardizedFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.accounts.map((a) => {
-      return this.api.tx.sudo.sudo(this.api.tx.members.createFoundingMember(generateParamsFromAccountId(a)))
+      return this.api.tx.sudo.sudo(this.api.tx.members.createMember(generateParamsFromAccountId(a, true)))
     })
   }
 

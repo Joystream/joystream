@@ -249,6 +249,9 @@ pub struct CreateMemberParameters<AccountId> {
 
     /// Metadata concerning new member.
     pub metadata: Vec<u8>,
+
+    /// Founding Member Status
+    pub is_founding_member: bool,
 }
 
 decl_error! {
@@ -1177,48 +1180,6 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
         }
 
-        /// Create a founding member profile as root.
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (I + J)` where:
-        /// - `I` is the length of the handle
-        /// - `J` is the length of the metadata
-        /// - DB:
-        ///    - O(1) doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = WeightInfoMembership::<T>::create_member(
-            params.handle.len() as u32,
-            params.metadata.len() as u32
-        )]
-        pub fn create_founding_member(
-            origin,
-            params: CreateMemberParameters<T::AccountId>
-        ) {
-            ensure_root(origin)?;
-
-            let handle_hash = Self::get_handle_hash(&Some(params.handle.clone()))?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-            let initial_invitation_count = Self::initial_invitation_count();
-
-            let member_id = Self::insert_member(
-                &params.root_account,
-                &params.controller_account,
-                handle_hash,
-                initial_invitation_count,
-                true
-            );
-
-            // Fire the event.
-            Self::deposit_event(
-                RawEvent::FoundingMemberCreated(member_id, params, initial_invitation_count)
-            );
-        }
-
         /// Create a member profile as root.
         ///
         /// <weight>
@@ -1252,13 +1213,19 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 initial_invitation_count,
-                false
+                params.is_founding_member
             );
 
-            // Fire the event.
-            Self::deposit_event(
-                RawEvent::MemberCreated(member_id, params, initial_invitation_count)
-            );
+            if params.is_founding_member {
+                // Fire the event.
+                Self::deposit_event(
+                    RawEvent::FoundingMemberCreated(member_id, params, initial_invitation_count)
+                );
+            } else {
+                Self::deposit_event(
+                    RawEvent::MemberCreated(member_id, params, initial_invitation_count)
+                );
+            }
         }
     }
 }

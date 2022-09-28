@@ -781,6 +781,7 @@ benchmarks! {
             controller_account: account_id.clone(),
             handle: handle.clone(),
             metadata,
+            is_founding_member: false,
         };
 
     }: _(RawOrigin::Root, params.clone())

@@ -554,7 +554,8 @@ export default {
     rootAccount: 'AccountId32',
     controllerAccount: 'AccountId32',
     handle: 'Bytes',
-    metadata: 'Bytes'
+    metadata: 'Bytes',
+    isFoundingMember: 'bool'
   },
   /**
    * Lookup75: pallet_membership::GiftMembershipParameters<sp_core::crypto::AccountId32, Balance>
@@ -2677,9 +2678,6 @@ export default {
       member_remark: {
         memberId: 'u64',
         msg: 'Bytes',
-      },
-      create_founding_member: {
-        params: 'PalletMembershipCreateMemberParameters',
       },
       create_member: {
         params: 'PalletMembershipCreateMemberParameters'

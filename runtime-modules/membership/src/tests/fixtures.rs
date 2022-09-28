@@ -805,6 +805,7 @@ impl CreateFoundingMemberFixture {
                 controller_account: ALICE_ACCOUNT_ID,
                 handle: alice.handle.unwrap(),
                 metadata: alice.metadata,
+                is_founding_member: true,
             },
         }
     }
@@ -826,7 +827,7 @@ impl CreateFoundingMemberFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let expected_member_id = Membership::members_created();
         let actual_result =
-            Membership::create_founding_member(self.origin.clone().into(), self.params.clone());
+            Membership::create_member(self.origin.clone().into(), self.params.clone());
 
         if expected_result.is_ok() {
             assert_ok!(actual_result);
@@ -873,6 +874,7 @@ impl CreateMemberFixture {
                 controller_account: ALICE_ACCOUNT_ID,
                 handle: alice.handle.unwrap(),
                 metadata: alice.metadata,
+                is_founding_member: false,
             },
         }
     }

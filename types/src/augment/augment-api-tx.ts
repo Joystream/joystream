@@ -2694,20 +2694,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       confirmStakingAccount: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, stakingAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
       /**
-       * Create a founding member profile as root.
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (I + J)` where:
-       * - `I` is the length of the handle
-       * - `J` is the length of the metadata
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
-      createFoundingMember: AugmentedSubmittable<(params: PalletMembershipCreateMemberParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipCreateMemberParameters]>;
-      /**
        * Create a member profile as root.
        * 
        * <weight>
@@ -2720,7 +2706,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      createMember: AugmentedSubmittable<(params: PalletMembershipCreateMemberParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipCreateMemberParameters]>;
+      createMember: AugmentedSubmittable<(params: PalletMembershipCreateMemberParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any; isFoundingMember?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipCreateMemberParameters]>;
       /**
        * Gift a membership using own funds. Gifter does not need to be a member.
        * Can optinally apply a lock on a portion of the funds transferred to root and controller
