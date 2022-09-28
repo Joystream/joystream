@@ -40,9 +40,7 @@ export class MigrateMembersCommand extends Command {
       const api = new RuntimeApi({ provider: new WsProvider(opts.wsProviderEndpointUri) })
       await api.isReadyOrError
       const snapshot = JSON.parse(readFileSync(opts.snapshotFilePath).toString()) as MembershipsSnapshot
-      const foundingMembers = opts.foundingMembersFilePath
-        ? (JSON.parse(readFileSync(opts.foundingMembersFilePath!).toString()) as FoundingMembers)
-        : []
+      const foundingMembers = JSON.parse(readFileSync(opts.foundingMembersFilePath).toString()) as FoundingMembers
       const migration = new MembershipMigration({
         api,
         snapshot,

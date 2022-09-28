@@ -1,4 +1,4 @@
-import creatingMemberships from '../flows/membership/creatingMemberships'
+import buyingMemberships from '../flows/membership/buyingMemberships'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
 import invitingMebers from '../flows/membership/invitingMembers'
@@ -8,7 +8,7 @@ import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Olympia', async ({ job }) => {
-  job('creating members', creatingMemberships)
+  job('buying members', buyingMemberships)
   job('updating member profile', updatingMemberProfile)
   job('updating member accounts', updatingMemberAccounts)
   job('inviting members', invitingMebers)

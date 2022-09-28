@@ -86,7 +86,7 @@ export abstract class BaseMigration<T> {
     this.logger.info('Exitting...')
     if (signal && this.pendingMigrationIteration !== undefined) {
       this.logger.info('Waiting for currently pending migration iteration to finalize...')
-      void this.pendingMigrationIteration.then(() => {
+      this.pendingMigrationIteration.then(() => {
         this.saveMigrationState(true)
         this.logger.info('Done.')
         process.kill(process.pid, signal)
@@ -130,10 +130,8 @@ export abstract class BaseMigration<T> {
   /**
    * Extract failed migrations (entity ids) from batch transaction result.
    * Assumptions:
-   * - Each entity is migrated with a constant number of calls (1 by default: balnces.transferKeepAlive and sudo.sudoAs)
+   * - Each entity is migrated with a constant number of calls (1 by default: sudo.sudo)
    * - Ordering of the entities in the `batch` array matches the ordering of the batched calls through which they are migrated
-   * - If `usesSudoAs===true`: Last call for each entity is always sudo.sudoAs
-   * - If `usesSudoAs===true`: There is only one sudo.sudoAs call per entity
    *
    * Entity migration is considered failed if the last call (per entity) failed or was not executed at all, regardless of
    * the result of any of the previous calls associated with that entity migration.
@@ -144,7 +142,7 @@ export abstract class BaseMigration<T> {
   protected extractFailedMigrations<T extends { id: string }>(
     result: SubmittableResult,
     batch: T[],
-    callsPerEntity = 2,
+    callsPerEntity = 1,
     usesSudoAs = true,
     usesSudo = true
   ): void {
@@ -156,7 +154,7 @@ export abstract class BaseMigration<T> {
     const numberOfMigratedEntites = Math.floor(numberOfSuccesfulCalls / callsPerEntity)
 
     const sudoAsDoneEvents = api.findEvents(result, 'sudo', 'SudoAsDone')
-    const sudoSudidEvent = api.findEvent(result, 'sudo', 'Sudid')
+    const sudoSudidEvents = api.findEvents(result, 'sudo', 'Sudid')
     if (usesSudoAs && sudoAsDoneEvents.length !== numberOfMigratedEntites) {
       throw new Error(
         `Unexpected number of SudoAsDone events (expected: ${numberOfMigratedEntites}, got: ${sudoAsDoneEvents.length})! ` +
@@ -164,14 +162,21 @@ export abstract class BaseMigration<T> {
       )
     }
 
-    if (usesSudo && sudoSudidEvent && sudoSudidEvent.data[0].isErr) {
-      throw new Error(`Sudo call failed ${JSON.stringify(result.toHuman())}`)
+    if (usesSudo && sudoSudidEvents.length !== numberOfMigratedEntites) {
+      throw new Error(
+        `Unexpected number of Sudid events (expected: ${numberOfMigratedEntites}, got: ${sudoSudidEvents.length})! ` +
+          `Could not extract failed migrations from: ${JSON.stringify(result.toHuman())}`
+      )
     }
 
     const failedIds: number[] = []
     batch.forEach((entity, i) => {
       const entityId = parseInt(entity.id)
-      if (i >= numberOfMigratedEntites || (usesSudoAs && sudoAsDoneEvents[i].data[0].isErr)) {
+      if (
+        i >= numberOfMigratedEntites ||
+        (usesSudoAs && sudoAsDoneEvents[i].data[0].isErr) ||
+        (usesSudo && sudoSudidEvents[i].data[0].isErr)
+      ) {
         failedIds.push(entityId)
         this.failedMigrations.add(entityId)
       }
