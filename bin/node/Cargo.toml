@@ -80,6 +80,9 @@ pallet-transaction-storage = { package = 'pallet-transaction-storage', default-f
 # node-specific dependencies
 node-runtime = { package = "joystream-node-runtime", path = "../../runtime" }
 
+# overrides
+overrides = { package = "overrides", path = "../overrides" }
+
 # CLI-specific dependencies
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 frame-benchmarking-cli = { package = 'frame-benchmarking-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}

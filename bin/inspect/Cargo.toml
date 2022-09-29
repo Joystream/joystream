@@ -18,3 +18,4 @@ sc-service = { package = 'sc-service', git = 'https://github.com/joystream/subst
 sp-blockchain = { package = 'sp-blockchain', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
 sp-core = { package = 'sp-core', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
 sp-runtime = { package = 'sp-runtime', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
+overrides = { package = "overrides", path = "../overrides" }
