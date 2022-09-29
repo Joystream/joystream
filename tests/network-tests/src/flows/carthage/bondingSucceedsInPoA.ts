@@ -10,7 +10,7 @@ export default async function bondingSucceedsInPoA({ api, query, env }: FlowProp
   debug('started')
   api.enableDebugTxLogs()
 
-  const bondAmount = new BN(100000)
+  const bondAmount = new BN(1000000000)
 
   // we are in poa
   const currentEra = await api.getCurrentEra()

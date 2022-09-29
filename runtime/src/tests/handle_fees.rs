@@ -3,7 +3,6 @@ use super::{
 };
 use crate::{currency, AccountId, Balances, DealWithFees, NegativeImbalance};
 use frame_support::traits::{Currency, Imbalance, OnUnbalanced};
-use sp_runtime::traits::Zero;
 
 #[test]
 fn block_author_only_receives_tips() {

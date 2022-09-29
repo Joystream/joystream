@@ -11,7 +11,7 @@ export default async function authoritiesDoGetTips({ api, query, env }: FlowProp
   api.enableDebugTxLogs()
 
   const nBlocks = 10
-  const bondAmount = new BN(100000)
+  const bondAmount = new BN(1000000000)
 
   // get authorities
   const authorities = (await api.getSessionAuthorities()).map((account) => account.toString())

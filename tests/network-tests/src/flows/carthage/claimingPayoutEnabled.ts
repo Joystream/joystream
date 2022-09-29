@@ -13,7 +13,7 @@ export default async function claimingPayoutsEnabled({ api, query, env }: FlowPr
 
   const nAccounts = 10
   const nBlocks = 100
-  const bondAmount = new BN(100000)
+  const bondAmount = new BN(1000000000)
   const claimingEra = 10
 
   // create n accounts
