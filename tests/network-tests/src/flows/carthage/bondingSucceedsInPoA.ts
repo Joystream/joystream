@@ -1,8 +1,8 @@
-import { extendDebug } from 'src/Debugger'
-import { FixtureRunner } from 'src/Fixture'
-import { FlowProps } from 'src/Flow'
+import { extendDebug } from '../../Debugger'
+import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import BN from 'bn.js'
-import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
+import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { assert } from 'chai'
 
 export default async function bondingSucceedsInPoA({ api, query, env }: FlowProps): Promise<void> {

@@ -1,10 +1,10 @@
-import { extendDebug } from 'src/Debugger'
-import { FixtureRunner } from 'src/Fixture'
-import { FlowProps } from 'src/Flow'
+import { extendDebug } from '../../Debugger'
+import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import { BN } from 'bn.js'
 import { expect } from 'chai'
-import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
-import { ClaimingPayoutStakersSucceedsFixture } from 'src/fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
+import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
+import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 
 export default async function claimingPayoutsDisabled({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: claiming staking rewards is disabled in PoA ')

@@ -1,5 +1,5 @@
-import { extendDebug } from 'src/Debugger'
-import { FlowProps } from 'src/Flow'
+import { extendDebug } from '../../Debugger'
+import { FlowProps } from '../../Flow'
 import { assert } from 'chai'
 
 export default async function currentEraIsNoneInPoA({ api, query, env }: FlowProps): Promise<void> {

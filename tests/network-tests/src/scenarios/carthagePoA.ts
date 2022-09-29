@@ -1,11 +1,11 @@
-import bondingSucceedsInPoA from 'src/flows/carthage/bondingSucceedsInPoA'
-import claimingPayoutsDisabled from 'src/flows/carthage/claimingPayoutsDisabled'
-import nominateSucceedsInPoA from 'src/flows/carthage/nominateSucceedsInPoA'
-import validateSucceedsInPoA from 'src/flows/carthage/validateSucceedsInPoA'
+import bondingSucceedsInPoA from '../flows/carthage/bondingSucceedsInPoA'
+import claimingPayoutsDisabled from '../flows/carthage/claimingPayoutsDisabled'
+import nominateSucceedsInPoA from '../flows/carthage/nominateSucceedsInPoA'
+import validateSucceedsInPoA from '../flows/carthage/validateSucceedsInPoA'
 import constantAuthorities from '../flows/carthage/constantAuthorities'
 import { scenario } from '../Scenario'
-import currentEraIsNoneInPoA from 'src/flows/carthage/currentEraIsNoneInPoA'
-import authoritiesDoGetTips from 'src/flows/carthage/authoritiesDoGetTips'
+import currentEraIsNoneInPoA from '../flows/carthage/currentEraIsNoneInPoA'
+import authoritiesDoGetTips from '../flows/carthage/authoritiesDoGetTips'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Carthage PoA setup', async ({ job }) => {

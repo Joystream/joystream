@@ -1,9 +1,9 @@
-import { extendDebug } from 'src/Debugger'
-import { FixtureRunner } from 'src/Fixture'
+import { extendDebug } from '../../Debugger'
+import { FixtureRunner } from '../../Fixture'
 import BN from 'bn.js'
-import { FlowProps } from 'src/Flow'
+import { FlowProps } from '../../Flow'
 import { assert } from 'chai'
-import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
+import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 
 export default async function authoritiesDoGetTips({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug("flow: authorities don't get tips in PoA")

@@ -1,5 +1,5 @@
-import { extendDebug } from 'src/Debugger'
-import { FlowProps } from 'src/Flow'
+import { extendDebug } from '../../Debugger'
+import { FlowProps } from '../../Flow'
 import { expect } from 'chai'
 
 export default async function changingAuthorities({ api, query, env }: FlowProps): Promise<void> {

@@ -1,10 +1,10 @@
-import { extendDebug } from 'src/Debugger'
-import { FixtureRunner } from 'src/Fixture'
-import { FlowProps } from 'src/Flow'
+import { extendDebug } from '../../Debugger'
+import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import { assert } from 'chai'
 import BN from 'bn.js'
-import { BondingSucceedsFixture } from 'src/fixtures/staking/BondingSucceedsFixture'
-import { ValidatingSucceedsFixture } from 'src/fixtures/staking/ValidatingSucceedsFixture'
+import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
+import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
 
 export default async function validateSucceedsInPoA({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: validate succeeds in PoA')
