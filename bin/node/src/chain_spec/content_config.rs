@@ -27,7 +27,6 @@ pub fn production_config() -> ContentConfig {
         max_bid_step: 200_000_000_000_000_000,
         platform_fee_percentage: Perbill::from_percent(1),
         auction_starts_at_max_delta: DAYS * 30,
-        max_auction_whitelist_length: 100,
         nft_limits_enabled: false,
         channel_state_bloat_bond_value: ExistentialDeposit::get() + 10 * currency::CENTS, // Must be higher than ExistentialDeposit!
         video_state_bloat_bond_value: 2 * currency::CENTS,
@@ -57,7 +56,6 @@ pub fn testing_config() -> ContentConfig {
         max_bid_step: 200_000_000_000_000_000,
         platform_fee_percentage: Perbill::from_percent(1),
         auction_starts_at_max_delta: DAYS * 30,
-        max_auction_whitelist_length: 100,
         nft_limits_enabled: false,
         channel_state_bloat_bond_value: ExistentialDeposit::get() + 10 * currency::CENTS, // Must be higher than ExistentialDeposit!
         video_state_bloat_bond_value: 2 * currency::CENTS,

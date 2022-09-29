@@ -69,14 +69,13 @@ pub fn assert_dispatch_error_message(result: DispatchResult, expected_result: Di
 #[derive(Clone, Debug, PartialEq)]
 pub struct TestUserInfo {
     pub handle: Option<Vec<u8>>,
-    pub handle_hash: Option<Vec<u8>>,
+    pub handle_hash: Option<<Test as frame_system::Config>::Hash>,
     pub metadata: Vec<u8>,
 }
 
 pub fn get_alice_info() -> TestUserInfo {
     let handle = b"alice".to_vec();
-    let hashed = <Test as frame_system::Config>::Hashing::hash(&handle);
-    let hash = hashed.as_ref().to_vec();
+    let hash = <Test as frame_system::Config>::Hashing::hash(&handle);
 
     let metadata = b"
     {
@@ -96,8 +95,7 @@ pub fn get_alice_info() -> TestUserInfo {
 
 pub fn get_bob_info() -> TestUserInfo {
     let handle = b"bobby".to_vec();
-    let hashed = <Test as frame_system::Config>::Hashing::hash(&handle);
-    let hash = hashed.as_ref().to_vec();
+    let hash = <Test as frame_system::Config>::Hashing::hash(&handle);
 
     let metadata = b"
     {
@@ -833,10 +831,7 @@ impl CreateFoundingMemberFixture {
         if expected_result.is_ok() {
             assert_ok!(actual_result);
 
-            let handle_hash: Vec<u8> =
-                <Test as frame_system::Config>::Hashing::hash(&self.params.handle.clone())
-                    .as_ref()
-                    .to_vec();
+            let handle_hash = <Test as frame_system::Config>::Hashing::hash(&self.params.handle);
             let profile = get_membership_by_id(expected_member_id);
 
             assert_eq!(Membership::handles(handle_hash.clone()), expected_member_id);

@@ -180,8 +180,8 @@ fn setup_account_with_max_number_of_locks<T: Config>(
     usable_balance: Option<TokenBalanceOf<T>>,
 ) {
     AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
-        (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
-            a.add_or_update_vesting_schedule(
+        for i in 0u32..T::MaxVestingSchedulesPerAccountPerToken::get() {
+            a.add_or_update_vesting_schedule::<T>(
                 VestingSource::Sale(i),
                 VestingSchedule {
                     linear_vesting_duration: 0u32.into(),
@@ -191,8 +191,9 @@ fn setup_account_with_max_number_of_locks<T: Config>(
                     burned_amount: TokenBalanceOf::<T>::zero(),
                 },
                 None,
-            );
-        });
+            )
+            .unwrap();
+        }
         a.split_staking_status = Some(StakingStatus {
             split_id: 0u32,
             amount: TokenBalanceOf::<T>::one(),
@@ -417,25 +418,26 @@ benchmarks! {
         DEFAULT_SALE_PURCHASE.into()
     )
     verify {
-        assert_eq!(Token::<T>::account_info_by_token_and_member(
-            token_id, &member_id
-        ), AccountData {
-            amount: DEFAULT_SALE_PURCHASE.into(),
-            vesting_schedules: vec![
-                (
-                    VestingSource::Sale(sale_id),
-                    Token::<T>::token_info_by_id(token_id)
-                        .sale
-                        .unwrap()
-                        .get_vesting_schedule(DEFAULT_SALE_PURCHASE.into())
-                        .unwrap()
-                )
-            ].iter().cloned().collect(),
-            split_staking_status: None,
-            last_sale_total_purchased_amount: Some((sale_id, DEFAULT_SALE_PURCHASE.into())),
-            next_vesting_transfer_id: 0,
-            bloat_bond: RepayableBloatBond::new(bloat_bond, None),
-        });
+        assert!(
+            Token::<T>::account_info_by_token_and_member(token_id, &member_id)
+            == AccountData {
+                amount: DEFAULT_SALE_PURCHASE.into(),
+                vesting_schedules: vec![
+                    (
+                        VestingSource::Sale(sale_id),
+                        Token::<T>::token_info_by_id(token_id)
+                            .sale
+                            .unwrap()
+                            .get_vesting_schedule(DEFAULT_SALE_PURCHASE.into())
+                            .unwrap()
+                    )
+                ].iter().cloned().collect::<BTreeMap<_, _>>().try_into().unwrap(),
+                split_staking_status: None,
+                last_sale_total_purchased_amount: Some((sale_id, DEFAULT_SALE_PURCHASE.into())),
+                next_vesting_transfer_id: 0,
+                bloat_bond: RepayableBloatBond::new(bloat_bond, None),
+            }
+        );
         assert_last_event::<T>(
             RawEvent::TokensPurchasedOnSale(
                 token_id,
@@ -560,9 +562,9 @@ benchmarks! {
         amount_to_burn
     )
     verify {
-        assert_eq!(
-            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap(),
-            AccountDataOf::<T> {
+        assert!(
+            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap()
+            == AccountDataOf::<T> {
                 split_staking_status: Some(StakingStatus {
                     split_id: 0,
                     amount: TokenBalanceOf::<T>::zero()
