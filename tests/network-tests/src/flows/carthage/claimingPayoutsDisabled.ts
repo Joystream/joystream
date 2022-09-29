@@ -12,7 +12,7 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   api.enableDebugTxLogs()
 
   const nAccounts = 10
-  const nBlocks = 100
+  const nBlocks = 10
   const bondAmount = new BN(1000000000)
   const claimingEra = 10
 
