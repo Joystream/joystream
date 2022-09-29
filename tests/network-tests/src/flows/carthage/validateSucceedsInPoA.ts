@@ -11,11 +11,11 @@ export default async function validateSucceedsInPoA({ api, query, env }: FlowPro
   debug('started')
   api.enableDebugTxLogs()
 
-  const bondAmount = new BN(1000000000)
+  const bondAmount = new BN(1000000000000000)
 
   // we are in poa
-  const currentEra = await api.getCurrentEra()
-  assert(currentEra.isNone)
+  const forceEra = await api.getForceEra()
+  assert(forceEra.isForceNone)
 
   // create keys
   const account = (await api.createKeyPairs(1))[0].key.address

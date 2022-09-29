@@ -1,13 +1,17 @@
 import { BaseFixture } from '../../Fixture'
+import { Keyring } from '@polkadot/api'
 
 export class SetForceEraForcingNewFixture extends BaseFixture {
   async execute(): Promise<void> {
-    const sudoKey = (await this.api.query.sudo.key()).value.toString()
-    const forceTx = this.api.tx.staking.forceNewEra()
-    const fee = await this.api.estimateTxFee(forceTx, sudoKey)
-    await this.api.treasuryTransferBalance(sudoKey, fee)
+    const keyring = new Keyring({ type: 'sr25519' })
 
-    const result = await this.api.signAndSend(forceTx, sudoKey)
-    this.expectDispatchError(result, 'ForceEra not changed')
+    const sudoKey = await this.api.query.sudo.key()
+    const sudoPair = keyring.getPair(sudoKey.toString())
+
+    // Send the actual sudo transaction
+    const forceTx = this.api.tx.staking.forceNewEra()
+    await this.api.tx.sudo.sudo(forceTx).signAndSend(sudoPair)
+
+    // this.expectDispatchSuccess(result, "error sending sudo TX")
   }
 }

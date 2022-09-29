@@ -12,11 +12,11 @@ export default async function nominateSucceedsInPoA({ api, query, env }: FlowPro
   debug('started')
   api.enableDebugTxLogs()
 
-  const bondAmount = new BN(1000000000)
+  const bondAmount = new BN(1000000000000000)
 
   // we are in poa
-  const currentEra = await api.getCurrentEra()
-  assert(currentEra.isNone)
+  const forceEra = await api.getForceEra()
+  assert(forceEra.isForceNone)
 
   // create keys and bonding tx
   const [nominatorAccount, validatorAccount] = (await api.createKeyPairs(2)).map(({ key }) => key.address)

@@ -13,8 +13,8 @@ export default async function bondingSucceedsInPoA({ api, query, env }: FlowProp
   const bondAmount = new BN(1000000000)
 
   // we are in poa
-  const currentEra = await api.getCurrentEra()
-  assert(currentEra.isNone)
+  const forceEra = await api.getForceEra()
+  assert(forceEra.isForceNone)
 
   // create keys and bonding tx
   const account = (await api.createKeyPairs(1))[0].key.address

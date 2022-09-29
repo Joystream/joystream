@@ -15,7 +15,6 @@ export default async function nextActiveEraIsNoneInPoA({ api, query, env }: Flow
   const forceEra = await api.getForceEra()
   assert(forceEra.isForceNone)
 
-
   // wait 10 seconds
   sleep(sleepTimeSeconds * 1000)
 

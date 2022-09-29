@@ -2,7 +2,7 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { FlowProps } from '../../Flow'
 import { BN } from 'bn.js'
-import { expect } from 'chai'
+import { assert } from 'chai'
 import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 
@@ -12,9 +12,10 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   api.enableDebugTxLogs()
 
   const nAccounts = 10
-  const nBlocks = 10
   const bondAmount = new BN(1000000000)
   const claimingEra = 10
+  const sleepTimeSeconds = 20
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
   // create n accounts
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
@@ -38,7 +39,7 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   )
 
   // wait k = 10 blocks
-  await api.untilBlock(nBlocks)
+  sleep(sleepTimeSeconds * 1000)
 
   // attempt to claim payout for ALL validators
   await Promise.all(
@@ -48,9 +49,10 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
       fixtureRunner.run()
     })
   )
+  debug('payout claimed')
 
   const currentBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
   // previous balances is equal to current balances
-  expect(previousBalances).to.be.deep.equal(currentBalances)
+  assert.deepEqual(previousBalances, currentBalances)
 }
