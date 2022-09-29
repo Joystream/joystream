@@ -17,6 +17,7 @@ import {
   CategoryArchivalStatusUpdatedEvent,
   ForumCategory,
   Worker,
+  WorkingGroup,
   CategoryStatusArchived,
   CategoryDeletedEvent,
   CategoryStatusRemoved,
@@ -83,10 +84,19 @@ async function getPost(store: DatabaseManager, postId: string, relations?: 'thre
 }
 
 async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): Promise<Worker> {
+  const workingGroup = await store.get(WorkingGroup, {
+    where: { id: 'forumWorkingGroup'},
+    relations: ['leader']
+  })
+
+  if (!workingGroup) {
+    throw new Error(`Forum Working Group not found!`)
+  }
+  
   const worker = await store.get(Worker, {
     where: {
       group: { id: 'forumWorkingGroup' },
-      ...(actor.isLead ? { isLead: true } : { runtimeId: actor.asModerator.toNumber() }),
+      ...(actor.isLead ? { id: workingGroup.leader?.id } : { runtimeId: actor.asModerator.toNumber() }),
     },
     relations: ['group'],
   })

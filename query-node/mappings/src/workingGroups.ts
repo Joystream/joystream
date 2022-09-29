@@ -453,6 +453,23 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
   await store.save<AppliedOnOpeningEvent>(appliedOnOpeningEvent)
 }
 
+async function removeIsLeadFromGroup(store: DatabaseManager, groupId: string) {
+  const groupWorkers = await store.getMany(Worker, {
+    where: {
+      group: { id: groupId },
+      isLead: true
+    },
+    relations: ['group']
+  })
+
+  await Promise.all(
+    groupWorkers.map((worker) => {
+      worker.isLead = false
+      return store.save<Worker>(worker)
+    })
+  )
+}
+
 export async function workingGroups_LeaderSet({ store, event }: EventContext & StoreContext): Promise<void> {
   const group = await getWorkingGroup(store, event)
 
@@ -509,6 +526,12 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
                 application.id
               )
             }
+
+            if (opening.type === WorkingGroupOpeningType.LEADER) {
+              // setting isLead of existing leader to false.
+              await removeIsLeadFromGroup(store, group.id)
+            }
+
             const worker = new Worker({
               id: `${group.name}-${workerRuntimeId.toString()}`,
               runtimeId: workerRuntimeId.toNumber(),
