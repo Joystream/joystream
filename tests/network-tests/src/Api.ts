@@ -34,6 +34,7 @@ import {
   SpConsensusBabeAppPublic,
   JoystreamNodeRuntimeSessionKeys,
   PalletStakingActiveEraInfo,
+  PalletStakingEraRewardPoints,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -351,6 +352,10 @@ export class Api {
 
   public async getActiveEra(): Promise<Option<PalletStakingActiveEraInfo>> {
     return this.api.query.staking.activeEra()
+  }
+
+  public async getErasStartSessionIndex(index: u32): Promise<Option<u32>> {
+    return this.api.query.staking.erasStartSessionIndex(index)
   }
 
   public async getForceEra(): Promise<PalletStakingForcing> {
