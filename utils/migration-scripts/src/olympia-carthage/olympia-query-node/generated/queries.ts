@@ -6,13 +6,7 @@ export type MembershipFieldsFragment = {
   handle: string
   controllerAccount: string
   rootAccount: string
-  isFoundingMember: boolean
-  metadata: {
-    name?: Types.Maybe<string>
-    about?: Types.Maybe<string>
-    avatar?: Types.Maybe<{ avatarUri: string }>
-    externalResources?: Types.Maybe<Array<{ value: string }>>
-  }
+  metadata: { name?: Types.Maybe<string>; about?: Types.Maybe<string>; avatar?: Types.Maybe<{ avatarUri: string }> }
 }
 
 export type MembershipConnectionFieldsFragment = {
@@ -39,13 +33,9 @@ export const MembershipFields = gql`
           avatarUri
         }
       }
-      externalResources {
-        value
-      }
     }
     controllerAccount
     rootAccount
-    isFoundingMember
   }
 `
 export const MembershipConnectionFields = gql`

@@ -2,7 +2,7 @@
 overwrite: true
 
 # schema: https://query.joystream.org/graphql
-schema: src/olympia-carthage/olympia-query-node/schema.graphql
+schema: src/olympia-carthage/olympia-query-node/olympia.schema.graphql
 
 documents:
   - 'src/olympia-carthage/olympia-query-node/queries/queries.graphql'
