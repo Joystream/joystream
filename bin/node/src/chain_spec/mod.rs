@@ -28,7 +28,10 @@ pub mod storage_config;
 use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
-    constants::currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
+    constants::{
+        currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
+        ExistentialDeposit,
+    },
     wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
     GrandpaConfig, ImOnlineConfig, MaxNominations, SessionConfig, SessionKeys, StakerStatus,
     StakingConfig, StorageConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
@@ -199,9 +202,12 @@ pub fn testnet_genesis(
     };
 
     /// How much each initial validator at genesis will bond
-    const INITIAL_VALIDATOR_BOND: Balance = GENESIS_MIN_VALIDATOR_BOND.saturating_mul(10);
+    const INITIAL_VALIDATOR_BOND: Balance = GENESIS_MIN_VALIDATOR_BOND
+        .saturating_mul(10)
+        .saturating_add(ExistentialDeposit::get());
     /// How much each initial nominator at genesis will bond per nomination
-    const INITIAL_NOMINATOR_BOND: Balance = GENESIS_MIN_NOMINATOR_BOND;
+    const INITIAL_NOMINATOR_BOND: Balance =
+        GENESIS_MIN_NOMINATOR_BOND.saturating_add(ExistentialDeposit::get());
 
     let mut funded: Vec<AccountId> = genesis_balances
         .iter()
