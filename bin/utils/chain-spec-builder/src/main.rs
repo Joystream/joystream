@@ -305,20 +305,35 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
         let (_, _, grandpa, babe, im_online, authority_discovery) =
             chain_spec::authority_keys_from_seed(seed);
 
-        let insert_key = |key_type, public| {
-            SyncCryptoStore::insert_unknown(&*keystore, key_type, &format!("//{}", seed), public)
-                .map_err(|_| format!("Failed to insert key: {}", grandpa))
+        let insert_key = |key_type, public, n| {
+            if seed.starts_with("0x") || seed.starts_with("//") {
+                SyncCryptoStore::insert_unknown(&*keystore, key_type, seed, public)
+                    .map_err(|_| format!("Failed to insert key: {}", n))
+            } else {
+                SyncCryptoStore::insert_unknown(
+                    &*keystore,
+                    key_type,
+                    &format!("//{}", seed),
+                    public,
+                )
+                .map_err(|_| format!("Failed to insert key: {}", n))
+            }
         };
 
-        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice())?;
+        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice(), n)?;
 
-        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice())?;
+        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice(), n)?;
 
-        insert_key(sp_core::crypto::key_types::IM_ONLINE, im_online.as_slice())?;
+        insert_key(
+            sp_core::crypto::key_types::IM_ONLINE,
+            im_online.as_slice(),
+            n,
+        )?;
 
         insert_key(
             sp_core::crypto::key_types::AUTHORITY_DISCOVERY,
             authority_discovery.as_slice(),
+            n,
         )?;
     }
 
