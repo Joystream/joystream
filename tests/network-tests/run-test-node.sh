@@ -49,11 +49,15 @@ function cleanup() {
 trap cleanup EXIT
 
 # Create a chain spec file
-../../target/release/chain-spec-builder new -a Alice \
+../../target/release/chain-spec-builder \
+  new \
+  --fund-accounts \
+  -a Alice \
   --chain-spec-path ${DATA_PATH}/chain-spec.json \
   --initial-balances-path ${DATA_PATH}/initial-balances.json \
   --deployment dev \
   --sudo-account ${ALICE}
 
 ../../target/release/joystream-node --base-path ${DATA_PATH}/alice \
-  --validator --chain ${DATA_PATH}/chain-spec.json --alice --unsafe-ws-external --rpc-cors all --pruning=archive
+  --validator --chain ${DATA_PATH}/chain-spec.json --alice --unsafe-ws-external \
+  --rpc-cors all --pruning=archive --no-telemetry
