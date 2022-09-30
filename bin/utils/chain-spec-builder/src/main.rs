@@ -81,6 +81,13 @@ enum ChainSpecBuilder {
         /// The path where the chain spec should be saved.
         #[clap(long, short, default_value = "./chain_spec.json")]
         chain_spec_path: PathBuf,
+        /// Path to use when saving generated keystores for each authority.
+        ///
+        /// At this path, a new folder will be created for each authority's
+        /// keystore named `auth-$i` where `i` is the authority index, i.e.
+        /// `auth-0`, `auth-1`, etc.
+        #[clap(long, short)]
+        keystore_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[structopt(long)]
         initial_balances_path: Option<PathBuf>,
@@ -164,7 +171,7 @@ impl ChainSpecBuilder {
         }
     }
 
-    /// Returns the chain deployment
+    /// Returns wether to fund accounts or not
     fn fund_accounts(&self) -> bool {
         match self {
             // Authorities, Nominators, Sudo Key and endowed accounts by default
@@ -433,8 +440,15 @@ async fn main() -> Result<(), String> {
             authority_seeds,
             nominator_accounts,
             sudo_account,
+            keystore_path,
             ..
-        } => (authority_seeds, nominator_accounts, vec![], sudo_account),
+        } => {
+            if let Some(keystore_path) = keystore_path {
+                generate_authority_keys_and_store(&authority_seeds, &keystore_path)?;
+            }
+
+            (authority_seeds, nominator_accounts, vec![], sudo_account)
+        }
     };
 
     let json = generate_chain_spec(
