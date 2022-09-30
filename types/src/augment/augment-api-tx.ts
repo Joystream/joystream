@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, WrapperKeepOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParameters, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonMerkleTreeProofElementRecord, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
+import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonMerkleTreeProofElementRecord, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -192,7 +192,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(M) (O(1) on open contract)
        * # </weight>
        **/
-      createBounty: AugmentedSubmittable<(params: PalletBountyBountyParameters | { oracle?: any; contractType?: any; creator?: any; cherry?: any; oracleReward?: any; entrantStake?: any; fundingType?: any } | string | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyParameters, Bytes]>;
+      createBounty: AugmentedSubmittable<(params: PalletBountyBountyParametersBTreeSet | { oracle?: any; contractType?: any; creator?: any; cherry?: any; oracleReward?: any; entrantStake?: any; fundingType?: any } | string | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletBountyBountyParametersBTreeSet, Bytes]>;
       /**
        * Bounty Oracle made a remark
        * 
@@ -1365,10 +1365,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
       /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
        * # <weight>
@@ -1762,10 +1758,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
       /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
        * # <weight>
@@ -2017,7 +2009,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(W + V)
        * # </weight>
        **/
-      setStickiedThreads: AugmentedSubmittable<(actor: PalletForumPrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, stickiedIds: Vec<u64> | (u64 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [PalletForumPrivilegedActor, u64, Vec<u64>]>;
+      setStickiedThreads: AugmentedSubmittable<(actor: PalletForumPrivilegedActor | { Lead: any } | { Moderator: any } | string | Uint8Array, categoryId: u64 | AnyNumber | Uint8Array, stickiedIds: BTreeSet<u64>) => SubmittableExtrinsic<ApiType>, [PalletForumPrivilegedActor, u64, BTreeSet<u64>]>;
       /**
        * Update archival status
        * 
@@ -2294,10 +2286,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
       /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
        * # <weight>
@@ -2543,10 +2531,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
-      /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -3104,10 +3088,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
       /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
        * # <weight>
@@ -3490,10 +3470,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
       /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
        * # <weight>
@@ -3740,10 +3716,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
       /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
        * # <weight>
@@ -3989,10 +3961,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
-      /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -4283,7 +4251,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      changeThreadMode: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, mode: PalletProposalsDiscussionThreadMode | { Open: any } | { Closed: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProposalsDiscussionThreadMode]>;
+      changeThreadMode: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, mode: PalletProposalsDiscussionThreadModeBTreeSet | { Open: any } | { Closed: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProposalsDiscussionThreadModeBTreeSet]>;
       /**
        * Remove post from storage, with the last parameter indicating whether to also hide it
        * in the UI.
@@ -5152,7 +5120,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      updateDistributionBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      updateDistributionBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32]>;
       /**
        * Updates a distribution bucket 'accepts new bags' flag.
        * <weight>
@@ -5187,7 +5155,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      updateNumberOfStorageBucketsInDynamicBagCreationPolicy: AugmentedSubmittable<(dynamicBagType: PalletStorageDynamicBagType | 'Member' | 'Channel' | number | Uint8Array, numberOfStorageBuckets: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletStorageDynamicBagType, u64]>;
+      updateNumberOfStorageBucketsInDynamicBagCreationPolicy: AugmentedSubmittable<(dynamicBagType: PalletStorageDynamicBagType | 'Member' | 'Channel' | number | Uint8Array, numberOfStorageBuckets: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletStorageDynamicBagType, u32]>;
       /**
        * Updates storage buckets for a bag.
        * <weight>
@@ -5211,7 +5179,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      updateStorageBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      updateStorageBucketsPerBagLimit: AugmentedSubmittable<(newLimit: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32]>;
       /**
        * Update whether new bags are being accepted for storage.
        * <weight>
@@ -5467,10 +5435,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
-      /**
-       * Update the associated role storage.
-       **/
-      updateRoleStorage: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storage: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 

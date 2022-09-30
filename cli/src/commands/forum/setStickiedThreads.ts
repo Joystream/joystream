@@ -32,7 +32,7 @@ export default class ForumSetStickiedThreadsCommand extends ForumCommandBase {
 
     await this.sendAndFollowTx(
       await this.getDecodedPair(key),
-      api.tx.forum.setStickiedThreads(actor, categoryId, threadIds)
+      api.tx.forum.setStickiedThreads(actor, categoryId, this.createType('BTreeSet<u64>', threadIds))
     )
 
     this.log(

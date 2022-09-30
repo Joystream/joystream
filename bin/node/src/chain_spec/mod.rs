@@ -283,7 +283,6 @@ pub fn testnet_genesis(
         forum: forum_config::empty(),
         content: content_cfg,
         storage: storage_cfg,
-        referendum: council_config::create_referendum_config(),
         project_token: Default::default(),
         proposals_discussion: Default::default(),
     }

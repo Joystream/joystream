@@ -100,7 +100,7 @@ export async function proposalsDiscussion_ThreadModeChanged({
     const newMode = new ProposalDiscussionThreadModeClosed()
     const whitelistMemberIds = threadMode.asClosed
     const members = await store.getMany(Membership, {
-      where: { id: In(whitelistMemberIds.map((id) => id.toString())) },
+      where: { id: In(Array.from(whitelistMemberIds.values()).map((id) => id.toString())) },
     })
     const whitelist = new ProposalDiscussionWhitelist({
       members,

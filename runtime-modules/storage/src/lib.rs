@@ -141,15 +141,17 @@ mod tests;
 mod benchmarking;
 
 pub mod weights;
+use frame_support::BoundedBTreeMap;
 pub use weights::WeightInfo;
 
-use codec::{Codec, Decode, Encode};
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, Get};
 
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, IterableStorageDoubleMap, PalletId,
-    Parameter,
+    decl_error, decl_event, decl_module, decl_storage, ensure, parameter_types,
+    storage::{bounded_btree_set::BoundedBTreeSet, bounded_vec::BoundedVec},
+    IterableStorageDoubleMap, PalletId, Parameter,
 };
 use frame_system::{ensure_root, ensure_signed};
 use scale_info::TypeInfo;
@@ -166,7 +168,6 @@ use sp_std::marker::PhantomData;
 use sp_std::vec::Vec;
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
-use common::constraints::BoundedValueConstraint;
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::working_group::WorkingGroup;
 use common::working_group::WorkingGroupAuthenticator;
@@ -177,9 +178,6 @@ type DataObjAndStateBloatBondAndObjSize<T> =
     Result<(Vec<DataObjectOf<T>>, BalanceOf<T>, u64), DispatchError>;
 
 type DataObjectsWithIds<T> = Vec<(<T as Config>::DataObjectId, DataObjectOf<T>)>;
-
-/// Content ID length in bytes (46 bytes multihash).
-pub const CID_LENGTH: usize = 46;
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Config> {
@@ -343,6 +341,7 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
         + Copy
         + MaybeSerialize
         + PartialEq
+        + MaxEncodedLen
         + iter::Step; // needed for iteration
 
     /// Storage bucket ID type.
@@ -355,7 +354,8 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
         + MaybeSerialize
         + PartialEq
         + Into<u64>
-        + From<u64>;
+        + From<u64>
+        + MaxEncodedLen;
 
     /// Distribution bucket index within a distribution bucket family type.
     type DistributionBucketIndex: Parameter
@@ -367,7 +367,8 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
         + MaybeSerialize
         + PartialEq
         + Into<u64>
-        + From<u64>;
+        + From<u64>
+        + MaxEncodedLen;
 
     /// Distribution bucket family ID type.
     type DistributionBucketFamilyId: Parameter
@@ -377,7 +378,8 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     /// Channel ID type (part of the dynamic bag ID).
     type ChannelId: Parameter
@@ -389,7 +391,8 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
         + MaybeSerialize
         + PartialEq
         + From<u64>
-        + Into<u64>;
+        + Into<u64>
+        + MaxEncodedLen;
 
     /// Distribution bucket operator ID type (relationship between distribution bucket and
     /// distribution operator).
@@ -400,7 +403,8 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     /// Defines maximum size of the "hash blacklist" collection.
     type BlacklistSizeLimit: Get<u64>;
@@ -408,23 +412,32 @@ pub trait Config: frame_system::Config + balances::Config + common::MembershipTy
     /// The module id, used for deriving its sovereign account ID.
     type ModuleId: Get<PalletId>;
 
-    /// "Storage buckets per bag" value constraint.
-    type StorageBucketsPerBagValueConstraint: Get<StorageBucketsPerBagValueConstraint>;
+    /// Minimum number of storage buckets per bag
+    type MinStorageBucketsPerBag: Get<u32>;
 
-    /// "Distribution buckets per bag" value constraint.
-    type DistributionBucketsPerBagValueConstraint: Get<DistributionBucketsPerBagValueConstraint>;
+    /// Maximum number of storage buckets per bag
+    type MaxStorageBucketsPerBag: Get<u32>;
+
+    /// Minimum number of distribution buckets per bag
+    type MinDistributionBucketsPerBag: Get<u32>;
+
+    /// Maximum number of distribution buckets per bag
+    type MaxDistributionBucketsPerBag: Get<u32>;
 
     /// Defines the default dynamic bag creation policy for members (storage bucket number).
-    type DefaultMemberDynamicBagNumberOfStorageBuckets: Get<u64>;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets: Get<u32>;
 
     /// Defines the default dynamic bag creation policy for channels (storage bucket number).
-    type DefaultChannelDynamicBagNumberOfStorageBuckets: Get<u64>;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets: Get<u32>;
 
     /// Defines max allowed distribution bucket family number.
     type MaxDistributionBucketFamilyNumber: Get<u64>;
 
     /// Max number of pending invitations per distribution bucket.
-    type MaxNumberOfPendingInvitationsPerDistributionBucket: Get<u64>;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket: Get<u32>;
+
+    /// Max number of operators per distribution bucket.
+    type MaxNumberOfOperatorsPerDistributionBucket: Get<u32>;
 
     /// Max data object size in bytes.
     type MaxDataObjectSize: Get<u64>;
@@ -478,28 +491,19 @@ impl<T: balances::Config, ModId: Get<PalletId>> ModuleAccount<T>
 /// and there is one such policy for each type of dynamic bag.
 /// It describes how many storage buckets should store the bag.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct DynamicBagCreationPolicy<DistributionBucketFamilyId: Ord> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct DynamicBagCreationPolicy<DistributionBucketFamilyToNumberOfBucketsMap> {
     /// The number of storage buckets which should replicate the new bag.
-    pub number_of_storage_buckets: u64,
+    pub number_of_storage_buckets: u32,
 
     /// The set of distribution bucket families which should be sampled
     /// to distribute bag, and for each the number of buckets in that family
     /// which should be used.
-    pub families: BTreeMap<DistributionBucketFamilyId, u32>,
+    pub families: DistributionBucketFamilyToNumberOfBucketsMap,
 }
-
-/// "Storage buckets per bag" value constraint type.
-pub type StorageBucketsPerBagValueConstraint = BoundedValueConstraint<u64>;
-
-/// "Distribution buckets per bag" value constraint type.
-pub type DistributionBucketsPerBagValueConstraint = BoundedValueConstraint<u64>;
 
 /// Local module account handler.
 pub type StorageTreasury<T> = ModuleAccountHandler<T, <T as Config>::ModuleId>;
-
-/// IPFS hash type alias (content ID).
-pub type Cid = Vec<u8>;
 
 // Alias for the Substrate balances pallet.
 type Balances<T> = balances::Pallet<T>;
@@ -525,7 +529,7 @@ pub type BucketPair<T> = (
 /// them to end users. The system is unaware of the underlying content represented by such an
 /// object, as it is used by different parts of the Joystream system.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct DataObject<RepayableBloatBond> {
     /// Defines whether the data object was accepted by a liason.
     pub accepted: bool,
@@ -536,25 +540,47 @@ pub struct DataObject<RepayableBloatBond> {
     /// Object size in bytes.
     pub size: u64,
 
-    /// Content identifier presented as IPFS hash.
-    pub ipfs_content_id: Vec<u8>,
+    /// Content identifier presented as base-58 encoded multihash.
+    pub ipfs_content_id: Base58Multihash,
 }
+
+parameter_types! { pub const Base58MultihashLen: u32 = 46; }
+pub type Base58Multihash = BoundedVec<u8, Base58MultihashLen>;
 
 /// Type alias for DataObject.
 pub type DataObjectOf<T> = DataObject<RepayableBloatBondOf<T>>;
 
+/// Type alias for bounded storage bucket ids set
+pub type StorageBucketIdsSet<T> =
+    BoundedBTreeSet<<T as Config>::StorageBucketId, <T as Config>::MaxStorageBucketsPerBag>;
+
+/// Type alias for bounded distribution bucket ids set
+pub type DistributionBucketIdsSet<T> =
+    BoundedBTreeSet<DistributionBucketId<T>, <T as Config>::MaxDistributionBucketsPerBag>;
+
 /// Type alias for the BagRecord.
-pub type Bag<T> = BagRecord<<T as Config>::StorageBucketId, DistributionBucketId<T>>;
+pub type Bag<T> = BagRecord<StorageBucketIdsSet<T>, DistributionBucketIdsSet<T>>;
+
+/// Type alias for bounded distribution bucket family to number of buckets map
+pub type DistributionBucketFamilyToNumberOfBucketsMap<T> = BoundedBTreeMap<
+    <T as Config>::DistributionBucketFamilyId,
+    u32,
+    <T as Config>::MaxDistributionBucketsPerBag,
+>;
+
+/// Type alias for DynamicBagCreationPolicy.
+pub type DynamicBagCreationPolicyOf<T> =
+    DynamicBagCreationPolicy<DistributionBucketFamilyToNumberOfBucketsMap<T>>;
 
 /// Bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct BagRecord<StorageBucketId: Ord, DistributionBucketId: Ord> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct BagRecord<StorageBucketIdsSet, DistributionBucketIdsSet> {
     /// Associated storage buckets.
-    pub stored_by: BTreeSet<StorageBucketId>,
+    pub stored_by: StorageBucketIdsSet,
 
     /// Associated distribution buckets.
-    pub distributed_by: BTreeSet<DistributionBucketId>,
+    pub distributed_by: DistributionBucketIdsSet,
 
     /// Total object size for bag.
     pub objects_total_size: u64,
@@ -563,41 +589,62 @@ pub struct BagRecord<StorageBucketId: Ord, DistributionBucketId: Ord> {
     pub objects_number: u64,
 }
 
-impl<StorageBucketId: Ord, DistributionBucketId: Ord>
-    BagRecord<StorageBucketId, DistributionBucketId>
+impl<
+        StorageBucketId: Ord + Clone,
+        DistributionBucketId: Ord + Clone,
+        StorageBucketsPerBagLimit: Get<u32>,
+        DistributionBucketsPerBagLimit: Get<u32>,
+    >
+    BagRecord<
+        BoundedBTreeSet<StorageBucketId, StorageBucketsPerBagLimit>,
+        BoundedBTreeSet<DistributionBucketId, DistributionBucketsPerBagLimit>,
+    >
 {
     // Add and/or remove storage buckets.
-    fn update_storage_buckets(
+    fn update_storage_buckets<T: Config>(
         &mut self,
         add_buckets: &mut BTreeSet<StorageBucketId>,
         remove_buckets: &BTreeSet<StorageBucketId>,
-    ) {
+    ) -> DispatchResult {
+        let mut new_buckets = self.stored_by.clone().into_inner();
         if !add_buckets.is_empty() {
-            self.stored_by.append(add_buckets);
+            new_buckets.append(add_buckets);
         }
 
         if !remove_buckets.is_empty() {
             for bucket_id in remove_buckets.iter() {
-                self.stored_by.remove(bucket_id);
+                new_buckets.remove(bucket_id);
             }
         }
+
+        self.stored_by = new_buckets
+            .try_into()
+            .map_err(|_| Error::<T>::StorageBucketPerBagLimitExceeded)?;
+
+        Ok(())
     }
 
     // Add and/or remove distribution buckets.
-    fn update_distribution_buckets(
+    fn update_distribution_buckets<T: Config>(
         &mut self,
         add_buckets: &mut BTreeSet<DistributionBucketId>,
         remove_buckets: &BTreeSet<DistributionBucketId>,
-    ) {
+    ) -> DispatchResult {
+        let mut new_buckets = self.distributed_by.clone().into_inner();
         if !add_buckets.is_empty() {
-            self.distributed_by.append(add_buckets);
+            new_buckets.append(add_buckets);
         }
 
         if !remove_buckets.is_empty() {
             for bucket_id in remove_buckets.iter() {
-                self.distributed_by.remove(bucket_id);
+                new_buckets.remove(bucket_id);
             }
         }
+        self.distributed_by = new_buckets
+            .try_into()
+            .map_err(|_| Error::<T>::MaxDistributionBucketNumberPerBagLimitExceeded)?;
+
+        Ok(())
     }
 }
 
@@ -620,7 +667,7 @@ pub type BagId<T> = BagIdType<MemberId<T>, <T as Config>::ChannelId>;
 
 /// Identifier for a bag.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub enum BagIdType<MemberId, ChannelId> {
     /// Static bag type.
     Static(StaticBagId),
@@ -637,7 +684,9 @@ impl<MemberId, ChannelId> Default for BagIdType<MemberId, ChannelId> {
 
 /// Define dynamic bag types.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, Copy, TypeInfo)]
+#[derive(
+    Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, Copy, TypeInfo, MaxEncodedLen,
+)]
 pub enum DynamicBagType {
     /// Member dynamic bag type.
     Member,
@@ -655,7 +704,7 @@ impl Default for DynamicBagType {
 
 /// A type for static bags ID.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub enum StaticBagId {
     /// Dedicated bag for a council.
     Council,
@@ -681,7 +730,7 @@ pub type DynamicBagId<T> = DynamicBagIdType<MemberId<T>, <T as Config>::ChannelI
 
 /// A type for dynamic bags ID.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub enum DynamicBagIdType<MemberId, ChannelId> {
     /// Dynamic bag assigned to a member.
     Member(MemberId),
@@ -784,7 +833,7 @@ pub struct DynBagCreationParametersRecord<
 
 /// Defines storage bucket parameters.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct Voucher {
     /// Total size limit.
     pub size_limit: u64,
@@ -868,7 +917,7 @@ impl VoucherUpdate {
 
 /// Defines the storage bucket connection to the storage operator (storage WG worker).
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum StorageBucketOperatorStatus<WorkerId, AccountId> {
     /// No connection.
     Missing,
@@ -893,7 +942,7 @@ pub type StorageBucket<T> =
 /// A commitment to hold some set of bags for long term storage. A bucket may have a bucket
 /// operator, which is a single worker in the storage working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct StorageBucketRecord<WorkerId, AccountId> {
     /// Current storage operator status.
     pub operator_status: StorageBucketOperatorStatus<WorkerId, AccountId>,
@@ -963,7 +1012,7 @@ pub type DistributionBucketFamily<T> =
 
 /// Distribution bucket family.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct DistributionBucketFamilyRecord<DistributionBucketIndex> {
     /// Next distribution bucket index.
     pub next_distribution_bucket_index: DistributionBucketIndex,
@@ -987,7 +1036,9 @@ pub type DistributionBucketId<T> = DistributionBucketIdRecord<
 /// Complex distribution bucket ID type.
 /// Joins a distribution bucket family ID and a distribution bucket index within the family.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
+#[derive(
+    Encode, Decode, Default, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen,
+)]
 pub struct DistributionBucketIdRecord<DistributionBucketFamilyId: Ord, DistributionBucketIndex: Ord>
 {
     /// Distribution bucket family ID.
@@ -998,12 +1049,16 @@ pub struct DistributionBucketIdRecord<DistributionBucketFamilyId: Ord, Distribut
 }
 
 /// Type alias for the DistributionBucketRecord.
-pub type DistributionBucket<T> = DistributionBucketRecord<WorkerId<T>>;
+pub type DistributionBucket<T> = DistributionBucketRecord<
+    BoundedBTreeSet<WorkerId<T>, <T as Config>::MaxNumberOfPendingInvitationsPerDistributionBucket>,
+    BoundedBTreeSet<WorkerId<T>, <T as Config>::MaxNumberOfOperatorsPerDistributionBucket>,
+>;
 
 /// Distribution bucket.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct DistributionBucketRecord<WorkerId: Ord> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct DistributionBucketRecord<DistributionBucketInvitedOperators, DistributionBucketOperators>
+{
     /// Distribution bucket accepts new bags.
     pub accepting_new_bags: bool,
 
@@ -1011,16 +1066,18 @@ pub struct DistributionBucketRecord<WorkerId: Ord> {
     pub distributing: bool,
 
     /// Pending invitations for workers to distribute the bucket.
-    pub pending_invitations: BTreeSet<WorkerId>,
+    pub pending_invitations: DistributionBucketInvitedOperators,
 
     /// Active operators to distribute the bucket.
-    pub operators: BTreeSet<WorkerId>,
+    pub operators: DistributionBucketOperators,
 
     /// Number of assigned bags.
     pub assigned_bags: u64,
 }
 
-impl<WorkerId: Ord> DistributionBucketRecord<WorkerId> {
+impl<DistributionBucketInvitedOperators, DistributionBucketOperators>
+    DistributionBucketRecord<DistributionBucketInvitedOperators, DistributionBucketOperators>
+{
     // Increment the assigned bags number.
     fn register_bag_assignment(&mut self) {
         self.assigned_bags = self.assigned_bags.saturating_add(1);
@@ -1037,7 +1094,7 @@ impl<WorkerId: Ord> DistributionBucketRecord<WorkerId> {
     }
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Storage {
         /// Defines whether all new uploads blocked
         pub UploadingBlocked get(fn uploading_blocked): bool;
@@ -1056,7 +1113,7 @@ decl_storage! {
             T::StorageBucketId => Option<StorageBucket<T>>;
 
         /// Blacklisted data object hashes.
-        pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) Cid => ();
+        pub Blacklist get (fn blacklist): map hasher(blake2_128_concat) Base58Multihash => ();
 
         /// Blacklist collection counter.
         pub CurrentBlacklistSize get (fn current_blacklist_size): u64;
@@ -1065,7 +1122,7 @@ decl_storage! {
         pub DataObjectPerMegabyteFee get (fn data_object_per_mega_byte_fee) config(): BalanceOf<T>;
 
         /// "Storage buckets per bag" number limit.
-        pub StorageBucketsPerBagLimit get (fn storage_buckets_per_bag_limit): u64;
+        pub StorageBucketsPerBagLimit get (fn storage_buckets_per_bag_limit): u32;
 
         /// "Max objects size for a storage bucket voucher" number limit.
         pub VoucherMaxObjectsSizeLimit get (fn voucher_max_objects_size_limit): u64;
@@ -1079,7 +1136,7 @@ decl_storage! {
         /// DynamicBagCreationPolicy by bag type storage map.
         pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy): map
             hasher(blake2_128_concat) DynamicBagType =>
-            DynamicBagCreationPolicy<T::DistributionBucketFamilyId>;
+            DynamicBagCreationPolicyOf<T>;
 
         /// 'Data objects for bags' storage double map.
         pub DataObjectsById get (fn data_object_by_id): double_map
@@ -1102,7 +1159,7 @@ decl_storage! {
         pub DistributionBucketFamilyNumber get(fn distribution_bucket_family_number): u64;
 
         /// "Distribution buckets per bag" number limit.
-        pub DistributionBucketsPerBagLimit get (fn distribution_buckets_per_bag_limit): u64;
+        pub DistributionBucketsPerBagLimit get (fn distribution_buckets_per_bag_limit): u32;
     }
     add_extra_genesis {
         build(|_| {
@@ -1220,7 +1277,7 @@ decl_event! {
         /// Emits on changing the "Storage buckets per bag" number limit.
         /// Params
         /// - new limit
-        StorageBucketsPerBagLimitUpdated(u64),
+        StorageBucketsPerBagLimitUpdated(u32),
 
         /// Emits on changing the "Storage buckets voucher max limits".
         /// Params
@@ -1252,7 +1309,7 @@ decl_event! {
         /// Params
         /// - hashes to remove from the blacklist
         /// - hashes to add to the blacklist
-        UpdateBlacklist(BTreeSet<Cid>, BTreeSet<Cid>),
+        UpdateBlacklist(BTreeSet<Vec<u8>>, BTreeSet<Vec<u8>>),
 
         /// Emits on deleting a dynamic bag.
         /// Params
@@ -1283,7 +1340,7 @@ decl_event! {
         /// Params
         /// - dynamic bag type
         /// - new number of storage buckets
-        NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(DynamicBagType, u64),
+        NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated(DynamicBagType, u32),
 
         /// Emits on creating distribution bucket family.
         /// Params
@@ -1328,7 +1385,7 @@ decl_event! {
         /// Emits on changing the "Distribution buckets per bag" number limit.
         /// Params
         /// - new limit
-        DistributionBucketsPerBagLimitUpdated(u64),
+        DistributionBucketsPerBagLimitUpdated(u32),
 
         /// Emits on storage bucket mode update (distributing flag).
         /// Params
@@ -1622,6 +1679,9 @@ decl_error! {
         /// Max number of pending invitations limit for a distribution bucket reached.
         MaxNumberOfPendingInvitationsLimitForDistributionBucketReached,
 
+        /// Max number of operators for a distribution bucket reached.
+        MaxNumberOfOperatorsPerDistributionBucketReached,
+
         /// Distribution family bound to a bag creation policy.
         DistributionFamilyBoundToBagCreationPolicy,
 
@@ -1654,30 +1714,38 @@ decl_module! {
         /// Exports const - maximum size of the "hash blacklist" collection.
         const BlacklistSizeLimit: u64 = T::BlacklistSizeLimit::get();
 
-        /// Exports const - "Storage buckets per bag" value constraint.
-        const StorageBucketsPerBagValueConstraint: StorageBucketsPerBagValueConstraint =
-            T::StorageBucketsPerBagValueConstraint::get();
+        /// Exports const - minimum number of storage buckets per bag.
+        const MinStorageBucketsPerBag: u32 = T::MinStorageBucketsPerBag::get();
+
+        /// Exports const - maximum number of storage buckets per bag.
+        const MaxStorageBucketsPerBag: u32 = T::MaxStorageBucketsPerBag::get();
+
+        /// Exports const - minimum number of distribution buckets per bag.
+        const MinDistributionBucketsPerBag: u32 = T::MinDistributionBucketsPerBag::get();
+
+        /// Exports const - maximum number of distribution buckets per bag.
+        const MaxDistributionBucketsPerBag: u32 = T::MaxDistributionBucketsPerBag::get();
 
         /// Exports const - the default dynamic bag creation policy for members (storage bucket
         /// number).
-        const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 =
+        const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 =
             T::DefaultMemberDynamicBagNumberOfStorageBuckets::get();
 
         /// Exports const - the default dynamic bag creation policy for channels (storage bucket
         /// number).
-        const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 =
+        const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 =
             T::DefaultChannelDynamicBagNumberOfStorageBuckets::get();
 
         /// Exports const - max allowed distribution bucket family number.
         const MaxDistributionBucketFamilyNumber: u64 = T::MaxDistributionBucketFamilyNumber::get();
 
-        /// Exports const - "Distribution buckets per bag" value constraint.
-        const DistributionBucketsPerBagValueConstraint: DistributionBucketsPerBagValueConstraint =
-            T::DistributionBucketsPerBagValueConstraint::get();
-
         /// Exports const - max number of pending invitations per distribution bucket.
-        const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 =
+        const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 =
             T::MaxNumberOfPendingInvitationsPerDistributionBucket::get();
+
+        /// Exports const - max number of operators per distribution bucket.
+        const MaxNumberOfOperatorsPerDistributionBucket: u32 =
+            T::MaxNumberOfOperatorsPerDistributionBucket::get();
 
         /// Exports const - max data object size in bytes.
         const MaxDataObjectSize: u64 = T::MaxDataObjectSize::get();
@@ -1771,14 +1839,17 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_storage_buckets_per_bag_limit()]
-        pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u64) {
+        pub fn update_storage_buckets_per_bag_limit(origin, new_limit: u32) {
             <T as Config>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
-            T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
-                new_limit,
-                Error::<T>::StorageBucketsPerBagLimitTooLow,
-                Error::<T>::StorageBucketsPerBagLimitTooHigh,
-            )?;
+            ensure!(
+                new_limit >= T::MinStorageBucketsPerBag::get(),
+                Error::<T>::StorageBucketsPerBagLimitTooLow
+            );
+            ensure!(
+                new_limit <= T::MaxStorageBucketsPerBag::get(),
+                Error::<T>::StorageBucketsPerBagLimitTooHigh
+            );
 
             //
             // == MUTATION SAFE ==
@@ -1857,15 +1928,15 @@ decl_module! {
         pub fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
             origin,
             dynamic_bag_type: DynamicBagType,
-            number_of_storage_buckets: u64,
+            number_of_storage_buckets: u32,
         ) {
             <T as Config>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
-            T::StorageBucketsPerBagValueConstraint::get().ensure_valid(
-                number_of_storage_buckets,
-                Error::<T>::NumberOfStorageBucketsOutsideOfAllowedContraints,
-                Error::<T>::NumberOfStorageBucketsOutsideOfAllowedContraints,
-            )?;
+            ensure!(
+                number_of_storage_buckets >= T::MinStorageBucketsPerBag::get()
+                    && number_of_storage_buckets <= T::MaxStorageBucketsPerBag::get(),
+                Error::<T>::NumberOfStorageBucketsOutsideOfAllowedContraints
+            );
 
             //
             // == MUTATION SAFE ==
@@ -1901,8 +1972,8 @@ decl_module! {
         ]
         pub fn update_blacklist(
             origin,
-            remove_hashes: BTreeSet<Cid>,
-            add_hashes: BTreeSet<Cid>
+            remove_hashes: BTreeSet<Vec<u8>>,
+            add_hashes: BTreeSet<Vec<u8>>
         ){
             <T as Config>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
@@ -2049,9 +2120,9 @@ decl_module! {
             // Update bag counters.
             Self::change_bag_assignments_for_storage_buckets(&add_buckets, &remove_buckets);
 
-            Bags::<T>::mutate(&bag_id, |bag| {
-                bag.update_storage_buckets(&mut add_buckets.clone(), &remove_buckets);
-            });
+            Bags::<T>::try_mutate(&bag_id, |bag| {
+                bag.update_storage_buckets::<T>(&mut add_buckets.clone(), &remove_buckets)
+            })?;
 
             Self::deposit_event(
                 RawEvent::StorageBucketsUpdatedForBag(bag_id, add_buckets, remove_buckets)
@@ -2471,8 +2542,8 @@ decl_module! {
             let bucket = DistributionBucket::<T> {
                 accepting_new_bags,
                 distributing: true,
-                pending_invitations: BTreeSet::new(),
-                operators: BTreeSet::new(),
+                pending_invitations: BoundedBTreeSet::default(),
+                operators: BoundedBTreeSet::default(),
                 assigned_bags: 0,
             };
 
@@ -2606,9 +2677,9 @@ decl_module! {
                 .map(|idx| Self::create_distribution_bucket_id(family_id, *idx))
                 .collect::<BTreeSet<_>>();
 
-            Bags::<T>::mutate(&bag_id, |bag| {
-                bag.update_distribution_buckets(&mut add_buckets_ids.clone(), &remove_buckets_ids);
-            });
+            Bags::<T>::try_mutate(&bag_id, |bag| {
+                bag.update_distribution_buckets::<T>(&mut add_buckets_ids.clone(), &remove_buckets_ids)
+            })?;
 
             Self::change_bag_assignments_for_distribution_buckets(
                 &add_buckets_ids,
@@ -2634,14 +2705,17 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoStorage::<T>::update_distribution_buckets_per_bag_limit()]
-        pub fn update_distribution_buckets_per_bag_limit(origin, new_limit: u64) {
+        pub fn update_distribution_buckets_per_bag_limit(origin, new_limit: u32) {
             <T as Config>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
-            T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
-                new_limit,
+            ensure!(
+                new_limit >= T::MinDistributionBucketsPerBag::get(),
                 Error::<T>::DistributionBucketsPerBagLimitTooLow,
+            );
+            ensure!(
+                new_limit <= T::MaxDistributionBucketsPerBag::get(),
                 Error::<T>::DistributionBucketsPerBagLimitTooHigh,
-            )?;
+            );
 
             //
             // == MUTATION SAFE ==
@@ -2709,7 +2783,7 @@ decl_module! {
         ) {
             <T as Config>::DistributionWorkingGroup::ensure_leader_origin(origin)?;
 
-            Self::validate_update_families_in_dynamic_bag_creation_policy_params(&families)?;
+            let policy_families = Self::validate_update_families_in_dynamic_bag_creation_policy_params(&families)?;
 
             //
             // == MUTATION SAFE ==
@@ -2717,7 +2791,7 @@ decl_module! {
 
             // We initialize the default storage bucket number here if no policy exists.
             let mut new_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
-            new_policy.families = families.clone();
+            new_policy.families = policy_families;
 
             DynamicBagCreationPolicies::<T>::insert(dynamic_bag_type, new_policy);
 
@@ -2753,13 +2827,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <DistributionBucketByFamilyIdById<T>>::mutate(
+            <DistributionBucketByFamilyIdById<T>>::try_mutate(
                 bucket_id.distribution_bucket_family_id,
                 bucket_id.distribution_bucket_index,
                 |bucket| {
-                    bucket.pending_invitations.insert(operator_worker_id);
+                    bucket.pending_invitations
+                    .try_insert(operator_worker_id)
+                    .map_err(|_| Error::<T>::MaxNumberOfPendingInvitationsLimitForDistributionBucketReached)
                 }
-            );
+            )?;
 
             Self::deposit_event(
                 RawEvent::DistributionBucketOperatorInvited(bucket_id, operator_worker_id)
@@ -2911,18 +2987,21 @@ decl_module! {
                 Error::<T>::NoDistributionBucketInvitation
             );
 
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <DistributionBucketByFamilyIdById<T>>::mutate(
+            <DistributionBucketByFamilyIdById<T>>::try_mutate(
                 bucket_id.distribution_bucket_family_id,
                 bucket_id.distribution_bucket_index,
                 |bucket| {
                     bucket.pending_invitations.remove(&worker_id);
-                    bucket.operators.insert(worker_id);
+                    bucket.operators
+                        .try_insert(worker_id)
+                        .map_err(|_| Error::<T>::MaxNumberOfOperatorsPerDistributionBucketReached)?;
+                    DispatchResult::Ok(())
                 }
-            );
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             Self::deposit_event(
                 RawEvent::DistributionBucketInvitationAccepted(worker_id, bucket_id)
@@ -3448,7 +3527,7 @@ impl<T: Config> Module<T> {
             .len()
             .saturating_add(add_buckets.len())
             .saturating_sub(remove_buckets.len())
-            .saturated_into::<u64>();
+            .saturated_into::<u32>();
 
         ensure!(
             new_bucket_number <= Self::storage_buckets_per_bag_limit(),
@@ -3525,26 +3604,41 @@ impl<T: Config> Module<T> {
 
     // Returns only existing hashes in the blacklist from the original collection.
     #[allow(clippy::redundant_closure)] // doesn't work with Substrate storage functions.
-    fn get_existing_hashes(hashes: &BTreeSet<Cid>) -> Result<BTreeSet<Cid>, DispatchError> {
+    fn get_existing_hashes(
+        hashes: &BTreeSet<Vec<u8>>,
+    ) -> Result<BTreeSet<Base58Multihash>, DispatchError> {
         Self::get_hashes_by_predicate(hashes, |cid| Blacklist::contains_key(cid))
     }
 
     // Returns only nonexisting hashes in the blacklist from the original collection.
-    fn get_nonexisting_hashes(hashes: &BTreeSet<Cid>) -> Result<BTreeSet<Cid>, DispatchError> {
+    fn get_nonexisting_hashes(
+        hashes: &BTreeSet<Vec<u8>>,
+    ) -> Result<BTreeSet<Base58Multihash>, DispatchError> {
         Self::get_hashes_by_predicate(hashes, |cid| !Blacklist::contains_key(cid))
     }
 
     // Returns hashes from the original collection selected by predicate.
-    fn get_hashes_by_predicate<P: FnMut(&&Cid) -> bool>(
-        hashes: &BTreeSet<Cid>,
+    fn get_hashes_by_predicate<P: FnMut(&&Base58Multihash) -> bool>(
+        hashes: &BTreeSet<Vec<u8>>,
         predicate: P,
-    ) -> Result<BTreeSet<Cid>, DispatchError> {
-        ensure!(
-            hashes.iter().all(|cid| cid.len() == CID_LENGTH),
-            Error::<T>::InvalidCidLength
-        );
+    ) -> Result<BTreeSet<Base58Multihash>, DispatchError> {
+        let validated_cids = hashes
+            .iter()
+            .map(|cid| {
+                // This will also validate too short cid's!
+                ensure!(
+                    cid.len() as u32 == Base58MultihashLen::get(),
+                    Error::<T>::InvalidCidLength
+                );
+                let validated: Base58Multihash = cid
+                    .clone()
+                    .try_into()
+                    .map_err(|_| Error::<T>::InvalidCidLength)?;
+                Result::<Base58Multihash, DispatchError>::Ok(validated)
+            })
+            .collect::<Result<BTreeSet<Base58Multihash>, DispatchError>>()?;
 
-        let filtered_cids = hashes
+        let filtered_cids = validated_cids
             .iter()
             .filter(predicate)
             .cloned()
@@ -3626,7 +3720,9 @@ impl<T: Config> Module<T> {
         }
     }
 
-    fn upload_data_objects_checks(obj: &DataObjectCreationParameters) -> DispatchResult {
+    fn upload_data_objects_checks(
+        obj: &DataObjectCreationParameters,
+    ) -> Result<Base58Multihash, DispatchError> {
         ensure!(!Self::uploading_blocked(), Error::<T>::UploadingBlocked);
         ensure!(
             obj.size <= T::MaxDataObjectSize::get(),
@@ -3634,15 +3730,21 @@ impl<T: Config> Module<T> {
         );
         ensure!(obj.size != 0, Error::<T>::ZeroObjectSize,);
         ensure!(!obj.ipfs_content_id.is_empty(), Error::<T>::EmptyContentId);
+        // This will also validate too short cid's!
         ensure!(
-            !Blacklist::contains_key(obj.ipfs_content_id.clone()),
-            Error::<T>::DataObjectBlacklisted,
-        );
-        ensure!(
-            obj.ipfs_content_id.len() == CID_LENGTH,
+            obj.ipfs_content_id.len() as u32 == Base58MultihashLen::get(),
             Error::<T>::InvalidCidLength
         );
-        Ok(())
+        let bounded_cid = obj
+            .ipfs_content_id
+            .clone()
+            .try_into()
+            .map_err(|_| Error::<T>::InvalidCidLength)?;
+        ensure!(
+            !Blacklist::contains_key(&bounded_cid),
+            Error::<T>::DataObjectBlacklisted,
+        );
+        Ok(bounded_cid)
     }
 
     // objects number and total objects size.
@@ -3708,13 +3810,13 @@ impl<T: Config> Module<T> {
     // Get default dynamic bag policy by bag type.
     fn get_default_dynamic_bag_creation_policy(
         bag_type: DynamicBagType,
-    ) -> DynamicBagCreationPolicy<T::DistributionBucketFamilyId> {
+    ) -> DynamicBagCreationPolicyOf<T> {
         let number_of_storage_buckets = match bag_type {
             DynamicBagType::Member => T::DefaultMemberDynamicBagNumberOfStorageBuckets::get(),
             DynamicBagType::Channel => T::DefaultChannelDynamicBagNumberOfStorageBuckets::get(),
         };
 
-        DynamicBagCreationPolicy::<T::DistributionBucketFamilyId> {
+        DynamicBagCreationPolicyOf::<T> {
             number_of_storage_buckets,
             ..Default::default()
         }
@@ -3723,7 +3825,7 @@ impl<T: Config> Module<T> {
     // Loads dynamic bag creation policy or use default values.
     pub(crate) fn get_dynamic_bag_creation_policy(
         bag_type: DynamicBagType,
-    ) -> DynamicBagCreationPolicy<T::DistributionBucketFamilyId> {
+    ) -> DynamicBagCreationPolicyOf<T> {
         if DynamicBagCreationPolicies::<T>::contains_key(bag_type) {
             return Self::dynamic_bag_creation_policy(bag_type);
         }
@@ -3840,7 +3942,7 @@ impl<T: Config> Module<T> {
             .len()
             .saturating_add(add_buckets.len())
             .saturating_sub(remove_buckets.len())
-            .saturated_into::<u64>();
+            .saturated_into::<u32>();
 
         ensure!(
             new_bucket_number <= Self::distribution_buckets_per_bag_limit(),
@@ -3878,21 +3980,31 @@ impl<T: Config> Module<T> {
     // Ensures validity of the `update_families_in_dynamic_bag_creation_policy` extrinsic parameters
     fn validate_update_families_in_dynamic_bag_creation_policy_params(
         families: &BTreeMap<T::DistributionBucketFamilyId, u32>,
-    ) -> DispatchResult {
-        let number_of_distribution_buckets: u64 = families
+    ) -> Result<DistributionBucketFamilyToNumberOfBucketsMap<T>, DispatchError> {
+        // Filter out families with "0 buckets" constraint from the policy
+        let filtered = families
             .iter()
-            .fold(0, |acc, (_, num)| acc.saturating_add((*num).into()));
-        T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
-            number_of_distribution_buckets,
-            Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints,
-            Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints,
-        )?;
+            .map(|(k, v)| (*k, *v))
+            .filter(|(_, buckets_num)| !buckets_num.is_zero())
+            .collect::<BTreeMap<_, _>>();
+        let policy_families: DistributionBucketFamilyToNumberOfBucketsMap<T> = filtered
+            .clone()
+            .try_into()
+            .map_err(|_| Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints)?;
+        let number_of_distribution_buckets: u32 = filtered
+            .iter()
+            .fold(0, |acc, (_, num)| acc.saturating_add(*num));
+        ensure!(
+            number_of_distribution_buckets >= T::MinDistributionBucketsPerBag::get()
+                && number_of_distribution_buckets <= T::MaxDistributionBucketsPerBag::get(),
+            Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints
+        );
 
-        for (family_id, _) in families.iter() {
+        for (family_id, _) in filtered.iter() {
             Self::ensure_distribution_bucket_family_exists(family_id)?;
         }
 
-        Ok(())
+        Ok(policy_families)
     }
 
     // Verify parameters for the `invite_distribution_bucket_operator` extrinsic.
@@ -3916,7 +4028,7 @@ impl<T: Config> Module<T> {
         );
 
         ensure!(
-            bucket.pending_invitations.len().saturated_into::<u64>()
+            bucket.pending_invitations.len().saturated_into::<u32>()
                 < T::MaxNumberOfPendingInvitationsPerDistributionBucket::get(),
             Error::<T>::MaxNumberOfPendingInvitationsLimitForDistributionBucketReached
         );
@@ -4126,12 +4238,19 @@ impl<T: Config> Module<T> {
     ) -> Result<Bag<T>, DispatchError> {
         Self::ensure_bag_exists(&BagId::<T>::Dynamic(dynamic_bag_id.clone())).map_or_else(
             |_| {
-                Ok(Bag::<T> {
-                    distributed_by: distribution_buckets.clone(),
-                    stored_by: storage_buckets.clone(),
+                let bag = Bag::<T> {
+                    distributed_by: distribution_buckets
+                        .clone()
+                        .try_into()
+                        .map_err(|_| Error::<T>::MaxDistributionBucketNumberPerBagLimitExceeded)?,
+                    stored_by: storage_buckets
+                        .clone()
+                        .try_into()
+                        .map_err(|_| Error::<T>::StorageBucketPerBagLimitExceeded)?,
                     objects_number,
                     objects_total_size,
-                })
+                };
+                Ok(bag)
             },
             |_| Err(Error::<T>::DynamicBagExists.into()),
         )
@@ -4381,15 +4500,15 @@ impl<T: Config> Module<T> {
         let state_bloat_bond = Self::data_object_state_bloat_bond_value();
         list.iter()
             .map(|param| {
-                Self::upload_data_objects_checks(param).and({
-                    Ok(DataObject {
+                Self::upload_data_objects_checks(param).map(|bounded_cid| {
+                    DataObject {
                         accepted: false,
                         // Default value, possibly overriden later
                         // based on pay_data_objects_bloat_bonds result
                         state_bloat_bond: RepayableBloatBond::new(state_bloat_bond, None),
                         size: param.size,
-                        ipfs_content_id: param.ipfs_content_id.clone(),
-                    })
+                        ipfs_content_id: bounded_cid,
+                    }
                 })
             })
             .try_fold(
@@ -4463,7 +4582,7 @@ impl<T: Config> Module<T> {
         let creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
 
         ensure!(
-            creation_policy.number_of_storage_buckets == storage_buckets.len() as u64,
+            creation_policy.number_of_storage_buckets == storage_buckets.len() as u32,
             Error::<T>::StorageBucketsNumberViolatesDynamicBagCreationPolicy
         );
 
@@ -4500,7 +4619,7 @@ impl<T: Config> Module<T> {
         }
 
         ensure!(
-            families_match == creation_policy.families,
+            creation_policy.families == families_match,
             Error::<T>::DistributionBucketsViolatesDynamicBagCreationPolicy
         );
 

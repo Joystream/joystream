@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use sp_std::vec::Vec;
 
 /// Current status of the proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum ProposalStatus<BlockNumber> {
     /// A new proposal status that is available for voting.
     Active,
@@ -64,7 +64,7 @@ impl<BlockNumber: Clone> ProposalStatus<BlockNumber> {
 
 /// Decision for the finalized proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum ProposalDecision {
     /// Proposal was withdrawn by its proposer.
     Canceled,
@@ -90,7 +90,7 @@ pub enum ProposalDecision {
 
 /// Approved proposal decision.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum ApprovedProposalDecision {
     /// A proposal should be executed and grace period is in effect.
     PendingExecution,

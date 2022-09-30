@@ -3,7 +3,7 @@ use sp_runtime::DispatchResult;
 // Proc macro (EnumIter) clippy::integer_arithmetic disable hack
 #[allow(clippy::integer_arithmetic)]
 pub mod iterable_enums {
-    use codec::{Decode, Encode};
+    use codec::{Decode, Encode, MaxEncodedLen};
     use scale_info::TypeInfo;
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
@@ -12,7 +12,9 @@ pub mod iterable_enums {
 
     /// Defines well-known working groups.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo)]
+    #[derive(
+        Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen,
+    )]
     pub enum WorkingGroup {
         /// Forum working group: working_group::Instance1.
         Forum,

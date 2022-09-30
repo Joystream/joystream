@@ -20,6 +20,7 @@ storage = { package = 'pallet-storage', default-features = false, path = '../sto
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 project-token = { package = 'pallet-project-token', default-features = false, path = '../project-token'}
+varaint-count = { version = '1.1.0', package = 'variant_count' }
 
 # Benchmarking
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', optional = true}

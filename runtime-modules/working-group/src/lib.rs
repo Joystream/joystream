@@ -74,10 +74,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 
 pub use errors::Error;
-pub use types::{
-    Application, ApplicationId, ApplyOnOpeningParameters, BalanceOf, Opening, OpeningId,
-    OpeningType, RewardPaymentType, StakeParameters, StakePolicy, Worker, WorkerId,
-};
+pub use types::*;
 use types::{ApplicationInfo, WorkerInfo};
 
 use common::costs::burn_from_usable;
@@ -142,7 +139,8 @@ decl_event!(
        OpeningType = OpeningType,
        StakePolicy = StakePolicy<<T as frame_system::Config>::BlockNumber, BalanceOf<T>>,
        ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
-       MemberId = MemberId<T>
+       MemberId = MemberId<T>,
+       Hash = <T as frame_system::Config>::Hash
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -257,7 +255,7 @@ decl_event!(
         /// Params:
         /// - status text hash
         /// - status text
-        StatusTextChanged(Vec<u8>, Option<Vec<u8>>),
+        StatusTextChanged(Hash, Option<Vec<u8>>),
 
         /// Emits on budget from the working group being spent
         /// Params:
@@ -280,12 +278,6 @@ decl_event!(
         /// - Missed reward (optional). None means 'no missed reward'.
         NewMissedRewardLevelReached(WorkerId, Option<Balance>),
 
-        /// Emits on updating the worker storage role.
-        /// Params:
-        /// - Id of the worker.
-        /// - Raw storage field.
-        WorkerStorageUpdated(WorkerId, Vec<u8>),
-
         /// Fund the working group budget.
         /// Params:
         /// - Member ID
@@ -306,14 +298,14 @@ decl_event!(
     }
 );
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config<I>, I: Instance=DefaultInstance> as WorkingGroup {
         /// Next identifier value for new job opening.
         pub NextOpeningId get(fn next_opening_id): OpeningId;
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            OpeningId => Opening<T::BlockNumber, BalanceOf<T>>;
+            OpeningId => OpeningOf<T>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
@@ -339,14 +331,7 @@ decl_storage! {
         pub Budget get(fn budget) : BalanceOf<T>;
 
         /// Status text hash.
-        pub StatusTextHash get(fn status_text_hash) : Vec<u8>;
-
-        /// Maps identifier to corresponding worker storage.
-        pub WorkerStorage get(fn worker_storage): map hasher(blake2_128_concat)
-            WorkerId<T> => Vec<u8>;
-
-        /// Worker storage size upper bound.
-        pub WorkerStorageSize get(fn worker_storage_size) : u16 = default_storage_size_constraint();
+        pub StatusTextHash get(fn status_text_hash) : T::Hash;
     }
 }
 
@@ -470,7 +455,7 @@ decl_module! {
             let new_opening = Opening{
                 opening_type,
                 created: Self::current_block(),
-                description_hash: hashed_description.as_ref().to_vec(),
+                description_hash: hashed_description,
                 stake_policy: stake_policy.clone(),
                 reward_per_block,
                 creation_stake,
@@ -557,7 +542,7 @@ decl_module! {
                 &p.stake_parameters.staking_account_id,
                 &p.member_id,
                 p.opening_id,
-                hashed_description.as_ref().to_vec(),
+                hashed_description,
             );
 
             // Store an application.
@@ -1118,15 +1103,11 @@ decl_module! {
 
             let status_text_hash = status_text
                 .as_ref()
-                .map(|status_text| {
-                        let hashed = T::Hashing::hash(status_text);
-
-                        hashed.as_ref().to_vec()
-                    })
+                .map(|status_text| { T::Hashing::hash(status_text) })
                 .unwrap_or_default();
 
             // Update the status text hash.
-            <StatusTextHash<I>>::put(status_text_hash.clone());
+            <StatusTextHash<T, I>>::put(status_text_hash);
 
             // Trigger event
             Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash, status_text));
@@ -1169,31 +1150,6 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
-        }
-
-        /// Update the associated role storage.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_role_storage(
-            origin,
-            worker_id: WorkerId<T>,
-            storage: Vec<u8>
-        ) {
-
-            // Ensure there is a signer which matches role account of worker corresponding to provided id.
-            checks::ensure_worker_signed::<T,I>(origin, &worker_id)?;
-
-            // Ensure valid text.
-            checks::ensure_worker_role_storage_text_is_valid::<T,I>(&storage)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Complete the role storage update
-            WorkerStorage::<T, I>::insert(worker_id, storage.clone());
-
-            // Trigger event
-            Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
 
         /// Fund working group budget by a member.
@@ -1359,7 +1315,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
-        opening: &Opening<T::BlockNumber, BalanceOf<T>>,
+        opening: &OpeningOf<T>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<ApplicationId, WorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();
@@ -1382,7 +1338,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 
     // Creates worker by the application. Deletes application from the storage.
     fn create_worker_by_application(
-        opening: &Opening<T::BlockNumber, BalanceOf<T>>,
+        opening: &OpeningOf<T>,
         application_info: &ApplicationInfo<T, I>,
     ) -> WorkerId<T> {
         // Get worker id.
@@ -1723,9 +1679,4 @@ impl<T: Config<I>, I: Instance>
 
         Ok(())
     }
-}
-
-// Creates default storage size constraint.
-pub(crate) fn default_storage_size_constraint() -> u16 {
-    2048
 }

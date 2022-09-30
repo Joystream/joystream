@@ -30,7 +30,7 @@ mod benchmarking;
 pub mod weights;
 pub use weights::WeightInfo;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{decl_event, decl_module, decl_storage};
 use frame_system::ensure_root;
 use scale_info::TypeInfo;
@@ -43,7 +43,7 @@ use sp_std::vec::Vec;
 type WeightInfoConstitution<T> = <T as Config>::WeightInfo;
 
 pub trait Config: frame_system::Config {
-    type Event: From<Event> + Into<<Self as frame_system::Config>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -51,25 +51,25 @@ pub trait Config: frame_system::Config {
 
 /// Contains constitution text hash and its amendment number.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo)]
-pub struct ConstitutionInfo {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
+pub struct ConstitutionInfo<Hash> {
     /// Constitution text hash.
-    pub text_hash: Vec<u8>,
+    pub text_hash: Hash,
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Constitution {
-        Constitution get(fn constitution) : ConstitutionInfo;
+        Constitution get(fn constitution) : ConstitutionInfo<<T as frame_system::Config>::Hash>;
     }
 }
 
 decl_event! {
-    pub enum Event {
+    pub enum Event<T> where Hash = <T as frame_system::Config>::Hash {
         /// Emits on constitution amendment.
         /// Parameters:
         /// - constitution text hash
         /// - constitution text
-        ConstutionAmended(Vec<u8>, Vec<u8>),
+        ConstutionAmended(Hash, Vec<u8>),
     }
 }
 
@@ -91,16 +91,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let hashed = T::Hashing::hash(&constitution_text);
-            let hash = hashed.as_ref().to_vec();
+            let hash = T::Hashing::hash(&constitution_text);
 
-            let constitution = ConstitutionInfo{
-                text_hash: hash.clone(),
+            let constitution = ConstitutionInfo {
+                text_hash: hash,
             };
 
-            Constitution::put(constitution);
+            Constitution::<T>::put(constitution);
 
-            Self::deposit_event(Event::ConstutionAmended(hash, constitution_text));
+            Self::deposit_event(Event::<T>::ConstutionAmended(hash, constitution_text));
         }
     }
 }

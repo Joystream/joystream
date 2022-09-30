@@ -287,7 +287,7 @@ fn claim_patronage_fails_with_active_revenue_split() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_id, AccountData::default())
+        .with_account(owner_id, ConfigAccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -316,7 +316,7 @@ fn claim_patronage_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_id, AccountData::default())
+        .with_account(owner_id, ConfigAccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -399,7 +399,7 @@ fn claim_patronage_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_id, AccountData::new_with_amount(init_supply))
+        .with_account(owner_id, ConfigAccountData::new_with_amount(init_supply))
         .build();
 
     build_test_externalities(config).execute_with(|| {
