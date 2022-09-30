@@ -51,7 +51,11 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const fixtureRunner = new FixtureRunner(setForceEraForcingNewFixture)
   await fixtureRunner.run()
 
-  debug('Npos switch done')
+    let currentEra = (await api.getCurrentEra()).unwrapOrDefault()
+  while (currentEra.eqn(0)) {
+    sleep(sleepTimeSeconds * 1000)
+    currentEra = (await api.getCurrentEra()).unwrapOrDefault()
+  }
 
   // ----------- ASSERT ----------------
 
@@ -59,14 +63,13 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const forceEra2 = await api.getForceEra()
   assert(forceEra2.isForceNew, 'not in NPoS')
 
-  sleep(sleepTimeSeconds * 1000)
-  // 1. Active era index increases
+// 1. Active era index increases
   const activeEra = await api.getActiveEra()
   assert(activeEra.isSome, 'active era is not some')
   const { index } = activeEra.unwrap()
-  // assert.isAbove(index.toNumber(), 0)
-  const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
-  assert(nextEraStartingSessionIndex.isSome, 'ext era starting session index is not some')
+  assert.isAbove(index.toNumber(), 0)
+  // const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
+  // assert(nextEraStartingSessionIndex.isSome, 'ext era starting session index is not some')
 
   // 2. Validators are able to claim payouts
   await Promise.all(
@@ -77,16 +80,13 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
     })
   )
   const currentBalances = await getBalances(stakerAccounts.concat(genesisAuthorities))
-  // assert(
-  //   previousBalances
-  //     .map((past, i) => past > currentBalances[i])
-  //     .reduce((accumulator, iter) => iter || accumulator, false),
-  //   "Validators couldn't claim payouts"
-  // )
+  assert(
+    previousBalances
+      .map((past, i) => past > currentBalances[i])
+      .reduce((accumulator, iter) => iter || accumulator, false),
+    "Validators couldn't claim payouts"
+  )
 
   // 3. Election rounds have happened
   const electionRounds = await api.getElectionRounds()
-  //assert.isAbove(electionRounds.toNumber(), 0)
-  //
-  // 4. ForceEra is on ForceNew
-}
+  assert.isAbove(electionRounds.toNumber(), 0)

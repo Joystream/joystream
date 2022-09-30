@@ -1,6 +1,7 @@
 import { extendDebug } from '../../Debugger'
 import { FlowProps } from '../../Flow'
 import { assert } from 'chai'
+import { u32 } from '@polkadot/types'
 
 export default async function eraRewardIsZero({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: bonding succeeds in PoA')
@@ -19,6 +20,7 @@ export default async function eraRewardIsZero({ api, query, env }: FlowProps): P
 
   // get era reward
   const { index } = (await api.getActiveEra()).unwrap()
-  const eraReward = await api.getEraValidatorReward(index)
-  assert.deepEqual(eraReward.toString(), '0')
+  assert.equal(index.toNumber(), 0, 'index not zero')
+  const eraReward = await api.getEraValidatorReward(index.addn(1) as u32)
+  assert(eraReward.isNone)
 }
