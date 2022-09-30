@@ -14,7 +14,10 @@ use frame_support::traits::{
     ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
 };
 
-use frame_support::{parameter_types, traits::EnsureOneOf, StorageMap, StorageValue};
+use frame_support::{
+    parameter_types, storage::weak_bounded_vec::WeakBoundedVec, traits::EnsureOneOf, StorageMap,
+    StorageValue,
+};
 use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use sp_core::H256;
@@ -49,7 +52,7 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 7;
     pub const MinimumStake: u64 = 10000;
     pub const LockId: LockIdentifier = *b"referend";
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 thread_local! {
@@ -327,23 +330,12 @@ pub enum OriginType<AccountId> {
     None,
 }
 
-/////////////////// Utility mocks //////////////////////////////////////////////s
+/////////////////// Utility mocks //////////////////////////////////////////////
 
-pub fn default_genesis_config() -> referendum::GenesisConfig<Runtime, DefaultInstance> {
-    referendum::GenesisConfig::<Runtime, DefaultInstance> {
-        stage: ReferendumStage::default(),
-        votes: vec![],
-    }
-}
-
-pub fn build_test_externalities(
-    config: referendum::GenesisConfig<Runtime, DefaultInstance>,
-) -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::default()
+pub fn build_test_externalities() -> sp_io::TestExternalities {
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
-
-    config.assimilate_storage(&mut t).unwrap();
 
     let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
 
@@ -392,9 +384,7 @@ where
         origin_account_id: T::AccountId,
         f: F,
     ) {
-        let config = default_genesis_config();
-
-        build_test_externalities(config).execute_with(|| {
+        build_test_externalities().execute_with(|| {
             let origin = OriginType::Signed(origin_account_id);
 
             f(origin)
@@ -493,7 +483,7 @@ pub struct InstanceMocks<T: Config<I>, I: Instance> {
 impl InstanceMocks<Runtime, DefaultInstance> {
     pub fn start_referendum_extrinsic(
         origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
-        winning_target_count: u64,
+        winning_target_count: u32,
         cycle_id: u64,
         expected_result: Result<(), ()>,
     ) -> () {
@@ -514,7 +504,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
     // checks that winning_target_count equals expected
     // fails if used outisde of voting stage
-    pub fn check_winning_target_count(winning_target_count: u64) {
+    pub fn check_winning_target_count(winning_target_count: u32) {
         if let ReferendumStage::Voting(stage_data) = Stage::<Runtime, DefaultInstance>::get() {
             assert_eq!(stage_data.winning_target_count, winning_target_count);
         } else {
@@ -523,7 +513,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     }
 
     pub fn start_referendum_manager(
-        winning_target_count: u64,
+        winning_target_count: u32,
         cycle_id: u64,
         expected_result: Result<(), ()>,
     ) -> () {
@@ -548,7 +538,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         Self::start_referendum_inner(extra_winning_target_count, cycle_id, expected_result)
     }
 
-    pub fn force_start(winning_target_count: u64, cycle_id: u64) -> () {
+    pub fn force_start(winning_target_count: u32, cycle_id: u64) -> () {
         let extra_winning_target_count = winning_target_count - 1;
 
         <Module<Runtime> as ReferendumManager<
@@ -560,7 +550,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     }
 
     fn start_referendum_inner(
-        extra_winning_target_count: u64,
+        extra_winning_target_count: u32,
         cycle_id: u64,
         expected_result: Result<(), ()>,
     ) {
@@ -596,7 +586,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         );
     }
 
-    pub fn check_voting_finished(winning_target_count: u64, cycle_id: u64) {
+    pub fn check_voting_finished(winning_target_count: u32, cycle_id: u64) {
         let block_number = frame_system::Pallet::<Runtime>::block_number();
         let revealing_ends_at = block_number + <Runtime as Config>::RevealStageDuration::get();
 
@@ -605,7 +595,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 started: block_number,
                 winning_target_count,
-                intermediate_winners: vec![],
+                intermediate_winners: WeakBoundedVec::default(),
                 current_cycle_id: cycle_id,
                 ends_at: revealing_ends_at
             }),

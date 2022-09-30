@@ -19,6 +19,8 @@
 #![allow(clippy::unnecessary_cast)]
 
 // Substrate FRAME pallets
+pub mod block_weights;
+pub mod extrinsic_weights;
 pub mod frame_system;
 pub mod pallet_balances;
 pub mod pallet_im_online;
@@ -27,4 +29,5 @@ pub mod pallet_session;
 pub mod pallet_staking;
 pub mod pallet_timestamp;
 pub mod pallet_vesting;
+pub mod rocksdb_weights;
 pub mod substrate_utility;

@@ -69,7 +69,7 @@ fn curator_group_management() {
         );
 
         let group = Content::curator_group_by_id(curator_group_id);
-        assert_eq!(group.is_active(), true);
+        assert!(group.is_active());
 
         // Group permissions
         let permissions = BTreeMap::from_iter(vec![
@@ -164,7 +164,7 @@ fn curator_group_management() {
             Content::add_curator_to_group(
                 Origin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
-                DEFAULT_CURATOR_ID + 1, // not a curator,
+                DEFAULT_MEMBER_ID, // not a curator,
                 BTreeSet::new()
             ),
             Error::<Test>::CuratorIdInvalid

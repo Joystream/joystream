@@ -119,12 +119,9 @@ fn sling_nft_back_auth_failed() {
         create_default_member_owned_channel_with_video();
 
         // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        IssueNftFixture::default()
+            .with_non_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
 
         // Make an attempt to sling nft back with wrong credentials
         let sling_nft_back_result = Content::sling_nft_back(
@@ -151,12 +148,9 @@ fn sling_nft_back_not_authorized() {
         create_default_member_owned_channel_with_video();
 
         // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        IssueNftFixture::default()
+            .with_non_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
 
         // Make an attempt to sling nft back if actor is not authorized
         let sling_nft_back_result = Content::sling_nft_back(
@@ -183,27 +177,24 @@ fn sling_nft_back_transactional_status_is_not_idle() {
         create_default_member_owned_channel_with_video();
 
         // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        IssueNftFixture::default()
+            .with_non_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
+            ContentActor::Member(SECOND_MEMBER_ID),
             SECOND_MEMBER_ID,
             None,
         ));
 
         // Make an attempt to sling nft back when it is already offered
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
+            ContentActor::Member(SECOND_MEMBER_ID),
         );
 
         // Failure checked
@@ -215,10 +206,32 @@ fn sling_nft_back_transactional_status_is_not_idle() {
 fn sling_nft_back_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        ContentTest::default().with_video_nft().setup();
+        ContentTest::default().with_video().setup();
+        IssueNftFixture::default()
+            .with_non_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
         InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::sling_nft_back(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                1u64,
+                ContentActor::Member(SECOND_MEMBER_ID),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn sling_nft_back_fails_with_channel_owned_nft() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::default().with_video().setup();
+        IssueNftFixture::default().call_and_assert(Ok(()));
 
         assert_noop!(
             Content::sling_nft_back(
@@ -226,7 +239,7 @@ fn sling_nft_back_fails_during_channel_transfer() {
                 1u64,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
             ),
-            Error::<Test>::InvalidChannelTransferStatus,
+            Error::<Test>::NftAlreadyOwnedByChannel,
         );
     })
 }

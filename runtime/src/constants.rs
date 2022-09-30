@@ -1,4 +1,5 @@
 use super::Balance;
+use super::ExtrinsicBaseWeight;
 use crate::{BlockNumber, Moment};
 pub use common::locks::*;
 use frame_support::parameter_types;
@@ -33,7 +34,8 @@ pub const MILLISECS_PER_BLOCK: Moment = 1000;
 pub const SLOT_DURATION: Moment = 1000;
 
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-pub const BONDING_DURATION: u32 = 24 * 7;
+pub const BONDING_DURATION: u32 = 24 * 28;
+pub const SLASH_DEFER_DURATION: u32 = 24 * 7; // 1/4 the bonding duration.
 
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
@@ -57,8 +59,8 @@ pub const JOY_ADDRESS_PREFIX: u16 = 126;
 /// This module is based on https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#relay-chain-transaction-fees-and-per-block-transaction-limits
 /// It was copied from Polkadot's implementation
 pub mod fees {
+    use super::ExtrinsicBaseWeight;
     use super::{parameter_types, Balance};
-    use frame_support::weights::constants::ExtrinsicBaseWeight;
     use frame_support::weights::{
         WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
     };
@@ -167,8 +169,9 @@ pub mod currency {
 mod tests {
     use super::currency::{CENTS, DOLLARS, MILLICENTS};
     use super::fees::WeightToFee;
+    use super::ExtrinsicBaseWeight;
     use crate::MAXIMUM_BLOCK_WEIGHT;
-    use frame_support::weights::{constants::ExtrinsicBaseWeight, WeightToFee as WeightToFeeT};
+    use frame_support::weights::WeightToFee as WeightToFeeT;
     use pallet_balances::WeightInfo;
 
     #[test]

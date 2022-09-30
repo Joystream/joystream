@@ -92,6 +92,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       actor,
       videoId,
       createType('u64', dataObjectsInfo.length),
+      createType('Option<u32>', await this.getStorageBucketsNumWitness(video.inChannel)),
     ])
   }
 }

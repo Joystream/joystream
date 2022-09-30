@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '11.2.0'
+version = '11.3.0'
 
 [dependencies]
 # Third-party dependencies
@@ -19,59 +19,59 @@ log = { version = "0.4.17", default-features = false }
 static_assertions = "1.1.0"
 
 # Substrate primitives
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-offchain = { package = 'sp-offchain', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-authority-discovery = { package = 'sp-authority-discovery', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-consensus-babe = { package = 'sp-consensus-babe', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-transaction-pool = { package = 'sp-transaction-pool', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-session = { package = 'sp-session', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-block-builder = { package = 'sp-block-builder', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-api = { package = 'sp-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-version = { package = 'sp-version', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-application-crypto = { package = 'sp-application-crypto', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-offchain = { package = 'sp-offchain', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-authority-discovery = { package = 'sp-authority-discovery', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-consensus-babe = { package = 'sp-consensus-babe', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-transaction-pool = { package = 'sp-transaction-pool', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-session = { package = 'sp-session', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-block-builder = { package = 'sp-block-builder', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-api = { package = 'sp-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-version = { package = 'sp-version', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-application-crypto = { package = 'sp-application-crypto', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 
 # Frame
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-frame-executive = { package = 'frame-executive', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
-pallet-elections-phragmen = { package = 'pallet-elections-phragmen', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
-pallet-bags-list = { package = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+frame-executive = { package = 'frame-executive', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
+pallet-elections-phragmen = { package = 'pallet-elections-phragmen', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
+pallet-bags-list = { package = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 
 # Pallets
-pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-babe = { package = 'pallet-babe', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-transaction-payment = { package = 'pallet-transaction-payment', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-transaction-payment-rpc-runtime-api = { package = 'pallet-transaction-payment-rpc-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-authorship = { package = 'pallet-authorship', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-session = { package = 'pallet-session', features = [ "historical" ], default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-offences = { package = 'pallet-offences', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-authority-discovery = { package = 'pallet-authority-discovery', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-sudo = { package = 'pallet-sudo', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
-pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
-pallet-multisig = { package = 'pallet-multisig', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-babe = { package = 'pallet-babe', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-transaction-payment = { package = 'pallet-transaction-payment', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-transaction-payment-rpc-runtime-api = { package = 'pallet-transaction-payment-rpc-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-authorship = { package = 'pallet-authorship', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-session = { package = 'pallet-session', features = [ "historical" ], default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-offences = { package = 'pallet-offences', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-authority-discovery = { package = 'pallet-authority-discovery', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-sudo = { package = 'pallet-sudo', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+substrate-utility = { package = 'pallet-utility', version = "4.0.0-dev", default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
+pallet-multisig = { package = 'pallet-multisig', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 
 # Benchmarking
-frame-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe', default-features = false, optional = true }
-frame-system-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe', default-features = false, optional = true }
-pallet-offences-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe', default-features = false, optional = true }
-pallet-session-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe', default-features = false, optional = true }
+frame-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', default-features = false, optional = true }
+frame-system-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', default-features = false, optional = true }
+pallet-offences-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', default-features = false, optional = true }
+pallet-session-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', default-features = false, optional = true }
 hex-literal = { optional = true, version = '0.3.1' }
-pallet-election-provider-support-benchmarking = { package = 'pallet-election-provider-support-benchmarking', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
+pallet-election-provider-support-benchmarking = { package = 'pallet-election-provider-support-benchmarking', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
@@ -86,17 +86,17 @@ proposals-discussion = { package = 'pallet-proposals-discussion', default-featur
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 pallet-constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
-# bounty = { package = 'pallet-bounty', default-features = false, path = '../runtime-modules/bounty'}
+bounty = { package = 'pallet-bounty', default-features = false, path = '../runtime-modules/bounty'}
 content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content'}
 joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
 project-token = { package = 'pallet-project-token', default-features = false, path = '../runtime-modules/project-token'}
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 strum = {version = "0.19", default-features = false}
 
 [build-dependencies]
-substrate-wasm-builder = { git = "https://github.com/joystream/substrate", rev = '31f4f7654cf8e27e0d73ffeb1c11b2df2d4fbffe' }
+substrate-wasm-builder = { git = "https://github.com/joystream/substrate", rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
 
 [features]
 default = ['std']
@@ -167,7 +167,7 @@ std = [
     'proposals-codex/std',
     'pallet-constitution/std',
     'staking-handler/std',
-    # 'bounty/std',
+    'bounty/std',
     'joystream-utility/std',
     'content/std',
     'project-token/std',
@@ -209,8 +209,9 @@ runtime-benchmarks = [
     "membership/runtime-benchmarks",
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
-    # "bounty/runtime-benchmarks",
+    "bounty/runtime-benchmarks",
     'storage/runtime-benchmarks',
+    'content/runtime-benchmarks',
     "project-token/runtime-benchmarks",
 ]
 

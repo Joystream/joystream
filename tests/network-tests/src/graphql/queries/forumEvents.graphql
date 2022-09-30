@@ -253,37 +253,6 @@ query getPostModeratedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-fragment PostReactedEventFields on PostReactedEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  post {
-    id
-  }
-  reactionResult {
-    __typename
-    ... on PostReactionResultValid {
-      reaction
-      reactionId
-    }
-    ... on PostReactionResultInvalid {
-      invalidReactionId: reactionId
-    }
-  }
-  reactingMember {
-    id
-  }
-}
-
-query getPostReactedEventsByEventIds($eventIds: [ID!]) {
-  postReactedEvents(where: { id_in: $eventIds }) {
-    ...PostReactedEventFields
-  }
-}
-
 fragment PostTextUpdatedEventFields on PostTextUpdatedEvent {
   id
   createdAt

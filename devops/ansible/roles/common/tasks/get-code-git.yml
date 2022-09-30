@@ -1,0 +1,9 @@
+---
+# Get the latest code
+
+- name: Git checkout
+  git:
+    repo: '{{ git_repo }}'
+    version: '{{ branch_name }}'
+    dest: '{{ remote_code_path }}'
+    force: yes

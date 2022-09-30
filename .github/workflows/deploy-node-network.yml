@@ -10,11 +10,11 @@ on:
 
 defaults:
   run:
-    working-directory: devops/aws
+    working-directory: devops/ansible
 
 jobs:
   deploy-node-network:
-    name: Create CloudFormation stack and run Ansible playbook
+    name: Deploy New Joystream Chain
     runs-on: ubuntu-latest
     env:
       STACK_NAME: network-deployment-${{ github.run_number }}
@@ -31,12 +31,9 @@ jobs:
           echo "::add-mask::$ENCRYPTION_KEY"
           echo ::set-output name=gitRepo::$(echo $jsonInput | jq -r '.gitRepo.value')
           echo ::set-output name=branchName::$(echo $jsonInput | jq -r '.branchName.value')
-          echo ::set-output name=numberOfValidators::$(echo $jsonInput | jq -r '.numberOfValidators.value')
-          echo ::set-output name=validatorInstanceType::$(echo $jsonInput | jq -r '.validatorInstanceType.value')
-          echo ::set-output name=buildInstanceType::$(echo $jsonInput | jq -r '.buildInstanceType.value')
-          echo ::set-output name=rpcInstanceType::$(echo $jsonInput | jq -r '.rpcInstanceType.value')
-          echo ::set-output name=joystreamAmi::$(echo $jsonInput | jq -r '.joystreamAmi.value')
+          echo ::set-output name=instanceType::$(echo $jsonInput | jq -r '.instanceType.value')
           echo ::set-output name=networkName::$(echo $jsonInput | jq -r '.networkName.value')
+          echo ::set-output name=networkId::$(echo $jsonInput | jq -r '.networkId.value')
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
           echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
           echo ::set-output name=runtimeProfile::$(echo $jsonInput | jq -r '.runtimeProfile.value')
@@ -51,8 +48,17 @@ jobs:
             echo ::set-output name=initialBalancesFilePath::'initial-balances.json'
           fi
 
-      - name: Install Ansible dependencies
-        run: pipx inject ansible-core boto3 botocore
+      - name: Install python3 netaddr
+        run: sudo apt-get install -y --no-install-recommends python3-netaddr
+
+      - name: Install python netaddr
+        run: sudo apt install -y --no-install-recommends python-netaddr
+
+      - name: Install Ansible
+        run: |
+          pip3 install --upgrade --user ansible
+          pipx inject ansible-core boto3 botocore
+          ansible-playbook --version
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -76,47 +82,40 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/aws/cloudformation/infrastructure.yml
+          template: devops/aws/cloudformation/network.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: >-
             KeyName=joystream-github-action-key-new,
-            ValidatorEC2InstanceType=${{ steps.network_config.outputs.validatorInstanceType }},
-            RPCEC2InstanceType=${{ steps.network_config.outputs.rpcInstanceType }},
-            BuildEC2InstanceType=${{ steps.network_config.outputs.buildInstanceType }},
-            JoystreamAmi=${{ steps.network_config.outputs.joystreamAmi }},
-            NumberOfValidators=${{ steps.network_config.outputs.numberOfValidators }},
-            VolumeSize=${{ steps.network_config.outputs.volumeSize }},
-            NumberOfStorageNodes=0,
-            NumberOfDistributorNodes=0,
-            TotalNumberOfInstancesInGroups=${{ steps.network_config.outputs.numberOfValidators }}
+            EC2InstanceType=${{ steps.network_config.outputs.instanceType }},
+            VolumeSize=${{ steps.network_config.outputs.volumeSize }}
 
       - name: Prepare inventory for Ansible
         run: |
-          ASG=${{ steps.deploy_stack.outputs.ValidatorsAutoScalingId }}
-
-          VALIDATORS=""
-
-          INSTANCES=$(aws autoscaling describe-auto-scaling-instances \
-            --query "AutoScalingInstances[?AutoScalingGroupName=='${ASG}'].InstanceId" --output text);
-
-          for ID in $INSTANCES
-          do
-            IP=$(aws ec2 describe-instances --instance-ids $ID --query "Reservations[].Instances[].PublicIpAddress" --output text)
-            VALIDATORS+="$IP\n"
-          done
-
-          echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n" >> inventory
-          echo -e "[validators]\n$VALIDATORS" >> inventory
-          echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}" >> inventory
+          VAL1="${{ steps.deploy_stack.outputs.Val1PublicIp }}"
+          VAL2="${{ steps.deploy_stack.outputs.Val2PublicIp }}"
+          VAL3="${{ steps.deploy_stack.outputs.Val3PublicIp }}"
+          echo -e "[validators]\n$VAL1\n$VAL2\n$VAL3\n\n" >> inventory
+          echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n\n" >> inventory
+          echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}\n" >> inventory
           cat inventory
 
-      - name: Run playbook to setup all hosts and compile joystream-node
+      # Always Install tools
+      - name: Install tools on all hosts
         uses: dawidd6/action-ansible-playbook@v2
-        # Build binaries if AMI not specified
-        if: steps.network_config.outputs.joystreamAmi == ''
+        with:
+          playbook: install-tools.yml
+          directory: devops/ansible
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+
+      # Build
+      - name: Build code
+        uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: build-code.yml
-          directory: devops/aws
+          directory: devops/ansible
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
@@ -124,27 +123,18 @@ jobs:
             --extra-vars "branch_name=${{ steps.network_config.outputs.branchName }} \
                           git_repo=${{ steps.network_config.outputs.gitRepo }} data_path=deploy_artifacts \
                           runtime_profile=${{ steps.network_config.outputs.runtimeProfile }}"
-            --verbose
 
-      - name: Run playbook to configure chain-spec
+      # Always Fetch binaries
+      - name: Fetch binaries from build host
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          playbook: configure-network.yml
-          directory: devops/aws
+          playbook: fetch-binaries.yml
+          directory: devops/ansible
           requirements: requirements.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
             --inventory inventory
-            --extra-vars "network_name=${{ steps.network_config.outputs.networkName }} data_path=deploy_artifacts \
-                          number_of_validators=${{ steps.network_config.outputs.numberOfValidators }} \
-                          number_of_storage_nodes=0 \
-                          number_of_distributor_nodes=0 \
-                          git_repo=${{ steps.network_config.outputs.gitRepo }} \
-                          deployment_type=${{ steps.network_config.outputs.deploymentType }} \
-                          branch_name=${{ steps.network_config.outputs.branchName }} \
-                          initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
-                          endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
-            --verbose
+            --extra-vars "data_path=deploy_artifacts"
 
       - name: Terminate Build instance
         continue-on-error: true
@@ -152,15 +142,33 @@ jobs:
           echo "Deleting build instance with id ${{ steps.deploy_stack.outputs.BuildInstanceId }}"
           aws ec2 terminate-instances --instance-ids ${{ steps.deploy_stack.outputs.BuildInstanceId }}
 
+      # Configure and start chain
+      - name: Run playbook to configure chain-spec
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: deploy-network.yml
+          directory: devops/ansible
+          requirements: requirements.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --inventory inventory
+            --extra-vars "network_name='${{ steps.network_config.outputs.networkName }}' \
+                          network_id=${{ steps.network_config.outputs.networkId }} \
+                          data_path=deploy_artifacts \
+                          deployment_type=${{ steps.network_config.outputs.deploymentType }} \
+                          initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
+                          endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
+
       - name: Encrpyt the artifacts
         run: |
+          cp inventory deploy_artifacts/
           7z a -p${{ steps.network_config.outputs.encryptionKey }} chain-data.7z deploy_artifacts/*
 
       - name: Save the output as an artifact
         uses: actions/upload-artifact@v2
         with:
           name: data-chainspec-auth
-          path: devops/aws/chain-data.7z
+          path: devops/ansible/chain-data.7z
 
       - name: Delete CloudFormation Stack if any step failed
         # Skip only if stack already existed or all steps passed succesfully

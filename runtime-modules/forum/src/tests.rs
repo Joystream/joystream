@@ -3,6 +3,7 @@
 use super::*;
 use crate::mock::*;
 use frame_support::traits::Currency;
+use sp_std::iter::FromIterator;
 
 /// test cases are arranged as two layers.
 /// first layer is each method in defined in module.
@@ -2335,61 +2336,6 @@ fn edit_non_editable_post_text() {
 }
 
 /*
- ** react_post
- */
-#[test]
-// test if post react take effect
-fn react_post() {
-    // three reations to post, test them one by one.
-    let reactions = vec![0, 1, 2];
-    for index in 0..reactions.len() {
-        let forum_lead = FORUM_LEAD_ORIGIN_ID;
-        let origin = FORUM_LEAD_ORIGIN;
-        let initial_balance = 10_000_000;
-
-        with_test_externalities(|| {
-            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-            let category_id = create_category_mock(
-                origin.clone(),
-                None,
-                good_category_title(),
-                good_category_description(),
-                Ok(()),
-            );
-
-            let thread_id = create_thread_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                good_thread_metadata(),
-                good_thread_text(),
-                Ok(()),
-            );
-            let post_id = create_post_mock(
-                origin.clone(),
-                forum_lead,
-                forum_lead,
-                category_id,
-                thread_id,
-                good_post_text(),
-                true,
-                Ok(()),
-            );
-            react_post_mock(
-                origin.clone(),
-                forum_lead,
-                category_id,
-                thread_id,
-                post_id,
-                reactions[index],
-                Ok(()),
-            );
-        });
-    }
-}
-
-/*
  ** moderate_post
  */
 
@@ -2768,7 +2714,7 @@ fn set_stickied_threads_ok() {
             origin.clone(),
             moderator_id,
             category_id,
-            vec![thread_id],
+            BTreeSet::from_iter(vec![thread_id]),
             Ok(()),
         );
 
@@ -2804,14 +2750,14 @@ fn set_stickied_threads_ok() {
             origin,
             moderator_id,
             category_id,
-            vec![thread_id, thread_id_deleted],
+            BTreeSet::from_iter(vec![thread_id, thread_id_deleted]),
             Err(Error::<Runtime>::ThreadDoesNotExist.into()),
         );
     });
 }
 
 #[test]
-fn set_stickied_threads_fails_with_duplicated_ids() {
+fn set_stickied_threads_fails_with_max_number_of_stickied_threads_exceeded() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
@@ -2834,21 +2780,25 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
             true,
             Ok(()),
         );
-        let thread_id = create_thread_mock(
-            origin.clone(),
-            forum_lead,
-            forum_lead,
-            category_id,
-            good_thread_metadata(),
-            good_thread_text(),
-            Ok(()),
-        );
+        let thread_ids = (0..<Runtime as Config>::MaxStickiedThreads::get() + 1)
+            .map(|_| {
+                create_thread_mock(
+                    origin.clone(),
+                    forum_lead,
+                    forum_lead,
+                    category_id,
+                    good_thread_metadata(),
+                    good_thread_text(),
+                    Ok(()),
+                )
+            })
+            .collect::<BTreeSet<_>>();
         set_stickied_threads_mock(
             origin,
             moderator_id,
             category_id,
-            vec![thread_id, thread_id],
-            Err(Error::<Runtime>::StickiedThreadIdsDuplicates.into()),
+            thread_ids,
+            Err(Error::<Runtime>::MaxNumberOfStickiedThreadsExceeded.into()),
         );
     });
 }
@@ -2883,7 +2833,7 @@ fn set_stickied_threads_wrong_moderator() {
             origin,
             moderator_id,
             category_id,
-            vec![thread_id],
+            BTreeSet::from_iter(vec![thread_id]),
             Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
         );
     });
@@ -2926,7 +2876,7 @@ fn set_stickied_threads_thread_not_exists() {
             origin,
             moderator_id,
             category_id,
-            vec![wrong_thread_id],
+            BTreeSet::from_iter(vec![wrong_thread_id]),
             Err(Error::<Runtime>::ThreadDoesNotExist.into()),
         );
     });

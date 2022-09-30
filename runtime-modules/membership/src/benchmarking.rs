@@ -127,22 +127,25 @@ benchmarks! {
 
         assert_eq!(Balances::<T>::free_balance(&account_id), free_balance - fee);
 
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
+        let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites,
         };
 
         assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
-        assert_last_event::<T>(RawEvent::MembershipBought(member_id, params).into());
+        assert_last_event::<T>(
+            RawEvent::MembershipBought(member_id, params, invites).into()
+        );
     }
 
     buy_membership_with_referrer{
@@ -199,15 +202,16 @@ benchmarks! {
             free_balance - fee + referral_cut_balance
         );
 
-        let second_handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
+        let second_handle_hash = T::Hashing::hash(&second_handle);
 
+        let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
-            handle_hash: second_handle_hash.clone(),
+            handle_hash: second_handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id,
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites,
         };
 
         let second_member_id = member_id + T::MemberId::one();
@@ -216,7 +220,9 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(second_member_id), Some(membership));
 
-        assert_last_event::<T>(RawEvent::MembershipBought(second_member_id, params).into());
+        assert_last_event::<T>(
+            RawEvent::MembershipBought(second_member_id, params, invites).into()
+        );
     }
 
     update_profile{
@@ -249,11 +255,12 @@ benchmarks! {
     verify {
 
         // Ensure membership profile is successfully updated
-        let handle_hash = T::Hashing::hash(&handle_updated).as_ref().to_vec();
+        let handle_old_hash = T::Hashing::hash(&handle);
+        let handle_updated_hash = T::Hashing::hash(&handle_updated);
 
-        assert!(!MemberIdByHandleHash::<T>::contains_key(handle));
-
-        assert_eq!(MemberIdByHandleHash::<T>::get(handle_updated.clone()), member_id);
+        assert!(!MemberIdByHandleHash::<T>::contains_key(handle_old_hash));
+        assert!(MemberIdByHandleHash::<T>::contains_key(&handle_updated_hash));
+        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_updated_hash), member_id);
 
         assert_last_event::<T>(RawEvent::MemberProfileUpdated(
                 member_id,
@@ -286,7 +293,7 @@ benchmarks! {
     verify {
 
         // Ensure root account is successfully updated
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
         let membership: Membership<T> = MembershipObject {
             handle_hash,
@@ -322,7 +329,7 @@ benchmarks! {
     verify {
         // Ensure controller account is successfully updated
 
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
         let membership: Membership<T> = MembershipObject {
             handle_hash,
@@ -360,7 +367,7 @@ benchmarks! {
     verify {
 
         // Ensure both root and controller accounts are successfully updated
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
         let membership: Membership<T> = MembershipObject {
             handle_hash,
@@ -414,9 +421,9 @@ benchmarks! {
     verify {
         // Ensure invites are successfully transfered
 
-        let first_handle_hash = T::Hashing::hash(&first_handle).as_ref().to_vec();
+        let first_handle_hash = T::Hashing::hash(&first_handle);
 
-        let second_handle_hash = T::Hashing::hash(&second_handle).as_ref().to_vec();
+        let second_handle_hash = T::Hashing::hash(&second_handle);
 
         let first_membership: Membership<T> = MembershipObject {
             handle_hash: first_handle_hash,
@@ -477,10 +484,10 @@ benchmarks! {
         // Ensure member is successfully invited
         let invited_member_id = member_id + T::MemberId::one();
 
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
         let invited_membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: false,
@@ -517,10 +524,10 @@ benchmarks! {
             controller_account: controller_account.clone(),
             handle: Some(handle.clone()),
             metadata,
-            credit_controller_account: (5_000_000 as u32).saturated_into::<BalanceOf<T>>(),
-            apply_controller_account_invitation_lock: Some((3_000_000 as u32).saturated_into()),
-            credit_root_account: (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
-            apply_root_account_invitation_lock: Some((1_000_000 as u32).saturated_into()),
+            credit_controller_account: (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            apply_controller_account_invitation_lock: Some((3_000_000_u32).saturated_into()),
+            credit_root_account: (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            apply_root_account_invitation_lock: Some((1_000_000_u32).saturated_into()),
         };
 
         let member_id = <NextMemberId<T>>::get();
@@ -529,10 +536,10 @@ benchmarks! {
 
     verify {
         // Ensure member is successfully invited
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
         let gifted_membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: root_account.clone(),
             controller_account: controller_account.clone(),
             verified: false,
@@ -547,22 +554,22 @@ benchmarks! {
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(controller_account.clone()),
-            (5_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(root_account.clone()),
-            (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(controller_account),
-            (2_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(root_account),
-            (1_000_000 as u32).saturated_into::<BalanceOf<T>>(),
+            (1_000_000_u32).saturated_into::<BalanceOf<T>>(),
         );
     }
 
@@ -606,7 +613,7 @@ benchmarks! {
     verify {
         // Ensure profile verification status is successfully updated
 
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
         let membership: Membership<T> = MembershipObject {
             handle_hash,
@@ -782,21 +789,24 @@ benchmarks! {
         // Ensure membership for given member_id is successfully bought
         assert_eq!(Module::<T>::members_created(), member_id + T::MemberId::one());
 
-        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+        let handle_hash = T::Hashing::hash(&handle);
 
+        let invites = Module::<T>::initial_invitation_count();
         let membership: Membership<T> = MembershipObject {
-            handle_hash: handle_hash.clone(),
+            handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: true,
-            invites: Module::<T>::initial_invitation_count(),
+            invites,
         };
 
         assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
-        assert_last_event::<T>(RawEvent::FoundingMemberCreated(member_id, params).into());
+        assert_last_event::<T>(
+            RawEvent::FoundingMemberCreated(member_id, params, invites).into()
+        );
     }
 
     // impl_benchmark_test_suite!(Module, tests::mock::build_test_externalities(), tests::mock::Test)

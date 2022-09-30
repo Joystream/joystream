@@ -81,17 +81,17 @@ export default async function proposalsDiscussion({ api, query, lock }: FlowProp
     {
       threadId: threadIds[0],
       asMember: memberIds[0],
-      newMode: createType('PalletProposalsDiscussionThreadMode', { Closed: memberIds }),
+      newMode: createType('PalletProposalsDiscussionThreadModeBTreeSet', { Closed: memberIds }),
     },
     {
       threadId: threadIds[1],
       asMember: memberIds[1],
-      newMode: createType('PalletProposalsDiscussionThreadMode', { Closed: [memberIds[0]] }),
+      newMode: createType('PalletProposalsDiscussionThreadModeBTreeSet', { Closed: [memberIds[0]] }),
     },
     {
       threadId: threadIds[1],
       asMember: memberIds[1],
-      newMode: createType('PalletProposalsDiscussionThreadMode', 'Open'),
+      newMode: createType('PalletProposalsDiscussionThreadModeBTreeSet', 'Open'),
     },
   ]
   const threadModeChanges = new ChangeThreadsModeFixture(api, query, threadModeChangesParams)

@@ -2,7 +2,7 @@
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use common::council::CouncilBudgetManager;
+use common::{council::CouncilBudgetManager, generate_merkle_root_helper};
 use sp_runtime::DispatchError;
 
 #[test]
@@ -930,7 +930,7 @@ fn unsuccessfull_channel_payouts_update_with_insufficient_uploader_account_balan
                 Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
@@ -954,7 +954,7 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
                 Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
@@ -977,7 +977,7 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_object_state_bloat_
                 Storage::<Test>::data_object_state_bloat_bond_value().saturating_add(1),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
@@ -1045,14 +1045,16 @@ fn successful_channel_payouts_update() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         let payments = create_some_pull_payments_helper();
-        let merkle_root = generate_merkle_root_helper(&payments).pop().unwrap();
+        let merkle_root = generate_merkle_root_helper::<Test, _>(&payments)
+            .pop()
+            .unwrap();
         let payload_params = ChannelPayoutsPayloadParameters::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond:
                 Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
-                ipfs_content_id: vec![1],
+                ipfs_content_id: create_cid(1),
             },
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };

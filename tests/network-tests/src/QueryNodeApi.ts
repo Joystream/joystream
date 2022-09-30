@@ -35,12 +35,6 @@ import {
   GetStakingAccountRemovedEventsByMemberIdQuery,
   GetStakingAccountRemovedEventsByMemberIdQueryVariables,
   GetStakingAccountRemovedEventsByMemberId,
-  GetMembershipSystemSnapshotAtQuery,
-  GetMembershipSystemSnapshotAtQueryVariables,
-  GetMembershipSystemSnapshotAt,
-  GetMembershipSystemSnapshotBeforeQuery,
-  GetMembershipSystemSnapshotBeforeQueryVariables,
-  GetMembershipSystemSnapshotBefore,
   GetReferralCutUpdatedEventsByEventIdQuery,
   GetReferralCutUpdatedEventsByEventIdQueryVariables,
   GetReferralCutUpdatedEventsByEventId,
@@ -95,7 +89,6 @@ import {
   StakingAccountAddedEventFieldsFragment,
   StakingAccountConfirmedEventFieldsFragment,
   StakingAccountRemovedEventFieldsFragment,
-  MembershipSystemSnapshotFieldsFragment,
   ReferralCutUpdatedEventFieldsFragment,
   MembershipPriceUpdatedEventFieldsFragment,
   InitialInvitationBalanceUpdatedEventFieldsFragment,
@@ -270,10 +263,6 @@ import {
   GetPostModeratedEventsByEventIdsQuery,
   GetPostModeratedEventsByEventIdsQueryVariables,
   GetPostModeratedEventsByEventIds,
-  PostReactedEventFieldsFragment,
-  GetPostReactedEventsByEventIdsQuery,
-  GetPostReactedEventsByEventIdsQueryVariables,
-  GetPostReactedEventsByEventIds,
   PostTextUpdatedEventFieldsFragment,
   GetPostTextUpdatedEventsByEventIdsQuery,
   GetPostTextUpdatedEventsByEventIdsQueryVariables,
@@ -344,7 +333,6 @@ import {
   GetCommentDeletedEventsByEventIdsQuery,
   GetCommentDeletedEventsByEventIdsQueryVariables,
   GetCommentDeletedEventsByEventIds,
-  VideoReactionFieldsFragment,
   VideoReactedEventFieldsFragment,
   GetVideoReactedEventsByEventIds,
   GetVideoReactedEventsByEventIdsQuery,
@@ -353,7 +341,6 @@ import {
   GetCommentReactedEventsByEventIds,
   GetCommentReactedEventsByEventIdsQuery,
   GetCommentReactedEventsByEventIdsQueryVariables,
-  CommentReactionFieldsFragment,
   MemberBannedFromChannelEventFieldsFragment,
   GetMemberBannedFromChannelEventsByEventIdsQuery,
   GetMemberBannedFromChannelEventsByEventIdsQueryVariables,
@@ -465,7 +452,7 @@ export class QueryNodeApi {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
     const debug = this.tryDebug.extend(label)
     let retryCounter = 0
-    const retry = async (error: any) => {
+    const retry = async (error: unknown) => {
       if (retryCounter === retries) {
         debug(`Max number of query retries (${retries}) reached!`)
         throw error
@@ -498,7 +485,7 @@ export class QueryNodeApi {
 
   private debugQuery(query: DocumentNode, args: Record<string, unknown>): void {
     const queryDef = query.definitions.find((d) => d.kind === 'OperationDefinition') as OperationDefinitionNode
-    this.queryDebug(`${queryDef.name!.value}(${JSON.stringify(args)})`)
+    this.queryDebug(`${queryDef.name?.value}(${JSON.stringify(args)})`)
   }
 
   // Query entity by unique input
@@ -663,26 +650,6 @@ export class QueryNodeApi {
       GetStakingAccountRemovedEventsByMemberIdQuery,
       GetStakingAccountRemovedEventsByMemberIdQueryVariables
     >(GetStakingAccountRemovedEventsByMemberId, { memberId: memberId.toString() }, 'stakingAccountRemovedEvents')
-  }
-
-  // FIXME: Cross-filtering is not enabled yet, so we have to use timestamp workaround
-  public async getMembershipSystemSnapshotAt(
-    timestamp: number
-  ): Promise<MembershipSystemSnapshotFieldsFragment | null> {
-    return this.firstEntityQuery<GetMembershipSystemSnapshotAtQuery, GetMembershipSystemSnapshotAtQueryVariables>(
-      GetMembershipSystemSnapshotAt,
-      { time: new Date(timestamp) },
-      'membershipSystemSnapshots'
-    )
-  }
-
-  public async getMembershipSystemSnapshotBefore(
-    timestamp: number
-  ): Promise<MembershipSystemSnapshotFieldsFragment | null> {
-    return this.firstEntityQuery<
-      GetMembershipSystemSnapshotBeforeQuery,
-      GetMembershipSystemSnapshotBeforeQueryVariables
-    >(GetMembershipSystemSnapshotBefore, { time: new Date(timestamp) }, 'membershipSystemSnapshots')
   }
 
   public async getReferralCutUpdatedEvent(
@@ -1138,14 +1105,6 @@ export class QueryNodeApi {
       GetPostModeratedEventsByEventIdsQuery,
       GetPostModeratedEventsByEventIdsQueryVariables
     >(GetPostModeratedEventsByEventIds, { eventIds }, 'postModeratedEvents')
-  }
-
-  public async getPostReactedEvents(events: EventDetails[]): Promise<PostReactedEventFieldsFragment[]> {
-    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
-    return this.multipleEntitiesQuery<
-      GetPostReactedEventsByEventIdsQuery,
-      GetPostReactedEventsByEventIdsQueryVariables
-    >(GetPostReactedEventsByEventIds, { eventIds }, 'postReactedEvents')
   }
 
   public async getPostTextUpdatedEvents(events: EventDetails[]): Promise<PostTextUpdatedEventFieldsFragment[]> {

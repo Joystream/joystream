@@ -177,6 +177,7 @@ parameter_types! {
     pub const MaxCategories: u64 = 40;
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
+    pub const MaxStickiedThreads: u32 = 10;
     pub const ForumModuleId: PalletId = PalletId(*b"m0:forum"); // module : forum
 }
 
@@ -193,7 +194,6 @@ impl Config for Runtime {
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;
-    type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
     type PostLifeTime = PostLifeTime;
 
@@ -202,6 +202,7 @@ impl Config for Runtime {
     type MemberOriginValidator = ();
     type ThreadDeposit = ThreadDeposit;
     type PostDeposit = PostDeposit;
+    type MaxStickiedThreads = MaxStickiedThreads;
 
     type ModuleId = ForumModuleId;
 
@@ -1014,7 +1015,7 @@ pub fn set_stickied_threads_mock(
     origin: OriginType,
     moderator_id: ModeratorId<Runtime>,
     category_id: <Runtime as Config>::CategoryId,
-    stickied_ids: Vec<<Runtime as Config>::ThreadId>,
+    stickied_ids: BTreeSet<<Runtime as Config>::ThreadId>,
     result: DispatchResult,
 ) -> <Runtime as Config>::CategoryId {
     assert_eq!(
@@ -1028,7 +1029,7 @@ pub fn set_stickied_threads_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            TestForumModule::category_by_id(category_id).sticky_thread_ids,
+            BTreeSet::<_>::from(TestForumModule::category_by_id(category_id).sticky_thread_ids),
             stickied_ids
         );
         assert_eq!(
@@ -1041,63 +1042,6 @@ pub fn set_stickied_threads_mock(
         );
     };
     category_id
-}
-
-/// Create react post mock
-pub fn react_post_mock(
-    origin: OriginType,
-    forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Config>::CategoryId,
-    thread_id: <Runtime as Config>::ThreadId,
-    post_id: <Runtime as Config>::PostId,
-    post_reaction_id: <Runtime as Config>::PostReactionId,
-    result: DispatchResult,
-) {
-    assert_eq!(
-        TestForumModule::react_post(
-            mock_origin(origin),
-            forum_user_id,
-            category_id,
-            thread_id,
-            post_id,
-            post_reaction_id,
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            Event::TestForumModule(RawEvent::PostReacted(
-                forum_user_id,
-                post_id,
-                post_reaction_id,
-                category_id,
-                thread_id
-            ))
-        );
-    };
-}
-
-pub fn ed() -> BalanceOf<Runtime> {
-    ExistentialDeposit::get().into()
-}
-
-pub fn set_invitation_lock(
-    who: &<Runtime as frame_system::Config>::AccountId,
-    amount: BalanceOf<Runtime>,
-) {
-    <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
-        amount,
-        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
-    );
-}
-
-pub fn set_staking_candidate_lock(
-    who: &<Runtime as frame_system::Config>::AccountId,
-    amount: BalanceOf<Runtime>,
-) {
-    <Runtime as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
 
 /// Create default genesis config
@@ -1145,4 +1089,26 @@ pub fn run_to_block(n: u64) {
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
         <TestForumModule as OnInitialize<u64>>::on_initialize(System::block_number());
     }
+}
+
+pub fn ed() -> BalanceOf<Runtime> {
+    ExistentialDeposit::get().into()
+}
+
+pub fn set_invitation_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
+}
+
+pub fn set_staking_candidate_lock(
+    who: &<Runtime as frame_system::Config>::AccountId,
+    amount: BalanceOf<Runtime>,
+) {
+    <Runtime as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }

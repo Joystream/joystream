@@ -1,31 +1,20 @@
 #![cfg(test)]
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::parameter_types;
-use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::weights::Weight;
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
+use frame_support::traits::{ConstU32, Currency, EnsureOneOf, LockIdentifier};
+use frame_support::{ensure, parameter_types, PalletId};
+use frame_system::{ensure_signed, EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    ModuleId,
+    Perbill,
 };
 
-use crate as bounty;
 use crate::Config;
+use sp_std::convert::TryFrom;
+use sp_std::convert::TryInto;
 use staking_handler::{LockComparator, StakingManager};
-
-parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
-    pub const BountyLockId: [u8; 8] = [12; 8];
-    pub const ClosedContractSizeLimit: u32 = 3;
-    pub const MinCherryLimit: u64 = 10;
-    pub const MinFundingLimit: u64 = 50;
-    pub const MinWorkEntrantStake: u64 = 10;
-}
-
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -35,17 +24,31 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        Membership: membership::{Module, Call, Storage, Event<T>},
-        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Bounty: bounty::{Module, Call, Storage, Event<T>},
-        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>},
-        Council: council::{Module, Call, Storage, Event<T>},
+        System: frame_system,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Balances: balances,
+        Bounty: crate::{Pallet, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>},
     }
 );
 
+// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
+    pub const BountyLockId: [u8; 8] = [12; 8];
+    pub const ClosedContractSizeLimit: u32 = 3;
+    pub const MinWorkEntrantStake: u64 = 10;
+    pub const CreatorStateBloatBondAmount: u64 = 10;
+    pub const FunderStateBloatBondAmount: u64 = 10;
+}
+
 impl frame_system::Config for Test {
-    type BaseCallFilter = ();
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
     type Origin = Origin;
@@ -67,6 +70,8 @@ impl frame_system::Config for Test {
     type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
     type SS58Prefix = ();
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 impl Config for Test {
@@ -79,9 +84,9 @@ impl Config for Test {
     type StakingHandler = StakingManager<Test, BountyLockId>;
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
-    type MinCherryLimit = MinCherryLimit;
-    type MinFundingLimit = MinFundingLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
 }
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u128 = 10000;
@@ -90,10 +95,13 @@ impl common::StakingAccountValidator<Test> for () {
         *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
     }
 }
+pub const MAX_MEMBERS: u32 = 150;
+pub const INVALID_MEMBER_ID: u64 = (MAX_MEMBERS + 1) as u64;
+pub const INVALID_ACCOUNT_ID: u128 = (MAX_MEMBERS + 1) as u128;
 
 impl common::membership::MembershipInfoProvider<Test> for () {
     fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
-        if member_id < 10 {
+        if member_id < MAX_MEMBERS.into() {
             return Ok(member_id as u128); // similar account_id
         }
 
@@ -140,15 +148,18 @@ impl common::membership::MembershipTypes for Test {
 impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,
-        _member_id: u64,
+        member_id: u64,
     ) -> Result<u128, DispatchError> {
-        let signed_account_id = frame_system::ensure_signed(origin)?;
-
-        Ok(signed_account_id)
+        let sender = ensure_signed(origin)?;
+        ensure!(
+            Self::is_member_controller_account(&member_id, &sender),
+            DispatchError::Other("origin signer not a member controller account"),
+        );
+        Ok(sender)
     }
 
-    fn is_member_controller_account(_member_id: &u64, _account_id: &u128) -> bool {
-        true
+    fn is_member_controller_account(member_id: &u64, account_id: &u128) -> bool {
+        *member_id < MAX_MEMBERS.into() && (*member_id) as u128 == *account_id
     }
 }
 
@@ -162,68 +173,6 @@ parameter_types! {
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const CandidateStake: u64 = 130;
-}
-
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
 }
 
 impl pallet_timestamp::Config for Test {
@@ -242,7 +191,7 @@ impl membership::Config for Test {
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type CandidateStake = CandidateStake;
 }
 
@@ -293,7 +242,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
@@ -326,15 +275,17 @@ impl balances::Config for Test {
     type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
     type WeightInfo = ();
     type MaxLocks = ();
 }
 
 parameter_types! {
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 27;
-    pub const CouncilSize: u64 = 3;
+    pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const CouncilorLockId: LockIdentifier = *b"council2";
@@ -359,62 +310,10 @@ impl council::Config for Test {
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
     type BudgetRefillPeriod = BudgetRefillPeriod;
     type StakingAccountValidator = ();
-    type WeightInfo = CouncilWeightInfo;
+    type WeightInfo = ();
     type MemberOriginValidator = ();
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
-}
-
-pub struct CouncilWeightInfo;
-impl council::WeightInfo for CouncilWeightInfo {
-    fn try_process_budget() -> Weight {
-        0
-    }
-    fn try_progress_stage_idle() -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_restart() -> Weight {
-        0
-    }
-    fn announce_candidacy() -> Weight {
-        0
-    }
-    fn release_candidacy_stake() -> Weight {
-        0
-    }
-    fn set_candidacy_note(_: u32) -> Weight {
-        0
-    }
-    fn withdraw_candidacy() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn plan_budget_refill() -> Weight {
-        0
-    }
-    fn set_budget_increment() -> Weight {
-        0
-    }
-    fn set_councilor_reward() -> Weight {
-        0
-    }
-    fn funding_request(_: u32) -> Weight {
-        0
-    }
-    fn fund_council_budget() -> Weight {
-        0
-    }
-    fn councilor_remark() -> Weight {
-        0
-    }
-    fn candidate_remark() -> Weight {
-        0
-    }
 }
 
 parameter_types! {
@@ -423,20 +322,19 @@ parameter_types! {
     pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VotingLockId: LockIdentifier = *b"referend";
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
     type Event = Event;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = u64;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
     type MinimumStake = MinimumVotingStake;
-    type WeightInfo = ReferendumWeightInfo;
+    type WeightInfo = ();
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
@@ -460,53 +358,25 @@ impl referendum::Config<ReferendumInstance> for Test {
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
     }
 
     fn is_valid_option_id(option_index: &u64) -> bool {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
             option_index,
         )
     }
 
     fn get_option_power(option_id: &u64) -> Self::VotePower {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
     }
 
     fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::increase_option_power(
             option_id, amount,
         );
-    }
-}
-
-pub struct ReferendumWeightInfo;
-impl referendum::WeightInfo for ReferendumWeightInfo {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
     }
 }
 

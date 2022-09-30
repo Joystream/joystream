@@ -81,7 +81,7 @@ impl<T: Config> Module<T> {
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
-                Error::<T>::BuyNowIsLessThenStartingPrice
+                Error::<T>::BuyNowMustBeGreaterThanStartingPrice,
             );
         }
 
@@ -108,7 +108,7 @@ impl<T: Config> Module<T> {
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
-                Error::<T>::BuyNowIsLessThenStartingPrice
+                Error::<T>::BuyNowMustBeGreaterThanStartingPrice
             );
         }
 
@@ -170,7 +170,7 @@ impl<T: Config> Module<T> {
             1 => Err(Error::<T>::WhitelistHasOnlyOneMember.into()),
             length => {
                 ensure!(
-                    length <= Self::max_auction_whitelist_length() as usize,
+                    length as u32 <= T::MaxNftAuctionWhitelistLength::get(),
                     Error::<T>::MaxAuctionWhiteListLengthUpperBoundExceeded
                 );
                 Ok(())

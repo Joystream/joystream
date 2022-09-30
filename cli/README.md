@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.8.0 darwin-arm64 node-v16.15.0
+@joystream/cli/0.8.0 linux-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -123,6 +123,16 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:updateVideoStateBloatBond VALUE`](#joystream-cli-contentupdatevideostatebloatbond-value)
 - [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 - [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+- [`joystream-cli fee-profile:addForumPost`](#joystream-cli-fee-profileaddforumpost)
+- [`joystream-cli fee-profile:addVideoComment`](#joystream-cli-fee-profileaddvideocomment)
+- [`joystream-cli fee-profile:buyMembership`](#joystream-cli-fee-profilebuymembership)
+- [`joystream-cli fee-profile:createChannel`](#joystream-cli-fee-profilecreatechannel)
+- [`joystream-cli fee-profile:createForumThread`](#joystream-cli-fee-profilecreateforumthread)
+- [`joystream-cli fee-profile:createVideo`](#joystream-cli-fee-profilecreatevideo)
+- [`joystream-cli fee-profile:deleteChannel`](#joystream-cli-fee-profiledeletechannel)
+- [`joystream-cli fee-profile:deleteForumPost`](#joystream-cli-fee-profiledeleteforumpost)
+- [`joystream-cli fee-profile:deleteForumThread`](#joystream-cli-fee-profiledeleteforumthread)
+- [`joystream-cli fee-profile:deleteVideo`](#joystream-cli-fee-profiledeletevideo)
 - [`joystream-cli forum:addPost`](#joystream-cli-forumaddpost)
 - [`joystream-cli forum:categories`](#joystream-cli-forumcategories)
 - [`joystream-cli forum:category`](#joystream-cli-forumcategory)
@@ -163,7 +173,6 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
 - [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
 - [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
-- [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
 - [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
 
 ## `joystream-cli account:create`
@@ -920,6 +929,255 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
+
+## `joystream-cli fee-profile:addForumPost`
+
+Create fee profile of forum.add_post extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:addForumPost
+
+OPTIONS
+  -e, --editable           If specified - `editable` parameter is set to true when estimating the costs
+  -j, --joyPrice=joyPrice  [default: 6] Joy price in USD cents for estimating costs in USD
+  -p, --postLen=postLen    [default: 200] Post length to use for estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/addForumPost.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/addForumPost.ts)_
+
+## `joystream-cli fee-profile:addVideoComment`
+
+Create fee profile of members.member_remark extrinsic (video comment case).
+
+```
+USAGE
+  $ joystream-cli fee-profile:addVideoComment
+
+OPTIONS
+  -c, --commentLen=commentLen  [default: 50] Comment length to use for estimating tx fee
+  -j, --joyPrice=joyPrice      [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/addVideoComment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/addVideoComment.ts)_
+
+## `joystream-cli fee-profile:buyMembership`
+
+Create fee profile of members.buy_membership extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:buyMembership
+
+OPTIONS
+  -a, --aboutLength=aboutLength          [default: 0] Length of the member's about text (part of metadata) to use for
+                                         estimating tx fee
+
+  -h, --handleLength=handleLength        [default: 10] Length of the membership handle to use for estimating tx fee
+
+  -j, --joyPrice=joyPrice                [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -n, --nameLength=nameLength            [default: 10] Length of the member's name (part of metadata) to use for
+                                         estimating tx fee
+
+  -u, --avatarUriLength=avatarUriLength  [default: 25] Length of the member's avatar uri (part of metadata) to use for
+                                         estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/buyMembership.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/buyMembership.ts)_
+
+## `joystream-cli fee-profile:createChannel`
+
+Create fee profile of content.create_channel extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:createChannel
+
+OPTIONS
+  -C, --collaboratorsNum=collaboratorsNum              [default: 0] Number of channel collaborators to use for
+                                                       estimating tx fee
+
+  -D, --distributionBucketsNum=distributionBucketsNum  Number of distribution buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -S, --storageBucketsNum=storageBucketsNum            Number of storage buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -a, --avatarSize=avatarSize                          [default: 1] Avatar size in MB to use when estimating the costs
+
+  -c, --coverSize=coverSize                            [default: 1] Cover photo size in MB to use when estimating the
+                                                       costs
+
+  -d, --descriptionLen=descriptionLen                  [default: 200] Channel description (part of channel metadata)
+                                                       length to use for estimating tx fee
+
+  -j, --joyPrice=joyPrice                              [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -t, --titleLen=titleLen                              [default: 15] Channel title (part of channel metadata) length to
+                                                       use for estimating tx fee
+
+  --noAvatar                                           If provided - channel with no avatar will be used for estimating
+                                                       the costs
+
+  --noCover                                            If provided - channel with no cover photo will be used for
+                                                       estimating the costs
+```
+
+_See code: [src/commands/fee-profile/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/createChannel.ts)_
+
+## `joystream-cli fee-profile:createForumThread`
+
+Create fee profile of forum.create_thread extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:createForumThread
+
+OPTIONS
+  -G, --tagsNum=tagsNum                [default: 5] Number of forum thread tags (part of thread metadata) to use for
+                                       estimating tx fee
+
+  -g, --tagLen=tagLen                  [default: 10] Single tag length (part of thread metadata) to use for estimating
+                                       tx fee
+
+  -j, --joyPrice=joyPrice              [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -p, --initialPostLen=initialPostLen  [default: 200] Thread's initial post length to use for estimating tx fee
+
+  -t, --titleLen=titleLen              [default: 20] Thread title (part of thread metadata) length to use for estimating
+                                       tx fee
+```
+
+_See code: [src/commands/fee-profile/createForumThread.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/createForumThread.ts)_
+
+## `joystream-cli fee-profile:createVideo`
+
+Create fee profile of content.create_video extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:createVideo
+
+OPTIONS
+  -S, --storageBucketsNum=storageBucketsNum              Number of storage buckets to use for estimating tx fee.
+                                                         By default this number will be based on the current chain's
+                                                         dynamic bag policy for channel bags
+
+  -T, --thumbnailSize=thumbnailSize                      [default: 1] Thumbnail photo size in MB to use for estimating
+                                                         the costs
+
+  -c, --categoryLen=categoryLen                          [default: 10] Video cateogry (part of video metadata) length to
+                                                         use for estimating tx fee
+
+  -d, --descriptionLen=descriptionLen                    [default: 200] Video description (part of video metadata)
+                                                         length to use for estimating tx fee
+
+  -f, --subtitlesFileSize=subtitlesFileSize              [default: 1] Single subtitles file/asset size in MB to use for
+                                                         estimating the costs
+
+  -j, --joyPrice=joyPrice                                [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -m, --mediaSize=mediaSize                              [default: 200] Video media file size in MB to use for
+                                                         estimating the costs
+
+  -s, --subtitlesNum=subtitlesNum                        [default: 1] Number of subtitles (subtitle assets) to use for
+                                                         estimating the costs
+
+  -t, --titleLen=titleLen                                [default: 15] Video title (part of video metadata) length to
+                                                         use for estimating tx fee
+
+  -w, --nftAuctionWhitelistSize=nftAuctionWhitelistSize  If `--withNft` is provided - determines auction whitelist size
+                                                         in nft's InitTransactionalStatus to use when estimating tx fee
+                                                         (Default: 0)
+
+  --noMedia                                              If provided - video with no media asset will be used for
+                                                         estimating the costs
+
+  --noThumbnail                                          If provided - video with no thumbnail asset will be used for
+                                                         estimating the costs
+
+  --withNft                                              If provided - `auto_issue_nft` parameter will be set when
+                                                         estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/createVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/createVideo.ts)_
+
+## `joystream-cli fee-profile:deleteChannel`
+
+Create fee profile of content.delete_channel extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteChannel
+
+OPTIONS
+  -D, --distributionBucketsNum=distributionBucketsNum  Number of distribution buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -S, --storageBucketsNum=storageBucketsNum            Number of storage buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -a, --assetsNum=assetsNum                            [default: 2] Number of assets to use for estimating the
+                                                       costs/returns
+
+  -j, --joyPrice=joyPrice                              [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/deleteChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteChannel.ts)_
+
+## `joystream-cli fee-profile:deleteForumPost`
+
+Create fee profile of forum.delete_posts extrinsic (single post case).
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteForumPost
+
+OPTIONS
+  -j, --joyPrice=joyPrice          [default: 6] Joy price in USD cents for estimating costs in USD
+  -r, --rationaleLen=rationaleLen  [default: 0] Default rationale length to use for estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/deleteForumPost.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteForumPost.ts)_
+
+## `joystream-cli fee-profile:deleteForumThread`
+
+Create fee profile of forum.delete_thread extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteForumThread
+
+OPTIONS
+  -j, --joyPrice=joyPrice  [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/deleteForumThread.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteForumThread.ts)_
+
+## `joystream-cli fee-profile:deleteVideo`
+
+Create fee profile of forum.delete_video extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteVideo
+
+OPTIONS
+  -S, --storageBucketsNum=storageBucketsNum  Number of storage buckets to use for estimating tx fee.
+                                             By default this number will be based on the current chain's dynamic bag
+                                             policy for channel bags
+
+  -a, --assetsNum=assetsNum                  [default: 2] Number of assets to use for estimating the costs/returns
+
+  -j, --joyPrice=joyPrice                    [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/deleteVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteVideo.ts)_
 
 ## `joystream-cli forum:addPost`
 
@@ -1827,32 +2085,6 @@ OPTIONS
 ```
 
 _See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
-
-## `joystream-cli working-groups:updateRoleStorage STORAGE`
-
-Updates the associated worker storage
-
-```
-USAGE
-  $ joystream-cli working-groups:updateRoleStorage STORAGE
-
-ARGUMENTS
-  STORAGE  Worker storage
-
-OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
-      The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
-      distributors.
-
-  --useMemberId=useMemberId
-      Try using the specified member id as context whenever possible
-
-  --useWorkerId=useWorkerId
-      Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/working-groups/updateRoleStorage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleStorage.ts)_
 
 ## `joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`
 

@@ -93,6 +93,146 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       VestingBalance: AugmentedError<ApiType>;
     };
+    bounty: {
+      /**
+       * Bounty doesnt exist.
+       **/
+      BountyDoesntExist: AugmentedError<ApiType>;
+      /**
+       * Incompatible assurance contract type for a member: cannot submit work to the 'closed
+       * assurance' bounty contract.
+       **/
+      CannotSubmitWorkToClosedContractBounty: AugmentedError<ApiType>;
+      /**
+       * Cherry less than minimum allowed.
+       **/
+      CherryLessThenMinimumAllowed: AugmentedError<ApiType>;
+      /**
+       * Cannot create a 'closed assurance contract' bounty with empty member list.
+       **/
+      ClosedContractMemberListIsEmpty: AugmentedError<ApiType>;
+      /**
+       * Cannot create a 'closed assurance contract' bounty with member list larger
+       * than allowed max work entry limit.
+       **/
+      ClosedContractMemberListIsTooLarge: AugmentedError<ApiType>;
+      /**
+       * 'closed assurance contract' bounty member list can only include existing members
+       **/
+      ClosedContractMemberNotFound: AugmentedError<ApiType>;
+      /**
+       * The conflicting stake discovered. Cannot stake.
+       **/
+      ConflictingStakes: AugmentedError<ApiType>;
+      /**
+       * Cannot create a bounty with an entrant stake is less than required minimum.
+       **/
+      EntrantStakeIsLessThanMininum: AugmentedError<ApiType>;
+      /**
+       * Cannot create a bounty with zero funding amount parameter.
+       **/
+      FundingAmountCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Cannot create a bounty with zero funding period parameter.
+       **/
+      FundingPeriodCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Insufficient balance for a bounty cherry.
+       **/
+      InsufficientBalanceForBounty: AugmentedError<ApiType>;
+      /**
+       * There is not enough balance for a stake.
+       **/
+      InsufficientBalanceForStake: AugmentedError<ApiType>;
+      /**
+       * Bounty contributor not found
+       **/
+      InvalidContributorActorSpecified: AugmentedError<ApiType>;
+      /**
+       * Invalid Creator Actor for Bounty specified
+       **/
+      InvalidCreatorActorSpecified: AugmentedError<ApiType>;
+      /**
+       * Member specified is not an entrant worker
+       **/
+      InvalidEntrantWorkerSpecified: AugmentedError<ApiType>;
+      /**
+       * Bounty oracle not found
+       **/
+      InvalidOracleActorSpecified: AugmentedError<ApiType>;
+      /**
+       * Provided oracle member id does not belong to an existing member
+       **/
+      InvalidOracleMemberId: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: Cancelled.
+       **/
+      InvalidStageUnexpectedCancelled: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: FailedBountyWithdrawal.
+       **/
+      InvalidStageUnexpectedFailedBountyWithdrawal: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: Funding.
+       **/
+      InvalidStageUnexpectedFunding: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: Judgment.
+       **/
+      InvalidStageUnexpectedJudgment: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: NoFundingContributed.
+       **/
+      InvalidStageUnexpectedNoFundingContributed: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: SuccessfulBountyWithdrawal.
+       **/
+      InvalidStageUnexpectedSuccessfulBountyWithdrawal: AugmentedError<ApiType>;
+      /**
+       * Unexpected bounty stage for an operation: WorkSubmission.
+       **/
+      InvalidStageUnexpectedWorkSubmission: AugmentedError<ApiType>;
+      /**
+       * Staking account doesn't belong to a member.
+       **/
+      InvalidStakingAccountForMember: AugmentedError<ApiType>;
+      /**
+       * Min funding amount cannot be greater than max amount.
+       **/
+      MinFundingAmountCannotBeGreaterThanMaxAmount: AugmentedError<ApiType>;
+      /**
+       * Cannot found bounty contribution.
+       **/
+      NoBountyContributionFound: AugmentedError<ApiType>;
+      /**
+       * Oracle have already been withdrawn
+       **/
+      OracleRewardAlreadyWithdrawn: AugmentedError<ApiType>;
+      /**
+       * Origin is root, so switching oracle is not allowed in this extrinsic. (call switch_oracle_as_root)
+       **/
+      SwitchOracleOriginIsRoot: AugmentedError<ApiType>;
+      /**
+       * The total reward for winners should be equal to total bounty funding.
+       **/
+      TotalRewardShouldBeEqualToTotalFunding: AugmentedError<ApiType>;
+      /**
+       * Invalid judgment - all winners should have work submissions.
+       **/
+      WinnerShouldHasWorkSubmission: AugmentedError<ApiType>;
+      /**
+       * Worker tried to access a work entry that doesn't belong to him
+       **/
+      WorkEntryDoesntBelongToWorker: AugmentedError<ApiType>;
+      /**
+       * Work entry doesnt exist.
+       **/
+      WorkEntryDoesntExist: AugmentedError<ApiType>;
+      /**
+       * Cannot set zero reward for winners.
+       **/
+      ZeroWinnerReward: AugmentedError<ApiType>;
+    };
     content: {
       /**
        * Already active auction cannot be cancelled
@@ -177,7 +317,7 @@ declare module '@polkadot/api-base/types/errors' {
       /**
        * Auction buy now is less then starting price
        **/
-      BuyNowIsLessThenStartingPrice: AugmentedError<ApiType>;
+      BuyNowMustBeGreaterThanStartingPrice: AugmentedError<ApiType>;
       /**
        * Cannot directly withdraw funds from a channel account when the channel has
        * a creator token issued
@@ -349,6 +489,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Channel bag witness parameters don't match the current runtime state
+       **/
+      InvalidChannelBagWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Incorrect channel owner for an operation.
        **/
       InvalidChannelOwner: AugmentedError<ApiType>;
@@ -374,6 +518,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
       /**
+       * Storage buckets number witness parameter does not match the current runtime state
+       **/
+      InvalidStorageBucketsNumWitnessProvided: AugmentedError<ApiType>;
+      /**
        * Invalid number of objects to delete provided for delete_video
        **/
       InvalidVideoDataObjectsCountProvided: AugmentedError<ApiType>;
@@ -397,6 +545,30 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to set minimum cashout allowed above the limit
        **/
       MaxCashoutValueTooHigh: AugmentedError<ApiType>;
+      /**
+       * Maximum number of curator permissions per given channel privilege level exceeded
+       **/
+      MaxCuratorPermissionsPerLevelExceeded: AugmentedError<ApiType>;
+      /**
+       * Maximum number of channel agent permissions for channel agent exceeded
+       **/
+      MaxNumberOfChannelAgentPermissionsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of channel assets exceeds MaxNumberOfAssetsPerChannel
+       **/
+      MaxNumberOfChannelAssetsExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
+       **/
+      MaxNumberOfChannelCollaboratorsExceeded: AugmentedError<ApiType>;
+      /**
+       * Maximum number of paused features per channel exceeded
+       **/
+      MaxNumberOfPausedFeaturesPerChannelExceeded: AugmentedError<ApiType>;
+      /**
+       * Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
+       **/
+      MaxNumberOfVideoAssetsExceeded: AugmentedError<ApiType>;
       /**
        * Member authentication failed
        **/
@@ -427,9 +599,18 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MinCashoutValueTooLow: AugmentedError<ApiType>;
       /**
+       * Storage buckets number witness parameter must be provided when channel/video assets
+       * are being updated.
+       **/
+      MissingStorageBucketsNumWitness: AugmentedError<ApiType>;
+      /**
        * Nft for given video id already exists
        **/
       NftAlreadyExists: AugmentedError<ApiType>;
+      /**
+       * Attempt to sling back a channel owned nft
+       **/
+      NftAlreadyOwnedByChannel: AugmentedError<ApiType>;
       /**
        * Nft auction is already expired
        **/
@@ -458,6 +639,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Nft is not in auction state
        **/
       NotInAuctionState: AugmentedError<ApiType>;
+      /**
+       * Delete channel and assets and delete video assets must have a number of assets to remove greater than zero
+       **/
+      NumberOfAssetsToRemoveIsZero: AugmentedError<ApiType>;
       /**
        * Overflow or underflow error happened
        **/
@@ -1005,6 +1190,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MapSizeLimit: AugmentedError<ApiType>;
       /**
+       * Maximum number of stickied threads per category exceeded
+       **/
+      MaxNumberOfStickiedThreadsExceeded: AugmentedError<ApiType>;
+      /**
        * Maximum valid category depth exceeded.
        **/
       MaxValidCategoryDepthExceeded: AugmentedError<ApiType>;
@@ -1040,10 +1229,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Post does not exist.
        **/
       PostDoesNotExist: AugmentedError<ApiType>;
-      /**
-       * Duplicates for the stickied thread id collection.
-       **/
-      StickiedThreadIdsDuplicates: AugmentedError<ApiType>;
       /**
        * Thread does not exist
        **/
@@ -2402,6 +2587,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MaxActiveProposalNumberExceeded: AugmentedError<ApiType>;
       /**
+       * The size of encoded dispatchable call to be executed by the proposal is too big
+       **/
+      MaxDispatchableCallCodeSizeExceeded: AugmentedError<ApiType>;
+      /**
        * Not an author
        **/
       NotAuthor: AugmentedError<ApiType>;
@@ -2535,6 +2724,10 @@ declare module '@polkadot/api-base/types/errors' {
        * A nomination target was supplied that was blocked or otherwise not a validator.
        **/
       BadTarget: AugmentedError<ApiType>;
+      /**
+       * External restriction prevents bonding with given account
+       **/
+      BondingRestricted: AugmentedError<ApiType>;
       /**
        * The user has enough bond and thus cannot be chilled forcefully by an external person.
        **/
@@ -2770,6 +2963,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Max distribution bucket number per bag limit exceeded.
        **/
       MaxDistributionBucketNumberPerBagLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Max number of operators for a distribution bucket reached.
+       **/
+      MaxNumberOfOperatorsPerDistributionBucketReached: AugmentedError<ApiType>;
       /**
        * Max number of pending invitations limit for a distribution bucket reached.
        **/

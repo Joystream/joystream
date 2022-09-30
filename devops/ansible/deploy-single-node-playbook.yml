@@ -1,0 +1,45 @@
+---
+
+- name: Setup joystream full node
+  hosts: all
+  tasks:
+    - name: Download chain spec file using link
+      get_url:
+        url: "{{ chainspec }}"
+        dest: ~/chainspec.json
+      when: chainspec is search("http")
+
+    - name: Copy chain spec file from local
+      copy:
+        src: "{{ chainspec }}"
+        dest: ~/chainspec.json
+      when: chainspec is not search("http")
+
+    - name: Download and unarchive binary using link
+      unarchive:
+        src: "{{ joystream_node }}"
+        dest: ~/
+        remote_src: yes
+      when: joystream_node is search("http")
+
+    - name: Copy binary from local
+      copy:
+        src: "{{ joystream_node }}"
+        dest: ~/joystream-node
+        mode: "0775"
+      when: joystream_node is not search("http")
+
+    - name: Create a service file
+      template:
+        src: roles/node/templates/joystream-node.service.j2
+        dest: /etc/systemd/system/joystream-node.service
+      vars:
+        template_working_dir: "{{ ansible_env.HOME }}"
+        template_user: "{{ ansible_user }}"
+      become: yes
+
+    - name: Start service joystream-node, if not started
+      service:
+        name: joystream-node
+        state: started
+      become: yes
