@@ -112,11 +112,11 @@ impl Default for PausableChannelFeature {
 }
 
 parameter_types! {
-    pub MaxCuratorPermissionsPerLevel: u32 = ContentModerationAction::VARIANT_COUNT as u32
+    pub MaxCuratorPermissionsPerLevel: u32 = (ContentModerationAction::VARIANT_COUNT as u32)
         // ChangeChannelFeatureStatus can contain all possible PausableChannelFeature variants
-        + (PausableChannelFeature::VARIANT_COUNT as u32 - 1)
+        .saturating_add((PausableChannelFeature::VARIANT_COUNT as u32).saturating_sub(1))
         // DeleteVideoAssets can contain `true` or `false`
-        + 1;
+        .saturating_add(1);
 }
 
 pub type StoredCuratorModerationPermissions =
