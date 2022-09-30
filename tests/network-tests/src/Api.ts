@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, BTreeSet, Option, Vec } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option, Vec } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -360,6 +360,10 @@ export class Api {
 
   public async getForceEra(): Promise<PalletStakingForcing> {
     return this.api.query.staking.forceEra()
+  }
+
+  public async getEraValidatorReward(index: u32): Promise<Option<u128>> {
+    return this.api.query.staking.erasValidatorReward(index)
   }
 
   public async getBlockHash(blockNumber: number | BlockNumber): Promise<BlockHash> {
