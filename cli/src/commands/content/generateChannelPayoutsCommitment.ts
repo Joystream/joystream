@@ -3,8 +3,8 @@ import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
-export default class GenerateChannelPayoutsMerkleRoot extends ContentDirectoryCommandBase {
-  static description = 'Generate merkle root from channel payouts payload.'
+export default class GenerateChannelPayoutsCommitment extends ContentDirectoryCommandBase {
+  static description = 'Generate merkle root (commitment) from channel payouts payload.'
   static flags = {
     path: flags.string({
       required: false,
@@ -20,7 +20,7 @@ export default class GenerateChannelPayoutsMerkleRoot extends ContentDirectoryCo
   }
 
   async run(): Promise<void> {
-    const { path, url } = this.parse(GenerateChannelPayoutsMerkleRoot).flags
+    const { path, url } = this.parse(GenerateChannelPayoutsCommitment).flags
     if (!(path || url)) {
       this.error('One of path or url should be provided')
     }

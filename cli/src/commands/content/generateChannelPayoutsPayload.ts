@@ -27,12 +27,13 @@ export default class GenerateChannelPayoutsPayload extends UploadBaseCommand {
   async run(): Promise<void> {
     const { input, out } = this.parse(GenerateChannelPayoutsPayload).flags
     const payloadBodyInput = await getInputJson<ChannelPayoutsVector>(input, ChannelPayoutsVectorSchema)
-    const channelPayouts = generateJsonPayloadFromPayoutsVector(payloadBodyInput)
+    const [commitment, channelPayouts] = generateJsonPayloadFromPayoutsVector(payloadBodyInput)
     const serializedPayload = generateSerializedPayload(channelPayouts)
 
     displayCollapsedRow({
       'Payload Size': Buffer.from(serializedPayload).byteLength,
       'Payload Hash': blake2AsHex(serializedPayload),
+      'Payload Commitment': commitment,
     })
 
     saveOutputToFile(out, serializedPayload)

@@ -1,211 +1,192 @@
 [
   {
-    "channelId": 0,
-    "cumulativePayoutEarned": 20,
-    "merkleBranch": [
-      {
-        "hash": "qui",
-        "side": 1
-      },
-      {
-        "hash": "id",
-        "side": 0
-      },
-      {
-        "hash": "quis",
-        "side": 1
-      }
-    ],
-    "payoutRationale": "reward for best content creator"
-  },
-  {
     "channelId": 1,
-    "cumulativePayoutEarned": 50,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "occaecat enim",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "sit",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "nulla amet proident",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for most viewed video"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 2,
-    "cumulativePayoutEarned": 34,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "qui",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "id",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "quis",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for best channel in sports category"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 3,
-    "cumulativePayoutEarned": 20,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "qui",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "id",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "quis",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for best content creator"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 4,
-    "cumulativePayoutEarned": 50,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "occaecat enim",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "sit",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "nulla amet proident",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for most viewed video"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 5,
-    "cumulativePayoutEarned": 34,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "qui",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "id",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "quis",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for best channel in sports category"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 6,
-    "cumulativePayoutEarned": 20,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "qui",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "id",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "quis",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for best content creator"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 7,
-    "cumulativePayoutEarned": 50,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "occaecat enim",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "sit",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "nulla amet proident",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for most viewed video"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 8,
-    "cumulativePayoutEarned": 34,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "qui",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "id",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "quis",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for best channel in sports category"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 9,
-    "cumulativePayoutEarned": 20,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "qui",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "id",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "quis",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for best content creator"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   },
   {
     "channelId": 10,
-    "cumulativePayoutEarned": 50,
+    "cumulativePayoutEarned": "2666666",
     "merkleBranch": [
       {
-        "hash": "occaecat enim",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 0
       },
       {
-        "hash": "sit",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       },
       {
-        "hash": "nulla amet proident",
+        "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
         "side": 1
       }
     ],
-    "payoutRationale": "reward for most viewed video"
+    "reason": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477"
   }
 ]

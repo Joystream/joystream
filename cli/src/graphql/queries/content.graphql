@@ -30,7 +30,7 @@ fragment ChannelPayoutsUpdatedEvent on ChannelPayoutsUpdatedEvent {
   }
 }
 
-query getChannelPayoutsUpdatedEventByCommitment($commitment: Bytes!) {
+query getChannelPayoutsUpdatedEventByCommitment($commitment: String!) {
   channelPayoutsUpdatedEvents(where: { commitment_eq: $commitment }, orderBy: [createdAt_DESC], limit: 1) {
     ...ChannelPayoutsUpdatedEvent
   }

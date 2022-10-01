@@ -9,12 +9,12 @@ export default class ChannelPayoutPayloadHeader extends Command {
   static flags = {
     path: flags.string({
       required: false,
-      description: 'Path to the serialized payload file',
+      description: 'Path to the protobuf serialized payload file',
       exclusive: ['url'],
     }),
     url: flags.string({
       required: false,
-      description: 'URL to the serialized payload file',
+      description: 'URL to the protobuf serialized payload file',
       exclusive: ['path'],
     }),
   }

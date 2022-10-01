@@ -1,8 +1,8 @@
-import { channelPayoutRecordAtByteOffset } from '@joystreamjs/content'
+import { channelPayoutProofAtByteOffset } from '@joystreamjs/content'
 import { Command, flags } from '@oclif/command'
 import { displayCollapsedRow } from '../../helpers/display'
 
-export default class ChannelPayoutRecordAtByteOffset extends Command {
+export default class ChannelPayoutProofAtByteOffset extends Command {
   static description = 'Get channel payout record from serialized payload at given byte.'
   static flags = {
     path: flags.string({
@@ -26,8 +26,8 @@ export default class ChannelPayoutRecordAtByteOffset extends Command {
   ]
 
   async run(): Promise<void> {
-    const { path, url } = this.parse(ChannelPayoutRecordAtByteOffset).flags
-    const { byteOffset } = this.parse(ChannelPayoutRecordAtByteOffset).args
+    const { path, url } = this.parse(ChannelPayoutProofAtByteOffset).flags
+    const { byteOffset } = this.parse(ChannelPayoutProofAtByteOffset).args
     const start = Number.parseInt(byteOffset as string)
 
     try {
@@ -35,16 +35,17 @@ export default class ChannelPayoutRecordAtByteOffset extends Command {
         this.error('One of path or url should be provided')
       }
 
-      const payoutRecord = path
-        ? await channelPayoutRecordAtByteOffset('PATH', path, start)
-        : await channelPayoutRecordAtByteOffset('URL', url!, start)
+      const payoutProof = path
+        ? await channelPayoutProofAtByteOffset('PATH', path, start)
+        : await channelPayoutProofAtByteOffset('URL', url!, start)
 
       displayCollapsedRow({
-        'Channel Id': payoutRecord.channelId,
-        'Cumulative Payout Earned': payoutRecord.cumulativeRewardEarned,
-        'Merkle Proof Branch': JSON.stringify(payoutRecord.merkleBranch),
-        'Payout Rationale': payoutRecord.payoutRationale,
+        'Channel Id': payoutProof.channelId,
+        'Cumulative Payout Earned': payoutProof.cumulativeRewardEarned,
+        'Merkle Proof Branch': JSON.stringify(payoutProof.merkleBranch),
+        'Payout reason': payoutProof.reason,
       })
+      console.log(payoutProof.merkleBranch)
     } catch (error) {
       this.error(`Invalid byte offset for payout record ${error}`)
     }

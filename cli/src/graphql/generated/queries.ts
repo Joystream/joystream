@@ -16,9 +16,9 @@ export type ChannelPayoutsUpdatedEventFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
-  commitment?: Types.Maybe<any>
+  commitment?: Types.Maybe<string>
   payloadSize?: Types.Maybe<any>
-  payloadHash?: Types.Maybe<any>
+  payloadHash?: Types.Maybe<string>
   minCashoutAllowed?: Types.Maybe<any>
   maxCashoutAllowed?: Types.Maybe<any>
   channelCashoutsEnabled?: Types.Maybe<boolean>
@@ -26,7 +26,7 @@ export type ChannelPayoutsUpdatedEventFragment = {
 }
 
 export type GetChannelPayoutsUpdatedEventByCommitmentQueryVariables = Types.Exact<{
-  commitment: Types.Scalars['Bytes']
+  commitment: Types.Scalars['String']
 }>
 
 export type GetChannelPayoutsUpdatedEventByCommitmentQuery = {
@@ -333,7 +333,7 @@ export const GetChannelById = gql`
   ${ChannelFields}
 `
 export const GetChannelPayoutsUpdatedEventByCommitment = gql`
-  query getChannelPayoutsUpdatedEventByCommitment($commitment: Bytes!) {
+  query getChannelPayoutsUpdatedEventByCommitment($commitment: String!) {
     channelPayoutsUpdatedEvents(where: { commitment_eq: $commitment }, orderBy: [createdAt_DESC], limit: 1) {
       ...ChannelPayoutsUpdatedEvent
     }
