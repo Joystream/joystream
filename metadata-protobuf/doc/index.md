@@ -13,12 +13,12 @@
 - [proto/ChannelPayouts.proto](#proto/ChannelPayouts.proto)
     - [ChannelPayoutsMetadata](#.ChannelPayoutsMetadata)
     - [ChannelPayoutsMetadata.Body](#.ChannelPayoutsMetadata.Body)
-    - [ChannelPayoutsMetadata.Body.ChannelPayoutRecord](#.ChannelPayoutsMetadata.Body.ChannelPayoutRecord)
-    - [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement](#.ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutProof](#.ChannelPayoutsMetadata.Body.ChannelPayoutProof)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement](#.ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement)
     - [ChannelPayoutsMetadata.Header](#.ChannelPayoutsMetadata.Header)
     - [ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset](#.ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset)
   
-    - [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side](#.ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side](#.ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side)
   
 - [proto/Council.proto](#proto/Council.proto)
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
@@ -215,41 +215,41 @@ Channel payout full body structure, it will not be downloaded by clients in full
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| channel_payouts | [ChannelPayoutsMetadata.Body.ChannelPayoutRecord](#ChannelPayoutsMetadata.Body.ChannelPayoutRecord) | repeated | List of channel payouts |
+| channel_payouts | [ChannelPayoutsMetadata.Body.ChannelPayoutProof](#ChannelPayoutsMetadata.Body.ChannelPayoutProof) | repeated | List of channel payouts |
 
 
 
 
 
 
-<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutRecord"></a>
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutProof"></a>
 
-### ChannelPayoutsMetadata.Body.ChannelPayoutRecord
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| channel_id | [uint32](#uint32) | required | `c_i` |
-| cumulative_reward_earned | [float](#float) | required | `p_i` |
-| merkle_branch | [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement](#ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement) | repeated |  |
-| payout_rationale | [string](#string) | required | `d_i`; rationale for for reward or deduction for `c_i`; |
-
-
-
-
-
-
-<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement"></a>
-
-### ChannelPayoutsMetadata.Body.ChannelPayoutRecord.ProofElement
+### ChannelPayoutsMetadata.Body.ChannelPayoutProof
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| hash | [bytes](#bytes) | required |  |
-| side | [ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side](#ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side) | required |  |
+| channel_id | [uint32](#uint32) | required |  |
+| cumulative_reward_earned | [string](#string) | required | Since protobuf does not support 128 bit unsigned inetgers so string representation is being used here, after message decoding the string would be converted to BN to pervent precision loss |
+| merkle_branch | [ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement](#ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement) | repeated |  |
+| reason | [string](#string) | required | reward rationale for channel; |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement"></a>
+
+### ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| hash | [string](#string) | required |  |
+| side | [ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side](#ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side) | required |  |
 
 
 
@@ -260,9 +260,9 @@ Channel payout full body structure, it will not be downloaded by clients in full
 
 ### ChannelPayoutsMetadata.Header
 Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
-This allows first calculating and then setting the byte offset of each `ChannelPayout` accurately, e.g. 
+This allows first calculating, and then setting the byte offset of each `ChannelPayoutProof` accurately, e.g. 
 `byte_offset` = `size(Header)` &#43; `position_where_record_for_channel_exists_in_Body`
-If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutRecord` 
+If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutProof` 
 w.r.t the start of the payload would be improbable since the header size won&#39;t be known.
 
 
@@ -286,8 +286,8 @@ w.r.t the start of the payload would be improbable since the header size won&#39
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| channel_id | [fixed32](#fixed32) | required | Channel id; `c_i` |
-| byte_offset | [fixed64](#fixed64) | required | Byte offset from start of payload where payout record for channel `c_i` exists |
+| channel_id | [fixed32](#fixed32) | required | Channel id |
+| byte_offset | [fixed64](#fixed64) | required | Byte offset from start of payload where payout record for given channel Id exists |
 
 
 
@@ -296,9 +296,9 @@ w.r.t the start of the payload would be improbable since the header size won&#39
  
 
 
-<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side"></a>
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side"></a>
 
-### ChannelPayoutsMetadata.Body.ChannelPayoutRecord.Side
+### ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side
 
 
 | Name | Number | Description |

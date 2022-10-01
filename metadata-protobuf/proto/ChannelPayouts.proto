@@ -3,9 +3,9 @@ syntax = "proto2";
 message ChannelPayoutsMetadata {
 /**
  Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
- This allows first calculating and then setting the byte offset of each `ChannelPayout` accurately, e.g. 
+ This allows first calculating, and then setting the byte offset of each `ChannelPayoutProof` accurately, e.g. 
  `byte_offset` = `size(Header)` + `position_where_record_for_channel_exists_in_Body`
- If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutRecord` 
+ If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutProof` 
  w.r.t the start of the payload would be improbable since the header size won't be known.
 **/
   message Header {
@@ -19,10 +19,10 @@ message ChannelPayoutsMetadata {
     required fixed32 number_of_channels = 3; 
 
     message ChannelPayoutByteOffset {
-      // Channel id; `c_i`
+      // Channel id 
       required fixed32 channel_id = 1; 
     
-      // Byte offset from start of payload where payout record for channel `c_i` exists
+      // Byte offset from start of payload where payout record for given channel Id exists
       required fixed64 byte_offset = 2; 
     }
 
@@ -32,10 +32,12 @@ message ChannelPayoutsMetadata {
 
   // Channel payout full body structure, it will not be downloaded by clients in full
   message Body {
-    message ChannelPayoutRecord {
-      required uint32 channel_id = 1; // `c_i`
+    message ChannelPayoutProof {
+      required uint32 channel_id = 1;
     
-      required float cumulative_reward_earned = 2; // `p_i`
+      // Since protobuf does not support 128 bit unsigned inetgers so string representation is being used
+      // here, after message decoding the string would be converted to BN to pervent precision loss
+      required string cumulative_reward_earned = 2; 
     
       enum Side {
         Left = 0;
@@ -43,18 +45,18 @@ message ChannelPayoutsMetadata {
       }
     
       message ProofElement {
-        required bytes hash = 1;
+        required string hash = 1;
         required Side side = 2;
       }
     
       repeated ProofElement merkle_branch = 3; 
     
-      // `d_i`; rationale for for reward or deduction for `c_i`;
-      required string payout_rationale = 4; 
+      // reward rationale for channel;
+      required string reason = 4; 
     }
     
     // List of channel payouts
-    repeated ChannelPayoutRecord channel_payouts = 1; 
+    repeated ChannelPayoutProof channel_payouts = 1; 
   }
 
   required Header header = 1; // Payload header
