@@ -534,9 +534,9 @@ export type ChannelPayoutsUpdatedEventFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
-  commitment?: Types.Maybe<any>
+  commitment?: Types.Maybe<string>
   payloadSize?: Types.Maybe<any>
-  payloadHash?: Types.Maybe<any>
+  payloadHash?: Types.Maybe<string>
   minCashoutAllowed?: Types.Maybe<any>
   maxCashoutAllowed?: Types.Maybe<any>
   channelCashoutsEnabled?: Types.Maybe<boolean>
@@ -547,6 +547,45 @@ export type GetMostRecentChannelPayoutsUpdatedEventQueryVariables = Types.Exact<
 
 export type GetMostRecentChannelPayoutsUpdatedEventQuery = {
   channelPayoutsUpdatedEvents: Array<ChannelPayoutsUpdatedEventFragment>
+}
+
+export type ChannelRewardClaimedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  amount: any
+  channel: { id: string }
+}
+
+export type GetChannelRewardClaimedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelRewardClaimedEventsByEventIdsQuery = {
+  channelRewardClaimedEvents: Array<ChannelRewardClaimedEventFieldsFragment>
+}
+
+export type ChannelFundsWithdrawnEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  amount: any
+  account: string
+  channel: { id: string }
+}
+
+export type GetChannelFundsWithdrawnEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelFundsWithdrawnEventsByEventIdsQuery = {
+  channelFundsWithdrawnEvents: Array<ChannelFundsWithdrawnEventFieldsFragment>
 }
 
 export type EnglishAuctionStartedEventFieldsFragment = {
@@ -609,6 +648,26 @@ export type GetReferendumIntermediateWinnersQueryVariables = Types.Exact<{
 }>
 
 export type GetReferendumIntermediateWinnersQuery = { candidates: Array<CandidateFieldsFragment> }
+
+export type CouncilBudgetFundedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  memberId: number
+  amount: any
+  rationale: string
+}
+
+export type GetCouncilBudgetFundedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCouncilBudgetFundedEventsByEventIdsQuery = {
+  councilBudgetFundedEvents: Array<CouncilBudgetFundedEventFieldsFragment>
+}
 
 export type ForumCategoryFieldsFragment = {
   id: string
@@ -3006,6 +3065,35 @@ export const ChannelPayoutsUpdatedEvent = gql`
     }
   }
 `
+export const ChannelRewardClaimedEventFields = gql`
+  fragment ChannelRewardClaimedEventFields on ChannelRewardClaimedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    amount
+  }
+`
+export const ChannelFundsWithdrawnEventFields = gql`
+  fragment ChannelFundsWithdrawnEventFields on ChannelFundsWithdrawnEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    amount
+    account
+  }
+`
 export const EnglishAuctionStartedEventFields = gql`
   fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
     video {
@@ -3075,6 +3163,19 @@ export const CandidateFields = gql`
     member {
       id
     }
+  }
+`
+export const CouncilBudgetFundedEventFields = gql`
+  fragment CouncilBudgetFundedEventFields on CouncilBudgetFundedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    memberId
+    amount
+    rationale
   }
 `
 export const ForumCategoryFields = gql`
@@ -5037,6 +5138,22 @@ export const GetMostRecentChannelPayoutsUpdatedEvent = gql`
   }
   ${ChannelPayoutsUpdatedEvent}
 `
+export const GetChannelRewardClaimedEventsByEventIds = gql`
+  query getChannelRewardClaimedEventsByEventIds($eventIds: [ID!]) {
+    channelRewardClaimedEvents(where: { id_in: $eventIds }) {
+      ...ChannelRewardClaimedEventFields
+    }
+  }
+  ${ChannelRewardClaimedEventFields}
+`
+export const GetChannelFundsWithdrawnEventsByEventIds = gql`
+  query getChannelFundsWithdrawnEventsByEventIds($eventIds: [ID!]) {
+    channelFundsWithdrawnEvents(where: { id_in: $eventIds }) {
+      ...ChannelFundsWithdrawnEventFields
+    }
+  }
+  ${ChannelFundsWithdrawnEventFields}
+`
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
     englishAuctionStartedEvents(where: { id_in: $eventIds }) {
@@ -5080,6 +5197,14 @@ export const GetReferendumIntermediateWinners = gql`
     }
   }
   ${CandidateFields}
+`
+export const GetCouncilBudgetFundedEventsByEventIds = gql`
+  query getCouncilBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+    councilBudgetFundedEvents(where: { id_in: $eventIds }) {
+      ...CouncilBudgetFundedEventFields
+    }
+  }
+  ${CouncilBudgetFundedEventFields}
 `
 export const GetCategoriesByIds = gql`
   query getCategoriesByIds($ids: [ID!]) {

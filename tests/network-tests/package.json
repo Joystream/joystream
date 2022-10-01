@@ -31,7 +31,8 @@
     "bmp-js": "^0.1.0",
     "@types/bmp-js": "^0.1.0",
     "node-cleanup": "^2.1.2",
-    "graphql": "^14.7.0"
+    "graphql": "^14.7.0",
+    "@joystreamjs/content": "^1.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",

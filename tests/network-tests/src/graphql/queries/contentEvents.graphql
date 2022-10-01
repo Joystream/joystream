@@ -294,3 +294,42 @@ query getMostRecentChannelPayoutsUpdatedEvent {
     ...ChannelPayoutsUpdatedEvent
   }
 }
+
+fragment ChannelRewardClaimedEventFields on ChannelRewardClaimedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  amount
+}
+
+query getChannelRewardClaimedEventsByEventIds($eventIds: [ID!]) {
+  channelRewardClaimedEvents(where: { id_in: $eventIds }) {
+    ...ChannelRewardClaimedEventFields
+  }
+}
+
+fragment ChannelFundsWithdrawnEventFields on ChannelFundsWithdrawnEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  amount
+  account
+}
+
+query getChannelFundsWithdrawnEventsByEventIds($eventIds: [ID!]) {
+  channelFundsWithdrawnEvents(where: { id_in: $eventIds }) {
+    ...ChannelFundsWithdrawnEventFields
+  }
+}

@@ -34,6 +34,7 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
+import channelPayouts from '../flows/proposals/channelPayouts'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -42,6 +43,10 @@ scenario('Full', async ({ job, env }) => {
   const councilJob = job('electing council', electCouncil)
   const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
+    : undefined
+
+  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
+    ? job('channel payouts proposal', channelPayouts).requires(councilJob)
     : undefined
 
   const coreJob = runtimeUpgradeProposalJob || councilJob
