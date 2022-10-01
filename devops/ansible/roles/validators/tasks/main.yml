@@ -14,7 +14,20 @@
 - set_fact:
     node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
 
-- name: Creating chain directory
+# TODO - DETECT EXISTING SERVICE AND EXIST TO AVOID BREAKING EXISTING VALIDATOR
+
+# - name: Stop service if started
+#   ansible.builtin.service:
+#     name: joystream-node
+#     state: stopped
+#   become: true
+
+# - name: Delete chain directory
+#   file:
+#     state: absent
+#     path: "{{ chain_path }}"
+
+- name: ReCreate chain directory
   file:
     path: "{{ item }}"
     state: directory
