@@ -112,6 +112,7 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
 * [`joystream-cli content:generateChannelPayoutsCommitment`](#joystream-cli-contentgeneratechannelpayoutscommitment)
 * [`joystream-cli content:generateChannelPayoutsPayload`](#joystream-cli-contentgeneratechannelpayoutspayload)
+* [`joystream-cli content:getPayoutsOnchainCommitment`](#joystream-cli-contentgetpayoutsonchaincommitment)
 * [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
 * [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
 * [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
@@ -791,6 +792,21 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/generateChannelPayoutsPayload.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutsPayload.ts)_
+
+## `joystream-cli content:getPayoutsOnchainCommitment`
+
+Get on-chain commitment (merkle root) for channel payouts payload.
+
+```
+USAGE
+  $ joystream-cli content:getPayoutsOnchainCommitment
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/getPayoutsOnchainCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/getPayoutsOnchainCommitment.ts)_
 
 ## `joystream-cli content:removeChannelAssets`
 
