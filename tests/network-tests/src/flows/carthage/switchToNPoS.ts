@@ -84,11 +84,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
     "Validators couldn't claim payouts"
   )
 
-  // 2. Era reward is zero
-  const { total } = await api.getErasRewardPoints(index)
-  assert.equal(total.toBn(), new BN(0))
-
-  // 3. Election rounds have happened
+  // 2. Election rounds have happened
   const electionRounds = await api.getElectionRounds()
   assert.isAbove(electionRounds.toNumber(), 0)
 }
