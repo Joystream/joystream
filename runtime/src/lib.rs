@@ -112,6 +112,7 @@ use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
+use pallet_staking::{Forcing, EraPayout};
 
 // Node dependencies
 pub use common;
@@ -541,12 +542,11 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
     total_issuance: Balance,
     era_duration_millis: u64,
   ) -> (Balance, Balance) {
-    if pallet_staking::Forcing::<Runtime>::get() == Forcing::None {
+    if pallet_staking::Pallet::<Runtime>::force_era() == Forcing::ForceNone {
       // PoA mode: no inflation.
       (0, 0)
     } else {
-      // proxy to whatever else is the default:
-      <pallet_staking::ConvertCurve as EraPayout<Balance>>::era_payout(
+      <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
          total_staked,
          total_issuance,
          era_duration_millis,

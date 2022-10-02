@@ -18,6 +18,11 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   // helpers
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
   const getBalances = async (accounts: string[]) => Promise.all(accounts.map((account) => api.getBalance(account)))
+  const authorities = await api.getSessionAuthorities()
+  const authoritiesStash = (await Promise.all(authorities.map((account) => api.getBonded(account)))).map((x) =>
+    x.unwrap().toString()
+  )
+  const eraToReward = (await api.getCurrentEra()).unwrap().toNumber()
 
   // constants
   const nAccounts = 10
@@ -39,7 +44,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
       fixtureRunner.run()
     })
   )
-  const previousBalances = await getBalances(stakerAccounts.concat(genesisAuthorities))
+  const previousBalances = await getBalances(authoritiesStash)
 
   // ensure that we are in PoA
   const forceEra = await api.getForceEra()
@@ -59,8 +64,6 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
     forceEraStatus = await api.getForceEra()
   }
 
-  // 2. Burn the accrued amount in the stashn
-
   // ----------- ASSERT ----------------
 
   // 1. Nex Era Starting session index is Some
@@ -68,23 +71,18 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
   assert(nextEraStartingSessionIndex.isSome, 'ext era starting session index is not some')
 
-  // 2. Validators are able to claim payouts
+  // 2. Check that genesis authorities claim for era 0 is 0
   await Promise.all(
-    stakerAccounts.concat(genesisAuthorities).map(async (account) => {
-      const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, claimingEra)
+    authoritiesStash.map(async (account) => {
+      const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, eraToReward)
       const fixtureRunner = new FixtureRunner(claimingPayoutStakersSucceedsFixture)
       fixtureRunner.run()
     })
   )
-  const currentBalances = await getBalances(stakerAccounts.concat(genesisAuthorities))
-  assert(
-    previousBalances
-      .map((past, i) => past > currentBalances[i])
-      .reduce((accumulator, iter) => iter || accumulator, false),
-    "Validators couldn't claim payouts"
-  )
+  const currentBalances = await getBalances(authoritiesStash)
+  assert.deepEqual(previousBalances, currentBalances)
 
-  // 2. Election rounds have happened
+  // 3. Election rounds have happened
   const electionRounds = await api.getElectionRounds()
   assert.isAbove(electionRounds.toNumber(), 0)
 }

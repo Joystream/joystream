@@ -22,5 +22,4 @@ export default async function eraRewardIsZero({ api, query, env }: FlowProps): P
   const { index } = (await api.getActiveEra()).unwrap()
   const { total } = await api.getErasRewardPoints(index)
   assert.equal(total.toBn(), new BN(0))
-
 }

@@ -16,7 +16,7 @@ export class ClaimingPayoutStakersSucceedsFixture extends BaseFixture {
     const fees = await this.api.estimateTxFee(claimTx, this.account)
     await this.api.treasuryTransferBalance(this.account, fees)
 
-    const result = await this.api.signAndSend(claimTx, this.account)
+    await this.api.signAndSend(claimTx, this.account)
     //this.expectDispatchSuccess(result, 'Not successful')
   }
 }
