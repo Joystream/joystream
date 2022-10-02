@@ -45,10 +45,6 @@ scenario('Full', async ({ job, env }) => {
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
     : undefined
 
-  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
-    ? job('channel payouts proposal', channelPayouts).requires(councilJob)
-    : undefined
-
   const coreJob = runtimeUpgradeProposalJob || councilJob
 
   // All other jobs should be executed after coreJob
@@ -75,9 +71,13 @@ scenario('Full', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
 
+  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
+    ? job('channel payouts proposal', channelPayouts).requires(proposalsJob)
+    : undefined
+
   // Working groups
   const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    proposalsJob
+    channelPayoutsProposalJob || proposalsJob
   )
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)

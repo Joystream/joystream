@@ -6162,10 +6162,6 @@ export type Channel = BaseGraphQlObject & {
   privilegeLevel?: Maybe<Scalars['Int']>
   /** Cumulative rewards claimed by this channel */
   cumulativeRewardClaimed?: Maybe<Scalars['BigInt']>
-  /** Last reward amount claimed by this channel */
-  lastRewardClaimed?: Maybe<Scalars['BigInt']>
-  /** Last reward chlaimed timestamp */
-  lastRewardClaimedAt?: Maybe<Scalars['DateTime']>
   claimedRewards: Array<ChannelRewardClaimedEvent>
   channelfundswithdrawneventchannel?: Maybe<Array<ChannelFundsWithdrawnEvent>>
   channelrewardclaimedandwithdrawneventchannel?: Maybe<Array<ChannelRewardClaimedAndWithdrawnEvent>>
@@ -6351,8 +6347,6 @@ export type ChannelCreateInput = {
   channelStateBloatBond: Scalars['String']
   privilegeLevel?: Maybe<Scalars['Float']>
   cumulativeRewardClaimed?: Maybe<Scalars['String']>
-  lastRewardClaimed?: Maybe<Scalars['String']>
-  lastRewardClaimedAt?: Maybe<Scalars['DateTime']>
 }
 
 export type ChannelDeletedByModeratorEvent = BaseGraphQlObject & {
@@ -6806,10 +6800,6 @@ export enum ChannelOrderByInput {
   PrivilegeLevelDesc = 'privilegeLevel_DESC',
   CumulativeRewardClaimedAsc = 'cumulativeRewardClaimed_ASC',
   CumulativeRewardClaimedDesc = 'cumulativeRewardClaimed_DESC',
-  LastRewardClaimedAsc = 'lastRewardClaimed_ASC',
-  LastRewardClaimedDesc = 'lastRewardClaimed_DESC',
-  LastRewardClaimedAtAsc = 'lastRewardClaimedAt_ASC',
-  LastRewardClaimedAtDesc = 'lastRewardClaimedAt_DESC',
 }
 
 export type ChannelPayoutsUpdatedEvent = BaseGraphQlObject & {
@@ -7311,8 +7301,6 @@ export type ChannelUpdateInput = {
   channelStateBloatBond?: Maybe<Scalars['String']>
   privilegeLevel?: Maybe<Scalars['Float']>
   cumulativeRewardClaimed?: Maybe<Scalars['String']>
-  lastRewardClaimed?: Maybe<Scalars['String']>
-  lastRewardClaimedAt?: Maybe<Scalars['DateTime']>
 }
 
 export type ChannelVisibilitySetByModeratorEvent = BaseGraphQlObject & {
@@ -7539,17 +7527,6 @@ export type ChannelWhereInput = {
   cumulativeRewardClaimed_lt?: Maybe<Scalars['BigInt']>
   cumulativeRewardClaimed_lte?: Maybe<Scalars['BigInt']>
   cumulativeRewardClaimed_in?: Maybe<Array<Scalars['BigInt']>>
-  lastRewardClaimed_eq?: Maybe<Scalars['BigInt']>
-  lastRewardClaimed_gt?: Maybe<Scalars['BigInt']>
-  lastRewardClaimed_gte?: Maybe<Scalars['BigInt']>
-  lastRewardClaimed_lt?: Maybe<Scalars['BigInt']>
-  lastRewardClaimed_lte?: Maybe<Scalars['BigInt']>
-  lastRewardClaimed_in?: Maybe<Array<Scalars['BigInt']>>
-  lastRewardClaimedAt_eq?: Maybe<Scalars['DateTime']>
-  lastRewardClaimedAt_lt?: Maybe<Scalars['DateTime']>
-  lastRewardClaimedAt_lte?: Maybe<Scalars['DateTime']>
-  lastRewardClaimedAt_gt?: Maybe<Scalars['DateTime']>
-  lastRewardClaimedAt_gte?: Maybe<Scalars['DateTime']>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   coverPhoto?: Maybe<StorageDataObjectWhereInput>

@@ -242,7 +242,7 @@ export function generateSerializedPayload(channelPayoutProofs: ChannelPayoutProo
   const numberOfChannels = channelPayoutProofs.length
   const headerLengthInBytes = Long.fromNumber(lengthOfHeader(numberOfChannels))
   const channelPayoutByteOffsets: ChannelPayoutsMetadata.Header.IChannelPayoutByteOffset[] = []
-  const body = asValidatedMetadata(ChannelPayoutsMetadata.Body, { channelPayoutProofs })
+  const body = asValidatedMetadata(ChannelPayoutsMetadata.Body, { channelPayouts: channelPayoutProofs })
 
   // Length of Header is known prior to serialization since its fields are fixed size, however the
   // length of the COMPLETE payload can only be known after it has been serialized since Body fields
