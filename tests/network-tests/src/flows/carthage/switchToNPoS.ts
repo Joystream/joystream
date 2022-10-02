@@ -41,6 +41,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   )
   const previousBalances = await getBalances(stakerAccounts.concat(genesisAuthorities))
 
+  // ensure that we are in PoA
   const forceEra = await api.getForceEra()
   assert(forceEra.isForceNone, 'not on PoA')
 
@@ -51,25 +52,21 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const fixtureRunner = new FixtureRunner(setForceEraForcingNewFixture)
   await fixtureRunner.run()
 
-    let currentEra = (await api.getCurrentEra()).unwrapOrDefault()
-  while (currentEra.eqn(0)) {
+  // wait until new era happened: about 10 minutes
+  let forceEraStatus = await api.getForceEra()
+  while (forceEraStatus.isForceNew) {
     sleep(sleepTimeSeconds * 1000)
-    currentEra = (await api.getCurrentEra()).unwrapOrDefault()
+    forceEraStatus = await api.getForceEra()
   }
+
+  // 2. Burn the accrued amount in the stashn
 
   // ----------- ASSERT ----------------
 
-  // 1. ForceEra is on ForceNew
-  const forceEra2 = await api.getForceEra()
-  assert(forceEra2.isForceNew, 'not in NPoS')
-
-// 1. Active era index increases
-  const activeEra = await api.getActiveEra()
-  assert(activeEra.isSome, 'active era is not some')
-  const { index } = activeEra.unwrap()
-  assert.isAbove(index.toNumber(), 0)
-  // const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
-  // assert(nextEraStartingSessionIndex.isSome, 'ext era starting session index is not some')
+  // 1. Nex Era Starting session index is Some
+  const { index } = (await api.getActiveEra()).unwrap()
+  const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
+  assert(nextEraStartingSessionIndex.isSome, 'ext era starting session index is not some')
 
   // 2. Validators are able to claim payouts
   await Promise.all(
@@ -87,6 +84,11 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
     "Validators couldn't claim payouts"
   )
 
+  // 2. Era reward is zero
+  const { total } = await api.getErasRewardPoints(index)
+  assert.equal(total.toBn(), new BN(0))
+
   // 3. Election rounds have happened
   const electionRounds = await api.getElectionRounds()
   assert.isAbove(electionRounds.toNumber(), 0)
+}

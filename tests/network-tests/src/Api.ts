@@ -350,6 +350,10 @@ export class Api {
     return this.api.query.electionProviderMultiPhase.round()
   }
 
+   public async getErasRewardPoints(eraIndex: u32): Promise<PalletStakingEraRewardPoints> {
+     return this.api.query.staking.erasRewardPoints(eraIndex)
+   }
+
   public async getActiveEra(): Promise<Option<PalletStakingActiveEraInfo>> {
     return this.api.query.staking.activeEra()
   }

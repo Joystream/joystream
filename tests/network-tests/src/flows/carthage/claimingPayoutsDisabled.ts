@@ -19,11 +19,9 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
 
   // create n accounts
   const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
-
+  const getBalances = async (accounts: string[]) => Promise.all(accounts.map((account) => api.getBalance(account)))
   // get authorities
   const authorities = (await api.getSessionAuthorities()).map((account) => account.toString())
-
-  const previousBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
 
   // such accounts becomes stakers
   await Promise.all(
@@ -38,6 +36,8 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
     })
   )
 
+  const previousBalances = await getBalances(stakerAccounts)
+
   // wait k = 10 blocks
   sleep(sleepTimeSeconds * 1000)
 
@@ -51,7 +51,7 @@ export default async function claimingPayoutsDisabled({ api, query, env }: FlowP
   )
   debug('payout claimed')
 
-  const currentBalances = await Promise.all(stakerAccounts.map((account) => api.getBalance(account)))
+  const currentBalances = await getBalances(stakerAccounts)
 
   // previous balances is equal to current balances
   assert.deepEqual(previousBalances, currentBalances)
