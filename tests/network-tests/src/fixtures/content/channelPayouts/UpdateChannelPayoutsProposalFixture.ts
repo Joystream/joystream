@@ -2,12 +2,10 @@ import { createType } from '@joystream/types'
 import { MemberId } from '@joystream/types/primitives'
 import { generateCommitmentFromPayloadFile } from '@joystreamjs/content'
 import BN from 'bn.js'
-import { assert } from 'chai'
 import fs from 'fs'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../../fixtures/proposals'
-import { Maybe } from '../../../graphql/generated/schema'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { Utils } from '../../../utils'
 
@@ -75,24 +73,5 @@ export class UpdateChannelPayoutsProposalFixture extends BaseQueryNodeFixture {
     await new FixtureRunner(decideOnProposalStatusFixture).runWithQueryNodeChecks()
 
     this.debug('Done')
-  }
-
-  /**
-    Asserts a channel, or a video/channel categories have their active videos counter set properly
-    in Query node.
-  */
-  private async assertCounterMatch(
-    entityName: 'channel' | 'videoCategory',
-    entityId: number | string,
-    expectedCount: number
-  ) {
-    const getterName = `${entityName}ById` as 'channelById' | 'videoCategoryById'
-    await this.query.tryQueryWithTimeout(
-      () => this.query[getterName](entityId.toString()) as Promise<Maybe<{ id: string; activeVideosCounter: number }>>,
-      (entity) => {
-        Utils.assert(entity)
-        assert.equal(entity.activeVideosCounter, expectedCount)
-      }
-    )
   }
 }

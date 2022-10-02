@@ -112,7 +112,7 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
     },
   ]
   const claimChannelRewardFixture = new ClaimChannelRewardFixture(api, query, claimChannelRewardParams)
-  await new FixtureRunner(claimChannelRewardFixture).run()
+  await new FixtureRunner(claimChannelRewardFixture).runWithQueryNodeChecks()
 
   // Withdraw channel reward to destination account
   const withdrawChannelRewardParams: WithdrawChannelRewardParams[] = [
@@ -123,7 +123,7 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
     },
   ]
   const withdrawChannelRewardFixture = new WithdrawChannelRewardFixture(api, query, withdrawChannelRewardParams)
-  await new FixtureRunner(withdrawChannelRewardFixture).run()
+  await new FixtureRunner(withdrawChannelRewardFixture).runWithQueryNodeChecks()
 
   unlock()
 

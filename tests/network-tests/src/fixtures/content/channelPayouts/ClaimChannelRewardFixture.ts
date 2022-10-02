@@ -62,21 +62,6 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
     })
   }
 
-  //   protected assertQueriedCommentsAreValid(
-  //     qComments: CommentFieldsFragment[],
-  //     qEvents: CommentCreatedEventFieldsFragment[]
-  //   ): void {
-  //     qEvents.map((qEvent, i) => {
-  //       const qComment = qComments.find((comment) => comment.id === qEvent.comment.id.toString())
-  //       const commentParams = this.commentsParams[i]
-  //       Utils.assert(qComment, 'Query node: Comment not found')
-  //       assert.equal(qComment.video.id, commentParams.msg.videoId.toString())
-  //       assert.equal(qComment.author.id, commentParams.asMember.toString())
-  //       assert.equal(qComment.status, CommentStatus.Visible)
-  //       assert.equal(qComment.text, commentParams.msg.body)
-  //     })
-  //   }
-
   protected assertQueryNodeEventIsValid(qEvent: ChannelRewardClaimedEventFieldsFragment, i: number): void {
     const params = this.claimChannelRewardParams[i]
     assert.equal(qEvent.channel.id, params.payoutProof.channelId.toString())
@@ -90,9 +75,5 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
       () => this.query.getChannelRewardClaimedEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
-
-    // // Query the comments
-    // const qComments = await this.query.getChanne(qEvents.map((e) => e.comment.id))
-    // this.assertQueriedCommentsAreValid(qComments, qEvents)
   }
 }

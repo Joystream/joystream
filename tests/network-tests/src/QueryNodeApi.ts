@@ -442,6 +442,7 @@ import {
   GetStorageNodesInfoByBagIdQuery,
   GetStorageNodesInfoByBagIdQueryVariables,
   GetStorageNodesInfoByBagId,
+  GetChannelRewardClaimedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1515,7 +1516,7 @@ export class QueryNodeApi {
     return this.multipleEntitiesQuery<
       GetChannelRewardClaimedEventsByEventIdsQuery,
       GetChannelRewardClaimedEventsByEventIdsQueryVariables
-    >(GetChannelDeletedByModeratorEventsByEventIds, { eventIds }, 'channelRewardClaimedEvents')
+    >(GetChannelRewardClaimedEventsByEventIds, { eventIds }, 'channelRewardClaimedEvents')
   }
 
   public async getChannelFundsWithdrawnEvents(
