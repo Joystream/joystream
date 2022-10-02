@@ -1,24 +1,16 @@
 import { ChannelPayoutsMetadata, IChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
-import { asValidatedMetadata, getByteSequenceFromFile } from '@joystreamjs/utils'
+import { asValidatedMetadata, readBytesFromFile, ReadFileContext } from '@joystreamjs/utils'
+import { ChannelPayoutProof } from '@joystreamjs/utils/typings/ChannelPayoutsPayload.schema'
 import { ChannelPayoutsVector } from '@joystreamjs/utils/typings/ChannelPayoutsVector.schema'
-import { PalletCommonProofElementRecord as ProofElement } from '@polkadot/types/lookup'
-import { blake2AsHex } from '@polkadot/util-crypto'
-import axios from 'axios'
-import _ from 'lodash'
+import { u8aToHex } from '@polkadot/util'
+import { blake2AsU8a } from '@polkadot/util-crypto'
+import BN from 'bn.js'
 import Long from 'long'
 import { MerkleTree } from 'merkletreejs'
 import { Reader, Writer } from 'protobufjs'
 
-const PAYLOAD_CONTEXT = ['Header', 'Body'] as const
-type PayloadContext = typeof PAYLOAD_CONTEXT[number]
-
-export interface ChannelPayout {
-  channelId: number
-  cumulativePayoutEarned: number
-  merkleBranch: ProofElement[]
-  payoutRationale: string
-}
+export const hashFunc = blake2AsU8a
 
 type MerkleProof = {
   position: 'left' | 'right'
@@ -26,30 +18,27 @@ type MerkleProof = {
 }[]
 
 /**
- * Get Payout Record for given channel Id. It uses the `fetchChannelPayout`
- * function to retrieve the record from remote source
+ * Get Payout Proof for given channel from
+ * remote source or file
+ * @param context "PATH" | "URL"
+ * @param pathOrUrl
  * @param channelId Id of the channel
- * @returns payout record for given channel Id
+ * @returns payout proof record for given channel Id
  */
-export async function channelPayoutRecord(channelId: number): Promise<ChannelPayoutsMetadata.Body.ChannelPayout> {
-  const header = (await fetchChannelPayout('Header')) as ChannelPayoutsMetadata.Header
-  if (!header.channelPayoutByteOffsets.length) {
-    throw new Error('No payout record exists')
+export async function channelPayoutProof(
+  context: ReadFileContext,
+  pathOrUrl: string,
+  channelId: number
+): Promise<ChannelPayoutsMetadata.Body.ChannelPayoutProof> {
+  const serializedHeader = await serializedPayloadHeader(context, pathOrUrl)
+  const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
+
+  const channelPayoutProofOffset = header.channelPayoutByteOffsets.find((o) => o.channelId === channelId)
+  if (!channelPayoutProofOffset) {
+    throw new Error(`No payout Proof exists for channel id ${channelId}`)
   }
 
-  const channelPayoutRecordOffset = header.channelPayoutByteOffsets.find(
-    (payoutOffset) => payoutOffset.channelId === channelId
-  )
-  if (!channelPayoutRecordOffset) {
-    throw new Error(`No payout record exists for channel with channel id ${channelId}`)
-  }
-
-  const channelPayoutRecord = (await fetchChannelPayout(
-    'Body',
-    channelPayoutRecordOffset.byteOffset.toNumber()
-  )) as ChannelPayoutsMetadata.Body.ChannelPayout
-
-  return channelPayoutRecord
+  return channelPayoutProofAtByteOffset(context, pathOrUrl, channelPayoutProofOffset.byteOffset.toNumber())
 }
 
 /**
@@ -65,70 +54,36 @@ export async function channelPayoutRecord(channelId: number): Promise<ChannelPay
 
 /**
  * calculates byte length of message `size` - encoded as varint. Protobuf encodes the
- * message as `varint_encoded_message_size||serialized_message` e.g., for serialized
- * message of 10 bytes, protobuf encoded message would look like: `0a||0b0c0d0e0f1a1b1c1d1e`.
+ * message as `varint_encoded_message_size+serialized_message` e.g., for serialized
+ * message of 10 bytes, protobuf encoded message would look like: `0a+0b0c0d0e0f1a1b1c1d1e`.
  * Since `size` of example message is encoded in 1 byte so the function will return 1.
- * @param serializedMessageLength length of serialized message in number of bytes
+ * @param protobufMessageLength length of serialized message in number of bytes
  * @return length of varint encoded message size in number of bytes
  */
-function lengthOfVarintEncodedMessageSize(serializedMessageLength: number): number {
-  return Writer.create().uint32(serializedMessageLength).finish().byteLength
+function lengthOfVarintEncodedMessageSize(protobufMessageLength: number): number {
+  return Writer.create().uint32(protobufMessageLength).finish().byteLength
 }
 
 /**
- * We dont have any prior knowledge of how many bytes are used to encode the size information of the message,
+ * We don't have any prior knowledge of how many bytes are used to encode the size information of the message,
  * so we arbitrary read `n` bytes from the payload based on the assumption that the size of the header CAN BE
  * encoded in `n` bytes. For reference, if serialized message is over 4 TB then its size information can be
  * encoded in just 6 bytes
- * @param inputFilePath path to protobuf serialized payload file
+ * @param context "PATH" | "URL"
+ * @param pathOrUrl path to protobuf serialized payload file
  * @param messageOffset byte offset of message in serialized payload
  * @returns length of serialized message in number of bytes
  */
-async function lengthOfSerializedMessage(inputFilePath: string, messageOffset: number): Promise<number> {
+async function lengthOfProtobufMessage(
+  context: ReadFileContext,
+  pathOrUrl: string,
+  messageOffset: number
+): Promise<number> {
   // TODO: improve the implementation by reading size info byte by byte
   // TODO: and checking most significant bit (msb) of each byte.
-  const arbitraryBytes = await getByteSequenceFromFile(inputFilePath, messageOffset, messageOffset + 6)
+  const arbitraryBytes = await readBytesFromFile(context, pathOrUrl, messageOffset, messageOffset + 10)
   const lengthOfMessage = Reader.create(arbitraryBytes).uint32()
   return lengthOfMessage
-}
-
-/**
- * Get serialized payload header from a local file.
- * @param inputFilePath path to protobuf serialized payload file
- * @return bytes of payload header
- **/
-export async function serializedPayloadHeader(inputFilePath: string): Promise<Uint8Array> {
-  // skip the first byte which is the Tag(key) of `Header` message
-  const lengthOfSerializedHeader = await lengthOfSerializedMessage(inputFilePath, 1)
-  const lengthOfVarintEncodedHeaderSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedHeader)
-  const serializedHeader = await getByteSequenceFromFile(
-    inputFilePath,
-    1 + lengthOfVarintEncodedHeaderSize,
-    lengthOfVarintEncodedHeaderSize + lengthOfSerializedHeader
-  )
-
-  return serializedHeader
-}
-
-/**
- * Get channel payout record from local serialized payload file.
- * @param inputFilePath path to protobuf serialized payload file
- * @param byteOffset byte offset of channel payout record in serialized payload
- * @return channel payout record
- **/
-export async function channelPayoutRecordAtByteOffset(
-  inputFilePath: string,
-  byteOffset: number
-): Promise<ChannelPayoutsMetadata.Body.ChannelPayout> {
-  const lengthOfSerializedRecord = await lengthOfSerializedMessage(inputFilePath, byteOffset)
-  const lengthOfVarintEncodedRecordSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedRecord)
-  const serializedPayoutRecord = await getByteSequenceFromFile(
-    inputFilePath,
-    byteOffset + lengthOfVarintEncodedRecordSize,
-    byteOffset + lengthOfSerializedRecord
-  )
-
-  return ChannelPayoutsMetadata.Body.ChannelPayout.decode(serializedPayoutRecord)
 }
 
 // calculates byte length of the serialized payload header
@@ -152,22 +107,147 @@ function lengthOfHeader(numberOfChannels: number): number {
 }
 
 /**
+ * Get serialized payload header from a local file.
+ * @param context "PATH" | "URL"
+ * @param pathOrUrl path to protobuf serialized payload file
+ * @return bytes of payload header
+ **/
+export async function serializedPayloadHeader(context: ReadFileContext, pathOrUrl: string): Promise<Uint8Array> {
+  // skip the first byte which is the Tag(key) of `Header` message
+  const lengthOfSerializedHeader = await lengthOfProtobufMessage(context, pathOrUrl, 1)
+  const lengthOfVarintEncodedHeaderSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedHeader)
+  const serializedHeader = await readBytesFromFile(
+    context,
+    pathOrUrl,
+    1 + lengthOfVarintEncodedHeaderSize,
+    lengthOfVarintEncodedHeaderSize + lengthOfSerializedHeader
+  )
+
+  return serializedHeader
+}
+
+/**
+ * Get channel payout Proof from local serialized payload file.
+ * @param context "PATH" | "URL"
+ * @param pathOrUrl path to protobuf serialized payload file
+ * @param byteOffset byte offset of channel payout Proof in serialized payload
+ * @return channel payout Proof
+ **/
+export async function channelPayoutProofAtByteOffset(
+  context: ReadFileContext,
+  pathOrUrl: string,
+  byteOffset: number
+): Promise<ChannelPayoutsMetadata.Body.ChannelPayoutProof> {
+  const lengthOfSerializedProof = await lengthOfProtobufMessage(context, pathOrUrl, byteOffset)
+  const lengthOfVarintEncodedProofSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedProof)
+  const serializedPayoutProof = await readBytesFromFile(
+    context,
+    pathOrUrl,
+    byteOffset + lengthOfVarintEncodedProofSize,
+    byteOffset + lengthOfSerializedProof + 1
+  )
+  const proof = ChannelPayoutsMetadata.Body.ChannelPayoutProof.decode(serializedPayoutProof)
+  return proof
+}
+
+/**
+ * Generate merkle root from the serialized payload
+ * @param context "PATH" | "URL"
+ * @param pathOrUrl path to protobuf serialized payload file
+ * @returns merkle root of the cashout vector
+ */
+export async function generateCommitmentFromPayloadFile(context: ReadFileContext, pathOrUrl: string): Promise<string> {
+  const serializedHeader = await serializedPayloadHeader(context, pathOrUrl)
+  const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
+
+  // Any payout Proof can be used to generate the merkle root,
+  // here first Proof from channel payouts payload is used
+  const ProofByteOffset = header.channelPayoutByteOffsets.shift()!.byteOffset.toNumber()
+  const proof = await channelPayoutProofAtByteOffset(context, pathOrUrl, ProofByteOffset)
+  return verifyChannelPayoutProof(proof)
+}
+
+/**
+ * Generate merkle root from branch of a channel payout proof
+ * @param proof channel payout proof record
+ * @returns commitment (merkle root) of the cashout payload
+ */
+export function verifyChannelPayoutProof(proof: ChannelPayoutsMetadata.Body.ChannelPayoutProof): string {
+  // item = c_i||p_i||m_i
+  const item = hashFunc(
+    Buffer.concat([
+      createType('u64', proof.channelId).toU8a(),
+      createType('u128', new BN(proof.cumulativeRewardEarned)).toU8a(),
+      Buffer.from(proof.reason, 'hex'),
+    ])
+  )
+
+  const merkleRoot = proof.merkleBranch.reduce((res, proofElement) => {
+    if (proofElement.side === ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side.Right) {
+      return hashFunc(Buffer.concat([res, Buffer.from(proofElement.hash, 'hex')]))
+    } else {
+      return hashFunc(Buffer.concat([Buffer.from(proofElement.hash, 'hex'), res]))
+    }
+  }, item)
+
+  return u8aToHex(merkleRoot)
+}
+
+export function generateJsonPayloadFromPayoutsVector(
+  channelPayoutsVector: ChannelPayoutsVector
+): [string, ChannelPayoutProof[]] {
+  const generateLeaf = (p: ChannelPayoutsVector[number]) => {
+    return hashFunc(
+      Buffer.concat([
+        createType('u64', p.channelId).toU8a(),
+        createType('u128', new BN(p.cumulativeRewardEarned)).toU8a(),
+        hashFunc(createType('Bytes', p.reason).toU8a()),
+      ])
+    )
+  }
+  const leaves = channelPayoutsVector.map(generateLeaf)
+
+  const tree = new MerkleTree(leaves, hashFunc)
+
+  const channelPayouts = channelPayoutsVector.map((p, i) => {
+    // merkle proof for each Payout
+    const merkleProof: MerkleProof = tree.getProof(Buffer.from(leaves[i]))
+
+    const merkleBranch = merkleProof.map(({ data, position }) => {
+      return {
+        hash: data.toString('hex'),
+        side: position === 'left' ? 0 : 1,
+      }
+    })
+
+    return {
+      channelId: p.channelId,
+      cumulativeRewardEarned: p.cumulativeRewardEarned,
+      merkleBranch,
+      reason: Buffer.from(hashFunc(createType('Bytes', p.reason).toU8a())).toString('hex'),
+    } as ChannelPayoutProof
+  })
+
+  return [tree.getHexRoot(), channelPayouts]
+}
+
+/**
  * Generate serialized payload from JSON encoded channel payouts.
- * @param payloadBodyInput path to JSON file containing channel payouts
+ * @param channelPayoutProofs JSON object containing channel payout proofs
  * @returns serialized channel payouts payload
  */
-export function generateSerializedPayload(payloadBodyInput: ChannelPayout[]): Uint8Array {
-  if (payloadBodyInput.length === 0) throw new Error('payload is empty')
+export function generateSerializedPayload(channelPayoutProofs: ChannelPayoutProof[]): Uint8Array {
+  if (channelPayoutProofs.length === 0) throw new Error('payload is empty')
 
-  const numberOfChannels = payloadBodyInput.length
+  const numberOfChannels = channelPayoutProofs.length
   const headerLengthInBytes = Long.fromNumber(lengthOfHeader(numberOfChannels))
   const channelPayoutByteOffsets: ChannelPayoutsMetadata.Header.IChannelPayoutByteOffset[] = []
-  const body = asValidatedMetadata(ChannelPayoutsMetadata.Body, { channelPayouts: payloadBodyInput })
+  const body = asValidatedMetadata(ChannelPayoutsMetadata.Body, { channelPayoutProofs })
 
   // Length of Header is known prior to serialization since its fields are fixed size, however the
   // length of the COMPLETE payload can only be known after it has been serialized since Body fields
   // are varint encoded.
-  // So we cant set payload length & byte offsets, to resolve this issue payload will be serialized
+  // So we can't set payload length & byte offsets, to resolve this issue payload will be serialized
   // with empty payload length & byte offsets, and once serialized both unknowns can be obtained
   // from payload
   body.channelPayouts?.forEach(({ channelId }) => {
@@ -187,11 +267,11 @@ export function generateSerializedPayload(payloadBodyInput: ChannelPayout[]): Ui
   const payloadLengthInBytes = Long.fromNumber(serializedPayloadWithEmptyHeaderFields.byteLength)
 
   for (let i = 0; i < numberOfChannels; i++) {
-    const channelPayoutRecord = ChannelPayoutsMetadata.Body.ChannelPayout.encode(body.channelPayouts![i]).finish()
-    const indexOfChannelPayoutRecord = serializedPayloadWithEmptyHeaderFields.indexOf(channelPayoutRecord)
+    const channelPayoutProof = ChannelPayoutsMetadata.Body.ChannelPayoutProof.encode(body.channelPayouts![i]).finish()
+    const indexOfChannelPayoutProof = serializedPayloadWithEmptyHeaderFields.indexOf(channelPayoutProof)
     // set correct byteOffsets
     payload.header.channelPayoutByteOffsets![i].byteOffset = Long.fromNumber(
-      indexOfChannelPayoutRecord - lengthOfVarintEncodedMessageSize(Buffer.from(channelPayoutRecord).byteLength)
+      indexOfChannelPayoutProof - lengthOfVarintEncodedMessageSize(Buffer.from(channelPayoutProof).byteLength)
     )
   }
 
@@ -200,107 +280,4 @@ export function generateSerializedPayload(payloadBodyInput: ChannelPayout[]): Ui
   // serialize payload again
   const serializedPayload = ChannelPayoutsMetadata.encode(payload).finish()
   return serializedPayload
-}
-
-/**
- * Generate merkle root from the serialized payload
- * @param inputFilePath path to protobuf serialized payload file
- * @returns merkle root of the cashout vector
- */
-export async function generateCommitmentFromPayloadFile(inputFilePath: string): Promise<string> {
-  const serializedHeader = await serializedPayloadHeader(inputFilePath)
-  const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
-
-  // Any payout record can be used to generate the merkle root,
-  // here first record from channel payouts payload is used
-  const recordByteOffset = header.channelPayoutByteOffsets.shift()!.byteOffset.toNumber()
-  const record = await channelPayoutRecordAtByteOffset(inputFilePath, recordByteOffset)
-  return generateCommitmentFromPayload(record)
-}
-
-/**
- * Generate merkle root from branch of channel payout record
- * @param channelPayoutsPayload create payout record
- * @returns merkle root of the cashout vector
- */
-export function generateCommitmentFromPayload(
-  channelPayoutsPayload: ChannelPayoutsMetadata.Body.ChannelPayout
-): string {
-  // item = c_i||p_i||m_i
-  const item =
-    channelPayoutsPayload.channelId.toString() +
-    channelPayoutsPayload.cumulativeRewardEarned.toString() +
-    blake2AsHex(channelPayoutsPayload.payoutRationale)
-
-  const merkleRoot = channelPayoutsPayload.merkleBranch.reduce((hashV, el) => {
-    if (el.side === ChannelPayoutsMetadata.Body.ChannelPayout.Side.Right) {
-      return blake2AsHex(hashV + el.hash)
-    } else return blake2AsHex(el.hash + hashV)
-  }, blake2AsHex(item))
-
-  return merkleRoot
-}
-
-export function generateJsonPlayloadFromPayoutsVector(channelPayoutsVector: ChannelPayoutsVector): ChannelPayout[] {
-  const leaves = channelPayoutsVector.map(({ channelId, cumulativePayoutEarned, payoutRationale }) =>
-    blake2AsHex(`${channelId}${cumulativePayoutEarned}${blake2AsHex(payoutRationale)}`)
-  )
-  const tree = new MerkleTree(leaves, blake2AsHex)
-
-  const channelPayouts = channelPayoutsVector.map((p, i) => {
-    // merkle proof for each record
-    const merkleProof: MerkleProof = tree.getProof(leaves[i])
-
-    const merkleBranch = merkleProof.map(({ data, position }) => {
-      return createType('PalletContentProofElementRecord', {
-        hash_: data,
-        side: position === 'left' ? { Left: null } : { Right: null },
-      })
-    })
-
-    return {
-      channelId: p.channelId,
-      cumulativePayoutEarned: p.cumulativePayoutEarned,
-      merkleBranch,
-      payoutRationale: blake2AsHex(p.payoutRationale),
-    } as ChannelPayout
-  })
-
-  return channelPayouts
-}
-
-/**
- * fetch channel payouts payload from remote source
- * @param context `Header | Body` based on part to be fetch from remote source
- * @param offset If `context` arg is `Body` then offset of payload record must be provided
- **/
-async function fetchChannelPayout(
-  context: PayloadContext,
-  offset?: number
-): Promise<ChannelPayoutsMetadata.Header | ChannelPayoutsMetadata.Body.ChannelPayout> {
-  // HTTP Url of remote host where payload is stored
-  let url = process.env.Channel_PAYOUT_DATA_URL as string
-  if (_.isEmpty(url)) {
-    throw new Error('cannot fetch channel payouts data, remote url does not exist')
-  }
-
-  if (context === 'Header') {
-    url = `${url}?header`
-  } else if (context === 'Body' && offset !== undefined) {
-    url = `${url}?offset=${offset}`
-  } else throw new Error('Invalid fetch channel payout parameters')
-
-  const response = await axios.get(url, {
-    headers: {
-      responseType: 'arraybuffer',
-    },
-  })
-  if (response.status !== 200) {
-    throw new Error('invalid response while fetching channel payout data')
-  }
-
-  const responseBuffer = Buffer.from(response.data)
-  if (context === 'Header') {
-    return ChannelPayoutsMetadata.Header.decode(responseBuffer)
-  } else return ChannelPayoutsMetadata.Body.ChannelPayout.decode(responseBuffer)
 }

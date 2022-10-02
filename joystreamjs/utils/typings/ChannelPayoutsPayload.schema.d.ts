@@ -6,9 +6,9 @@
  */
 
 export type Side = 0 | 1
-export type ChannelPayoutsPayload = ChannelPayout[]
+export type ChannelPayoutsPayload = ChannelPayoutProof[]
 
-export interface ChannelPayout {
+export interface ChannelPayoutProof {
   channelId: number
   cumulativeRewardEarned: string
   merkleBranch: ProofElement[]

@@ -21,70 +21,49 @@ This function gets the payout record from the remote source. It first fetches th
 header and then uses the `offset` of given channel Id from header to fetch the record.
 
 ```javascript
-import { creatorPayoutRecord } from '@joystreamjs/content'
+import { channelPayoutProof } from '@joystreamjs/content'
 
+const readContext = 'PATH' // 'PATH' | 'URL'
+const inputFilePath = './payload'
 const channelId = 1
-const payoutRecord = await creatorPayoutRecord(channelId)
+const payoutRecord = await channelPayoutProof(channelId)
 ```
 
-### Getting creator payout record from serialized payload file at given byte
+### Getting channel payout record from serialized payload file at given byte
 
 ```javascript
-import { creatorPayoutRecordAtByteOffset } from '@joystreamjs/content'
+import { channelPayoutProofAtByteOffset } from '@joystreamjs/content'
 
+const readContext = 'PATH' // 'PATH' | 'URL'
 const inputFilePath = './payload'
 const byteOffset = 40
-const payoutRecord = await creatorPayoutRecordAtByteOffset(input, byteOffset)
+const payoutRecord = await channelPayoutProofAtByteOffset(readContext, input, byteOffset)
 ```
 
-### Get header from serialized creator payouts payload file
+### Get header from serialized channel payouts payload file
 
 ```javascript
 import { serializedPayloadHeader } from '@joystreamjs/content'
-import { CreatorPayoutPayload } from '@joystream/metadata-protobuf'
+import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 
-const serializedHeader = await serializedPayloadHeader(input)
+const readContext = 'PATH' // 'PATH' | 'URL'
+const serializedHeader = await serializedPayloadHeader(readContext, input)
 // decode header
-const header = CreatorPayoutPayload.Header.decode(serializedHeader)
+const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
 console.log(
   header.payloadLengthInBytes,
   header.headerLengthInBytes,
   header.numberOfChannels,
-  header.creatorPayoutByteOffsets
+  header.channelPayoutByteOffsets
 )
 ```
 
-### Create serialized creator payouts payload from JSON input
-
-```javascript
-import { generateSerializedPayload } from '@joystreamjs/content'
-import { CreatorPayoutPayload as CreatorPayoutPayloadInput } from '@joystreamjs/utils/typings/CreatorPayoutPayload.schema'
-
-const payloadBodyInput: CreatorPayoutPayloadInput = [
-  {
-    channelId: 0,
-    cumulativePayoutOwed: 20,
-    merkleBranch: [
-      {
-        hash: '7a7b2d34',
-        side: 1,
-      },
-      {
-        hash: '74bd3bc2',
-        side: 0,
-      },
-    ],
-    payoutRationale: 'reward for best content creator',
-  },
-]
-const serializedPayload = generateSerializedPayload(payloadBodyInput)
-```
-
-### Generate merkle root from serialized creator payouts payload
+### Generate merkle root from serialized channel payouts payload
 
 ```javascript
 import { generateMerkleRoot } from '@joystreamjs/content'
 
 const inputFilePath = './payload'
-const merkleRoot = await generateMerkleRoot(inputFilePath)
+const readContext = 'PATH' // 'PATH' | 'URL'
+const merkleRoot = await generateCommitmentFromPayloadFile(inputFilePath)
 ```
