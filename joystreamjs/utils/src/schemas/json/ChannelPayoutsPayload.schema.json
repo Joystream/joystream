@@ -12,8 +12,8 @@
         "channelId": {
           "type": "number"
         },
-        "cumulativePayoutEarned": {
-          "type": "number"
+        "cumulativeRewardEarned": {
+          "type": "string"
         },
         "merkleBranch": {
           "items": {
@@ -21,11 +21,11 @@
           },
           "type": "array"
         },
-        "payoutRationale": {
+        "reason": {
           "type": "string"
         }
       },
-      "required": ["channelId", "cumulativePayoutEarned", "merkleBranch", "payoutRationale"],
+      "required": ["channelId", "cumulativeRewardEarned", "merkleBranch", "reason"],
       "type": "object"
     },
     "ProofElement": {

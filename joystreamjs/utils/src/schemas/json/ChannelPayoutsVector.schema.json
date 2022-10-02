@@ -12,14 +12,14 @@
         "channelId": {
           "type": "number"
         },
-        "cumulativePayoutEarned": {
-          "type": "number"
+        "cumulativeRewardEarned": {
+          "type": "string"
         },
-        "payoutRationale": {
+        "reason": {
           "type": "string"
         }
       },
-      "required": ["channelId", "cumulativePayoutEarned", "payoutRationale"],
+      "required": ["channelId", "cumulativeRewardEarned", "reason"],
       "type": "object"
     }
   }

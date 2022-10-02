@@ -41,7 +41,8 @@
   "scripts": {
     "build": "rm -rf lib && tsc --build tsconfig.json",
     "format": "prettier ./ --write",
-    "generate:schema-typings": "rm -rf ./src/schemas/typings && json2ts -i ./src/schemas/json/ -o ./typings/ && yarn format"
+    "generate:schema-typings": "rm -rf ./src/schemas/typings && json2ts -i ./src/schemas/json/ -o ./typings/ && yarn format",
+    "generate:all": "yarn generate:schema-typings"
   },
   "types": "lib/index.d.ts",
   "volta": {

@@ -10,9 +10,9 @@ export type ChannelPayoutsPayload = ChannelPayout[]
 
 export interface ChannelPayout {
   channelId: number
-  cumulativePayoutEarned: number
+  cumulativeRewardEarned: string
   merkleBranch: ProofElement[]
-  payoutRationale: string
+  reason: string
 }
 export interface ProofElement {
   hash: string

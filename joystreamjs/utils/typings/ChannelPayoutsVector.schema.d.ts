@@ -9,6 +9,6 @@ export type ChannelPayoutsVector = ChannelPayout[]
 
 export interface ChannelPayout {
   channelId: number
-  cumulativePayoutEarned: number
-  payoutRationale: string
+  cumulativeRewardEarned: string
+  reason: string
 }
