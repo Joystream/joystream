@@ -4,8 +4,8 @@ pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
 use crate::{
-    Bounties, BountyActor, BountyContributions, BountyCreationParameters, BountyMilestone,
-    BountyRecord, BountyStage, Entries, Error, FundingType, OracleJudgment,
+    Bounties, BountyActor, BountyContributions, BountyMilestone, BountyRecord, BountyStage,
+    BountyStoredCreationParameters, Entries, Error, FundingType, OracleJudgment,
     OracleWorkEntryJudgment, RawEvent,
 };
 use fixtures::{
@@ -53,7 +53,7 @@ fn validate_funding_bounty_stage() {
         // Perpetual funding period
         // No contributions.
         let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
+            creation_params: BountyStoredCreationParameters::<Test> {
                 ..Default::default()
             },
             milestone: BountyMilestone::Created {
@@ -72,7 +72,7 @@ fn validate_funding_bounty_stage() {
 
         // Has contributions
         let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
+            creation_params: BountyStoredCreationParameters::<Test> {
                 ..Default::default()
             },
             milestone: BountyMilestone::Created {
@@ -93,7 +93,7 @@ fn validate_funding_bounty_stage() {
         let funding_period = 10;
 
         let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
+            creation_params: BountyStoredCreationParameters::<Test> {
                 funding_type: FundingType::Limited {
                     funding_period,
                     target: 10,
@@ -117,7 +117,7 @@ fn validate_funding_bounty_stage() {
         );
 
         let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
+            creation_params: BountyStoredCreationParameters::<Test> {
                 funding_type: FundingType::Limited {
                     funding_period,
                     target: 10,
@@ -151,7 +151,7 @@ fn validate_funding_expired_bounty_stage() {
         // Limited funding period
         // No contributions.
         let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
+            creation_params: BountyStoredCreationParameters::<Test> {
                 funding_type: FundingType::Limited {
                     funding_period,
                     target: 10,
@@ -182,7 +182,7 @@ fn validate_work_submission_bounty_stage() {
         let target_funding = 100;
 
         // Limited funding period
-        let params = BountyCreationParameters::<Test> {
+        let params = BountyStoredCreationParameters::<Test> {
             funding_type: FundingType::Limited {
                 funding_period,
                 target: target_funding,
@@ -233,7 +233,7 @@ fn validate_judgment_bounty_stage() {
 
         // Work period is not expired.
         let bounty = BountyRecord {
-            creation_params: BountyCreationParameters::<Test> {
+            creation_params: BountyStoredCreationParameters::<Test> {
                 funding_type: FundingType::Limited {
                     funding_period,
                     target,
