@@ -22,6 +22,7 @@ import {
   ChannelRewardClaimedAndWithdrawnEvent,
   ChannelRewardClaimedEvent,
   DataObjectTypeChannelPayoutsPayload,
+  ChannelFundsWithdrawnEvent,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -34,6 +35,7 @@ import {
   saveMetaprotocolTransactionErrored,
   deterministicEntityId,
   unwrap,
+  bytesToString,
 } from '../common'
 import { getCurrentElectedCouncil } from '../council'
 import {
@@ -433,15 +435,15 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
   }
 
   const asPayload = unwrap(updateChannelPayoutParameters.payload)?.objectCreationParams
-  const payloadSize = asPayload ? new BN(asPayload.size) : undefined
-  const payloadHash = asPayload ? Buffer.from(asPayload.ipfsContentId) : undefined
+  const payloadSize = asPayload ? new BN(asPayload.size_) : undefined
+  const payloadHash = asPayload ? bytesToString(asPayload.ipfsContentId) : undefined
   const minCashoutAllowed = unwrap(updateChannelPayoutParameters.minCashoutAllowed)
   const maxCashoutAllowed = unwrap(updateChannelPayoutParameters.maxCashoutAllowed)
   const channelCashoutsEnabled = unwrap(updateChannelPayoutParameters.channelCashoutsEnabled)?.valueOf()
 
   const newChannelPayoutsUpdatedEvent = new ChannelPayoutsUpdatedEvent({
     ...genericEventFields(event),
-    commitment: Buffer.from(updateChannelPayoutParameters.commitment.unwrap()),
+    commitment: unwrap(updateChannelPayoutParameters.commitment)?.toString(),
     payloadSize,
     payloadHash,
     minCashoutAllowed,
@@ -453,14 +455,6 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
 
   // save new channel payout parameters record (with new commitment)
   await store.save<ChannelPayoutsUpdatedEvent>(newChannelPayoutsUpdatedEvent)
-}
-
-function setChannelRewardFields(event: SubstrateEvent, channel: Channel, amount: BN) {
-  // update channel reward fields
-  channel.lastRewardClaimed = amount
-  channel.cumulativeRewardClaimed = channel.cumulativeRewardClaimed?.add(amount)
-  channel.lastRewardClaimedAt = new Date(event.blockTimestamp)
-  channel.updatedAt = new Date(event.blockTimestamp)
 }
 
 export async function content_ChannelRewardUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -486,7 +480,7 @@ export async function content_ChannelRewardUpdated({ store, event }: EventContex
 
   await store.save<ChannelRewardClaimedEvent>(rewardClaimedEvent)
 
-  setChannelRewardFields(event, channel, amount)
+  channel.cumulativeRewardClaimed = amount
 
   // save channel
   await store.save<Channel>(channel)
@@ -518,9 +512,9 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
     actor: await convertContentActor(store, owner),
   })
 
-  await store.save<ChannelRewardClaimedEvent>(rewardClaimedEvent)
+  await store.save<ChannelRewardClaimedAndWithdrawnEvent>(rewardClaimedEvent)
 
-  setChannelRewardFields(event, channel, amount)
+  channel.cumulativeRewardClaimed = amount
 
   // save channel
   await store.save<Channel>(channel)
@@ -528,4 +522,27 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
 
 export async function content_ChannelFundsWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
   // load event data
+  // load event data
+  const [owner, channelId, amount, account] = new Content.ChannelFundsWithdrawnEvent(event).params
+
+  // load channel
+  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Non-existing channel reward updated', channelId)
+  }
+
+  // common event processing - second
+
+  const rewardClaimedEvent = new ChannelFundsWithdrawnEvent({
+    ...genericEventFields(event),
+
+    amount,
+    channel,
+    account: account.toString(),
+    actor: await convertContentActor(store, owner),
+  })
+
+  await store.save<ChannelFundsWithdrawnEvent>(rewardClaimedEvent)
 }

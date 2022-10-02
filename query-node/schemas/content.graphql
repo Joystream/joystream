@@ -75,18 +75,8 @@ type Channel @entity {
   "Cumulative rewards claimed by this channel"
   cumulativeRewardClaimed: BigInt
 
-  "Last reward amount claimed by this channel"
-  lastRewardClaimed: BigInt
-
-  "Last reward chlaimed timestamp"
-  lastRewardClaimedAt: DateTime
-
   "List of all claimed rewards"
   claimedRewards: [ChannelRewardClaimedEvent!] @derivedFrom(field: "channel")
-
-  # "Can cashout reward? basically by ensuring that if the channel has already cashed"
-  #  "out after the date at which the proposal passed, then they can't do it again"
-  #  canCashout: Boolean!
 }
 
 type VideoCategory @entity {

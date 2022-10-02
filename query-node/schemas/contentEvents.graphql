@@ -593,6 +593,39 @@ type ChannelRewardClaimedAndWithdrawnEvent implements Event @entity {
   actor: ContentActor!
 }
 
+type ChannelFundsWithdrawnEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The channel that claimed the reward"
+  channel: Channel!
+
+  "Reward amount claimed"
+  amount: BigInt!
+
+  "Destination account ID"
+  account: String!
+
+  "Content actor"
+  actor: ContentActor!
+}
+
 type ChannelPayoutsUpdatedEvent @entity {
   ### GENERIC DATA ###
 
@@ -614,7 +647,7 @@ type ChannelPayoutsUpdatedEvent @entity {
   ### SPECIFIC DATA ###
 
   "Merkle root of the channel payouts"
-  commitment: Bytes
+  commitment: String
 
   "Storage data object corresponding to the channel payouts payload"
   payloadDataObject: StorageDataObject!
@@ -623,7 +656,7 @@ type ChannelPayoutsUpdatedEvent @entity {
   payloadSize: BigInt
 
   "Hash of the serialized channel payouts payload"
-  payloadHash: Bytes
+  payloadHash: String
 
   "Minimum amount of channel reward cashout allowed at a time"
   minCashoutAllowed: BigInt

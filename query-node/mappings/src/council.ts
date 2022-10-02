@@ -59,6 +59,7 @@ import {
 
   // Misc
   Membership,
+  CouncilBudgetFundedEvent,
 } from 'query-node/dist/model'
 import { Council, Referendum } from '../generated/types'
 import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
@@ -837,6 +838,23 @@ export async function council_RequestFunded({ event, store }: EventContext & Sto
     ...genericEventFields(event),
     account: account.toString(),
     amount,
+  })
+
+  await store.save<RequestFundedEvent>(requestFundedEvent)
+
+  // no specific event processing
+}
+
+export async function council_CouncilBudgetFunded({ event, store }: EventContext & StoreContext): Promise<void> {
+  // common event processing
+
+  const [memberId, amount, rationale] = new Council.CouncilBudgetFundedEvent(event).params
+
+  const requestFundedEvent = new CouncilBudgetFundedEvent({
+    ...genericEventFields(event),
+    memberId: memberId.toNumber(),
+    amount,
+    rationale: rationale.toHuman()?.toString(),
   })
 
   await store.save<RequestFundedEvent>(requestFundedEvent)
