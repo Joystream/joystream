@@ -534,6 +534,27 @@ pallet_staking_reward_curve::build! {
     );
 }
 
+pub struct NoInflationIfNoEras;
+impl EraPayout<Balance> for NoInflationIfNoEras {
+  fn era_payout(
+    total_staked: Balance,
+    total_issuance: Balance,
+    era_duration_millis: u64,
+  ) -> (Balance, Balance) {
+    if pallet_staking::Forcing::<Runtime>::get() == Forcing::None {
+      // PoA mode: no inflation.
+      (0, 0)
+    } else {
+      // proxy to whatever else is the default:
+      <pallet_staking::ConvertCurve as EraPayout<Balance>>::era_payout(
+         total_staked,
+         total_issuance,
+         era_duration_millis,
+      )
+    }
+  }
+}
+
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
@@ -567,7 +588,7 @@ impl pallet_staking::Config for Runtime {
     type SessionInterface = Self;
     // TODO (Mainnet): enable normal curve
     // type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
-    type EraPayout = ();
+    type EraPayout = NoInflationIfNoEras;
     type NextNewSession = Session;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
