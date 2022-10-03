@@ -110,9 +110,9 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
+use pallet_staking::{EraPayout, Forcing};
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
-use pallet_staking::{Forcing, EraPayout};
 
 // Node dependencies
 pub use common;
@@ -537,22 +537,22 @@ pallet_staking_reward_curve::build! {
 
 pub struct NoInflationIfNoEras;
 impl EraPayout<Balance> for NoInflationIfNoEras {
-  fn era_payout(
-    total_staked: Balance,
-    total_issuance: Balance,
-    era_duration_millis: u64,
-  ) -> (Balance, Balance) {
-    if pallet_staking::Pallet::<Runtime>::force_era() == Forcing::ForceNone {
-      // PoA mode: no inflation.
-      (0, 0)
-    } else {
-      <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
-         total_staked,
-         total_issuance,
-         era_duration_millis,
-      )
+    fn era_payout(
+        total_staked: Balance,
+        total_issuance: Balance,
+        era_duration_millis: u64,
+    ) -> (Balance, Balance) {
+        if pallet_staking::Pallet::<Runtime>::force_era() == Forcing::ForceNone {
+            // PoA mode: no inflation.
+            (0, 0)
+        } else {
+            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
+                total_staked,
+                total_issuance,
+                era_duration_millis,
+            )
+        }
     }
-  }
 }
 
 parameter_types! {
