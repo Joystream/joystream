@@ -306,18 +306,8 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
             chain_spec::authority_keys_from_seed(seed);
 
         let insert_key = |key_type, public, n| {
-            if seed.starts_with("0x") || seed.starts_with("//") {
-                SyncCryptoStore::insert_unknown(&*keystore, key_type, seed, public)
-                    .map_err(|_| format!("Failed to insert key: {}", n))
-            } else {
-                SyncCryptoStore::insert_unknown(
-                    &*keystore,
-                    key_type,
-                    &format!("//{}", seed),
-                    public,
-                )
+            SyncCryptoStore::insert_unknown(&*keystore, key_type, seed, public)
                 .map_err(|_| format!("Failed to insert key: {}", n))
-            }
         };
 
         insert_key(sp_core::crypto::key_types::BABE, babe.as_slice(), n)?;
@@ -344,12 +334,12 @@ fn print_seeds(
     authority_seeds: &[String],
     nominator_seeds: &[String],
     endowed_seeds: &[String],
-    sudo_seed: &String,
+    sudo_seed: &str,
 ) {
     println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
-        println!("auth_{}=//{}", n, seed);
+        println!("auth_{}={}", n, seed);
     }
 
     println!();
@@ -357,7 +347,7 @@ fn print_seeds(
     if !nominator_seeds.is_empty() {
         println!("# Nominator seeds");
         for (n, seed) in nominator_seeds.iter().enumerate() {
-            println!("nom_{}=//{}", n, seed);
+            println!("nom_{}={}", n, seed);
         }
     }
 
@@ -366,14 +356,14 @@ fn print_seeds(
     if !endowed_seeds.is_empty() {
         println!("# Endowed seeds");
         for (n, seed) in endowed_seeds.iter().enumerate() {
-            println!("endowed_{}=//{}", n, seed);
+            println!("endowed_{}={}", n, seed);
         }
 
         println!();
     }
 
     println!("# Sudo seed");
-    println!("sudo=//{}", sudo_seed);
+    println!("sudo={}", sudo_seed);
     println!();
 }
 

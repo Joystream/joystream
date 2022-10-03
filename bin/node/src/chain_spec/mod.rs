@@ -92,15 +92,9 @@ fn session_keys(
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
     let password = None;
-    if seed.starts_with("0x") || seed.starts_with("//") {
-        TPublic::Pair::from_string(seed, password)
-            .expect("static values are valid; qed")
-            .public()
-    } else {
-        TPublic::Pair::from_string(&format!("//{}", seed), password)
-            .expect("static values are valid; qed")
-            .public()
-    }
+    TPublic::Pair::from_string(seed, password)
+        .expect("static values are valid; qed")
+        .public()
 }
 
 /// Helper function to generate an account ID from seed
@@ -135,18 +129,18 @@ pub fn authority_keys_from_seed(
 // Accounts to endow on dev and local test networks
 fn development_endowed_accounts() -> Vec<AccountId> {
     vec![
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        get_account_id_from_seed::<sr25519::Public>("Bob"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-        get_account_id_from_seed::<sr25519::Public>("Dave"),
-        get_account_id_from_seed::<sr25519::Public>("Eve"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice"),
+        get_account_id_from_seed::<sr25519::Public>("//Bob"),
+        get_account_id_from_seed::<sr25519::Public>("//Charlie"),
+        get_account_id_from_seed::<sr25519::Public>("//Dave"),
+        get_account_id_from_seed::<sr25519::Public>("//Eve"),
+        get_account_id_from_seed::<sr25519::Public>("//Ferdie"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Bob//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Charlie//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Dave//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Eve//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Ferdie//stash"),
     ]
 }
 
@@ -357,12 +351,12 @@ pub fn testnet_genesis(
 fn development_config_genesis() -> GenesisConfig {
     testnet_genesis(
         true,
-        vec![authority_keys_from_seed("Alice")],
+        vec![authority_keys_from_seed("//Alice")],
         vec![
-            get_account_id_from_seed::<sr25519::Public>("Bob"),
-            get_account_id_from_seed::<sr25519::Public>("Charlie"),
+            get_account_id_from_seed::<sr25519::Public>("//Bob"),
+            get_account_id_from_seed::<sr25519::Public>("//Charlie"),
         ],
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice"),
         development_endowed_accounts(),
         vec![],
         vec![],
@@ -391,11 +385,11 @@ fn local_testnet_genesis() -> GenesisConfig {
     testnet_genesis(
         true,
         vec![
-            authority_keys_from_seed("Alice"),
-            authority_keys_from_seed("Bob"),
+            authority_keys_from_seed("//Alice"),
+            authority_keys_from_seed("//Bob"),
         ],
         vec![],
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice"),
         development_endowed_accounts(),
         vec![],
         vec![],
@@ -430,9 +424,9 @@ pub(crate) mod tests {
     fn local_testnet_genesis_instant_single() -> GenesisConfig {
         testnet_genesis(
             true,
-            vec![authority_keys_from_seed("Alice")],
+            vec![authority_keys_from_seed("//Alice")],
             vec![],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            get_account_id_from_seed::<sr25519::Public>("//Alice"),
             development_endowed_accounts(),
             vec![],
             vec![],
