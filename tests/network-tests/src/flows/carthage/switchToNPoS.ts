@@ -18,32 +18,15 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   // helpers
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
   const getBalances = async (accounts: string[]) => Promise.all(accounts.map((account) => api.getBalance(account)))
+
+  // constants
+  const sleepTimeSeconds = 10
+
   const authorities = await api.getSessionAuthorities()
   const authoritiesStash = (await Promise.all(authorities.map((account) => api.getBonded(account)))).map((x) =>
     x.unwrap().toString()
   )
   const eraToReward = (await api.getCurrentEra()).unwrap().toNumber()
-
-  // constants
-  const nAccounts = 10
-  const bondAmount = new BN(1000000000)
-  const claimingEra = 10
-  const sleepTimeSeconds = 30
-  const stakerAccounts = (await api.createKeyPairs(nAccounts)).map(({ key }) => key.address)
-  const genesisAuthorities = await api.getSessionAuthorities()
-
-  // bond stakers
-  await Promise.all(
-    stakerAccounts.map(async (account) => {
-      const bondingSucceedsFixture = new BondingSucceedsFixture(api, {
-        stash: account,
-        controller: account,
-        bondAmount: bondAmount,
-      })
-      const fixtureRunner = new FixtureRunner(bondingSucceedsFixture)
-      fixtureRunner.run()
-    })
-  )
   const previousBalances = await getBalances(authoritiesStash)
 
   // ensure that we are in PoA
@@ -52,12 +35,12 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
 
   // ----------- ACT ----------------
 
-  // 1. Switch to NPoS
+  // Switch to NPoS
   const setForceEraForcingNewFixture = new SetForceEraForcingNewFixture(api)
   const fixtureRunner = new FixtureRunner(setForceEraForcingNewFixture)
   await fixtureRunner.run()
 
-  // wait until new era happened: about 10 minutes
+  // And wait until new era happened: about 10 minutes
   let forceEraStatus = await api.getForceEra()
   while (forceEraStatus.isForceNew) {
     sleep(sleepTimeSeconds * 1000)
