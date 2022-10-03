@@ -98,6 +98,7 @@ export class CreateMemberHappyCaseFixture extends StandardizedFixture {
     assert.equal(qEvent.handle, txParams.handle)
     assert.equal(qEvent.rootAccount, txParams.root_account)
     assert.equal(qEvent.controllerAccount, txParams.controller_account)
+    assert.equal(qEvent.isFoundingMember, this.asFoundingMember)
 
     assert.equal(qEvent.metadata.name, metadata.name || null)
     assert.equal(qEvent.metadata.about, metadata.about || null)

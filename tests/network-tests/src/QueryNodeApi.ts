@@ -205,10 +205,6 @@ import {
   GetMemberInvitedEventsByEventIdsQuery,
   GetMemberInvitedEventsByEventIdsQueryVariables,
   GetMemberInvitedEventsByEventIds,
-  GetFoundingMemberCreatedEventsByEventIdsQuery,
-  GetFoundingMemberCreatedEventsByEventIdsQueryVariables,
-  GetFoundingMemberCreatedEventsByEventIds,
-  FoundingMemberCreatedEventFieldsFragment,
   GetMemberCreatedEventsByEventIdsQuery,
   GetMemberCreatedEventsByEventIdsQueryVariables,
   GetMemberCreatedEventsByEventIds,
@@ -564,16 +560,6 @@ export class QueryNodeApi {
       GetMemberAccountsUpdatedEventsByMemberIdQuery,
       GetMemberAccountsUpdatedEventsByMemberIdQueryVariables
     >(GetMemberAccountsUpdatedEventsByMemberId, { memberId: memberId.toString() }, 'memberAccountsUpdatedEvents')
-  }
-
-  public async getFoundingMemberCreatedEvents(
-    events: EventDetails[]
-  ): Promise<FoundingMemberCreatedEventFieldsFragment[]> {
-    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
-    return this.multipleEntitiesQuery<
-      GetFoundingMemberCreatedEventsByEventIdsQuery,
-      GetFoundingMemberCreatedEventsByEventIdsQueryVariables
-    >(GetFoundingMemberCreatedEventsByEventIds, { eventIds }, 'foundingMemberCreatedEvents')
   }
 
   public async getMemberCreatedEvents(events: EventDetails[]): Promise<MemberCreatedEventFieldsFragment[]> {
