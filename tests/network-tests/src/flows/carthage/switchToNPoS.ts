@@ -3,9 +3,7 @@ import { FlowProps } from '../../Flow'
 import { FixtureRunner } from '../../Fixture'
 import { SetForceEraForcingNewFixture } from '../../fixtures/staking/SetForceEraForcingNewFixture'
 import { assert } from 'chai'
-import { BN } from 'bn.js'
 import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
-import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { u32 } from '@polkadot/types'
 
 export default async function switchToNPoS({ api, query, env }: FlowProps): Promise<void> {
