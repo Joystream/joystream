@@ -16,7 +16,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   // ----------- ARRANGE ----------------
 
   // helpers
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
   const getBalances = async (accounts: string[]) => Promise.all(accounts.map((account) => api.getBalance(account)))
 
   // constants
