@@ -12,6 +12,7 @@ DATA_PATH=./data
 # Alice is the source of funds for all new accounts that are created in the tests.
 INITIAL_BALANCE="9000000000000000000000"
 ALICE="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+BOB="5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
 CHARLIE="5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
 
 mkdir -p ${DATA_PATH}
@@ -19,6 +20,7 @@ mkdir -p ${DATA_PATH}
 echo "{
   \"balances\":[
     [\"${ALICE}\", ${INITIAL_BALANCE}],
+    [\"${BOB}\", ${INITIAL_BALANCE}],
     [\"${CHARLIE}\", ${INITIAL_BALANCE}]
   ],
   \"vesting\":[

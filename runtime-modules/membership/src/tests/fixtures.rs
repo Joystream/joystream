@@ -790,75 +790,6 @@ impl ConfirmStakingAccountFixture {
     }
 }
 
-pub struct CreateFoundingMemberFixture {
-    pub origin: RawOrigin<u64>,
-    pub params: CreateMemberParameters<u64>,
-}
-
-impl CreateFoundingMemberFixture {
-    pub fn default() -> Self {
-        let alice = get_alice_info();
-        Self {
-            origin: RawOrigin::Root,
-            params: CreateMemberParameters {
-                root_account: ALICE_ACCOUNT_ID,
-                controller_account: ALICE_ACCOUNT_ID,
-                handle: alice.handle.unwrap(),
-                metadata: alice.metadata,
-                is_founding_member: true,
-            },
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_handle(self, handle: Vec<u8>) -> Self {
-        Self {
-            params: CreateMemberParameters {
-                handle,
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let expected_member_id = Membership::members_created();
-        let actual_result =
-            Membership::create_member(self.origin.clone().into(), self.params.clone());
-
-        if expected_result.is_ok() {
-            assert_ok!(actual_result);
-
-            let handle_hash = <Test as frame_system::Config>::Hashing::hash(&self.params.handle);
-            let profile = get_membership_by_id(expected_member_id);
-
-            assert_eq!(Membership::handles(handle_hash.clone()), expected_member_id);
-            assert_eq!(Membership::members_created(), expected_member_id + 1);
-            assert_eq!(
-                profile,
-                MembershipObject {
-                    handle_hash,
-                    root_account: self.params.root_account.clone(),
-                    controller_account: self.params.controller_account.clone(),
-                    verified: true,
-                    invites: Membership::initial_invitation_count()
-                }
-            );
-
-            EventFixture::assert_last_crate_event(MembershipEvent::<Test>::FoundingMemberCreated(
-                expected_member_id,
-                self.params.clone(),
-                Membership::initial_invitation_count(),
-            ));
-        } else {
-            assert_noop!(actual_result, expected_result.err().unwrap());
-        }
-    }
-}
-
 pub struct CreateMemberFixture {
     pub origin: RawOrigin<u64>,
     pub params: CreateMemberParameters<u64>,
@@ -879,6 +810,16 @@ impl CreateMemberFixture {
         }
     }
 
+    pub fn founding_member() -> Self {
+        Self {
+            params: CreateMemberParameters {
+                is_founding_member: true,
+                ..Self::default().params
+            },
+            ..Self::default()
+        }
+    }
+
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
@@ -912,7 +853,7 @@ impl CreateMemberFixture {
                     handle_hash,
                     root_account: self.params.root_account.clone(),
                     controller_account: self.params.controller_account.clone(),
-                    verified: false,
+                    verified: self.params.is_founding_member,
                     invites: Membership::initial_invitation_count()
                 }
             );

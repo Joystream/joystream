@@ -20,10 +20,12 @@ export class CreateMemberHappyCaseFixture extends StandardizedFixture {
   protected events: MemberCreatedEventDetails[] = []
   protected members: Membership[] = []
   protected defaultInviteCount!: number
+  protected asFoundingMember: boolean
 
-  public constructor(api: Api, query: QueryNodeApi, accounts: string[]) {
+  public constructor(api: Api, query: QueryNodeApi, accounts: string[], asFoundingMember = false) {
     super(api, query)
     this.accounts = accounts
+    this.asFoundingMember = asFoundingMember
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
@@ -33,7 +35,9 @@ export class CreateMemberHappyCaseFixture extends StandardizedFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.accounts.map((a) => {
-      return this.api.tx.sudo.sudo(this.api.tx.members.createMember(generateParamsFromAccountId(a)))
+      return this.api.tx.sudo.sudo(
+        this.api.tx.members.createMember(generateParamsFromAccountId(a, this.asFoundingMember))
+      )
     })
   }
 
@@ -77,8 +81,8 @@ export class CreateMemberHappyCaseFixture extends StandardizedFixture {
         externalResources ?? [],
         metadata.externalResources?.map(asMembershipExternalResource) ?? []
       )
-      assert.equal(isVerified, false)
-      assert.equal(isFoundingMember, false)
+      assert.equal(isVerified, this.asFoundingMember)
+      assert.equal(isFoundingMember, this.asFoundingMember)
       Utils.assert(entry.__typename === 'MembershipEntryMemberCreated', 'Query node: Invalid membership entry method')
       Utils.assert(entry.memberCreatedEvent)
       assert.equal(entry.memberCreatedEvent.id, qEvent.id)

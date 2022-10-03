@@ -67,12 +67,6 @@ type MembershipEntryGifted @variant {
   membershipGiftedEvent: MembershipGiftedEvent
 }
 
-type MembershipEntryFoundingMemberCreated @variant {
-  "The event the member was created in"
-  # Must be optional because of member.entry <=> foundingMemberCreatedEvent.newMember cross relationship
-  foundingMemberCreatedEvent: FoundingMemberCreatedEvent
-}
-
 type MembershipEntryMemberCreated @variant {
   "The event the member was created in"
   # Must be optional because of member.entry <=> memberCreatedEvent.newMember cross relationship
@@ -87,7 +81,6 @@ union MembershipEntryMethod =
     MembershipEntryPaid
   | MembershipEntryInvited
   | MembershipEntryGifted
-  | MembershipEntryFoundingMemberCreated
   | MembershipEntryMemberCreated
   | MembershipEntryGenesis
 

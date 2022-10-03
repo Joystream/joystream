@@ -583,11 +583,9 @@ declare module '@polkadot/types/lookup' {
     readonly asStakingAccountConfirmed: ITuple<[AccountId32, u64]>;
     readonly isMemberRemarked: boolean;
     readonly asMemberRemarked: ITuple<[u64, Bytes]>;
-    readonly isFoundingMemberCreated: boolean;
-    readonly asFoundingMemberCreated: ITuple<[u64, PalletMembershipCreateMemberParameters, u32]>;
     readonly isMemberCreated: boolean;
     readonly asMemberCreated: ITuple<[u64, PalletMembershipCreateMemberParameters, u32]>;
-    readonly type: 'MemberInvited' | 'MembershipGifted' | 'MembershipBought' | 'MemberProfileUpdated' | 'MemberAccountsUpdated' | 'MemberVerificationStatusUpdated' | 'ReferralCutUpdated' | 'InvitesTransferred' | 'MembershipPriceUpdated' | 'InitialInvitationBalanceUpdated' | 'LeaderInvitationQuotaUpdated' | 'InitialInvitationCountUpdated' | 'StakingAccountAdded' | 'StakingAccountRemoved' | 'StakingAccountConfirmed' | 'MemberRemarked' | 'FoundingMemberCreated' | 'MemberCreated';
+    readonly type: 'MemberInvited' | 'MembershipGifted' | 'MembershipBought' | 'MemberProfileUpdated' | 'MemberAccountsUpdated' | 'MemberVerificationStatusUpdated' | 'ReferralCutUpdated' | 'InvitesTransferred' | 'MembershipPriceUpdated' | 'InitialInvitationBalanceUpdated' | 'LeaderInvitationQuotaUpdated' | 'InitialInvitationCountUpdated' | 'StakingAccountAdded' | 'StakingAccountRemoved' | 'StakingAccountConfirmed' | 'MemberRemarked' | 'MemberCreated';
   }
 
   /** @name PalletMembershipBuyMembershipParameters (70) */

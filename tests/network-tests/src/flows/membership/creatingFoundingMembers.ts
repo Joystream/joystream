@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import { CreateFoundingMemberHappyCaseFixture } from '../../fixtures/membership'
+import { CreateMemberHappyCaseFixture } from '../../fixtures/membership'
 
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
@@ -14,7 +14,7 @@ export default async function creatingFoundingMembers({ api, query, env }: FlowP
   assert(N > 0)
 
   const nAccounts = (await api.createKeyPairs(N)).map(({ key }) => key.address)
-  const happyCaseFixture = new CreateFoundingMemberHappyCaseFixture(api, query, nAccounts)
+  const happyCaseFixture = new CreateMemberHappyCaseFixture(api, query, nAccounts, true)
   await new FixtureRunner(happyCaseFixture).runWithQueryNodeChecks()
 
   debug('Done')

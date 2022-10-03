@@ -1,7 +1,6 @@
 export { AddStakingAccountsHappyCaseFixture } from './AddStakingAccountsHappyCaseFixture'
 export { BuyMembershipHappyCaseFixture } from './BuyMembershipHappyCaseFixture'
 export { BuyMembershipWithInsufficienFundsFixture } from './BuyMembershipWithInsufficienFundsFixture'
-export { CreateFoundingMemberHappyCaseFixture } from './CreateFoundingMemberHappyCaseFixture'
 export { CreateMemberHappyCaseFixture } from './CreateMemberHappyCaseFixture'
 export { GiftMembershipHappyCaseFixture } from './GiftMembershipHappyCaseFixture'
 export { InviteMembersHappyCaseFixture } from './InviteMembersHappyCaseFixture'

@@ -34,7 +34,6 @@ import {
   MemberMetadata,
   MembershipBoughtEvent,
   MembershipGiftedEvent,
-  FoundingMemberCreatedEvent,
   MemberCreatedEvent,
   MemberProfileUpdatedEvent,
   MemberAccountsUpdatedEvent,
@@ -52,7 +51,6 @@ import {
   MembershipEntryPaid,
   MembershipEntryInvited,
   MembershipEntryGifted,
-  MembershipEntryFoundingMemberCreated,
   MembershipEntryMemberCreated,
   AvatarUri,
   WorkingGroup,
@@ -158,7 +156,8 @@ async function createNewMemberFromParams(
   memberId: MemberId,
   entryMethod: typeof MembershipEntryMethod,
   params: BuyMembershipParameters | InviteMembershipParameters | GiftMembershipParameters | CreateMemberParameters,
-  inviteCount: number
+  inviteCount: number,
+  isFoundingMember = false
 ): Promise<Membership> {
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
   const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
@@ -174,7 +173,7 @@ async function createNewMemberFromParams(
       entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrerId.isSome
         ? new Membership({ id: (params as BuyMembershipParameters).referrerId.unwrap().toString() })
         : undefined,
-    isVerified: entryMethod.isTypeOf === 'MembershipEntryFoundingMemberCreated',
+    isVerified: isFoundingMember,
     inviteCount,
     boundAccounts: [],
     invitees: [],
@@ -183,7 +182,7 @@ async function createNewMemberFromParams(
       entryMethod.isTypeOf === 'MembershipEntryInvited'
         ? new Membership({ id: (params as InviteMembershipParameters).invitingMemberId.toString() })
         : undefined,
-    isFoundingMember: entryMethod.isTypeOf === 'MembershipEntryFoundingMemberCreated',
+    isFoundingMember,
     isCouncilMember: false,
 
     councilCandidacies: [],
@@ -299,36 +298,6 @@ export async function members_MembershipGifted({ store, event }: EventContext & 
   await store.save<Membership>(member)
 }
 
-export async function members_FoundingMemberCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId, foundingMemberParameters, inviteCount] = new Members.FoundingMemberCreatedEvent(event).params
-
-  const memberEntry = new MembershipEntryFoundingMemberCreated()
-  const member = await createNewMemberFromParams(
-    store,
-    event,
-    memberId,
-    memberEntry,
-    foundingMemberParameters,
-    inviteCount.toNumber()
-  )
-
-  const foundingMemberCreatedEvent = new FoundingMemberCreatedEvent({
-    ...genericEventFields(event),
-    newMember: member,
-
-    controllerAccount: member.controllerAccount,
-    rootAccount: member.rootAccount,
-    handle: member.handle,
-    metadata: await saveMembershipMetadata(store, member),
-  })
-
-  await store.save<FoundingMemberCreatedEvent>(foundingMemberCreatedEvent)
-
-  // Update the other side of event<->membership relation
-  memberEntry.foundingMemberCreatedEventId = foundingMemberCreatedEvent.id
-  await store.save<Membership>(member)
-}
-
 export async function members_MemberCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, memberParameters, inviteCount] = new Members.MemberCreatedEvent(event).params
 
@@ -339,7 +308,8 @@ export async function members_MemberCreated({ store, event }: EventContext & Sto
     memberId,
     memberEntry,
     memberParameters,
-    inviteCount.toNumber()
+    inviteCount.toNumber(),
+    memberParameters.isFoundingMember.isTrue
   )
 
   const memberCreatedEvent = new MemberCreatedEvent({
@@ -350,6 +320,7 @@ export async function members_MemberCreated({ store, event }: EventContext & Sto
     rootAccount: member.rootAccount,
     handle: member.handle,
     metadata: await saveMembershipMetadata(store, member),
+    isFoundingMember: memberParameters.isFoundingMember.isTrue,
   })
 
   await store.save<MemberCreatedEvent>(memberCreatedEvent)

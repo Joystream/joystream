@@ -1385,7 +1385,7 @@ fn successful_member_remark() {
 fn create_founding_member_succeeds() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
-        CreateFoundingMemberFixture::default().call_and_assert(Ok(()));
+        CreateMemberFixture::founding_member().call_and_assert(Ok(()));
     });
 }
 
@@ -1393,7 +1393,7 @@ fn create_founding_member_succeeds() {
 fn create_founding_member_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
-        CreateFoundingMemberFixture::default()
+        CreateMemberFixture::founding_member()
             .with_origin(RawOrigin::Signed(ALICE_ACCOUNT_ID))
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
@@ -1403,7 +1403,7 @@ fn create_founding_member_fails_with_invalid_origin() {
 fn create_founding_member_fails_with_empty_handle() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
-        CreateFoundingMemberFixture::default()
+        CreateMemberFixture::founding_member()
             .with_handle(Vec::new())
             .call_and_assert(Err(
                 Error::<Test>::HandleMustBeProvidedDuringRegistration.into()
@@ -1415,8 +1415,8 @@ fn create_founding_member_fails_with_empty_handle() {
 fn create_founding_member_fails_with_non_unique_handle() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
-        CreateFoundingMemberFixture::default().call_and_assert(Ok(()));
-        CreateFoundingMemberFixture::default()
+        CreateMemberFixture::founding_member().call_and_assert(Ok(()));
+        CreateMemberFixture::founding_member()
             .call_and_assert(Err(Error::<Test>::HandleAlreadyRegistered.into()));
     });
 }

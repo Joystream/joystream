@@ -400,7 +400,6 @@ decl_event! {
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
         MemberRemarked(MemberId, Vec<u8>),
-        FoundingMemberCreated(MemberId, CreateMemberParameters, u32),
         MemberCreated(MemberId, CreateMemberParameters, u32),
     }
 }
@@ -1216,16 +1215,9 @@ decl_module! {
                 params.is_founding_member
             );
 
-            if params.is_founding_member {
-                // Fire the event.
-                Self::deposit_event(
-                    RawEvent::FoundingMemberCreated(member_id, params, initial_invitation_count)
-                );
-            } else {
-                Self::deposit_event(
-                    RawEvent::MemberCreated(member_id, params, initial_invitation_count)
-                );
-            }
+            Self::deposit_event(
+                RawEvent::MemberCreated(member_id, params, initial_invitation_count)
+            );
         }
     }
 }

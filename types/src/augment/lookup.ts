@@ -523,7 +523,6 @@ export default {
       StakingAccountRemoved: '(AccountId32,u64)',
       StakingAccountConfirmed: '(AccountId32,u64)',
       MemberRemarked: '(u64,Bytes)',
-      FoundingMemberCreated: '(u64,PalletMembershipCreateMemberParameters,u32)',
       MemberCreated: '(u64,PalletMembershipCreateMemberParameters,u32)'
     }
   },

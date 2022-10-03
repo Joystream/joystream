@@ -38,11 +38,7 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
   ): Promise<void> {
     const { api } = this
     const result = await api.sendExtrinsic(this.sudo, tx)
-    // I doubt we need to sort, the event order will be in the same order as
-    // calls in the batch
-    const memberCreationEvents = result
-      .filterRecords('members', ['MemberCreated', 'FoundingMemberCreated'])
-      .map((r) => r.event)
+    const memberCreationEvents = this.api.findEvents(result, 'members', 'MemberCreated')
 
     const newMemberIds: MemberId[] = memberCreationEvents.map((e) => e.data[0] as MemberId)
 

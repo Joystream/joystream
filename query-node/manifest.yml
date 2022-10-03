@@ -14,7 +14,6 @@ typegen:
     # Membership
     - members.MembershipBought
     - members.MembershipGifted
-    - members.FoundingMemberCreated
     - members.MemberCreated
     - members.MemberProfileUpdated
     - members.MemberAccountsUpdated
@@ -213,8 +212,6 @@ mappings:
       handler: members_MembershipBought
     - event: members.MembershipGifted
       handler: members_MembershipGifted
-    - event: members.FoundingMemberCreated
-      handler: members_FoundingMemberCreated
     - event: members.MemberCreated
       handler: members_MemberCreated
     - event: members.MemberProfileUpdated
