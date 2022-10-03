@@ -21,7 +21,6 @@ export class BondingSucceedsFixture extends BaseFixture {
     const fees = await this.api.estimateTxFee(bondTx, this.input.stash)
     await this.api.treasuryTransferBalance(this.input.stash, this.input.bondAmount.add(fees))
 
-    const result = await this.api.signAndSend(bondTx, this.input.stash)
-    // this.expectDispatchSuccess(result, 'Not successful')
+    await this.api.signAndSend(bondTx, this.input.stash)
   }
 }

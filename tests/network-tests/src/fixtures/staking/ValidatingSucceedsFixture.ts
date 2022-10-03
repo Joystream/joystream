@@ -16,7 +16,6 @@ export class ValidatingSucceedsFixture extends BaseFixture {
     const fees = await this.api.estimateTxFee(validateTx, this.controller)
     await this.api.treasuryTransferBalance(this.controller, fees)
 
-    const result = await this.api.signAndSend(validateTx, this.controller)
-    // this.expectDispatchSuccess(result, 'Not successful')
+    await this.api.signAndSend(validateTx, this.controller)
   }
 }
