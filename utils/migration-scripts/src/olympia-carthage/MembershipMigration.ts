@@ -47,7 +47,7 @@ export class MembershipMigration extends BaseMigration<MembershipsSnapshot> {
     const newMemberIds: MemberId[] = memberCreationEvents.map((e) => e.data[0] as MemberId)
 
     if (newMemberIds.length !== members.length) {
-      this.extractFailedMigrations(result, members, 1, false)
+      this.extractFailedMigrations(result, members, 1)
     }
     const newMembersMapEntries: [number, number][] = []
     let newMemberIdIndex = 0

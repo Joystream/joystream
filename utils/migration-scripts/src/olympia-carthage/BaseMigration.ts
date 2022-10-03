@@ -140,7 +140,6 @@ export abstract class BaseMigration<T> {
     result: SubmittableResult,
     batch: T[],
     callsPerEntity = 1,
-    usesSudoAs = true,
     usesSudo = true
   ): void {
     const { api } = this
@@ -150,14 +149,7 @@ export abstract class BaseMigration<T> {
       : callsPerEntity * batch.length
     const numberOfMigratedEntites = Math.floor(numberOfSuccesfulCalls / callsPerEntity)
 
-    const sudoAsDoneEvents = api.findEvents(result, 'sudo', 'SudoAsDone')
     const sudoSudidEvents = api.findEvents(result, 'sudo', 'Sudid')
-    if (usesSudoAs && sudoAsDoneEvents.length !== numberOfMigratedEntites) {
-      throw new Error(
-        `Unexpected number of SudoAsDone events (expected: ${numberOfMigratedEntites}, got: ${sudoAsDoneEvents.length})! ` +
-          `Could not extract failed migrations from: ${JSON.stringify(result.toHuman())}`
-      )
-    }
 
     if (usesSudo && sudoSudidEvents.length !== numberOfMigratedEntites) {
       throw new Error(
@@ -169,11 +161,7 @@ export abstract class BaseMigration<T> {
     const failedIds: number[] = []
     batch.forEach((entity, i) => {
       const entityId = parseInt(entity.id)
-      if (
-        i >= numberOfMigratedEntites ||
-        (usesSudoAs && sudoAsDoneEvents[i].data[0].isErr) ||
-        (usesSudo && sudoSudidEvents[i].data[0].isErr)
-      ) {
+      if (i >= numberOfMigratedEntites || (usesSudo && sudoSudidEvents[i].data[0].isErr)) {
         failedIds.push(entityId)
         this.failedMigrations.add(entityId)
       }
