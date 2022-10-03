@@ -19,6 +19,8 @@ jobs:
         yarn install --frozen-lockfile
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
+        yarn workspace @joystreamjs/utils build
+        yarn workspace @joystreamjs/content build
         yarn lint
 
   lint_osx:
@@ -38,4 +40,6 @@ jobs:
         yarn install --frozen-lockfile
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
+        yarn workspace @joystreamjs/utils build
+        yarn workspace @joystreamjs/content build
         yarn lint
