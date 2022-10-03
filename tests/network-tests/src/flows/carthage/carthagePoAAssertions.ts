@@ -7,7 +7,6 @@ import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFi
 import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
 import { NominatingSucceedsFixture } from '../../fixtures/staking/NominatingSucceedsFixture'
 
-
 export default async function carthagePoAAssertions({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: constant Authorities in PoA')
   debug('started')

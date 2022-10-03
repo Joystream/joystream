@@ -22,7 +22,6 @@ import {
   LockIdentifier,
   AccountId32,
 } from '@polkadot/types/interfaces'
-import { ITuple, Codec } from '@polkadot/types-codec/types'
 import {
   PalletWorkingGroupGroupWorker as Worker,
   PalletWorkingGroupOpening as Opening,
@@ -31,8 +30,6 @@ import {
   PalletProposalsEngineProposalParameters as ProposalParameters,
   PalletContentChannelBagWitness,
   PalletStakingForcing,
-  SpConsensusBabeAppPublic,
-  JoystreamNodeRuntimeSessionKeys,
   PalletStakingActiveEraInfo,
   PalletStakingEraRewardPoints,
 } from '@polkadot/types/lookup'
