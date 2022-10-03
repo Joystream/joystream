@@ -1,21 +1,29 @@
 ---
 # Create chain spec files and keys
 
-# TODO - DETECT EXISTING VALIDATOR AND EXIST TO AVOID BREAKING EXISTING VALIDATOR
+- name: Check if local chain dir exists
+  stat:
+    path: "{{ data_path }}/chain"
+  register: local_dir_check 
+  delegate_to: localhost
+  run_once: true
 
-# - name: Delete local chain directory
-#   file:
-#     state: absent
-#     path: "{{ data_path }}/chain/"
-#   delegate_to: localhost
-#   run_once: true
+- name: Exit if local chain dir exists
+  fail: msg="local chain dir already exists"
+  when: local_dir_check.stat.isdir is defined and local_dir_check.stat.isdir
 
-# - name: Delete remote data directory
-#   file:
-#     state: absent
-#     path: "{{ remote_data_path }}"
+- name: Check if remote data path dir exists
+  stat:
+    path: "{{ remote_data_path }}"
+  register: remote_dir_check 
+  delegate_to: '{{ first_validator }}'
+  run_once: true
 
-- name: Re/Create remote data directory
+- name: Exit if remote dir exists
+  fail: msg="remote data path dir already exists"
+  when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
+
+- name: Create remote data directory
   file:
     state: directory
     path: "{{ remote_data_path }}"

@@ -14,20 +14,16 @@
 - set_fact:
     node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
 
-# TODO - DETECT EXISTING SERVICE AND EXIST TO AVOID BREAKING EXISTING VALIDATOR
+- name: Check if remote chain path dir exists
+  stat:
+    path: "{{ chain_path }}"
+  register: remote_dir_check 
 
-# - name: Stop service if started
-#   ansible.builtin.service:
-#     name: joystream-node
-#     state: stopped
-#   become: true
+- name: Exit if remote dir exists
+  fail: msg="remote {{ chain_path}} dir already exists"
+  when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
 
-# - name: Delete chain directory
-#   file:
-#     state: absent
-#     path: "{{ chain_path }}"
-
-- name: ReCreate chain directory
+- name: Create chain directory
   file:
     path: "{{ item }}"
     state: directory
@@ -62,8 +58,9 @@
   become: true
 
 - name: Start service joystream-node, if not started
-  service:
+  systemd:
     name: joystream-node
     state: started
     enabled: yes
+    daemon_reload: yes
   become: true
