@@ -73,7 +73,7 @@ use sp_runtime::{
     create_runtime_str,
     curve::PiecewiseLinear,
     generic, impl_opaque_keys,
-    traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
+    traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys, Zero},
     Perbill,
 };
 
@@ -110,7 +110,7 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
-use pallet_staking::{EraPayout, Forcing};
+use pallet_staking::{EraPayout};
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 
@@ -542,16 +542,19 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
         total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
-        if pallet_staking::Pallet::<Runtime>::force_era() == Forcing::ForceNone {
-            // PoA mode: no inflation.
-            (0, 0)
-        } else {
-            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
-                total_staked,
-                total_issuance,
-                era_duration_millis,
-            )
-        }
+        let era_index = pallet_staking::Pallet::<Runtime>::current_era()
+            .unwrap_or(sp_staking::EraIndex::zero());
+
+            if era_index.is_zero() {
+                // PoA mode: no inflation.
+                (0, 0)
+            } else {
+                <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
+                    total_staked,
+                    total_issuance,
+                    era_duration_millis,
+                )
+            }
     }
 }
 
