@@ -7,8 +7,8 @@ import {
   PalletMembershipMembershipObject as Membership,
   PalletWorkingGroupOpeningType as OpeningType,
   PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
-  PalletContentChannelActionPermission as ChannelActionPermission,
-  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
+  PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission,
+  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction as ContentModerationAction,
 } from '@polkadot/types/lookup'
 import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { Validator } from 'inquirer'

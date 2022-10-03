@@ -1,6 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import chalk from 'chalk'
 import { formatBalance } from '@polkadot/util'

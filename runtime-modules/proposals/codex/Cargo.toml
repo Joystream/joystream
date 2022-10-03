@@ -45,7 +45,12 @@ sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/j
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking', 'balances', 'council']
+runtime-benchmarks = [
+    'frame-benchmarking',
+    'balances',
+    'council',
+    'common/runtime-benchmarks',
+]
 std = [
     'serde',
     'codec/std',

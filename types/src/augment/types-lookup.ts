@@ -800,14 +800,14 @@ declare module '@polkadot/types/lookup' {
     readonly isRuntimeUpgraded: boolean;
     readonly asRuntimeUpgraded: Bytes;
     readonly isUpdatedWorkingGroupBudget: boolean;
-    readonly asUpdatedWorkingGroupBudget: ITuple<[PalletCommonWorkingGroup, u128, PalletCommonBalanceKind]>;
+    readonly asUpdatedWorkingGroupBudget: ITuple<[PalletCommonWorkingGroupIterableEnumsWorkingGroup, u128, PalletCommonBalanceKind]>;
     readonly isTokensBurned: boolean;
     readonly asTokensBurned: ITuple<[AccountId32, u128]>;
     readonly type: 'Signaled' | 'RuntimeUpgraded' | 'UpdatedWorkingGroupBudget' | 'TokensBurned';
   }
 
-  /** @name PalletCommonWorkingGroup (95) */
-  export interface PalletCommonWorkingGroup extends Enum {
+  /** @name PalletCommonWorkingGroupIterableEnumsWorkingGroup (95) */
+  export interface PalletCommonWorkingGroupIterableEnumsWorkingGroup extends Enum {
     readonly isForum: boolean;
     readonly isStorage: boolean;
     readonly isContent: boolean;
@@ -832,11 +832,11 @@ declare module '@polkadot/types/lookup' {
     readonly isCuratorGroupCreated: boolean;
     readonly asCuratorGroupCreated: u64;
     readonly isCuratorGroupPermissionsUpdated: boolean;
-    readonly asCuratorGroupPermissionsUpdated: ITuple<[u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
+    readonly asCuratorGroupPermissionsUpdated: ITuple<[u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>]>;
     readonly isCuratorGroupStatusSet: boolean;
     readonly asCuratorGroupStatusSet: ITuple<[u64, bool]>;
     readonly isCuratorAdded: boolean;
-    readonly asCuratorAdded: ITuple<[u64, u64, BTreeSet<PalletContentChannelActionPermission>]>;
+    readonly asCuratorAdded: ITuple<[u64, u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>]>;
     readonly isCuratorRemoved: boolean;
     readonly asCuratorRemoved: ITuple<[u64, u64]>;
     readonly isChannelCreated: boolean;
@@ -858,7 +858,7 @@ declare module '@polkadot/types/lookup' {
     readonly isChannelVisibilitySetByModerator: boolean;
     readonly asChannelVisibilitySetByModerator: ITuple<[PalletContentPermissionsContentActor, u64, bool, Bytes]>;
     readonly isChannelPausedFeaturesUpdatedByModerator: boolean;
-    readonly asChannelPausedFeaturesUpdatedByModerator: ITuple<[PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, Bytes]>;
+    readonly asChannelPausedFeaturesUpdatedByModerator: ITuple<[PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>, Bytes]>;
     readonly isChannelAssetsDeletedByModerator: boolean;
     readonly asChannelAssetsDeletedByModerator: ITuple<[PalletContentPermissionsContentActor, u64, BTreeSet<u64>, Bytes]>;
     readonly isChannelFundsWithdrawn: boolean;
@@ -956,10 +956,10 @@ declare module '@polkadot/types/lookup' {
   export interface PalletContentChannelRecord extends Struct {
     readonly owner: PalletContentChannelOwner;
     readonly numVideos: u64;
-    readonly collaborators: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>;
+    readonly collaborators: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>;
     readonly cumulativeRewardClaimed: u128;
     readonly privilegeLevel: u8;
-    readonly pausedFeatures: BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>;
+    readonly pausedFeatures: BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>;
     readonly transferStatus: PalletContentChannelTransferStatus;
     readonly dataObjects: BTreeSet<u64>;
     readonly dailyNftLimit: PalletContentLimitPerPeriod;
@@ -970,8 +970,8 @@ declare module '@polkadot/types/lookup' {
     readonly channelStateBloatBond: PalletCommonBloatBondRepayableBloatBond;
   }
 
-  /** @name PalletContentChannelActionPermission (103) */
-  export interface PalletContentChannelActionPermission extends Enum {
+  /** @name PalletContentIterableEnumsChannelActionPermission (103) */
+  export interface PalletContentIterableEnumsChannelActionPermission extends Enum {
     readonly isUpdateChannelMetadata: boolean;
     readonly isManageNonVideoChannelAssets: boolean;
     readonly isManageChannelCollaborators: boolean;
@@ -996,8 +996,8 @@ declare module '@polkadot/types/lookup' {
     readonly type: 'UpdateChannelMetadata' | 'ManageNonVideoChannelAssets' | 'ManageChannelCollaborators' | 'UpdateVideoMetadata' | 'AddVideo' | 'ManageVideoAssets' | 'DeleteChannel' | 'DeleteVideo' | 'ManageVideoNfts' | 'AgentRemark' | 'TransferChannel' | 'ClaimChannelReward' | 'WithdrawFromChannelBalance' | 'IssueCreatorToken' | 'ClaimCreatorTokenPatronage' | 'InitAndManageCreatorTokenSale' | 'CreatorTokenIssuerTransfer' | 'MakeCreatorTokenPermissionless' | 'ReduceCreatorTokenPatronageRate' | 'ManageRevenueSplits' | 'DeissueCreatorToken';
   }
 
-  /** @name PalletContentPermissionsCuratorGroupPausableChannelFeature (110) */
-  export interface PalletContentPermissionsCuratorGroupPausableChannelFeature extends Enum {
+  /** @name PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature (110) */
+  export interface PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature extends Enum {
     readonly isChannelFundsTransfer: boolean;
     readonly isCreatorCashout: boolean;
     readonly isVideoNftIssuance: boolean;
@@ -1039,7 +1039,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletContentTransferCommitmentParametersBoundedBTreeMap (117) */
   export interface PalletContentTransferCommitmentParametersBoundedBTreeMap extends Struct {
-    readonly newCollaborators: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>;
+    readonly newCollaborators: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>;
     readonly price: u128;
     readonly transferId: u64;
   }
@@ -1102,7 +1102,7 @@ declare module '@polkadot/types/lookup' {
   export interface PalletContentChannelCreationParametersRecord extends Struct {
     readonly assets: Option<PalletContentStorageAssetsRecord>;
     readonly meta: Option<Bytes>;
-    readonly collaborators: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>;
+    readonly collaborators: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>;
     readonly storageBuckets: BTreeSet<u64>;
     readonly distributionBuckets: BTreeSet<PalletStorageDistributionBucketIdRecord>;
     readonly expectedChannelStateBloatBond: u128;
@@ -1132,7 +1132,7 @@ declare module '@polkadot/types/lookup' {
     readonly assetsToUpload: Option<PalletContentStorageAssetsRecord>;
     readonly newMeta: Option<Bytes>;
     readonly assetsToRemove: BTreeSet<u64>;
-    readonly collaborators: Option<BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>>;
+    readonly collaborators: Option<BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>>;
     readonly expectedDataObjectStateBloatBond: u128;
     readonly storageBucketsNumWitness: Option<u32>;
   }
@@ -1157,12 +1157,12 @@ declare module '@polkadot/types/lookup' {
     readonly storageBucketsNumWitness: Option<u32>;
   }
 
-  /** @name PalletContentPermissionsCuratorGroupContentModerationAction (144) */
-  export interface PalletContentPermissionsCuratorGroupContentModerationAction extends Enum {
+  /** @name PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction (144) */
+  export interface PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction extends Enum {
     readonly isHideVideo: boolean;
     readonly isHideChannel: boolean;
     readonly isChangeChannelFeatureStatus: boolean;
-    readonly asChangeChannelFeatureStatus: PalletContentPermissionsCuratorGroupPausableChannelFeature;
+    readonly asChangeChannelFeatureStatus: PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature;
     readonly isDeleteVideo: boolean;
     readonly isDeleteChannel: boolean;
     readonly isDeleteVideoAssets: boolean;
@@ -1174,7 +1174,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletContentTransferCommitmentParametersBTreeMap (148) */
   export interface PalletContentTransferCommitmentParametersBTreeMap extends Struct {
-    readonly newCollaborators: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>;
+    readonly newCollaborators: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>;
     readonly price: u128;
     readonly transferId: u64;
   }
@@ -1322,7 +1322,7 @@ declare module '@polkadot/types/lookup' {
   export interface PalletStorageStaticBagId extends Enum {
     readonly isCouncil: boolean;
     readonly isWorkingGroup: boolean;
-    readonly asWorkingGroup: PalletCommonWorkingGroup;
+    readonly asWorkingGroup: PalletCommonWorkingGroupIterableEnumsWorkingGroup;
     readonly type: 'Council' | 'WorkingGroup';
   }
 
@@ -1617,19 +1617,19 @@ declare module '@polkadot/types/lookup' {
     readonly isFillWorkingGroupLeadOpening: boolean;
     readonly asFillWorkingGroupLeadOpening: PalletProposalsCodexFillOpeningParameters;
     readonly isUpdateWorkingGroupBudget: boolean;
-    readonly asUpdateWorkingGroupBudget: ITuple<[u128, PalletCommonWorkingGroup, PalletCommonBalanceKind]>;
+    readonly asUpdateWorkingGroupBudget: ITuple<[u128, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletCommonBalanceKind]>;
     readonly isDecreaseWorkingGroupLeadStake: boolean;
-    readonly asDecreaseWorkingGroupLeadStake: ITuple<[u64, u128, PalletCommonWorkingGroup]>;
+    readonly asDecreaseWorkingGroupLeadStake: ITuple<[u64, u128, PalletCommonWorkingGroupIterableEnumsWorkingGroup]>;
     readonly isSlashWorkingGroupLead: boolean;
-    readonly asSlashWorkingGroupLead: ITuple<[u64, u128, PalletCommonWorkingGroup]>;
+    readonly asSlashWorkingGroupLead: ITuple<[u64, u128, PalletCommonWorkingGroupIterableEnumsWorkingGroup]>;
     readonly isSetWorkingGroupLeadReward: boolean;
-    readonly asSetWorkingGroupLeadReward: ITuple<[u64, Option<u128>, PalletCommonWorkingGroup]>;
+    readonly asSetWorkingGroupLeadReward: ITuple<[u64, Option<u128>, PalletCommonWorkingGroupIterableEnumsWorkingGroup]>;
     readonly isTerminateWorkingGroupLead: boolean;
     readonly asTerminateWorkingGroupLead: PalletProposalsCodexTerminateRoleParameters;
     readonly isAmendConstitution: boolean;
     readonly asAmendConstitution: Bytes;
     readonly isCancelWorkingGroupLeadOpening: boolean;
-    readonly asCancelWorkingGroupLeadOpening: ITuple<[u64, PalletCommonWorkingGroup]>;
+    readonly asCancelWorkingGroupLeadOpening: ITuple<[u64, PalletCommonWorkingGroupIterableEnumsWorkingGroup]>;
     readonly isSetMembershipPrice: boolean;
     readonly asSetMembershipPrice: u128;
     readonly isSetCouncilBudgetIncrement: boolean;
@@ -1664,7 +1664,7 @@ declare module '@polkadot/types/lookup' {
     readonly description: Bytes;
     readonly stakePolicy: PalletWorkingGroupStakePolicy;
     readonly rewardPerBlock: Option<u128>;
-    readonly group: PalletCommonWorkingGroup;
+    readonly group: PalletCommonWorkingGroupIterableEnumsWorkingGroup;
   }
 
   /** @name PalletWorkingGroupStakePolicy (209) */
@@ -1677,14 +1677,14 @@ declare module '@polkadot/types/lookup' {
   export interface PalletProposalsCodexFillOpeningParameters extends Struct {
     readonly openingId: u64;
     readonly applicationId: u64;
-    readonly workingGroup: PalletCommonWorkingGroup;
+    readonly workingGroup: PalletCommonWorkingGroupIterableEnumsWorkingGroup;
   }
 
   /** @name PalletProposalsCodexTerminateRoleParameters (211) */
   export interface PalletProposalsCodexTerminateRoleParameters extends Struct {
     readonly workerId: u64;
     readonly slashingAmount: Option<u128>;
-    readonly group: PalletCommonWorkingGroup;
+    readonly group: PalletCommonWorkingGroupIterableEnumsWorkingGroup;
   }
 
   /** @name PalletWorkingGroupRawEventInstance1 (212) */
@@ -3327,12 +3327,12 @@ declare module '@polkadot/types/lookup' {
     readonly isCreateCuratorGroup: boolean;
     readonly asCreateCuratorGroup: {
       readonly isActive: bool;
-      readonly permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>;
+      readonly permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>;
     } & Struct;
     readonly isUpdateCuratorGroupPermissions: boolean;
     readonly asUpdateCuratorGroupPermissions: {
       readonly curatorGroupId: u64;
-      readonly permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>;
+      readonly permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>;
     } & Struct;
     readonly isSetCuratorGroupStatus: boolean;
     readonly asSetCuratorGroupStatus: {
@@ -3343,7 +3343,7 @@ declare module '@polkadot/types/lookup' {
     readonly asAddCuratorToGroup: {
       readonly curatorGroupId: u64;
       readonly curatorId: u64;
-      readonly permissions: BTreeSet<PalletContentChannelActionPermission>;
+      readonly permissions: BTreeSet<PalletContentIterableEnumsChannelActionPermission>;
     } & Struct;
     readonly isRemoveCuratorFromGroup: boolean;
     readonly asRemoveCuratorFromGroup: {
@@ -3370,7 +3370,7 @@ declare module '@polkadot/types/lookup' {
     readonly asSetChannelPausedFeaturesAsModerator: {
       readonly actor: PalletContentPermissionsContentActor;
       readonly channelId: u64;
-      readonly newPausedFeatures: BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>;
+      readonly newPausedFeatures: BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>;
       readonly rationale: Bytes;
     } & Struct;
     readonly isDeleteChannel: boolean;
@@ -3452,7 +3452,7 @@ declare module '@polkadot/types/lookup' {
     readonly isClaimChannelReward: boolean;
     readonly asClaimChannelReward: {
       readonly actor: PalletContentPermissionsContentActor;
-      readonly proof: Vec<PalletCommonProofElementRecord>;
+      readonly proof: Vec<PalletCommonMerkleTreeProofElementRecord>;
       readonly item: PalletContentPullPaymentElement;
     } & Struct;
     readonly isWithdrawFromChannelBalance: boolean;
@@ -3472,7 +3472,7 @@ declare module '@polkadot/types/lookup' {
     readonly isClaimAndWithdrawChannelReward: boolean;
     readonly asClaimAndWithdrawChannelReward: {
       readonly actor: PalletContentPermissionsContentActor;
-      readonly proof: Vec<PalletCommonProofElementRecord>;
+      readonly proof: Vec<PalletCommonMerkleTreeProofElementRecord>;
       readonly item: PalletContentPullPaymentElement;
     } & Struct;
     readonly isIssueNft: boolean;
@@ -3703,14 +3703,14 @@ declare module '@polkadot/types/lookup' {
     readonly distributionBucketsNum: u32;
   }
 
-  /** @name PalletCommonProofElementRecord (387) */
-  export interface PalletCommonProofElementRecord extends Struct {
+  /** @name PalletCommonMerkleTreeProofElementRecord (387) */
+  export interface PalletCommonMerkleTreeProofElementRecord extends Struct {
     readonly hash_: H256;
-    readonly side: PalletCommonSide;
+    readonly side: PalletCommonMerkleTreeSide;
   }
 
-  /** @name PalletCommonSide (388) */
-  export interface PalletCommonSide extends Enum {
+  /** @name PalletCommonMerkleTreeSide (388) */
+  export interface PalletCommonMerkleTreeSide extends Enum {
     readonly isLeft: boolean;
     readonly isRight: boolean;
     readonly type: 'Left' | 'Right';
@@ -3725,7 +3725,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletContentInitTransferParameters (390) */
   export interface PalletContentInitTransferParameters extends Struct {
-    readonly newCollaborators: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>;
+    readonly newCollaborators: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>;
     readonly price: u128;
     readonly newOwner: PalletContentChannelOwner;
   }
@@ -4665,6 +4665,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletCouncilError (529) */
   export interface PalletCouncilError extends Enum {
+    readonly isArithmeticError: boolean;
     readonly isBadOrigin: boolean;
     readonly isCantCandidateNow: boolean;
     readonly isCantReleaseStakeNow: boolean;
@@ -4688,7 +4689,7 @@ declare module '@polkadot/types/lookup' {
     readonly isZeroTokensFunding: boolean;
     readonly isCandidateDoesNotExist: boolean;
     readonly isInsufficientBalanceForTransfer: boolean;
-    readonly type: 'BadOrigin' | 'CantCandidateNow' | 'CantReleaseStakeNow' | 'CandidacyStakeTooLow' | 'CantCandidateTwice' | 'ConflictingStake' | 'StakeStillNeeded' | 'NoStake' | 'InsufficientBalanceForStaking' | 'CantVoteForYourself' | 'MemberIdNotMatchAccount' | 'InvalidAccountToStakeReuse' | 'NotCandidatingNow' | 'CantWithdrawCandidacyNow' | 'NotCouncilor' | 'InsufficientFundsForFundingRequest' | 'ZeroBalanceFundRequest' | 'RepeatedFundRequestAccount' | 'EmptyFundingRequests' | 'InsufficientTokensForFunding' | 'ZeroTokensFunding' | 'CandidateDoesNotExist' | 'InsufficientBalanceForTransfer';
+    readonly type: 'ArithmeticError' | 'BadOrigin' | 'CantCandidateNow' | 'CantReleaseStakeNow' | 'CandidacyStakeTooLow' | 'CantCandidateTwice' | 'ConflictingStake' | 'StakeStillNeeded' | 'NoStake' | 'InsufficientBalanceForStaking' | 'CantVoteForYourself' | 'MemberIdNotMatchAccount' | 'InvalidAccountToStakeReuse' | 'NotCandidatingNow' | 'CantWithdrawCandidacyNow' | 'NotCouncilor' | 'InsufficientFundsForFundingRequest' | 'ZeroBalanceFundRequest' | 'RepeatedFundRequestAccount' | 'EmptyFundingRequests' | 'InsufficientTokensForFunding' | 'ZeroTokensFunding' | 'CandidateDoesNotExist' | 'InsufficientBalanceForTransfer';
   }
 
   /** @name PalletReferendumReferendumStage (530) */
@@ -4816,6 +4817,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletForumError (543) */
   export interface PalletForumError extends Enum {
+    readonly isArithmeticError: boolean;
     readonly isOriginNotForumLead: boolean;
     readonly isForumUserIdNotMatchAccount: boolean;
     readonly isModeratorIdNotMatchAccount: boolean;
@@ -4842,7 +4844,7 @@ declare module '@polkadot/types/lookup' {
     readonly isMapSizeLimit: boolean;
     readonly isPathLengthShouldBeGreaterThanZero: boolean;
     readonly isMaxNumberOfStickiedThreadsExceeded: boolean;
-    readonly type: 'OriginNotForumLead' | 'ForumUserIdNotMatchAccount' | 'ModeratorIdNotMatchAccount' | 'AccountDoesNotMatchThreadAuthor' | 'ThreadDoesNotExist' | 'ModeratorModerateOriginCategory' | 'ModeratorModerateDestinationCategory' | 'ThreadMoveInvalid' | 'ThreadNotBeingUpdated' | 'InsufficientBalanceForThreadCreation' | 'CannotDeleteThreadWithOutstandingPosts' | 'PostDoesNotExist' | 'AccountDoesNotMatchPostAuthor' | 'InsufficientBalanceForPost' | 'CategoryNotBeingUpdated' | 'AncestorCategoryImmutable' | 'MaxValidCategoryDepthExceeded' | 'CategoryDoesNotExist' | 'CategoryModeratorDoesNotExist' | 'CategoryNotEmptyThreads' | 'CategoryNotEmptyCategories' | 'ModeratorCantDeleteCategory' | 'ModeratorCantUpdateCategory' | 'MapSizeLimit' | 'PathLengthShouldBeGreaterThanZero' | 'MaxNumberOfStickiedThreadsExceeded';
+    readonly type: 'ArithmeticError' | 'OriginNotForumLead' | 'ForumUserIdNotMatchAccount' | 'ModeratorIdNotMatchAccount' | 'AccountDoesNotMatchThreadAuthor' | 'ThreadDoesNotExist' | 'ModeratorModerateOriginCategory' | 'ModeratorModerateDestinationCategory' | 'ThreadMoveInvalid' | 'ThreadNotBeingUpdated' | 'InsufficientBalanceForThreadCreation' | 'CannotDeleteThreadWithOutstandingPosts' | 'PostDoesNotExist' | 'AccountDoesNotMatchPostAuthor' | 'InsufficientBalanceForPost' | 'CategoryNotBeingUpdated' | 'AncestorCategoryImmutable' | 'MaxValidCategoryDepthExceeded' | 'CategoryDoesNotExist' | 'CategoryModeratorDoesNotExist' | 'CategoryNotEmptyThreads' | 'CategoryNotEmptyCategories' | 'ModeratorCantDeleteCategory' | 'ModeratorCantUpdateCategory' | 'MapSizeLimit' | 'PathLengthShouldBeGreaterThanZero' | 'MaxNumberOfStickiedThreadsExceeded';
   }
 
   /** @name PalletConstitutionConstitutionInfo (544) */
@@ -4911,6 +4913,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletBountyError (553) */
   export interface PalletBountyError extends Enum {
+    readonly isArithmeticError: boolean;
     readonly isMinFundingAmountCannotBeGreaterThanMaxAmount: boolean;
     readonly isBountyDoesntExist: boolean;
     readonly isSwitchOracleOriginIsRoot: boolean;
@@ -4945,7 +4948,7 @@ declare module '@polkadot/types/lookup' {
     readonly isInvalidCreatorActorSpecified: boolean;
     readonly isWorkEntryDoesntBelongToWorker: boolean;
     readonly isOracleRewardAlreadyWithdrawn: boolean;
-    readonly type: 'MinFundingAmountCannotBeGreaterThanMaxAmount' | 'BountyDoesntExist' | 'SwitchOracleOriginIsRoot' | 'InvalidStageUnexpectedFunding' | 'InvalidStageUnexpectedNoFundingContributed' | 'InvalidStageUnexpectedCancelled' | 'InvalidStageUnexpectedWorkSubmission' | 'InvalidStageUnexpectedJudgment' | 'InvalidStageUnexpectedSuccessfulBountyWithdrawal' | 'InvalidStageUnexpectedFailedBountyWithdrawal' | 'InsufficientBalanceForBounty' | 'NoBountyContributionFound' | 'InsufficientBalanceForStake' | 'ConflictingStakes' | 'WorkEntryDoesntExist' | 'CherryLessThenMinimumAllowed' | 'CannotSubmitWorkToClosedContractBounty' | 'ClosedContractMemberListIsEmpty' | 'ClosedContractMemberListIsTooLarge' | 'ClosedContractMemberNotFound' | 'InvalidOracleMemberId' | 'InvalidStakingAccountForMember' | 'ZeroWinnerReward' | 'TotalRewardShouldBeEqualToTotalFunding' | 'EntrantStakeIsLessThanMininum' | 'FundingAmountCannotBeZero' | 'FundingPeriodCannotBeZero' | 'WinnerShouldHasWorkSubmission' | 'InvalidContributorActorSpecified' | 'InvalidOracleActorSpecified' | 'InvalidEntrantWorkerSpecified' | 'InvalidCreatorActorSpecified' | 'WorkEntryDoesntBelongToWorker' | 'OracleRewardAlreadyWithdrawn';
+    readonly type: 'ArithmeticError' | 'MinFundingAmountCannotBeGreaterThanMaxAmount' | 'BountyDoesntExist' | 'SwitchOracleOriginIsRoot' | 'InvalidStageUnexpectedFunding' | 'InvalidStageUnexpectedNoFundingContributed' | 'InvalidStageUnexpectedCancelled' | 'InvalidStageUnexpectedWorkSubmission' | 'InvalidStageUnexpectedJudgment' | 'InvalidStageUnexpectedSuccessfulBountyWithdrawal' | 'InvalidStageUnexpectedFailedBountyWithdrawal' | 'InsufficientBalanceForBounty' | 'NoBountyContributionFound' | 'InsufficientBalanceForStake' | 'ConflictingStakes' | 'WorkEntryDoesntExist' | 'CherryLessThenMinimumAllowed' | 'CannotSubmitWorkToClosedContractBounty' | 'ClosedContractMemberListIsEmpty' | 'ClosedContractMemberListIsTooLarge' | 'ClosedContractMemberNotFound' | 'InvalidOracleMemberId' | 'InvalidStakingAccountForMember' | 'ZeroWinnerReward' | 'TotalRewardShouldBeEqualToTotalFunding' | 'EntrantStakeIsLessThanMininum' | 'FundingAmountCannotBeZero' | 'FundingPeriodCannotBeZero' | 'WinnerShouldHasWorkSubmission' | 'InvalidContributorActorSpecified' | 'InvalidOracleActorSpecified' | 'InvalidEntrantWorkerSpecified' | 'InvalidCreatorActorSpecified' | 'WorkEntryDoesntBelongToWorker' | 'OracleRewardAlreadyWithdrawn';
   }
 
   /** @name PalletContentVideoRecord (555) */
@@ -5016,9 +5019,9 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletContentPermissionsCuratorGroupCuratorGroupRecord (566) */
   export interface PalletContentPermissionsCuratorGroupCuratorGroupRecord extends Struct {
-    readonly curators: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>;
+    readonly curators: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>;
     readonly active: bool;
-    readonly permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>;
+    readonly permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>;
   }
 
   /** @name PalletContentNftTypesOpenAuctionBidRecord (573) */
@@ -5355,6 +5358,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletProjectTokenErrorsError (607) */
   export interface PalletProjectTokenErrorsError extends Enum {
+    readonly isArithmeticError: boolean;
     readonly isInsufficientTransferrableBalance: boolean;
     readonly isTokenDoesNotExist: boolean;
     readonly isAccountInformationDoesNotExist: boolean;
@@ -5403,7 +5407,7 @@ declare module '@polkadot/types/lookup' {
     readonly isRevenueSplitRateIsZero: boolean;
     readonly isBurnAmountIsZero: boolean;
     readonly isBurnAmountGreaterThanAccountTokensAmount: boolean;
-    readonly type: 'InsufficientTransferrableBalance' | 'TokenDoesNotExist' | 'AccountInformationDoesNotExist' | 'MerkleProofVerificationFailure' | 'TargetPatronageRateIsHigherThanCurrentRate' | 'TokenSymbolAlreadyInUse' | 'InitialAllocationToNonExistingMember' | 'AccountAlreadyExists' | 'TransferDestinationMemberDoesNotExist' | 'TokenIssuanceNotInIdleState' | 'InsufficientJoyBalance' | 'JoyTransferSubjectToDusting' | 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode' | 'AttemptToRemoveNonEmptyAccount' | 'CannotJoinWhitelistInPermissionlessMode' | 'CannotDeissueTokenWithOutstandingAccounts' | 'NoUpcomingSale' | 'NoActiveSale' | 'InsufficientBalanceForTokenPurchase' | 'NotEnoughTokensOnSale' | 'SaleStartingBlockInThePast' | 'SaleAccessProofRequired' | 'SaleAccessProofParticipantIsNotSender' | 'SalePurchaseCapExceeded' | 'MaxVestingSchedulesPerAccountPerTokenReached' | 'PreviousSaleNotFinalized' | 'NoTokensToRecover' | 'SaleDurationTooShort' | 'SaleDurationIsZero' | 'SaleUpperBoundQuantityIsZero' | 'SaleCapPerMemberIsZero' | 'SaleUnitPriceIsZero' | 'SalePurchaseAmountIsZero' | 'RevenueSplitTimeToStartTooShort' | 'RevenueSplitDurationTooShort' | 'RevenueSplitAlreadyActiveForToken' | 'RevenueSplitNotActiveForToken' | 'RevenueSplitDidNotEnd' | 'RevenueSplitNotOngoing' | 'UserAlreadyParticipating' | 'InsufficientBalanceForSplitParticipation' | 'UserNotParticipantingInAnySplit' | 'CannotParticipateInSplitWithZeroAmount' | 'CannotIssueSplitWithZeroAllocationAmount' | 'CannotModifySupplyWhenRevenueSplitsAreActive' | 'RevenueSplitRateIsZero' | 'BurnAmountIsZero' | 'BurnAmountGreaterThanAccountTokensAmount';
+    readonly type: 'ArithmeticError' | 'InsufficientTransferrableBalance' | 'TokenDoesNotExist' | 'AccountInformationDoesNotExist' | 'MerkleProofVerificationFailure' | 'TargetPatronageRateIsHigherThanCurrentRate' | 'TokenSymbolAlreadyInUse' | 'InitialAllocationToNonExistingMember' | 'AccountAlreadyExists' | 'TransferDestinationMemberDoesNotExist' | 'TokenIssuanceNotInIdleState' | 'InsufficientJoyBalance' | 'JoyTransferSubjectToDusting' | 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode' | 'AttemptToRemoveNonEmptyAccount' | 'CannotJoinWhitelistInPermissionlessMode' | 'CannotDeissueTokenWithOutstandingAccounts' | 'NoUpcomingSale' | 'NoActiveSale' | 'InsufficientBalanceForTokenPurchase' | 'NotEnoughTokensOnSale' | 'SaleStartingBlockInThePast' | 'SaleAccessProofRequired' | 'SaleAccessProofParticipantIsNotSender' | 'SalePurchaseCapExceeded' | 'MaxVestingSchedulesPerAccountPerTokenReached' | 'PreviousSaleNotFinalized' | 'NoTokensToRecover' | 'SaleDurationTooShort' | 'SaleDurationIsZero' | 'SaleUpperBoundQuantityIsZero' | 'SaleCapPerMemberIsZero' | 'SaleUnitPriceIsZero' | 'SalePurchaseAmountIsZero' | 'RevenueSplitTimeToStartTooShort' | 'RevenueSplitDurationTooShort' | 'RevenueSplitAlreadyActiveForToken' | 'RevenueSplitNotActiveForToken' | 'RevenueSplitDidNotEnd' | 'RevenueSplitNotOngoing' | 'UserAlreadyParticipating' | 'InsufficientBalanceForSplitParticipation' | 'UserNotParticipantingInAnySplit' | 'CannotParticipateInSplitWithZeroAmount' | 'CannotIssueSplitWithZeroAllocationAmount' | 'CannotModifySupplyWhenRevenueSplitsAreActive' | 'RevenueSplitRateIsZero' | 'BurnAmountIsZero' | 'BurnAmountGreaterThanAccountTokensAmount';
   }
 
   /** @name PalletProposalsEngineProposal (608) */
@@ -5440,6 +5444,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletProposalsEngineError (613) */
   export interface PalletProposalsEngineError extends Enum {
+    readonly isArithmeticError: boolean;
     readonly isEmptyTitleProvided: boolean;
     readonly isEmptyDescriptionProvided: boolean;
     readonly isTitleIsTooLong: boolean;
@@ -5462,7 +5467,7 @@ declare module '@polkadot/types/lookup' {
     readonly isConflictingStakes: boolean;
     readonly isInvalidStakingAccountForMember: boolean;
     readonly isMaxDispatchableCallCodeSizeExceeded: boolean;
-    readonly type: 'EmptyTitleProvided' | 'EmptyDescriptionProvided' | 'TitleIsTooLong' | 'DescriptionIsTooLong' | 'ProposalNotFound' | 'ProposalFinalized' | 'AlreadyVoted' | 'NotAuthor' | 'MaxActiveProposalNumberExceeded' | 'EmptyStake' | 'StakeShouldBeEmpty' | 'StakeDiffersFromRequired' | 'InvalidParameterApprovalThreshold' | 'InvalidParameterSlashingThreshold' | 'RequireRootOrigin' | 'ProposalHasVotes' | 'ZeroExactExecutionBlock' | 'InvalidExactExecutionBlock' | 'InsufficientBalanceForStake' | 'ConflictingStakes' | 'InvalidStakingAccountForMember' | 'MaxDispatchableCallCodeSizeExceeded';
+    readonly type: 'ArithmeticError' | 'EmptyTitleProvided' | 'EmptyDescriptionProvided' | 'TitleIsTooLong' | 'DescriptionIsTooLong' | 'ProposalNotFound' | 'ProposalFinalized' | 'AlreadyVoted' | 'NotAuthor' | 'MaxActiveProposalNumberExceeded' | 'EmptyStake' | 'StakeShouldBeEmpty' | 'StakeDiffersFromRequired' | 'InvalidParameterApprovalThreshold' | 'InvalidParameterSlashingThreshold' | 'RequireRootOrigin' | 'ProposalHasVotes' | 'ZeroExactExecutionBlock' | 'InvalidExactExecutionBlock' | 'InsufficientBalanceForStake' | 'ConflictingStakes' | 'InvalidStakingAccountForMember' | 'MaxDispatchableCallCodeSizeExceeded';
   }
 
   /** @name PalletProposalsDiscussionDiscussionThread (614) */
@@ -5489,6 +5494,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletProposalsDiscussionError (618) */
   export interface PalletProposalsDiscussionError extends Enum {
+    readonly isArithmeticError: boolean;
     readonly isThreadDoesntExist: boolean;
     readonly isPostDoesntExist: boolean;
     readonly isRequireRootOrigin: boolean;
@@ -5498,7 +5504,7 @@ declare module '@polkadot/types/lookup' {
     readonly isWhitelistedMemberDoesNotExist: boolean;
     readonly isInsufficientBalanceForPost: boolean;
     readonly isCannotDeletePost: boolean;
-    readonly type: 'ThreadDoesntExist' | 'PostDoesntExist' | 'RequireRootOrigin' | 'CannotPostOnClosedThread' | 'NotAuthorOrCouncilor' | 'MaxWhiteListSizeExceeded' | 'WhitelistedMemberDoesNotExist' | 'InsufficientBalanceForPost' | 'CannotDeletePost';
+    readonly type: 'ArithmeticError' | 'ThreadDoesntExist' | 'PostDoesntExist' | 'RequireRootOrigin' | 'CannotPostOnClosedThread' | 'NotAuthorOrCouncilor' | 'MaxWhiteListSizeExceeded' | 'WhitelistedMemberDoesNotExist' | 'InsufficientBalanceForPost' | 'CannotDeletePost';
   }
 
   /** @name PalletProposalsCodexError (619) */
@@ -5566,6 +5572,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletWorkingGroupErrorsError (623) */
   export interface PalletWorkingGroupErrorsError extends Enum {
+    readonly isArithmeticError: boolean;
     readonly isStakeBalanceCannotBeZero: boolean;
     readonly isOpeningDoesNotExist: boolean;
     readonly isCannotHireMultipleLeaders: boolean;
@@ -5597,7 +5604,7 @@ declare module '@polkadot/types/lookup' {
     readonly isInsufficientTokensForFunding: boolean;
     readonly isZeroTokensFunding: boolean;
     readonly isInsufficientBalanceForTransfer: boolean;
-    readonly type: 'StakeBalanceCannotBeZero' | 'OpeningDoesNotExist' | 'CannotHireMultipleLeaders' | 'WorkerApplicationDoesNotExist' | 'MaxActiveWorkerNumberExceeded' | 'SuccessfulWorkerApplicationDoesNotExist' | 'CannotHireLeaderWhenLeaderExists' | 'IsNotLeadAccount' | 'CurrentLeadNotSet' | 'WorkerDoesNotExist' | 'InvalidMemberOrigin' | 'SignerIsNotWorkerRoleAccount' | 'BelowMinimumStakes' | 'InsufficientBalanceToCoverStake' | 'ApplicationStakeDoesntMatchOpening' | 'OriginIsNotApplicant' | 'WorkerIsLeaving' | 'CannotRewardWithZero' | 'InvalidStakingAccountForMember' | 'ConflictStakesOnAccount' | 'WorkerHasNoReward' | 'UnstakingPeriodLessThanMinimum' | 'CannotSpendZero' | 'InsufficientBudgetForSpending' | 'NoApplicationsProvided' | 'CannotDecreaseStakeDeltaGreaterThanStake' | 'ApplicationsNotForOpening' | 'WorkerStorageValueTooLong' | 'InsufficientTokensForFunding' | 'ZeroTokensFunding' | 'InsufficientBalanceForTransfer';
+    readonly type: 'ArithmeticError' | 'StakeBalanceCannotBeZero' | 'OpeningDoesNotExist' | 'CannotHireMultipleLeaders' | 'WorkerApplicationDoesNotExist' | 'MaxActiveWorkerNumberExceeded' | 'SuccessfulWorkerApplicationDoesNotExist' | 'CannotHireLeaderWhenLeaderExists' | 'IsNotLeadAccount' | 'CurrentLeadNotSet' | 'WorkerDoesNotExist' | 'InvalidMemberOrigin' | 'SignerIsNotWorkerRoleAccount' | 'BelowMinimumStakes' | 'InsufficientBalanceToCoverStake' | 'ApplicationStakeDoesntMatchOpening' | 'OriginIsNotApplicant' | 'WorkerIsLeaving' | 'CannotRewardWithZero' | 'InvalidStakingAccountForMember' | 'ConflictStakesOnAccount' | 'WorkerHasNoReward' | 'UnstakingPeriodLessThanMinimum' | 'CannotSpendZero' | 'InsufficientBudgetForSpending' | 'NoApplicationsProvided' | 'CannotDecreaseStakeDeltaGreaterThanStake' | 'ApplicationsNotForOpening' | 'WorkerStorageValueTooLong' | 'InsufficientTokensForFunding' | 'ZeroTokensFunding' | 'InsufficientBalanceForTransfer';
   }
 
   /** @name SpRuntimeMultiSignature (633) */

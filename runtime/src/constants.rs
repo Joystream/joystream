@@ -160,8 +160,10 @@ pub mod currency {
 
     /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        (items as Balance).saturating_mul(CENTS).saturating_mul(15)
-            + (bytes as Balance).saturating_mul(CENTS).saturating_mul(6)
+        (items as Balance)
+            .saturating_mul(CENTS)
+            .saturating_mul(15)
+            .saturating_add((bytes as Balance).saturating_mul(CENTS).saturating_mul(6))
     }
 }
 
