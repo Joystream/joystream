@@ -135,9 +135,6 @@ export abstract class BaseMigration<T> {
    *
    * Entity migration is considered failed if the last call (per entity) failed or was not executed at all, regardless of
    * the result of any of the previous calls associated with that entity migration.
-   * (This means, for example, that regardless of whether balnces.transferKeepAlive failed and interrupted the batch or balnces.transferKeepAlive
-   * succeeded, but sudo.sudoAs failed - in both cases the migration is considered failed and should be fully re-executed on
-   * the next script run)
    */
   protected extractFailedMigrations<T extends { id: string }>(
     result: SubmittableResult,

@@ -11,14 +11,9 @@ fragment MembershipFields on Membership {
         avatarUri
       }
     }
-    # Was this properly implemented on olympia? Is there any valuable info there?
-    # externalResources {
-    #   value
-    # }
   }
   controllerAccount
   rootAccount
-  # isFoundingMember # Is this even populated?
 }
 
 fragment MembershipConnectionFields on MembershipConnection {

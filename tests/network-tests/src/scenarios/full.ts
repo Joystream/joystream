@@ -5,6 +5,8 @@ import moderation from '../flows/forum/moderation'
 import threadTags from '../flows/forum/threadTags'
 import leadOpening from '../flows/working-groups/leadOpening'
 import buyingMemberships from '../flows/membership/buyingMemberships'
+import creatingMembers from '../flows/membership/creatingMembers'
+import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
 import invitingMebers from '../flows/membership/invitingMembers'
@@ -50,6 +52,8 @@ scenario('Full', async ({ job, env }) => {
 
   // Membership:
   job('buying members', buyingMemberships).after(coreJob)
+  job('creating members', creatingMembers).after(coreJob)
+  job('creating founding members', creatingFoundingMembers).after(coreJob)
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
   job('inviting members', invitingMebers).after(coreJob)

@@ -13,7 +13,6 @@ export default async function creatingMembers({ api, query, env }: FlowProps): P
   const N: number = +env.MEMBERSHIP_CREATION_N!
   assert(N > 0)
 
-  // Assert membership can be bought if sufficient funds are available
   const nAccounts = (await api.createKeyPairs(N)).map(({ key }) => key.address)
   const happyCaseFixture = new CreateMemberHappyCaseFixture(api, query, nAccounts)
   await new FixtureRunner(happyCaseFixture).runWithQueryNodeChecks()

@@ -17,7 +17,7 @@ export class MigrateMembersCommand extends Command {
       description: 'Path to list of founding member ids (json)',
     }),
     wsProviderEndpointUri: flags.string({
-      description: 'WS provider endpoint uri (Olympia)',
+      description: 'WS provider endpoint uri (Carthage)',
       default: 'ws://localhost:9944',
     }),
     sudoUri: flags.string({

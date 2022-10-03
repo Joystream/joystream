@@ -17,10 +17,7 @@ type MemberCreationParams = {
 }
 
 // Common code for Membership fixtures
-export function generateParamsFromAccountId(
-  accountId: string,
-  isFoundingMember: boolean = false // eslint-disable-line @typescript-eslint/no-inferrable-types
-): MemberCreationParams {
+export function generateParamsFromAccountId(accountId: string, isFoundingMember = false): MemberCreationParams {
   const affix = accountId.substring(0, 14)
   const name = `name${affix}`
   const about = `about${affix}`
