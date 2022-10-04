@@ -50,7 +50,7 @@
     deny(clippy::match_on_vec_items),
     deny(clippy::unreachable)
 )]
-
+#![feature(int_roundings)]
 #[cfg(not(any(test, feature = "runtime-benchmarks")))]
 #[allow(unused_imports)]
 #[macro_use]
