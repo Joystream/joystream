@@ -562,7 +562,8 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
         );
 
-        let exceeded_budget = <Test as crate::Config>::FundingRequestProposalMaxAmount::get() + 1;
+        let exceeded_budget =
+            <Test as crate::Config>::FundingRequestProposalMaxTotalAmount::get() + 1;
 
         let funding_request_proposal_exceeded_balance =
             ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {

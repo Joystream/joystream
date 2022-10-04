@@ -70,6 +70,7 @@ use frame_support::traits::Get;
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use sp_arithmetic::traits::Zero;
+use sp_runtime::traits::CheckedAdd;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
@@ -264,7 +265,7 @@ pub trait Config:
     >;
 
     /// Max amount in funding request proposal (per account)
-    type FundingRequestProposalMaxAmount: Get<BalanceOf<Self>>;
+    type FundingRequestProposalMaxTotalAmount: Get<BalanceOf<Self>>;
 
     /// Max number of accounts per funding request proposal
     type FundingRequestProposalMaxAccounts: Get<u32>;
@@ -481,8 +482,8 @@ decl_module! {
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
 
         /// Max amount in funding request proposal (per account)
-        const FundingRequestProposalMaxAmount: BalanceOf<T> =
-            T::FundingRequestProposalMaxAmount::get();
+        const FundingRequestProposalMaxTotalAmount: BalanceOf<T> =
+            T::FundingRequestProposalMaxTotalAmount::get();
 
         /// Max number of accounts per funding request proposal
         const FundingRequestProposalMaxAccounts: u32 =
@@ -750,18 +751,26 @@ impl<T: Config> Module<T> {
                         Error::<T>::InvalidFundingRequestProposalRepeatedAccount
                     );
 
-                    ensure!(
-                        funding_request.amount != Zero::zero(),
-                        Error::<T>::InvalidFundingRequestProposalBalance
-                    );
-
-                    ensure!(
-                        funding_request.amount <= T::FundingRequestProposalMaxAmount::get(),
-                        Error::<T>::InvalidFundingRequestProposalBalance
-                    );
-
                     visited_accounts.insert(account);
                 }
+
+                let total_funding_amount = funding_requests
+                    .iter()
+                    .try_fold(BalanceOf::<T>::zero(), |sum, el| {
+                        sum.checked_add(&el.amount)
+                    })
+                    .ok_or("Arithmetic Error")?;
+
+                // ensure total_funding_amount in (0, MAX]
+                ensure!(
+                    !total_funding_amount.is_zero(),
+                    Error::<T>::InvalidFundingRequestProposalBalance
+                );
+
+                ensure!(
+                    total_funding_amount <= T::FundingRequestProposalMaxTotalAmount::get(),
+                    Error::<T>::InvalidFundingRequestProposalBalance
+                );
             }
             ProposalDetails::SetMaxValidatorCount(ref new_validator_count) => {
                 // Since `set_validator_count` doesn't check that `new_validator_count`
