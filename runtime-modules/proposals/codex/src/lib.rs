@@ -39,6 +39,22 @@
 // the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 mod types;
 
@@ -825,9 +841,11 @@ impl<T: Config> Module<T> {
                 // Note: No checks for this proposal for now
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
-                if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
+                if let (Some(min_cashout_allowed), Some(max_cashout_allowed)) =
+                    (params.min_cashout_allowed, params.max_cashout_allowed)
+                {
                     ensure!(
-                        params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
+                        max_cashout_allowed >= min_cashout_allowed,
                         Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
                     );
                 }

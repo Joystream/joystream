@@ -8,7 +8,7 @@ use frame_support::dispatch::DispatchResult;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::Perbill;
+use sp_runtime::{traits::Saturating, Perbill};
 use sp_std::boxed::Box;
 use sp_std::cmp::PartialOrd;
 use sp_std::ops::Add;
@@ -98,16 +98,19 @@ impl VotingResults {
     /// Add vote to the related counter
     pub fn add_vote(&mut self, vote: VoteKind) {
         match vote {
-            VoteKind::Abstain => self.abstentions += 1,
-            VoteKind::Approve => self.approvals += 1,
-            VoteKind::Reject => self.rejections += 1,
-            VoteKind::Slash => self.slashes += 1,
+            VoteKind::Abstain => self.abstentions = self.abstentions.saturating_add(1),
+            VoteKind::Approve => self.approvals = self.approvals.saturating_add(1),
+            VoteKind::Reject => self.rejections = self.rejections.saturating_add(1),
+            VoteKind::Slash => self.slashes = self.slashes.saturating_add(1),
         }
     }
 
     /// Calculates number of votes so far
     pub fn votes_number(&self) -> u32 {
-        self.abstentions + self.approvals + self.rejections + self.slashes
+        self.abstentions
+            .saturating_add(self.approvals)
+            .saturating_add(self.rejections)
+            .saturating_add(self.slashes)
     }
 
     /// Returns True if there were no votes. False otherwise.
@@ -167,17 +170,19 @@ impl<BlockNumber: Default, ProposerId: Default, Balance: Default, AccountId> Def
 impl<BlockNumber, ProposerId, Balance, AccountId>
     Proposal<BlockNumber, ProposerId, Balance, AccountId>
 where
-    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy + Saturating,
     AccountId: Clone,
 {
     /// Increases proposal constitutionality level.
     pub fn increase_constitutionality_level(&mut self) {
-        self.nr_of_council_confirmations += 1;
+        self.nr_of_council_confirmations = self.nr_of_council_confirmations.saturating_add(1);
     }
 
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
-        now >= self.activated_at + self.parameters.voting_period
+        now >= self
+            .activated_at
+            .saturating_add(self.parameters.voting_period)
     }
 
     /// Returns whether grace period expired by now.
@@ -185,7 +190,7 @@ where
     /// Returns false otherwise.
     pub fn is_grace_period_expired(&self, now: BlockNumber) -> bool {
         if let ProposalStatus::PendingExecution(finalized_at) = self.status.clone() {
-            return now >= finalized_at + self.parameters.grace_period;
+            return now >= finalized_at.saturating_add(self.parameters.grace_period);
         }
 
         false
@@ -288,7 +293,7 @@ pub(crate) struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance,
 impl<'a, BlockNumber, ProposerId, Balance, AccountId>
     ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, AccountId>
 where
-    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy + Saturating,
     AccountId: Clone,
 {
     // Defines vote count during the quorum and threshold calculations.
@@ -320,10 +325,11 @@ where
     // Verifies that approval threshold is still achievable for the proposal.
     // Compares actual approval votes sum with remaining possible votes number.
     pub(crate) fn is_approval_threshold_achievable(&self) -> bool {
-        let remaining_votes_count = self.total_voters_count - self.votes_count;
+        let remaining_votes_count = self.total_voters_count.saturating_sub(self.votes_count);
         let possible_approval_votes_fraction = Perbill::from_rational(
-            self.approvals + remaining_votes_count,
-            self.votes_count_without_abstentions() + remaining_votes_count,
+            self.approvals.saturating_add(remaining_votes_count),
+            self.votes_count_without_abstentions()
+                .saturating_add(remaining_votes_count),
         );
 
         let required_threshold_fraction =
@@ -340,10 +346,11 @@ where
     // Verifies that slashing threshold is still achievable for the proposal.
     // Compares actual slashing votes sum with remaining possible votes number.
     pub(crate) fn is_slashing_threshold_achievable(&self) -> bool {
-        let remaining_votes_count = self.total_voters_count - self.votes_count;
+        let remaining_votes_count = self.total_voters_count.saturating_sub(self.votes_count);
         let possible_slashing_votes_fraction = Perbill::from_rational(
-            self.slashes + remaining_votes_count,
-            self.votes_count_without_abstentions() + remaining_votes_count,
+            self.slashes.saturating_add(remaining_votes_count),
+            self.votes_count_without_abstentions()
+                .saturating_add(remaining_votes_count),
         );
 
         let required_threshold_fraction =
@@ -394,7 +401,8 @@ where
 
     // Council approved the proposal enough times.
     pub fn is_constitutionality_reached_on_approval(&self) -> bool {
-        self.proposal.nr_of_council_confirmations + 1 >= self.proposal.parameters.constitutionality
+        self.proposal.nr_of_council_confirmations.saturating_add(1)
+            >= self.proposal.parameters.constitutionality
     }
 }
 
