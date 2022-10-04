@@ -20,7 +20,7 @@ import { Option, UInt, u64 } from '@polkadot/types'
 import { Balance, AccountId, LockIdentifier, StakingLedger } from '@polkadot/types/interfaces'
 import {
   PalletContentChannelRecord as Channel,
-  PalletContentPermissionsCuratorGroup as CuratorGroup,
+  PalletContentPermissionsCuratorGroupCuratorGroupRecord as CuratorGroup,
   PalletContentVideoRecord as Video,
   PalletForumCategory as Category,
   PalletForumPost as Post,
@@ -28,6 +28,7 @@ import {
   PalletMembershipMembershipObject as Membership,
   PalletMembershipStakingAccountMemberBinding as StakingAccountMemberBinding,
   PalletStorageBagIdType as BagId,
+  PalletStorageBagRecord,
   PalletStorageDataObject as DataObject,
   PalletWorkingGroupGroupWorker as Worker,
   PalletWorkingGroupJobApplication as Application,
@@ -206,8 +207,8 @@ export default class Api {
   }
 
   async memberDetailsById(memberId: MemberId | number): Promise<MemberDetails | null> {
-    const membership = (await this._api.query.members.membershipById(memberId)).unwrap()
-    return membership.isEmpty ? null : await this.memberDetails(createType('u64', memberId), membership)
+    const membership = await this._api.query.members.membershipById(memberId)
+    return membership.isNone ? null : await this.memberDetails(createType('u64', memberId), membership.unwrap())
   }
 
   async expectedMemberDetailsById(memberId: MemberId | number): Promise<MemberDetails> {
@@ -220,7 +221,12 @@ export default class Api {
   }
 
   async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
-    return (await this._api.query.members.membershipById.multi(ids)).map((optionalMember) => optionalMember.unwrap())
+    return (await this._api.query.members.membershipById.multi(ids)).map((optionalMember, i) => {
+      if (optionalMember.isSome) {
+        return optionalMember.unwrap()
+      }
+      throw new CLIError(`Member ${ids[i]} does not exist!`)
+    })
   }
 
   async membersDetailsByIds(ids: MemberId[] | number[]): Promise<MemberDetails[]> {
@@ -283,13 +289,13 @@ export default class Api {
   }
 
   async workerByWorkerId(group: WorkingGroups, workerId: WorkerId | number): Promise<Worker> {
-    const worker = (await this.workingGroupApiQuery(group).workerById(workerId)).unwrap()
+    const worker = await this.workingGroupApiQuery(group).workerById(workerId)
 
-    if (worker.isEmpty) {
+    if (worker.isNone) {
       throw new CLIError(`Worker ${chalk.magentaBright(workerId)} does not exist!`)
     }
 
-    return worker
+    return worker.unwrap()
   }
 
   async groupMember(group: WorkingGroups, workerId: number): Promise<GroupMember> {
@@ -324,13 +330,13 @@ export default class Api {
       throw new CLIError('Invalid working group application ID!')
     }
 
-    const result = (await this.workingGroupApiQuery(group).applicationById(applicationId)).unwrap()
+    const result = await this.workingGroupApiQuery(group).applicationById(applicationId)
 
-    if (result.isEmpty) {
+    if (result.isNone) {
       throw new CLIError(`Application of ID=${applicationId} no longer exists!`)
     }
 
-    return result
+    return result.unwrap()
   }
 
   protected async fetchApplicationDetails(
@@ -456,6 +462,10 @@ export default class Api {
     return channel
   }
 
+  async channelBagByChannelId(channelId: ChannelId | number): Promise<PalletStorageBagRecord> {
+    return this._api.query.storage.bags(createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } }))
+  }
+
   async videoById(videoId: VideoId | number | string): Promise<Video> {
     const video = await this._api.query.content.videoById(videoId)
     if (video.isEmpty) {
@@ -475,6 +485,10 @@ export default class Api {
 
   async dataObjectStateBloatBond(): Promise<BN> {
     return await this._api.query.storage.dataObjectStateBloatBondValue()
+  }
+
+  async dataObjectPerMegabyteFee(): Promise<BN> {
+    return await this._api.query.storage.dataObjectPerMegabyteFee()
   }
 
   async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {

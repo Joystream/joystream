@@ -80,6 +80,7 @@ export default class DeleteChannelAsModeratorCommand extends ContentDirectoryCom
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannelAsModerator', [
       actor,
       channelId,
+      await this.getChannelBagWitness(channelId),
       force ? dataObjectsInfo.length : 0,
       rationale,
     ])

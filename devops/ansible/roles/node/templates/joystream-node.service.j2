@@ -1,0 +1,17 @@
+[Unit]
+Description=Joystream Node
+After=network.target
+
+[Service]
+Type=simple
+User={{ template_user }}
+WorkingDirectory={{ template_working_dir }}
+ExecStart={{ template_working_dir }}/joystream-node \
+        --chain {{ template_working_dir }}/chainspec.json \
+        --pruning archive
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+---
+
+- name: Fetch joystream-node binary
+  fetch:
+    src: "{{ remote_code_path }}/target/release/joystream-node"
+    dest: "{{ data_path }}/joystream-node"
+    flat: yes
+- name: Fetch chain-spec-builder binary
+  fetch:
+    src: "{{ remote_code_path }}/target/release/chain-spec-builder"
+    dest: "{{ data_path }}/chain-spec-builder"
+    flat: yes

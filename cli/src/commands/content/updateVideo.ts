@@ -6,7 +6,7 @@ import { flags } from '@oclif/command'
 import { CreateInterface } from '@joystream/types'
 import {
   PalletContentVideoUpdateParametersRecord as VideoUpdateParameters,
-  PalletContentChannelActionPermission as ChannelActionPermission,
+  PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission,
 } from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import { ContentMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
@@ -143,6 +143,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assetsToUpload,
       newMeta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
       assetsToRemove,
+      storageBucketsNumWitness: await this.getStorageBucketsNumWitness(video.inChannel),
     }
 
     this.jsonPrettyPrint(

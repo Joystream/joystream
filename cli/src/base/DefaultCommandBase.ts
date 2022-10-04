@@ -21,6 +21,7 @@ export default abstract class DefaultCommandBase extends Command {
   }
 
   output(value: unknown): void {
+    this.log('')
     console.log(value)
   }
 

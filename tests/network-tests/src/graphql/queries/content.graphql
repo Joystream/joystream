@@ -124,6 +124,9 @@ fragment VideoFields on Video {
   title
   description
   isPublic
+  category {
+    ...VideoCategoryFields
+  }
   language {
     iso
   }
@@ -177,6 +180,9 @@ fragment OwnedNftFields on OwnedNft {
   id
   video {
     ...VideoFields
+  }
+  videoCategory {
+    ...VideoCategoryFields
   }
   ownerMember {
     id

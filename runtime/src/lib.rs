@@ -53,8 +53,11 @@ use frame_support::traits::{
     LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{
-    constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-    ConstantMultiplier, DispatchClass, Weight,
+    constants::WEIGHT_PER_SECOND, ConstantMultiplier, DispatchClass, Weight,
+};
+pub use weights::{
+    block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
+    rocksdb_weights::constants::RocksDbWeight,
 };
 
 use frame_support::{construct_runtime, parameter_types, PalletId};
@@ -128,11 +131,12 @@ pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
 /// This runtime version.
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 11,
-    spec_version: 2,
+    spec_version: 3,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -194,9 +198,9 @@ const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO
 /// Our extrinsics call filter
 pub enum CallFilter {}
 
-/// Filter that disables all non-essential calls.
-/// Allowing only calls for successful block authoring, staking, nominating.
-/// Since balances calls are disabled, his means that stash and controller
+/// Stage 1: Filter all non-essential calls.
+/// Allow only calls that are essential for successful block authoring, staking, nominating.
+/// Since balances calls are disabled, this means that stash and controller
 /// accounts must already be funded. If this is not practical to setup at genesis
 /// then consider enabling Balances calls?
 /// This will be used at initial launch, and other calls will be enabled as we rollout.
@@ -205,7 +209,7 @@ pub enum CallFilter {}
     feature = "testing_runtime",
     feature = "runtime-benchmarks"
 )))]
-fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool {
+fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
     match call {
         Call::System(method) =>
         // All methods except the remark call
@@ -229,31 +233,31 @@ fn filter_non_essential(call: &<Runtime as frame_system::Config>::Call) -> bool 
     }
 }
 
-// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
-// Filter out a subset of calls on content pallet and some specific proposals
+// Stage 2: Filter out only a subset of calls on content pallet, some specific proposals
+// and the bounty creation call.
 #[cfg(not(feature = "runtime-benchmarks"))]
-fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) -> bool {
+fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
+    // TODO: adjust after Carthage
     match call {
-        // TODO: adjust after Carthage
         Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
         Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
         Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
         Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
         Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
         Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
             ..
         }) => false,
         Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+        Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
+        Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
         Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
             general_proposal_parameters: _,
             proposal_details,
         }) => !matches!(
             proposal_details,
-            proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
-                | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+            proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
         ),
-        _ => true, // Enable all other calls
+        _ => true,
     }
 }
 
@@ -265,7 +269,7 @@ fn filter_content_and_proposals(call: &<Runtime as frame_system::Config>::Call) 
 )))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_non_essential(call) && filter_content_and_proposals(call)
+        filter_stage_1(call) && filter_stage_2(call)
     }
 }
 
@@ -281,7 +285,7 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
 #[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_content_and_proposals(call)
+        filter_stage_2(call)
     }
 }
 
@@ -536,7 +540,7 @@ pallet_staking_reward_curve::build! {
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
-    pub const SlashDeferDuration: sp_staking::EraIndex = BONDING_DURATION - 1;
+    pub const SlashDeferDuration: sp_staking::EraIndex = SLASH_DEFER_DURATION;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
@@ -793,6 +797,10 @@ parameter_types! {
     };  // TODO: update
     pub const MinimumCashoutAllowedLimit: Balance = ExistentialDeposit::get() + 1; // TODO: update
     pub const MaximumCashoutAllowedLimit: Balance = 1_000_000 * currency::DOLLARS; // TODO: update
+    pub const MaxNumberOfAssetsPerChannel: MaxNumber = 10;
+    pub const MaxNumberOfAssetsPerVideo: MaxNumber = 20;
+    pub const MaxNumberOfCollaboratorsPerChannel: MaxNumber = 10;
+    pub const MaxNftAuctionWhitelistLength: MaxNumber = 100;
 }
 
 impl content::Config for Runtime {
@@ -801,9 +809,13 @@ impl content::Config for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
+    type WeightInfo = content::weights::SubstrateWeight<Runtime>;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+    type MaxNumberOfAssetsPerChannel = MaxNumberOfAssetsPerChannel;
+    type MaxNumberOfAssetsPerVideo = MaxNumberOfAssetsPerVideo;
+    type MaxNumberOfCollaboratorsPerChannel = MaxNumberOfCollaboratorsPerChannel;
     type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
     type CouncilBudgetManager = Council;
     type ContentWorkingGroup = ContentWorkingGroup;
@@ -815,11 +827,12 @@ impl content::Config for Runtime {
     type TransferId = TransferId;
     type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
+    type MaxNftAuctionWhitelistLength = MaxNftAuctionWhitelistLength;
 }
 
 parameter_types! {
     pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
-    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust value
+    pub const MaxVestingSchedulesPerAccountPerToken: u32 = 5; // TODO: adjust value
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
 }
 
@@ -853,14 +866,14 @@ parameter_types! {
     pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 14400;
     pub const IdlePeriodDuration: BlockNumber = 57600;
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u32 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 14400;
-    pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
+    pub const MaxWinnerTargetCount: u32 = 10; // should be greater than council size
 }
 
 // Common staging and playground coucil and elections configuration
@@ -874,27 +887,27 @@ parameter_types! {
     pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 200;
     pub const IdlePeriodDuration: BlockNumber = 400;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 // Staging council size
 #[cfg(feature = "staging_runtime")]
 #[cfg(not(feature = "playground_runtime"))]
 parameter_types! {
-    pub const CouncilSize: u64 = 3;
+    pub const CouncilSize: u32 = 3;
 }
 
 // Playground council size
 #[cfg(feature = "staging_runtime")]
 #[cfg(feature = "playground_runtime")]
 parameter_types! {
-    pub const CouncilSize: u64 = 1;
+    pub const CouncilSize: u32 = 1;
 }
 
 // Testing config
@@ -907,14 +920,14 @@ parameter_types! {
     pub const MinimumVotingStake: Balance = 10 * currency::DOLLARS;
 
     // council parameteres
-    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const MinNumberOfExtraCandidates: u32 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 20;
     pub const IdlePeriodDuration: BlockNumber = 20;
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u32 = 5;
     pub const MinCandidateStake: Balance = 100 * currency::DOLLARS;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const BudgetRefillPeriod: BlockNumber = 1000;
-    pub const MaxWinnerTargetCount: u64 = 10;
+    pub const MaxWinnerTargetCount: u32 = 10;
 }
 
 impl referendum::Config<ReferendumInstance> for Runtime {
@@ -998,30 +1011,37 @@ impl common::StorageOwnership for Runtime {
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 20; //TODO: adjust value
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
+    pub const MinDistributionBucketsPerBag: u32 = 1; //TODO: adjust value
+    pub const MaxDistributionBucketsPerBag: u32 = 100; //TODO: adjust value
     pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 20; // TODO: adjust value
 }
 
 // Production storage parameters
 #[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
 parameter_types! {
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
+    pub const MinStorageBucketsPerBag: u32 = 5; //TODO: adjust value
+    pub const MaxStorageBucketsPerBag: u32 = 20; //TODO: adjust value
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 5; //TODO: adjust value
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 5; //TODO: adjust value
 }
 
 // Staging/testing storage parameters
 #[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
 parameter_types! {
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 1, max_min_diff: 15};
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 1;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 1;
+    pub const MinStorageBucketsPerBag: u32 = 1;
+    pub const MaxStorageBucketsPerBag: u32 = 20;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 1;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 1;
 }
+
+// Assertions
+const_assert!(MinStorageBucketsPerBag::get() > 0);
+const_assert!(MaxStorageBucketsPerBag::get() >= MinStorageBucketsPerBag::get());
+const_assert!(MinDistributionBucketsPerBag::get() > 0);
+const_assert!(MaxDistributionBucketsPerBag::get() >= MinDistributionBucketsPerBag::get());
 
 impl storage::Config for Runtime {
     type Event = Event;
@@ -1032,16 +1052,19 @@ impl storage::Config for Runtime {
     type ChannelId = ChannelId;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type DistributionBucketOperatorId = DistributionBucketOperatorId;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
     type WeightInfo = storage::weights::SubstrateWeight<Runtime>;
@@ -1086,6 +1109,7 @@ parameter_types! {
     pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
+    pub const MaxStickiedThreads: u32 = 20;
 }
 
 pub struct MapLimits;
@@ -1100,7 +1124,6 @@ impl forum::Config for Runtime {
     type ThreadId = ThreadId;
     type PostId = PostId;
     type CategoryId = u64;
-    type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
     type ThreadDeposit = ThreadDeposit;
     type PostDeposit = PostDeposit;
@@ -1110,6 +1133,7 @@ impl forum::Config for Runtime {
     type WorkingGroup = ForumWorkingGroup;
     type MemberOriginValidator = Members;
     type PostLifeTime = PostLifeTime;
+    type MaxStickiedThreads = MaxStickiedThreads;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {
         Self::Hashing::hash(text)
@@ -1334,6 +1358,7 @@ parameter_types! {
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 20;
+    pub const DispatchableCallCodeMaxLen: u32 = 3 * 1024 * 1024; // 3 MB
 }
 
 impl proposals_engine::Config for Runtime {
@@ -1352,6 +1377,7 @@ impl proposals_engine::Config for Runtime {
     type ProposalObserver = ProposalsCodex;
     type WeightInfo = proposals_engine::weights::SubstrateWeight<Runtime>;
     type StakingAccountValidator = Members;
+    type DispatchableCallCodeMaxLen = DispatchableCallCodeMaxLen;
 }
 
 impl Default for Call {
@@ -1464,31 +1490,28 @@ impl pallet_constitution::Config for Runtime {
     type WeightInfo = pallet_constitution::weights::SubstrateWeight<Runtime>;
 }
 
-// parameter_types! {
-//     pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
-//     pub const ClosedContractSizeLimit: u32 = 50;
-//     pub const MinCherryLimit: Balance = 1000;
-//     pub const MinFundingLimit: Balance = 1000;
-//     pub const MinWorkEntrantStake: Balance = 1000;
-// }
+parameter_types! {
+    pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
+    pub const ClosedContractSizeLimit: u32 = 50;
+    pub const MinWorkEntrantStake: Balance = 100 * currency::DOLLARS;
+    pub const FunderStateBloatBondAmount: Balance = 10 * currency::DOLLARS;
+    pub const CreatorStateBloatBondAmount: Balance = 10 * currency::DOLLARS;
+}
 
-// impl bounty::Config for Runtime {
-//     type Event = Event;
-//     type ModuleId = BountyModuleId;
-//     type BountyId = u64;
-//     type Membership = Members;
-//     type WeightInfo = weights::bounty::WeightInfo;
-//     type CouncilBudgetManager = Council;
-//     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
-//     type EntryId = u64;
-//     type ClosedContractSizeLimit = ClosedContractSizeLimit;
-//     type MinCherryLimit = MinCherryLimit;
-//     type MinFundingLimit = MinFundingLimit;
-//     type MinWorkEntrantStake = MinWorkEntrantStake;
-// }
-
-/// Forum identifier for category
-pub type CategoryId = u64;
+impl bounty::Config for Runtime {
+    type Event = Event;
+    type ModuleId = BountyModuleId;
+    type BountyId = u64;
+    type Membership = Members;
+    type WeightInfo = bounty::weights::SubstrateWeight<Runtime>;
+    type CouncilBudgetManager = Council;
+    type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
+    type EntryId = u64;
+    type ClosedContractSizeLimit = ClosedContractSizeLimit;
+    type MinWorkEntrantStake = MinWorkEntrantStake;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
+}
 
 parameter_types! {
     pub const MinVestedTransfer: Balance = 100 * currency::CENTS; // TODO: adjust value
@@ -1574,12 +1597,12 @@ construct_runtime!(
         Multisig: pallet_multisig,
         // Joystream
         Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Members: membership::{Pallet, Call, Storage, Event<T>},
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Constitution: pallet_constitution::{Pallet, Call, Storage, Event},
-        // Bounty: bounty::{Pallet, Call, Storage, Event<T>},
-        JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
+        Constitution: pallet_constitution::{Pallet, Call, Storage, Event<T>},
+        Bounty: bounty::{Pallet, Call, Storage, Event<T>},
+        JoystreamUtility: joystream_utility::{Pallet, Call, Storage, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},

@@ -11,7 +11,7 @@ pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumb
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(100 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(100)),
         constitutionality: 1,
     }
 }
@@ -25,7 +25,7 @@ pub(crate) fn runtime_upgrade_proposal() -> ProposalParameters<BlockNumber, Bala
         approval_threshold_percentage: 100,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(1000 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(1000)),
         constitutionality: 1,
     }
 }
@@ -39,7 +39,7 @@ pub(crate) fn signal_proposal() -> ProposalParameters<BlockNumber, Balance> {
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(25)),
         constitutionality: 1,
     }
 }
@@ -53,7 +53,7 @@ pub(crate) fn funding_request_proposal() -> ProposalParameters<BlockNumber, Bala
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(25)),
         constitutionality: 1,
     }
 }
@@ -67,7 +67,7 @@ pub(crate) fn create_working_group_lead_opening_proposal(
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(100 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(100)),
         constitutionality: 1,
     }
 }
@@ -82,7 +82,7 @@ pub(crate) fn fill_working_group_lead_opening_proposal() -> ProposalParameters<B
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -96,7 +96,7 @@ pub(crate) fn update_working_group_budget_proposal() -> ProposalParameters<Block
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -111,7 +111,7 @@ pub(crate) fn decrease_working_group_lead_stake_proposal(
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -125,7 +125,7 @@ pub fn slash_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Ba
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -139,7 +139,7 @@ pub(crate) fn set_working_group_lead_reward_proposal() -> ProposalParameters<Blo
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -153,7 +153,7 @@ pub(crate) fn terminate_working_group_lead_proposal() -> ProposalParameters<Bloc
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -167,7 +167,7 @@ pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, B
         approval_threshold_percentage: 100,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(1000 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(1000)),
         constitutionality: 2,
     }
 }
@@ -182,7 +182,7 @@ pub(crate) fn cancel_working_group_lead_opening_proposal(
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -196,7 +196,7 @@ pub(crate) fn set_membership_price_proposal() -> ProposalParameters<BlockNumber,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -210,7 +210,7 @@ pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<Bloc
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(200 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(200)),
         constitutionality: 1,
     }
 }
@@ -224,7 +224,7 @@ pub(crate) fn set_councilor_reward_proposal() -> ProposalParameters<BlockNumber,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(200 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(200)),
         constitutionality: 2,
     }
 }
@@ -239,7 +239,7 @@ pub(crate) fn set_initial_invitation_balance_proposal() -> ProposalParameters<Bl
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -255,7 +255,7 @@ pub(crate) fn set_membership_lead_invitation_quota_proposal(
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -269,7 +269,7 @@ pub(crate) fn set_referral_cut_proposal() -> ProposalParameters<BlockNumber, Bal
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -283,7 +283,7 @@ pub(crate) fn set_invitation_count_proposal() -> ProposalParameters<BlockNumber,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
@@ -298,7 +298,7 @@ pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balanc
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 66,
-        required_stake: Some(1000 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(1000)),
         constitutionality: 1,
     }
 }
@@ -312,7 +312,7 @@ pub(crate) fn update_global_nft_limit_proposal() -> ProposalParameters<BlockNumb
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(100 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(100)),
         constitutionality: 1,
     }
 }
@@ -326,7 +326,7 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(100 * currency::DOLLARS),
+        required_stake: Some(currency::DOLLARS.saturating_mul(100)),
         constitutionality: 1,
     }
 }

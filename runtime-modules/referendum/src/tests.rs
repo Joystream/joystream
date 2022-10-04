@@ -22,9 +22,7 @@ fn referendum_start() {
 /// Test that referendum can be started via extrinsic only by superuser.
 #[test]
 fn referendum_start_access_restricted() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let winning_target_count = 1;
         let cycle_id = 1;
 
@@ -40,9 +38,7 @@ fn referendum_start_access_restricted() {
 /// Test that referendum can't be started again before it ends first.
 #[test]
 fn referendum_start_forbidden_after_start() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let origin = OriginType::Signed(USER_ADMIN);
         let options = 1;
         let winning_target_count = 1;
@@ -58,9 +54,7 @@ fn referendum_start_forbidden_after_start() {
 /// Test that a user can successfully vote in the referendum.
 #[test]
 fn voting() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let cycle_id = 1;
@@ -80,9 +74,7 @@ fn voting() {
 /// Test that voting is prohibited outside of the voting stage.
 #[test]
 fn voting_referendum_not_running() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let cycle_id = 1;
@@ -123,9 +115,7 @@ fn voting_referendum_not_running() {
 /// Test that vote will fail when staking too little.
 #[test]
 fn voting_stake_too_low() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let cycle_id = 1;
@@ -151,9 +141,7 @@ fn voting_stake_too_low() {
 /// Test that a user is prevented from voting multiple times in the same cycle.
 #[test]
 fn voting_user_repeated_vote() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let cycle_id = 1;
@@ -211,9 +199,7 @@ fn finish_voting() {
 /// That that a user can reveal his vote.
 #[test]
 fn reveal() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
@@ -262,9 +248,7 @@ fn reveal() {
 /// Test that a user can't vote outside of the voting stage.
 #[test]
 fn reveal_reveal_stage_not_running() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
@@ -315,9 +299,7 @@ fn reveal_reveal_stage_not_running() {
 /// Test that the revealing stage will finish after expected number of blocks even when no votes were cast.
 #[test]
 fn reveal_no_vote() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
@@ -339,9 +321,7 @@ fn reveal_no_vote() {
 /// Test that salt used to calculate commitment isn't too long.
 #[test]
 fn reveal_salt_too_long() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let max_salt_length = <Runtime as Config>::MaxSaltLength::get();
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let account_id = USER_ADMIN;
@@ -389,9 +369,7 @@ fn reveal_salt_too_long() {
 /// Test that revealing of a vote for a not-existing option is rejected.
 #[test]
 fn reveal_invalid_vote() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
@@ -432,9 +410,7 @@ fn reveal_invalid_vote() {
 /// Test that invalid commitment proof is rejected.
 #[test]
 fn reveal_invalid_commitment_proof() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
@@ -475,9 +451,7 @@ fn reveal_invalid_commitment_proof() {
 /// Test that the revealing stage will finish after expected number of blocks.
 #[test]
 fn finish_revealing_period() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
@@ -520,9 +494,7 @@ fn finish_revealing_period() {
 /// Test that voting power is properly accounted for the relevant options.
 #[test]
 fn finish_revealing_period_vote_power() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
@@ -602,9 +574,7 @@ fn finish_revealing_period_vote_power() {
 /// Test that winners are properly selected when no vote is cast.
 #[test]
 fn winners_no_vote_revealed() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let origin = OriginType::Signed(USER_ADMIN);
@@ -623,9 +593,7 @@ fn winners_no_vote_revealed() {
 /// Test that winners are properly selected when there are multiple winners.
 #[test]
 fn winners_multiple_winners() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
@@ -720,9 +688,7 @@ fn winners_multiple_winners() {
 
 #[test]
 fn correct_candidates_make_it_into_winners_list() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
@@ -865,9 +831,7 @@ fn correct_candidates_make_it_into_winners_list() {
 
 #[test]
 fn correct_orderding_of_winners() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
@@ -1003,9 +967,7 @@ fn correct_orderding_of_winners() {
 /// N-th option and (N+1)-th option has the same amount of votes but only N winners are expected.
 #[test]
 fn winners_multiple_winners_extra() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
@@ -1066,7 +1028,7 @@ fn winners_multiple_winners_extra() {
             option_id: option_to_vote_for1,
             vote_power: stake,
         }];
-        assert!((expected_winners.len() as u64) == winning_target_count); // sanity check - check that there will be expected number of winners
+        assert!((expected_winners.len() as u32) == winning_target_count); // sanity check - check that there will be expected number of winners
         Mocks::check_revealing_finished(
             expected_winners,
             MockUtils::transform_results(vec![stake, stake]),
@@ -1077,9 +1039,7 @@ fn winners_multiple_winners_extra() {
 // Test that winners are properly selected when there only votes for fewer options than expected winners.
 #[test]
 fn winners_multiple_not_enough() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
@@ -1120,7 +1080,7 @@ fn winners_multiple_not_enough() {
             option_id: option_to_vote_for,
             vote_power: stake,
         }];
-        assert!((expected_winners.len() as u64) < winning_target_count); // sanity check - check that there will be less winners than expected
+        assert!((expected_winners.len() as u32) < winning_target_count); // sanity check - check that there will be less winners than expected
         Mocks::check_revealing_finished(
             expected_winners,
             MockUtils::transform_results(vec![stake]),
@@ -1133,9 +1093,7 @@ fn winners_multiple_not_enough() {
 /// Test that referendum stake can be released after the referendum ends.
 #[test]
 fn referendum_release_stake() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
@@ -1189,9 +1147,7 @@ fn referendum_release_stake() {
 /// Test that other runtime modules can start the referendum.
 #[test]
 fn referendum_manager_referendum_start() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let winning_target_count = 1;
         let cycle_id = 1;
 
@@ -1202,9 +1158,7 @@ fn referendum_manager_referendum_start() {
 /// Test that trying to start with more than allowed targets fails
 #[test]
 fn referendum_manager_referendum_start_error_with_more_than_allowed_target() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let winning_target_count = <Runtime as Config>::MaxWinnerTargetCount::get() + 1;
         let cycle_id = 1;
 
@@ -1215,9 +1169,7 @@ fn referendum_manager_referendum_start_error_with_more_than_allowed_target() {
 /// Test that forcing the start with more than allowed max winners is capped
 #[test]
 fn referendum_manager_force_start_error_with_more_than_allowed_target() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
+    build_test_externalities().execute_with(|| {
         let winning_target_count = <Runtime as Config>::MaxWinnerTargetCount::get() + 5;
         let cycle_id = 1;
 

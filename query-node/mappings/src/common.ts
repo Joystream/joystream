@@ -2,7 +2,7 @@ import { DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydr
 import { Bytes } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { WorkerId } from '@joystream/types/primitives'
-import { PalletCommonWorkingGroup as WGType } from '@polkadot/types/lookup'
+import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WGType } from '@polkadot/types/lookup'
 import {
   Worker,
   Event,

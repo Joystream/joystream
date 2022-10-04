@@ -587,6 +587,19 @@ fn create_proposal_fails_with_invalid_body_or_title() {
 }
 
 #[test]
+fn create_proposal_fails_with_max_dispatchable_call_code_len_exceeded() {
+    initial_test_ext().execute_with(|| {
+        let too_long_code =
+            vec![0; (<Test as crate::Config>::DispatchableCallCodeMaxLen::get() + 1) as usize];
+        DummyProposalFixture::default()
+            .with_proposal_code(too_long_code)
+            .create_proposal_and_assert(Err(
+                Error::<Test>::MaxDispatchableCallCodeSizeExceeded.into()
+            ));
+    });
+}
+
+#[test]
 fn vote_fails_with_not_active_proposal() {
     initial_test_ext().execute_with(|| {
         let parameters_fixture = ProposalParametersFixture::default().with_grace_period(30);

@@ -1,9 +1,9 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
 import {
-  PalletContentChannelActionPermission as ChannelActionPermission,
-  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
-  PalletContentPermissionsCuratorGroup as CuratorGroup,
+  PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission,
+  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction as ContentModerationAction,
+  PalletContentPermissionsCuratorGroupCuratorGroupRecord as CuratorGroup,
   PalletWorkingGroupGroupWorker as Worker,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentChannelRecord as Channel,
@@ -13,7 +13,7 @@ import {
 import { CLIError } from '@oclif/errors'
 import { flags } from '@oclif/command'
 import { memberHandle } from '../helpers/display'
-import { MemberId, CuratorGroupId, ChannelPrivilegeLevel } from '@joystream/types/primitives'
+import { MemberId, CuratorGroupId, ChannelPrivilegeLevel, ChannelId } from '@joystream/types/primitives'
 import { CreateInterface, createType } from '@joystream/types'
 import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 import BN from 'bn.js'
@@ -173,7 +173,10 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       return true
     }
 
-    const permissionRequired = createType('PalletContentPermissionsCuratorGroupContentModerationAction', permission)
+    const permissionRequired = createType(
+      'PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction',
+      permission
+    )
     const { permissionsByLevel } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
     const permissionsForLevel = [...permissionsByLevel].find(([k]) => k.eq(channelPrivilegeLevel))?.[1]
     return !!(
@@ -449,6 +452,21 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
         exit: ExitCodes.InvalidInput,
       })
     }
+  }
+
+  public async getChannelBagWitness(
+    channelId: ChannelId | number
+  ): Promise<{ storageBucketsNum: number; distributionBucketsNum: number }> {
+    const channelBag = await this.getApi().channelBagByChannelId(channelId)
+    return {
+      storageBucketsNum: channelBag.storedBy.size,
+      distributionBucketsNum: channelBag.distributedBy.size,
+    }
+  }
+
+  public async getStorageBucketsNumWitness(channelId: ChannelId | number): Promise<number> {
+    const channelBag = await this.getApi().channelBagByChannelId(channelId)
+    return channelBag.storedBy.size
   }
 
   async getDataObjectsInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {

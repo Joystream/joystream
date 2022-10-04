@@ -8,8 +8,8 @@ use crate::{
     balance,
     tests::mock::*,
     types::{
-        AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
-        PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
+        AccountData, BlockRate, ConfigAccountDataOf, MerkleProof, MerkleSide, PatronageData,
+        Payment, PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
         TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf,
         Transfers, Validated, ValidatedPayment, VestingSchedule, VestingSource,
     },
@@ -163,7 +163,11 @@ impl GenesisConfigBuilder {
     }
 
     // add account & updates token supply
-    pub fn with_account(mut self, member_id: MemberId, account_data: AccountDataOf<Test>) -> Self {
+    pub fn with_account(
+        mut self,
+        member_id: MemberId,
+        account_data: ConfigAccountDataOf<Test>,
+    ) -> Self {
         let id = self.next_token_id.saturating_sub(TokenId::one());
 
         self.token_info_by_id
@@ -204,17 +208,8 @@ pub fn default_vesting_schedule() -> VestingScheduleOf<Test> {
     }
 }
 
-impl<
-        BlockNumber: From<u32> + Clone,
-        Balance: Zero + From<u32> + Saturating + Clone,
-        RepayableBloatBond: Default + Clone,
-    >
-    AccountData<
-        VestingSchedule<BlockNumber, Balance>,
-        Balance,
-        StakingStatus<Balance>,
-        RepayableBloatBond,
-    >
+impl<Balance: Default + Zero, RepayableBloatBond: Default, VestingSchedulesMap: Default>
+    AccountData<Balance, StakingStatus<Balance>, RepayableBloatBond, VestingSchedulesMap>
 {
     pub fn new_with_amount(amount: Balance) -> Self {
         Self {
@@ -223,6 +218,29 @@ impl<
         }
     }
 
+    pub fn with_staked(self, amount: Balance) -> Self {
+        Self {
+            split_staking_status: Some(StakingStatus {
+                amount,
+                split_id: 0,
+            }),
+            ..self
+        }
+    }
+}
+
+impl<
+        BlockNumber: From<u32> + Clone,
+        Balance: Zero + From<u32> + Saturating + Clone,
+        RepayableBloatBond: Default + Clone,
+    >
+    AccountData<
+        Balance,
+        StakingStatus<Balance>,
+        RepayableBloatBond,
+        BTreeMap<VestingSource, VestingSchedule<BlockNumber, Balance>>,
+    >
+{
     pub fn with_max_vesting_schedules(
         self,
         vesting_schedule: VestingSchedule<BlockNumber, Balance>,
@@ -255,16 +273,6 @@ impl<
             ..self
         }
     }
-
-    pub fn with_staked(self, amount: Balance) -> Self {
-        Self {
-            split_staking_status: Some(StakingStatus {
-                amount,
-                split_id: 0,
-            }),
-            ..self
-        }
-    }
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
@@ -277,15 +285,7 @@ impl<Balance, Account: Ord> Transfers<Account, Payment<Balance>> {
     pub fn new(v: Vec<(Account, Balance)>) -> Self {
         Transfers::<_, _>(
             v.into_iter()
-                .map(|(acc, amount)| {
-                    (
-                        acc,
-                        Payment::<Balance> {
-                            remark: vec![],
-                            amount,
-                        },
-                    )
-                })
+                .map(|(acc, amount)| (acc, Payment::<Balance> { amount }))
                 .collect::<BTreeMap<_, _>>(),
         )
     }
@@ -301,7 +301,6 @@ impl<Balance, MemberId: Ord, VestingScheduleParams>
                     (
                         member_id,
                         PaymentWithVesting {
-                            remark: vec![],
                             amount,
                             vesting_schedule,
                         },
@@ -336,7 +335,6 @@ where
                             validated_acc,
                             ValidatedPayment {
                                 payment: PaymentWithVesting::<Balance, VestingScheduleParams> {
-                                    remark: vec![],
                                     amount,
                                     vesting_schedule,
                                 },

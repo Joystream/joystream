@@ -2,8 +2,24 @@
 #![recursion_limit = "256"]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
 
-use codec::FullCodec;
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
+
+use codec::{FullCodec, MaxEncodedLen};
 use common::membership::{MemberId as MemberIdOf, MemberOriginValidator, MembershipInfoProvider};
 use core::default::Default;
 use frame_support::{
@@ -21,6 +37,7 @@ use sp_runtime::{
     Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryInto;
 use sp_std::iter::Sum;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -68,10 +85,17 @@ pub trait Config:
         + From<u64>
         + UniqueSaturatedInto<u64>
         + Into<JoyBalanceOf<Self>>
-        + TypeInfo;
+        + TypeInfo
+        + MaxEncodedLen;
 
     /// The token identifier used
-    type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + TypeInfo;
+    type TokenId: AtLeast32BitUnsigned
+        + FullCodec
+        + Copy
+        + Default
+        + Debug
+        + TypeInfo
+        + MaxEncodedLen;
 
     /// Block number to balance converter used for interest calculation
     type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Config>::Balance>;
@@ -86,7 +110,7 @@ pub trait Config:
     type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
 
     /// Maximum number of vesting balances per account per token
-    type MaxVestingSchedulesPerAccountPerToken: Get<u8>;
+    type MaxVestingSchedulesPerAccountPerToken: Get<u32>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -105,10 +129,10 @@ pub trait Config:
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Token {
         /// Double map TokenId x MemberId => AccountData for managing account data
-        pub AccountInfoByTokenAndMember get(fn account_info_by_token_and_member) config():
+        pub AccountInfoByTokenAndMember get(fn account_info_by_token_and_member):
         double_map
             hasher(blake2_128_concat) T::TokenId,
             hasher(blake2_128_concat) T::MemberId => AccountDataOf<T>;
@@ -142,7 +166,17 @@ decl_storage! {
     }
 
     add_extra_genesis {
-        build(|_| {
+        config(account_info_by_token_and_member): Vec<(T::TokenId, T::MemberId, ConfigAccountDataOf<T>)>;
+
+        build(|s| {
+            // Initialize accounts
+            for (token_id, member_id, config_account_data) in s.account_info_by_token_and_member.iter() {
+                let opt_acc_data: Option<AccountDataOf<T>> = config_account_data.clone().try_into().ok();
+                if let Some(account_data) = opt_acc_data {
+                    AccountInfoByTokenAndMember::<T>::insert(token_id, member_id, account_data);
+                }
+            }
+
             // We deposit some initial balance to the pallet's module account
             // on the genesis block to protect the account
             // from being deleted ("dusted") on early stages of pallet's work
@@ -194,17 +228,19 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (T)` where:
+        /// `O (T + M)` where:
         /// - `T` is the length of `outputs`
+        /// - `M` is the length of `metadata`
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32)]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, metadata.len() as u32)]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
             token_id: T::TokenId,
             outputs: TransfersOf<T>,
+            metadata: Vec<u8>
         ) -> DispatchResult {
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -222,6 +258,7 @@ decl_module! {
                 token_id,
                 src_member_id,
                 validated_transfers,
+                metadata
             ));
             Ok(())
         }
@@ -289,9 +326,10 @@ decl_module! {
             let now = Self::current_block();
 
             // Burn tokens from the account
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account| {
-                account.burn::<T>(amount, now);
-            });
+            AccountInfoByTokenAndMember::<T>::try_mutate(token_id, member_id, |account| {
+                account.burn::<T>(amount, now)?;
+                DispatchResult::Ok(())
+            })?;
 
             // Decrease token supply by the burned amount
             TokenInfoById::<T>::mutate(token_id, |token| {
@@ -494,7 +532,9 @@ decl_module! {
             let current_block = Self::current_block();
             let token_data = Self::ensure_token_exists(token_id)?;
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
-            let sale_id = token_data.next_sale_id - 1;
+            let sale_id = token_data.next_sale_id
+                .checked_sub(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
             let platform_fee = Self::sale_platform_fee();
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
             let burn_amount = if sale.earnings_destination.is_some() {
@@ -563,32 +603,33 @@ decl_module! {
             }
 
             if account_data.is_some() {
-                AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |acc_data| {
-                    acc_data.process_sale_purchase(
+                AccountInfoByTokenAndMember::<T>::try_mutate(token_id, &member_id, |acc_data| {
+                    acc_data.process_sale_purchase::<T>(
                         sale_id,
                         amount,
                         vesting_schedule,
                         vesting_cleanup_key
-                    );
-                });
+                    )?;
+                    DispatchResult::Ok(())
+                })?;
             } else {
                 Self::transfer_joy(&sender, &treasury, bloat_bond)?;
+                let mut account = AccountDataOf::<T>::new_with_amount_and_bond(
+                        TokenBalanceOf::<T>::zero(),
+                        // No restrictions on repayable bloat bond,
+                        // since only usable balance is allowed
+                        RepayableBloatBond::new(bloat_bond, None)
+                    );
+                account.process_sale_purchase::<T>(
+                        sale_id,
+                        amount,
+                        vesting_schedule,
+                        vesting_cleanup_key
+                    )?;
                 Self::do_insert_new_account_for_token(
                     token_id,
                     &member_id,
-                    AccountDataOf::<T>
-                        ::new_with_amount_and_bond(
-                            TokenBalanceOf::<T>::zero(),
-                            // No restrictions on repayable bloat bond,
-                            // since only usable balance is allowed
-                            RepayableBloatBond::new(bloat_bond, None)
-                        )
-                        .process_sale_purchase(
-                            sale_id,
-                            amount,
-                            vesting_schedule,
-                            vesting_cleanup_key
-                        ).clone()
+                    account
                 );
             }
 
@@ -634,7 +675,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::participate_in_split()]
-        fn participate_in_split(
+        pub fn participate_in_split(
             origin,
             token_id: T::TokenId,
             member_id: T::MemberId,
@@ -652,6 +693,9 @@ decl_module! {
 
             let token_info = Self::ensure_token_exists(token_id)?;
             let split_info = token_info.revenue_split.ensure_active::<T>()?;
+            let split_id = token_info.next_revenue_split_id
+                .checked_sub(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
 
             let current_block = Self::current_block();
             ensure!(
@@ -689,7 +733,7 @@ decl_module! {
             });
 
             AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
-                account_info.stake(token_info.next_revenue_split_id - 1, amount);
+                account_info.stake(split_id, amount);
             });
 
             Self::deposit_event(RawEvent::UserParticipatedInSplit(
@@ -697,7 +741,7 @@ decl_module! {
                 member_id,
                 amount,
                 dividend_amount,
-                token_info.next_revenue_split_id - 1,
+                split_id,
             ));
 
             Ok(())
@@ -723,7 +767,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::exit_revenue_split()]
-        fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        pub fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -733,9 +777,12 @@ decl_module! {
 
             let account_info = Self::ensure_account_data_exists(token_id, &member_id)?;
             let staking_info = account_info.ensure_account_is_valid_split_participant::<T>()?;
+            let current_split_id = token_info.next_revenue_split_id
+                .checked_sub(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
 
             // staking_info.split_id in [0,token_info.next_revenue_split_id) is a runtime invariant
-            if staking_info.split_id == token_info.next_revenue_split_id - 1 {
+            if staking_info.split_id == current_split_id {
                 if let Ok(split_info) = token_info.revenue_split.ensure_active::<T>() {
                     ensure!(
                         split_info.timeline.is_ended(Self::current_block()),
@@ -976,6 +1023,7 @@ impl<T: Config>
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
         outputs: TransfersWithVestingOf<T>,
+        metadata: Vec<u8>,
     ) -> DispatchResult {
         // Currency transfer preconditions
         let validated_transfers =
@@ -994,6 +1042,7 @@ impl<T: Config>
             token_id,
             src_member_id,
             validated_transfers,
+            metadata,
         ));
         Ok(())
     }
@@ -1080,7 +1129,10 @@ impl<T: Config>
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
-        let sale_id = token_data.next_sale_id - 1;
+        let sale_id = token_data
+            .next_sale_id
+            .checked_sub(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
 
         // Validate sale duration
         if let Some(duration) = new_duration {
@@ -1274,7 +1326,10 @@ impl<T: Config>
         let token_info = Self::ensure_token_exists(token_id)?;
         OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
         let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
-        let sale_id = token_info.next_sale_id - 1;
+        let sale_id = token_info
+            .next_sale_id
+            .checked_sub(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
 
         // == MUTATION SAFE ==
         AccountInfoByTokenAndMember::<T>::mutate(token_id, &sale.tokens_source, |ad| {
@@ -1384,34 +1439,35 @@ impl<T: Config> Module<T> {
                 });
             match validated_account {
                 ValidatedWithBloatBond::Existing(dst_member_id) => {
-                    AccountInfoByTokenAndMember::<T>::mutate(
+                    AccountInfoByTokenAndMember::<T>::try_mutate(
                         token_id,
                         &dst_member_id,
                         |account_data| {
                             if let Some(vs) = vesting_schedule {
-                                account_data.add_or_update_vesting_schedule(
+                                account_data.add_or_update_vesting_schedule::<T>(
                                     VestingSource::IssuerTransfer(
                                         account_data.next_vesting_transfer_id,
                                     ),
                                     vs,
                                     validated_payment.vesting_cleanup_candidate.clone(),
-                                )
+                                )?;
                             } else {
                                 account_data.increase_amount_by(validated_payment.payment.amount);
                             }
+                            DispatchResult::Ok(())
                         },
-                    );
+                    )?;
                 }
                 ValidatedWithBloatBond::NonExisting(dst_member_id, repayable_bloat_bond) => {
                     Self::do_insert_new_account_for_token(
                         token_id,
                         dst_member_id,
                         if let Some(vs) = vesting_schedule {
-                            AccountDataOf::<T>::new_with_vesting_and_bond(
+                            AccountDataOf::<T>::new_with_vesting_and_bond::<T>(
                                 VestingSource::IssuerTransfer(0),
                                 vs,
                                 repayable_bloat_bond.clone(),
-                            )
+                            )?
                         } else {
                             AccountDataOf::<T>::new_with_amount_and_bond(
                                 validated_payment.payment.amount,
@@ -1689,11 +1745,11 @@ impl<T: Config> Module<T> {
 
         for (destination, (allocation, repayable_bloat_bond)) in targets_with_bloat_bonds.iter() {
             let account_data = if let Some(vsp) = allocation.vesting_schedule_params.as_ref() {
-                AccountDataOf::<T>::new_with_vesting_and_bond(
+                AccountDataOf::<T>::new_with_vesting_and_bond::<T>(
                     VestingSource::InitialIssuance,
                     VestingSchedule::from_params(current_block, allocation.amount, vsp.clone()),
                     repayable_bloat_bond.clone(),
-                )
+                )?
             } else {
                 AccountDataOf::<T>::new_with_amount_and_bond(
                     allocation.amount,
@@ -1781,35 +1837,34 @@ impl<T: Config> Module<T> {
         )?;
 
         let mut bloat_bond_index: u32 = 0;
-        Ok(Transfers(
-            validated_transfers
-                .0
-                .iter()
-                .map(
-                    |(validated_member_id, validated_payment)| match validated_member_id {
-                        Validated::Existing(member_id) => (
-                            ValidatedWithBloatBond::Existing(*member_id),
+        let transfers_set = validated_transfers
+            .0
+            .iter()
+            .map(
+                |(validated_member_id, validated_payment)| match validated_member_id {
+                    Validated::Existing(member_id) => Ok((
+                        ValidatedWithBloatBond::Existing(*member_id),
+                        validated_payment.clone(),
+                    )),
+                    Validated::NonExisting(member_id) => {
+                        let repayable_bloat_bond = match locked_balance_used
+                            <= bloat_bond.saturating_mul((bloat_bond_index as u32).into())
+                        {
+                            true => RepayableBloatBond::new(bloat_bond, None),
+                            false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
+                        };
+                        bloat_bond_index = bloat_bond_index
+                            .checked_add(1)
+                            .ok_or(Error::<T>::ArithmeticError)?;
+
+                        Ok((
+                            ValidatedWithBloatBond::NonExisting(*member_id, repayable_bloat_bond),
                             validated_payment.clone(),
-                        ),
-                        Validated::NonExisting(member_id) => {
-                            let repayable_bloat_bond = match locked_balance_used
-                                <= bloat_bond.saturating_mul((bloat_bond_index as u32).into())
-                            {
-                                true => RepayableBloatBond::new(bloat_bond, None),
-                                false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
-                            };
-                            bloat_bond_index += 1;
-                            (
-                                ValidatedWithBloatBond::NonExisting(
-                                    *member_id,
-                                    repayable_bloat_bond,
-                                ),
-                                validated_payment.clone(),
-                            )
-                        }
-                    },
-                )
-                .collect(),
-        ))
+                        ))
+                    }
+                },
+            )
+            .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
+        Ok(Transfers(transfers_set))
     }
 }

@@ -39,8 +39,12 @@ export default class ForumCategoryCommand extends ForumCommandBase {
     })
 
     displayHeader('Stickied threads')
-    if (category.stickyThreadIds.length) {
-      this.log(category.stickyThreadIds.map((id) => chalk.magentaBright(id.toString())).join(', '))
+    if (category.stickyThreadIds.size) {
+      this.log(
+        Array.from(category.stickyThreadIds.values())
+          .map((id) => chalk.magentaBright(id.toString()))
+          .join(', ')
+      )
     } else {
       this.log('No stickied threads')
     }

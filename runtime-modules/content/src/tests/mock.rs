@@ -1,6 +1,7 @@
 #![cfg(test)]
 use crate::*;
 use common::membership::MemberOriginValidator;
+use common::working_group::WorkingGroupAuthenticator;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
     ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize,
@@ -33,40 +34,75 @@ pub type ChannelId = <Test as storage::Config>::ChannelId;
 pub type TransferId = <Test as Config>::TransferId;
 pub type StorageBucketId = <Test as storage::Config>::StorageBucketId;
 
-/// Account Ids
-pub const DEFAULT_MEMBER_ACCOUNT_ID: U256 = U256([101, 0, 0, 0]);
-pub const DEFAULT_MEMBER_ALT_ACCOUNT_ID: U256 = U256([1001, 0, 0, 0]);
-pub const DEFAULT_CURATOR_ACCOUNT_ID: U256 = U256([102, 0, 0, 0]);
-pub const LEAD_ACCOUNT_ID: U256 = U256([103, 0, 0, 0]);
-pub const COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = U256([104, 0, 0, 0]);
-pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: U256 = U256([111, 0, 0, 0]);
-pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: U256 = U256([112, 0, 0, 0]);
-pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: U256 = U256([113, 0, 0, 0]);
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = U256([114, 0, 0, 0]);
-pub const SECOND_MEMBER_ACCOUNT_ID: U256 = U256([116, 0, 0, 0]);
-pub const THIRD_MEMBER_ACCOUNT_ID: U256 = U256([117, 0, 0, 0]);
-pub const LEAD_MEMBER_CONTROLLER_ACCOUNT_ID: U256 = U256([120, 0, 0, 0]);
-pub const DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: U256 = U256([121, 0, 0, 0]);
-pub const UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: U256 = U256([122, 0, 0, 0]);
+const fn gen_array_u64<const N: usize>(init: u64) -> [u64; N] {
+    let mut res = [0; N];
 
-/// Runtime Id's
-pub const DEFAULT_MEMBER_ID: u64 = 201;
-pub const DEFAULT_CURATOR_ID: u64 = 202;
-pub const COLLABORATOR_MEMBER_ID: u64 = 204;
-pub const UNAUTHORIZED_MEMBER_ID: u64 = 211;
-pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
-pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
-pub const SECOND_MEMBER_ID: u64 = 216;
-pub const THIRD_MEMBER_ID: u64 = 217;
-pub const LEAD_MEMBER_ID: u64 = 218;
-pub const DEFAULT_CURATOR_MEMBER_ID: u64 = 219;
-pub const UNAUTHORIZED_CURATOR_MEMBER_ID: u64 = 220;
+    let mut i = 0;
+    while i < N as u64 {
+        res[i as usize] = init + i;
+        i += 1;
+    }
+
+    res
+}
+
+const fn account(id: u64) -> U256 {
+    U256([id, 0, 0, 0])
+}
+
+pub const MEMBER_IDS_INIT: u64 = 500;
+pub const MAX_MEMBER_IDS: usize = 100;
+
+pub const MEMBER_IDS: [u64; MAX_MEMBER_IDS] = gen_array_u64::<MAX_MEMBER_IDS>(MEMBER_IDS_INIT);
+
+pub const CURATOR_IDS_INIT: u64 = 600;
+pub const MAX_CURATOR_IDS: usize = 100;
+
+pub const CURATOR_IDS: [u64; MAX_CURATOR_IDS] = gen_array_u64::<MAX_CURATOR_IDS>(CURATOR_IDS_INIT);
+
+pub const COLABORATOR_IDS_INIT: u64 = 700;
+pub const MAX_COLABORATOR_IDS: usize = 100;
+
+pub const COLABORATOR_IDS: [u64; MAX_COLABORATOR_IDS] =
+    gen_array_u64::<MAX_COLABORATOR_IDS>(COLABORATOR_IDS_INIT);
+
+pub const LEAD_ACCOUNT_ID: U256 = account(100005);
+pub const LEAD_MEMBER_ID: u64 = 100005;
+
+pub const DEFAULT_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[0]);
+pub const DEFAULT_MEMBER_ALT_ACCOUNT_ID: U256 = account(MEMBER_IDS[1]);
+pub const DEFAULT_MEMBER_ID: u64 = MEMBER_IDS[0];
+
+pub const SECOND_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[2]);
+pub const SECOND_MEMBER_ID: u64 = MEMBER_IDS[2];
+
+pub const THIRD_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[3]);
+pub const THIRD_MEMBER_ID: u64 = MEMBER_IDS[3];
+
+pub const COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = account(COLABORATOR_IDS[0]);
+pub const COLLABORATOR_MEMBER_ID: u64 = COLABORATOR_IDS[0];
+
+pub const DEFAULT_CURATOR_ACCOUNT_ID: U256 = account(CURATOR_IDS[0]);
+pub const DEFAULT_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[0];
+pub const DEFAULT_CURATOR_ID: u64 = CURATOR_IDS[0];
+
+pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: U256 = account(100008);
+
+pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: U256 = account(MEMBER_IDS[4]);
+pub const UNAUTHORIZED_MEMBER_ID: u64 = MEMBER_IDS[4];
+
+pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: U256 = account(CURATOR_IDS[1]);
+pub const UNAUTHORIZED_CURATOR_MEMBER_ID: u64 = CURATOR_IDS[1];
+pub const UNAUTHORIZED_CURATOR_ID: u64 = CURATOR_IDS[1];
+
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: U256 = account(COLABORATOR_IDS[1]);
+pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = COLABORATOR_IDS[1];
 
 pub const DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_CHANNEL_STATE_BLOAT_BOND: u64 = 25; // Should be >= ExistentialDeposit!
 pub const DEFAULT_VIDEO_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
-pub const DATA_OBJECTS_NUMBER: u64 = 10;
+pub const DATA_OBJECTS_NUMBER: u64 = 10; // MUST BE >= 1
 pub const OUTSTANDING_VIDEOS: u64 = 5;
 pub const OUTSTANDING_CHANNELS: u64 = 3;
 pub const TOTAL_OBJECTS_NUMBER: u64 =
@@ -115,6 +151,9 @@ frame_support::construct_runtime!(
         Storage: storage::{Pallet, Call, Storage, Event<T>},
         Token: project_token::{Pallet, Call, Storage, Config<T>, Event<T>},
         Content: crate::{Pallet, Call, Storage, Config<T>, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
+        StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
+        ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
     }
 );
 
@@ -192,14 +231,15 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        match *member_id {
-            DEFAULT_MEMBER_ID => true,
-            SECOND_MEMBER_ID => true,
-            THIRD_MEMBER_ID => true,
-            UNAUTHORIZED_MEMBER_ID => true,
-            COLLABORATOR_MEMBER_ID => true,
-            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => true,
-            _ => false,
+        if Membership::membership(member_id).is_some()
+            || MEMBER_IDS.contains(member_id)
+            || COLABORATOR_IDS.contains(member_id)
+            || CURATOR_IDS.contains(member_id)
+            || LEAD_MEMBER_ID == *member_id
+        {
+            true
+        } else {
+            false
         }
     }
 
@@ -208,106 +248,62 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId> {
-        match *curator_id {
+        ContentWorkingGroup::get_worker_member_id(curator_id).or_else(|| match *curator_id {
             DEFAULT_CURATOR_ID => Some(DEFAULT_CURATOR_MEMBER_ID),
             UNAUTHORIZED_CURATOR_ID => Some(UNAUTHORIZED_CURATOR_MEMBER_ID),
             _ => None,
-        }
+        })
     }
 
     fn is_lead(account_id: &Self::AccountId) -> bool {
-        *account_id == ensure_signed(Origin::signed(LEAD_ACCOUNT_ID)).unwrap()
+        working_group::Module::<Test, ContentWorkingGroupInstance>::is_leader_account_id(account_id)
+            || *account_id == LEAD_ACCOUNT_ID
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
-        match *curator_id {
-            DEFAULT_CURATOR_ID => {
-                *account_id == ensure_signed(Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID)).unwrap()
-            }
-
-            UNAUTHORIZED_CURATOR_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(UNAUTHORIZED_CURATOR_ACCOUNT_ID)).unwrap()
-            }
-
-            _ => false,
-        }
+        working_group::Module::<Test, ContentWorkingGroupInstance>::is_worker_account_id(
+            account_id, curator_id,
+        ) || (CURATOR_IDS.contains(curator_id) && *account_id == account(*curator_id))
     }
 
     fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
-        match *member_id {
-            DEFAULT_MEMBER_ID => {
-                *account_id == ensure_signed(Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID)).unwrap()
-                    || *account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID
-            }
-
-            SECOND_MEMBER_ID => {
-                *account_id == ensure_signed(Origin::signed(SECOND_MEMBER_ACCOUNT_ID)).unwrap()
-            }
-
-            THIRD_MEMBER_ID => {
-                *account_id == ensure_signed(Origin::signed(THIRD_MEMBER_ACCOUNT_ID)).unwrap()
-            }
-
-            UNAUTHORIZED_MEMBER_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID)).unwrap()
-            }
-
-            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID))
-                        .unwrap()
-            }
-
-            COLLABORATOR_MEMBER_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID)).unwrap()
-            }
-
-            LEAD_MEMBER_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(LEAD_MEMBER_CONTROLLER_ACCOUNT_ID)).unwrap()
-            }
-            DEFAULT_CURATOR_MEMBER_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID))
-                        .unwrap()
-            }
-            UNAUTHORIZED_CURATOR_MEMBER_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(
-                        UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID,
-                    ))
-                    .unwrap()
-            }
-            _ => false,
+        let controller_account_id = account(*member_id);
+        if Membership::is_member_controller_account(member_id, account_id)
+            || (*account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID && *member_id == DEFAULT_MEMBER_ID)
+        {
+            true
+        } else if MEMBER_IDS.contains(member_id)
+            || COLABORATOR_IDS.contains(member_id)
+            || CURATOR_IDS.contains(member_id)
+            || LEAD_MEMBER_ID == *member_id
+        {
+            *account_id == controller_account_id
+        } else {
+            false
         }
     }
 
     fn is_valid_curator_id(curator_id: &Self::CuratorId) -> bool {
-        match *curator_id {
-            DEFAULT_CURATOR_ID => true,
-            UNAUTHORIZED_CURATOR_ID => true,
-            _ => false,
-        }
+        working_group::Module::<Test, ContentWorkingGroupInstance>::ensure_worker_exists(curator_id)
+            .is_ok()
+            || CURATOR_IDS.contains(curator_id)
     }
 }
 
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
-    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 20;
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 0, max_min_diff: 7};
-    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-    storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
+    pub const MinStorageBucketsPerBag: u32 = 1;
+    pub const MaxStorageBucketsPerBag: u32 = 20;
+    pub const MinDistributionBucketsPerBag: u32 = 1;
+    pub const MaxDistributionBucketsPerBag: u32 = 20;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
     pub const MaxDataObjectSize: u64 = VOUCHER_OBJECTS_SIZE_LIMIT;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
 }
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: U256 = U256([100001, 0, 0, 0]);
@@ -329,15 +325,18 @@ impl storage::Config for Test {
     type ChannelId = u64;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
-    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
     type DefaultMemberDynamicBagNumberOfStorageBuckets =
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
-    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
     type StorageWorkingGroup = StorageWG;
@@ -350,6 +349,9 @@ impl storage::Config for Test {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
+    pub const MaxNumberOfAssetsPerChannel: u32 = 1000;
+    pub const MaxNumberOfAssetsPerVideo: u32 = 2000;
+    pub const MaxNumberOfCollaboratorsPerChannel: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
@@ -369,13 +371,14 @@ parameter_types! {
         block_number_period: 1000,
         limit: 500,
     };
-
     pub const MinimumCashoutAllowedLimit: u64 = 1;
-
     pub const MaximumCashoutAllowedLimit: u64 = 1_000_000;
+    pub const MaxNftAuctionWhitelistLength: u32 = 5;
 }
 
 impl Config for Test {
+    type WeightInfo = ();
+
     /// The overarching event type.
     type Event = Event;
 
@@ -399,6 +402,15 @@ impl Config for Test {
 
     /// max number of keys per curator_group.permissions_by_level map instance
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+
+    /// The maximum number of assets that can be assigned to a single channel
+    type MaxNumberOfAssetsPerChannel = MaxNumberOfAssetsPerChannel;
+
+    /// The maximum number of assets that can be assigned to a signle video
+    type MaxNumberOfAssetsPerVideo = MaxNumberOfAssetsPerVideo;
+
+    /// The maximum number of collaborators per channel
+    type MaxNumberOfCollaboratorsPerChannel = MaxNumberOfCollaboratorsPerChannel;
 
     /// channel privilege level
     type ChannelPrivilegeLevel = u8;
@@ -432,29 +444,27 @@ impl Config for Test {
 
     /// Max cashout allowed limit
     type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
+
+    /// Max nft auction whitelist length
+    type MaxNftAuctionWhitelistLength = MaxNftAuctionWhitelistLength;
 }
 
-pub const COUNCIL_BUDGET_ACCOUNT_ID: U256 = U256([90000000, 0, 0, 0]);
+pub const COUNCIL_INITIAL_BUDGET: u64 = 0;
+
+thread_local! {
+    pub static COUNCIL_BUDGET: RefCell<u64> = RefCell::new(COUNCIL_INITIAL_BUDGET);
+}
+
 pub struct CouncilBudgetManager;
 impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
-        balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+        COUNCIL_BUDGET.with(|val| *val.borrow())
     }
 
     fn set_budget(budget: u64) {
-        let old_budget = Self::get_budget();
-
-        if budget > old_budget {
-            let _ = balances::Pallet::<Test>::deposit_creating(
-                &COUNCIL_BUDGET_ACCOUNT_ID,
-                budget - old_budget,
-            );
-        }
-
-        if budget < old_budget {
-            let _ =
-                balances::Pallet::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
-        }
+        COUNCIL_BUDGET.with(|val| {
+            *val.borrow_mut() = budget;
+        });
     }
 
     fn try_withdraw(account_id: &U256, amount: u64) -> DispatchResult {
@@ -471,6 +481,71 @@ impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
     }
 }
 
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+impl working_group::Config<StorageWorkingGroupInstance> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
+
+impl working_group::Config<DistributionWorkingGroupInstance> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+// Content working group instance alias.
+pub type ContentWorkingGroupInstance = working_group::Instance3;
+
+impl working_group::Config<ContentWorkingGroupInstance> for Test {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId3>;
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+impl common::membership::MemberOriginValidator<Origin, u64, U256> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<U256, DispatchError> {
+        let account_id = ensure_signed(origin).unwrap();
+        ensure!(
+            Self::is_member_controller_account(&member_id, &account_id),
+            DispatchError::BadOrigin
+        );
+        Ok(account_id)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
+        return Membership::is_member_controller_account(member_id, account_id)
+            || TestMemberships::is_member_controller_account(member_id, account_id);
+    }
+}
 thread_local! {
     pub static CONTENT_WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
 }
@@ -515,7 +590,6 @@ pub struct ExtBuilder {
     max_bid_step: u64,
     platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
-    max_auction_whitelist_length: u32,
     nft_limits_enabled: bool,
     channel_state_bloat_bond_value: BalanceOf<Test>,
     video_state_bloat_bond_value: BalanceOf<Test>,
@@ -546,7 +620,6 @@ impl Default for ExtBuilder {
             max_bid_step: 100,
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
-            max_auction_whitelist_length: 4,
             nft_limits_enabled: true,
             channel_state_bloat_bond_value: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
             video_state_bloat_bond_value: DEFAULT_VIDEO_STATE_BLOAT_BOND,
@@ -611,7 +684,6 @@ impl ExtBuilder {
             max_bid_step: self.max_bid_step,
             platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
-            max_auction_whitelist_length: self.max_auction_whitelist_length,
             nft_limits_enabled: self.nft_limits_enabled,
             channel_state_bloat_bond_value: self.channel_state_bloat_bond_value,
             video_state_bloat_bond_value: self.video_state_bloat_bond_value,
@@ -673,7 +745,10 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const MaxWorkerNumberLimit: u32 = 10;
+    pub const LockId: LockIdentifier = [9; 8];
+    pub const LockId2: LockIdentifier = [10; 8];
+    pub const LockId3: LockIdentifier = [11; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MinimumStakeForOpening: u32 = 50;
@@ -789,18 +864,18 @@ impl MembershipInfoProvider<Test> for TestMemberships {
     fn controller_account_id(
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
-        match member_id {
-            DEFAULT_MEMBER_ID => Ok(DEFAULT_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID => Ok(SECOND_MEMBER_ACCOUNT_ID),
-            THIRD_MEMBER_ID => Ok(THIRD_MEMBER_ACCOUNT_ID),
-            UNAUTHORIZED_MEMBER_ID => Ok(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
-            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => Ok(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
-            COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),
-            LEAD_MEMBER_ID => Ok(LEAD_MEMBER_CONTROLLER_ACCOUNT_ID),
-            DEFAULT_CURATOR_MEMBER_ID => Ok(DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID),
-            UNAUTHORIZED_CURATOR_MEMBER_ID => Ok(UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID),
-            _ => Err(DispatchError::Other("no account found")),
-        }
+        Membership::controller_account_id(member_id).or_else(|_| {
+            let account_id = account(member_id);
+            if MEMBER_IDS.contains(&member_id)
+                || COLABORATOR_IDS.contains(&member_id)
+                || CURATOR_IDS.contains(&member_id)
+                || member_id == LEAD_MEMBER_ID
+            {
+                Ok(account_id)
+            } else {
+                Err(DispatchError::Other("no account found"))
+            }
+        })
     }
 }
 
@@ -819,26 +894,11 @@ impl MemberOriginValidator<Origin, u64, U256> for TestMemberships {
     }
 
     fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
-        match *member_id {
-            DEFAULT_MEMBER_ID => {
-                *account_id == DEFAULT_MEMBER_ACCOUNT_ID
-                    || *account_id == DEFAULT_MEMBER_ALT_ACCOUNT_ID
-            }
-            SECOND_MEMBER_ID => *account_id == SECOND_MEMBER_ACCOUNT_ID,
-            UNAUTHORIZED_MEMBER_ID => *account_id == UNAUTHORIZED_MEMBER_ACCOUNT_ID,
-            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => {
-                *account_id == UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID
-            }
-            COLLABORATOR_MEMBER_ID => *account_id == COLLABORATOR_MEMBER_ACCOUNT_ID,
-            LEAD_MEMBER_ID => *account_id == LEAD_MEMBER_CONTROLLER_ACCOUNT_ID,
-            DEFAULT_CURATOR_MEMBER_ID => {
-                *account_id == DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID
-            }
-            UNAUTHORIZED_CURATOR_MEMBER_ID => {
-                *account_id == UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID
-            }
-            _ => false,
-        }
+        Membership::is_member_controller_account(member_id, account_id)
+            || MEMBER_IDS.contains(&member_id)
+            || COLABORATOR_IDS.contains(&member_id)
+            || CURATOR_IDS.contains(&member_id)
+            || LEAD_MEMBER_ID == *member_id
     }
 }
 
@@ -1000,7 +1060,7 @@ impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for Distributio
 // pallet_project_token trait implementation and related stuff
 parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
-    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
+    pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
 }
 

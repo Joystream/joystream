@@ -915,6 +915,7 @@ pub struct TransferFixture {
     token_id: TokenId,
     src_member_id: MemberId,
     outputs: TransfersOf<Test>,
+    metadata: Vec<u8>,
 }
 
 impl TransferFixture {
@@ -923,7 +924,6 @@ impl TransferFixture {
             vec![(
                 member!(2).0,
                 Payment::<Balance> {
-                    remark: "remark".as_bytes().to_vec(),
                     amount: DEFAULT_SPLIT_PARTICIPATION,
                 },
             )]
@@ -935,6 +935,7 @@ impl TransferFixture {
             token_id: 1u64.into(),
             src_member_id: member!(1).0,
             outputs,
+            metadata: "metadata".as_bytes().to_vec(),
         }
     }
 
@@ -945,6 +946,7 @@ impl TransferFixture {
             self.src_member_id,
             self.token_id,
             self.outputs.clone(),
+            self.metadata.clone(),
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 

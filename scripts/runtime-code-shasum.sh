@@ -20,10 +20,9 @@ ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020
     Cargo.toml \
     runtime \
     runtime-modules \
-    utils/chain-spec-builder \
     joystream-node.Dockerfile \
     joystream-node-armv7.Dockerfile \
-    node \
+    bin \
     | if [[ -n "$RUNTIME_PROFILE" ]]; then ${SED} '$a'"$RUNTIME_PROFILE"; else tee; fi \
     | shasum \
     | cut -d " " -f 1

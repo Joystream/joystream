@@ -17,6 +17,7 @@ import {
   StorageDataObject,
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
+  ChannelVisibilitySetByModeratorEvent,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -43,7 +44,7 @@ import {
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
-import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -75,15 +76,8 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const storageDataObjectParams = {
-      storageBagOrId: storageBag,
-      objectCreationList: channelCreationParameters.assets.unwrapOr(undefined)?.objectCreationList || [],
-      stateBloatBond: channelCreationParameters.expectedDataObjectStateBloatBond,
-      objectIds: [...dataObjects],
-    }
-
     const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
-    await processChannelMetadata(ctx, channel, metadata, storageDataObjectParams)
+    await processChannelMetadata(ctx, channel, metadata, dataObjects)
   }
 
   // save entity
@@ -122,15 +116,8 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const storageDataObjectParams = {
-      storageBagOrId: storageBag,
-      objectCreationList: channelUpdateParameters.assetsToUpload.unwrapOr(undefined)?.objectCreationList || [],
-      stateBloatBond: channelUpdateParameters.expectedDataObjectStateBloatBond,
-      objectIds: [...newDataObjects],
-    }
-
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, storageDataObjectParams)
+    await processChannelMetadata(ctx, channel, newMetadata, newDataObjects)
   }
 
   // save channel
@@ -209,6 +196,46 @@ export async function content_ChannelDeletedByModerator({ store, event }: EventC
   await store.save<ChannelDeletedByModeratorEvent>(channelDeletedByModeratorEvent)
 }
 
+export async function content_ChannelVisibilitySetByModerator({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  // read event data
+  const [actor, channelId, isCensored, rationale] = new Content.ChannelVisibilitySetByModeratorEvent(event).params
+
+  // load channel
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+  })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Non-existing channel censoring requested', channelId)
+  }
+
+  // update channel
+  channel.isCensored = isCensored.isTrue
+
+  // save channel
+  await store.save<Channel>(channel)
+
+  // emit log event
+  logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })
+
+  // common event processing - second
+
+  const channelVisibilitySetByModeratorEvent = new ChannelVisibilitySetByModeratorEvent({
+    ...genericEventFields(event),
+
+    channelId: channelId.toNumber(),
+    isHidden: isCensored.isTrue,
+    rationale: rationale.toHuman() as string,
+    actor: await convertContentActor(store, actor),
+  })
+
+  await store.save<ChannelVisibilitySetByModeratorEvent>(channelVisibilitySetByModeratorEvent)
+}
+
 export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
   const [channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
@@ -242,7 +269,6 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
 
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
-    const messageType = decodedMessage.channelOwnerRemarked
     const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
 
     const metaTransactionInfo = await processOwnerRemark(store, event, channelId, contentActor, decodedMessage)
@@ -284,7 +310,7 @@ export async function content_ChannelAgentRemarked(ctx: EventContext & StoreCont
 async function updateChannelAgentsPermissions(
   store: DatabaseManager,
   channel: Channel,
-  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentChannelActionPermission>>
+  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>
 ) {
   // safest way to update permission is to delete existing and creating new ones
 

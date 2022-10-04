@@ -23,10 +23,9 @@ use super::mocks::{
 };
 
 use crate::{
-    BagId, Cid, DataObjectCreationParameters, DataObjectPerMegabyteFee,
-    DataObjectStateBloatBondValue, DataObjectStorage, DistributionBucket, DistributionBucketId,
-    DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent, StorageBucketOperatorStatus,
-    UploadParameters,
+    BagId, DataObjectCreationParameters, DataObjectPerMegabyteFee, DataObjectStateBloatBondValue,
+    DataObjectStorage, DistributionBucket, DistributionBucketId, DynBagCreationParameters,
+    DynamicBagId, DynamicBagType, RawEvent, StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -66,7 +65,7 @@ pub fn set_max_voucher_limits_with_params(size_limit: u64, objects_limit: u64) {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
+pub fn create_storage_buckets(buckets_number: u32) -> BTreeSet<u64> {
     set_max_voucher_limits();
     CreateStorageBucketFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -119,7 +118,7 @@ pub fn create_storage_bucket_and_assign_to_bag(
     bucket_id
 }
 
-pub fn set_update_storage_buckets_per_bag_limit(new_limit: u64) {
+pub fn set_update_storage_buckets_per_bag_limit(new_limit: u32) {
     UpdateStorageBucketsPerBagLimitFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
         .with_new_limit(new_limit)
@@ -151,6 +150,7 @@ impl EventFixture {
             u64,
             DistributionBucketId<Test>,
             u64,
+            DynBagCreationParameters<Test>,
         >,
     ) {
         let converted_event = TestEvent::Storage(expected_raw_event);
@@ -171,6 +171,7 @@ impl EventFixture {
             u64,
             DistributionBucketId<Test>,
             u64,
+            DynBagCreationParameters<Test>,
         >,
     ) {
         let converted_event = TestEvent::Storage(expected_raw_event);
@@ -471,9 +472,13 @@ pub fn create_data_object_candidates_with_size(
 
     range
         .into_iter()
-        .map(|idx| DataObjectCreationParameters {
-            size,
-            ipfs_content_id: create_cid(idx.into()),
+        .map(|idx| {
+            let ipfs_content_id = create_cid(idx.into());
+
+            DataObjectCreationParameters {
+                size,
+                ipfs_content_id,
+            }
         })
         .collect()
 }
@@ -810,10 +815,10 @@ pub struct UpdateBlacklistFixture {
     origin: RawOrigin<u64>,
 
     #[new(default)]
-    remove_hashes: BTreeSet<Cid>,
+    remove_hashes: BTreeSet<Vec<u8>>,
 
     #[new(default)]
-    add_hashes: BTreeSet<Cid>,
+    add_hashes: BTreeSet<Vec<u8>>,
 }
 
 impl UpdateBlacklistFixture {
@@ -1018,7 +1023,7 @@ pub struct UpdateStorageBucketsPerBagLimitFixture {
     origin: RawOrigin<u64>,
 
     #[new(default)]
-    new_limit: u64,
+    new_limit: u32,
 }
 
 impl UpdateStorageBucketsPerBagLimitFixture {
@@ -1215,6 +1220,10 @@ impl CreateDynamicBagFixture {
         }
     }
 
+    pub fn get_params(&self) -> DynBagCreationParameters<Test> {
+        self.params.clone()
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::create_dynamic_bag(self.params.clone());
 
@@ -1237,7 +1246,7 @@ pub struct UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
     origin: RawOrigin<u64>,
 
     #[new(default)]
-    new_storage_buckets_number: u64,
+    new_storage_buckets_number: u32,
 
     #[new(default)]
     dynamic_bag_type: DynamicBagType,
@@ -1482,7 +1491,7 @@ pub struct UpdateDistributionBucketsPerBagLimitFixture {
     origin: RawOrigin<u64>,
 
     #[new(default)]
-    new_limit: u64,
+    new_limit: u32,
 }
 
 impl UpdateDistributionBucketsPerBagLimitFixture {
@@ -1782,7 +1791,7 @@ impl SetDistributionBucketFamilyMetadataFixture {
 
 // helper methods
 impl CreateStorageBucketFixture {
-    pub fn create_several(&self, bucket_number: u64) -> BTreeSet<u64> {
+    pub fn create_several(&self, bucket_number: u32) -> BTreeSet<u64> {
         let mut bucket_ids = BTreeSet::new();
         for _ in 0..bucket_number {
             let bucket_id = self.call_and_assert(Ok(())).unwrap();

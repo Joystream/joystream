@@ -4,7 +4,7 @@ import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the channel and optionally all associated data objects.'
@@ -83,6 +83,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannel', [
       actor,
       channelId,
+      await this.getChannelBagWitness(channelId),
       force ? dataObjectsInfo.length : 0,
     ])
   }

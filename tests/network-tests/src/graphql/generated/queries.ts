@@ -103,6 +103,7 @@ export type VideoFieldsFragment = {
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  category?: Types.Maybe<VideoCategoryFieldsFragment>
   language?: Types.Maybe<{ iso: string }>
   comments: Array<CommentFieldsFragment>
   reactions: Array<VideoReactionFieldsFragment>
@@ -131,6 +132,7 @@ export type OwnedNftFieldsFragment = {
   lastSalePrice?: Types.Maybe<any>
   lastSaleDate?: Types.Maybe<any>
   video: VideoFieldsFragment
+  videoCategory?: Types.Maybe<VideoCategoryFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   transactionalStatus?: Types.Maybe<
     | { __typename: 'TransactionalStatusIdle'; dummy?: Types.Maybe<number> }
@@ -614,7 +616,6 @@ export type ForumPostFieldsFragment = {
     | { __typename: 'PostOriginThreadInitial'; threadCreatedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'PostOriginThreadReply'; postAddedEvent?: Types.Maybe<{ id: string }> }
   edits: Array<{ id: string }>
-  reactions: Array<{ id: string; reaction: Types.PostReaction; member: { id: string } }>
 }
 
 export type ForumThreadWithInitialPostFragment = {
@@ -881,27 +882,6 @@ export type GetPostModeratedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetPostModeratedEventsByEventIdsQuery = { postModeratedEvents: Array<PostModeratedEventFieldsFragment> }
 
-export type PostReactedEventFieldsFragment = {
-  id: string
-  createdAt: any
-  inBlock: number
-  network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
-  indexInBlock: number
-  post: { id: string }
-  reactionResult:
-    | { __typename: 'PostReactionResultCancel' }
-    | { __typename: 'PostReactionResultValid'; reaction: Types.PostReaction; reactionId: number }
-    | { __typename: 'PostReactionResultInvalid'; invalidReactionId: string }
-  reactingMember: { id: string }
-}
-
-export type GetPostReactedEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetPostReactedEventsByEventIdsQuery = { postReactedEvents: Array<PostReactedEventFieldsFragment> }
-
 export type PostTextUpdatedEventFieldsFragment = {
   id: string
   createdAt: any
@@ -977,31 +957,6 @@ export type GetMembersByIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment> }
-
-export type MembershipSystemSnapshotFieldsFragment = {
-  createdAt: any
-  snapshotBlock: number
-  referralCut: number
-  invitedInitialBalance: any
-  defaultInviteCount: number
-  membershipPrice: any
-}
-
-export type GetMembershipSystemSnapshotAtQueryVariables = Types.Exact<{
-  time: Types.Scalars['DateTime']
-}>
-
-export type GetMembershipSystemSnapshotAtQuery = {
-  membershipSystemSnapshots: Array<MembershipSystemSnapshotFieldsFragment>
-}
-
-export type GetMembershipSystemSnapshotBeforeQueryVariables = Types.Exact<{
-  time: Types.Scalars['DateTime']
-}>
-
-export type GetMembershipSystemSnapshotBeforeQuery = {
-  membershipSystemSnapshots: Array<MembershipSystemSnapshotFieldsFragment>
-}
 
 export type MembershipBoughtEventFieldsFragment = {
   id: string
@@ -2636,6 +2591,9 @@ export const VideoFields = gql`
     title
     description
     isPublic
+    category {
+      ...VideoCategoryFields
+    }
     language {
       iso
     }
@@ -2658,6 +2616,7 @@ export const VideoFields = gql`
       }
     }
   }
+  ${VideoCategoryFields}
   ${CommentFields}
   ${VideoReactionFields}
   ${StorageDataObjectFields}
@@ -2693,6 +2652,9 @@ export const OwnedNftFields = gql`
     id
     video {
       ...VideoFields
+    }
+    videoCategory {
+      ...VideoCategoryFields
     }
     ownerMember {
       id
@@ -2743,6 +2705,7 @@ export const OwnedNftFields = gql`
     lastSaleDate
   }
   ${VideoFields}
+  ${VideoCategoryFields}
   ${BidFields}
 `
 export const ChannelNftCollectorFields = gql`
@@ -3143,13 +3106,6 @@ export const ForumPostFields = gql`
     edits {
       id
     }
-    reactions {
-      id
-      member {
-        id
-      }
-      reaction
-    }
   }
 `
 export const ForumThreadWithInitialPost = gql`
@@ -3399,32 +3355,6 @@ export const PostModeratedEventFields = gql`
     }
   }
 `
-export const PostReactedEventFields = gql`
-  fragment PostReactedEventFields on PostReactedEvent {
-    id
-    createdAt
-    inBlock
-    network
-    inExtrinsic
-    indexInBlock
-    post {
-      id
-    }
-    reactionResult {
-      __typename
-      ... on PostReactionResultValid {
-        reaction
-        reactionId
-      }
-      ... on PostReactionResultInvalid {
-        invalidReactionId: reactionId
-      }
-    }
-    reactingMember {
-      id
-    }
-  }
-`
 export const PostTextUpdatedEventFields = gql`
   fragment PostTextUpdatedEventFields on PostTextUpdatedEvent {
     id
@@ -3515,16 +3445,6 @@ export const MembershipFields = gql`
     boundAccounts
   }
   ${MemberMetadataFields}
-`
-export const MembershipSystemSnapshotFields = gql`
-  fragment MembershipSystemSnapshotFields on MembershipSystemSnapshot {
-    createdAt
-    snapshotBlock
-    referralCut
-    invitedInitialBalance
-    defaultInviteCount
-    membershipPrice
-  }
 `
 export const MembershipBoughtEventFields = gql`
   fragment MembershipBoughtEventFields on MembershipBoughtEvent {
@@ -5210,14 +5130,6 @@ export const GetPostModeratedEventsByEventIds = gql`
   }
   ${PostModeratedEventFields}
 `
-export const GetPostReactedEventsByEventIds = gql`
-  query getPostReactedEventsByEventIds($eventIds: [ID!]) {
-    postReactedEvents(where: { id_in: $eventIds }) {
-      ...PostReactedEventFields
-    }
-  }
-  ${PostReactedEventFields}
-`
 export const GetPostTextUpdatedEventsByEventIds = gql`
   query getPostTextUpdatedEventsByEventIds($eventIds: [ID!]) {
     postTextUpdatedEvents(where: { id_in: $eventIds }) {
@@ -5249,22 +5161,6 @@ export const GetMembersByIds = gql`
     }
   }
   ${MembershipFields}
-`
-export const GetMembershipSystemSnapshotAt = gql`
-  query getMembershipSystemSnapshotAt($time: DateTime!) {
-    membershipSystemSnapshots(where: { createdAt_eq: $time }, orderBy: createdAt_DESC, limit: 1) {
-      ...MembershipSystemSnapshotFields
-    }
-  }
-  ${MembershipSystemSnapshotFields}
-`
-export const GetMembershipSystemSnapshotBefore = gql`
-  query getMembershipSystemSnapshotBefore($time: DateTime!) {
-    membershipSystemSnapshots(where: { createdAt_lt: $time }, orderBy: createdAt_DESC, limit: 1) {
-      ...MembershipSystemSnapshotFields
-    }
-  }
-  ${MembershipSystemSnapshotFields}
 `
 export const GetMembershipBoughtEventsByEventIds = gql`
   query getMembershipBoughtEventsByEventIds($eventIds: [ID!]) {

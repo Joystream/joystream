@@ -2,6 +2,7 @@ import { updateDataSizeFee } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
+import { formatBalance } from '@polkadot/util'
 
 /**
  * CLI command:
@@ -28,10 +29,10 @@ export default class LeaderUpdateDataFee extends ApiCommandBase {
 
     const fee = flags.fee
 
-    logger.info('Updating data size fee...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
+    logger.info(`Updating data size fee to ${formatBalance(fee)}...`)
 
     const account = this.getAccount(flags)
     const api = await this.getApi()

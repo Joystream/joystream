@@ -83,6 +83,7 @@ export default class DeleteChannelAssetsAsModeratorCommand extends ContentDirect
         'BTreeSet<u64>',
         dataObjectsInfo.map(([id]) => Number(id))
       ),
+      await this.getStorageBucketsNumWitness(channelId),
       rationale,
     ])
   }

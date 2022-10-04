@@ -12,6 +12,9 @@ import path from 'path'
 import { promisify } from 'util'
 import ExitCodes from './../command-base/ExitCodes'
 import fs from 'fs'
+import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
+import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
+import { Option } from '@polkadot/types-codec'
 const fsPromises = fs.promises
 
 /**
@@ -152,10 +155,13 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     const storageProviderAccount = this.getAccount(flags)
+    const workerId = flags.worker
+    if (!(await verifyWorkerId(api, flags.queryNodeEndpoint, workerId, storageProviderAccount.address))) {
+      this.exit(ExitCodes.InvalidWorkerId)
+    }
 
     try {
       const port = flags.port
-      const workerId = flags.worker
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
       const tempFileUploadingDir = path.join(flags.uploads, TempDirName)
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
@@ -249,4 +255,45 @@ async function recreateTempDirectory(uploadsDirectory: string, tempDirName: stri
   } catch (err) {
     logger.error(`Temp directory IO error: ${err}`)
   }
+}
+
+async function verifyWorkerId(
+  api: ApiPromise,
+  queryNodeUri: string,
+  workerId: number,
+  transactorAccount: string
+): Promise<boolean> {
+  const worker = await api.query.storageWorkingGroup.workerById(workerId)
+  if (!worker.isSome) {
+    logger.error('Provided workerId does not belong to an existing worker')
+    return false
+  }
+
+  const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUri, workerId)
+  const buckets: [string, PalletStorageStorageBucketRecord][] = (
+    await Promise.all(
+      bucketIds.map(
+        async (bucketId) =>
+          [bucketId, await api.query.storage.storageBucketById(bucketId)] as [
+            string,
+            Option<PalletStorageStorageBucketRecord>
+          ]
+      )
+    )
+  )
+    .filter(([, optBucket]) => optBucket.isSome && optBucket.unwrap().operatorStatus.isStorageWorker)
+    .map(([bucketId, optBucket]) => [bucketId, optBucket.unwrap()])
+
+  if (buckets.length === 0) {
+    logger.warn(`Warning: No active buckets found by worker id ${workerId}!`)
+  }
+
+  for (const [bucketId, bucket] of buckets) {
+    if (!bucket.operatorStatus.asStorageWorker[1].eq(transactorAccount)) {
+      logger.error(`${transactorAccount} is not a valid transactor key for bucket ${bucketId} of worker ${workerId}`)
+      return false
+    }
+  }
+
+  return true
 }

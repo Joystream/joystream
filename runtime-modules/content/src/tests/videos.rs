@@ -6,31 +6,16 @@ use super::curators;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::assert_err;
 use storage::DynamicBagType;
 use storage::ModuleAccount as StorageModuleAccount;
 
 #[test]
-fn delete_video_nft_is_issued() {
+fn unsuccessful_video_deletion_when_nft_issued() {
     with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = Content::next_video_id();
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video_with_nft();
+        ContentTest::with_member_channel().with_video_nft().setup();
 
         // Make an attempt to delete a video, which has an nft issued already.
-        assert_err!(
-            Content::delete_video(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-                DATA_OBJECTS_NUMBER,
-            ),
-            Error::<Test>::NftAlreadyExists
-        );
+        DeleteVideoFixture::default().call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()))
     })
 }
 
@@ -199,6 +184,23 @@ fn unsuccessful_video_creation_with_invalid_expected_video_state_bloat_bond() {
             })
             .with_expected_video_state_bloat_bond(video_state_bloat_bond - 1)
             .call_and_assert(Err(Error::<Test>::VideoStateBloatBondChanged.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_creation_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        CreateVideoFixture::default()
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerVideo::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfVideoAssetsExceeded.into()));
     })
 }
 
@@ -409,7 +411,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_size_le
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: STORAGE_BUCKET_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(
@@ -453,7 +455,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
                 object_creation_list: (0..(STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1))
                     .map(|_| DataObjectCreationParameters {
                         size: 1,
-                        ipfs_content_id: vec![1u8],
+                        ipfs_content_id: create_cid(1),
                     })
                     .collect(),
             })
@@ -479,10 +481,22 @@ fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: VOUCHER_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_creation_with_invalid_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        CreateVideoFixture::default()
+            .with_storage_buckets_num_witness(0)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ))
     })
 }
 
@@ -737,6 +751,23 @@ fn unsuccessful_video_update_with_pending_channel_transfer() {
 }
 
 #[test]
+fn unsuccessful_video_update_with_number_of_assets_exceeded() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_object_candidates_helper(
+                    1,
+                    <Test as Config>::MaxNumberOfAssetsPerVideo::get() as u64 + 1,
+                ),
+            })
+            .call_and_assert(Err(Error::<Test>::MaxNumberOfVideoAssetsExceeded.into()));
+    })
+}
+
+#[test]
 fn successful_video_update_by_collaborator_with_assets_removal() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -977,7 +1008,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_size_left
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: STORAGE_BUCKET_OBJECTS_SIZE_LIMIT + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(
@@ -1008,7 +1039,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_number_le
                 object_creation_list: (0..(STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1))
                     .map(|_| DataObjectCreationParameters {
                         size: 1,
-                        ipfs_content_id: vec![1u8],
+                        ipfs_content_id: create_cid(1),
                     })
                     .collect(),
             })
@@ -1032,7 +1063,7 @@ fn unsuccessful_video_update_with_max_object_size_limits_exceeded() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
                     size: <Test as storage::Config>::MaxDataObjectSize::get() + 1,
-                    ipfs_content_id: vec![1u8],
+                    ipfs_content_id: create_cid(1),
                 }],
             })
             .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
@@ -1083,6 +1114,68 @@ fn unsuccessful_video_update_with_nft() {
         create_default_member_owned_channel_with_video_with_nft();
 
         UpdateVideoFixture::default().call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_assets_to_upload_and_invalid_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateVideoFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_assets_to_upload_and_missing_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateVideoFixture::default()
+            .with_assets_to_upload(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_assets_to_remove_and_invalid_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_remove(video_assets)
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_update_with_assets_to_remove_and_missing_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
+            .collect::<BTreeSet<_>>();
+
+        UpdateVideoFixture::default()
+            .with_assets_to_remove(video_assets)
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
     })
 }
 
@@ -1314,6 +1407,32 @@ fn unsuccessful_video_deletion_with_invalid_num_objects_to_delete() {
             .call_and_assert(Err(
                 Error::<Test>::InvalidVideoDataObjectsCountProvided.into()
             ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_deletion_with_assets_and_invalid_storage_buckets_num_witness() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        // Make an attempt to delete a video, which has an nft issued already.
+        DeleteVideoFixture::default()
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ))
+    })
+}
+
+#[test]
+fn unsuccessful_video_deletion_with_assets_and_storage_buckets_num_witness_missing() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        // Make an attempt to delete a video, which has an nft issued already.
+        DeleteVideoFixture::default()
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()))
     })
 }
 
@@ -1726,6 +1845,52 @@ fn unsuccessful_moderation_action_nft_video_deletion_by_lead() {
 }
 
 #[test]
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_invalid_storage_buckets_num_witness(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(Some(0))
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_deletion_by_curator_with_missing_storage_buckets_num_witness(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
+            )]),
+        );
+
+        DeleteVideoAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(None)
+            .call_and_assert(Err(Error::<Test>::MissingStorageBucketsNumWitness.into()));
+    })
+}
+
+#[test]
 fn successful_moderation_action_video_deletion_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -2063,6 +2228,52 @@ fn unsuccessful_moderation_action_non_existing_video_assets_deletion() {
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
             .with_video_id(2)
             .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_invalid_storage_buckets_num_witness(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video_nft().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_storage_buckets_num_witness(0)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStorageBucketsNumWitnessProvided.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_zero_number_of_assets_to_delete(
+) {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video_nft().setup();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_assets_to_remove(BTreeSet::new())
+            .call_and_assert(Err(Error::<Test>::NumberOfAssetsToRemoveIsZero.into()));
     })
 }
 

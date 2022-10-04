@@ -1,13 +1,25 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    not(any(test, feature = "test", feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
 
 pub mod bloat_bond;
-pub mod constraints;
 pub mod costs;
 pub mod council;
 pub mod currency;
 pub mod locks;
 pub mod membership;
+pub mod merkle_tree;
+pub mod no_panic;
 pub mod storage;
 pub mod working_group;
 
