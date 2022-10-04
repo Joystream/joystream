@@ -500,13 +500,13 @@ mod tests {
         assert!(size <= 176, "size {} of working_group::Call too big", size);
         let size = core::mem::size_of::<membership::Call<Runtime>>();
         assert!(size <= 225, "size {} of membership::Call too big", size);
-        let size = core::mem::size_of::<content::Call<Runtime>>();
-        assert!(size <= 336, "size {} of content::Call too big", size);
         let size = core::mem::size_of::<proposals_codex::Call<Runtime>>();
         assert!(
             size <= 336,
             "size {} of proposals_codex::Call too big",
             size
         );
+        let size = core::mem::size_of::<content::Call<Runtime>>();
+        assert!(size <= 352, "size {} of content::Call too big", size);
     }
 }
