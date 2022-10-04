@@ -3,7 +3,6 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-
 use sp_runtime::{
     traits::{Convert, IdentifyAccount, Verify},
     MultiSignature,
