@@ -20,6 +20,8 @@ sp-std = { package = 'sp-std', default-features = false, git = 'https://github.c
 
 [features]
 default = ['std']
+test = []
+runtime-benchmarks = []
 std = [
 	'serde',
 	'strum',

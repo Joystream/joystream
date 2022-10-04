@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perquintill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletBountyBountyActor, PalletBountyBountyParameters, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
+import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateFoundingMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/events' {
   export interface AugmentedEvents<ApiType extends ApiTypes> {
@@ -79,7 +79,7 @@ declare module '@polkadot/api-base/types/events' {
        * - creation parameters
        * - bounty metadata
        **/
-      BountyCreated: AugmentedEvent<ApiType, [u64, PalletBountyBountyParameters, Bytes]>;
+      BountyCreated: AugmentedEvent<ApiType, [u64, PalletBountyBountyParametersBTreeSet, Bytes]>;
       /**
        * A bounty creator has withdrawn the cherry (member or council).
        * Params:
@@ -256,7 +256,7 @@ declare module '@polkadot/api-base/types/events' {
        * - constitution text hash
        * - constitution text
        **/
-      ConstutionAmended: AugmentedEvent<ApiType, [Bytes, Bytes]>;
+      ConstutionAmended: AugmentedEvent<ApiType, [H256, Bytes]>;
     };
     content: {
       AuctionBidCanceled: AugmentedEvent<ApiType, [u64, u64]>;
@@ -278,7 +278,7 @@ declare module '@polkadot/api-base/types/events' {
        * Metaprotocols related event
        **/
       ChannelOwnerRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
-      ChannelPausedFeaturesUpdatedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, Bytes]>;
+      ChannelPausedFeaturesUpdatedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>, Bytes]>;
       ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
       ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
@@ -289,9 +289,9 @@ declare module '@polkadot/api-base/types/events' {
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       CouncilRewardClaimed: AugmentedEvent<ApiType, [u64, u128]>;
       CreatorTokenIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64]>;
-      CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentChannelActionPermission>]>;
+      CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>]>;
       CuratorGroupCreated: AugmentedEvent<ApiType, [u64]>;
-      CuratorGroupPermissionsUpdated: AugmentedEvent<ApiType, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
+      CuratorGroupPermissionsUpdated: AugmentedEvent<ApiType, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>]>;
       CuratorGroupStatusSet: AugmentedEvent<ApiType, [u64, bool]>;
       CuratorRemoved: AugmentedEvent<ApiType, [u64, u64]>;
       EnglishAuctionSettled: AugmentedEvent<ApiType, [u64, AccountId32, u64]>;
@@ -431,7 +431,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -490,13 +490,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -586,7 +579,7 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Candidates are announced and voting starts
        **/
-      VotingPeriodStarted: AugmentedEvent<ApiType, [u64]>;
+      VotingPeriodStarted: AugmentedEvent<ApiType, [u32]>;
     };
     distributionWorkingGroup: {
       /**
@@ -701,7 +694,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -760,13 +753,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -834,7 +820,7 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Sticky thread updated for category
        **/
-      CategoryStickyThreadUpdate: AugmentedEvent<ApiType, [u64, Vec<u64>, PalletForumPrivilegedActor]>;
+      CategoryStickyThreadUpdate: AugmentedEvent<ApiType, [u64, BTreeSet<u64>, PalletForumPrivilegedActor]>;
       /**
        * A title of category with given id was updated.
        * The second argument reflects the new title hash of the category.
@@ -997,7 +983,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -1056,13 +1042,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -1185,7 +1164,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -1244,13 +1223,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -1316,7 +1288,7 @@ declare module '@polkadot/api-base/types/events' {
        * - Enum variant with positive indicating funds moved torwards working group and negative
        * and negative funds moving from the working group
        **/
-      UpdatedWorkingGroupBudget: AugmentedEvent<ApiType, [PalletCommonWorkingGroup, u128, PalletCommonBalanceKind]>;
+      UpdatedWorkingGroupBudget: AugmentedEvent<ApiType, [PalletCommonWorkingGroupIterableEnumsWorkingGroup, u128, PalletCommonBalanceKind]>;
     };
     members: {
       FoundingMemberCreated: AugmentedEvent<ApiType, [u64, PalletMembershipCreateFoundingMemberParameters, u32]>;
@@ -1450,7 +1422,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -1509,13 +1481,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -1664,7 +1629,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -1723,13 +1688,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -1852,7 +1810,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -1911,13 +1869,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -2040,7 +1991,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -2099,13 +2050,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:
@@ -2298,7 +2242,7 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Emits on thread mode change.
        **/
-      ThreadModeChanged: AugmentedEvent<ApiType, [u64, PalletProposalsDiscussionThreadMode, u64]>;
+      ThreadModeChanged: AugmentedEvent<ApiType, [u64, PalletProposalsDiscussionThreadModeBTreeSet, u64]>;
     };
     proposalsEngine: {
       /**
@@ -2354,11 +2298,11 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Referendum started
        **/
-      ReferendumStarted: AugmentedEvent<ApiType, [u64, u32]>;
+      ReferendumStarted: AugmentedEvent<ApiType, [u32, u32]>;
       /**
        * Referendum started
        **/
-      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64, u32]>;
+      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u32, u32]>;
       /**
        * Revealing phase has begun
        **/
@@ -2572,7 +2516,7 @@ declare module '@polkadot/api-base/types/events' {
        * Params
        * - new limit
        **/
-      DistributionBucketsPerBagLimitUpdated: AugmentedEvent<ApiType, [u64]>;
+      DistributionBucketsPerBagLimitUpdated: AugmentedEvent<ApiType, [u32]>;
       /**
        * Emits on storage bucket status update (accepting new bags).
        * Params
@@ -2622,7 +2566,7 @@ declare module '@polkadot/api-base/types/events' {
        * - dynamic bag type
        * - new number of storage buckets
        **/
-      NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated: AugmentedEvent<ApiType, [PalletStorageDynamicBagType, u64]>;
+      NumberOfStorageBucketsInDynamicBagCreationPolicyUpdated: AugmentedEvent<ApiType, [PalletStorageDynamicBagType, u32]>;
       /**
        * Emits on accepting pending data objects.
        * Params
@@ -2680,7 +2624,7 @@ declare module '@polkadot/api-base/types/events' {
        * Params
        * - new limit
        **/
-      StorageBucketsPerBagLimitUpdated: AugmentedEvent<ApiType, [u64]>;
+      StorageBucketsPerBagLimitUpdated: AugmentedEvent<ApiType, [u32]>;
       /**
        * Emits on storage bucket status update.
        * Params
@@ -2861,7 +2805,7 @@ declare module '@polkadot/api-base/types/events' {
        * - status text hash
        * - status text
        **/
-      StatusTextChanged: AugmentedEvent<ApiType, [Bytes, Option<Bytes>]>;
+      StatusTextChanged: AugmentedEvent<ApiType, [H256, Option<Bytes>]>;
       /**
        * Emits on terminating the leader.
        * Params:
@@ -2920,13 +2864,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       WorkerStartedLeaving: AugmentedEvent<ApiType, [u64, Option<Bytes>]>;
-      /**
-       * Emits on updating the worker storage role.
-       * Params:
-       * - Id of the worker.
-       * - Raw storage field.
-       **/
-      WorkerStorageUpdated: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
        * Fund the working group budget.
        * Params:

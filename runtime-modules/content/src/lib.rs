@@ -3,6 +3,22 @@
 #![allow(clippy::unused_unit)]
 #![recursion_limit = "512"]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 #[cfg(test)]
 mod tests;
@@ -31,7 +47,7 @@ pub use permissions::*;
 use scale_info::TypeInfo;
 pub use types::*;
 
-use codec::{Codec, Decode, Encode};
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use frame_support::weights::Weight;
 pub use storage::{
     BagId, BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
@@ -46,8 +62,9 @@ pub use common::{
     },
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
+    merkle_tree::Side,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
-    MembershipTypes, Side, StorageOwnership, Url,
+    MembershipTypes, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -110,7 +127,7 @@ pub trait Config:
     type MemberAuthenticator: MembershipInfoProvider<Self>;
 
     /// Max number of keys per curator_group.permissions_by_level map instance
-    type MaxKeysPerCuratorGroupPermissionsByLevelMap: Get<u8>;
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap: Get<MaxNumber>;
 
     /// The maximum number of assets that can be assigned to a single channel
     type MaxNumberOfAssetsPerChannel: Get<MaxNumber>;
@@ -121,6 +138,9 @@ pub trait Config:
     /// The maximum number of collaborators per channel
     type MaxNumberOfCollaboratorsPerChannel: Get<MaxNumber>;
 
+    /// The maximum number of members that can be part of nft auction whitelist
+    type MaxNftAuctionWhitelistLength: Get<MaxNumber>;
+
     // Channel's privilege level
     type ChannelPrivilegeLevel: Parameter
         + Member
@@ -129,7 +149,8 @@ pub trait Config:
         + Default
         + Copy
         + MaybeSerializeDeserialize
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     /// Content working group pallet integration.
     type ContentWorkingGroup: common::working_group::WorkingGroupBudgetHandler<
@@ -172,7 +193,7 @@ pub trait Config:
     type MaximumCashoutAllowedLimit: Get<BalanceOf<Self>>;
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Content {
         pub ChannelById get(fn channel_by_id):
         map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
@@ -248,9 +269,6 @@ decl_storage! {
         /// Max delta between current block and starts at
         pub AuctionStartsAtMaxDelta get(fn auction_starts_at_max_delta) config(): T::BlockNumber;
 
-        /// Max nft auction whitelist length
-        pub MaxAuctionWhiteListLength get(fn max_auction_whitelist_length) config(): MaxNumber;
-
         /// Bids for open auctions
         pub OpenAuctionBidByVideoAndMember get(fn open_auction_bid_by_video_and_member):
         double_map hasher(blake2_128_concat) T::VideoId,
@@ -298,11 +316,15 @@ decl_module! {
         /// Initializing events
         fn deposit_event() = default;
 
-        /// Exports const -  max number of curators per group
+        /// Exports const - max number of curators per group
         const MaxNumberOfCuratorsPerGroup: MaxNumber = T::MaxNumberOfCuratorsPerGroup::get();
 
-        /// Exports const -  max number of keys per curator_group.permissions_by_level map instance
-        const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
+        /// Exports const - max number of keys per curator_group.permissions_by_level map instance
+        const MaxKeysPerCuratorGroupPermissionsByLevelMap: MaxNumber =
+            T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
+
+        /// Exports const - max nft auction whitelist length
+        const MaxNftAuctionWhitelistLength: MaxNumber = T::MaxNftAuctionWhitelistLength::get();
 
         /// Exports const - default global daily NFT limit.
         const DefaultGlobalDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
@@ -344,8 +366,8 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
-            // Ensure permissions_by_level map max. allowed size is not exceeded
-            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
+
+            let group = CuratorGroupRecord::try_create::<T>(is_active, &permissions_by_level)?;
 
             //
             // == MUTATION SAFE ==
@@ -354,7 +376,7 @@ decl_module! {
             let curator_group_id = Self::next_curator_group_id();
 
             // Insert curator group with provided permissions
-            <CuratorGroupById<T>>::insert(curator_group_id, CuratorGroup::create(is_active, &permissions_by_level));
+            <CuratorGroupById<T>>::insert(curator_group_id, group);
 
             // Increment the next curator curator_group_id:
             <NextCuratorGroupId<T>>::mutate(|n| *n += T::CuratorGroupId::one());
@@ -384,17 +406,16 @@ decl_module! {
             ensure_lead_auth_success::<T>(&sender)?;
             // Ensure curator group under provided curator_group_id already exist
             Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
-            // Ensure permissions_by_level map max. allowed size is not exceeded
-            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
+
+            // Try to update `permissions_by_level` for curator group under given `curator_group_id`
+            <CuratorGroupById<T>>::try_mutate(curator_group_id, |curator_group| {
+                curator_group.try_set_permissions_by_level::<T>(&permissions_by_level)?;
+                DispatchResult::Ok(())
+            })?;
 
             //
             // == MUTATION SAFE ==
             //
-
-            // Set `permissions` for curator group under given `curator_group_id`
-            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.set_permissions_by_level(&permissions_by_level)
-            });
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions_by_level))
@@ -459,27 +480,21 @@ decl_module! {
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
-            // Ensure curator group under provided curator_group_id already exist,
-            // retrieve corresponding one
-            let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
+            // Ensure curator group under provided curator_group_id already exist
+            Self::ensure_curator_group_exists(&curator_group_id)?;
 
             // Ensure that curator_id is infact a worker in content working group
             ensure_is_valid_curator_id::<T>(&curator_id)?;
 
-            // Ensure max number of curators per group limit not reached yet
-            curator_group.ensure_max_number_of_curators_limit_not_reached()?;
-
-            // Ensure curator under provided curator_id isn`t a CuratorGroup member yet
-            curator_group.ensure_curator_in_group_does_not_exist(&curator_id)?;
+            // Try to add curator into curator_group under given curator_group_id
+            <CuratorGroupById<T>>::try_mutate(curator_group_id, |curator_group| {
+                curator_group.try_add_curator::<T>(curator_id, &permissions)?;
+                DispatchResult::Ok(())
+            })?;
 
             //
             // == MUTATION SAFE ==
             //
-
-            // Insert curator_id into curator_group under given curator_group_id
-            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.get_curators_mut().insert(curator_id, permissions.clone());
-            });
 
             // Trigger event
             Self::deposit_event(RawEvent::CuratorAdded(curator_group_id, curator_id, permissions));
@@ -511,7 +526,7 @@ decl_module! {
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
             // Ensure curator under provided curator_id is CuratorGroup member
-            curator_group.ensure_curator_in_group_exists(&curator_id)?;
+            curator_group.ensure_curator_in_group_exists::<T>(&curator_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -519,7 +534,7 @@ decl_module! {
 
             // Remove curator_id from curator_group under given curator_group_id
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.get_curators_mut().remove(&curator_id);
+                curator_group.remove_curator(&curator_id);
             });
 
             // Trigger event
@@ -599,11 +614,7 @@ decl_module! {
                 distribution_buckets: params.distribution_buckets.clone(),
             };
 
-            let collaborators: ChannelCollaboratorsMap<T> = params
-                .collaborators
-                .clone()
-                .try_into()
-                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))?;
+            let collaborators = try_into_stored_collaborators_map::<T>(&params.collaborators)?;
 
             // retrieve channel account
             let channel_account = ContentTreasury::<T>::account_for_channel(channel_id);
@@ -633,7 +644,7 @@ decl_module! {
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
                 transfer_status: ChannelTransferStatus::NoActiveTransfer,
                 privilege_level: Zero::zero(),
-                paused_features: BTreeSet::new(),
+                paused_features: Default::default(),
                 data_objects,
                 daily_nft_limit: T::DefaultChannelDailyNftLimit::get(),
                 weekly_nft_limit: T::DefaultChannelWeeklyNftLimit::get(),
@@ -691,11 +702,9 @@ decl_module! {
 
             let new_collabs: Option<ChannelCollaboratorsMap<T>> = params
                 .collaborators
-                .clone()
-                .map(|c| c
-                    .try_into()
-                    .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))
-                ).transpose()?;
+                .as_ref()
+                .map(|c| try_into_stored_collaborators_map::<T>(c))
+                .transpose()?;
 
             let upload_parameters =
                 if !params.assets_to_remove.is_empty() || params.assets_to_upload.is_some() {
@@ -818,11 +827,16 @@ decl_module! {
                 .collect::<Vec<_>>();
             ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &required_permissions, channel.privilege_level)?;
 
+            let new_stored_paused_features: PausedFeaturesSet = new_paused_features
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::MaxNumberOfPausedFeaturesPerChannelExceeded)?;
+
             //
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features.clone() });
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_stored_paused_features });
 
 
             // deposit event
@@ -1920,20 +1934,20 @@ decl_module! {
             // Validate round_duration & starting_price
             Self::validate_open_auction_params(&auction_params)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
-
             // Create new auction
             let new_nonce = nft.open_auctions_nonce.saturating_add(One::one());
             let current_block = <frame_system::Pallet<T>>::block_number();
-            let auction = OpenAuction::<T>::new(auction_params.clone(), new_nonce, current_block);
+            let auction = OpenAuction::<T>::try_new::<T>(auction_params.clone(), new_nonce, current_block)?;
 
-            // Update the video
             let new_nft = nft
                 .with_transactional_status(TransactionalStatus::<T>::OpenAuction(auction))
                 .increment_open_auction_count();
 
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update the video
             VideoById::<T>::mutate(
                 video_id,
                 |v| v.set_nft_status(new_nft)
@@ -1984,13 +1998,13 @@ decl_module! {
             // Validate round_duration & starting_price
             Self::validate_english_auction_params(&auction_params)?;
 
+            // Create new auction
+            let current_block = <frame_system::Pallet<T>>::block_number();
+            let auction = EnglishAuction::<T>::try_new::<T>(auction_params.clone(), current_block)?;
+
             //
             // == MUTATION SAFE ==
             //
-
-            // Create new auction
-            let current_block = <frame_system::Pallet<T>>::block_number();
-            let auction = EnglishAuction::<T>::new(auction_params.clone(), current_block);
 
             // Update the video
             VideoById::<T>::mutate(
@@ -3130,20 +3144,14 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-           let params = if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
-                ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
-                Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
-                Ok(params)
-            } else {
-                Err(Error::<T>::InvalidChannelTransferStatus)
+            let params = match channel.transfer_status {
+                ChannelTransferStatus::PendingTransfer(ref params) => Ok(params),
+                _ => Err(Error::<T>::InvalidChannelTransferStatus)
             }?;
 
+            ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
+            let new_collaborators = Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
             let new_owner = params.new_owner.clone();
-            let new_collaborators: ChannelCollaboratorsMap<T> = commitment_params
-                .new_collaborators
-                .clone()
-                .try_into()
-                .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))?;
 
             //
             // == MUTATION SAFE ==
@@ -3805,16 +3813,19 @@ impl<T: Config> Module<T> {
             InitTransactionalStatus::<T>::EnglishAuction(ref params) => {
                 Self::validate_english_auction_params(params)?;
                 let current_block = <frame_system::Pallet<T>>::block_number();
-                Ok(TransactionalStatus::<T>::EnglishAuction(
-                    EnglishAuction::<T>::new(params.clone(), current_block),
-                ))
+                let english_auction =
+                    EnglishAuction::<T>::try_new::<T>(params.clone(), current_block)?;
+                Ok(TransactionalStatus::<T>::EnglishAuction(english_auction))
             }
             InitTransactionalStatus::<T>::OpenAuction(ref params) => {
                 Self::validate_open_auction_params(params)?;
                 let current_block = <frame_system::Pallet<T>>::block_number();
-                Ok(TransactionalStatus::<T>::OpenAuction(
-                    OpenAuction::<T>::new(params.clone(), T::OpenAuctionId::zero(), current_block),
-                ))
+                let open_auction = OpenAuction::<T>::try_new::<T>(
+                    params.clone(),
+                    T::OpenAuctionId::zero(),
+                    current_block,
+                )?;
+                Ok(TransactionalStatus::<T>::OpenAuction(open_auction))
             }
         }
     }
@@ -3888,9 +3899,7 @@ impl<T: Config> Module<T> {
         Self::validate_channel_owner(&params.new_owner)?;
         let transfer_id = Self::next_transfer_id();
         let new_collaborators: ChannelCollaboratorsMap<T> =
-            params.new_collaborators.try_into().map_err(|_| {
-                DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded)
-            })?;
+            try_into_stored_collaborators_map::<T>(&params.new_collaborators)?;
         Ok(PendingTransferOf::<T> {
             new_owner: params.new_owner,
             transfer_params: TransferCommitmentOf::<T> {
@@ -4019,17 +4028,6 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn ensure_permissions_by_level_map_size_not_exceeded(
-        permissions_by_level: &ModerationPermissionsByLevel<T>,
-    ) -> DispatchResult {
-        ensure!(
-            permissions_by_level.len()
-                <= T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get().into(),
-            Error::<T>::CuratorGroupMaxPermissionsByLevelMapSizeExceeded
-        );
-        Ok(())
-    }
-
     pub(crate) fn ensure_open_bid_exists(
         video_id: T::VideoId,
         member_id: T::MemberId,
@@ -4155,11 +4153,13 @@ impl<T: Config> Module<T> {
     fn validate_channel_transfer_acceptance(
         witness: &TransferCommitmentWitnessOf<T>,
         params: &PendingTransferOf<T>,
-    ) -> DispatchResult {
+    ) -> Result<ChannelCollaboratorsMap<T>, DispatchError> {
+        let new_collaborators: ChannelCollaboratorsMap<T> =
+            try_into_stored_collaborators_map::<T>(&witness.new_collaborators)?;
+
         ensure!(
             witness.transfer_id == params.transfer_params.transfer_id
-                && witness.new_collaborators
-                    == params.transfer_params.new_collaborators.clone().into()
+                && new_collaborators == params.transfer_params.new_collaborators
                 && witness.price == params.transfer_params.price,
             Error::<T>::InvalidChannelTransferCommitmentParams
         );
@@ -4172,7 +4172,7 @@ impl<T: Config> Module<T> {
             )?;
         }
 
-        Ok(())
+        Ok(new_collaborators)
     }
     // Transfers balance from the new channel owner to the old channel owner.
     fn pay_for_channel_swap(

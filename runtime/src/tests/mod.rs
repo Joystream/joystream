@@ -86,11 +86,11 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
     let councilor_stake: u128 = <Runtime as council::Config>::MinCandidateStake::get().into();
 
     // council members that will be elected
-    let council_member_ids = create_new_members(council_size);
+    let council_member_ids = create_new_members(council_size as u64);
     // one new voter for each candidate that will be elected
-    let voter_ids = create_new_members(council_size);
+    let voter_ids = create_new_members(council_size as u64);
     // additional candidates that will receive no votes
-    let extra_candidate_ids = create_new_members(num_extra_candidates);
+    let extra_candidate_ids = create_new_members(num_extra_candidates as u64);
 
     for member_id in council_member_ids.clone() {
         let councilor = account_from_member_id(member_id);

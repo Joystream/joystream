@@ -59,6 +59,22 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -70,6 +86,7 @@ mod stages;
 mod benchmarking;
 
 pub mod weights;
+
 pub use weights::WeightInfo;
 
 type WeightInfoBounty<T> = <T as Config>::WeightInfo;
@@ -79,15 +96,17 @@ pub(crate) use actors::BountyActorManager;
 // use council::Balance;
 pub(crate) use stages::BountyStageCalculator;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
 use common::council::CouncilBudgetManager;
 use common::membership::{
-    MemberId, MemberOriginValidator, MembershipInfoProvider, StakingAccountValidator,
+    MemberId, MemberOriginValidator, MembershipInfoProvider, MembershipTypes,
+    StakingAccountValidator,
 };
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{
@@ -98,9 +117,9 @@ use scale_info::TypeInfo;
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::AccountIdConversion;
 use sp_runtime::{Perbill, SaturatedConversion};
-use sp_std::collections::btree_map::BTreeMap;
-use sp_std::collections::btree_set::BTreeSet;
-use sp_std::convert::TryInto;
+use sp_std::clone::Clone;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::convert::{TryFrom, TryInto};
 use sp_std::vec::Vec;
 use staking_handler::StakingHandler;
 
@@ -115,7 +134,7 @@ pub trait Config:
     type ModuleId: Get<PalletId>;
 
     /// Bounty Id type
-    type BountyId: From<u32> + Parameter + Default + Copy;
+    type BountyId: From<u32> + Parameter + Default + Copy + MaxEncodedLen;
 
     /// Validates staking account ownership for a member, member ID and origin combination and
     /// providers controller id for a member.
@@ -138,7 +157,7 @@ pub trait Config:
     >;
 
     /// Work entry Id type
-    type EntryId: From<u32> + Parameter + Default + Copy + Ord + One;
+    type EntryId: From<u32> + Parameter + Default + Copy + Ord + One + MaxEncodedLen;
 
     /// Defines max work entry number for a closed assurance type contract bounty.
     type ClosedContractSizeLimit: Get<u32>;
@@ -159,29 +178,41 @@ pub trait Config:
 pub type BountyCreationParameters<T> = BountyParameters<
     BalanceOf<T>,
     <T as frame_system::Config>::BlockNumber,
-    <T as common::membership::MembershipTypes>::MemberId,
+    <T as MembershipTypes>::MemberId,
+    BTreeSet<<T as MembershipTypes>::MemberId>,
+>;
+
+/// Alias type for stored BountyParameters.
+pub type BountyStoredCreationParameters<T> = BountyParameters<
+    BalanceOf<T>,
+    <T as frame_system::Config>::BlockNumber,
+    <T as MembershipTypes>::MemberId,
+    ClosedContractWhitelist<T>,
 >;
 
 /// Defines who can submit the work.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub enum AssuranceContractType<MemberId: Ord> {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub enum AssuranceContractType<ClosedContractWhitelist> {
     /// Anyone can submit the work.
     Open,
 
     /// Only specific members can submit the work.
-    Closed(BTreeSet<MemberId>),
+    Closed(ClosedContractWhitelist),
 }
 
-impl<MemberId: Ord> Default for AssuranceContractType<MemberId> {
+impl<ClosedContractWhitelist> Default for AssuranceContractType<ClosedContractWhitelist> {
     fn default() -> Self {
         AssuranceContractType::Open
     }
 }
 
+pub type ClosedContractWhitelist<T> =
+    BoundedBTreeSet<<T as MembershipTypes>::MemberId, <T as Config>::ClosedContractSizeLimit>;
+
 /// Defines funding conditions.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum FundingType<BlockNumber, Balance> {
     /// Funding has no time limits.
     Perpetual {
@@ -209,13 +240,13 @@ impl<BlockNumber, Balance: Default> Default for FundingType<BlockNumber, Balance
 
 /// Defines parameters for the bounty creation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord, ClosedContractWhitelist> {
     /// Origin that will select winner(s), is either a given member or a council.
     pub oracle: BountyActor<MemberId>,
 
     /// Contract type defines who can submit the work.
-    pub contract_type: AssuranceContractType<MemberId>,
+    pub contract_type: AssuranceContractType<ClosedContractWhitelist>,
 
     /// Bounty creator: could be a member or a council.
     pub creator: BountyActor<MemberId>,
@@ -239,9 +270,45 @@ pub struct BountyParameters<Balance, BlockNumber, MemberId: Ord> {
     pub funding_type: FundingType<BlockNumber, Balance>,
 }
 
+impl<Balance: Clone, BlockNumber: Clone, MemberId: Ord + Clone, ClosedContractSizeLimit>
+    TryFrom<BountyParameters<Balance, BlockNumber, MemberId, BTreeSet<MemberId>>>
+    for BountyParameters<
+        Balance,
+        BlockNumber,
+        MemberId,
+        BoundedBTreeSet<MemberId, ClosedContractSizeLimit>,
+    >
+where
+    BoundedBTreeSet<MemberId, ClosedContractSizeLimit>: TryFrom<BTreeSet<MemberId>>,
+{
+    type Error = ();
+
+    fn try_from(
+        params: BountyParameters<Balance, BlockNumber, MemberId, BTreeSet<MemberId>>,
+    ) -> Result<Self, Self::Error> {
+        let contract_type = match params.contract_type.clone() {
+            AssuranceContractType::Closed(whitelist) => {
+                let bounded_whitelist = whitelist.try_into().map_err(|_| ())?;
+                AssuranceContractType::Closed(bounded_whitelist)
+            }
+            AssuranceContractType::Open => AssuranceContractType::Open,
+        };
+
+        Ok(Self {
+            contract_type,
+            oracle: params.oracle,
+            creator: params.creator,
+            cherry: params.cherry,
+            oracle_reward: params.oracle_reward,
+            entrant_stake: params.entrant_stake,
+            funding_type: params.funding_type,
+        })
+    }
+}
+
 /// Bounty actor to perform operations for a bounty.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum BountyActor<MemberId> {
     /// Council performs operations for a bounty.
     Council,
@@ -285,7 +352,7 @@ pub enum BountyStage {
 
 /// Defines current bounty state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum BountyMilestone<BlockNumber> {
     /// Bounty was created at given block number.
     ///
@@ -348,14 +415,15 @@ pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
     <T as frame_system::Config>::BlockNumber,
     <T as common::membership::MembershipTypes>::MemberId,
+    ClosedContractWhitelist<T>,
 >;
 
 /// Crowdfunded bounty record.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord, ClosedContractWhitelist> {
     /// Bounty creation parameters.
-    pub creation_params: BountyParameters<Balance, BlockNumber, MemberId>,
+    pub creation_params: BountyParameters<Balance, BlockNumber, MemberId, ClosedContractWhitelist>,
 
     /// Total funding balance reached so far.
     /// Includes initial funding by a creator and other members funding.
@@ -372,8 +440,8 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
     pub has_unpaid_oracle_reward: bool,
 }
 
-impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
-    BountyRecord<Balance, BlockNumber, MemberId>
+impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord, ClosedContractWhitelist>
+    BountyRecord<Balance, BlockNumber, MemberId, ClosedContractWhitelist>
 {
     // Increments bounty active work entry counter.
     fn increment_active_work_entry_counter(&mut self) {
@@ -415,7 +483,7 @@ pub type Entry<T> = EntryRecord<
 
 /// Work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct EntryRecord<AccountId, MemberId, BlockNumber> {
     /// Work entrant member ID.
     pub member_id: MemberId,
@@ -467,7 +535,7 @@ struct RequiredStakeInfo<T: Config> {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub struct Contribution<T: Config> {
     // contribution amount
@@ -519,7 +587,7 @@ enum ValidTerminateBountyStage {
     ValidTerminationToFailedStage,
 }
 
-decl_storage! {
+decl_storage! { generate_storage_info
     trait Store for Module<T: Config> as Bounty {
         /// Bounty storage.
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
@@ -732,6 +800,8 @@ decl_event! {
 decl_error! {
     /// Bounty pallet predefined errors
     pub enum Error for Module<T: Config> {
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
 
         /// Min funding amount cannot be greater than max amount.
         MinFundingAmountCannotBeGreaterThanMaxAmount,
@@ -879,6 +949,10 @@ decl_module! {
             )?;
 
             Self::ensure_create_bounty_parameters_valid(&params)?;
+            let stored_creation_params = params
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::ClosedContractMemberListIsTooLarge)?;
 
             let amount = params.cherry
             .saturating_add(params.oracle_reward)
@@ -901,7 +975,7 @@ decl_module! {
 
             let bounty = Bounty::<T> {
                 total_funding: Zero::zero(),
-                creation_params: params.clone(),
+                creation_params: stored_creation_params,
                 milestone: created_bounty_milestone,
                 active_work_entry_count: 0,
                 has_unpaid_oracle_reward: params.oracle_reward > Zero::zero()
@@ -1822,11 +1896,6 @@ impl<T: Config> Module<T> {
                 Error::<T>::ClosedContractMemberListIsEmpty
             );
 
-            ensure!(
-                member_ids.len() <= T::ClosedContractSizeLimit::get().saturated_into(),
-                Error::<T>::ClosedContractMemberListIsTooLarge
-            );
-
             for member_id in member_ids {
                 ensure!(
                     T::Membership::controller_account_id(*member_id).is_ok(),
@@ -2293,11 +2362,15 @@ impl<T: Config> Module<T> {
             judgment_map.iter().fold(
                 (0u32, 0u32, 0u32),
                 |(w, r, k), (_, judgment)| match judgment {
-                    OracleWorkEntryJudgment::Winner { .. } => (w + 1, r, k),
+                    OracleWorkEntryJudgment::Winner { .. } => (w.saturating_add(1), r, k),
                     OracleWorkEntryJudgment::Rejected {
                         action_justification,
                         ..
-                    } => (w, r + 1, k + action_justification.len() as u32),
+                    } => (
+                        w,
+                        r.saturating_add(1),
+                        k.saturating_add(action_justification.len() as u32),
+                    ),
                 },
             );
 

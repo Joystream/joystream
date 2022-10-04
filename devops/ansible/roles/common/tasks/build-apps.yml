@@ -1,0 +1,26 @@
+---
+# Build code
+
+- name: Build joystream apps
+  shell: 
+    cmd: |
+      bash -ic "yarn build:packages"
+  args:
+    chdir: '{{ remote_code_path }}'
+    # Always try to rebuild incase code has been updated for existing repo
+    # creates: 'target/release/joystream-node'
+    executable: /bin/bash
+  # Run in async fashion for max duration of 1 hr
+  async: 3600
+  poll: 0
+  register: build_result
+
+- name: Check on build async task
+  async_status:
+    jid: '{{ build_result.ansible_job_id }}'
+  register: job_result
+  until: job_result.finished
+  # Max number of times to check for status
+  retries: 36
+  # Check for the status every 100s
+  delay: 100

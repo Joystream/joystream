@@ -1,13 +1,15 @@
 use crate::*;
-use common::{bloat_bond::RepayableBloatBondOf, ProofElementRecord, Side};
+use common::{
+    bloat_bond::RepayableBloatBondOf,
+    merkle_tree::{ProofElementRecord, Side},
+};
+use frame_support::parameter_types;
 use frame_support::storage::{
     bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet,
 };
 use frame_support::PalletId;
 use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
-#[cfg(feature = "std")]
-use strum_macros::EnumIter;
 
 /// Defines NFT limit ID type for global and channel NFT limits and counters.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -50,7 +52,7 @@ impl Default for NftLimitPeriod {
 
 /// Defines limit for object for a defined period.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, Copy, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, Copy, TypeInfo, MaxEncodedLen)]
 pub struct LimitPerPeriod<BlockNumber> {
     /// Limit for objects.
     pub limit: u64,
@@ -61,7 +63,7 @@ pub struct LimitPerPeriod<BlockNumber> {
 
 /// Defines limit for object for a defined period.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct NftCounter<BlockNumber: BaseArithmetic + Copy> {
     /// Counter for objects.
     pub counter: u64,
@@ -94,7 +96,7 @@ impl<BlockNumber: BaseArithmetic + Copy> NftCounter<BlockNumber> {
         period_length: BlockNumber,
     ) {
         if self.is_current_period(current_block, period_length) {
-            self.counter += 1;
+            self.counter = self.counter.saturating_add(1);
         } else {
             self.counter = 1;
         }
@@ -117,7 +119,7 @@ pub enum NewAsset<ContentParameters> {
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum ChannelOwner<MemberId, CuratorGroupId> {
     /// A Member owns the channel
     Member(MemberId),
@@ -133,88 +135,121 @@ impl<MemberId: Default, CuratorGroupId> Default for ChannelOwner<MemberId, Curat
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
-pub enum ChannelActionPermission {
-    /// Allows updating channel metadata through `update_channel` tx
-    UpdateChannelMetadata,
-    /// Allows adding/setting/unsetting/removing channel assets through `update_channel` tx
-    ManageNonVideoChannelAssets,
-    /// Allows adding/updating/removing channel collaborators through `update_channel`, provided that:
-    /// - all affected collaborators currently have permissions that are a subset of sender agent permissions
-    /// - all affected collaborators will have permissions that are a subset of sender agent permissions AFTER the update
-    ManageChannelCollaborators,
-    /// Allows updating video metadata through `update_video` tx
-    UpdateVideoMetadata,
-    /// Allows adding a new video through `create_video` tx:
-    /// - allows including new assets, even without `ManageVideoAssets` permissions
-    /// - does not allow issuing an nft through optional `auto_issue_nft` parameter
-    ///   (unless `ManageVideoNfts` permissions are also granted)
-    AddVideo,
-    /// Allows adding/setting/unsetting/removing video assets through `update_video` tx
-    ManageVideoAssets,
-    /// Allows deleting the channel through `delete_channel` tx
-    /// (provided it has no assets, otherwise ManageNonVideoChannelAssets needs to be additionally granted)
-    DeleteChannel,
-    /// Allows deleting a video through `delete_video` tx
-    /// (provided it has no assets, otherwise ManageVideoAssets needs to be additionally granted)
-    DeleteVideo,
-    /// Allows managing video nfts owned by the channel, this includes actions such as:
-    /// - issuing nft through `issue_nft` / `create_video` / `update_video`
-    /// - starting nft auctions: `start_open_auction`, `start_english_auction`
-    /// - canceling nft auctions: `cancel_english_auction`, `cancel_open_auction`
-    /// - `offer_nft`
-    /// - `cancel_offer`,
-    /// - `sell_nft`
-    /// - `cancel_buy_now`,
-    /// - `update_buy_now_price`,
-    /// - `pick_open_auction_winner`
-    /// - `nft_owner_remark`
-    /// - `destroy_nft`
-    ManageVideoNfts,
-    /// Allows executing `channel_agent_remark` for given channel
-    AgentRemark,
-    /// Allows updating channel transfer status through `update_channel_transfer_status` tx
-    TransferChannel,
-    /// Allows claiming channel reward through `claim_channel_reward` tx
-    // or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
-    ClaimChannelReward,
-    // Allows the agent to trigger channel balance withdrawal through `withdraw_from_channel_balance` tx
-    // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted).
-    // The withdrawal always goes to the channel owner member controller account (for member channels) /
-    // the council budget (curator channels)
-    WithdrawFromChannelBalance,
-    /// Allows issuing channel's creator token through `issue_creator_token` extrinsic.
-    IssueCreatorToken,
-    /// Allows the agent to claim creator token patronage into AGENT'S MEMBERSHIP(!).
-    /// Affected extrinsics:
-    /// - `claim_creator_token_patronage_credit`
-    ClaimCreatorTokenPatronage,
-    /// Allows initializing and managing channel's creator token sale.
-    /// Included actions:
-    /// - `init_creator_token_sale` (CRT source: AGENT'S MEMBERSHIP, JOY dest: AGENT'S ACCOUNT / None)
-    /// - `update_upcoming_creator_token_sale` (only if initialized by AGENT in question)
-    /// - `finalize_creator_token_sale` (only if initialized by AGENT in question)
-    InitAndManageCreatorTokenSale,
-    /// Allows performing creator token issuer transfer (CRT source: AGENT'S MEMBERSHIP) through:
-    /// - `creator_token_issuer_transfer`
-    CreatorTokenIssuerTransfer,
-    /// Allows changing creator token transfer policy to permissionless through:
-    /// - `make_creator_token_permissionless`
-    MakeCreatorTokenPermissionless,
-    /// Allows reducing creator token patronage rate through:
-    /// - `reduce_creator_token_patronage_rate_to`
-    ReduceCreatorTokenPatronageRate,
-    /// Allows issuing and finalizing revenue splits. Affected extrinsics:
-    /// - `issue_revenue_split`
-    /// - `finalize_revenue_split`
-    ManageRevenueSplits,
-    /// Allows deissuing a creator token (provided it has 0 supply)
-    /// - `deissue_creator_token`
-    DeissueCreatorToken,
+// Proc macro (EnumIter) clippy::integer_arithmetic disable hack
+#[allow(clippy::integer_arithmetic)]
+pub mod iterable_enums {
+    use codec::{Decode, Encode, MaxEncodedLen};
+    use scale_info::TypeInfo;
+    #[cfg(feature = "std")]
+    use serde::{Deserialize, Serialize};
+    #[cfg(feature = "std")]
+    use strum_macros::EnumIter;
+    use varaint_count::VariantCount;
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+    #[derive(
+        Encode,
+        Decode,
+        Clone,
+        Copy,
+        PartialEq,
+        Eq,
+        Debug,
+        PartialOrd,
+        Ord,
+        TypeInfo,
+        VariantCount,
+        MaxEncodedLen,
+    )]
+    pub enum ChannelActionPermission {
+        /// Allows updating channel metadata through `update_channel` tx
+        UpdateChannelMetadata,
+        /// Allows adding/setting/unsetting/removing channel assets through `update_channel` tx
+        ManageNonVideoChannelAssets,
+        /// Allows adding/updating/removing channel collaborators through `update_channel`, provided that:
+        /// - all affected collaborators currently have permissions that are a subset of sender agent permissions
+        /// - all affected collaborators will have permissions that are a subset of sender agent permissions AFTER the update
+        ManageChannelCollaborators,
+        /// Allows updating video metadata through `update_video` tx
+        UpdateVideoMetadata,
+        /// Allows adding a new video through `create_video` tx:
+        /// - allows including new assets, even without `ManageVideoAssets` permissions
+        /// - does not allow issuing an nft through optional `auto_issue_nft` parameter
+        ///   (unless `ManageVideoNfts` permissions are also granted)
+        AddVideo,
+        /// Allows adding/setting/unsetting/removing video assets through `update_video` tx
+        ManageVideoAssets,
+        /// Allows deleting the channel through `delete_channel` tx
+        /// (provided it has no assets, otherwise ManageNonVideoChannelAssets needs to be additionally granted)
+        DeleteChannel,
+        /// Allows deleting a video through `delete_video` tx
+        /// (provided it has no assets, otherwise ManageVideoAssets needs to be additionally granted)
+        DeleteVideo,
+        /// Allows managing video nfts owned by the channel, this includes actions such as:
+        /// - issuing nft through `issue_nft` / `create_video` / `update_video`
+        /// - starting nft auctions: `start_open_auction`, `start_english_auction`
+        /// - canceling nft auctions: `cancel_english_auction`, `cancel_open_auction`
+        /// - `offer_nft`
+        /// - `cancel_offer`,
+        /// - `sell_nft`
+        /// - `cancel_buy_now`,
+        /// - `update_buy_now_price`,
+        /// - `pick_open_auction_winner`
+        /// - `nft_owner_remark`
+        /// - `destroy_nft`
+        ManageVideoNfts,
+        /// Allows executing `channel_agent_remark` for given channel
+        AgentRemark,
+        /// Allows updating channel transfer status through `update_channel_transfer_status` tx
+        TransferChannel,
+        /// Allows claiming channel reward through `claim_channel_reward` tx
+        // or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
+        ClaimChannelReward,
+        // Allows the agent to trigger channel balance withdrawal through `withdraw_from_channel_balance` tx
+        // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted).
+        // The withdrawal always goes to the channel owner member controller account (for member channels) /
+        // the council budget (curator channels)
+        WithdrawFromChannelBalance,
+        /// Allows issuing channel's creator token through `issue_creator_token` extrinsic.
+        IssueCreatorToken,
+        /// Allows the agent to claim creator token patronage into AGENT'S MEMBERSHIP(!).
+        /// Affected extrinsics:
+        /// - `claim_creator_token_patronage_credit`
+        ClaimCreatorTokenPatronage,
+        /// Allows initializing and managing channel's creator token sale.
+        /// Included actions:
+        /// - `init_creator_token_sale` (CRT source: AGENT'S MEMBERSHIP, JOY dest: AGENT'S ACCOUNT / None)
+        /// - `update_upcoming_creator_token_sale` (only if initialized by AGENT in question)
+        /// - `finalize_creator_token_sale` (only if initialized by AGENT in question)
+        InitAndManageCreatorTokenSale,
+        /// Allows performing creator token issuer transfer (CRT source: AGENT'S MEMBERSHIP) through:
+        /// - `creator_token_issuer_transfer`
+        CreatorTokenIssuerTransfer,
+        /// Allows changing creator token transfer policy to permissionless through:
+        /// - `make_creator_token_permissionless`
+        MakeCreatorTokenPermissionless,
+        /// Allows reducing creator token patronage rate through:
+        /// - `reduce_creator_token_patronage_rate_to`
+        ReduceCreatorTokenPatronageRate,
+        /// Allows issuing and finalizing revenue splits. Affected extrinsics:
+        /// - `issue_revenue_split`
+        /// - `finalize_revenue_split`
+        ManageRevenueSplits,
+        /// Allows deissuing a creator token (provided it has 0 supply)
+        /// - `deissue_creator_token`
+        DeissueCreatorToken,
+    }
+}
+
+pub use iterable_enums::ChannelActionPermission;
+
+parameter_types! {
+    pub const ChannelAgentPermissionsMaxSize: u32 = ChannelActionPermission::VARIANT_COUNT as u32;
 }
 
 pub type ChannelAgentPermissions = BTreeSet<ChannelActionPermission>;
+pub type StoredChannelAgentPermissions =
+    BoundedBTreeSet<ChannelActionPermission, ChannelAgentPermissionsMaxSize>;
 
 /// Destination of the funds withdrawn from the channel account
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -226,7 +261,7 @@ pub enum ChannelFundsDestination<AccountId> {
 
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct ChannelRecord<
     MemberId: Ord + PartialEq,
     CuratorGroupId: PartialEq,
@@ -237,6 +272,7 @@ pub struct ChannelRecord<
     TransferId: PartialEq + Copy,
     ChannelAssetsSet,
     ChannelCollaboratorsMap: PartialEq,
+    PausedFeaturesSet,
     RepayableBloatBond,
 > {
     /// The owner of a channel
@@ -250,7 +286,7 @@ pub struct ChannelRecord<
     /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
     pub privilege_level: ChannelPrivilegeLevel,
     /// List of channel features that have been paused by a curator
-    pub paused_features: BTreeSet<PausableChannelFeature>,
+    pub paused_features: PausedFeaturesSet,
     /// Transfer status of the channel. Requires to be explicitly accepted.
     pub transfer_status: ChannelTransferStatus<
         MemberId,
@@ -276,7 +312,7 @@ pub struct ChannelRecord<
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 /// Defines whether a channel is being transferred. No transfer by the default.
 pub enum ChannelTransferStatus<
     MemberId: Ord + PartialEq,
@@ -329,7 +365,7 @@ impl<
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 /// Contains parameters for the pending transfer.
 pub struct PendingTransfer<
     MemberId: Ord,
@@ -357,7 +393,7 @@ pub struct InitTransferParameters<MemberId: Ord + Clone, CuratorGroupId, Balance
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 /// Contains parameters for the pending transfer.
 pub struct TransferCommitmentParameters<
     ChannelCollaboratorsMap,
@@ -403,6 +439,7 @@ impl<
         TransferId,
         DataObjectsSet,
         CollaboratorsMap,
+        PausedFeaturesSet,
         RepayableBloatBond,
     >
 {
@@ -455,14 +492,38 @@ impl<
     }
 }
 
+parameter_types! {
+    pub PausedFeaturesSetMaxSize: u32 = PausableChannelFeature::VARIANT_COUNT as u32;
+}
+
 pub type ChannelAssetsSet<T> =
     BoundedBTreeSet<DataObjectId<T>, <T as Config>::MaxNumberOfAssetsPerChannel>;
 
 pub type ChannelCollaboratorsMap<T> = BoundedBTreeMap<
     <T as MembershipTypes>::MemberId,
-    ChannelAgentPermissions,
+    StoredChannelAgentPermissions,
     <T as Config>::MaxNumberOfCollaboratorsPerChannel,
 >;
+
+pub fn try_into_stored_collaborators_map<T: Config>(
+    collaborators_map: &BTreeMap<T::MemberId, ChannelAgentPermissions>,
+) -> Result<ChannelCollaboratorsMap<T>, DispatchError> {
+    collaborators_map
+        .clone()
+        .iter()
+        .map(|(k, v)| {
+            let stored_agent_permissions: StoredChannelAgentPermissions = v
+                .clone()
+                .try_into()
+                .map_err(|_| Error::<T>::MaxNumberOfChannelAgentPermissionsExceeded)?;
+            Ok((*k, stored_agent_permissions))
+        })
+        .collect::<Result<BTreeMap<_, _>, DispatchError>>()?
+        .try_into()
+        .map_err(|_| DispatchError::from(Error::<T>::MaxNumberOfChannelCollaboratorsExceeded))
+}
+
+pub type PausedFeaturesSet = BoundedBTreeSet<PausableChannelFeature, PausedFeaturesSetMaxSize>;
 
 // Channel alias type for simplification.
 pub type Channel<T> = ChannelRecord<
@@ -475,6 +536,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Config>::TransferId,
     ChannelAssetsSet<T>,
     ChannelCollaboratorsMap<T>,
+    PausedFeaturesSet,
     RepayableBloatBondOf<T>,
 >;
 
@@ -631,7 +693,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct VideoRecord<ChannelId, OwnedNft, VideoAssetsSet, RepayableBloatBond> {
     pub in_channel: ChannelId,
     /// Whether nft for this video have been issued.
@@ -853,6 +915,7 @@ pub trait NumericIdentifier:
     + Zero
     + From<u64>
     + Into<u64>
+    + MaxEncodedLen
 {
 }
 

@@ -2628,7 +2628,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "7.2.0"
+version = "7.4.1"
 dependencies = [
  "assert_cmd",
  "async-std",
@@ -2647,6 +2647,7 @@ dependencies = [
  "log",
  "nix 0.23.1",
  "node-inspect",
+ "overrides",
  "pallet-balances",
  "pallet-im-online",
  "pallet-staking",
@@ -2718,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "11.2.0"
+version = "11.3.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4147,6 +4148,7 @@ name = "node-inspect"
 version = "0.9.0-dev"
 dependencies = [
  "clap 3.2.5",
+ "overrides",
  "parity-scale-codec",
  "sc-cli",
  "sc-client-api",
@@ -4320,6 +4322,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21326818e99cfe6ce1e524c2a805c189a99b5ae555a35d19f9a284b427d86afa"
 
 [[package]]
+name = "overrides"
+version = "0.1.0"
+
+[[package]]
 name = "owning_ref"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4468,6 +4474,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-common",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -4505,6 +4512,7 @@ dependencies = [
  "sp-std",
  "strum 0.19.5",
  "strum_macros 0.19.4",
+ "variant_count",
 ]
 
 [[package]]
@@ -9327,6 +9335,16 @@ checksum = "2209b78d1249f7e6f3293657c9779fe31ced465df091bbd433a1cf88e916ec55"
 dependencies = [
  "ctor",
  "version_check",
+]
+
+[[package]]
+name = "variant_count"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aae2faf80ac463422992abf4de234731279c058aaf33171ca70277c98406b124"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

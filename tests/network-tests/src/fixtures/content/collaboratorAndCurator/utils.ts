@@ -1,5 +1,5 @@
 import { assert } from 'chai'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export function assertCuratorCollaboratorPermissions(
   expectedPermissions: ChannelActionPermission['type'][],

@@ -18,6 +18,9 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
+# Install additional Ansible roles from requirements
+ansible-galaxy install -r ../ansible/requirements.yml
+
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying single node ==========="
 aws cloudformation deploy \
@@ -33,14 +36,11 @@ aws cloudformation deploy \
 
 # If the deploy succeeded, get the IP and configure the created instance
 if [ $? -eq 0 ]; then
-  # Install additional Ansible roles from requirements
-  ansible-galaxy install -r requirements.yml
-
   SERVER_IP=$(get_aws_export $STACK_NAME "PublicIp")
 
   echo -e "New Node Public IP: $SERVER_IP"
 
   echo -e "\n\n=========== Configuring node ==========="
-  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-single-node-playbook.yml \
-    --extra-vars "binary_file=$BINARY_FILE chain_spec_file=$CHAIN_SPEC_FILE"
+  ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH ../ansible/deploy-single-node-playbook.yml \
+    --extra-vars "joystream_node=$BINARY_FILE chainspec=$CHAIN_SPEC_FILE"
 fi

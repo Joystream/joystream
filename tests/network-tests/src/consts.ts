@@ -1,4 +1,4 @@
-import { PalletCommonWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
+import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
 import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
 import { ProposalType, WorkingGroupModuleName } from './types'

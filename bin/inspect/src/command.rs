@@ -22,6 +22,7 @@ use crate::{
     cli::{InspectCmd, InspectSubCmd},
     Inspector,
 };
+use overrides::DEFAULT_HEAP_PAGES;
 use sc_cli::{CliConfiguration, ImportParams, Result, SharedParams};
 use sc_executor::NativeElseWasmExecutor;
 use sc_service::{new_full_client, Configuration, NativeExecutionDispatch};
@@ -39,7 +40,7 @@ impl InspectCmd {
     {
         let executor = NativeElseWasmExecutor::<EX>::new(
             config.wasm_method,
-            config.default_heap_pages,
+            Some(DEFAULT_HEAP_PAGES),
             config.max_runtime_instances,
             config.runtime_cache_size,
         );

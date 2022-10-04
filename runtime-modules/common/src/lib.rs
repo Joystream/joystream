@@ -1,13 +1,25 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    not(any(test, feature = "test", feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
 
 pub mod bloat_bond;
-pub mod constraints;
 pub mod costs;
 pub mod council;
 pub mod currency;
 pub mod locks;
 pub mod membership;
+pub mod merkle_tree;
+pub mod no_panic;
 pub mod storage;
 pub mod working_group;
 
@@ -18,11 +30,10 @@ use serde::{Deserialize, Serialize};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::LockIdentifier;
 use frame_support::Parameter;
-use frame_system::Config;
 pub use membership::{ActorId, MemberId, MembershipTypes, StakingAccountValidator};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, Saturating};
-use sp_runtime::traits::{Hash, MaybeSerialize, Member};
+use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
 
@@ -139,123 +150,4 @@ pub trait BudgetManager<AccountId, Balance: Saturating> {
 
         Self::set_budget(new_budget);
     }
-}
-
-/// Side used to construct hash values during merkle proof verification
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo)]
-pub enum Side {
-    Left,
-    Right,
-}
-
-impl Default for Side {
-    fn default() -> Self {
-        Side::Right
-    }
-}
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-/// Element used in for channel payout
-pub struct ProofElementRecord<Hash, Side> {
-    // Node hash
-    pub hash: Hash,
-    // side in which *self* must be adjoined during proof verification
-    pub side: Side,
-}
-
-#[derive(Debug)]
-pub struct IndexItem {
-    index: usize,
-    side: Side,
-}
-
-pub fn generate_merkle_root_helper<T: Config, E: Encode>(collection: &[E]) -> Vec<T::Hash> {
-    // generates merkle root from the ordered sequence collection.
-    // The resulting vector is structured as follows: elements in range
-    // [0..collection.len()) will be the tree leaves (layer 0), elements in range
-    // [collection.len()..collection.len()/2) will be the nodes in the next to last layer (layer 1)
-    // [layer_n_length..layer_n_length/2) will be the number of nodes in layer(n+1)
-    assert!(!collection.is_empty());
-    let mut out = Vec::new();
-    for e in collection.iter() {
-        out.push(T::Hashing::hash(&e.encode()));
-    }
-
-    let mut start: usize = 0;
-    let mut last_len = out.len();
-    //let mut new_len = out.len();
-    let mut max_len = last_len >> 1;
-    let mut rem = last_len % 2;
-
-    // range [last..(maxlen >> 1) + (maxlen % 2)]
-    while max_len != 0 {
-        last_len = out.len();
-        for i in 0..max_len {
-            out.push(T::Hashing::hash(
-                &[out[start + 2 * i], out[start + 2 * i + 1]].encode(),
-            ));
-        }
-        if rem == 1 {
-            out.push(T::Hashing::hash(
-                &[out[last_len - 1], out[last_len - 1]].encode(),
-            ));
-        }
-        let new_len: usize = out.len() - last_len;
-        rem = new_len % 2;
-        max_len = new_len >> 1;
-        start = last_len;
-    }
-    out
-}
-
-pub fn build_merkle_path_helper<T: Config, E: Encode + Clone>(
-    collection: &[E],
-    idx: usize,
-) -> Vec<ProofElementRecord<T::Hash, Side>> {
-    let merkle_tree = generate_merkle_root_helper::<T, _>(collection);
-    // builds the actual merkle path with the hashes needed for the proof
-    let index_path = index_path_helper(collection.len(), idx + 1);
-    index_path
-        .iter()
-        .map(|idx_item| crate::ProofElementRecord::<_, _> {
-            hash: merkle_tree[idx_item.index - 1],
-            side: idx_item.side,
-        })
-        .collect()
-}
-
-pub fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
-    // used as a helper function to generate the correct sequence of indexes used to
-    // construct the merkle path necessary for membership proof
-    let mut idx = index;
-    assert!(idx > 0); // index starting at 1
-    let floor_2 = |x: usize| (x >> 1) + (x % 2);
-    let mut path = Vec::new();
-    let mut prev_len: usize = 0;
-    let mut el = len;
-    while el != 1 {
-        if idx % 2 == 1 && idx == el {
-            path.push(IndexItem {
-                index: prev_len + idx,
-                side: Side::Left,
-            });
-        } else {
-            match idx % 2 {
-                1 => path.push(IndexItem {
-                    index: prev_len + idx + 1,
-                    side: Side::Right,
-                }),
-                _ => path.push(IndexItem {
-                    index: prev_len + idx - 1,
-                    side: Side::Left,
-                }),
-            };
-        }
-        prev_len += el;
-        idx = floor_2(idx);
-        el = floor_2(el);
-    }
-    path
 }

@@ -95,6 +95,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     bounty: {
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Bounty doesnt exist.
        **/
       BountyDoesntExist: AugmentedError<ApiType>;
@@ -546,6 +550,14 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MaxCashoutValueTooHigh: AugmentedError<ApiType>;
       /**
+       * Maximum number of curator permissions per given channel privilege level exceeded
+       **/
+      MaxCuratorPermissionsPerLevelExceeded: AugmentedError<ApiType>;
+      /**
+       * Maximum number of channel agent permissions for channel agent exceeded
+       **/
+      MaxNumberOfChannelAgentPermissionsExceeded: AugmentedError<ApiType>;
+      /**
        * Number of channel assets exceeds MaxNumberOfAssetsPerChannel
        **/
       MaxNumberOfChannelAssetsExceeded: AugmentedError<ApiType>;
@@ -553,6 +565,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Number of channel collaborators exceeds MaxNumberOfCollaboratorsPerChannel
        **/
       MaxNumberOfChannelCollaboratorsExceeded: AugmentedError<ApiType>;
+      /**
+       * Maximum number of paused features per channel exceeded
+       **/
+      MaxNumberOfPausedFeaturesPerChannelExceeded: AugmentedError<ApiType>;
       /**
        * Number of video assets exceeds MaxMaxNumberOfAssetsPerVideo
        **/
@@ -736,6 +752,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -854,6 +874,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     council: {
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Origin is invalid.
        **/
       BadOrigin: AugmentedError<ApiType>;
@@ -957,6 +981,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -1138,6 +1166,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * A thread with outstanding posts cannot be removed
        **/
       CannotDeleteThreadWithOutstandingPosts: AugmentedError<ApiType>;
@@ -1178,6 +1210,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MapSizeLimit: AugmentedError<ApiType>;
       /**
+       * Maximum number of stickied threads per category exceeded
+       **/
+      MaxNumberOfStickiedThreadsExceeded: AugmentedError<ApiType>;
+      /**
        * Maximum valid category depth exceeded.
        **/
       MaxValidCategoryDepthExceeded: AugmentedError<ApiType>;
@@ -1214,10 +1250,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       PostDoesNotExist: AugmentedError<ApiType>;
       /**
-       * Duplicates for the stickied thread id collection.
-       **/
-      StickiedThreadIdsDuplicates: AugmentedError<ApiType>;
-      /**
        * Thread does not exist
        **/
       ThreadDoesNotExist: AugmentedError<ApiType>;
@@ -1239,6 +1271,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -1365,6 +1401,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -1635,6 +1675,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -1819,6 +1863,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -1944,6 +1992,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -2071,6 +2123,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -2196,6 +2252,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Requested account data does not exist
        **/
       AccountInformationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Attempt to remove an account with some outstanding tokens
        **/
@@ -2488,6 +2548,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     proposalsDiscussion: {
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Account can't delete post at the moment
        **/
       CannotDeletePost: AugmentedError<ApiType>;
@@ -2530,6 +2594,10 @@ declare module '@polkadot/api-base/types/errors' {
        * The proposal have been already voted on
        **/
       AlreadyVoted: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * The conflicting stake discovered. Cannot stake.
        **/
@@ -2574,6 +2642,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Max active proposals number exceeded
        **/
       MaxActiveProposalNumberExceeded: AugmentedError<ApiType>;
+      /**
+       * The size of encoded dispatchable call to be executed by the proposal is too big
+       **/
+      MaxDispatchableCallCodeSizeExceeded: AugmentedError<ApiType>;
       /**
        * Not an author
        **/
@@ -2948,6 +3020,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MaxDistributionBucketNumberPerBagLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Max number of operators for a distribution bucket reached.
+       **/
+      MaxNumberOfOperatorsPerDistributionBucketReached: AugmentedError<ApiType>;
+      /**
        * Max number of pending invitations limit for a distribution bucket reached.
        **/
       MaxNumberOfPendingInvitationsLimitForDistributionBucketReached: AugmentedError<ApiType>;
@@ -3062,6 +3138,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/

@@ -1,9 +1,9 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
 import {
-  PalletContentChannelActionPermission as ChannelActionPermission,
-  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
-  PalletContentPermissionsCuratorGroup as CuratorGroup,
+  PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission,
+  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction as ContentModerationAction,
+  PalletContentPermissionsCuratorGroupCuratorGroupRecord as CuratorGroup,
   PalletWorkingGroupGroupWorker as Worker,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentChannelRecord as Channel,
@@ -173,7 +173,10 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
       return true
     }
 
-    const permissionRequired = createType('PalletContentPermissionsCuratorGroupContentModerationAction', permission)
+    const permissionRequired = createType(
+      'PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction',
+      permission
+    )
     const { permissionsByLevel } = await this.getCuratorGroup(actor.asCurator[0].toNumber())
     const permissionsForLevel = [...permissionsByLevel].find(([k]) => k.eq(channelPrivilegeLevel))?.[1]
     return !!(

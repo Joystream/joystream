@@ -4,6 +4,7 @@ import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembersAndCurators'
 import { assertNftOwner } from './utils'
+import { assert } from 'chai'
 
 export class UpdateVideoForNftCreationFixture extends BaseQueryNodeFixture {
   private author: IMember
@@ -48,6 +49,7 @@ export class UpdateVideoForNftCreationFixture extends BaseQueryNodeFixture {
     this.debug('Check NFT ownership')
     await assertNftOwner(this.query, event.data[1].toNumber(), this.author, (ownedNft) => {
       Utils.assert(ownedNft.transactionalStatusAuction, 'NFT not in auctioned state')
+      assert.equal(ownedNft.videoCategory?.id, ownedNft.video.category?.id)
     })
   }
 }

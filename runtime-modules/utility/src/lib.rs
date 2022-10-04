@@ -19,6 +19,22 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -33,7 +49,7 @@ use frame_support::dispatch::DispatchResultWithPostInfo;
 use frame_support::traits::Get;
 use frame_support::traits::{Currency, Imbalance};
 use frame_support::weights::{DispatchClass, Weight};
-use frame_support::{decl_error, decl_event, decl_module, ensure, print};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, print};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
@@ -104,6 +120,10 @@ decl_event!(
         TokensBurned(AccountId, Balance),
     }
 );
+
+decl_storage! { generate_storage_info
+    trait Store for Module<T: Config> as JoystreamUtility { }
+}
 
 decl_module! {
     pub struct Module<T: Config> for enum Call where origin: T::Origin {

@@ -3,7 +3,7 @@ authors = ['Joystream contributors']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '7.2.0'
+version = '7.4.1'
 default-run = "joystream-node"
 
 [[bin]]
@@ -80,6 +80,9 @@ pallet-transaction-storage = { package = 'pallet-transaction-storage', default-f
 
 # node-specific dependencies
 node-runtime = { package = "joystream-node-runtime", path = "../../runtime" }
+
+# overrides
+overrides = { package = "overrides", path = "../overrides" }
 
 # CLI-specific dependencies
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}

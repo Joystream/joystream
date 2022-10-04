@@ -298,7 +298,7 @@ fn move_to_block_before_initialize_assert_stage<T: Config>(
 }
 
 const MAX_BYTES: u32 = 16384;
-const MAX_CANDIDATES: u64 = 100;
+const MAX_CANDIDATES: u32 = 100;
 const START_ID: u32 = 5000;
 const MAX_FUNDING_REQUESTS: u32 = 100;
 
@@ -384,7 +384,7 @@ benchmarks! {
         assert_eq!(System::<T>::block_number(), Zero::zero(), "Block number not updated");
         // Worst case we have a council elected
         let (accounts_id, candidates_id) = start_period_announce_multiple_candidates::<T>(
-            T::CouncilSize::get().try_into().unwrap()
+            T::CouncilSize::get()
         );
 
         let winners = candidates_id.iter().map(|candidate_id| {
@@ -410,7 +410,7 @@ benchmarks! {
             }).collect::<Vec<_>>();
 
         assert_eq!(
-            Council::<T>::council_members(),
+            Council::<T>::council_members().to_vec(),
             council,
             "Council not updated"
         );
@@ -491,15 +491,14 @@ benchmarks! {
 
     try_progress_stage_announcing_start_election {
         let i in
-            ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get()).try_into().unwrap()) ..
-            ((T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get() + MAX_CANDIDATES)
-                .try_into().unwrap());
+            (T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get()) ..
+            (T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get() + MAX_CANDIDATES);
 
         start_period_announce_multiple_candidates::<T>(i + 1);
         let current_block_number = System::<T>::block_number();
         let current_stage =
             CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
-                candidates_count: (i + 1).into(),
+                candidates_count: i + 1,
                 ends_at: current_block_number + T::AnnouncingPeriodDuration::get()
             });
         let current_stage_update =
@@ -518,14 +517,14 @@ benchmarks! {
             CouncilStageUpdate {
                 stage: CouncilStage::Election(
                     CouncilStageElection {
-                        candidates_count: (i + 1).into()
+                        candidates_count: i + 1
                     }),
                 changed_at: target_block_number,
             },
             "Announcing period didn't end"
         );
 
-        assert_last_event::<T>(RawEvent::VotingPeriodStarted((i+1).into()).into());
+        assert_last_event::<T>(RawEvent::VotingPeriodStarted(i+1).into());
     }
 
     try_progress_stage_announcing_restart {
@@ -720,7 +719,7 @@ benchmarks! {
 
         // Worst case we have a council elected
         let (accounts_id, candidates_id) = start_period_announce_multiple_candidates::<T>(
-            T::CouncilSize::get().try_into().unwrap()
+            T::CouncilSize::get()
         );
 
         let winners = candidates_id.iter().map(|candidate_id| {
@@ -746,7 +745,7 @@ benchmarks! {
             }).collect::<Vec<_>>();
 
         assert_eq!(
-            Council::<T>::council_members(),
+            Council::<T>::council_members().to_vec(),
             council,
             "Council not updated"
         );

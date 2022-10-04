@@ -10,34 +10,25 @@ Parameters:
     Default: t2.xlarge
   EC2AMI:
     Type: String
-    Default: 'ami-09e67e426f25ce0d7'
+    Default: 'ami-0149b2da6ceec4bb0'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
-    Default: 'joystream-key'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
 
 Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
+      GroupDescription: !Sub 'Internal Security group for ami builder ${AWS::StackName}'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}_validator'
+          Value: !Sub '${AWS::StackName}_ami_builder'
 
   InstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -78,7 +69,6 @@ Resources:
             
             # Build toolchains
             apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config unzip libc6-dev make libssl-dev python3 cmake
-
             apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
             mkdir -p /etc/apt/keyrings
