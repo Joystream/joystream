@@ -8,6 +8,9 @@ decl_error! {
     /// Discussion module predefined errors
     // #[derive(PartialEq)]
     pub enum Error for Module<T: Config<I>, I: Instance>{
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Provided stake balance cannot be zero.
         StakeBalanceCannotBeZero,
 

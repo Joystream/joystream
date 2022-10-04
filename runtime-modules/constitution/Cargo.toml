@@ -14,6 +14,7 @@ frame_system = { package = 'frame-system', default-features = false, git = 'http
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', optional = true}
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', optional = true }
+common = { package = 'pallet-common', default-features = false, path = '../common'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
@@ -21,7 +22,10 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 
 [features]
 default = ['std']
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "common/runtime-benchmarks",
+]
 std = [
     'serde',
     'codec/std',
@@ -31,4 +35,5 @@ std = [
     'sp-runtime/std',
     'scale-info/std',
     'pallet-balances/std',
+    'common/std',
 ]

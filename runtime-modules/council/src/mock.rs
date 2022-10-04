@@ -861,7 +861,7 @@ where
         origin: OriginType<T::AccountId>,
         member_id: T::MemberId,
         stake: Balance<T>,
-        expected_result: Result<(), Error<T>>,
+        expected_result: DispatchResult,
     ) {
         // use member id as staking and reward accounts
         Self::announce_candidacy_raw(
@@ -880,7 +880,7 @@ where
         staking_account_id: T::AccountId,
         reward_account_id: T::AccountId,
         stake: Balance<T>,
-        expected_result: Result<(), Error<T>>,
+        expected_result: DispatchResult,
     ) {
         // check method returns expected result
         assert_eq!(
