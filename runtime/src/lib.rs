@@ -1539,6 +1539,10 @@ impl Default for Call {
 
 parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
+    // module : proposals_discussion
+    pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:prdis");
+    pub const ProposalsDiscussionPostLifetime: BlockNumber = hours!(1);
+
     // Proposal discussion post deposit related:
     pub ProposalDiscussionPostCleanupTxFee: Balance = compute_fee(
         Call::ProposalsDiscussion(proposals_discussion::Call::<Runtime>::delete_post {
@@ -1555,9 +1559,6 @@ parameter_types! {
         false, // doesn't serve as existential deposit
         ProposalDiscussionPostCleanupTxFee::get()
     );
-    // module : proposals_discussion
-    pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:prdis");
-    pub const ProposalsDiscussionPostLifetime: BlockNumber = hours!(1);
 }
 
 macro_rules! call_wg {
