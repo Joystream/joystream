@@ -1,6 +1,15 @@
 ---
 # Configure and start joystream-node RPC, QueryNode, Orion and Faucet services on the servers
 
+- name: Check if remote chain path dir exists
+  stat:
+    path: "bin/chain"
+  register: remote_dir_check 
+
+- name: Exit if remote dir exists
+  fail: msg="remote bin/chain dir already exists"
+  when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
+
 - name: Creating chain directory
   file:
     path: "{{ item }}"
@@ -23,10 +32,11 @@
   become: true
 
 - name: Start service joystream-node, if not started
-  service:
+  systemd:
     name: joystream-node
     state: started
     enabled: yes
+    daemon_reload: yes
   become: true
 
 - name: Make sure docker is running

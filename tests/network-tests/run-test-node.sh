@@ -7,6 +7,9 @@ cd $SCRIPT_PATH
 # Location used to store chain data, generated spec file and initial members
 # and balances for the test chain.
 DATA_PATH=./data
+rm -Rf ${DATA_PATH}/alice
+rm -Rf ${DATA_PATH}/auth-*
+
 
 # Initial account balance for Alice
 # Alice is the source of funds for all new accounts that are created in the tests.
@@ -44,18 +47,20 @@ else
   fi
 fi
 
-function cleanup() {
-    rm -Rf ${DATA_PATH}/alice
-}
-
-trap cleanup EXIT
-
 # Create a chain spec file
-../../target/release/chain-spec-builder new -a Alice \
+../../target/release/chain-spec-builder \
+  new \
+  --fund-accounts \
+  -a //Alice \
   --chain-spec-path ${DATA_PATH}/chain-spec.json \
   --initial-balances-path ${DATA_PATH}/initial-balances.json \
   --deployment dev \
-  --sudo-account ${ALICE}
+  --sudo-account ${ALICE} \
+  --keystore-path ${DATA_PATH}
 
 ../../target/release/joystream-node --base-path ${DATA_PATH}/alice \
-  --validator --chain ${DATA_PATH}/chain-spec.json --alice --unsafe-ws-external --rpc-cors all --pruning=archive
+  --keystore-path ${DATA_PATH}/auth-0 \
+  --validator --chain ${DATA_PATH}/chain-spec.json \
+  --unsafe-ws-external --unsafe-rpc-external \
+  --rpc-methods Unsafe --rpc-cors=all \
+  --pruning=archive --no-telemetry
