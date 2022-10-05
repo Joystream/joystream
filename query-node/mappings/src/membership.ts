@@ -166,7 +166,7 @@ async function createNewMemberFromParams(
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
-    handle: ('unwrap' in handle ? handle.unwrap() : handle).toHuman()?.toString(),
+    handle: bytesToString('unwrap' in handle ? handle.unwrap() : handle),
     metadata: await saveMembershipMetadata(store, undefined, metadata),
     entry: entryMethod,
     referredBy:
