@@ -102,9 +102,8 @@ pub mod fees {
     impl WeightToFeePolynomial for WeightToFee {
         type Balance = Balance;
         fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-            // in Polkadot, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
-            let p = super::currency::CENTS;
-            let q = 10 * Balance::from(ExtrinsicBaseWeight::get());
+            let p = 2 * super::currency::CENTS;
+            let q = 100 * Balance::from(ExtrinsicBaseWeight::get());
             smallvec![WeightToFeeCoefficient {
                 degree: 1,
                 negative: false,
@@ -123,10 +122,6 @@ lazy_static! {
         BoundStakingAccountLockId::get(),
     ]
     .to_vec();
-}
-
-parameter_types! {
-    pub const ExistentialDeposit: Balance = currency::MILLICENTS;
 }
 
 pub mod currency {
@@ -187,19 +182,19 @@ mod tests {
     // This function tests that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight is correct
     fn full_block_fee_is_correct() {
         println!("Base: {}", ExtrinsicBaseWeight::get());
-        // A full block should cost between 10 and 100 DOLLARS.
+        // A full block should cost between 2 and 10 DOLLARS.
         let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
-        assert!(full_block >= DOLLARS.saturating_mul(10));
-        assert!(full_block <= DOLLARS.saturating_mul(100));
+        assert!(full_block >= DOLLARS.saturating_mul(2));
+        assert!(full_block <= DOLLARS.saturating_mul(10));
     }
 
     #[test]
     // This function tests that the fee for `ExtrinsicBaseWeight` of weight is correct
     fn extrinsic_base_fee_is_correct() {
-        // `ExtrinsicBaseWeight` should cost 1/10 of a CENT
+        // `ExtrinsicBaseWeight` should cost 1/50 of a CENT
         println!("Base: {}", ExtrinsicBaseWeight::get());
         let x = WeightToFee::weight_to_fee(&ExtrinsicBaseWeight::get());
-        let y = CENTS.saturating_div(10);
+        let y = CENTS.saturating_div(50);
         assert!(x.max(y) - x.min(y) < MILLICENTS);
     }
 }

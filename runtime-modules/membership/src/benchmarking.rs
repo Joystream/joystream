@@ -301,7 +301,7 @@ benchmarks! {
             controller_account: account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
@@ -337,7 +337,7 @@ benchmarks! {
             controller_account: new_controller_account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
@@ -375,7 +375,7 @@ benchmarks! {
             controller_account: new_controller_account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
@@ -414,7 +414,7 @@ benchmarks! {
         let second_handle = handle_from_id::<T>(second_member_id);
         let (second_account_id, second_member_id) = member_funded_account::<T>("second_member", second_member_id);
 
-        let number_of_invites = 5;
+        let number_of_invites = 2;
 
     }: _(RawOrigin::Signed(first_account_id.clone()), first_member_id, second_member_id, number_of_invites)
 
@@ -438,7 +438,7 @@ benchmarks! {
             root_account: second_account_id.clone(),
             controller_account: second_account_id.clone(),
             verified: false,
-            invites: 10,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get() + number_of_invites,
         };
 
         assert_eq!(MembershipById::<T>::get(first_member_id), Some(first_membership));
@@ -620,7 +620,7 @@ benchmarks! {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: is_verified,
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
