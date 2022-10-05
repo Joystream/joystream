@@ -7,6 +7,8 @@ build_local_code: ""
 git_repo: "https://github.com/Joystream/joystream.git"
 branch_name: carthage
 runtime_profile: ""
+chainspec_creation_strategy: "generate" # "generate" or "new"
+authority_seeds: [] # [ "Alice", "Bob" ]
 
 # Paths relative to remote_user working directory
 remote_data_path: artifacts

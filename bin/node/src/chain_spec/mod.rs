@@ -28,7 +28,10 @@ pub mod storage_config;
 use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
-    constants::currency::{ENDOWMENT, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND, STASH},
+    constants::{
+        currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
+        ExistentialDeposit,
+    },
     wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
     GrandpaConfig, ImOnlineConfig, MaxNominations, SessionConfig, SessionKeys, StakerStatus,
     StakingConfig, StorageConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
@@ -88,7 +91,8 @@ fn session_keys(
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
+    let password = None;
+    TPublic::Pair::from_string(seed, password)
         .expect("static values are valid; qed")
         .public()
 }
@@ -125,18 +129,18 @@ pub fn authority_keys_from_seed(
 // Accounts to endow on dev and local test networks
 fn development_endowed_accounts() -> Vec<AccountId> {
     vec![
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        get_account_id_from_seed::<sr25519::Public>("Bob"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-        get_account_id_from_seed::<sr25519::Public>("Dave"),
-        get_account_id_from_seed::<sr25519::Public>("Eve"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice"),
+        get_account_id_from_seed::<sr25519::Public>("//Bob"),
+        get_account_id_from_seed::<sr25519::Public>("//Charlie"),
+        get_account_id_from_seed::<sr25519::Public>("//Dave"),
+        get_account_id_from_seed::<sr25519::Public>("//Eve"),
+        get_account_id_from_seed::<sr25519::Public>("//Ferdie"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Bob//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Charlie//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Dave//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Eve//stash"),
+        get_account_id_from_seed::<sr25519::Public>("//Ferdie//stash"),
     ]
 }
 
@@ -160,6 +164,7 @@ pub fn joy_chain_spec_properties() -> json::map::Map<String, json::Value> {
 #[allow(clippy::too_many_arguments)]
 /// Helper function to create GenesisConfig for testing
 pub fn testnet_genesis(
+    fund_accounts: bool,
     initial_authorities: Vec<(
         AccountId,
         AccountId,
@@ -170,28 +175,106 @@ pub fn testnet_genesis(
     )>,
     initial_nominators: Vec<AccountId>,
     root_key: AccountId,
-    mut endowed_accounts: Vec<AccountId>,
-    genesis_balances: Vec<(AccountId, Balance)>,
+    endowed_accounts: Vec<AccountId>,
+    mut genesis_balances: Vec<(AccountId, Balance)>,
     vesting_accounts: Vec<(AccountId, BlockNumber, BlockNumber, Balance)>,
     content_cfg: ContentConfig,
     storage_cfg: StorageConfig,
 ) -> GenesisConfig {
-    // endow all authorities and nominators.
-    initial_authorities
+    // staking benchmakrs is not sensitive to actual value of min bonds so
+    // accounts are not funded with sufficient funds and fail with InsufficientBond err
+    // so for benchmarks we set min bond to zero.
+    const GENESIS_MIN_NOMINATOR_BOND: Balance = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_NOMINATOR_BOND
+    };
+    const GENESIS_MIN_VALIDATOR_BOND: Balance = if cfg!(feature = "runtime-benchmarks") {
+        0
+    } else {
+        MIN_VALIDATOR_BOND
+    };
+
+    /// How much each initial validator at genesis will bond
+    const INITIAL_VALIDATOR_BOND: Balance = GENESIS_MIN_VALIDATOR_BOND
+        .saturating_mul(10)
+        .saturating_add(ExistentialDeposit::get());
+    /// How much each initial nominator at genesis will bond per nomination
+    const INITIAL_NOMINATOR_BOND: Balance =
+        GENESIS_MIN_NOMINATOR_BOND.saturating_add(ExistentialDeposit::get());
+
+    let mut funded: Vec<AccountId> = genesis_balances
         .iter()
-        .map(|x| &x.0)
-        .chain(initial_nominators.iter())
-        .for_each(|x| {
-            if !endowed_accounts.contains(x) {
-                endowed_accounts.push(x.clone())
+        .cloned()
+        .map(|(account, _)| account)
+        .collect();
+
+    // For every account missing from genesis_balances add it and fund it
+    if fund_accounts {
+        // Genesis balance for each endowed account.
+        let endowment: Balance = DOLLARS
+            .saturating_mul(1_000_000)
+            .max(INITIAL_VALIDATOR_BOND)
+            .max(if !initial_nominators.is_empty() {
+                INITIAL_NOMINATOR_BOND.saturating_mul(initial_authorities.len() as u128)
+            } else {
+                0
+            });
+
+        initial_authorities.iter().for_each(|x| {
+            // stash
+            if !funded.contains(&x.0) {
+                funded.push(x.0.clone());
+                genesis_balances.push((x.0.clone(), endowment));
+            }
+            // controller
+            if !funded.contains(&x.1) {
+                funded.push(x.1.clone());
+                genesis_balances.push((x.1.clone(), endowment));
             }
         });
+
+        initial_nominators.iter().for_each(|account| {
+            if !funded.contains(account) {
+                funded.push(account.clone());
+                genesis_balances.push((account.clone(), endowment));
+            }
+        });
+
+        endowed_accounts.iter().for_each(|account| {
+            if !funded.contains(account) {
+                funded.push(account.clone());
+                genesis_balances.push((account.clone(), endowment));
+            }
+        });
+
+        if !funded.contains(&root_key) {
+            funded.push(root_key.clone());
+            genesis_balances.push((root_key.clone(), endowment));
+        }
+    }
+
+    // Make sure sudo is in initial balances sufficient funds
+    if !genesis_balances
+        .iter()
+        .cloned()
+        .any(|(account, _)| account == root_key)
+    {
+        println!("# WARNING - root_key is not assigned an initial balance");
+    }
 
     // stakers: all validators and nominators.
     let mut rng = rand::thread_rng();
     let stakers = initial_authorities
         .iter()
-        .map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator))
+        .map(|x| {
+            (
+                x.0.clone(),
+                x.1.clone(),
+                INITIAL_VALIDATOR_BOND,
+                StakerStatus::Validator,
+            )
+        })
         .chain(initial_nominators.iter().map(|x| {
             use rand::{seq::SliceRandom, Rng};
             let limit = (MaxNominations::get() as usize).min(initial_authorities.len());
@@ -205,41 +288,18 @@ pub fn testnet_genesis(
             (
                 x.clone(),
                 x.clone(),
-                STASH,
+                INITIAL_NOMINATOR_BOND,
                 StakerStatus::Nominator(nominations),
             )
         }))
         .collect::<Vec<_>>();
-
-    // staking benchmakrs is not sensitive to actual value of min bonds so
-    // accounts are not funded with sufficient funds and fail with InsufficientBond err
-    // so for benchmarks we set min bond to zero.
-    let min_nominator_bond = if cfg!(feature = "runtime-benchmarks") {
-        0
-    } else {
-        MIN_NOMINATOR_BOND
-    };
-    let min_validator_bond = if cfg!(feature = "runtime-benchmarks") {
-        0
-    } else {
-        MIN_VALIDATOR_BOND
-    };
 
     GenesisConfig {
         system: SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
         },
         balances: BalancesConfig {
-            balances: endowed_accounts
-                .iter()
-                .cloned()
-                .map(|x| (x, ENDOWMENT))
-                .chain(
-                    genesis_balances
-                        .iter()
-                        .map(|(account, balance)| (account.clone(), *balance)),
-                )
-                .collect(),
+            balances: genesis_balances,
         },
         session: SessionConfig {
             keys: initial_authorities
@@ -259,8 +319,8 @@ pub fn testnet_genesis(
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
             stakers,
-            min_nominator_bond,
-            min_validator_bond,
+            min_nominator_bond: GENESIS_MIN_NOMINATOR_BOND,
+            min_validator_bond: GENESIS_MIN_VALIDATOR_BOND,
             ..Default::default()
         },
         sudo: SudoConfig {
@@ -290,12 +350,13 @@ pub fn testnet_genesis(
 
 fn development_config_genesis() -> GenesisConfig {
     testnet_genesis(
-        vec![authority_keys_from_seed("Alice")],
+        true,
+        vec![authority_keys_from_seed("//Alice")],
         vec![
-            get_account_id_from_seed::<sr25519::Public>("Bob"),
-            get_account_id_from_seed::<sr25519::Public>("Charlie"),
+            get_account_id_from_seed::<sr25519::Public>("//Bob"),
+            get_account_id_from_seed::<sr25519::Public>("//Charlie"),
         ],
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice"),
         development_endowed_accounts(),
         vec![],
         vec![],
@@ -322,12 +383,13 @@ pub fn development_config() -> ChainSpec {
 
 fn local_testnet_genesis() -> GenesisConfig {
     testnet_genesis(
+        true,
         vec![
-            authority_keys_from_seed("Alice"),
-            authority_keys_from_seed("Bob"),
+            authority_keys_from_seed("//Alice"),
+            authority_keys_from_seed("//Bob"),
         ],
         vec![],
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("//Alice"),
         development_endowed_accounts(),
         vec![],
         vec![],
@@ -361,9 +423,10 @@ pub(crate) mod tests {
 
     fn local_testnet_genesis_instant_single() -> GenesisConfig {
         testnet_genesis(
-            vec![authority_keys_from_seed("Alice")],
+            true,
+            vec![authority_keys_from_seed("//Alice")],
             vec![],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            get_account_id_from_seed::<sr25519::Public>("//Alice"),
             development_endowed_accounts(),
             vec![],
             vec![],
