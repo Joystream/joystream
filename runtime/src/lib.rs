@@ -998,7 +998,7 @@ parameter_types! {
     // council parameteres
     pub const MinNumberOfExtraCandidates: u32 = 0;
     pub const AnnouncingPeriodDuration: BlockNumber = 60;
-    pub const IdlePeriodDuration: BlockNumber = 1;
+    pub const IdlePeriodDuration: BlockNumber = 10;
     pub const CouncilSize: u32 = 5;
     pub const MinCandidateStake: Balance = dollars!(10_000);
     pub const ElectedMemberRewardPeriod: BlockNumber = 6;
