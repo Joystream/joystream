@@ -92,6 +92,11 @@ fn create_owner<T: Config>() -> (<T as MembershipTypes>::MemberId, T::AccountId)
 fn issue_token<T: Config>(
     transfer_policy: TransferPolicyParamsOf<T>,
 ) -> Result<T::TokenId, DispatchError> {
+    let bloat_bond = BloatBond::<T>::get();
+
+    // top up owner JOY balance
+    let _ = Joy::<T>::deposit_creating(&token_owner_account::<T>(), bloat_bond);
+
     let token_id = Token::<T>::next_token_id();
     Token::<T>::issue_token(
         token_owner_account::<T>(),
@@ -298,7 +303,6 @@ benchmarks! {
         let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
 
         BloatBond::<T>::set(bloat_bond);
-        let _ = Joy::<T>::deposit_creating(&owner_account, bloat_bond);
         // Issue token
         let commitment = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
         let policy_params = TransferPolicyParams::Permissioned(WhitelistParams {

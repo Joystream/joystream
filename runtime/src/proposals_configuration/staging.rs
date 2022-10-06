@@ -1,6 +1,6 @@
 //! This module contains staging parameters for the runtime codex proposals.
 
-use crate::{currency, Balance, BlockNumber, ProposalParameters};
+use crate::{currency, dollars, Balance, BlockNumber, ProposalParameters};
 
 // Proposal parameters for the 'Set Max Validator Count' proposal
 pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
@@ -117,7 +117,7 @@ pub(crate) fn decrease_working_group_lead_stake_proposal(
 }
 
 // Proposal parameters for the 'Slash Working Group Lead' proposal
-pub fn slash_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Balance> {
+pub const fn slash_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 200,
         grace_period: 0,

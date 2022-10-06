@@ -118,7 +118,7 @@ pub(crate) fn decrease_working_group_lead_stake_proposal(
 }
 
 // Proposal parameters for the 'Slash Working Group Lead' proposal
-pub fn slash_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Balance> {
+pub const fn slash_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 30,
         grace_period: 0,

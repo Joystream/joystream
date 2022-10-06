@@ -524,10 +524,10 @@ benchmarks! {
             controller_account: controller_account.clone(),
             handle: Some(handle.clone()),
             metadata,
-            credit_controller_account: (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
-            apply_controller_account_invitation_lock: Some((3_000_000_u32).saturated_into()),
-            credit_root_account: (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
-            apply_root_account_invitation_lock: Some((1_000_000_u32).saturated_into()),
+            credit_controller_account: BalanceOf::<T>::from(5u32) * <T as balances::Config>::ExistentialDeposit::get(),
+            apply_controller_account_invitation_lock: Some(BalanceOf::<T>::from(3u32) * <T as balances::Config>::ExistentialDeposit::get()),
+            credit_root_account: BalanceOf::<T>::from(2u32) * <T as balances::Config>::ExistentialDeposit::get(),
+            apply_root_account_invitation_lock: Some(<T as balances::Config>::ExistentialDeposit::get()),
         };
 
         let member_id = <NextMemberId<T>>::get();
@@ -554,22 +554,22 @@ benchmarks! {
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(controller_account.clone()),
-            (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            BalanceOf::<T>::from(5u32) * <T as balances::Config>::ExistentialDeposit::get(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(root_account.clone()),
-            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            BalanceOf::<T>::from(2u32) * <T as balances::Config>::ExistentialDeposit::get(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(controller_account),
-            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            BalanceOf::<T>::from(2u32) * <T as balances::Config>::ExistentialDeposit::get(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(root_account),
-            (1_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            <T as balances::Config>::ExistentialDeposit::get(),
         );
     }
 
