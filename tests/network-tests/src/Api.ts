@@ -283,6 +283,10 @@ export class Api {
     this.sender.setLogLevel(LogLevel.Debug)
   }
 
+  public async setSudoKey(key: string):  {
+    return this.api.tx.sudo.setKey(key)
+  }
+
   public enableVerboseTxLogs(): void {
     this.sender.setLogLevel(LogLevel.Verbose)
   }
