@@ -316,7 +316,7 @@ export class Api {
   }
 
   public async getBabeAuthorities(): Promise<string[]> {
-    return await this.api.query.babe.authorities().then((key) => key.map(([k]) => k.toString()))
+    return (await this.api.query.babe.authorities()).map(([k]) => k.toString())
   }
 
   public async getNextBabeAuthorities(): Promise<string[]> {
