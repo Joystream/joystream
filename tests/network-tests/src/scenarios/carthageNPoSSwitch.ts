@@ -4,7 +4,9 @@
 // import currentEraIsSomeInPoS from 'src/flows/carthage/currentEraIsSomeInPoS'
 import { scenario } from '../Scenario'
 import switchToNPoS from '../flows/carthage/switchToNPoS'
+import carthagePoAAssertions from '../flows/carthage/carthagePoAAssertions'
 
 scenario('Carthage NPoS switch', async ({ job }) => {
-  job('switch to npos checks', switchToNPoS)
+  const poaAssertions = job('carthage poa assertions', carthagePoAAssertions)
+  job('switch to npos checks', switchToNPoS).requires(poaAssertions)
 })
