@@ -41,7 +41,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   // And wait until new era happened: about 10 minutes
   let forceEraStatus = await api.getForceEra()
   while (forceEraStatus.isForceNew) {
-    sleep(sleepTimeSeconds * 1000)
+    await sleep(sleepTimeSeconds * 1000)
     forceEraStatus = await api.getForceEra()
   }
 
