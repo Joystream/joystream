@@ -13,7 +13,8 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   debug('started')
   api.enableDebugTxLogs()
 
-  const bondAmount = new BN(1000000000000000)
+  const nominatorBond = await api.query.staking.minNominatorBond()
+  const validatorBond = await api.query.staking.minValidatorBond()
   const [nominatorAccount, validatorAccount] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
   const forceEra = await api.getForceEra()
   assert(forceEra.isForceNone)
@@ -44,7 +45,7 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   const nominatorBondingSucceedsFixture = new BondingSucceedsFixture(api, {
     stash: nominatorAccount,
     controller: nominatorAccount,
-    bondAmount: bondAmount,
+    bondAmount: nominatorBond,
   })
   const nominatorFixture = new FixtureRunner(nominatorBondingSucceedsFixture)
   await nominatorFixture.run()
@@ -53,7 +54,7 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   const validatorBondingSucceedsFixture = new BondingSucceedsFixture(api, {
     stash: validatorAccount,
     controller: validatorAccount,
-    bondAmount: bondAmount,
+    bondAmount: validatorBond,
   })
   const validatorFixture = new FixtureRunner(validatorBondingSucceedsFixture)
   await validatorFixture.run()
