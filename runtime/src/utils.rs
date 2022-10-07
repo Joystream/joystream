@@ -1,6 +1,6 @@
 use crate::{
-    Balance, BloatBondFeePerByte, Call, ExistentialDeposit, Runtime, StorageDepositCleanupProfit,
-    UncheckedExtrinsic,
+    Balance, Call, ExistentialDeposit, MinimumBloatBondPerByte, Runtime,
+    StorageDepositCleanupProfit, UncheckedExtrinsic,
 };
 use codec::{Encode, FullCodec, MaxEncodedLen};
 use frame_support::{
@@ -15,10 +15,13 @@ use frame_support::{
 pub use sp_runtime::Perbill;
 use sp_std::mem::size_of;
 
+/// The size of an encoded extrinsic signature ie. `(Address, Signature, Extra)`, assuming tip = 0
+pub const ENCODED_EXTRINSIC_SIGNATURE_LENGTH: u64 = 102;
+
 /// Compute total fee for executing a call
 pub fn compute_fee(call: Call) -> Balance {
     let xt = UncheckedExtrinsic::new_unsigned(call);
-    let length = xt.encode().len() as u64 + 102; // We're adding 102 bytes, as this is the length of a signature
+    let length = xt.encode().len() as u64 + ENCODED_EXTRINSIC_SIGNATURE_LENGTH;
     let dispatch_info = &<UncheckedExtrinsic as GetDispatchInfo>::get_dispatch_info(&xt);
     let weight_fee = <Runtime as pallet_transaction_payment::Config>::WeightToFee::weight_to_fee(
         &dispatch_info.weight,
@@ -37,14 +40,17 @@ pub fn compute_fee(call: Call) -> Balance {
 pub fn compute_single_bloat_bond(
     total_byte_size: u32,
     serves_as_ed: bool,
-    floor: Option<Balance>,
+    forced_minimum: Option<Balance>,
 ) -> Balance {
-    let size_fee = Balance::from(total_byte_size).saturating_mul(BloatBondFeePerByte::get());
-    match (serves_as_ed, floor) {
-        (true, Some(min_value)) => size_fee.max(ExistentialDeposit::get()).max(min_value),
-        (true, None) => size_fee.max(ExistentialDeposit::get()),
-        (false, Some(min_value)) => size_fee.max(min_value),
-        (false, None) => size_fee,
+    let min_bloat_bond =
+        Balance::from(total_byte_size).saturating_mul(MinimumBloatBondPerByte::get());
+    match (serves_as_ed, forced_minimum) {
+        (true, Some(forced_minimum)) => min_bloat_bond
+            .max(ExistentialDeposit::get())
+            .max(forced_minimum),
+        (true, None) => min_bloat_bond.max(ExistentialDeposit::get()),
+        (false, Some(forced_minimum)) => min_bloat_bond.max(forced_minimum),
+        (false, None) => min_bloat_bond,
     }
 }
 

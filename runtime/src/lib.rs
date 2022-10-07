@@ -200,7 +200,13 @@ const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO
 
 // Bloat-bond related global parameters:
 parameter_types! {
-    pub const BloatBondFeePerByte: Balance = currency::MILLICENTS;
+    /// Minimum deposit per byte of data stored in the runtime state
+    pub const MinimumBloatBondPerByte: Balance = currency::MILLICENTS;
+    /// Minimum profit that the user should recieve for cleaning up an object from
+    /// the runtime state. Provided that `x` is a computed cleanup transaction inclusion fee
+    /// and `y` is `MinimumBloatBondPerByte::get() * storage_entry_size`, the recoverable
+    /// bloat bond in this case should be:
+    /// `(x + StorageDepositCleanupProfit::get()).max(y)`
     pub const StorageDepositCleanupProfit: Balance = currency::CENTS;
 }
 
@@ -448,7 +454,7 @@ parameter_types! {
 
     /// The minimum amount required to keep an account open.
     pub ExistentialDeposit: Balance = Balance::from(SystemAccountEntryFixedSize::get())
-        .saturating_mul(BloatBondFeePerByte::get());
+        .saturating_mul(MinimumBloatBondPerByte::get());
 }
 
 impl pallet_balances::Config for Runtime {
@@ -932,7 +938,11 @@ pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
 pub type CouncilModule = council::Module<Runtime>;
 
 // Production coucil and elections configuration
-#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+#[cfg(not(any(
+    feature = "staging_runtime",
+    feature = "testing_runtime",
+    feature = "runtime-benchmarks"
+)))]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -951,9 +961,12 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = days!(1);
 }
 
-// Common staging and playground coucil and elections configuration
+// Common staging, playground and benchmarking coucil and elections configuration
 // CouncilSize is defined separately
-#[cfg(feature = "staging_runtime")]
+// Periods are shorter to:
+// - allow easier testing
+// - prevent benchmarks System::events() from accumulating too much data and overflowing the memory
+#[cfg(any(feature = "staging_runtime", feature = "runtime-benchmarks"))]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -971,8 +984,8 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = 33;
 }
 
-// Staging council size
-#[cfg(feature = "staging_runtime")]
+// Staging/benchmarking council size
+#[cfg(any(feature = "staging_runtime", feature = "runtime-benchmarks"))]
 #[cfg(not(feature = "playground_runtime"))]
 parameter_types! {
     pub const CouncilSize: u32 = 3;
@@ -1090,7 +1103,7 @@ parameter_types! {
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const MinDistributionBucketsPerBag: u32 = 1;
     pub const MaxDistributionBucketsPerBag: u32 = 51;
-    pub const MaxDataObjectSize: u64 = giga_bytes!(30);
+    pub const MaxDataObjectSize: u64 = giga_bytes!(60);
     pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 20; // TODO: adjust value
 
     // Data object bloat bond related:
@@ -1757,7 +1770,7 @@ parameter_types! {
         None
     );
     // Deposit for adding 32 bytes to an already stored item
-    pub const DepositFactor: Balance = 32 * BloatBondFeePerByte::get();
+    pub const DepositFactor: Balance = 32 * MinimumBloatBondPerByte::get();
     // Max number of multisig signatories
     pub const MaxSignatories: u16 = 100;
 }

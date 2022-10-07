@@ -102,8 +102,8 @@ pub mod fees {
     impl WeightToFeePolynomial for WeightToFee {
         type Balance = Balance;
         fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-            let p = 2 * super::currency::CENTS;
-            let q = 100 * Balance::from(ExtrinsicBaseWeight::get());
+            let p = super::currency::CENTS;
+            let q = 50 * Balance::from(ExtrinsicBaseWeight::get());
             smallvec![WeightToFeeCoefficient {
                 degree: 1,
                 negative: false,
@@ -162,7 +162,9 @@ mod tests {
     use super::currency::{CENTS, DOLLARS, MILLICENTS};
     use super::fees::WeightToFee;
     use super::ExtrinsicBaseWeight;
-    use crate::MAXIMUM_BLOCK_WEIGHT;
+    use crate::{
+        Balance, MaximumBlockLength, Runtime, Weight, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO,
+    };
     use frame_support::weights::WeightToFee as WeightToFeeT;
     use pallet_balances::WeightInfo;
 
@@ -179,13 +181,57 @@ mod tests {
     }
 
     #[test]
-    // This function tests that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight is correct
-    fn full_block_fee_is_correct() {
-        println!("Base: {}", ExtrinsicBaseWeight::get());
-        // A full block should cost between 2 and 10 DOLLARS.
-        let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
-        assert!(full_block >= DOLLARS.saturating_mul(2));
-        assert!(full_block <= DOLLARS.saturating_mul(10));
+    // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
+    // total weight for 1 day is within the pre-determined bounds
+    fn block_weight_fill_cost_per_day_is_correct() {
+        // The bounds that we epect the cost to be within
+        const BLOCK_WEIGHT_FILL_MIN_DAILY_COST: Balance = DOLLARS.saturating_mul(30_000);
+        const BLOCK_WEIGHT_FILL_MAX_DAILY_COST: Balance = DOLLARS.saturating_mul(120_000);
+
+        // Max normal dispatch block weight
+        let max_normal_dispatch_block_weight: Weight = NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT;
+
+        let full_block_cost: Balance =
+            WeightToFee::weight_to_fee(&max_normal_dispatch_block_weight);
+        let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
+
+        println!(
+            "weight per block: {}, block cost: {}¢, cost/day: ${}",
+            max_normal_dispatch_block_weight,
+            full_block_cost.saturating_div(CENTS),
+            day_of_full_blocks_cost.saturating_div(DOLLARS),
+        );
+
+        assert!(day_of_full_blocks_cost >= BLOCK_WEIGHT_FILL_MIN_DAILY_COST);
+        assert!(day_of_full_blocks_cost <= BLOCK_WEIGHT_FILL_MAX_DAILY_COST);
+    }
+
+    #[test]
+    // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
+    // total length for 1 day is within the pre-determined bounds
+    fn block_length_fill_cost_per_day_is_correct() {
+        // The bounds that we epect the cost to be within
+        const BLOCK_LENGTH_FILL_MIN_DAILY_COST: Balance = DOLLARS.saturating_mul(30_000);
+        const BLOCK_LENGTH_FILL_MAX_DAILY_COST: Balance = DOLLARS.saturating_mul(120_000);
+        // Max normal dispatch block length
+        let max_normal_dispatch_block_length: u64 =
+            (NORMAL_DISPATCH_RATIO * MaximumBlockLength::get()) as u64;
+
+        let full_block_cost: Balance =
+            <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
+                &max_normal_dispatch_block_length,
+            );
+        let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
+
+        println!(
+            "bytes per block: {}, block cost: {}¢, cost/day: ${}",
+            max_normal_dispatch_block_length,
+            full_block_cost.saturating_div(CENTS),
+            day_of_full_blocks_cost.saturating_div(DOLLARS),
+        );
+
+        assert!(day_of_full_blocks_cost >= BLOCK_LENGTH_FILL_MIN_DAILY_COST);
+        assert!(day_of_full_blocks_cost <= BLOCK_LENGTH_FILL_MAX_DAILY_COST);
     }
 
     #[test]
