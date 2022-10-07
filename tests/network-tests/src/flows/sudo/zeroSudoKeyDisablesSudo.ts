@@ -10,7 +10,7 @@ export default async function zeroSudoKeyDisablesSudo({ api, query, env }: FlowP
   api.enableDebugTxLogs()
 
   // arrange
-  const setSudoKeyFixture = new SetSudoKeyFixture(api, '0x0')
+  const setSudoKeyFixture = new SetSudoKeyFixture(api, 0)
   const fixtureRunner = new FixtureRunner(setSudoKeyFixture)
 
   // act: set sudo key to zero
