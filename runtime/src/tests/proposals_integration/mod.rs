@@ -575,9 +575,6 @@ fn text_proposal_execution_succeeds() {
         })
         .with_member_id(member_id as u64);
 
-        let params = <Runtime as proposals_codex::Config>::SignalProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
     });
 }

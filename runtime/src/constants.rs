@@ -159,11 +159,13 @@ pub mod currency {
 
 #[cfg(test)]
 mod tests {
-    use super::currency::{CENTS, DOLLARS, MILLICENTS};
+    use super::currency::{CENTS, MILLICENTS};
     use super::fees::WeightToFee;
     use super::ExtrinsicBaseWeight;
+    #[cfg(not(feature = "testing_runtime"))]
     use crate::{
-        Balance, MaximumBlockLength, Runtime, Weight, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO,
+        constants::currency::DOLLARS, Balance, MaximumBlockLength, Runtime, Weight,
+        MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO,
     };
     use frame_support::weights::WeightToFee as WeightToFeeT;
     use pallet_balances::WeightInfo;
@@ -180,6 +182,8 @@ mod tests {
         assert!(0 < transfer_fee && transfer_fee < CENTS);
     }
 
+    // This test does not make sense for `testing_runtime`, because of 1s blocks
+    #[cfg(not(feature = "testing_runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
     // total weight for 1 day is within the pre-determined bounds
@@ -206,6 +210,8 @@ mod tests {
         assert!(day_of_full_blocks_cost <= BLOCK_WEIGHT_FILL_MAX_DAILY_COST);
     }
 
+    // This test does not make sense for `testing_runtime`, because of 1s blocks
+    #[cfg(not(feature = "testing_runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
     // total length for 1 day is within the pre-determined bounds
