@@ -25,9 +25,9 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   const nextAuthorities = await api.getNextBabeAuthorities()
   expect(nextAuthorities).to.be.deep.equal(currentAuthorities)
 
-  // 1.b. Next session keys are none
+  // 1.b. Queued keys (for next session) and current session keys are the same
   const sessionAuthorities = await api.getSessionAuthorities()
-  const queuedKeys = await api.getQueuedKeys()
+  const queuedKeys = await api.getQueudeKeys()
   expect(queuedKeys).to.be.deep.equal(sessionAuthorities)
 
   // 2. Next Era starting session index is none
