@@ -559,6 +559,7 @@ benchmarks! {
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
         let amount_to_burn = Token::<T>::account_info_by_token_and_member(token_id, &owner_member_id).amount;
+        let bloat_bond = BloatBond::<T>::get();
     }: _(
         RawOrigin::Signed(owner_account.clone()),
         token_id,
@@ -566,16 +567,9 @@ benchmarks! {
         amount_to_burn
     )
     verify {
-        assert!(
-            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap()
-            == AccountDataOf::<T> {
-                split_staking_status: Some(StakingStatus {
-                    split_id: 0,
-                    amount: TokenBalanceOf::<T>::zero()
-                }),
-                bloat_bond: RepayableBloatBond::new(Zero::zero(), None),
-                ..Default::default()
-            }
+        assert_eq!(
+            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap().amount,
+            <T as Config>::Balance::zero()
         );
         assert_last_event::<T>(
             RawEvent::TokensBurned(
