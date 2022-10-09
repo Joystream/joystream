@@ -1949,9 +1949,9 @@ impl<T: Config> Module<T> {
 
             let parent_category = <CategoryById<T>>::get(tmp_parent_category_id);
 
-            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxDirectSubcategoriesInCategory>(
-                parent_category.num_direct_subcategories as u64,
-            )?;
+            Self::ensure_map_limits::<
+                <<T>::MapLimits as StorageLimits>::MaxDirectSubcategoriesInCategory,
+            >(parent_category.num_direct_subcategories as u64)?;
 
             return Ok(Some(parent_category));
         }
