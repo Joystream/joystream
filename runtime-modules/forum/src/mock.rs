@@ -172,9 +172,9 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MaxCategoryDepth: u64 = 20;
     pub const PostLifeTime: u64 = 100;
-    pub const MaxSubcategories: u64 = 20;
+    pub const MaxDirectSubcategoriesInCategory: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 3;
-    pub const MaxCategories: u64 = 40;
+    pub const MaxTotalCategories: u64 = 40;
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
     pub const MaxStickiedThreads: u32 = 10;
@@ -184,9 +184,9 @@ parameter_types! {
 pub struct MapLimits;
 
 impl StorageLimits for MapLimits {
-    type MaxSubcategories = MaxSubcategories;
+    type MaxDirectSubcategoriesInCategory = MaxDirectSubcategoriesInCategory;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
-    type MaxCategories = MaxCategories;
+    type MaxTotalCategories = MaxTotalCategories;
 }
 
 impl Config for Runtime {

@@ -1100,11 +1100,9 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxSubcategories: u64 = 40;
-    pub const MaxThreadsInCategory: u64 = 20;
-    pub const MaxPostsInThread: u64 = 20;
+    pub const MaxDirectSubcategoriesInCategory: u64 = 40;
     pub const MaxModeratorsForCategory: u64 = 20;
-    pub const MaxCategories: u64 = 40;
+    pub const MaxTotalCategories: u64 = 40;
     pub const ThreadDeposit: Balance = ExistentialDeposit::get() + 25 * currency::CENTS; // Must be higher than ExistentialDeposit!
     pub const PostDeposit: Balance = 10 * currency::CENTS;
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
@@ -1114,9 +1112,9 @@ parameter_types! {
 
 pub struct MapLimits;
 impl forum::StorageLimits for MapLimits {
-    type MaxSubcategories = MaxSubcategories;
+    type MaxDirectSubcategoriesInCategory = MaxDirectSubcategoriesInCategory;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
-    type MaxCategories = MaxCategories;
+    type MaxTotalCategories = MaxTotalCategories;
 }
 
 impl forum::Config for Runtime {
