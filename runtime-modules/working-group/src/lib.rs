@@ -27,6 +27,22 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
@@ -374,7 +390,7 @@ decl_module! {
                 let mut count_number_of_workers = 0;
                 WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
                     Self::reward_worker(&worker_id, &worker);
-                    count_number_of_workers += 1;
+                    count_number_of_workers = count_number_of_workers.saturating_add(1);
                 });
 
                 biggest_number_of_processed_workers = biggest_number_of_processed_workers.max(count_number_of_workers);
@@ -410,6 +426,12 @@ decl_module! {
 
             checks::ensure_stake_for_opening_type::<T, I>(origin, opening_type)?;
 
+            let new_opening_id = NextOpeningId::<I>::get();
+
+            let updated_next_opening_id = new_opening_id
+                .checked_add(1)
+                .ok_or(Error::<T, I>::ArithmeticError)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -439,12 +461,10 @@ decl_module! {
                 creation_stake,
             };
 
-            let new_opening_id = NextOpeningId::<I>::get();
-
             OpeningById::<T, I>::insert(new_opening_id, new_opening);
 
             // Update NextOpeningId
-            NextOpeningId::<I>::mutate(|id| *id += <OpeningId as One>::one());
+            NextOpeningId::<I>::mutate(|id| *id = updated_next_opening_id);
 
             Self::deposit_event(RawEvent::OpeningAdded(
                     new_opening_id,
@@ -500,6 +520,13 @@ decl_module! {
                   Error::<T, I>::InsufficientBalanceToCoverStake
               );
 
+            // Get id of new worker/lead application
+            let new_application_id = NextApplicationId::<I>::get();
+
+            let updated_next_application_id = new_application_id
+                .checked_add(1)
+                .ok_or(Error::<T, I>::ArithmeticError)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -518,14 +545,11 @@ decl_module! {
                 hashed_description,
             );
 
-            // Get id of new worker/lead application
-            let new_application_id = NextApplicationId::<I>::get();
-
             // Store an application.
             ApplicationById::<T, I>::insert(new_application_id, application);
 
             // Update the next application identifier value.
-            NextApplicationId::<I>::mutate(|id| *id += <ApplicationId as One>::one());
+            NextApplicationId::<I>::mutate(|id| *id = updated_next_application_id);
 
             // Trigger the event.
             Self::deposit_event(RawEvent::AppliedOnOpening(p, new_application_id));
@@ -558,8 +582,9 @@ decl_module! {
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening.opening_type)?;
 
             // Ensure we're not exceeding the maximum worker number.
-            let potential_worker_number =
-                Self::active_worker_count() + (successful_application_ids.len() as u32);
+            let potential_worker_number = Self::active_worker_count()
+                .checked_add(successful_application_ids.len() as u32)
+                .ok_or(Error::<T, I>::ArithmeticError)?;
 
             ensure!(
                 potential_worker_number <= T::MaxWorkerNumberLimit::get(),

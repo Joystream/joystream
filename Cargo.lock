@@ -2647,6 +2647,7 @@ dependencies = [
  "log",
  "nix 0.23.1",
  "node-inspect",
+ "overrides",
  "pallet-balances",
  "pallet-im-online",
  "pallet-timestamp",
@@ -4146,6 +4147,7 @@ name = "node-inspect"
 version = "0.9.0-dev"
 dependencies = [
  "clap 3.2.5",
+ "overrides",
  "parity-scale-codec",
  "sc-cli",
  "sc-client-api",
@@ -4319,6 +4321,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21326818e99cfe6ce1e524c2a805c189a99b5ae555a35d19f9a284b427d86afa"
 
 [[package]]
+name = "overrides"
+version = "0.1.0"
+
+[[package]]
 name = "owning_ref"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4467,6 +4473,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-common",
  "parity-scale-codec",
  "scale-info",
  "serde",
