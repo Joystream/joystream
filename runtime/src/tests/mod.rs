@@ -6,6 +6,7 @@ mod proposals_integration;
 mod fee_tests;
 mod handle_fees;
 mod locks;
+mod sudo_zero_key;
 
 use crate::constants::currency;
 use crate::primitives::{Balance, MemberId};
@@ -42,6 +43,14 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
     .unwrap();
 
     staking_config.assimilate_storage(&mut t).unwrap();
+
+    let sudo_config = pallet_sudo::GenesisConfig::<crate::Runtime> {
+        key: Some(AccountId32::new([1; 32])),
+    }
+    .build_storage()
+    .unwrap();
+
+    sudo_config.assimilate_storage(&mut t).unwrap();
 
     t.into()
 }
