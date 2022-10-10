@@ -1,11 +1,12 @@
+import { PalletStakingValidatorPrefs } from '@polkadot/types/lookup'
 import { Api } from '../../Api'
 import { BaseFixture } from '../../Fixture'
 
 export class ValidatingSucceedsFixture extends BaseFixture {
-  protected preferences: any
+  protected preferences: PalletStakingValidatorPrefs
   protected controller: string
 
-  public constructor(api: Api, preferences: any, controller: string) {
+  public constructor(api: Api, preferences: PalletStakingValidatorPrefs, controller: string) {
     super(api)
     this.controller = controller
     this.preferences = preferences

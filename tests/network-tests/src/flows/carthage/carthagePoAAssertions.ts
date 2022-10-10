@@ -2,7 +2,6 @@ import { expect, assert } from 'chai'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { FlowProps } from '../../Flow'
-import BN from 'bn.js'
 import { u32 } from '@polkadot/types'
 import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
@@ -62,10 +61,10 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   // 4. Validating succeeds: candidate validator
   const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(
     api,
-    {
+    api.createType('PalletStakingValidatorPreferences',{
       'commission': 10,
       'blocked': false,
-    },
+    }),
     validatorAccount
   )
   const candidationFixture = new FixtureRunner(validatorCandidatingSucceedsFixture)
