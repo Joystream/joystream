@@ -3,20 +3,30 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { SetSudoKeyFixture } from '../../fixtures/sudo/setSudoKey'
 import { assert } from 'chai'
+import { Keyring } from '@polkadot/api';
 
 export default async function zeroSudoKeyDisablesSudo({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug(`flow:multiple-post-deletions-bug`)
+  const debug = extendDebug(`flow:zero-sudo-key-disables-sudo`)
   debug('Started')
   api.enableDebugTxLogs()
 
-  // arrange
-  const setSudoKeyFixture = new SetSudoKeyFixture(api, 0)
+  // ARRANGE
+  const address = 'j4RKcRhyu1wEZQ5SEKLPghzsqfm5vob22eStxDG3xsz87UMkD' // 0x0 address
+  const keyring = new Keyring({ type: 'sr25519' })
+  const pair = keyring.addFromUri('ZeroAccount')
+  const setSudoKeyFixture = new SetSudoKeyFixture(api, pair.address)
   const fixtureRunner = new FixtureRunner(setSudoKeyFixture)
 
-  // act: set sudo key to zero
+  // ACT
+  // set sudo key to zero
   await fixtureRunner.run()
 
-  // assert: any sudo extr. is disabled
+  // ASSERT
+  // 1. sudo key updated
+  const sudoKey = await api.query.sudo.key()
+  assert.deepEqual(sudoKey.toString(), address)
+
+  // 2. pallet sudo disabled
   const tx = api.tx.staking.forceNewEra()
   const result = await api.makeSudoCall(tx)
   assert(result.isError)
