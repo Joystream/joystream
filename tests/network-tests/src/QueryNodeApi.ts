@@ -443,10 +443,11 @@ export class QueryNodeApi {
     this.tryDebug = this.debug.extend('try')
   }
 
+  // TODO: Refactor to use graphql subscription (stateSubscription.lastCompleteBlock) instead
   public async tryQueryWithTimeout<QueryResultT>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
-    retryTimeMs = BLOCKTIME * 3,
+    retryTimeMs = BLOCKTIME * 9,
     retries = 6
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')

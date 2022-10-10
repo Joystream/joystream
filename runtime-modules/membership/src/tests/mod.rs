@@ -228,7 +228,10 @@ fn buy_membership_succeeds() {
         let profile = get_membership_by_id(next_member_id);
 
         assert_eq!(Some(profile.handle_hash), get_alice_info().handle_hash);
-        assert_eq!(profile.invites, crate::DEFAULT_MEMBER_INVITES_COUNT);
+        assert_eq!(
+            profile.invites,
+            <Test as Config>::DefaultMemberInvitesCount::get()
+        );
 
         // controller account initially set to primary account
         assert_eq!(profile.controller_account, ALICE_ACCOUNT_ID);
@@ -236,7 +239,7 @@ fn buy_membership_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::MembershipBought(
             next_member_id,
             get_alice_membership_parameters(),
-            crate::DEFAULT_MEMBER_INVITES_COUNT,
+            <Test as Config>::DefaultMemberInvitesCount::get(),
         ));
     });
 }
@@ -695,7 +698,7 @@ fn invite_member_succeeds() {
         let inviter_profile = get_membership_by_id(inviter_member_id);
         assert_eq!(
             inviter_profile.invites,
-            crate::DEFAULT_MEMBER_INVITES_COUNT - 1
+            <Test as Config>::DefaultMemberInvitesCount::get() - 1
         );
 
         // Invited member created with correct handle and 0 invites
@@ -758,7 +761,7 @@ fn invite_member_succeeds_with_additional_checks() {
         let inviter_profile = get_membership_by_id(inviter_member_id);
         assert_eq!(
             inviter_profile.invites,
-            crate::DEFAULT_MEMBER_INVITES_COUNT - 1
+            <Test as Config>::DefaultMemberInvitesCount::get() - 1
         );
 
         // Invited member created with correct handle and 0 invites

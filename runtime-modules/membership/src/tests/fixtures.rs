@@ -386,7 +386,7 @@ impl Default for TransferInvitesFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             source_member_id: ALICE_MEMBER_ID,
             target_member_id: BOB_MEMBER_ID,
-            invites: 3,
+            invites: 2,
         }
     }
 }
