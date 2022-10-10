@@ -20,10 +20,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   // constants
   const sleepTimeSeconds = 10
 
-  const authorities = await api.getSessionAuthorities()
-  const authoritiesStash = (await Promise.all(authorities.map((account) => api.getBonded(account)))).map((x) =>
-    x.unwrap().toString()
-  )
+  const authoritiesStash = await api.getSessionAuthorities()
   const eraToReward = (await api.getCurrentEra()).unwrap().toNumber()
   const previousBalances = await getBalances(authoritiesStash)
 
