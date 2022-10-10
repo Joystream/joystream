@@ -3,6 +3,7 @@ import { FlowProps } from '../../Flow'
 import { FixtureRunner } from '../../Fixture'
 import { SetForceEraForcingNewFixture } from '../../fixtures/staking/SetForceEraForcingNewFixture'
 import { assert } from 'chai'
+import { BN } from 'bn.js'
 import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 import { u32 } from '@polkadot/types'
 
@@ -24,9 +25,12 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const eraToReward = (await api.getCurrentEra()).unwrap().toNumber()
   const previousBalances = await getBalances(authoritiesStash)
 
-  // ensure that we are in PoA
+  // ensure that we are in PoA at era 0
   const forceEra = await api.getForceEra()
   assert(forceEra.isForceNone, 'not on PoA')
+  let activeEra = (await api.getActiveEra()).unwrap()
+  assert.equal(activeEra.index.toString(), '0', 'starting active era is not zero')
+
 
   // ----------- ACT ----------------
 
@@ -36,10 +40,9 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   await fixtureRunner.run()
 
   // And wait until new era happened: about 10 minutes
-  let forceEraStatus = await api.getForceEra()
-  while (forceEraStatus.isForceNew) {
+  while (activeEra.index.toString() === '0') {
     await sleep(sleepTimeSeconds * 1000)
-    forceEraStatus = await api.getForceEra()
+    activeEra = (await api.getActiveEra()).unwrap()
   }
 
   // ----------- ASSERT ----------------
