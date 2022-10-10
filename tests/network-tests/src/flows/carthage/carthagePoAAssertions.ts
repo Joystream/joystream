@@ -34,9 +34,9 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   if (activeEra.isSome) {
     const { index } = activeEra.unwrap()
     const nextEraIndex = index.addn(1)
-    const nextSessionIndex = await api.getErasStartSessionIndex(nextEraIndex as u32)
+    const nextEraStartSessionIndex = await api.getErasStartSessionIndex(nextEraIndex as u32)
     assert.equal(index.toNumber(), 0)
-    assert(nextSessionIndex.isNone)
+    assert(nextEraStartSessionIndex.isNone)
   }
 
   // 3. Bonding succeds
