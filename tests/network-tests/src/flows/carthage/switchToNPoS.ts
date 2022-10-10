@@ -47,7 +47,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   // 1. Nex Era Starting session index is Some
   const { index } = (await api.getActiveEra()).unwrap()
   const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
-  assert(nextEraStartingSessionIndex.isSome, 'ext era starting session index is not some')
+assert(nextEraStartingSessionIndex.isSome, 'Next era starting session index is not set')
 
   // 2. Check that genesis authorities claim for era 0 is 0
   await Promise.all(
