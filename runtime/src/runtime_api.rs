@@ -461,52 +461,13 @@ mod tests {
 
     #[test]
     fn call_size() {
-        // Target limit - substrate frame pallets only Call size = 208
-        const LIMIT: usize = 120;
-
-        let size = core::mem::size_of::<referendum::Call<Runtime, referendum::Instance1>>();
-        assert!(size <= LIMIT, "size {} of referendum::Call too big", size);
-        let size = core::mem::size_of::<forum::Call<Runtime>>();
-        assert!(size <= LIMIT, "size {} of forum::Call too big", size);
-        let size = core::mem::size_of::<pallet_constitution::Call<Runtime>>();
-        assert!(size <= LIMIT, "size {} of constitution::Call too big", size);
-        let size = core::mem::size_of::<joystream_utility::Call<Runtime>>();
+        const SAFE_SIZE: usize = 368;
+        let current_size = core::mem::size_of::<Call>();
         assert!(
-            size <= LIMIT,
-            "size {} of joystream_utility::Call too big",
-            size
+            current_size <= SAFE_SIZE,
+            "size of Call {} is more than {} bytes: some calls have too big arguments, use Box to reduce the
+            size of Call. If the limit is too strong, maybe consider increase the limit.",
+            current_size, SAFE_SIZE
         );
-        let size = core::mem::size_of::<project_token::Call<Runtime>>();
-        assert!(
-            size <= LIMIT,
-            "size {} of project_token::Call too big",
-            size
-        );
-        let size = core::mem::size_of::<proposals_engine::Call<Runtime>>();
-        assert!(
-            size <= LIMIT,
-            "size {} of proposals_engine::Call too big",
-            size
-        );
-        let size = core::mem::size_of::<proposals_discussion::Call<Runtime>>();
-        assert!(
-            size <= LIMIT,
-            "size {} of proposals_discussion::Call too big",
-            size
-        );
-        let size = core::mem::size_of::<storage::Call<Runtime>>();
-        assert!(size <= 128, "size {} of storage::Call too big", size);
-        let size = core::mem::size_of::<working_group::Call<Runtime, working_group::Instance1>>();
-        assert!(size <= 176, "size {} of working_group::Call too big", size);
-        let size = core::mem::size_of::<membership::Call<Runtime>>();
-        assert!(size <= 225, "size {} of membership::Call too big", size);
-        let size = core::mem::size_of::<proposals_codex::Call<Runtime>>();
-        assert!(
-            size <= 336,
-            "size {} of proposals_codex::Call too big",
-            size
-        );
-        let size = core::mem::size_of::<content::Call<Runtime>>();
-        assert!(size <= 352, "size {} of content::Call too big", size);
     }
 }
