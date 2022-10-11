@@ -22,15 +22,15 @@ use sp_std::vec::Vec;
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
 
 // Normal 6s block interval
-#[cfg(not(feature = "testing_runtime"))]
+#[cfg(not(feature = "testing-runtime"))]
 pub const MILLISECS_PER_BLOCK: Moment = 6000;
-#[cfg(not(feature = "testing_runtime"))]
+#[cfg(not(feature = "testing-runtime"))]
 pub const SLOT_DURATION: Moment = 6000;
 
 // 1s block interval for integration testing
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 pub const MILLISECS_PER_BLOCK: Moment = 1000;
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 pub const SLOT_DURATION: Moment = 1000;
 
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
@@ -162,7 +162,7 @@ mod tests {
     use super::currency::{CENTS, MILLICENTS};
     use super::fees::WeightToFee;
     use super::ExtrinsicBaseWeight;
-    #[cfg(not(feature = "testing_runtime"))]
+    #[cfg(not(feature = "testing-runtime"))]
     use crate::{
         constants::currency::DOLLARS, Balance, MaximumBlockLength, Runtime, Weight,
         MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO,
@@ -183,7 +183,7 @@ mod tests {
     }
 
     // This test does not make sense for `testing_runtime`, because of 1s blocks
-    #[cfg(not(feature = "testing_runtime"))]
+    #[cfg(not(feature = "testing-runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
     // total weight for 1 day is within the pre-determined bounds
@@ -211,7 +211,7 @@ mod tests {
     }
 
     // This test does not make sense for `testing_runtime`, because of 1s blocks
-    #[cfg(not(feature = "testing_runtime"))]
+    #[cfg(not(feature = "testing-runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
     // total length for 1 day is within the pre-determined bounds
