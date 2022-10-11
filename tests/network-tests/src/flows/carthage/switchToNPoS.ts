@@ -3,7 +3,6 @@ import { FlowProps } from '../../Flow'
 import { FixtureRunner } from '../../Fixture'
 import { SetForceEraForcingNewFixture } from '../../fixtures/staking/SetForceEraForcingNewFixture'
 import { assert } from 'chai'
-import { BN } from 'bn.js'
 import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 import { u32 } from '@polkadot/types'
 
@@ -31,7 +30,6 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   let activeEra = (await api.getActiveEra()).unwrap()
   assert.equal(activeEra.index.toString(), '0', 'starting active era is not zero')
 
-
   // ----------- ACT ----------------
 
   // Switch to NPoS
@@ -50,7 +48,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   // 1. Nex Era Starting session index is Some
   const { index } = (await api.getActiveEra()).unwrap()
   const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
-assert(nextEraStartingSessionIndex.isSome, 'Next era starting session index is not set')
+  assert(nextEraStartingSessionIndex.isSome, 'Next era starting session index is not set')
 
   // 2. Check that genesis authorities claim for era 0 is 0
   await Promise.all(

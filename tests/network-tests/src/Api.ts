@@ -359,6 +359,10 @@ export class Api {
     return this.api.query.staking.activeEra()
   }
 
+  public async getCurrentSessionIndex(): Promise<u32> {
+    return this.api.query.session.currentIndex()
+  }
+
   public async getCurrentEra(): Promise<Option<u32>> {
     return this.api.query.staking.currentEra()
   }
