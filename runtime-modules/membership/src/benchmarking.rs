@@ -301,7 +301,7 @@ benchmarks! {
             controller_account: account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
@@ -337,7 +337,7 @@ benchmarks! {
             controller_account: new_controller_account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
@@ -375,7 +375,7 @@ benchmarks! {
             controller_account: new_controller_account_id.clone(),
             verified: false,
             // Save the updated profile.
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
@@ -414,7 +414,7 @@ benchmarks! {
         let second_handle = handle_from_id::<T>(second_member_id);
         let (second_account_id, second_member_id) = member_funded_account::<T>("second_member", second_member_id);
 
-        let number_of_invites = 5;
+        let number_of_invites = 2;
 
     }: _(RawOrigin::Signed(first_account_id.clone()), first_member_id, second_member_id, number_of_invites)
 
@@ -438,7 +438,7 @@ benchmarks! {
             root_account: second_account_id.clone(),
             controller_account: second_account_id.clone(),
             verified: false,
-            invites: 10,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get() + number_of_invites,
         };
 
         assert_eq!(MembershipById::<T>::get(first_member_id), Some(first_membership));
@@ -524,10 +524,10 @@ benchmarks! {
             controller_account: controller_account.clone(),
             handle: Some(handle.clone()),
             metadata,
-            credit_controller_account: (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
-            apply_controller_account_invitation_lock: Some((3_000_000_u32).saturated_into()),
-            credit_root_account: (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
-            apply_root_account_invitation_lock: Some((1_000_000_u32).saturated_into()),
+            credit_controller_account: BalanceOf::<T>::from(5u32) * <T as balances::Config>::ExistentialDeposit::get(),
+            apply_controller_account_invitation_lock: Some(BalanceOf::<T>::from(3u32) * <T as balances::Config>::ExistentialDeposit::get()),
+            credit_root_account: BalanceOf::<T>::from(2u32) * <T as balances::Config>::ExistentialDeposit::get(),
+            apply_root_account_invitation_lock: Some(<T as balances::Config>::ExistentialDeposit::get()),
         };
 
         let member_id = <NextMemberId<T>>::get();
@@ -554,22 +554,22 @@ benchmarks! {
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(controller_account.clone()),
-            (5_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            BalanceOf::<T>::from(5u32) * <T as balances::Config>::ExistentialDeposit::get(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(root_account.clone()),
-            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            BalanceOf::<T>::from(2u32) * <T as balances::Config>::ExistentialDeposit::get(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(controller_account),
-            (2_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            BalanceOf::<T>::from(2u32) * <T as balances::Config>::ExistentialDeposit::get(),
         );
 
         assert_eq!(
             balances::Pallet::<T>::usable_balance(root_account),
-            (1_000_000_u32).saturated_into::<BalanceOf<T>>(),
+            <T as balances::Config>::ExistentialDeposit::get(),
         );
     }
 
@@ -620,7 +620,7 @@ benchmarks! {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             verified: is_verified,
-            invites: 5,
+            invites: <T as crate::Config>::DefaultMemberInvitesCount::get(),
         };
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
@@ -762,7 +762,7 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
     }
 
-    create_founding_member{
+    create_member{
 
         let i in 1 .. MAX_BYTES;
 
@@ -776,11 +776,12 @@ benchmarks! {
 
         let metadata = vec![0u8].repeat(j as usize);
 
-        let params = CreateFoundingMemberParameters {
+        let params = CreateMemberParameters {
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
             handle: handle.clone(),
             metadata,
+            is_founding_member: false,
         };
 
     }: _(RawOrigin::Root, params.clone())
@@ -796,7 +797,7 @@ benchmarks! {
             handle_hash,
             root_account: account_id.clone(),
             controller_account: account_id.clone(),
-            verified: true,
+            verified: false,
             invites,
         };
 
@@ -805,7 +806,7 @@ benchmarks! {
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
         assert_last_event::<T>(
-            RawEvent::FoundingMemberCreated(member_id, params, invites).into()
+            RawEvent::MemberCreated(member_id, params, invites).into()
         );
     }
 

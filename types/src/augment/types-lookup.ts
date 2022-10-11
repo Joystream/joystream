@@ -583,9 +583,9 @@ declare module '@polkadot/types/lookup' {
     readonly asStakingAccountConfirmed: ITuple<[AccountId32, u64]>;
     readonly isMemberRemarked: boolean;
     readonly asMemberRemarked: ITuple<[u64, Bytes]>;
-    readonly isFoundingMemberCreated: boolean;
-    readonly asFoundingMemberCreated: ITuple<[u64, PalletMembershipCreateFoundingMemberParameters, u32]>;
-    readonly type: 'MemberInvited' | 'MembershipGifted' | 'MembershipBought' | 'MemberProfileUpdated' | 'MemberAccountsUpdated' | 'MemberVerificationStatusUpdated' | 'ReferralCutUpdated' | 'InvitesTransferred' | 'MembershipPriceUpdated' | 'InitialInvitationBalanceUpdated' | 'LeaderInvitationQuotaUpdated' | 'InitialInvitationCountUpdated' | 'StakingAccountAdded' | 'StakingAccountRemoved' | 'StakingAccountConfirmed' | 'MemberRemarked' | 'FoundingMemberCreated';
+    readonly isMemberCreated: boolean;
+    readonly asMemberCreated: ITuple<[u64, PalletMembershipCreateMemberParameters, u32]>;
+    readonly type: 'MemberInvited' | 'MembershipGifted' | 'MembershipBought' | 'MemberProfileUpdated' | 'MemberAccountsUpdated' | 'MemberVerificationStatusUpdated' | 'ReferralCutUpdated' | 'InvitesTransferred' | 'MembershipPriceUpdated' | 'InitialInvitationBalanceUpdated' | 'LeaderInvitationQuotaUpdated' | 'InitialInvitationCountUpdated' | 'StakingAccountAdded' | 'StakingAccountRemoved' | 'StakingAccountConfirmed' | 'MemberRemarked' | 'MemberCreated';
   }
 
   /** @name PalletMembershipBuyMembershipParameters (70) */
@@ -606,12 +606,13 @@ declare module '@polkadot/types/lookup' {
     readonly metadata: Bytes;
   }
 
-  /** @name PalletMembershipCreateFoundingMemberParameters (74) */
-  export interface PalletMembershipCreateFoundingMemberParameters extends Struct {
+  /** @name PalletMembershipCreateMemberParameters (74) */
+  export interface PalletMembershipCreateMemberParameters extends Struct {
     readonly rootAccount: AccountId32;
     readonly controllerAccount: AccountId32;
     readonly handle: Bytes;
     readonly metadata: Bytes;
+    readonly isFoundingMember: bool;
   }
 
   /** @name PalletMembershipGiftMembershipParameters (75) */
@@ -3106,11 +3107,11 @@ declare module '@polkadot/types/lookup' {
       readonly memberId: u64;
       readonly msg: Bytes;
     } & Struct;
-    readonly isCreateFoundingMember: boolean;
-    readonly asCreateFoundingMember: {
-      readonly params: PalletMembershipCreateFoundingMemberParameters;
+    readonly isCreateMember: boolean;
+    readonly asCreateMember: {
+      readonly params: PalletMembershipCreateMemberParameters;
     } & Struct;
-    readonly type: 'BuyMembership' | 'UpdateProfile' | 'UpdateAccounts' | 'UpdateProfileVerification' | 'SetReferralCut' | 'TransferInvites' | 'InviteMember' | 'GiftMembership' | 'SetMembershipPrice' | 'SetLeaderInvitationQuota' | 'SetInitialInvitationBalance' | 'SetInitialInvitationCount' | 'AddStakingAccountCandidate' | 'RemoveStakingAccount' | 'ConfirmStakingAccount' | 'MemberRemark' | 'CreateFoundingMember';
+    readonly type: 'BuyMembership' | 'UpdateProfile' | 'UpdateAccounts' | 'UpdateProfileVerification' | 'SetReferralCut' | 'TransferInvites' | 'InviteMember' | 'GiftMembership' | 'SetMembershipPrice' | 'SetLeaderInvitationQuota' | 'SetInitialInvitationBalance' | 'SetInitialInvitationCount' | 'AddStakingAccountCandidate' | 'RemoveStakingAccount' | 'ConfirmStakingAccount' | 'MemberRemark' | 'CreateMember';
   }
 
   /** @name PalletForumCall (380) */
