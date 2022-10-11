@@ -545,7 +545,7 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
         total_issuance: Balance,
         era_duration_millis: u64,
     ) -> (Balance, Balance) {
-        let era_index = pallet_staking::Pallet::<Runtime>::active_era().unwrap_or_else(Zero::zero);
+        let era_index = pallet_staking::Pallet::<Runtime>::active_era().map_or_else(Zero::zero, |era| era.index);
 
         if era_index.is_zero() {
             // PoA mode: no inflation.

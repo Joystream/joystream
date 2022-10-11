@@ -5,6 +5,10 @@ import { SetForceEraForcingNewFixture } from '../../fixtures/staking/SetForceEra
 import { assert } from 'chai'
 import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
 import { u32 } from '@polkadot/types'
+import { PalletStakingValidatorPrefs } from '@polkadot/types/lookup'
+import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
+import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
+import { NominatingSucceedsFixture } from '../../fixtures/staking/NominatingSucceedsFixture'
 
 export default async function switchToNPoS({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow: current era era must be some in NPoS')
@@ -30,7 +34,44 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   let activeEra = (await api.getActiveEra()).unwrap()
   assert.equal(activeEra.index.toString(), '0', 'starting active era is not zero')
 
-  // ----------- ACT ----------------
+  // create 1 nominator and 1 validator (besides genesis authorities)
+  const nominatorBond = await api.query.staking.minNominatorBond()
+  const validatorBond = await api.query.staking.minValidatorBond()
+  const [nominatorAccount, validatorAccount] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
+
+  const nominatorBondingSucceedsFixture = new BondingSucceedsFixture(api, {
+    stash: nominatorAccount,
+    controller: nominatorAccount,
+    bondAmount: nominatorBond,
+  })
+  const nominatorFixture = new FixtureRunner(nominatorBondingSucceedsFixture)
+  await nominatorFixture.run()
+
+  const validatorBondingSucceedsFixture = new BondingSucceedsFixture(api, {
+    stash: validatorAccount,
+    controller: validatorAccount,
+    bondAmount: validatorBond,
+  })
+  const validatorFixture = new FixtureRunner(validatorBondingSucceedsFixture)
+  await validatorFixture.run()
+
+  const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(
+    api,
+    api.createType('PalletStakingValidatorPrefs', {
+      'commission': 0,
+      'blocked': false,
+    }),
+    validatorAccount
+  )
+  const candidationFixture = new FixtureRunner(validatorCandidatingSucceedsFixture)
+  await candidationFixture.run()
+
+  const nominatorCandidatingSucceedsFixture = new NominatingSucceedsFixture(api, [validatorAccount], nominatorAccount)
+  const nominationFixture = new FixtureRunner(nominatorCandidatingSucceedsFixture)
+  await nominationFixture.run()
+
+
+  // ---------------------- ACT --------------------------------
 
   // Switch to NPoS
   const setForceEraForcingNewFixture = new SetForceEraForcingNewFixture(api)
@@ -43,14 +84,15 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
     activeEra = (await api.getActiveEra()).unwrap()
   }
 
-  // ----------- ASSERT ----------------
+  // ------------------------- ASSERT ---------------------------
 
   // 1. Nex Era Starting session index is Some
   const { index } = (await api.getActiveEra()).unwrap()
   const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
-  assert(nextEraStartingSessionIndex.isSome, 'Next era starting session index is not set')
+  assert(nextEraStartingSessionIndex.isSome, 'next era starting session index is not set')
 
-  // 2. Check that genesis authorities claim for era 0 is 0
+  // 2 ---------------- Era rewards checks -----------------------
+  // 2.a Check that genesis authorities claim for era 0 is 0
   await Promise.all(
     authoritiesStash.map(async (account) => {
       const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, eraToReward)
@@ -61,7 +103,17 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const currentBalances = await getBalances(authoritiesStash)
   assert.deepEqual(previousBalances, currentBalances)
 
-  // 3. Election rounds have happened
+  // 3. ----------------- Election checks -----------------------
+  // 3.a. Election rounds have happened
   const electionRounds = await api.getElectionRounds()
-  assert.isAbove(electionRounds.toNumber(), 0)
+  assert.isAbove(electionRounds.toNumber(), 1, 'no new election rounds have happened')
+
+  // 3.b. current election snapshots contains new targets and voters
+  const electionRoundSnapshot = (await api.getElectionSnapshot()).unwrap()
+  const electionTargets = electionRoundSnapshot.targets.map((account) => account.toString())
+  assert.include(electionTargets, validatorAccount, 'extra validator not considered')
+  const electionVoters = electionRoundSnapshot.voters.map(([account,]) => account.toString())
+  assert.include(electionVoters, nominatorAccount, 'extra nominators not considered')
+
+
 }

@@ -1,9 +1,10 @@
-import { expect, assert } from 'chai'
+import { assert } from 'chai'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { FlowProps } from '../../Flow'
 import { u32 } from '@polkadot/types'
 import { BN } from 'bn.js'
+import { PalletStakingValidatorPrefs } from '@polkadot/types/lookup'
 import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
 import { NominatingSucceedsFixture } from '../../fixtures/staking/NominatingSucceedsFixture'
@@ -43,8 +44,8 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
 
   const validatorCandidatingSucceedsFixture = new ValidatingSucceedsFixture(
     api,
-    api.createType('PalletStakingValidatorPreferences', {
-      'commission': 10,
+    api.createType('PalletStakingValidatorPrefs', {
+      'commission': 0,
       'blocked': false,
     }),
     validatorAccount
@@ -58,22 +59,22 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
 
   // wait for era duration blocks
   let currentSessionIndex = await api.getCurrentSessionIndex()
-  while (currentSessionIndex.toBn() < new BN(6)) {
-    sleep(sleepTimeSeconds * 1000)
-    currentSessionIndex = await api.getCurrentSessionIndex()
-  }
+  // while (currentSessionIndex.toBn() < new BN(6)) {
+  //   sleep(sleepTimeSeconds * 1000)
+  //   currentSessionIndex = await api.getCurrentSessionIndex()
+  // }
 
   // -------------------------- ASSERT ----------------------------
 
   // 1. Authorities are constant
   // 1.a. babe authorities are constant
   const currentAuthorities = await api.getBabeAuthorities()
-  expect(pastAuthorities).to.be.deep.equal(currentAuthorities)
+  assert.deepEqual(pastAuthorities, currentAuthorities, 'babe authorities have changed')
 
   // 1.b. Queued keys (for next session) and current session keys are the same
   const sessionAuthorities = await api.getSessionAuthorities()
   const queuedKeys = await api.getQueuedKeys()
-  expect(queuedKeys).to.be.deep.equal(sessionAuthorities)
+  assert.deepEqual(queuedKeys, sessionAuthorities, 'different validator keys in between sessions ')
 
   // 2. Next Era starting session index is none
   const activeEra = await api.getActiveEra()
@@ -82,6 +83,16 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
     const nextEraIndex = index.addn(1)
     const nextEraStartSessionIndex = await api.getErasStartSessionIndex(nextEraIndex as u32)
     assert.equal(index.toNumber(), 0)
-    assert(nextEraStartSessionIndex.isNone)
+    assert(nextEraStartSessionIndex.isNone, 'next era doomed to begin')
   }
+
+  // 3. Elections
+  // 3.a election round is blocked
+  const electionRoundSnapshot = await api.getElectionSnapshot()
+  assert(electionRoundSnapshot.isNone, 'ongoing elections')
+
+  // 3.b election round is 1 (initial round)
+  const currentElectionRound = (await api.getElectionRounds()).toNumber()
+  assert.equal(currentElectionRound, 1, 'election rounds happened')
+
 }
