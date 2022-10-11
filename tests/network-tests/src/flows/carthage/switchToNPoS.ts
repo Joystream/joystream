@@ -4,8 +4,7 @@ import { FixtureRunner } from '../../Fixture'
 import { SetForceEraForcingNewFixture } from '../../fixtures/staking/SetForceEraForcingNewFixture'
 import { assert } from 'chai'
 import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
-import { u32 } from '@polkadot/types'
-import { PalletStakingValidatorPrefs } from '@polkadot/types/lookup'
+import { BN  } from 'bn.js'
 import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
 import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { NominatingSucceedsFixture } from '../../fixtures/staking/NominatingSucceedsFixture'
@@ -25,11 +24,10 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const sleepTimeSeconds = 10
 
   const authoritiesStash = await api.getSessionAuthorities()
-  const eraToReward = (await api.getCurrentEra()).unwrap().toNumber()
   const previousBalances = await getBalances(authoritiesStash)
 
   // ensure that we are in PoA at era 0
-  const forceEra = await api.getForceEra()
+  let forceEra = await api.getForceEra()
   assert(forceEra.isForceNone, 'not on PoA')
   let activeEra = (await api.getActiveEra()).unwrap()
   assert.equal(activeEra.index.toString(), '0', 'starting active era is not zero')
@@ -70,7 +68,6 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const nominationFixture = new FixtureRunner(nominatorCandidatingSucceedsFixture)
   await nominationFixture.run()
 
-
   // ---------------------- ACT --------------------------------
 
   // Switch to NPoS
@@ -78,24 +75,30 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const fixtureRunner = new FixtureRunner(setForceEraForcingNewFixture)
   await fixtureRunner.run()
 
-  // And wait until new era happened: about 10 minutes
-  while (activeEra.index.toString() === '0') {
+  // Allow for one extra validator (beside genisis authorities)
+  const increaseValidatorsTx = api.tx.staking.increaseValidatorCount(1)
+  await api.makeSudoCall(increaseValidatorsTx)
+
+  // And wait until era is not forcing and an election has started
+  let electionPhase = await api.getElectionPhase()
+  while ((!forceEra.isNotForcing) && (electionPhase.isOff)) {
     await sleep(sleepTimeSeconds * 1000)
-    activeEra = (await api.getActiveEra()).unwrap()
+    forceEra = await api.getForceEra()
+    electionPhase = await api.getElectionPhase()
   }
 
   // ------------------------- ASSERT ---------------------------
 
-  // 1. Nex Era Starting session index is Some
-  const { index } = (await api.getActiveEra()).unwrap()
-  const nextEraStartingSessionIndex = await api.getErasStartSessionIndex(index.addn(1) as u32)
-  assert(nextEraStartingSessionIndex.isSome, 'next era starting session index is not set')
+  // 1. ------------- Era checks -----------------------------
+  // 1.a. active Era index has increased
+  const activeEraIndex = (await api.getActiveEra()).unwrap().index.toNumber()
+  assert.isAbove(activeEraIndex, 1)
 
   // 2 ---------------- Era rewards checks -----------------------
-  // 2.a Check that genesis authorities claim for era 0 is 0
+  // 2.a Check that genesis authorities (validators) claim for era 0 is 0
   await Promise.all(
     authoritiesStash.map(async (account) => {
-      const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, eraToReward)
+      const claimingPayoutStakersSucceedsFixture = new ClaimingPayoutStakersSucceedsFixture(api, account, 0)
       const fixtureRunner = new FixtureRunner(claimingPayoutStakersSucceedsFixture)
       fixtureRunner.run()
     })

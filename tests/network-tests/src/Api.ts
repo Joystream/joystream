@@ -33,6 +33,7 @@ import {
   PalletStakingActiveEraInfo,
   PalletStakingEraRewardPoints,
   PalletElectionProviderMultiPhaseRoundSnapshot,
+  PalletElectionProviderMultiPhasePhase,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -372,8 +373,12 @@ export class Api {
     return this.api.query.staking.currentEra()
   }
 
-  public async getErasStartSessionIndex(index: u32): Promise<Option<u32>> {
-    return this.api.query.staking.erasStartSessionIndex(index)
+  public async getElectionPhase(): Promise<PalletElectionProviderMultiPhasePhase> {
+    return this.api.query.electionProviderMultiPhase.currentPhase()
+  }
+
+  public async getErasStartSessionIndex(era: u32): Promise<Option<u32>> {
+    return this.api.query.staking.erasStartSessionIndex(era)
   }
 
   public async getForceEra(): Promise<PalletStakingForcing> {
