@@ -5,8 +5,8 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 
-export default async function creatingMemberships({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow:creating-members')
+export default async function buyingMemberships({ api, query, env }: FlowProps): Promise<void> {
+  const debug = extendDebug('flow:buying-members')
   debug('Started')
   api.enableDebugTxLogs()
 
