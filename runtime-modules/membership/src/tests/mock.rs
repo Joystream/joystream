@@ -110,6 +110,7 @@ parameter_types! {
     pub const MinimumStakeForOpening: u32 = 50;
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
+    pub const DefaultMemberInvitesCount: u32 = 2;
 }
 
 impl LockComparator<u64> for Test {
@@ -148,6 +149,7 @@ impl Config for Test {
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
     type WeightInfo = ();
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 pub const WORKING_GROUP_BUDGET: u64 = 100;
@@ -276,10 +278,14 @@ impl Default for TestExternalitiesBuilder {
 impl TestExternalitiesBuilder {
     pub fn build(self) -> sp_io::TestExternalities {
         // Add system
-        let t = self
+        let mut t = self
             .system_config
             .unwrap_or_default()
             .build_storage::<Test>()
+            .unwrap();
+
+        crate::GenesisConfig::default()
+            .assimilate_storage::<Test>(&mut t)
             .unwrap();
 
         t.into()
