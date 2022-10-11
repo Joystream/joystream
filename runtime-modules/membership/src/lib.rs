@@ -141,9 +141,10 @@ pub trait Config:
 
     /// Stake needed to candidate as staking account.
     type CandidateStake: Get<BalanceOf<Self>>;
-}
 
-pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
+    /// Default number of invites a paid membership recieves.
+    type DefaultMemberInvitesCount: Get<u32>;
+}
 
 /// Public membership profile alias.
 pub type Membership<T> =
@@ -361,8 +362,7 @@ decl_storage! { generate_storage_info
             T::DefaultMembershipPrice::get();
 
         /// Initial invitation count for the newly bought membership.
-        pub InitialInvitationCount get(fn initial_invitation_count) : u32  =
-            DEFAULT_MEMBER_INVITES_COUNT;
+        pub InitialInvitationCount get(fn initial_invitation_count) : u32;
 
         /// Initial invitation balance for the invited member.
         pub InitialInvitationBalance get(fn initial_invitation_balance) : BalanceOf<T> =
@@ -371,6 +371,11 @@ decl_storage! { generate_storage_info
         /// Double of a staking account id and member id to the confirmation status.
         pub(crate) StakingAccountIdMemberStatus get(fn staking_account_id_member_status):
             map hasher(blake2_128_concat) T::AccountId => StakingAccountMemberBinding<T::MemberId>;
+    }
+    add_extra_genesis {
+        build(|_| {
+            InitialInvitationCount::put(T::DefaultMemberInvitesCount::get());
+        });
     }
 }
 

@@ -23,19 +23,17 @@ pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
+pub mod project_token_config;
 pub mod storage_config;
 
 use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
-    constants::{
-        currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
-        ExistentialDeposit,
-    },
+    constants::currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
     wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
-    GrandpaConfig, ImOnlineConfig, MaxNominations, SessionConfig, SessionKeys, StakerStatus,
-    StakingConfig, StorageConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
-    VestingConfig,
+    ExistentialDeposit, GrandpaConfig, ImOnlineConfig, MaxNominations, ProjectTokenConfig,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SudoConfig,
+    SystemConfig, TransactionPaymentConfig, VestingConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -180,6 +178,7 @@ pub fn testnet_genesis(
     vesting_accounts: Vec<(AccountId, BlockNumber, BlockNumber, Balance)>,
     content_cfg: ContentConfig,
     storage_cfg: StorageConfig,
+    project_token_cfg: ProjectTokenConfig,
 ) -> GenesisConfig {
     // staking benchmakrs is not sensitive to actual value of min bonds so
     // accounts are not funded with sufficient funds and fail with InsufficientBond err
@@ -195,12 +194,12 @@ pub fn testnet_genesis(
         MIN_VALIDATOR_BOND
     };
 
-    /// How much each initial validator at genesis will bond
-    const INITIAL_VALIDATOR_BOND: Balance = GENESIS_MIN_VALIDATOR_BOND
+    // How much each initial validator at genesis will bond
+    let initial_validator_bond: Balance = GENESIS_MIN_VALIDATOR_BOND
         .saturating_mul(10)
         .saturating_add(ExistentialDeposit::get());
-    /// How much each initial nominator at genesis will bond per nomination
-    const INITIAL_NOMINATOR_BOND: Balance =
+    // How much each initial nominator at genesis will bond per nomination
+    let initial_nominator_bond: Balance =
         GENESIS_MIN_NOMINATOR_BOND.saturating_add(ExistentialDeposit::get());
 
     let mut funded: Vec<AccountId> = genesis_balances
@@ -214,9 +213,9 @@ pub fn testnet_genesis(
         // Genesis balance for each endowed account.
         let endowment: Balance = DOLLARS
             .saturating_mul(1_000_000)
-            .max(INITIAL_VALIDATOR_BOND)
+            .max(initial_validator_bond)
             .max(if !initial_nominators.is_empty() {
-                INITIAL_NOMINATOR_BOND.saturating_mul(initial_authorities.len() as u128)
+                initial_nominator_bond.saturating_mul(initial_authorities.len() as u128)
             } else {
                 0
             });
@@ -271,7 +270,7 @@ pub fn testnet_genesis(
             (
                 x.0.clone(),
                 x.1.clone(),
-                INITIAL_VALIDATOR_BOND,
+                initial_validator_bond,
                 StakerStatus::Validator,
             )
         })
@@ -288,7 +287,7 @@ pub fn testnet_genesis(
             (
                 x.clone(),
                 x.clone(),
-                INITIAL_NOMINATOR_BOND,
+                initial_nominator_bond,
                 StakerStatus::Nominator(nominations),
             )
         }))
@@ -343,8 +342,9 @@ pub fn testnet_genesis(
         forum: forum_config::empty(),
         content: content_cfg,
         storage: storage_cfg,
-        project_token: Default::default(),
+        project_token: project_token_cfg,
         proposals_discussion: Default::default(),
+        members: Default::default(),
     }
 }
 
@@ -362,6 +362,7 @@ fn development_config_genesis() -> GenesisConfig {
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
+        project_token_config::testing_config(),
     )
 }
 
@@ -395,6 +396,7 @@ fn local_testnet_genesis() -> GenesisConfig {
         vec![],
         content_config::testing_config(),
         storage_config::testing_config(),
+        project_token_config::testing_config(),
     )
 }
 
@@ -432,6 +434,7 @@ pub(crate) mod tests {
             vec![],
             content_config::testing_config(),
             storage_config::testing_config(),
+            project_token_config::testing_config(),
         )
     }
 

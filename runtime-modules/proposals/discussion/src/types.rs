@@ -54,17 +54,21 @@ impl<MemberId> Default for ThreadMode<MemberId> {
 }
 
 // Aliases
+
+/// Alias for DiscussionThread
 pub type DiscussionThreadOf<T> = DiscussionThread<
     <T as MembershipTypes>::MemberId,
     <T as frame_system::Config>::BlockNumber,
     ThreadWhitelistOf<T>,
 >;
 
+/// Alias for DiscussionPost
 pub type DiscussionPostOf<T> = DiscussionPost<
     <T as MembershipTypes>::MemberId,
     <T as frame_system::Config>::BlockNumber,
     RepayableBloatBond<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
 >;
 
+/// Alias for BoundedBTreeSet<MemberId, MaxWhiteListSize>
 pub type ThreadWhitelistOf<T> =
     BoundedBTreeSet<<T as MembershipTypes>::MemberId, <T as Config>::MaxWhiteListSize>;
