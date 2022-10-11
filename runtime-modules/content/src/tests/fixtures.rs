@@ -1,3 +1,4 @@
+#![cfg(test)]
 use derive_fixture::Fixture;
 use derive_new::new;
 
@@ -7,7 +8,8 @@ pub use super::mock::Event as MetaEvent;
 use super::mock::*;
 use crate::*;
 use common::{
-    build_merkle_path_helper, council::CouncilBudgetManager, generate_merkle_root_helper,
+    council::CouncilBudgetManager,
+    merkle_tree::helpers::{build_merkle_path_helper, generate_merkle_root_helper},
 };
 use frame_support::{assert_noop, assert_ok};
 use frame_support::{

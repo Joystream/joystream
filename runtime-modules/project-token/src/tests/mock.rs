@@ -102,6 +102,7 @@ parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const CandidateStake: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
@@ -381,6 +382,7 @@ impl membership::Config for Test {
         staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
     type WeightInfo = ();
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl LockComparator<u128> for Test {

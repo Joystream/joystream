@@ -48,6 +48,22 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 mod benchmarking;
 #[cfg(test)]
@@ -76,9 +92,7 @@ use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::{MemberId, MembershipTypes};
-use types::*;
-
-pub use types::ThreadMode;
+pub use types::*;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
@@ -163,6 +177,9 @@ pub trait Config:
 decl_error! {
     /// Discussion module predefined errors
     pub enum Error for Module<T: Config> {
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Thread doesn't exist
         ThreadDoesntExist,
 
@@ -268,7 +285,9 @@ decl_module! {
 
             Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
 
-            let next_post_count_value = Self::post_count() + 1;
+            let next_post_count_value = Self::post_count()
+                .checked_add(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
             let new_post_id = next_post_count_value;
             let post_id = T::PostId::from(new_post_id);
 
@@ -445,7 +464,9 @@ impl<T: Config> Module<T> {
     ) -> Result<T::ThreadId, DispatchError> {
         let thread_mode = Self::ensure_thread_mode_ok(&mode)?;
 
-        let next_thread_count_value = Self::thread_count() + 1;
+        let next_thread_count_value = Self::thread_count()
+            .checked_add(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
         let new_thread_id = next_thread_count_value;
 
         let new_thread = DiscussionThread {

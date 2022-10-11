@@ -1,9 +1,31 @@
 ---
-# Create chain spec files and keys and copy to all the servers
+# Create chain spec files and keys
 
-- name: Delete remote data directory
+- name: Check if local chain dir exists
+  stat:
+    path: "{{ data_path }}/chain"
+  register: local_dir_check 
+  delegate_to: localhost
+  run_once: true
+
+- name: Exit if local chain dir exists
+  fail: msg="local chain dir already exists"
+  when: local_dir_check.stat.isdir is defined and local_dir_check.stat.isdir
+
+- name: Check if remote data path dir exists
+  stat:
+    path: "{{ remote_data_path }}"
+  register: remote_dir_check 
+  delegate_to: '{{ first_validator }}'
+  run_once: true
+
+- name: Exit if remote dir exists
+  fail: msg="remote data path dir already exists"
+  when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
+
+- name: Create remote data directory
   file:
-    state: absent
+    state: directory
     path: "{{ remote_data_path }}"
 
 - name: Copying initial balances file to the server
@@ -14,30 +36,47 @@
   delegate_to: '{{ first_validator }}'
   run_once: true
 
-- name: Run chain-spec-builder to generate chainspec.json file (with initial data)
+- name: ChainSpec - GENERATE
   shell: >
     bin/chain-spec-builder generate -a {{ groups['validators'] | length }}
     --chain-spec-path {{ remote_data_path }}/chainspec.json
-    {% if endow_accounts is defined and endow_accounts|int > 0%}--endowed {{ endow_accounts }}{% endif %}
     --keystore-path {{ remote_data_path }}
+    {% if endow_accounts is defined and endow_accounts|int > 0%}--endowed {{ endow_accounts }}{% endif %}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_data_path }}/initial-balances.json{% endif %}
-  register: chain_secrets_output
+  register: chainspec_builder_generate_output
   delegate_to: '{{ first_validator }}'
   run_once: true
+  when: chainspec_creation_strategy == "generate"
 
-- name: generate node keys
-  shell: > 
-    bin/joystream-node key generate-node-key --file {{ remote_data_path }}/node-key-{{ ansible_play_batch.index(inventory_hostname) }}
+- name: Chain Spec - NEW
+  shell: >
+    bin/chain-spec-builder new --fund-accounts {{ ['-a'] | product(authority_seeds) | map('join', ' ') | join(' ') }}
+    --chain-spec-path {{ remote_data_path }}/chainspec.json
+    --keystore-path {{ remote_data_path }}
+    --sudo-account {{ sudo_account }}
+    {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
+    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_data_path }}/initial-balances.json{% endif %}
+  register: chainspec_builder_new_output
   delegate_to: '{{ first_validator }}'
-  register: generate_node_keys_output
+  run_once: true
+  when: chainspec_creation_strategy == "new"
 
-- name: Save output of chain spec to local file
+- name: Save output of chainspec builder (new) to local file
   copy:
-    content: '{{ chain_secrets_output.stdout }}'
+    content: '{{ chainspec_builder_new_output.stdout }}'
     dest: '{{ remote_data_path }}/secrets.txt'
   delegate_to: '{{ first_validator }}'
   run_once: true
+  when: chainspec_builder_new_output.stdout is defined
+
+- name: Save output of chainspec builder (generate) to local file
+  copy:
+    content: '{{ chainspec_builder_generate_output.stdout }}'
+    dest: '{{ remote_data_path }}/secrets.txt'
+  delegate_to: '{{ first_validator }}'
+  run_once: true
+  when: chainspec_builder_generate_output.stdout is defined
 
 # - name: Format chain spec output
 #   set_fact:
@@ -56,6 +95,12 @@
 #   delegate_to: '{{ first_validator }}'
 #   run_once: true
 #   when: endow_accounts is defined and endow_accounts|int > 0
+
+- name: generate node keys
+  shell: > 
+    bin/joystream-node key generate-node-key --file {{ remote_data_path }}/node-key-{{ ansible_play_batch.index(inventory_hostname) }}
+  delegate_to: '{{ first_validator }}'
+  register: generate_node_keys_output
 
 - name: Set chain name, id, protocolId, and bootNodes
   update_chainspec_name_id_boot_nodes:

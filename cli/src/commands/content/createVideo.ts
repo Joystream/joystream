@@ -10,7 +10,7 @@ import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class CreateVideoCommand extends UploadCommandBase {
   static description = 'Create video (non nft) under specific channel inside content directory.'

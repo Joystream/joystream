@@ -1,6 +1,6 @@
 import { createType, keysOf } from '@joystream/types'
 import { flags } from '@oclif/command'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 
@@ -21,8 +21,8 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
 
   static flags = {
     permissions: flags.string({
-      options: keysOf<ChannelActionPermission, 'PalletContentChannelActionPermission'>(
-        'PalletContentChannelActionPermission'
+      options: keysOf<ChannelActionPermission, 'PalletContentIterableEnumsChannelActionPermission'>(
+        'PalletContentIterableEnumsChannelActionPermission'
       ),
       char: 'p',
       description: `List of permissions to associate with the curator, e.g. -p ManageChannelCollaborators UpdateVideoMetadata`,
@@ -54,7 +54,7 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
       groupId,
       curatorId,
       createType(
-        'BTreeSet<PalletContentChannelActionPermission>',
+        'BTreeSet<PalletContentIterableEnumsChannelActionPermission>',
         (typeof permissions === 'string' ? [permissions] : permissions) as ChannelActionPermission['type'][]
       ),
     ])

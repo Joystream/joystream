@@ -199,6 +199,7 @@ parameter_types! {
     pub const VotingLockId: LockIdentifier = *b"referend";
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
@@ -301,6 +302,7 @@ impl membership::Config for Runtime {
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 pub struct Wg;
@@ -861,7 +863,7 @@ where
         origin: OriginType<T::AccountId>,
         member_id: T::MemberId,
         stake: Balance<T>,
-        expected_result: Result<(), Error<T>>,
+        expected_result: DispatchResult,
     ) {
         // use member id as staking and reward accounts
         Self::announce_candidacy_raw(
@@ -880,7 +882,7 @@ where
         staking_account_id: T::AccountId,
         reward_account_id: T::AccountId,
         stake: Balance<T>,
-        expected_result: Result<(), Error<T>>,
+        expected_result: DispatchResult,
     ) {
         // check method returns expected result
         assert_eq!(

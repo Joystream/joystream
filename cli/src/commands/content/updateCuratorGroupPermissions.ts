@@ -45,7 +45,7 @@ export default class UpdateCuratorGroupPermissionsCommand extends ContentDirecto
     console.log(moderationPermissionsByLevelInput)
 
     const moderationPermissionsByLevel = createType(
-      'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
+      'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>',
       new Map(
         moderationPermissionsByLevelInput.map(({ channelPrivilegeLevel, permissions }) => [
           channelPrivilegeLevel,

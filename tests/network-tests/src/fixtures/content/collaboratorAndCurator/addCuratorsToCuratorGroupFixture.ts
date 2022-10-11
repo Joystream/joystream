@@ -1,5 +1,5 @@
 import { createType } from '@joystream/types'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 import { WorkerId, CuratorGroupId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE } from '../../../consts'
@@ -50,7 +50,7 @@ export class AddCuratorToCuratorGroupFixture extends BaseQueryNodeFixture {
       this.api.tx.content.addCuratorToGroup(
         curatorGroupId,
         curatorId,
-        createType('BTreeSet<PalletContentChannelActionPermission>', permissions)
+        createType('BTreeSet<PalletContentIterableEnumsChannelActionPermission>', permissions)
       )
     )
   }

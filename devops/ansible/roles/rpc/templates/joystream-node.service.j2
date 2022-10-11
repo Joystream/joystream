@@ -8,6 +8,7 @@ User={{ template_user }}
 WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/bin/joystream-node \
         --chain bin/chain/chainspec-raw.json \
+        --base-path bin/chain \
         --ws-external \
         --rpc-cors all \
         --pruning archive \

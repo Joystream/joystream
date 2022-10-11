@@ -2,6 +2,22 @@
 #![recursion_limit = "256"]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 use codec::{FullCodec, MaxEncodedLen};
 use common::membership::{MemberId as MemberIdOf, MemberOriginValidator, MembershipInfoProvider};
@@ -516,7 +532,9 @@ decl_module! {
             let current_block = Self::current_block();
             let token_data = Self::ensure_token_exists(token_id)?;
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
-            let sale_id = token_data.next_sale_id - 1;
+            let sale_id = token_data.next_sale_id
+                .checked_sub(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
             let platform_fee = Self::sale_platform_fee();
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
             let burn_amount = if sale.earnings_destination.is_some() {
@@ -675,6 +693,9 @@ decl_module! {
 
             let token_info = Self::ensure_token_exists(token_id)?;
             let split_info = token_info.revenue_split.ensure_active::<T>()?;
+            let split_id = token_info.next_revenue_split_id
+                .checked_sub(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
 
             let current_block = Self::current_block();
             ensure!(
@@ -712,7 +733,7 @@ decl_module! {
             });
 
             AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
-                account_info.stake(token_info.next_revenue_split_id - 1, amount);
+                account_info.stake(split_id, amount);
             });
 
             Self::deposit_event(RawEvent::UserParticipatedInSplit(
@@ -720,7 +741,7 @@ decl_module! {
                 member_id,
                 amount,
                 dividend_amount,
-                token_info.next_revenue_split_id - 1,
+                split_id,
             ));
 
             Ok(())
@@ -756,9 +777,12 @@ decl_module! {
 
             let account_info = Self::ensure_account_data_exists(token_id, &member_id)?;
             let staking_info = account_info.ensure_account_is_valid_split_participant::<T>()?;
+            let current_split_id = token_info.next_revenue_split_id
+                .checked_sub(1)
+                .ok_or(Error::<T>::ArithmeticError)?;
 
             // staking_info.split_id in [0,token_info.next_revenue_split_id) is a runtime invariant
-            if staking_info.split_id == token_info.next_revenue_split_id - 1 {
+            if staking_info.split_id == current_split_id {
                 if let Ok(split_info) = token_info.revenue_split.ensure_active::<T>() {
                     ensure!(
                         split_info.timeline.is_ended(Self::current_block()),
@@ -1105,7 +1129,10 @@ impl<T: Config>
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
-        let sale_id = token_data.next_sale_id - 1;
+        let sale_id = token_data
+            .next_sale_id
+            .checked_sub(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
 
         // Validate sale duration
         if let Some(duration) = new_duration {
@@ -1299,7 +1326,10 @@ impl<T: Config>
         let token_info = Self::ensure_token_exists(token_id)?;
         OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
         let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
-        let sale_id = token_info.next_sale_id - 1;
+        let sale_id = token_info
+            .next_sale_id
+            .checked_sub(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
 
         // == MUTATION SAFE ==
         AccountInfoByTokenAndMember::<T>::mutate(token_id, &sale.tokens_source, |ad| {
@@ -1807,35 +1837,34 @@ impl<T: Config> Module<T> {
         )?;
 
         let mut bloat_bond_index: u32 = 0;
-        Ok(Transfers(
-            validated_transfers
-                .0
-                .iter()
-                .map(
-                    |(validated_member_id, validated_payment)| match validated_member_id {
-                        Validated::Existing(member_id) => (
-                            ValidatedWithBloatBond::Existing(*member_id),
+        let transfers_set = validated_transfers
+            .0
+            .iter()
+            .map(
+                |(validated_member_id, validated_payment)| match validated_member_id {
+                    Validated::Existing(member_id) => Ok((
+                        ValidatedWithBloatBond::Existing(*member_id),
+                        validated_payment.clone(),
+                    )),
+                    Validated::NonExisting(member_id) => {
+                        let repayable_bloat_bond = match locked_balance_used
+                            <= bloat_bond.saturating_mul((bloat_bond_index as u32).into())
+                        {
+                            true => RepayableBloatBond::new(bloat_bond, None),
+                            false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
+                        };
+                        bloat_bond_index = bloat_bond_index
+                            .checked_add(1)
+                            .ok_or(Error::<T>::ArithmeticError)?;
+
+                        Ok((
+                            ValidatedWithBloatBond::NonExisting(*member_id, repayable_bloat_bond),
                             validated_payment.clone(),
-                        ),
-                        Validated::NonExisting(member_id) => {
-                            let repayable_bloat_bond = match locked_balance_used
-                                <= bloat_bond.saturating_mul((bloat_bond_index as u32).into())
-                            {
-                                true => RepayableBloatBond::new(bloat_bond, None),
-                                false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
-                            };
-                            bloat_bond_index += 1;
-                            (
-                                ValidatedWithBloatBond::NonExisting(
-                                    *member_id,
-                                    repayable_bloat_bond,
-                                ),
-                                validated_payment.clone(),
-                            )
-                        }
-                    },
-                )
-                .collect(),
-        ))
+                        ))
+                    }
+                },
+            )
+            .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
+        Ok(Transfers(transfers_set))
     }
 }

@@ -56,7 +56,8 @@ fi
 # Create a chain spec file
 docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
-  --authority-seeds Alice \
+  --fund-accounts \
+  --authority-seeds //Alice \
   --sudo-account ${SUDO_ACCOUNT} \
   --deployment dev \
   --chain-spec-path /spec/chain-spec.json \
@@ -73,4 +74,4 @@ docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name j
   -p 9944:9944 -p 9933:9933 joystream-node \
   --alice --validator --unsafe-ws-external --unsafe-rpc-external \
   --rpc-methods Unsafe --rpc-cors=all -l runtime \
-  --chain /spec/chain-spec-raw.json --pruning=archive
+  --chain /spec/chain-spec-raw.json --pruning=archive --no-telemetry

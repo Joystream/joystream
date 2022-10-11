@@ -8,7 +8,7 @@ import { inconsistentState, logger } from '../common'
 import { mapAgentPermission } from './utils'
 import { BTreeSet } from '@polkadot/types'
 // Joystream types
-import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 
 async function getCurator(store: DatabaseManager, curatorId: string): Promise<Curator | undefined> {
   const existingCurator = await store.get(Curator, {
@@ -134,7 +134,7 @@ async function updateCuratorAgentPermissions(
   store: DatabaseManager,
   curatorGroup: CuratorGroup,
   curator: Curator,
-  permissions?: BTreeSet<PalletContentChannelActionPermission>
+  permissions?: BTreeSet<PalletContentIterableEnumsChannelActionPermission>
 ) {
   // safest way to update permission is to delete existing and creating new ones
 

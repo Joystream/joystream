@@ -1,6 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayCollapsedRow, displayHeader, displayTable } from '../../helpers/display'
-import { PalletContentChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import { BTreeSet } from '@polkadot/types'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
@@ -19,7 +19,9 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
     ...ContentDirectoryCommandBase.flags,
   }
 
-  async displayCollaboratorsSet(set: [BN, BTreeSet<PalletContentChannelActionPermission>][]): Promise<void> {
+  async displayCollaboratorsSet(
+    set: [BN, BTreeSet<PalletContentIterableEnumsChannelActionPermission>][]
+  ): Promise<void> {
     if (set.length > 0) {
       displayTable(
         set.map(([id, p]) => ({
