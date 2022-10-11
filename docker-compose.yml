@@ -198,6 +198,9 @@ services:
       - INDEXER_ENDPOINT_URL=${PROCESSOR_INDEXER_GATEWAY}
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
+      - BATCH_SIZE=100
+      - QUEUE_FACTOR=1
+      - QUEUE_MAX_CAP_FACTOR=4
     depends_on:
       - db
     volumes:
