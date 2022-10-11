@@ -10,10 +10,7 @@ DATA_PATH=./data
 rm -Rf ${DATA_PATH}/alice
 rm -Rf ${DATA_PATH}/auth-*
 
-
-# Initial account balance for Alice
-# Alice is the source of funds for all new accounts that are created in the tests.
-INITIAL_BALANCE="10000000000"
+INITIAL_BALANCE="100000000"
 ALICE="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 BOB="5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
 CHARLIE="5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
