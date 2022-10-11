@@ -579,8 +579,8 @@ parameter_types! {
 
 pub struct StakingBenchmarkingConfig;
 impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
-    type MaxNominators = ConstU32<1000>;
-    type MaxValidators = ConstU32<1000>;
+    type MaxNominators = ConstU32<1000>; // Cannot be higher than `max_nominator_count` in genesis config
+    type MaxValidators = ConstU32<400>; // Cannot be higher than `max_validator_count` in genesis config
 }
 
 impl pallet_staking::Config for Runtime {
