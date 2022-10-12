@@ -285,7 +285,7 @@ fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
 )))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_1(call) && filter_stage_2(call)
+        filter_stage_2(call)
     }
 }
 
