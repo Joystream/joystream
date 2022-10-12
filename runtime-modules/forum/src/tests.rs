@@ -2889,7 +2889,7 @@ fn storage_limit_checks() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
 
-    // test MaxDirectSubcategoriesInCategory and MaxThreadsInCategory
+    // test MaxDirectSubcategoriesInCategory
     with_test_externalities(|| {
         balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
