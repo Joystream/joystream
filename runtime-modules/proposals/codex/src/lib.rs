@@ -757,18 +757,19 @@ impl<T: Config> Module<T> {
                     visited_accounts.insert(account);
                 }
 
-                let total_funding_amount = funding_requests
-                    .iter()
-                    .try_fold(BalanceOf::<T>::zero(), |sum, el| {
-                        // ensure funding_amount in non zero
-                        ensure!(
-                            !el.amount.is_zero(),
-                            Error::<T>::InvalidFundingRequestProposalBalance
-                        );
+                let total_funding_amount =
+                    funding_requests
+                        .iter()
+                        .try_fold(BalanceOf::<T>::zero(), |sum, el| {
+                            // ensure funding_amount in non zero
+                            ensure!(
+                                !el.amount.is_zero(),
+                                Error::<T>::InvalidFundingRequestProposalBalance
+                            );
 
-                        sum.checked_add(&el.amount).ok_or(Error::<T>::ArithmeticError)
-                    })?;
-
+                            sum.checked_add(&el.amount)
+                                .ok_or(Error::<T>::ArithmeticError)
+                        })?;
 
                 // ensure total funding amount <= MAX
                 ensure!(
