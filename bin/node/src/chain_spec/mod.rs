@@ -32,8 +32,8 @@ use node_runtime::{
     constants::currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
     wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
     ExistentialDeposit, GrandpaConfig, ImOnlineConfig, MaxNominations, ProjectTokenConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig,
-    SystemConfig, TransactionPaymentConfig, VestingConfig,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SystemConfig,
+    TransactionPaymentConfig, VestingConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;

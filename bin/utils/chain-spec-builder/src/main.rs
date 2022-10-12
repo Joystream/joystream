@@ -327,11 +327,7 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
     Ok(())
 }
 
-fn print_seeds(
-    authority_seeds: &[String],
-    nominator_seeds: &[String],
-    endowed_seeds: &[String],
-) {
+fn print_seeds(authority_seeds: &[String], nominator_seeds: &[String], endowed_seeds: &[String]) {
     println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
@@ -397,11 +393,7 @@ async fn main() -> Result<(), String> {
             let nominator_seeds = (0..nominators).map(|_| rand_str()).collect::<Vec<_>>();
             let endowed_seeds = (0..endowed).map(|_| rand_str()).collect::<Vec<_>>();
 
-            print_seeds(
-                &authority_seeds,
-                &nominator_seeds,
-                &endowed_seeds,
-            );
+            print_seeds(&authority_seeds, &nominator_seeds, &endowed_seeds);
 
             if let Some(keystore_path) = keystore_path {
                 generate_authority_keys_and_store(&authority_seeds, &keystore_path)?;
@@ -421,11 +413,7 @@ async fn main() -> Result<(), String> {
                 })
                 .collect();
 
-            (
-                authority_seeds,
-                nominator_accounts,
-                endowed_accounts,
-            )
+            (authority_seeds, nominator_accounts, endowed_accounts)
         }
         ChainSpecBuilder::New {
             authority_seeds,
