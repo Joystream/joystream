@@ -80,19 +80,19 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   await api.makeSudoCall(increaseValidatorsTx)
 
   // And wait until era is not forcing and an election has started
-  let electionPhase = await api.getElectionPhase()
-  while (activeEra.index.toNumber() === 0 && electionPhase.isOff) {
-    await sleep(sleepTimeSeconds * 1000)
-    activeEra = (await api.getActiveEra()).unwrap()
-    electionPhase = await api.getElectionPhase()
-  }
+  // let electionPhase = await api.getElectionPhase()
+  // while (activeEra.index.toNumber() === 0 && electionPhase.isOff) {
+  //   await sleep(sleepTimeSeconds * 1000)
+  //   activeEra = (await api.getActiveEra()).unwrap()
+  //   electionPhase = await api.getElectionPhase()
+  // }
 
   // ------------------------- ASSERT ---------------------------
 
   // 1. ------------- Era checks -----------------------------
   // 1.a. planned Era increased
-  const plannedEra = (await api.getCurrentEra()).unwrap().toNumber()
-  assert.isAbove(plannedEra, 0)
+  const activeEraIndex = (await api.getActiveEra()).unwrap().index.toNumber()
+  assert.isAbove(activeEraIndex, 0)
 
   // 2 ---------------- Era rewards checks -----------------------
   // 2.a Check that genesis authorities (validators) claim for era 0 is 0
