@@ -750,6 +750,7 @@ parameter_types! {
     pub const LockId2: LockIdentifier = [10; 8];
     pub const LockId3: LockIdentifier = [11; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const MinimumStakeForOpening: u32 = 50;
     pub const MinimumApplicationStake: u32 = 50;
@@ -767,6 +768,7 @@ impl membership::Config for Test {
         staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
     type WeightInfo = ();
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 pub const WORKING_GROUP_BUDGET: u64 = 100;

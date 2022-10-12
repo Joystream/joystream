@@ -1,7 +1,7 @@
 use super::mock::*;
 use crate::Event as MembershipEvent;
 use crate::{
-    BalanceOf, BuyMembershipParameters, CreateFoundingMemberParameters, GiftMembershipParameters,
+    BalanceOf, BuyMembershipParameters, CreateMemberParameters, GiftMembershipParameters,
     InviteMembershipParameters, MembershipObject,
 };
 use frame_support::dispatch::DispatchResult;
@@ -386,7 +386,7 @@ impl Default for TransferInvitesFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             source_member_id: ALICE_MEMBER_ID,
             target_member_id: BOB_MEMBER_ID,
-            invites: 3,
+            invites: 2,
         }
     }
 }
@@ -790,22 +790,33 @@ impl ConfirmStakingAccountFixture {
     }
 }
 
-pub struct CreateFoundingMemberFixture {
+pub struct CreateMemberFixture {
     pub origin: RawOrigin<u64>,
-    pub params: CreateFoundingMemberParameters<u64>,
+    pub params: CreateMemberParameters<u64>,
 }
 
-impl CreateFoundingMemberFixture {
+impl CreateMemberFixture {
     pub fn default() -> Self {
         let alice = get_alice_info();
         Self {
             origin: RawOrigin::Root,
-            params: CreateFoundingMemberParameters {
+            params: CreateMemberParameters {
                 root_account: ALICE_ACCOUNT_ID,
                 controller_account: ALICE_ACCOUNT_ID,
                 handle: alice.handle.unwrap(),
                 metadata: alice.metadata,
+                is_founding_member: false,
             },
+        }
+    }
+
+    pub fn founding_member() -> Self {
+        Self {
+            params: CreateMemberParameters {
+                is_founding_member: true,
+                ..Self::default().params
+            },
+            ..Self::default()
         }
     }
 
@@ -815,7 +826,7 @@ impl CreateFoundingMemberFixture {
 
     pub fn with_handle(self, handle: Vec<u8>) -> Self {
         Self {
-            params: CreateFoundingMemberParameters {
+            params: CreateMemberParameters {
                 handle,
                 ..self.params
             },
@@ -826,7 +837,7 @@ impl CreateFoundingMemberFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let expected_member_id = Membership::members_created();
         let actual_result =
-            Membership::create_founding_member(self.origin.clone().into(), self.params.clone());
+            Membership::create_member(self.origin.clone().into(), self.params.clone());
 
         if expected_result.is_ok() {
             assert_ok!(actual_result);
@@ -842,12 +853,12 @@ impl CreateFoundingMemberFixture {
                     handle_hash,
                     root_account: self.params.root_account.clone(),
                     controller_account: self.params.controller_account.clone(),
-                    verified: true,
+                    verified: self.params.is_founding_member,
                     invites: Membership::initial_invitation_count()
                 }
             );
 
-            EventFixture::assert_last_crate_event(MembershipEvent::<Test>::FoundingMemberCreated(
+            EventFixture::assert_last_crate_event(MembershipEvent::<Test>::MemberCreated(
                 expected_member_id,
                 self.params.clone(),
                 Membership::initial_invitation_count(),
