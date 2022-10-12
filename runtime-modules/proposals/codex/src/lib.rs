@@ -481,7 +481,7 @@ decl_module! {
         const UpdateChannelPayoutsProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
 
-        /// Max amount in funding request proposal (per account)
+        /// Maximum total amount in funding request proposal
         const FundingRequestProposalMaxTotalAmount: BalanceOf<T> =
             T::FundingRequestProposalMaxTotalAmount::get();
 
