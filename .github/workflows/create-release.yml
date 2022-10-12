@@ -15,6 +15,7 @@ env:
 
 jobs:
   build-mac-binary:
+    # Latest macos now runs on M1/arm64
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -129,7 +130,7 @@ jobs:
 
       - name: Rename MacOS and RPi tar
         run: |
-          mv joystream-node-macos.tar.gz joystream-node-${{ steps.extract_binaries.outputs.version_and_commit }}-x86_64-macos.tar.gz
+          mv joystream-node-macos.tar.gz joystream-node-${{ steps.extract_binaries.outputs.version_and_commit }}-arm64-macos.tar.gz
           # mv joystream-node-rpi.tar.gz joystream-node-${{ steps.extract_binaries.outputs.version_and_commit }}-rpi.tar.gz
 
       - name: Release

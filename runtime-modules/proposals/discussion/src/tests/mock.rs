@@ -64,6 +64,7 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 4;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const CandidateStake: u64 = 100;
     pub const PostLifeTime: u64 = 10;
@@ -137,6 +138,7 @@ impl membership::Config for Test {
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 impl LockComparator<<Test as balances::Config>::Balance> for Test {

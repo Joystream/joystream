@@ -3,10 +3,10 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate as council;
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, Candidate, CandidateOf, Candidates,
-    Config, CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing,
-    CouncilStageElection, CouncilStageIdle, CouncilStageUpdate, CouncilorReward, Error, Module,
-    NextBudgetRefill, RawEvent, ReferendumConnection, Stage,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates, Config,
+    CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
+    CouncilStageIdle, CouncilStageUpdate, CouncilorReward, Error, Module, NextBudgetRefill,
+    RawEvent, ReferendumConnection, Stage,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
@@ -199,6 +199,7 @@ parameter_types! {
     pub const VotingLockId: LockIdentifier = *b"referend";
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
     pub const MinimumPeriod: u64 = 5;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
@@ -301,6 +302,7 @@ impl membership::Config for Runtime {
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 pub struct Wg;
@@ -527,39 +529,6 @@ macro_rules! escape_checkpoint {
 pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
     council::GenesisConfig::<Runtime> {
         stage: CouncilStageUpdate::default(),
-        council_members: vec![],
-        candidates: vec![],
-        announcement_period_nr: 0,
-        budget: 0,
-        next_reward_payments: 0,
-        next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
-        budget_increment: 1,
-        councilor_reward: 100,
-    }
-}
-
-pub fn augmented_genesis_config() -> council::GenesisConfig<Runtime> {
-    council::GenesisConfig::<Runtime> {
-        stage: CouncilStageUpdate::default(),
-        council_members: vec![CouncilMemberOf::<Runtime> {
-            membership_id: 1,
-            staking_account_id: 0,
-            reward_account_id: 0,
-            stake: 0,
-            last_payment_block: 0,
-            unpaid_reward: 0,
-        }],
-        candidates: vec![(
-            2,
-            Candidate {
-                staking_account_id: 1,
-                reward_account_id: 1,
-                cycle_id: 0,
-                stake: 0,
-                vote_power: 0,
-                note_hash: None,
-            },
-        )],
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,
@@ -894,7 +863,7 @@ where
         origin: OriginType<T::AccountId>,
         member_id: T::MemberId,
         stake: Balance<T>,
-        expected_result: Result<(), Error<T>>,
+        expected_result: DispatchResult,
     ) {
         // use member id as staking and reward accounts
         Self::announce_candidacy_raw(
@@ -913,7 +882,7 @@ where
         staking_account_id: T::AccountId,
         reward_account_id: T::AccountId,
         stake: Balance<T>,
-        expected_result: Result<(), Error<T>>,
+        expected_result: DispatchResult,
     ) {
         // check method returns expected result
         assert_eq!(

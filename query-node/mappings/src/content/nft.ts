@@ -431,7 +431,8 @@ export async function createNft(
   // prepare nft record
   const nft = new OwnedNft({
     id: video.id.toString(),
-    video: video,
+    video,
+    videoCategory: video.category,
     ownerMember,
     creatorRoyalty,
     ownerCuratorGroup,

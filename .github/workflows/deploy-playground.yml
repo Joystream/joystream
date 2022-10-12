@@ -56,8 +56,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Ansible dependencies
-        run: pipx inject ansible-core boto3 botocore
+      - name: Install Ansible
+        run: |
+          pip3 install --upgrade --user ansible
+          pipx inject ansible-core boto3 botocore
+          ansible-playbook --version
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1

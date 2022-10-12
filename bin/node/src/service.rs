@@ -24,6 +24,7 @@ use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
 use node_runtime::opaque::Block;
 use node_runtime::RuntimeApi;
+use overrides::DEFAULT_HEAP_PAGES;
 use sc_client_api::{BlockBackend, ExecutorProvider};
 use sc_consensus_babe::{self, SlotProportion};
 use sc_executor::NativeElseWasmExecutor;
@@ -163,7 +164,7 @@ pub fn new_partial(
 
     let executor = NativeElseWasmExecutor::<ExecutorDispatch>::new(
         config.wasm_method,
-        config.default_heap_pages,
+        Some(DEFAULT_HEAP_PAGES),
         config.max_runtime_instances,
         config.runtime_cache_size,
     );

@@ -1,27 +1,52 @@
 FROM rust:1.61.0-buster AS rust
+WORKDIR /joystream
 RUN rustup self update
 RUN rustup install nightly-2022-05-11 --force
 RUN rustup default nightly-2022-05-11
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
 RUN rustup component add --toolchain nightly-2022-05-11 clippy
+RUN cargo install cargo-chef
 RUN apt-get update && \
   apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev cmake
+
+FROM rust AS planner
+LABEL description="Cargo chef prepare"
+WORKDIR /joystream
+COPY Cargo.toml .
+COPY Cargo.lock .
+COPY bin ./bin
+COPY runtime ./runtime
+COPY runtime-modules ./runtime-modules
+RUN cargo chef prepare --recipe-path /joystream/recipe.json
+
+FROM rust AS cacher
+LABEL description="Cargo chef cook dependencies"
+WORKDIR /joystream
+COPY --from=planner /joystream/recipe.json /joystream/recipe.json
+ENV WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
+# Build dependencies - this is the caching Docker layer!
+RUN cargo chef cook --release --recipe-path /joystream/recipe.json
 
 FROM rust AS builder
 LABEL description="Compiles all workspace artifacts"
 WORKDIR /joystream
-COPY . /joystream
+COPY Cargo.toml .
+COPY Cargo.lock .
+COPY bin ./bin
+COPY runtime ./runtime
+COPY runtime-modules ./runtime-modules
+# Copy over the cached dependencies
+COPY --from=cacher /joystream/target target
+COPY --from=cacher $CARGO_HOME $CARGO_HOME
 
 # Build all cargo crates
 # Ensure our tests and linter pass before actual build
 ARG CARGO_FEATURES
 RUN echo "CARGO_FEATURES=$CARGO_FEATURES"
 ENV WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
-RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
-    cargo test --release --all --features "${CARGO_FEATURES}" && \
-    cargo build --release --features "${CARGO_FEATURES}"
+RUN cargo build --release --features "${CARGO_FEATURES}"
 
-FROM ubuntu:21.04
+FROM ubuntu:22.04
 LABEL description="Joystream node"
 WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node

@@ -30,7 +30,10 @@ sp-storage = { package = 'sp-storage', default-features = false, git = 'https://
 
 [features]
 default = ['std']
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+	"frame-benchmarking",
+	"common/runtime-benchmarks",
+]
 std = [
 	'sp-std/std',
 	'sp-io/std',

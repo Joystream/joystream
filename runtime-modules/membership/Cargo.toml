@@ -29,6 +29,7 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 default = ['std']
 runtime-benchmarks = [
     'frame-benchmarking',
+	'common/runtime-benchmarks',
 ]
 std = [
 	'serde',

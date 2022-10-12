@@ -58,6 +58,10 @@ type OwnedNft @entity {
   "NFT's video"
   video: Video! @derivedFrom(field: "nft")
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
+  "Reference to a NFT's video category"
+  videoCategory: VideoCategory
+
   "Auctions done for this NFT"
   auctions: [Auction!]! @derivedFrom(field: "nft")
 
@@ -85,6 +89,7 @@ type OwnedNft @entity {
   "Is NFT owned by channel"
   isOwnedByChannel: Boolean!
 
+  # TODO: remove this field when Hydra supports deeply nested filtering
   "NFT creator's channel"
   creatorChannel: Channel!
 

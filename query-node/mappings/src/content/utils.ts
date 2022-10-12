@@ -39,7 +39,7 @@ import {
 import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
-  PalletContentChannelActionPermission,
+  PalletContentIterableEnumsChannelActionPermission,
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
@@ -201,6 +201,10 @@ export async function processVideoMetadata(
   // prepare video category if needed
   if (meta.category) {
     video.category = await processVideoCategory(ctx, video.category, meta.category)
+    // if video has NFT assign the category to NFT too.
+    if (video.nft) {
+      video.nft.videoCategory = video.category
+    }
   }
 
   // prepare media meta information if needed
@@ -584,7 +588,7 @@ async function processVideoCategory(
   currentCategory: VideoCategory | undefined,
   categoryId: string
 ): Promise<VideoCategory | undefined> {
-  const { store } = ctx
+  const { store, event } = ctx
 
   // load video category
   const category = await store.get(VideoCategory, {
@@ -597,7 +601,8 @@ async function processVideoCategory(
     const newCategory = new VideoCategory({
       id: categoryId,
       videos: [],
-      createdInBlock: ctx.event.blockNumber,
+      nfts: [],
+      createdInBlock: event.blockNumber,
       activeVideosCounter: 0,
     })
     await store.save<VideoCategory>(newCategory)
@@ -680,6 +685,6 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   await store.remove<StorageDataObject>(dataObject)
 }
 
-export function mapAgentPermission(permission: PalletContentChannelActionPermission): string {
+export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
 }

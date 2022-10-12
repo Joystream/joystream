@@ -32,7 +32,6 @@ jobs:
           echo ::set-output name=gitRepo::$(echo $jsonInput | jq -r '.gitRepo.value')
           echo ::set-output name=branchName::$(echo $jsonInput | jq -r '.branchName.value')
           echo ::set-output name=instanceType::$(echo $jsonInput | jq -r '.instanceType.value')
-          echo ::set-output name=joystreamAmi::$(echo $jsonInput | jq -r '.joystreamAmi.value')
           echo ::set-output name=networkName::$(echo $jsonInput | jq -r '.networkName.value')
           echo ::set-output name=networkId::$(echo $jsonInput | jq -r '.networkId.value')
           echo ::set-output name=deploymentType::$(echo $jsonInput | jq -r '.deploymentType.value')
@@ -83,12 +82,11 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/aws/cloudformation/infrastructure.yml
+          template: devops/aws/cloudformation/network.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: >-
             KeyName=joystream-github-action-key-new,
             EC2InstanceType=${{ steps.network_config.outputs.instanceType }},
-            JoystreamAmi=${{ steps.network_config.outputs.joystreamAmi }},
             VolumeSize=${{ steps.network_config.outputs.volumeSize }}
 
       - name: Prepare inventory for Ansible
@@ -115,8 +113,6 @@ jobs:
       # Build
       - name: Build code
         uses: dawidd6/action-ansible-playbook@v2
-        # if joystreamAmi was specified we assume that has all the code already built
-        if: steps.network_config.outputs.joystreamAmi == ''
         with:
           playbook: build-code.yml
           directory: devops/ansible
@@ -161,7 +157,8 @@ jobs:
                           data_path=deploy_artifacts \
                           deployment_type=${{ steps.network_config.outputs.deploymentType }} \
                           initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
-                          endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
+                          endow_accounts=${{ steps.network_config.outputs.endowAccounts }} \
+                          chainspec_creation_strategy='generate'"
 
       - name: Encrpyt the artifacts
         run: |

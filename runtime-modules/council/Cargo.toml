@@ -31,7 +31,11 @@ membership = { package = 'pallet-membership', default-features = false, path = '
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking', 'membership']
+runtime-benchmarks = [
+    'frame-benchmarking',
+    'membership',
+    'common/runtime-benchmarks',
+]
 std = [
     'codec/std',
     'serde',
