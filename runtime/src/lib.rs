@@ -605,13 +605,13 @@ parameter_types! {
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
-    pub OffchainRepeat: BlockNumber = 5;
+    pub OffchainRepeat: BlockNumber = UnsignedPhase::get() / 8;
 }
 
 pub struct StakingBenchmarkingConfig;
 impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
-    type MaxNominators = ConstU32<1000>;
-    type MaxValidators = ConstU32<1000>;
+    type MaxNominators = ConstU32<1000>; // Cannot be higher than `max_nominator_count` in genesis config
+    type MaxValidators = ConstU32<400>; // Cannot be higher than `max_validator_count` in genesis config
 }
 
 impl pallet_staking::Config for Runtime {
@@ -646,16 +646,19 @@ impl pallet_staking::Config for Runtime {
 }
 
 parameter_types! {
+    pub const SignedMaxSubmissions: u32 = 16;
+    pub const SignedMaxRefunds: u32 = 16 / 4;
+
     // phase durations. 1/4 of the last session for each.
     pub const SignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
     pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
 
     // signed config
-    pub const SignedRewardBase: Balance = dollars!(1); // TODO: adjust value
-    pub const SignedDepositBase: Balance = dollars!(1); // TODO: adjust value
-    pub const SignedDepositByte: Balance = currency::CENTS; // TODO: adjust value
+    pub const SignedRewardBase: Balance = dollars!(1);
+    pub const SignedDepositBase: Balance = dollars!(10);
+    pub const SignedDepositByte: Balance = MinimumBloatBondPerByte::get();
 
-    pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
+    pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(5u32, 10_000);
 
     // miner configs
     pub const MultiPhaseUnsignedPriority: TransactionPriority = StakingUnsignedPriority::get() - 1u64;
@@ -682,7 +685,7 @@ frame_election_provider_support::generate_solution_type!(
 
 parameter_types! {
     pub MaxNominations: u32 = <NposSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
-    pub MaxElectingVoters: u32 = 10_000;
+    pub MaxElectingVoters: u32 = 12_500;
 }
 
 /// The numbers configured here could always be more than the the maximum limits of staking pallet
@@ -769,11 +772,11 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type OffchainRepeat = OffchainRepeat;
     type MinerTxPriority = MultiPhaseUnsignedPriority;
     type MinerConfig = Self;
-    type SignedMaxSubmissions = ConstU32<10>;
+    type SignedMaxSubmissions = SignedMaxSubmissions;
     type SignedRewardBase = SignedRewardBase;
     type SignedDepositBase = SignedDepositBase;
     type SignedDepositByte = SignedDepositByte;
-    type SignedMaxRefunds = ConstU32<3>;
+    type SignedMaxRefunds = SignedMaxRefunds;
     type SignedDepositWeight = ();
     type SignedMaxWeight = MinerMaxWeight;
     type SlashHandler = (); // burn slashes
@@ -809,7 +812,7 @@ parameter_types! {
     pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
     /// We prioritize im-online heartbeats over election solution submission.
     pub const StakingUnsignedPriority: TransactionPriority = TransactionPriority::max_value() / 2;
-    pub const MaxAuthorities: u32 = 100;
+    pub const MaxAuthorities: u32 = 100_000;
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxPeerDataEncodingSize: u32 = 1_000;

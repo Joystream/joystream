@@ -34,10 +34,10 @@ pub const MILLISECS_PER_BLOCK: Moment = 1000;
 pub const SLOT_DURATION: Moment = 1000;
 
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-pub const BONDING_DURATION: u32 = 24 * 28;
-pub const SLASH_DEFER_DURATION: u32 = 24 * 7; // 1/4 the bonding duration.
+pub const BONDING_DURATION: u32 = 4 * 28; // 4 * 28 eras = 28 days (since 1 era = 6h)
+pub const SLASH_DEFER_DURATION: u32 = BONDING_DURATION - 1;
 
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = HOURS;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
 
@@ -144,9 +144,9 @@ pub mod currency {
     pub const MILLICENTS: Balance = CENTS.saturating_div(1_000);
 
     /// Minium Validator Bond to be set at genesis
-    pub const MIN_VALIDATOR_BOND: Balance = DOLLARS.saturating_mul(1_000);
+    pub const MIN_VALIDATOR_BOND: Balance = DOLLARS.saturating_mul(2_500);
     /// Minium Nominator Bond to be set at genesis
-    pub const MIN_NOMINATOR_BOND: Balance = DOLLARS.saturating_mul(10);
+    pub const MIN_NOMINATOR_BOND: Balance = DOLLARS.saturating_mul(100);
 
     /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
