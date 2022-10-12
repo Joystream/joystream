@@ -461,7 +461,8 @@ mod tests {
 
     #[test]
     fn call_size() {
-        const SAFE_SIZE: usize = 368;
+        // https://github.com/Joystream/joystream/pull/4336#discussion_r992359003
+        const SAFE_SIZE: usize = 400;
         let current_size = core::mem::size_of::<Call>();
         assert!(
             current_size <= SAFE_SIZE,
