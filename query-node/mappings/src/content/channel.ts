@@ -33,11 +33,9 @@ import {
   logger,
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
-  deterministicEntityId,
   unwrap,
   bytesToString,
 } from '../common'
-import { getCurrentElectedCouncil } from '../council'
 import {
   processBanOrUnbanMemberFromChannelMessage,
   processModerateCommentMessage,
@@ -54,6 +52,7 @@ import {
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
+import BN from 'bn.js'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx

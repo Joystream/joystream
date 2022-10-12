@@ -2,7 +2,7 @@ import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { MemberId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { PalletCommonProofElementRecord } from '@polkadot/types/lookup'
+import { PalletCommonMerkleTreeProofElementRecord } from '@polkadot/types/lookup'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { u8aToHex } from '@polkadot/util'
 import { BN } from 'bn.js'
@@ -49,9 +49,9 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
         reason: u8aToHex(Buffer.from(params.payoutProof.reason, 'hex')),
       })
 
-      const merkleBranch: PalletCommonProofElementRecord[] = []
+      const merkleBranch: PalletCommonMerkleTreeProofElementRecord[] = []
       params.payoutProof.merkleBranch.forEach((m) => {
-        const proofElement = createType('PalletCommonProofElementRecord', {
+        const proofElement = createType('PalletCommonMerkleTreeProofElementRecord', {
           hash_: u8aToHex(Buffer.from(m.hash, 'hex')),
           side: m.side ? { Right: null } : { Left: null },
         })

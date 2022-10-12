@@ -37,9 +37,8 @@ export class UpdateChannelPayoutsProposalFixture extends BaseQueryNodeFixture {
 
     const expectedDataSizeFee = await this.api.getDataObjectPerMegabyteFee()
     const expectedDataObjectStateBloatBond = await this.api.getDataObjectStateBloatBond()
-    const minCashoutAllowed = minCashoutAllowedInput || (await this.api.query.content.minCashoutAllowed()).addn(1)
-    const maxCashoutAllowed =
-      maxCashoutAllowedInput || (await this.api.query.content.minCashoutAllowed()).addn(10000000)
+    const minCashoutAllowed = minCashoutAllowedInput || (await this.api.query.content.minCashoutAllowed())
+    const maxCashoutAllowed = maxCashoutAllowedInput || (await this.api.query.content.maxCashoutAllowed())
 
     const createProposalsFixture = new CreateProposalsFixture(this.api, this.query, [
       {

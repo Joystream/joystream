@@ -1,7 +1,7 @@
 [
   {
     "channelId": 1,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -20,7 +20,7 @@
   },
   {
     "channelId": 2,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -39,7 +39,7 @@
   },
   {
     "channelId": 3,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -58,7 +58,7 @@
   },
   {
     "channelId": 4,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -77,7 +77,7 @@
   },
   {
     "channelId": 5,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -96,7 +96,7 @@
   },
   {
     "channelId": 6,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -115,7 +115,7 @@
   },
   {
     "channelId": 7,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -134,7 +134,7 @@
   },
   {
     "channelId": 8,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -153,7 +153,7 @@
   },
   {
     "channelId": 9,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
@@ -172,7 +172,7 @@
   },
   {
     "channelId": 10,
-    "cumulativePayoutEarned": "2666666",
+    "cumulativePayoutEarned": "2666666666660",
     "merkleBranch": [
       {
         "hash": "0xe25408fe2c5aed6b29b035864c3ca31a92261831000b462d6f73a8bcbdae1477",
