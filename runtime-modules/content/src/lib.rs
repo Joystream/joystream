@@ -3,6 +3,22 @@
 #![allow(clippy::unused_unit)]
 #![recursion_limit = "512"]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 #[cfg(test)]
 mod tests;
@@ -46,8 +62,9 @@ pub use common::{
     },
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
+    merkle_tree::Side,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
-    MembershipTypes, Side, StorageOwnership, Url,
+    MembershipTypes, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,

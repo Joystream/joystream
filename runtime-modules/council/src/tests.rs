@@ -75,7 +75,7 @@ fn council_candidacy_invalid_time() {
             late_candidate.origin.clone(),
             late_candidate.account_id,
             late_candidate.candidate.stake,
-            Err(Error::CantCandidateNow),
+            Err(Error::<Runtime>::CantCandidateNow.into()),
         );
     });
 }
@@ -95,7 +95,7 @@ fn council_candidacy_stake_too_low() {
             candidate.origin.clone(),
             candidate.account_id,
             candidate.candidate.stake,
-            Err(Error::CandidacyStakeTooLow),
+            Err(Error::<Runtime>::CandidacyStakeTooLow.into()),
         );
     });
 }
@@ -599,7 +599,7 @@ fn council_cant_candidate_repeatedly() {
             candidate.origin.clone(),
             candidate.membership_id,
             council_settings.min_candidate_stake,
-            Err(Error::CantCandidateTwice),
+            Err(Error::<Runtime>::CantCandidateTwice.into()),
         );
     });
 }
@@ -1524,7 +1524,7 @@ fn council_membership_checks() {
             candidate2.candidate.staking_account_id, // second candidate's account id
             candidate1.candidate.reward_account_id,
             candidate1.candidate.stake,
-            Err(Error::MemberIdNotMatchAccount),
+            Err(Error::<Runtime>::MemberIdNotMatchAccount.into()),
         );
 
         // test that reward_account_id not associated with membership_id can be used
@@ -2016,11 +2016,12 @@ fn fund_council_budget_fails_with_zero_amount() {
 
 #[test]
 fn councilor_remark_successful() {
-    let config = augmented_genesis_config();
+    let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let account_id = 1;
-        let member_id = 1;
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
+        let member_id = params.expected_final_council_members[0].membership_id;
+        let account_id = member_id;
         let msg = b"test".to_vec();
         let origin = RawOrigin::Signed(account_id);
 
@@ -2030,11 +2031,12 @@ fn councilor_remark_successful() {
 
 #[test]
 fn councilor_remark_unsuccessful_with_invalid_origin() {
-    let config = augmented_genesis_config();
+    let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let account_id = 21;
-        let member_id = 1;
+        let params = Mocks::run_full_council_cycle(1, &[], 0);
+        let member_id = params.expected_final_council_members[0].membership_id;
+        let account_id = member_id + 1;
         let msg = b"test".to_vec();
         let origin = RawOrigin::Signed(account_id);
 

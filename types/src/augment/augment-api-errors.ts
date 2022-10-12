@@ -95,6 +95,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     bounty: {
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Bounty doesnt exist.
        **/
       BountyDoesntExist: AugmentedError<ApiType>;
@@ -748,6 +752,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -866,6 +874,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     council: {
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Origin is invalid.
        **/
       BadOrigin: AugmentedError<ApiType>;
@@ -969,6 +981,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -1150,6 +1166,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * A thread with outstanding posts cannot be removed
        **/
       CannotDeleteThreadWithOutstandingPosts: AugmentedError<ApiType>;
@@ -1251,6 +1271,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -1377,6 +1401,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -1647,6 +1675,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -1831,6 +1863,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -1956,6 +1992,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/
@@ -2083,6 +2123,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Staking less than the lower bound.
        **/
       BelowMinimumStakes: AugmentedError<ApiType>;
@@ -2208,6 +2252,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Requested account data does not exist
        **/
       AccountInformationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Attempt to remove an account with some outstanding tokens
        **/
@@ -2500,6 +2548,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     proposalsDiscussion: {
       /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Account can't delete post at the moment
        **/
       CannotDeletePost: AugmentedError<ApiType>;
@@ -2542,6 +2594,10 @@ declare module '@polkadot/api-base/types/errors' {
        * The proposal have been already voted on
        **/
       AlreadyVoted: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * The conflicting stake discovered. Cannot stake.
        **/
@@ -3082,6 +3138,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Application stake is less than required opening stake.
        **/
       ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
       /**
        * Staking less than the lower bound.
        **/

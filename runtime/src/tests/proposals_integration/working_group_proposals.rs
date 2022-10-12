@@ -5,6 +5,7 @@ use super::*;
 
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
+use frame_support::traits::Get;
 use frame_support::traits::LockIdentifier;
 use frame_system::RawOrigin;
 use proposals_codex::CreateOpeningParameters;
@@ -144,6 +145,10 @@ fn add_opening(
     .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    let params =
+        <Runtime as proposals_codex::Config>::CreateWorkingGroupLeadOpeningProposalParameters::get(
+        );
+    run_to_block(System::block_number() + params.grace_period + 1);
 
     match group {
         WorkingGroup::Content => assert!(working_group::OpeningById::<
@@ -226,6 +231,9 @@ fn fill_opening(
     .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    let params =
+        <Runtime as proposals_codex::Config>::FillWorkingGroupLeadOpeningProposalParameters::get();
+    run_to_block(System::block_number() + params.grace_period + 1);
 }
 
 fn decrease_stake(
@@ -268,6 +276,10 @@ fn decrease_stake(
     .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    let params =
+        <Runtime as proposals_codex::Config>::DecreaseWorkingGroupLeadStakeProposalParameters::get(
+        );
+    run_to_block(System::block_number() + params.grace_period + 1);
 }
 
 fn slash_stake(
@@ -300,6 +312,9 @@ fn slash_stake(
     .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    let params =
+        <Runtime as proposals_codex::Config>::SlashWorkingGroupLeadProposalParameters::get();
+    run_to_block(System::block_number() + params.grace_period + 1);
 }
 
 fn set_reward(
@@ -342,6 +357,9 @@ fn set_reward(
     .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    let params =
+        <Runtime as proposals_codex::Config>::SetWorkingGroupLeadRewardProposalParameters::get();
+    run_to_block(System::block_number() + params.grace_period + 1);
 }
 
 fn set_mint_capacity<
@@ -384,6 +402,9 @@ fn set_mint_capacity<
     .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    let params =
+        <Runtime as proposals_codex::Config>::UpdateWorkingGroupBudgetProposalParameters::get();
+    run_to_block(System::block_number() + params.grace_period + 1);
 }
 
 fn terminate_role(
@@ -426,6 +447,9 @@ fn terminate_role(
     .with_expected_proposal_id(expected_proposal_id);
 
     codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    let params =
+        <Runtime as proposals_codex::Config>::TerminateWorkingGroupLeadProposalParameters::get();
+    run_to_block(System::block_number() + params.grace_period + 1);
 }
 
 #[test]
@@ -498,6 +522,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
     working_group: WorkingGroup,
 ) where
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -520,7 +545,8 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
                     stake_amount: <Runtime as working_group::Config<
                         MembershipWorkingGroupInstance,
                     >>::MinimumApplicationStake::get() as u128,
-                    leaving_unstaking_period: 1_000_000,
+                    leaving_unstaking_period:
+                        <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
                 },
                 1,
                 working_group,
@@ -607,6 +633,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
     common::MemberId<T>: From<u64>,
     <T as pallet_balances::Config>::Balance: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -627,7 +654,8 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
             account_id,
             StakePolicy {
                 stake_amount: min_stake,
-                leaving_unstaking_period: 1_000_000,
+                leaving_unstaking_period:
+                    <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
             },
             1,
             working_group,
@@ -762,6 +790,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
     <T as common::membership::MembershipTypes>::ActorId: Into<u64>,
     <T as pallet_balances::Config>::Balance: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -776,7 +805,8 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
-            leaving_unstaking_period: 45000, // more than min value
+            leaving_unstaking_period:
+                <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
         };
 
         let opening_id = add_opening(member_id, account_id, stake_policy, 1, working_group);
@@ -949,6 +979,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
     <T as common::membership::MembershipTypes>::ActorId: Into<u64>,
     <T as pallet_balances::Config>::Balance: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -961,7 +992,8 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
-            leaving_unstaking_period: 45000, // more than min value
+            leaving_unstaking_period:
+                <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
         };
 
         increase_total_balance_issuance_using_account_id(account_id.into(), stake_amount * 2);
@@ -1123,6 +1155,7 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
     <T as frame_system::Config>::AccountId: From<[u8; 32]>,
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -1165,6 +1198,7 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
     <T as frame_system::Config>::AccountId: From<[u8; 32]>,
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
     working_group::BalanceOf<T>: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -1186,7 +1220,8 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
             account_id,
             StakePolicy {
                 stake_amount: min_stake,
-                leaving_unstaking_period: 1_000_000,
+                leaving_unstaking_period:
+                    <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
             },
             1,
             working_group,
@@ -1371,6 +1406,7 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
     <T as common::membership::MembershipTypes>::ActorId: Into<u64>,
     working_group::BalanceOf<T>: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -1396,7 +1432,8 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
             account_id,
             StakePolicy {
                 stake_amount: min_stake,
-                leaving_unstaking_period: 1_000_000,
+                leaving_unstaking_period:
+                    <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
             },
             1,
             working_group,
@@ -1548,6 +1585,7 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     common::MemberId<T>: From<u64>,
     <T as common::membership::MembershipTypes>::ActorId: Into<u64>,
     <T as pallet_balances::Config>::Balance: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -1560,7 +1598,8 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
-            leaving_unstaking_period: 45000, // more than min value
+            leaving_unstaking_period:
+                <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
         };
 
         increase_total_balance_issuance_using_account_id(account_id.into(), stake_amount * 2);
@@ -1727,6 +1766,7 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
     <T as common::membership::MembershipTypes>::ActorId: Into<u64>,
     <T as pallet_balances::Config>::Balance: From<u128>,
+    <T as frame_system::Config>::BlockNumber: Into<u32>,
 {
     initial_test_ext().execute_with(|| {
         // start at block 1
@@ -1739,7 +1779,8 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
 
         let stake_policy = working_group::StakePolicy {
             stake_amount,
-            leaving_unstaking_period: 45000, // more than min value
+            leaving_unstaking_period:
+                <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
         };
 
         increase_total_balance_issuance_using_account_id(account_id.into(), stake_amount * 2);

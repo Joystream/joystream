@@ -39,6 +39,7 @@ runtime-benchmarks = [
 	'working-group',
 	'staking-handler',
     'sp-core',
+	'common/runtime-benchmarks',
 ]
 std = [
 	'serde',

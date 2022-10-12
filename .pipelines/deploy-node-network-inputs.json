@@ -8,12 +8,8 @@
     "value": "carthage"
   },
   "instanceType": {
-    "description": "AWS EC2 instance type for Validators and Rpc (t2.micro, t2.large)",
+    "description": "AWS EC2 instance type for Validators and Rpc (t2.micro, t2.large, t2.xlarge)",
     "value": "t2.large"
-  },
-  "joystreamAmi": {
-    "description": "Pre-built AMI ID - leave blank to build from source",
-    "value": ""
   },
   "volumeSize": {
     "description": "Instances volume size in GB",

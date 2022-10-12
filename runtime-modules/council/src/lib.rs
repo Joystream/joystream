@@ -43,6 +43,22 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 #![allow(clippy::type_complexity)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 // used dependencies
 use codec::{Decode, Encode, MaxEncodedLen};
@@ -324,7 +340,7 @@ decl_storage! { generate_storage_info
         pub CouncilMembers get(fn council_members): WeakBoundedVec<CouncilMemberOf<T>, T::CouncilSize>;
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
-        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat)
+        pub Candidates get(fn candidates): map hasher(blake2_128_concat)
             T::MemberId => Option<Candidate<T::AccountId, Balance<T>, T::Hash, VotePowerOf::<T>>>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period
@@ -345,20 +361,6 @@ decl_storage! { generate_storage_info
 
         /// Councilor reward per block
         pub CouncilorReward get(fn councilor_reward) config(): Balance<T>;
-    }
-
-    add_extra_genesis {
-        config(council_members): Vec<CouncilMemberOf<T>>;
-
-        build(|s| {
-            // Set initial council members
-            CouncilMembers::<T>::put(
-                WeakBoundedVec::force_from(
-                    s.council_members.clone(),
-                    Some("ConcilMembers genesis")
-                )
-            );
-        });
     }
 }
 
@@ -437,6 +439,9 @@ decl_error! {
     /// Council errors
     #[derive(PartialEq)]
     pub enum Error for Module<T: Config> {
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Origin is invalid.
         BadOrigin,
 
@@ -589,7 +594,7 @@ decl_module! {
                 staking_account_id: T::AccountId,
                 reward_account_id: T::AccountId,
                 stake: Balance<T>
-            ) -> Result<(), Error<T>> {
+            ) -> DispatchResult {
             // ensure action can be started
             let (stage_data, previous_staking_account_id) =
                 EnsureChecks::<T>::can_announce_candidacy(
@@ -615,7 +620,7 @@ decl_module! {
             }
 
             // update state
-            Mutations::<T>::announce_candidacy(&stage_data, &membership_id, &candidate, &stake);
+            Mutations::<T>::announce_candidacy(&stage_data, &membership_id, &candidate, &stake)?;
 
             // emit event
             Self::deposit_event(RawEvent::NewCandidate(
@@ -1032,7 +1037,8 @@ impl<T: Config> Module<T> {
 
     // Finish voting and start ravealing.
     fn end_announcement_period(candidates_count: u32) {
-        let min_candidate_count = T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get();
+        let min_candidate_count =
+            T::CouncilSize::get().saturating_add(T::MinNumberOfExtraCandidates::get());
 
         // reset announcing period when not enough candidates registered
         if candidates_count < min_candidate_count {
@@ -1386,14 +1392,14 @@ impl<T: Config> Mutations<T> {
         });
 
         // increase anouncement cycle id
-        AnnouncementPeriodNr::mutate(|value| *value += 1);
+        AnnouncementPeriodNr::mutate(|value| *value = value.saturating_add(1));
 
         ends_at
     }
 
     // Change the council stage from the announcing to the election stage.
     fn finalize_announcing_period(candidates_count: u32) {
-        let extra_winning_target_count = T::CouncilSize::get() - 1;
+        let extra_winning_target_count = T::CouncilSize::get().saturating_sub(1);
 
         // start referendum
         T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
@@ -1446,13 +1452,16 @@ impl<T: Config> Mutations<T> {
         membership_id: &T::MemberId,
         candidate: &CandidateOf<T>,
         stake: &Balance<T>,
-    ) {
+    ) -> DispatchResult {
         // insert candidate to candidate registery
         Candidates::<T>::insert(membership_id, candidate.clone());
 
         // prepare new stage
         let new_stage_data = CouncilStageAnnouncing::<T::BlockNumber> {
-            candidates_count: stage_data.candidates_count + 1,
+            candidates_count: stage_data
+                .candidates_count
+                .checked_add(1)
+                .ok_or(Error::<T>::ArithmeticError)?,
             ..*stage_data
         };
 
@@ -1468,6 +1477,8 @@ impl<T: Config> Mutations<T> {
 
         // lock candidacy stake
         T::CandidacyLock::lock(&candidate.staking_account_id, *stake);
+
+        Ok(())
     }
 
     fn withdraw_candidacy(
@@ -1571,8 +1582,13 @@ impl<T: Config> Mutations<T> {
 
         // update elected council member
         CouncilMembers::<T>::mutate(|members| {
-            members[member_index].last_payment_block = *now;
-            members[member_index].unpaid_reward = *missing_balance;
+            let maybe_member = members.get_mut(member_index);
+            if let Some(member) = maybe_member {
+                member.last_payment_block = *now;
+                member.unpaid_reward = *missing_balance;
+            } else {
+                debug_assert!(false);
+            }
         });
     }
 

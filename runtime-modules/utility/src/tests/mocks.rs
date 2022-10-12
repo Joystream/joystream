@@ -189,6 +189,7 @@ impl Config for Test {
 
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
@@ -206,6 +207,7 @@ impl membership::Config for Test {
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 pub struct Wg;

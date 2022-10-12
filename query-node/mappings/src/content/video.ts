@@ -140,6 +140,7 @@ export async function processCreateVideoMessage(
 
       contentActor: await convertContentActor(store, contentActor),
       video,
+      videoCategory: nft.videoCategory,
       royalty: nft.creatorRoyalty,
       metadata: nft.metadata,
       // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
@@ -172,7 +173,7 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   // load video
   const video = await store.get(Video, {
     where: { id: contentId.toString() },
-    relations: [...videoRelationsForCounters, 'license', 'channel.ownerMember', 'channel.ownerCuratorGroup'],
+    relations: [...videoRelationsForCounters, 'license', 'channel.ownerMember', 'channel.ownerCuratorGroup', 'nft'],
   })
 
   if (video) {
@@ -211,6 +212,7 @@ export async function processUpdateVideoMessage(
 
       contentActor: await convertContentActor(store, contentActor),
       video,
+      videoCategory: nft.videoCategory,
       royalty: nft.creatorRoyalty,
       metadata: nft.metadata,
       // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)

@@ -97,7 +97,7 @@ fn bonding_with_non_staked_account_works() {
         // Bonding with account free of locks
         let validator_1 = account_from_member_id(0);
         let stake_amount = currency::MIN_VALIDATOR_BOND;
-        let total_amount = currency::STASH;
+        let total_amount = stake_amount.saturating_mul(2) + currency::DOLLARS * 100;
         increase_total_balance_issuance_using_account_id(validator_1.clone(), total_amount);
 
         // bonding succeeds

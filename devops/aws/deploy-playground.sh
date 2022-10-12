@@ -25,6 +25,9 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
+# Install additional Ansible roles from requirements
+ansible-galaxy install -r ../ansible/requirements.yml
+
 # Deploy the CloudFormation template
 echo -e "\n\n=========== Deploying Playground Node ==========="
 aws cloudformation deploy \
@@ -40,9 +43,6 @@ aws cloudformation deploy \
 
 # If the deploy succeeded, get the IP and configure the created instance
 if [ $? -eq 0 ]; then
-  # Install additional Ansible roles from requirements
-  ansible-galaxy install -r ../ansible/requirements.yml
-
   SERVER_IP=$(get_aws_export $STACK_NAME "PublicIp")
 
   echo -e "New Node Public IP: $SERVER_IP"
