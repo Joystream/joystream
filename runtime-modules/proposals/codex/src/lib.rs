@@ -264,7 +264,7 @@ pub trait Config:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// Max amount in funding request proposal (per account)
+    /// Maximum total amount in funding request proposal
     type FundingRequestProposalMaxTotalAmount: Get<BalanceOf<Self>>;
 
     /// Max number of accounts per funding request proposal
