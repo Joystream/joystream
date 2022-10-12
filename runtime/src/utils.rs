@@ -128,6 +128,13 @@ macro_rules! mega_bytes {
 }
 
 #[macro_export]
+macro_rules! minutes {
+    ($a:expr) => {{
+        ((60 * 1000) / ExpectedBlockTime::get()) as u32 * $a
+    }};
+}
+
+#[macro_export]
 macro_rules! hours {
     ($a:expr) => {{
         ((60 * 60 * 1000) / ExpectedBlockTime::get()) as u32 * $a
