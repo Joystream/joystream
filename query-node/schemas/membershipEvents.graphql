@@ -112,7 +112,7 @@ type MembershipGiftedEvent implements Event @entity {
   metadata: MemberMetadata!
 }
 
-type FoundingMemberCreatedEvent implements Event @entity {
+type MemberCreatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -146,6 +146,9 @@ type FoundingMemberCreatedEvent implements Event @entity {
 
   "New member metadata"
   metadata: MemberMetadata!
+
+  "Whether member is founding member."
+  isFoundingMember: Boolean!
 }
 
 type MemberProfileUpdatedEvent implements Event @entity {

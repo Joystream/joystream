@@ -503,7 +503,7 @@ export default {
     votePower: 'u128'
   },
   /**
-   * Lookup69: pallet_membership::RawEvent<MemberId, Balance, sp_core::crypto::AccountId32, pallet_membership::BuyMembershipParameters<sp_core::crypto::AccountId32, MemberId>, ActorId, pallet_membership::InviteMembershipParameters<sp_core::crypto::AccountId32, MemberId>, pallet_membership::CreateFoundingMemberParameters<sp_core::crypto::AccountId32>, pallet_membership::GiftMembershipParameters<sp_core::crypto::AccountId32, Balance>>
+   * Lookup69: pallet_membership::RawEvent<MemberId, Balance, sp_core::crypto::AccountId32, pallet_membership::BuyMembershipParameters<sp_core::crypto::AccountId32, MemberId>, ActorId, pallet_membership::InviteMembershipParameters<sp_core::crypto::AccountId32, MemberId>, pallet_membership::CreateMemberParameters<sp_core::crypto::AccountId32>, pallet_membership::GiftMembershipParameters<sp_core::crypto::AccountId32, Balance>>
    **/
   PalletMembershipRawEvent: {
     _enum: {
@@ -523,7 +523,7 @@ export default {
       StakingAccountRemoved: '(AccountId32,u64)',
       StakingAccountConfirmed: '(AccountId32,u64)',
       MemberRemarked: '(u64,Bytes)',
-      FoundingMemberCreated: '(u64,PalletMembershipCreateFoundingMemberParameters,u32)'
+      MemberCreated: '(u64,PalletMembershipCreateMemberParameters,u32)'
     }
   },
   /**
@@ -547,13 +547,14 @@ export default {
     metadata: 'Bytes'
   },
   /**
-   * Lookup74: pallet_membership::CreateFoundingMemberParameters<sp_core::crypto::AccountId32>
+   * Lookup74: pallet_membership::CreateMemberParameters<sp_core::crypto::AccountId32>
    **/
-  PalletMembershipCreateFoundingMemberParameters: {
+  PalletMembershipCreateMemberParameters: {
     rootAccount: 'AccountId32',
     controllerAccount: 'AccountId32',
     handle: 'Bytes',
-    metadata: 'Bytes'
+    metadata: 'Bytes',
+    isFoundingMember: 'bool'
   },
   /**
    * Lookup75: pallet_membership::GiftMembershipParameters<sp_core::crypto::AccountId32, Balance>
@@ -2677,8 +2678,8 @@ export default {
         memberId: 'u64',
         msg: 'Bytes',
       },
-      create_founding_member: {
-        params: 'PalletMembershipCreateFoundingMemberParameters'
+      create_member: {
+        params: 'PalletMembershipCreateMemberParameters'
       }
     }
   },
