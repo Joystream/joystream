@@ -172,6 +172,7 @@ parameter_types! {
     pub const LeaderOpeningStake: u32 = 20;
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
     pub const CandidateStake: u64 = 130;
 }
 
@@ -188,6 +189,7 @@ impl membership::Config for Test {
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = Wg;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;

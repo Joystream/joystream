@@ -49,7 +49,7 @@ parameter_types! {
     pub DecreaseWorkingGroupLeadStakeProposalParameters: ProposalParameters<BlockNumber, Balance> =
         decrease_working_group_lead_stake_proposal();
 
-    pub SlashWorkingGroupLeadProposalParameters: ProposalParameters<BlockNumber, Balance> =
+    pub const SlashWorkingGroupLeadProposalParameters: ProposalParameters<BlockNumber, Balance> =
         slash_working_group_lead_proposal();
 
     pub SetWorkingGroupLeadRewardProposalParameters: ProposalParameters<BlockNumber, Balance> =

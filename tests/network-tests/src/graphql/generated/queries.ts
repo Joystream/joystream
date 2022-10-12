@@ -940,7 +940,7 @@ export type MembershipFieldsFragment = {
     | { __typename: 'MembershipEntryPaid'; membershipBoughtEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'MembershipEntryInvited'; memberInvitedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'MembershipEntryGifted'; membershipGiftedEvent?: Types.Maybe<{ id: string }> }
-    | { __typename: 'MembershipEntryFoundingMemberCreated'; foundingMemberCreatedEvent?: Types.Maybe<{ id: string }> }
+    | { __typename: 'MembershipEntryMemberCreated'; memberCreatedEvent?: Types.Maybe<{ id: string }> }
     | { __typename: 'MembershipEntryGenesis' }
   invitedBy?: Types.Maybe<{ id: string }>
   invitees: Array<{ id: string }>
@@ -1021,7 +1021,7 @@ export type GetMemberAccountsUpdatedEventsByMemberIdQuery = {
   memberAccountsUpdatedEvents: Array<MemberAccountsUpdatedEventFieldsFragment>
 }
 
-export type FoundingMemberCreatedEventFieldsFragment = {
+export type MemberCreatedEventFieldsFragment = {
   id: string
   createdAt: any
   inBlock: number
@@ -1031,17 +1031,16 @@ export type FoundingMemberCreatedEventFieldsFragment = {
   rootAccount: string
   controllerAccount: string
   handle: string
+  isFoundingMember: boolean
   newMember: { id: string }
   metadata: MemberMetadataFieldsFragment
 }
 
-export type GetFoundingMemberCreatedEventsByEventIdsQueryVariables = Types.Exact<{
+export type GetMemberCreatedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetFoundingMemberCreatedEventsByEventIdsQuery = {
-  foundingMemberCreatedEvents: Array<FoundingMemberCreatedEventFieldsFragment>
-}
+export type GetMemberCreatedEventsByEventIdsQuery = { memberCreatedEvents: Array<MemberCreatedEventFieldsFragment> }
 
 export type MembershipGiftedEventFieldsFragment = {
   id: string
@@ -3427,8 +3426,8 @@ export const MembershipFields = gql`
           id
         }
       }
-      ... on MembershipEntryFoundingMemberCreated {
-        foundingMemberCreatedEvent {
+      ... on MembershipEntryMemberCreated {
+        memberCreatedEvent {
           id
         }
       }
@@ -3502,8 +3501,8 @@ export const MemberAccountsUpdatedEventFields = gql`
     newControllerAccount
   }
 `
-export const FoundingMemberCreatedEventFields = gql`
-  fragment FoundingMemberCreatedEventFields on FoundingMemberCreatedEvent {
+export const MemberCreatedEventFields = gql`
+  fragment MemberCreatedEventFields on MemberCreatedEvent {
     id
     createdAt
     inBlock
@@ -3519,6 +3518,7 @@ export const FoundingMemberCreatedEventFields = gql`
     metadata {
       ...MemberMetadataFields
     }
+    isFoundingMember
   }
   ${MemberMetadataFields}
 `
@@ -5186,13 +5186,13 @@ export const GetMemberAccountsUpdatedEventsByMemberId = gql`
   }
   ${MemberAccountsUpdatedEventFields}
 `
-export const GetFoundingMemberCreatedEventsByEventIds = gql`
-  query getFoundingMemberCreatedEventsByEventIds($eventIds: [ID!]) {
-    foundingMemberCreatedEvents(where: { id_in: $eventIds }) {
-      ...FoundingMemberCreatedEventFields
+export const GetMemberCreatedEventsByEventIds = gql`
+  query getMemberCreatedEventsByEventIds($eventIds: [ID!]) {
+    memberCreatedEvents(where: { id_in: $eventIds }) {
+      ...MemberCreatedEventFields
     }
   }
-  ${FoundingMemberCreatedEventFields}
+  ${MemberCreatedEventFields}
 `
 export const GetMembershipGiftedEventsByEventIds = gql`
   query getMembershipGiftedEventsByEventIds($eventIds: [ID!]) {

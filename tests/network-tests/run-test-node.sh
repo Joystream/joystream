@@ -7,11 +7,12 @@ cd $SCRIPT_PATH
 # Location used to store chain data, generated spec file and initial members
 # and balances for the test chain.
 DATA_PATH=./data
+rm -Rf ${DATA_PATH}/alice
+rm -Rf ${DATA_PATH}/auth-*
 
-# Initial account balance for Alice
-# Alice is the source of funds for all new accounts that are created in the tests.
-INITIAL_BALANCE="9000000000000000000000"
+INITIAL_BALANCE="100000000"
 ALICE="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+BOB="5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
 CHARLIE="5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
 
 mkdir -p ${DATA_PATH}
@@ -19,10 +20,11 @@ mkdir -p ${DATA_PATH}
 echo "{
   \"balances\":[
     [\"${ALICE}\", ${INITIAL_BALANCE}],
+    [\"${BOB}\", ${INITIAL_BALANCE}],
     [\"${CHARLIE}\", ${INITIAL_BALANCE}]
   ],
   \"vesting\":[
-    [\"${CHARLIE}\", "0", "25", "100000000000"]
+    [\"${CHARLIE}\", "0", "25", "10000"]
   ]
 }" > ${DATA_PATH}/initial-balances.json
 
@@ -42,18 +44,20 @@ else
   fi
 fi
 
-function cleanup() {
-    rm -Rf ${DATA_PATH}/alice
-}
-
-trap cleanup EXIT
-
 # Create a chain spec file
-../../target/release/chain-spec-builder new -a Alice \
+../../target/release/chain-spec-builder \
+  new \
+  --fund-accounts \
+  -a //Alice \
   --chain-spec-path ${DATA_PATH}/chain-spec.json \
   --initial-balances-path ${DATA_PATH}/initial-balances.json \
   --deployment dev \
-  --sudo-account ${ALICE}
+  --sudo-account ${ALICE} \
+  --keystore-path ${DATA_PATH}
 
 ../../target/release/joystream-node --base-path ${DATA_PATH}/alice \
-  --validator --chain ${DATA_PATH}/chain-spec.json --alice --unsafe-ws-external --rpc-cors all --pruning=archive
+  --keystore-path ${DATA_PATH}/auth-0 \
+  --validator --chain ${DATA_PATH}/chain-spec.json \
+  --unsafe-ws-external --unsafe-rpc-external \
+  --rpc-methods Unsafe --rpc-cors=all \
+  --pruning=archive --no-telemetry

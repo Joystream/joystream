@@ -292,6 +292,7 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -310,6 +311,7 @@ impl membership::Config for Test {
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 pub struct Wg;

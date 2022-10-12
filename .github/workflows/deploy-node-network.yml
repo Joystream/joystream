@@ -157,7 +157,8 @@ jobs:
                           data_path=deploy_artifacts \
                           deployment_type=${{ steps.network_config.outputs.deploymentType }} \
                           initial_balances_file=${{ steps.network_config.outputs.initialBalancesFilePath }} \
-                          endow_accounts=${{ steps.network_config.outputs.endowAccounts }}"
+                          endow_accounts=${{ steps.network_config.outputs.endowAccounts }} \
+                          chainspec_creation_strategy='generate'"
 
       - name: Encrpyt the artifacts
         run: |
