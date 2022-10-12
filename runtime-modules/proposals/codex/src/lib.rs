@@ -375,6 +375,9 @@ decl_error! {
 
         /// Provided proposal id is not valid
         InvalidProposalId,
+
+        /// Arithmeic Error
+        ArithmeticError,
     }
 }
 
@@ -757,16 +760,17 @@ impl<T: Config> Module<T> {
                 let total_funding_amount = funding_requests
                     .iter()
                     .try_fold(BalanceOf::<T>::zero(), |sum, el| {
-                        sum.checked_add(&el.amount)
-                    })
-                    .ok_or("Arithmetic Error")?;
+                        // ensure funding_amount in non zero
+                        ensure!(
+                            !el.amount.is_zero(),
+                            Error::<T>::InvalidFundingRequestProposalBalance
+                        );
 
-                // ensure total_funding_amount in (0, MAX]
-                ensure!(
-                    !total_funding_amount.is_zero(),
-                    Error::<T>::InvalidFundingRequestProposalBalance
-                );
+                        sum.checked_add(&el.amount).ok_or(Error::<T>::ArithmeticError)
+                    })?;
 
+
+                // ensure total funding amount <= MAX
                 ensure!(
                     total_funding_amount <= T::FundingRequestProposalMaxTotalAmount::get(),
                     Error::<T>::InvalidFundingRequestProposalBalance
