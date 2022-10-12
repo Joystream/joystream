@@ -648,6 +648,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
+name = "call-sizes"
+version = "1.0.0"
+dependencies = [
+ "joystream-node-runtime",
+ "pallet-bounty",
+ "pallet-common",
+ "pallet-constitution",
+ "pallet-content",
+ "pallet-council",
+ "pallet-forum",
+ "pallet-membership",
+ "pallet-project-token",
+ "pallet-proposals-codex",
+ "pallet-proposals-discussion",
+ "pallet-proposals-engine",
+ "pallet-referendum",
+ "pallet-staking-handler",
+ "pallet-storage",
+ "pallet-utility 2.0.0",
+ "pallet-working-group",
+]
+
+[[package]]
 name = "camino"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
