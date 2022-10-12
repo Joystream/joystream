@@ -4,7 +4,7 @@ import { FixtureRunner } from '../../Fixture'
 import { SetForceEraForcingNewFixture } from '../../fixtures/staking/SetForceEraForcingNewFixture'
 import { assert } from 'chai'
 import { ClaimingPayoutStakersSucceedsFixture } from '../../fixtures/staking/ClaimingPayoutStakersSucceedsFixture'
-import { BN  } from 'bn.js'
+import { BN } from 'bn.js'
 import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
 import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { NominatingSucceedsFixture } from '../../fixtures/staking/NominatingSucceedsFixture'
@@ -27,7 +27,7 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const previousBalances = await getBalances(authoritiesStash)
 
   // ensure that we are in PoA at era 0
-  let forceEra = await api.getForceEra()
+  const forceEra = await api.getForceEra()
   assert(forceEra.isForceNone, 'not on PoA')
   let activeEra = (await api.getActiveEra()).unwrap()
   assert.equal(activeEra.index.toString(), '0', 'starting active era is not zero')
@@ -81,18 +81,18 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
 
   // And wait until era is not forcing and an election has started
   let electionPhase = await api.getElectionPhase()
-  while ((!forceEra.isNotForcing) && (electionPhase.isOff)) {
+  while (activeEra.index.toNumber() === 0 && electionPhase.isOff) {
     await sleep(sleepTimeSeconds * 1000)
-    forceEra = await api.getForceEra()
+    activeEra = (await api.getActiveEra()).unwrap()
     electionPhase = await api.getElectionPhase()
   }
 
   // ------------------------- ASSERT ---------------------------
 
   // 1. ------------- Era checks -----------------------------
-  // 1.a. active Era index has increased
-  const activeEraIndex = (await api.getActiveEra()).unwrap().index.toNumber()
-  assert.isAbove(activeEraIndex, 1)
+  // 1.a. planned Era increased
+  const plannedEra = (await api.getCurrentEra()).unwrap().toNumber()
+  assert.isAbove(plannedEra, 0)
 
   // 2 ---------------- Era rewards checks -----------------------
   // 2.a Check that genesis authorities (validators) claim for era 0 is 0
@@ -115,8 +115,6 @@ export default async function switchToNPoS({ api, query, env }: FlowProps): Prom
   const electionRoundSnapshot = (await api.getElectionSnapshot()).unwrap()
   const electionTargets = electionRoundSnapshot.targets.map((account) => account.toString())
   assert.include(electionTargets, validatorAccount, 'extra validator not considered')
-  const electionVoters = electionRoundSnapshot.voters.map(([account,]) => account.toString())
+  const electionVoters = electionRoundSnapshot.voters.map(([account]) => account.toString())
   assert.include(electionVoters, nominatorAccount, 'extra nominators not considered')
-
-
 }

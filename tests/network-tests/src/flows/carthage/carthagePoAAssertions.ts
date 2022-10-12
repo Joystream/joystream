@@ -57,13 +57,6 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   const nominationFixture = new FixtureRunner(nominatorCandidatingSucceedsFixture)
   await nominationFixture.run()
 
-  // wait for era duration blocks
-  let currentSessionIndex = await api.getCurrentSessionIndex()
-  // while (currentSessionIndex.toBn() < new BN(6)) {
-  //   sleep(sleepTimeSeconds * 1000)
-  //   currentSessionIndex = await api.getCurrentSessionIndex()
-  // }
-
   // -------------------------- ASSERT ----------------------------
 
   // 1. Authorities are constant
@@ -94,5 +87,4 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   // 3.b election round is 1 (initial round)
   const currentElectionRound = (await api.getElectionRounds()).toNumber()
   assert.equal(currentElectionRound, 1, 'election rounds happened')
-
 }
