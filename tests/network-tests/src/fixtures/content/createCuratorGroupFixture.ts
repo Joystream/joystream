@@ -1,8 +1,8 @@
 import { CreateInterface, createType } from '@joystream/types'
 import { CuratorGroupId } from '@joystream/types/primitives'
 import {
-  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
-  PalletContentPermissionsCuratorGroupPausableChannelFeature as PausableChannelFeature,
+  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction as ContentModerationAction,
+  PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature as PausableChannelFeature,
 } from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Api } from '../../Api'
@@ -74,7 +74,7 @@ export class CreateCuratorGroupFixture extends BaseQueryNodeFixture {
   protected async createCuratorGroup(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.curatorGroupParams.map(({ isActive, permissionsByLevel }) => {
       const moderationPermissionsByLevel = createType(
-        'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
+        'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>',
         new Map(
           permissionsByLevel.map(
             ({ channelPrivilegeLevel, contentModerationActionSet, permissionToDeleteNftAssets }) => {

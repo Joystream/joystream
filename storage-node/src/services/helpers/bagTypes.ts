@@ -2,7 +2,7 @@ import {
   PalletStorageBagIdType as BagId,
   PalletStorageDynamicBagType as DynamicBagType,
   PalletStorageStaticBagId as Static,
-  PalletCommonWorkingGroup,
+  PalletCommonWorkingGroupIterableEnumsWorkingGroup,
 } from '@polkadot/types/lookup'
 import { createType, keysOf } from '@joystream/types'
 import ExitCodes from '../../command-base/ExitCodes'
@@ -103,12 +103,15 @@ class BagIdParser {
     // Try to construct static working group bag ID.
     if (this.bagIdParts[1] === 'wg') {
       if (this.bagIdParts.length === 3) {
-        const groups = keysOf<PalletCommonWorkingGroup, 'PalletCommonWorkingGroup'>('PalletCommonWorkingGroup')
+        const groups = keysOf<
+          PalletCommonWorkingGroupIterableEnumsWorkingGroup,
+          'PalletCommonWorkingGroupIterableEnumsWorkingGroup'
+        >('PalletCommonWorkingGroupIterableEnumsWorkingGroup')
         const actualGroup = this.bagIdParts[2]
 
         for (const group of groups) {
           if (group.toLowerCase() === actualGroup) {
-            const workingGroup = createType('PalletCommonWorkingGroup', group)
+            const workingGroup = createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', group)
             const staticBagId: Static = createType('PalletStorageStaticBagId', {
               'WorkingGroup': workingGroup,
             })

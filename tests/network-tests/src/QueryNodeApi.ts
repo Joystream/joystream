@@ -205,10 +205,10 @@ import {
   GetMemberInvitedEventsByEventIdsQuery,
   GetMemberInvitedEventsByEventIdsQueryVariables,
   GetMemberInvitedEventsByEventIds,
-  GetFoundingMemberCreatedEventsByEventIdsQuery,
-  GetFoundingMemberCreatedEventsByEventIdsQueryVariables,
-  GetFoundingMemberCreatedEventsByEventIds,
-  FoundingMemberCreatedEventFieldsFragment,
+  GetMemberCreatedEventsByEventIdsQuery,
+  GetMemberCreatedEventsByEventIdsQueryVariables,
+  GetMemberCreatedEventsByEventIds,
+  MemberCreatedEventFieldsFragment,
   GetMembershipGiftedEventsByEventIdsQuery,
   GetMembershipGiftedEventsByEventIdsQueryVariables,
   GetMembershipGiftedEventsByEventIds,
@@ -462,10 +462,11 @@ export class QueryNodeApi {
     this.tryDebug = this.debug.extend('try')
   }
 
+  // TODO: Refactor to use graphql subscription (stateSubscription.lastCompleteBlock) instead
   public async tryQueryWithTimeout<QueryResultT>(
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
-    retryTimeMs = BLOCKTIME * 3,
+    retryTimeMs = BLOCKTIME * 9,
     retries = 6
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
@@ -581,14 +582,12 @@ export class QueryNodeApi {
     >(GetMemberAccountsUpdatedEventsByMemberId, { memberId: memberId.toString() }, 'memberAccountsUpdatedEvents')
   }
 
-  public async getFoundingMemberCreatedEvents(
-    events: EventDetails[]
-  ): Promise<FoundingMemberCreatedEventFieldsFragment[]> {
+  public async getMemberCreatedEvents(events: EventDetails[]): Promise<MemberCreatedEventFieldsFragment[]> {
     const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
     return this.multipleEntitiesQuery<
-      GetFoundingMemberCreatedEventsByEventIdsQuery,
-      GetFoundingMemberCreatedEventsByEventIdsQueryVariables
-    >(GetFoundingMemberCreatedEventsByEventIds, { eventIds }, 'foundingMemberCreatedEvents')
+      GetMemberCreatedEventsByEventIdsQuery,
+      GetMemberCreatedEventsByEventIdsQueryVariables
+    >(GetMemberCreatedEventsByEventIds, { eventIds }, 'memberCreatedEvents')
   }
 
   public async getMembershipGiftedEvents(events: EventDetails[]): Promise<MembershipGiftedEventFieldsFragment[]> {

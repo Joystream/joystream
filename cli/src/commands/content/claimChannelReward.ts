@@ -1,6 +1,6 @@
 import { createType } from '@joystream/types'
 import { channelPayoutProof, verifyChannelPayoutProof } from '@joystreamjs/content'
-import { PalletCommonProofElementRecord as ProofElement } from '@polkadot/types/lookup'
+import { PalletCommonMerkleTreeProofElementRecord as ProofElement } from '@polkadot/types/lookup'
 import { u8aToHex } from '@polkadot/util'
 import chalk from 'chalk'
 import UploadCommandBase from '../../base/UploadCommandBase'
@@ -60,7 +60,7 @@ export default class ClaimChannelReward extends UploadCommandBase {
 
     const merkleBranch: ProofElement[] = []
     payoutProof.merkleBranch.forEach((m) => {
-      const proofElement = createType('PalletCommonProofElementRecord', {
+      const proofElement = createType('PalletCommonMerkleTreeProofElementRecord', {
         hash_: u8aToHex(Buffer.from(m.hash, 'hex')),
         side: m.side ? { Right: null } : { Left: null },
       })

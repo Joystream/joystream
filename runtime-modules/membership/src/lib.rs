@@ -44,6 +44,22 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 pub mod benchmarking;
 #[cfg(test)]
@@ -125,9 +141,10 @@ pub trait Config:
 
     /// Stake needed to candidate as staking account.
     type CandidateStake: Get<BalanceOf<Self>>;
-}
 
-pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
+    /// Default number of invites a paid membership recieves.
+    type DefaultMemberInvitesCount: Get<u32>;
+}
 
 /// Public membership profile alias.
 pub type Membership<T> =
@@ -235,9 +252,9 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
     pub metadata: Vec<u8>,
 }
 
-/// Parameters for the create_founding_member extrinsic.
+/// Parameters for the create_member extrinsic.
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
-pub struct CreateFoundingMemberParameters<AccountId> {
+pub struct CreateMemberParameters<AccountId> {
     /// New member root account.
     pub root_account: AccountId,
 
@@ -249,6 +266,9 @@ pub struct CreateFoundingMemberParameters<AccountId> {
 
     /// Metadata concerning new member.
     pub metadata: Vec<u8>,
+
+    /// Founding Member Status
+    pub is_founding_member: bool,
 }
 
 decl_error! {
@@ -342,8 +362,7 @@ decl_storage! { generate_storage_info
             T::DefaultMembershipPrice::get();
 
         /// Initial invitation count for the newly bought membership.
-        pub InitialInvitationCount get(fn initial_invitation_count) : u32  =
-            DEFAULT_MEMBER_INVITES_COUNT;
+        pub InitialInvitationCount get(fn initial_invitation_count) : u32;
 
         /// Initial invitation balance for the invited member.
         pub InitialInvitationBalance get(fn initial_invitation_balance) : BalanceOf<T> =
@@ -352,6 +371,11 @@ decl_storage! { generate_storage_info
         /// Double of a staking account id and member id to the confirmation status.
         pub(crate) StakingAccountIdMemberStatus get(fn staking_account_id_member_status):
             map hasher(blake2_128_concat) T::AccountId => StakingAccountMemberBinding<T::MemberId>;
+    }
+    add_extra_genesis {
+        build(|_| {
+            InitialInvitationCount::put(T::DefaultMemberInvitesCount::get());
+        });
     }
 }
 
@@ -369,7 +393,7 @@ decl_event! {
             <T as frame_system::Config>::AccountId,
             <T as common::membership::MembershipTypes>::MemberId,
         >,
-        CreateFoundingMemberParameters = CreateFoundingMemberParameters<
+        CreateMemberParameters = CreateMemberParameters<
             <T as frame_system::Config>::AccountId
         >,
       GiftMembershipParameters = GiftMembershipParameters<
@@ -397,7 +421,7 @@ decl_event! {
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
         MemberRemarked(MemberId, Vec<u8>),
-        FoundingMemberCreated(MemberId, CreateFoundingMemberParameters, u32),
+        MemberCreated(MemberId, CreateMemberParameters, u32),
     }
 }
 
@@ -1176,7 +1200,7 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
         }
 
-        /// Create a founding member profile as root.
+        /// Create a member profile as root.
         ///
         /// <weight>
         ///
@@ -1187,13 +1211,13 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoMembership::<T>::create_founding_member(
+        #[weight = WeightInfoMembership::<T>::create_member(
             params.handle.len() as u32,
             params.metadata.len() as u32
         )]
-        pub fn create_founding_member(
+        pub fn create_member(
             origin,
-            params: CreateFoundingMemberParameters<T::AccountId>
+            params: CreateMemberParameters<T::AccountId>
         ) {
             ensure_root(origin)?;
 
@@ -1209,12 +1233,11 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 initial_invitation_count,
-                true
+                params.is_founding_member
             );
 
-            // Fire the event.
             Self::deposit_event(
-                RawEvent::FoundingMemberCreated(member_id, params, initial_invitation_count)
+                RawEvent::MemberCreated(member_id, params, initial_invitation_count)
             );
         }
     }

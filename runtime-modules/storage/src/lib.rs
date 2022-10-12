@@ -117,6 +117,23 @@
 #![allow(clippy::unused_unit)]
 // needed for step iteration over DataObjectId range
 #![feature(step_trait)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
+
 #[cfg(test)]
 mod tests;
 
@@ -2450,7 +2467,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::increment_distribution_family_number();
+            Self::increment_distribution_family_number()?;
 
             let family = DistributionBucketFamily::<T>::default();
 
@@ -2493,7 +2510,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::decrement_distribution_family_number();
+            Self::decrement_distribution_family_number()?;
 
             <DistributionBucketFamilyById<T>>::remove(family_id);
 
@@ -3329,15 +3346,21 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
 
 impl<T: Config> Module<T> {
     // Increment distribution family number in the storage.
-    fn increment_distribution_family_number() {
-        DistributionBucketFamilyNumber::put(Self::distribution_bucket_family_number() + 1);
+    fn increment_distribution_family_number() -> DispatchResult {
+        let incremented = Self::distribution_bucket_family_number()
+            .checked_add(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        DistributionBucketFamilyNumber::put(incremented);
+        Ok(())
     }
 
     // Decrement distribution family number in the storage. No effect on zero number.
-    fn decrement_distribution_family_number() {
-        if Self::distribution_bucket_family_number() > 0 {
-            DistributionBucketFamilyNumber::put(Self::distribution_bucket_family_number() - 1);
-        }
+    fn decrement_distribution_family_number() -> DispatchResult {
+        let decremented = Self::distribution_bucket_family_number()
+            .checked_sub(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        DistributionBucketFamilyNumber::put(decremented);
+        Ok(())
     }
 
     // Ensures the existence of the storage bucket.
@@ -3775,10 +3798,10 @@ impl<T: Config> Module<T> {
 
         const ONE_MB: u64 = 1_048_576;
 
-        let mut megabytes = bytes / ONE_MB;
+        let mut megabytes = bytes.saturating_div(ONE_MB);
 
-        if bytes % ONE_MB > 0 {
-            megabytes += 1; // rounding to the nearest greater integer
+        if bytes.wrapping_rem(ONE_MB) > 0 {
+            megabytes = megabytes.saturating_add(1); // rounding to the nearest greater integer
         }
 
         mb_fee.saturating_mul(megabytes.saturated_into())
@@ -4579,12 +4602,20 @@ impl<T: Config> Module<T> {
         let creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
 
         // We use this temp variable to validate provided distribution buckets.
-        let mut families_match = BTreeMap::new();
+        let mut families_match = BTreeMap::<T::DistributionBucketFamilyId, u32>::new();
 
         for distribution_bucket_id in distribution_buckets {
-            *families_match
-                .entry(distribution_bucket_id.distribution_bucket_family_id)
-                .or_insert(0u32) += 1u32;
+            if let Some(v) =
+                families_match.get(&distribution_bucket_id.distribution_bucket_family_id)
+            {
+                let incremented = v.checked_add(1).ok_or(Error::<T>::ArithmeticError)?;
+                families_match.insert(
+                    distribution_bucket_id.distribution_bucket_family_id,
+                    incremented,
+                );
+            } else {
+                families_match.insert(distribution_bucket_id.distribution_bucket_family_id, 1u32);
+            }
         }
 
         ensure!(

@@ -92,6 +92,11 @@ fn create_owner<T: Config>() -> (<T as MembershipTypes>::MemberId, T::AccountId)
 fn issue_token<T: Config>(
     transfer_policy: TransferPolicyParamsOf<T>,
 ) -> Result<T::TokenId, DispatchError> {
+    let bloat_bond = BloatBond::<T>::get();
+
+    // top up owner JOY balance
+    let _ = Joy::<T>::deposit_creating(&token_owner_account::<T>(), bloat_bond);
+
     let token_id = Token::<T>::next_token_id();
     Token::<T>::issue_token(
         token_owner_account::<T>(),
@@ -298,7 +303,6 @@ benchmarks! {
         let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
 
         BloatBond::<T>::set(bloat_bond);
-        let _ = Joy::<T>::deposit_creating(&owner_account, bloat_bond);
         // Issue token
         let commitment = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
         let policy_params = TransferPolicyParams::Permissioned(WhitelistParams {
@@ -555,6 +559,7 @@ benchmarks! {
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
         let amount_to_burn = Token::<T>::account_info_by_token_and_member(token_id, &owner_member_id).amount;
+        let bloat_bond = BloatBond::<T>::get();
     }: _(
         RawOrigin::Signed(owner_account.clone()),
         token_id,
@@ -562,16 +567,9 @@ benchmarks! {
         amount_to_burn
     )
     verify {
-        assert!(
-            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap()
-            == AccountDataOf::<T> {
-                split_staking_status: Some(StakingStatus {
-                    split_id: 0,
-                    amount: TokenBalanceOf::<T>::zero()
-                }),
-                bloat_bond: RepayableBloatBond::new(Zero::zero(), None),
-                ..Default::default()
-            }
+        assert_eq!(
+            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap().amount,
+            <T as Config>::Balance::zero()
         );
         assert_last_event::<T>(
             RawEvent::TokensBurned(

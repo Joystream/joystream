@@ -37,6 +37,7 @@ runtime-benchmarks = [
 	'membership',
     'referendum',
     'council',
+    'common/runtime-benchmarks',
 ]
 std = [
 	'serde',

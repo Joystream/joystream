@@ -368,7 +368,7 @@ benchmarks! {
     vote {
         let i in 0 .. MAX_BYTES;
 
-        let (council, last_id) = elect_council::<T>(1);
+        let (council, last_id) = elect_council::<T>(0);
         let voter = council[0].clone();
         let (account_voter_id, member_voter_id) = (voter.account_id, voter.member_id);
         let (_, _, proposal_id) = create_proposal::<T>(last_id + 1, 1, 0, 0);

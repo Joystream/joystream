@@ -329,6 +329,7 @@ impl membership::Config for Test {
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 parameter_types! {
@@ -337,6 +338,7 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {

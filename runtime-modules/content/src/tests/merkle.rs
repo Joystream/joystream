@@ -2,7 +2,7 @@
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use common::{council::CouncilBudgetManager, generate_merkle_root_helper};
+use common::{council::CouncilBudgetManager, merkle_tree::helpers::generate_merkle_root_helper};
 use sp_runtime::DispatchError;
 
 #[test]

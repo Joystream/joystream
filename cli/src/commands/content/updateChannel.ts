@@ -12,7 +12,7 @@ import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import ExitCodes from '../../ExitCodes'
-import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class UpdateChannelCommand extends UploadCommandBase {
   static description = 'Update existing content directory channel.'

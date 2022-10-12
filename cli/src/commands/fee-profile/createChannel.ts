@@ -4,7 +4,10 @@ import _ from 'lodash'
 import { ChannelMetadata, IChannelMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../helpers/serialization'
 import { createType } from '@joystream/types'
-import { PalletContentChannelActionPermission, PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
+import {
+  PalletContentIterableEnumsChannelActionPermission,
+  PalletContentStorageAssetsRecord,
+} from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import chalk from 'chalk'
 import { formatBalance } from '@polkadot/util'
@@ -145,7 +148,10 @@ export default class FeeProfileCreateChannel extends FeeProfileCommandBase {
         expectedChannelStateBloatBond: channelBloatBond,
         expectedDataObjectStateBloatBond: dataObjectBloatBond,
         collaborators: new Map(
-          Array.from({ length: collaboratorsNum }, (v, k) => [k, [] as PalletContentChannelActionPermission[]])
+          Array.from({ length: collaboratorsNum }, (v, k) => [
+            k,
+            [] as PalletContentIterableEnumsChannelActionPermission[],
+          ])
         ),
         assets,
         storageBuckets: Array.from({ length: storageBucketsNum }, (v, k) => k),
