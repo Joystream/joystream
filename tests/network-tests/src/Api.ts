@@ -373,11 +373,15 @@ export class Api {
     return this.api.query.staking.currentEra()
   }
 
+  public async getCurrentBlockNumber(): Promise<u32> {
+    return this.api.query.system.number()
+  }
+
   public async getElectionPhase(): Promise<PalletElectionProviderMultiPhasePhase> {
     return this.api.query.electionProviderMultiPhase.currentPhase()
   }
 
-  public async getErasStartSessionIndex(era: u32): Promise<Option<u32>> {
+  public async getErasStartSessionIndex(era: number): Promise<Option<u32>> {
     return this.api.query.staking.erasStartSessionIndex(era)
   }
 

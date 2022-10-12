@@ -37,8 +37,8 @@ pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 pub const BONDING_DURATION: u32 = 24 * 28;
 pub const SLASH_DEFER_DURATION: u32 = 24 * 7; // 1/4 the bonding duration.
 
-#[cfg(feature = "testing_runtime")] // for faster tests
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 1 * MINUTES;
+#[cfg(feature = "testing_runtime")] // 30 seconds sessions for faster tests
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES / 2;
 #[cfg(not(feature = "testing_runtime"))]
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
 

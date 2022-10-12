@@ -2,9 +2,6 @@ import { assert } from 'chai'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { FlowProps } from '../../Flow'
-import { u32 } from '@polkadot/types'
-import { BN } from 'bn.js'
-import { PalletStakingValidatorPrefs } from '@polkadot/types/lookup'
 import { BondingSucceedsFixture } from '../../fixtures/staking/BondingSucceedsFixture'
 import { ValidatingSucceedsFixture } from '../../fixtures/staking/ValidatingSucceedsFixture'
 import { NominatingSucceedsFixture } from '../../fixtures/staking/NominatingSucceedsFixture'
@@ -20,11 +17,7 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   const nominatorBond = await api.query.staking.minNominatorBond()
   const validatorBond = await api.query.staking.minValidatorBond()
   const [nominatorAccount, validatorAccount] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
-  const forceEra = await api.getForceEra()
   const pastAuthorities = await api.getBabeAuthorities()
-  assert(forceEra.isForceNone)
-
-  // -------------------------- ACT -------------------------------
 
   const nominatorBondingSucceedsFixture = new BondingSucceedsFixture(api, {
     stash: nominatorAccount,
@@ -57,7 +50,25 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   const nominationFixture = new FixtureRunner(nominatorCandidatingSucceedsFixture)
   await nominationFixture.run()
 
+  // -------------------------- ACT -------------------------------
+
+  // wait SessionPerEra * Epoch length blocks (standard era duration in block)
+  // this is the calculation done by the runtime:
+  // see https://github.com/paritytech/substrate/blob/master/frame/staking/src/pallet/impls.rs#L938
+  const period = api.consts.babe.epochDuration.toBn()
+  const sessionsPerEra = api.consts.staking.sessionsPerEra.toBn()
+  let currentBlock = (await api.getCurrentBlockNumber()).toBn()
+  const lastEraBlock = period.mul(sessionsPerEra).add(currentBlock)
+  while (currentBlock < lastEraBlock) {
+    sleep(sleepTimeSeconds * 1000)
+    currentBlock = (await api.getCurrentBlockNumber()).toBn()
+  }
+
   // -------------------------- ASSERT ----------------------------
+
+  // 0. Force none state at genesis
+  const forceEra = await api.getForceEra()
+  assert(forceEra.isForceNone)
 
   // 1. Authorities are constant
   // 1.a. babe authorities are constant
@@ -70,14 +81,11 @@ export default async function carthagePoAAssertions({ api, query, env }: FlowPro
   assert.deepEqual(queuedKeys, sessionAuthorities, 'different validator keys in between sessions ')
 
   // 2. Next Era starting session index is none
-  const activeEra = await api.getActiveEra()
-  if (activeEra.isSome) {
-    const { index } = activeEra.unwrap()
-    const nextEraIndex = index.addn(1)
-    const nextEraStartSessionIndex = await api.getErasStartSessionIndex(nextEraIndex as u32)
-    assert.equal(index.toNumber(), 0)
-    assert(nextEraStartSessionIndex.isNone, 'next era doomed to begin')
-  }
+  const activeEraIndex = (await api.getActiveEra()).unwrap().index.toNumber()
+  const nextEraIndex = activeEraIndex + 1
+  const nextEraStartSessionIndex = await api.getErasStartSessionIndex(nextEraIndex)
+  assert.equal(activeEraIndex, 0)
+  assert(nextEraStartSessionIndex.isNone, 'next era doomed to begin')
 
   // 3. Elections
   // 3.a election round is blocked
