@@ -68,7 +68,7 @@ query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
   }
 }
 
-fragment FoundingMemberCreatedEventFields on FoundingMemberCreatedEvent {
+fragment MemberCreatedEventFields on MemberCreatedEvent {
   id
   createdAt
   inBlock
@@ -84,11 +84,12 @@ fragment FoundingMemberCreatedEventFields on FoundingMemberCreatedEvent {
   metadata {
     ...MemberMetadataFields
   }
+  isFoundingMember
 }
 
-query getFoundingMemberCreatedEventsByEventIds($eventIds: [ID!]) {
-  foundingMemberCreatedEvents(where: { id_in: $eventIds }) {
-    ...FoundingMemberCreatedEventFields
+query getMemberCreatedEventsByEventIds($eventIds: [ID!]) {
+  memberCreatedEvents(where: { id_in: $eventIds }) {
+    ...MemberCreatedEventFields
   }
 }
 

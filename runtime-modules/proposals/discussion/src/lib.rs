@@ -92,9 +92,7 @@ use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::{MemberId, MembershipTypes};
-use types::*;
-
-pub use types::ThreadMode;
+pub use types::*;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
