@@ -38,7 +38,7 @@ export async function channelPayoutProof(
     throw new Error(`No payout Proof exists for channel id ${channelId}`)
   }
 
-  return channelPayoutProofAtByteOffset(context, pathOrUrl, channelPayoutProofOffset.byteOffset.toNumber())
+  return channelPayoutProofAtByteOffset(context, pathOrUrl, Number(channelPayoutProofOffset.byteOffset))
 }
 
 /**

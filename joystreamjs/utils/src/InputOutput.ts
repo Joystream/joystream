@@ -13,7 +13,7 @@ export type ReadFileContext = 'PATH' | 'URL'
  * @param end ending index of the range
  * @returns byte sequence
  */
-export function readBytesFromFile(
+export async function readBytesFromFile(
   context: ReadFileContext,
   pathOrUrl: string,
   start: number,
@@ -29,14 +29,13 @@ export function readBytesFromFile(
       })
     }
 
-    return axios
-      .get(pathOrUrl, {
-        responseType: 'arraybuffer',
-        headers: {
-          range: `bytes=${start}-${end}`,
-        },
-      })
-      .then((response) => response.data)
+    const response = await axios.get<Buffer>(pathOrUrl, {
+      responseType: 'arraybuffer',
+      headers: {
+        range: `bytes=${start}-${end}`,
+      },
+    })
+    return new Uint8Array(response.data)
   } catch (error) {
     throw new Error(`Failed to read input stream`)
   }
