@@ -102,8 +102,6 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 #[cfg(any(feature = "std", test))]
-pub use pallet_sudo::Call as SudoCall;
-#[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
 use constants::*;
@@ -212,42 +210,6 @@ parameter_types! {
 
 /// Our extrinsics call filter
 pub enum CallFilter {}
-
-/// Stage 1: Filter all non-essential calls.
-/// Allow only calls that are essential for successful block authoring, staking, nominating.
-/// Since balances calls are disabled, this means that stash and controller
-/// accounts must already be funded. If this is not practical to setup at genesis
-/// then consider enabling Balances calls?
-/// This will be used at initial launch, and other calls will be enabled as we rollout.
-#[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
-    feature = "runtime-benchmarks"
-)))]
-fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        Call::System(method) =>
-        // All methods except the remark call
-        {
-            !matches!(method, frame_system::Call::<Runtime>::remark { .. })
-        }
-        // confirmed that Utility.batch dispatch does not bypass filter.
-        Call::Utility(_) => true,
-        Call::Babe(_) => true,
-        Call::Timestamp(_) => true,
-        Call::Authorship(_) => true,
-        Call::ElectionProviderMultiPhase(_) => true,
-        Call::Staking(_) => true,
-        Call::Session(_) => true,
-        Call::Grandpa(_) => true,
-        Call::ImOnline(_) => true,
-        Call::Sudo(_) => true,
-        Call::BagsList(_) => true,
-        Call::Multisig(_) => true,
-        // Disable all other calls
-        _ => false,
-    }
-}
 
 // Stage 2: Filter out only a subset of calls on content pallet, some specific proposals
 // and the bounty creation call.
@@ -513,11 +475,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
-}
-
-impl pallet_sudo::Config for Runtime {
-    type Event = Event;
-    type Call = Call;
 }
 
 parameter_types! {
@@ -1828,7 +1785,6 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-        Sudo: pallet_sudo,
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
