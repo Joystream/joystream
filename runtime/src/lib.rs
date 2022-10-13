@@ -210,12 +210,18 @@ const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO
 parameter_types! {
     /// Minimum deposit per byte of data stored in the runtime state
     pub const MinimumBloatBondPerByte: Balance = currency::MILLICENTS;
-    /// Minimum profit that the user should recieve for cleaning up an object from
-    /// the runtime state. Provided that `x` is a computed cleanup transaction inclusion fee
-    /// and `y` is `MinimumBloatBondPerByte::get() * storage_entry_size`, the recoverable
-    /// bloat bond in this case should be:
-    /// `(x + StorageDepositCleanupProfit::get()).max(y)`
-    pub const StorageDepositCleanupProfit: Balance = currency::CENTS;
+    /// Default minimum profit that the user should recieve for cleaning up an object
+    /// (like channel / video / forum thread / forum post) from the runtime state.
+    /// Provided that `x` is a computed cleanup transaction inclusion fee and `y`
+    /// is `DefaultStorageDepositCleanupProfit::get() * storage_entry_size`, the recoverable
+    /// bloat bond should be:
+    /// `(x + DefaultStorageDepositCleanupProfit::get()).max(y)`
+    pub const DefaultStorageDepositCleanupProfit: Balance = currency::CENTS;
+    /// Minimum profit that the user should recieve for removing a storage data object (asset).
+    /// This is separate from `DefaultStorageDepositCleanupProfit`, because channels / videos will
+    /// usually include multiple data objects and we don't want each of them to increase
+    /// bloat bond significantly.
+    pub const DataObjectDepositCleanupProfit: Balance = currency::MILLICENTS.saturating_mul(200);
 }
 
 /// Our extrinsics call filter
@@ -853,10 +859,10 @@ parameter_types! {
         })
     );
     pub ChannelEntryMaxSize: u32 = map_entry_max_size::<content::ChannelById::<Runtime>>();
-    pub ChannelStateBloatBondValue: Balance = single_bloat_bond_with_cleanup(
+    pub ChannelStateBloatBondValue: Balance = single_existential_deposit_bloat_bond_with_cleanup(
         ChannelEntryMaxSize::get(),
-        true, // serves as channel account's bloat bond
-        ChannelCleanupTxFee::get()
+        ChannelCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Video bloat bond related:
@@ -871,8 +877,8 @@ parameter_types! {
     pub VideoEntryMaxSize: u32 = map_entry_max_size::<content::VideoById::<Runtime>>();
     pub VideoStateBloatBondValue: Balance = single_bloat_bond_with_cleanup(
         VideoEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit,
-        VideoCleanupTxFee::get()
+        VideoCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // TODO: Adjust those?
@@ -923,8 +929,8 @@ parameter_types! {
         map_entry_max_size::<project_token::AccountInfoByTokenAndMember::<Runtime>>();
     pub ProjectTokenAccountBloatBond: Balance = single_bloat_bond_with_cleanup(
         ProjectTokenAccountEntryMaxSize::get(),
-        false, // does not serve as existential deposit
         ProjectTokenAccountCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 }
 
@@ -1147,8 +1153,8 @@ parameter_types! {
     pub DataObjectMaxEntrySize: u32 = map_entry_max_size::<storage::DataObjectsById::<Runtime>>();
     pub DataObjectBloatBond: Balance = single_bloat_bond_with_cleanup(
         DataObjectMaxEntrySize::get(),
-        false, // doesn't serve as existential deposit
-        DataObjectCleanupTxFee::get()
+        DataObjectCleanupTxFee::get(),
+        DataObjectDepositCleanupProfit::get()
     );
 }
 
@@ -1257,10 +1263,10 @@ parameter_types! {
         })
     );
     pub ForumThreadEntryMaxSize: u32 = map_entry_max_size::<forum::ThreadById::<Runtime>>();
-    pub ThreadDeposit: Balance = single_bloat_bond_with_cleanup(
+    pub ThreadDeposit: Balance = single_existential_deposit_bloat_bond_with_cleanup(
         ForumThreadEntryMaxSize::get(),
-        true, // serves as existential deposit of thread account
-        FroumThreadCleanupTxFee::get()
+        FroumThreadCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Post bloat bond related:
@@ -1277,8 +1283,8 @@ parameter_types! {
     pub ForumPostEntryMaxSize: u32 = map_entry_max_size::<forum::PostById::<Runtime>>();
     pub PostDeposit: Balance = single_bloat_bond_with_cleanup(
         ForumPostEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        FroumPostCleanupTxFee::get()
+        FroumPostCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = days!(30);
@@ -1587,8 +1593,8 @@ parameter_types! {
         map_entry_max_size::<proposals_discussion::PostThreadIdByPostId::<Runtime>>();
     pub ProposalsPostDeposit: Balance = single_bloat_bond_with_cleanup(
         ProposalDiscussionPostEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        ProposalDiscussionPostCleanupTxFee::get()
+        ProposalDiscussionPostCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 }
 
@@ -1709,8 +1715,8 @@ parameter_types! {
     pub BountyWorkEntryEntryMaxSize: u32 = map_entry_max_size::<bounty::Entries::<Runtime>>();
     pub MinWorkEntrantStake: Balance = single_bloat_bond_with_cleanup(
         BountyWorkEntryEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        BountyWorkEntryCleanupTxFee::get()
+        BountyWorkEntryCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Funder bloat bond related:
@@ -1724,8 +1730,8 @@ parameter_types! {
         map_entry_max_size::<bounty::BountyContributions::<Runtime>>();
     pub FunderStateBloatBondAmount: Balance = single_bloat_bond_with_cleanup(
         BountyContributionEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        BountyContributionCleanupTxFee::get()
+        BountyContributionCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Creator bloat bond related:
@@ -1735,10 +1741,10 @@ parameter_types! {
         })
     );
     pub BountyEntryMaxSize: u32 = map_entry_max_size::<bounty::Bounties::<Runtime>>();
-    pub CreatorStateBloatBondAmount: Balance = single_bloat_bond_with_cleanup(
+    pub CreatorStateBloatBondAmount: Balance = single_existential_deposit_bloat_bond_with_cleanup(
         BountyEntryMaxSize::get(),
-        true, // serves as existential deposit of bounty account
-        BountyCleanupTxFee::get()
+        BountyCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 }
 
@@ -1784,7 +1790,6 @@ parameter_types! {
     // Deposit for storing one new item in Multisigs/Calls map
     pub DepositBase: Balance = compute_single_bloat_bond(
         MultisigMapEntryFixedPortionByteSize::get().max(CallMapEntryFixedPortionByteSize::get()),
-        false,
         None
     );
     // Deposit for adding 32 bytes to an already stored item

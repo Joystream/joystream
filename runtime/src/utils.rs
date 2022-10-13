@@ -1,6 +1,6 @@
 use crate::{
-    Balance, Call, ExistentialDeposit, MinimumBloatBondPerByte, Runtime,
-    StorageDepositCleanupProfit, UncheckedExtrinsic,
+    Balance, Call, DefaultStorageDepositCleanupProfit, ExistentialDeposit, MinimumBloatBondPerByte,
+    Runtime, UncheckedExtrinsic,
 };
 use codec::{Encode, FullCodec, MaxEncodedLen};
 use frame_support::{
@@ -37,39 +37,43 @@ pub fn compute_fee(call: Call) -> Balance {
 }
 
 /// Compute a single bloat bond
-pub fn compute_single_bloat_bond(
-    total_byte_size: u32,
-    serves_as_ed: bool,
-    forced_minimum: Option<Balance>,
-) -> Balance {
+pub fn compute_single_bloat_bond(total_byte_size: u32, forced_minimum: Option<Balance>) -> Balance {
     let min_bloat_bond =
         Balance::from(total_byte_size).saturating_mul(MinimumBloatBondPerByte::get());
-    match (serves_as_ed, forced_minimum) {
-        (true, Some(forced_minimum)) => min_bloat_bond
-            .max(ExistentialDeposit::get())
-            .max(forced_minimum),
-        (true, None) => min_bloat_bond.max(ExistentialDeposit::get()),
-        (false, Some(forced_minimum)) => min_bloat_bond.max(forced_minimum),
-        (false, None) => min_bloat_bond,
+    match forced_minimum {
+        Some(forced_minimum) => min_bloat_bond.max(forced_minimum),
+        None => min_bloat_bond,
     }
 }
 
 /// Compute a single bloat bond given storage entry size and cleanup transaction fee
 pub fn single_bloat_bond_with_cleanup(
     total_byte_size: u32,
-    serves_as_ed: bool,
     max_cleanup_inclusion_fee: Balance,
+    cleanup_profit: Balance,
 ) -> Balance {
     compute_single_bloat_bond(
         total_byte_size,
-        serves_as_ed,
-        Some(max_cleanup_inclusion_fee.saturating_add(StorageDepositCleanupProfit::get())),
+        Some(max_cleanup_inclusion_fee.saturating_add(cleanup_profit)),
     )
+}
+
+/// Compute a single bloat bond given storage entry size and cleanup transaction fee,
+/// while forcing it to also be >= ExistentialDeposit::get()
+pub fn single_existential_deposit_bloat_bond_with_cleanup(
+    total_byte_size: u32,
+    max_cleanup_inclusion_fee: Balance,
+    cleanup_profit: Balance,
+) -> Balance {
+    let forced_minimum = max_cleanup_inclusion_fee
+        .saturating_add(cleanup_profit)
+        .max(ExistentialDeposit::get());
+    compute_single_bloat_bond(total_byte_size, Some(forced_minimum))
 }
 
 /// Compute stake while being sensitive to cleanup transaction fee value
 pub fn stake_with_cleanup(stake: Balance, max_cleanup_inclusion_fee: Balance) -> Balance {
-    stake.max(max_cleanup_inclusion_fee.saturating_add(StorageDepositCleanupProfit::get()))
+    stake.max(max_cleanup_inclusion_fee.saturating_add(DefaultStorageDepositCleanupProfit::get()))
 }
 
 /// Compute size of a double map entry using fixed-size portion of the value type
