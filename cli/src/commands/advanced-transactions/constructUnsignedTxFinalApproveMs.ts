@@ -64,12 +64,13 @@ export default class ConstructUnsignedTxFinalApproveMsCommand extends AdvancedTr
         'If you are preparing multiple transactions from the samme account, before broadcasting them, you need to increase the nonce by 1 for each. This value will be added to the nonce read from the chain.',
     }),
   }
+
   async getInputFromFile(filePath: string): Promise<MultiSigApproveAsMulti> {
     return getInputJson<MultiSigApproveAsMulti>(filePath)
   }
 
   async run(): Promise<void> {
-    let {
+    const {
       input,
       addressSigner,
       output,

@@ -76,7 +76,7 @@ export default class SignUnsignedTxCommand extends SignOfflineCommandBase {
     const keyring = new Keyring(keyringOptions)
     const txSignerAddress = keyring.addFromAddress(inputFile.unsigned.address)
 
-    let signerPair: KeyringPair | undefined = undefined
+    let signerPair: KeyringPair | undefined
 
     if (this.isKeyAvailable(keyring, txSignerAddress.address)) {
       this.log('Signer key available in storage')

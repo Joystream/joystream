@@ -105,7 +105,7 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
         }
         this.error(`Only with an 1/m multisig can you both initiate and be the final approver.`)
       }
-      //} else if (signingPayloadDecoded.method.name == "cancelAsMulti") {
+      // } else if (signingPayloadDecoded.method.name == "cancelAsMulti") {
       //  ...
     } else {
       this.error(`Not a multisig`)

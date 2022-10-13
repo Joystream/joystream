@@ -47,7 +47,7 @@ export default class ConstructTxCallCommand extends AdvancedTransactionsCommandB
   }
 
   async run(): Promise<void> {
-    let { address, module, method, output, lifetime, tip, nonceIncrement } = this.parse(ConstructTxCallCommand).flags
+    const { address, module, method, output, lifetime, tip, nonceIncrement } = this.parse(ConstructTxCallCommand).flags
 
     const unsignedMethod = await this.promptForTxMethod(module, method)
 

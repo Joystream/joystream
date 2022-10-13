@@ -64,7 +64,7 @@ export default class ConstructUnsignedTxApproveMsCommand extends AdvancedTransac
   }
 
   async run(): Promise<void> {
-    let {
+    const {
       input,
       addressSigner,
       output,

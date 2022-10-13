@@ -44,7 +44,7 @@ export default class CreateUnsignedTxCommand extends AdvancedTransactionsCommand
   }
 
   async run(): Promise<void> {
-    let { address, module, method, lifetime, tip, nonceIncrement, output } = this.parse(CreateUnsignedTxCommand).flags
+    const { address, module, method, lifetime, tip, nonceIncrement, output } = this.parse(CreateUnsignedTxCommand).flags
 
     ensureOutputFileIsWriteable(output)
 
