@@ -39,14 +39,14 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
     return getInputJson<OfflineTransactionData>(filePath)
   }
 
-  async multiCheck(
+  multiCheck(
     signerAddress: string,
     signingPayloadDecoded: DecodedSigningPayload,
     multisigTxData: { call: string; callHash: string }
-  ) {
-    if (signingPayloadDecoded.method.name == 'approveAsMulti') {
+  ): void {
+    if (signingPayloadDecoded.method.name === 'approveAsMulti') {
       const args = signingPayloadDecoded.method.args as MultiSigApproveAsMulti
-      if (blake2AsHex(multisigTxData.call) == args.callHash.toString()) {
+      if (blake2AsHex(multisigTxData.call) === args.callHash.toString()) {
         const allSignatories = [...args.otherSignatories]
         allSignatories.push(signerAddress)
         const threshold = parseInt(args.threshold.toString())
@@ -79,7 +79,7 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
             `does not match the encoded call: ${multisigTxData.call}.`
         )
       }
-    } else if (signingPayloadDecoded.method.name == 'asMulti') {
+    } else if (signingPayloadDecoded.method.name === 'asMulti') {
       const args = signingPayloadDecoded.method.args as MultisigAsMulti
       const allSignatories = [...(args.otherSignatories as string[])]
       allSignatories.push(signerAddress)
@@ -98,7 +98,7 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
           } has approved already), you need to construct the unsigned transaction again with 'constructUnsignedTxFinalApproveMs'`
         )
       } else {
-        if (threshold == 1) {
+        if (threshold === 1) {
           this.log(
             `You are initiating, and the final/only approver of a multisig transaction from ${multiAddress} as ${signerAddress}.`
           )

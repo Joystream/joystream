@@ -146,6 +146,6 @@ export default class ConstructUnsignedTxFinalApproveMsCommand extends AdvancedTr
       callHash: unsignedCallHash,
     }
 
-    await this.createTransactionReadyForSigning(unsigned, output, unsignedTxData, multisigTxData)
+    this.createTransactionReadyForSigning(unsigned, output, unsignedTxData, multisigTxData)
   }
 }

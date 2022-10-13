@@ -27,11 +27,12 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     return getInputJson<MultisigAsMulti>(filePath)
   }
 
-  async getInputDiff(args: MultiSigApproveAsMulti, argsInput: MultiSigApproveAsMulti, initial: boolean) {
-    if (args.callHash != argsInput.callHash) {
-      this.error('The call provided does not match the callhash from the input file', { exit: ExitCodes.InvalidInput })
-    }
-  }
+  // Not used, maybe it was going to be used in getFinalMsInputs ?
+  // getInputDiff(args: MultiSigApproveAsMulti, argsInput: MultiSigApproveAsMulti): void {
+  //   if (args.callHash !== argsInput.callHash) {
+  //     this.error('The call provided does not match the callhash from the input file', { exit: ExitCodes.InvalidInput })
+  //   }
+  // }
 
   async getInitMsInputs(
     input: string | undefined,
@@ -64,14 +65,14 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
       callHash: callHash,
       maxWeight,
     }
-    if (argsInput.callHash != args.callHash) {
+    if (argsInput.callHash !== args.callHash) {
       this.error(
         `The hash of the input "call": ${args.callHash} does not match the input "callHash" ${argsInput.callHash}.`,
         { exit: ExitCodes.InvalidInput }
       )
     }
 
-    if (argsInput.maxWeight != args.maxWeight) {
+    if (argsInput.maxWeight.toString() !== args.maxWeight.toString()) {
       this.warn(`"maxWeight" changed from ${argsInput.maxWeight} to ${args.maxWeight} .`)
     }
     return args
@@ -114,14 +115,14 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
       callHash: callHash,
       maxWeight,
     }
-    if (argsInput.callHash != args.callHash) {
+    if (argsInput.callHash !== args.callHash) {
       this.error(
         `The hash of the input "call": ${args.callHash} does not match the input "callHash" ${argsInput.callHash}.`,
         { exit: ExitCodes.InvalidInput }
       )
     }
 
-    if (argsInput.maxWeight != args.maxWeight) {
+    if (argsInput.maxWeight.toString() !== args.maxWeight.toString()) {
       this.warn(`"maxWeight" changed from ${argsInput.maxWeight} to ${args.maxWeight} .`)
     }
     return args
@@ -140,13 +141,16 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     let args: MultisigAsMulti
     let otherSignatories: string[] = []
     if (input) {
+      // Review: this doesn't look correct..
       argsInput = await this.getAsMultiInputFromFile(input)
+      // here we have hidden the "others" argument of the function..is that the intent?
       const others = argsInput.otherSignatories as string[]
-      otherSignatories = sortAddresses(others, JOYSTREAM_ADDRESS_PREFIX)
-      args = argsInput
+      otherSignatories = sortAddresses(others, JOYSTREAM_ADDRESS_PREFIX) // which 'others' do we intend here?
+      args = argsInput // Object.assign({}, argsInput) instead maybe?
       args.otherSignatories = otherSignatories
       args.maxWeight = maxWeight
-      if (args != argsInput) {
+      // This will always be false because of "args = argsInput" assignment. (it is not a 'deep equal' test)
+      if (args !== argsInput) {
         await this.requireConfirmation(
           `Some file inputs have been overridden:` + `args from file input: ${argsInput}` + `new args: ${args}`
         )
@@ -214,7 +218,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     if (eraPeriod) {
       const ceil = Math.ceil(Math.log2(eraPeriod))
       const floor = Math.floor(Math.log2(eraPeriod))
-      if (eraPeriod < 4 || eraPeriod > 65536 || ceil != floor) {
+      if (eraPeriod < 4 || eraPeriod > 65536 || ceil !== floor) {
         this.error(`Invalid "lifetime" input.`, { exit: ExitCodes.InvalidInput })
       }
     }
@@ -257,12 +261,12 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     return paymentWeight.weight.toNumber()
   }
 
-  async createTransactionReadyForSigning(
+  createTransactionReadyForSigning(
     unsigned: UnsignedTransaction,
     output: string,
     unsignedTxData: { call: string; callHash: string },
     multisigTxData?: { call: string; callHash: string }
-  ) {
+  ): void {
     unsigned.signedExtensions.push('CheckEra')
     const signingPayload = createSigningPayload(unsigned, { registry })
     const transactionInputs: OfflineTransactionData = {

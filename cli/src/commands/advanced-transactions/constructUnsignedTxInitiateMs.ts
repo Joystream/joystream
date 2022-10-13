@@ -80,7 +80,7 @@ export default class ConstructUnsignedTxInitiateMsCommand extends AdvancedTransa
     const accBalances = await this.getApi().getAccountsBalancesInfo([multiAddress])
 
     if (addressMs) {
-      if (multiAddress != addressMs) {
+      if (multiAddress !== addressMs) {
         await this.requireConfirmation(
           `The input sender account, addressMs: ${addressMs},` +
             `does not match the account calculated from signer + others: ${multiAddress}` +

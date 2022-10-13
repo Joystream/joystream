@@ -117,8 +117,8 @@ export default class SignUnsignedTxCommand extends SignOfflineCommandBase {
       metadataRpc: `0x${metadata}`,
       registry,
     })
-    if (signingPayloadDecoded.method.pallet == 'multisig' && inputFile.multisigTxData) {
-      await this.multiCheck(signerPair.address, signingPayloadDecoded, inputFile.multisigTxData)
+    if (signingPayloadDecoded.method.pallet === 'multisig' && inputFile.multisigTxData) {
+      this.multiCheck(signerPair.address, signingPayloadDecoded, inputFile.multisigTxData)
     }
     const encodePayload = await this.createPayloadV4(inputFile.signingPayload)
     const signature = u8aToHex(encodePayload.sign(signerPair))
