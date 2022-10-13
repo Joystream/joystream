@@ -27,13 +27,6 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     return getInputJson<MultisigAsMulti>(filePath)
   }
 
-  // Not used, maybe it was going to be used in getFinalMsInputs ?
-  // getInputDiff(args: MultiSigApproveAsMulti, argsInput: MultiSigApproveAsMulti): void {
-  //   if (args.callHash !== argsInput.callHash) {
-  //     this.error('The call provided does not match the callhash from the input file', { exit: ExitCodes.InvalidInput })
-  //   }
-  // }
-
   async getInitMsInputs(
     input: string | undefined,
     threshold: number | undefined,

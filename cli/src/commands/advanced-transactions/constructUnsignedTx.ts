@@ -66,6 +66,6 @@ export default class CreateUnsignedTxCommand extends AdvancedTransactionsCommand
       callHash,
     }
 
-    await this.createTransactionReadyForSigning(unsigned, output, txData)
+    this.createTransactionReadyForSigning(unsigned, output, txData)
   }
 }
