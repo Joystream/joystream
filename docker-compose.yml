@@ -211,7 +211,7 @@ services:
     command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
-    image: joystream/hydra-indexer:v4.0.0-alpha.0
+    image: joystream/hydra-indexer:v4.0.0-alpha.7
     container_name: indexer
     restart: unless-stopped
     env_file:
@@ -232,7 +232,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:4.0.0-alpha.0
+    image: joystream/hydra-indexer-gateway:4.0.0-alpha.7
     container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:
