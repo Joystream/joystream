@@ -17,6 +17,7 @@ scale-info = { version = "2.1.1", default-features = false, features = ["derive"
 smallvec = "1.6.0"
 log = { version = "0.4.17", default-features = false }
 static_assertions = "1.1.0"
+impl-serde = { version = "=0.3.1", optional = true }
 
 # Substrate primitives
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
@@ -106,6 +107,7 @@ std = [
     'serde',
     'codec/std',
     'scale-info/std',
+    'impl-serde/std',
 
     # Substrate primitives
     'sp-std/std',

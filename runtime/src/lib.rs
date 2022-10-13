@@ -250,6 +250,7 @@ fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
         Call::ImOnline(_) => true,
         Call::Sudo(_) => true,
         Call::BagsList(_) => true,
+        Call::Multisig(_) => true,
         // Disable all other calls
         _ => false,
     }
