@@ -18,11 +18,11 @@ jobs:
         runtime_profile: ['STAGING', 'PLAYGROUND', 'TESTING']
         include:
           - runtime_profile: 'STAGING'
-            cargo_features: 'staging_runtime'
+            cargo_features: 'staging-runtime'
           - runtime_profile: 'PLAYGROUND'
-            cargo_features: 'playground_runtime'
+            cargo_features: 'playground-runtime'
           - runtime_profile: 'TESTING'
-            cargo_features: 'testing_runtime'
+            cargo_features: 'testing-runtime'
     env:
       RUNTIME_PROFILE: ${{ matrix.runtime_profile }}
 

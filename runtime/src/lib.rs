@@ -10,8 +10,16 @@
 #![allow(clippy::from_over_into)]
 
 // Mutually exclusive feature check
-#[cfg(all(feature = "staging_runtime", feature = "testing_runtime"))]
-compile_error!("feature \"staging_runtime\" and feature \"testing_runtime\" cannot be enabled at the same time");
+#[cfg(all(feature = "staging-runtime", feature = "testing-runtime"))]
+compile_error!("feature \"staging-runtime\" and feature \"testing-runtime\" cannot be enabled at the same time");
+
+// Mutually exclusive feature check
+#[cfg(all(feature = "playground-runtime", feature = "testing-runtime"))]
+compile_error!("feature \"playground-runtime\" and feature \"testing-runtime\" cannot be enabled at the same time");
+
+// Mutually exclusive feature check
+#[cfg(all(feature = "staging-runtime", feature = "playground-runtime"))]
+compile_error!("feature \"staging-runtime\" and feature \"playground-runtime\" cannot be enabled at the same time");
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -216,12 +224,11 @@ pub enum CallFilter {}
 /// Stage 1: Filter all non-essential calls.
 /// Allow only calls that are essential for successful block authoring, staking, nominating.
 /// Since balances calls are disabled, this means that stash and controller
-/// accounts must already be funded. If this is not practical to setup at genesis
-/// then consider enabling Balances calls?
+/// accounts must already be funded.
 /// This will be used at initial launch, and other calls will be enabled as we rollout.
 #[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime",
     feature = "runtime-benchmarks"
 )))]
 fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
@@ -251,7 +258,7 @@ fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
 
 // Stage 2: Filter out only a subset of calls on content pallet, some specific proposals
 // and the bounty creation call.
-#[cfg(not(feature = "runtime-benchmarks"))]
+#[cfg(any(feature = "playground-runtime", feature = "testing-runtime"))]
 fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
     // TODO: adjust after Carthage
     match call {
@@ -277,15 +284,15 @@ fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
     }
 }
 
-// Live Production config
+// Production config
 #[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime",
     feature = "runtime-benchmarks"
 )))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_1(call) && filter_stage_2(call)
+        filter_stage_1(call)
     }
 }
 
@@ -297,8 +304,8 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     }
 }
 
-// Staging and Testing - filter joystream pallet calls only to test they are properly disabled
-#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
+// Playground and Testing - filter joystream pallet calls only to test they are properly disabled
+#[cfg(any(feature = "playground-runtime", feature = "testing-runtime"))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
         filter_stage_2(call)
@@ -943,8 +950,9 @@ pub type CouncilModule = council::Module<Runtime>;
 
 // Production coucil and elections configuration
 #[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
+    feature = "staging-runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime",
     feature = "runtime-benchmarks"
 )))]
 parameter_types! {
@@ -965,12 +973,11 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = days!(1);
 }
 
-// Common staging, playground and benchmarking coucil and elections configuration
-// CouncilSize is defined separately
+// Common playground and benchmarking coucil and elections configuration
 // Periods are shorter to:
 // - allow easier testing
 // - prevent benchmarks System::events() from accumulating too much data and overflowing the memory
-#[cfg(any(feature = "staging_runtime", feature = "runtime-benchmarks"))]
+#[cfg(any(feature = "playground-runtime", feature = "runtime-benchmarks"))]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -983,27 +990,34 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u32 = 0;
     pub const AnnouncingPeriodDuration: BlockNumber = 300;
     pub const IdlePeriodDuration: BlockNumber = 1;
+    pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: Balance = dollars!(10_000);
     pub const ElectedMemberRewardPeriod: BlockNumber = 33;
     pub const BudgetRefillPeriod: BlockNumber = 33;
 }
 
-// Staging/benchmarking council size
-#[cfg(any(feature = "staging_runtime", feature = "runtime-benchmarks"))]
-#[cfg(not(feature = "playground_runtime"))]
+// Staging coucil and elections configuration
+#[cfg(feature = "staging-runtime")]
 parameter_types! {
-    pub const CouncilSize: u32 = 3;
-}
+    // referendum parameters
+    pub const MaxSaltLength: u64 = 32;
+    pub const VoteStageDuration: BlockNumber = hours!(1);
+    pub const RevealStageDuration: BlockNumber = hours!(1);
+    pub const MinimumVotingStake: Balance = dollars!(10);
+    pub const MaxWinnerTargetCount: u32 = CouncilSize::get();
 
-// Playground council size
-#[cfg(feature = "staging_runtime")]
-#[cfg(feature = "playground_runtime")]
-parameter_types! {
-    pub const CouncilSize: u32 = 1;
+    // council parameteres
+    pub const MinNumberOfExtraCandidates: u32 = 0;
+    pub const AnnouncingPeriodDuration: BlockNumber = hours!(3);
+    pub const IdlePeriodDuration: BlockNumber = 1; // 1 block
+    pub const CouncilSize: u32 = 3;
+    pub const MinCandidateStake: Balance = dollars!(10_000);
+    pub const ElectedMemberRewardPeriod: BlockNumber = days!(1);
+    pub const BudgetRefillPeriod: BlockNumber = days!(1);
 }
 
 // Testing config
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -1138,8 +1152,8 @@ parameter_types! {
     );
 }
 
-// Production storage parameters
-#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+// Production (and staging) storage parameters
+#[cfg(not(any(feature = "playground-runtime", feature = "testing-runtime")))]
 parameter_types! {
     pub const MinStorageBucketsPerBag: u32 = 3;
     pub const MaxStorageBucketsPerBag: u32 = 13;
@@ -1147,8 +1161,8 @@ parameter_types! {
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 5;
 }
 
-// Staging/testing storage parameters
-#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
+// Playground/testing storage parameters
+#[cfg(any(feature = "playground-runtime", feature = "testing-runtime",))]
 parameter_types! {
     pub const MinStorageBucketsPerBag: u32 = 1;
     pub const MaxStorageBucketsPerBag: u32 = 13;
