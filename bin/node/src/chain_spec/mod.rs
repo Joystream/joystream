@@ -196,7 +196,7 @@ pub fn testnet_genesis(
 
     // How much each initial validator at genesis will bond
     let initial_validator_bond: Balance = GENESIS_MIN_VALIDATOR_BOND
-        .saturating_mul(10)
+        .saturating_mul(4)
         .saturating_add(ExistentialDeposit::get());
     // How much each initial nominator at genesis will bond per nomination
     let initial_nominator_bond: Balance =
@@ -314,12 +314,15 @@ pub fn testnet_genesis(
         },
         staking: StakingConfig {
             validator_count: initial_authorities.len() as u32,
-            minimum_validator_count: initial_authorities.len() as u32,
+            minimum_validator_count: initial_authorities.len().min(4) as u32,
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
             stakers,
             min_nominator_bond: GENESIS_MIN_NOMINATOR_BOND,
             min_validator_bond: GENESIS_MIN_VALIDATOR_BOND,
+            history_depth: 120,
+            max_validator_count: Some(400),
+            max_nominator_count: Some(20_000),
             ..Default::default()
         },
         sudo: SudoConfig {
