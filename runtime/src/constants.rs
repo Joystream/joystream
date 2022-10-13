@@ -22,22 +22,22 @@ use sp_std::vec::Vec;
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
 
 // Normal 6s block interval
-#[cfg(not(feature = "testing_runtime"))]
+#[cfg(not(feature = "testing-runtime"))]
 pub const MILLISECS_PER_BLOCK: Moment = 6000;
-#[cfg(not(feature = "testing_runtime"))]
+#[cfg(not(feature = "testing-runtime"))]
 pub const SLOT_DURATION: Moment = 6000;
 
 // 1s block interval for integration testing
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 pub const MILLISECS_PER_BLOCK: Moment = 1000;
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 pub const SLOT_DURATION: Moment = 1000;
 
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-pub const BONDING_DURATION: u32 = 24 * 28;
-pub const SLASH_DEFER_DURATION: u32 = 24 * 7; // 1/4 the bonding duration.
+pub const BONDING_DURATION: u32 = 4 * 28; // 4 * 28 eras = 28 days (since 1 era = 6h)
+pub const SLASH_DEFER_DURATION: u32 = BONDING_DURATION - 1;
 
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = HOURS;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
 
@@ -144,9 +144,9 @@ pub mod currency {
     pub const MILLICENTS: Balance = CENTS.saturating_div(1_000);
 
     /// Minium Validator Bond to be set at genesis
-    pub const MIN_VALIDATOR_BOND: Balance = DOLLARS.saturating_mul(1_000);
+    pub const MIN_VALIDATOR_BOND: Balance = DOLLARS.saturating_mul(2_500);
     /// Minium Nominator Bond to be set at genesis
-    pub const MIN_NOMINATOR_BOND: Balance = DOLLARS.saturating_mul(10);
+    pub const MIN_NOMINATOR_BOND: Balance = DOLLARS.saturating_mul(100);
 
     /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
@@ -162,7 +162,7 @@ mod tests {
     use super::currency::{CENTS, MILLICENTS};
     use super::fees::WeightToFee;
     use super::ExtrinsicBaseWeight;
-    #[cfg(not(feature = "testing_runtime"))]
+    #[cfg(not(feature = "testing-runtime"))]
     use crate::{
         constants::currency::DOLLARS, Balance, MaximumBlockLength, Runtime, Weight,
         MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO,
@@ -182,8 +182,8 @@ mod tests {
         assert!(0 < transfer_fee && transfer_fee < CENTS);
     }
 
-    // This test does not make sense for `testing_runtime`, because of 1s blocks
-    #[cfg(not(feature = "testing_runtime"))]
+    // This test does not make sense for `testing-runtime`, because of 1s blocks
+    #[cfg(not(feature = "testing-runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
     // total weight for 1 day is within the pre-determined bounds
@@ -210,8 +210,8 @@ mod tests {
         assert!(day_of_full_blocks_cost <= BLOCK_WEIGHT_FILL_MAX_DAILY_COST);
     }
 
-    // This test does not make sense for `testing_runtime`, because of 1s blocks
-    #[cfg(not(feature = "testing_runtime"))]
+    // This test does not make sense for `testing-runtime`, because of 1s blocks
+    #[cfg(not(feature = "testing-runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
     // total length for 1 day is within the pre-determined bounds

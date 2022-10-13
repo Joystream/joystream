@@ -3053,7 +3053,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if cfg!(feature = "staging_runtime") || cfg!(feature = "testing_runtime") {
+            if cfg!(feature = "playground-runtime") || cfg!(feature = "testing-runtime") {
                 Self::upload_data_objects(params)?;
             } else {
                 return Err(Error::<T>::CallDisabled.into());
