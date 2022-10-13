@@ -1,4 +1,4 @@
-//! This module contains default "production" parameters configuration for the runtime codex proposals.
+//! This module contains staging parameters configuration for the runtime codex proposals.
 
 use crate::{
     currency, dollars, minutes, Balance, BlockNumber, CouncilSize, ExpectedBlockTime,

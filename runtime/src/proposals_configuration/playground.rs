@@ -1,4 +1,4 @@
-//! This module contains staging parameters for the runtime codex proposals.
+//! This module contains playground parameters for the runtime codex proposals.
 
 use crate::{currency, dollars, Balance, BlockNumber, ProposalParameters};
 
