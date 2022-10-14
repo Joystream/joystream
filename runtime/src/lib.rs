@@ -1247,10 +1247,8 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxDirectSubcategoriesInCategory: u64 = 40;
+    pub const MaxDirectSubcategoriesInCategory: u64 = 5;
     pub const MaxTotalCategories: u64 = 40;
-    pub const MaxThreadsInCategory: u64 = 20; // TODO: adjust
-    pub const MaxPostsInThread: u64 = 20; // TODO: adjust
     pub const MaxModeratorsForCategory: u64 = 10;
 
     // Thread bloat bond related:
