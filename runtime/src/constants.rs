@@ -182,7 +182,7 @@ mod tests {
         assert!(0 < transfer_fee && transfer_fee < CENTS);
     }
 
-    // This test does not make sense for `testing_runtime`, because of 1s blocks
+    // This test does not make sense for `testing-runtime`, because of 1s blocks
     #[cfg(not(feature = "testing-runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
@@ -210,7 +210,7 @@ mod tests {
         assert!(day_of_full_blocks_cost <= BLOCK_WEIGHT_FILL_MAX_DAILY_COST);
     }
 
-    // This test does not make sense for `testing_runtime`, because of 1s blocks
+    // This test does not make sense for `testing-runtime`, because of 1s blocks
     #[cfg(not(feature = "testing-runtime"))]
     #[test]
     // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
