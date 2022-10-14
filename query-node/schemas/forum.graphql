@@ -20,7 +20,6 @@ type ForumCategory @entity {
   id: ID!
 
   "Parent category (if none - this is a root category)"
-  parentId: ID
   parent: ForumCategory
 
   "Category title"
@@ -76,7 +75,6 @@ type ForumThread @entity {
   author: Membership!
 
   "Category the thread belongs to"
-  categoryId: ID!
   category: ForumCategory!
 
   "Thread title"

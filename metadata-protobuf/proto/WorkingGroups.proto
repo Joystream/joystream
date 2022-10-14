@@ -59,7 +59,7 @@ message WorkingGroupMetadataAction {
 }
 
 message ModeratePost {
-  optional uint64 post_id = 1;
+  required uint64 post_id = 1;
   optional string rationale = 2;
 }
 
