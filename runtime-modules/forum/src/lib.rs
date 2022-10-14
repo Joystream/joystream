@@ -182,9 +182,7 @@ pub trait Config:
     fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
 
-/// Upper bounds for storage maps and double maps. Needed to prevent potential block exhaustion during deletion, etc.
-/// MaxDirectSubcategoriesInCategory, and MaxTotalCategories should be reasonably small because when the category is deleted
-/// all of it's subcategories with their threads and posts will be iterated over and deleted.
+/// Upper bounds for storage maps and double maps.
 pub trait StorageLimits {
     /// Maximum direct subcategories in a category
     type MaxDirectSubcategoriesInCategory: Get<u64>;
