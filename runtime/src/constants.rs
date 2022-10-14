@@ -37,9 +37,9 @@ pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 pub const BONDING_DURATION: u32 = 4 * 28; // 4 * 28 eras = 28 days (since 1 era = 6h)
 pub const SLASH_DEFER_DURATION: u32 = BONDING_DURATION - 1;
 
-#[cfg(feature = "testing_runtime")] // 30 seconds sessions for faster tests
+#[cfg(feature = "testing-runtime")] // 30 seconds sessions for faster tests
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES / 2;
-#[cfg(not(feature = "testing_runtime"))]
+#[cfg(not(feature = "testing-runtime"))]
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = HOURS;
 
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
