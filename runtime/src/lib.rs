@@ -1247,11 +1247,9 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxSubcategories: u64 = 40; // TODO: adjust
-    pub const MaxThreadsInCategory: u64 = 20; // TODO: adjust
-    pub const MaxPostsInThread: u64 = 20; // TODO: adjust
+    pub const MaxDirectSubcategoriesInCategory: u64 = 5;
+    pub const MaxTotalCategories: u64 = 40;
     pub const MaxModeratorsForCategory: u64 = 10;
-    pub const MaxCategories: u64 = 40;
 
     // Thread bloat bond related:
     pub FroumThreadCleanupTxFee: Balance = compute_fee(
@@ -1293,9 +1291,9 @@ parameter_types! {
 
 pub struct MapLimits;
 impl forum::StorageLimits for MapLimits {
-    type MaxSubcategories = MaxSubcategories;
+    type MaxDirectSubcategoriesInCategory = MaxDirectSubcategoriesInCategory;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
-    type MaxCategories = MaxCategories;
+    type MaxTotalCategories = MaxTotalCategories;
 }
 
 impl forum::Config for Runtime {
