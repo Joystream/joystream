@@ -37,8 +37,8 @@ fragment MembershipFields on Membership {
         id
       }
     }
-    ... on MembershipEntryFoundingMemberCreated {
-      foundingMemberCreatedEvent {
+    ... on MembershipEntryMemberCreated {
+      memberCreatedEvent {
         id
       }
     }

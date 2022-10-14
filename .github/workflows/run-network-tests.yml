@@ -121,7 +121,7 @@ jobs:
           context: .
           file: joystream-node.Dockerfile
           platforms: linux/amd64
-          build-args: CARGO_FEATURES=testing_runtime
+          build-args: CARGO_FEATURES=testing-runtime
           push: false
           tags: joystream/node
           cache-from: type=local,src=/tmp/.buildx-cache

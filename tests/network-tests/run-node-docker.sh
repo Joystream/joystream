@@ -16,12 +16,12 @@ mkdir -p ${DATA_PATH}
 RUNTIME=${RUNTIME:=$(../../scripts/runtime-code-shasum.sh)}
 
 # Initial account balance for sudo account
-SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="9000000000000000000000"}
+SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
 SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
 SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # Source of funds for all new accounts that are created in the tests.
-TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="9000000000000000000000"}
+TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
 TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
@@ -56,7 +56,8 @@ fi
 # Create a chain spec file
 docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
-  --authority-seeds Alice \
+  --fund-accounts \
+  --authority-seeds //Alice \
   --sudo-account ${SUDO_ACCOUNT} \
   --deployment dev \
   --chain-spec-path /spec/chain-spec.json \
@@ -73,4 +74,4 @@ docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name j
   -p 9944:9944 -p 9933:9933 joystream-node \
   --alice --validator --unsafe-ws-external --unsafe-rpc-external \
   --rpc-methods Unsafe --rpc-cors=all -l runtime \
-  --chain /spec/chain-spec-raw.json --pruning=archive
+  --chain /spec/chain-spec-raw.json --pruning=archive --no-telemetry

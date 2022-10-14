@@ -225,7 +225,6 @@ where
             proposal: self,
             approvals: self.voting_results.approvals,
             slashes: self.voting_results.slashes,
-            abstentions: self.voting_results.abstentions,
             now,
             votes_count: self.voting_results.votes_number(),
             total_voters_count,
@@ -286,8 +285,6 @@ pub(crate) struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance,
     pub approvals: u32,
     /// Slash votes number
     pub slashes: u32,
-    /// Abstain votes number
-    pub abstentions: u32,
 }
 
 impl<'a, BlockNumber, ProposerId, Balance, AccountId>
@@ -296,14 +293,6 @@ where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy + Saturating,
     AccountId: Clone,
 {
-    // Defines vote count during the quorum and threshold calculations.
-    // It subtracts the abstentions from the all votes count.
-    // We alter the `votes count for quorum and threshold calculations` after this issue:
-    // https://github.com/Joystream/joystream/issues/2953
-    pub fn votes_count_without_abstentions(&self) -> u32 {
-        self.votes_count.saturating_sub(self.abstentions)
-    }
-
     // Proposal has been expired and quorum not reached.
     pub fn is_expired(&self) -> bool {
         self.proposal.is_voting_period_expired(self.now)
@@ -312,10 +301,8 @@ where
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes number.
     pub(crate) fn is_approval_quorum_reached(&self) -> bool {
-        let actual_votes_fraction = Perbill::from_rational(
-            self.votes_count_without_abstentions(),
-            self.total_voters_count,
-        );
+        let actual_votes_fraction =
+            Perbill::from_rational(self.votes_count, self.total_voters_count);
         let approval_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_quorum_percentage);
 
@@ -328,8 +315,7 @@ where
         let remaining_votes_count = self.total_voters_count.saturating_sub(self.votes_count);
         let possible_approval_votes_fraction = Perbill::from_rational(
             self.approvals.saturating_add(remaining_votes_count),
-            self.votes_count_without_abstentions()
-                .saturating_add(remaining_votes_count),
+            self.votes_count.saturating_add(remaining_votes_count),
         );
 
         let required_threshold_fraction =
@@ -349,8 +335,7 @@ where
         let remaining_votes_count = self.total_voters_count.saturating_sub(self.votes_count);
         let possible_slashing_votes_fraction = Perbill::from_rational(
             self.slashes.saturating_add(remaining_votes_count),
-            self.votes_count_without_abstentions()
-                .saturating_add(remaining_votes_count),
+            self.votes_count.saturating_add(remaining_votes_count),
         );
 
         let required_threshold_fraction =
@@ -362,10 +347,8 @@ where
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes number.
     pub fn is_slashing_quorum_reached(&self) -> bool {
-        let actual_votes_fraction = Perbill::from_rational(
-            self.votes_count_without_abstentions(),
-            self.total_voters_count,
-        );
+        let actual_votes_fraction =
+            Perbill::from_rational(self.votes_count, self.total_voters_count);
         let slashing_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_quorum_percentage);
 
@@ -375,8 +358,7 @@ where
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes number.
     pub fn is_approval_threshold_reached(&self) -> bool {
-        let approval_votes_fraction =
-            Perbill::from_rational(self.approvals, self.votes_count_without_abstentions());
+        let approval_votes_fraction = Perbill::from_rational(self.approvals, self.votes_count);
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
 
@@ -386,8 +368,7 @@ where
     // Slashing threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_slashing_threshold_reached(&self) -> bool {
-        let slashing_votes_fraction =
-            Perbill::from_rational(self.slashes, self.votes_count_without_abstentions());
+        let slashing_votes_fraction = Perbill::from_rational(self.slashes, self.votes_count);
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
 

@@ -24,8 +24,8 @@ use std::{
 };
 
 use joystream_node::chain_spec::{
-    self, content_config, initial_balances, joy_chain_spec_properties, storage_config, AccountId,
-    JOY_ADDRESS_PREFIX,
+    self, content_config, initial_balances, joy_chain_spec_properties, project_token_config,
+    storage_config, AccountId, JOY_ADDRESS_PREFIX,
 };
 
 use sc_chain_spec::ChainType;
@@ -72,24 +72,32 @@ enum ChainSpecBuilder {
         #[clap(long, short, required = true)]
         authority_seeds: Vec<String>,
         /// Active nominators (SS58 format), each backing a random subset of the aforementioned
-        /// authorities.
+        /// authorities. Same account used as stash and controller.
         #[clap(long, short)]
         nominator_accounts: Vec<String>,
-        /// Endowed account address (SS58 format).
-        #[clap(long, short)]
-        endowed_accounts: Vec<String>,
         /// Sudo account address (SS58 format).
         #[clap(long, short)]
         sudo_account: String,
         /// The path where the chain spec should be saved.
         #[clap(long, short, default_value = "./chain_spec.json")]
         chain_spec_path: PathBuf,
+        /// Path to use when saving generated keystores for each authority.
+        ///
+        /// At this path, a new folder will be created for each authority's
+        /// keystore named `auth-$i` where `i` is the authority index, i.e.
+        /// `auth-0`, `auth-1`, etc.
+        #[clap(long, short)]
+        keystore_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[structopt(long)]
         initial_balances_path: Option<PathBuf>,
         /// Deployment type: dev, local, staging, live
         #[structopt(long, short, default_value = "live")]
         deployment: String,
+        /// Endow authorities, nominators, and sudo account. Initial balances
+        /// overrides endowed amount.
+        #[structopt(long, short)]
+        fund_accounts: bool,
     },
     /// Create a new chain spec with the given number of authorities and endowed
     /// accounts. Random keys will be generated as required.
@@ -162,6 +170,18 @@ impl ChainSpecBuilder {
                 .expect("Failed to parse deployment argument"),
         }
     }
+
+    /// Returns wether to fund accounts or not
+    fn fund_accounts(&self) -> bool {
+        match self {
+            // Authorities, Nominators, Sudo Key and endowed accounts by default
+            // will not be endowed, unless explicitly selected.
+            ChainSpecBuilder::New { fund_accounts, .. } => *fund_accounts,
+            // When generating new authorities, nominators, endowed account,
+            // and sudo_key we will always try to endow them.
+            ChainSpecBuilder::Generate { .. } => true,
+        }
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -172,6 +192,7 @@ fn genesis_constructor(
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
     initial_balances_path: &Option<PathBuf>,
+    fund_accounts: bool,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
         .iter()
@@ -199,7 +220,13 @@ fn genesis_constructor(
         _ => storage_config::testing_config(),
     };
 
+    let project_token_cfg = match deployment {
+        ChainDeployment::live => project_token_config::production_config(),
+        _ => project_token_config::testing_config(),
+    };
+
     chain_spec::testnet_genesis(
+        fund_accounts,
         authorities,
         nominator_accounts.to_vec(),
         sudo_account.clone(),
@@ -208,6 +235,7 @@ fn genesis_constructor(
         vesting_accounts,
         content_cfg,
         storage_cfg,
+        project_token_cfg,
     )
 }
 
@@ -219,6 +247,7 @@ fn generate_chain_spec(
     endowed_accounts: Vec<String>,
     sudo_account: String,
     initial_balances_path: Option<PathBuf>,
+    fund_accounts: bool,
 ) -> Result<String, String> {
     let parse_account = |address: String| {
         AccountId::from_string(&address)
@@ -258,6 +287,7 @@ fn generate_chain_spec(
                 &endowed_accounts,
                 &sudo_account,
                 &initial_balances_path,
+                fund_accounts,
             )
         },
         vec![],
@@ -281,20 +311,25 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
         let (_, _, grandpa, babe, im_online, authority_discovery) =
             chain_spec::authority_keys_from_seed(seed);
 
-        let insert_key = |key_type, public| {
-            SyncCryptoStore::insert_unknown(&*keystore, key_type, &format!("//{}", seed), public)
-                .map_err(|_| format!("Failed to insert key: {}", grandpa))
+        let insert_key = |key_type, public, n| {
+            SyncCryptoStore::insert_unknown(&*keystore, key_type, seed, public)
+                .map_err(|_| format!("Failed to insert key: {}", n))
         };
 
-        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice())?;
+        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice(), n)?;
 
-        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice())?;
+        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice(), n)?;
 
-        insert_key(sp_core::crypto::key_types::IM_ONLINE, im_online.as_slice())?;
+        insert_key(
+            sp_core::crypto::key_types::IM_ONLINE,
+            im_online.as_slice(),
+            n,
+        )?;
 
         insert_key(
             sp_core::crypto::key_types::AUTHORITY_DISCOVERY,
             authority_discovery.as_slice(),
+            n,
         )?;
     }
 
@@ -310,7 +345,7 @@ fn print_seeds(
     println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
-        println!("auth_{}=//{}", n, seed);
+        println!("auth_{}={}", n, seed);
     }
 
     println!();
@@ -318,7 +353,7 @@ fn print_seeds(
     if !nominator_seeds.is_empty() {
         println!("# Nominator seeds");
         for (n, seed) in nominator_seeds.iter().enumerate() {
-            println!("nom_{}=//{}", n, seed);
+            println!("nom_{}={}", n, seed);
         }
     }
 
@@ -327,14 +362,15 @@ fn print_seeds(
     if !endowed_seeds.is_empty() {
         println!("# Endowed seeds");
         for (n, seed) in endowed_seeds.iter().enumerate() {
-            println!("endowed_{}=//{}", n, seed);
+            println!("endowed_{}={}", n, seed);
         }
 
         println!();
     }
 
     println!("# Sudo seed");
-    println!("sudo=//{}", sudo_seed);
+    println!("sudo={}", sudo_seed);
+    println!();
 }
 
 #[async_std::main]
@@ -352,6 +388,7 @@ async fn main() -> Result<(), String> {
     let chain_spec_path = builder.chain_spec_path().to_path_buf();
     let initial_balances_path = builder.initial_balances_path().clone();
     let deployment = builder.chain_deployment();
+    let fund_accounts = builder.fund_accounts();
 
     let (authority_seeds, nominator_accounts, endowed_accounts, sudo_account) = match builder {
         ChainSpecBuilder::Generate {
@@ -382,6 +419,9 @@ async fn main() -> Result<(), String> {
                 &sudo_seed,
             );
 
+            let sudo_account =
+                chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed).to_ss58check();
+
             if let Some(keystore_path) = keystore_path {
                 generate_authority_keys_and_store(&authority_seeds, &keystore_path)?;
             }
@@ -400,9 +440,6 @@ async fn main() -> Result<(), String> {
                 })
                 .collect();
 
-            let sudo_account =
-                chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed).to_ss58check();
-
             (
                 authority_seeds,
                 nominator_accounts,
@@ -413,15 +450,16 @@ async fn main() -> Result<(), String> {
         ChainSpecBuilder::New {
             authority_seeds,
             nominator_accounts,
-            endowed_accounts,
             sudo_account,
+            keystore_path,
             ..
-        } => (
-            authority_seeds,
-            nominator_accounts,
-            endowed_accounts,
-            sudo_account,
-        ),
+        } => {
+            if let Some(keystore_path) = keystore_path {
+                generate_authority_keys_and_store(&authority_seeds, &keystore_path)?;
+            }
+
+            (authority_seeds, nominator_accounts, vec![], sudo_account)
+        }
     };
 
     let json = generate_chain_spec(
@@ -431,6 +469,7 @@ async fn main() -> Result<(), String> {
         endowed_accounts,
         sudo_account,
         initial_balances_path,
+        fund_accounts,
     )?;
 
     fs::write(chain_spec_path, json).map_err(|err| err.to_string())
