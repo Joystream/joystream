@@ -7,20 +7,33 @@ use crate::{Balance, BlockNumber, ProposalParameters};
 use frame_support::parameter_types;
 
 // This is the default configuration, so only include it if neither staging or testing runtime feature is enabled
-#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+#[cfg(not(any(
+    feature = "staging-runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime"
+)))]
 mod defaults;
-#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+#[cfg(not(any(
+    feature = "staging-runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime"
+)))]
 use defaults::*;
 
-#[cfg(feature = "staging_runtime")]
+#[cfg(feature = "staging-runtime")]
 mod staging;
-#[cfg(feature = "staging_runtime")]
+#[cfg(feature = "staging-runtime")]
 use staging::*;
 
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 mod testing;
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 use testing::*;
+
+#[cfg(feature = "playground-runtime")]
+mod playground;
+#[cfg(feature = "playground-runtime")]
+use playground::*;
 
 /////////// Proposal parameters definition
 
