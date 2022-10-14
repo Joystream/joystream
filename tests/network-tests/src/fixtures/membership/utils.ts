@@ -13,10 +13,11 @@ type MemberCreationParams = {
   avatarUri?: string | null
   externalResources?: MembershipMetadata.IExternalResource[] | null
   metadata: Bytes
+  is_founding_member: boolean
 }
 
 // Common code for Membership fixtures
-export function generateParamsFromAccountId(accountId: string): MemberCreationParams {
+export function generateParamsFromAccountId(accountId: string, isFoundingMember = false): MemberCreationParams {
   const affix = accountId.substring(0, 14)
   const name = `name${affix}`
   const about = `about${affix}`
@@ -40,6 +41,7 @@ export function generateParamsFromAccountId(accountId: string): MemberCreationPa
     avatarUri,
     externalResources,
     metadata: metadataBytes,
+    is_founding_member: isFoundingMember,
   }
 }
 

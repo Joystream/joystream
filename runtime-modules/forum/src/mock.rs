@@ -29,6 +29,7 @@ parameter_types! {
     pub const ExistentialDeposit: u64 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const DefaultMemberInvitesCount: u32 = 2;
 }
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -166,6 +167,7 @@ impl membership::Config for Runtime {
     type StakingCandidateStakingHandler =
         staking_handler::StakingManager<Self, BoundStakingAccountLockId>;
     type CandidateStake = CandidateStake;
+    type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
 }
 
 parameter_types! {

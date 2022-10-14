@@ -10,16 +10,33 @@ docker-compose -f ../../docker-compose.yml down -v
 if [ "${DEV_NODE}" == true ]
 then
   docker-compose -f ../../docker-compose.yml up -d joystream-node
-  function cleanup() {
-      docker logs joystream-node --tail 15
-      docker-compose -f ../../docker-compose.yml down -v
-  }
-  trap cleanup EXIT
+  NODE_CONTAINER_ID="joystream-node"
 
 else
-  CONTAINER_ID=$(./run-test-node-docker.sh)
+  NODE_CONTAINER_ID=$(./run-test-node-docker.sh)
+fi
+
+if [ "${PERSIST}" != true ]
+then
   function cleanup() {
-      docker logs ${CONTAINER_ID} --tail 15
+      printf "**************************************************************************\n"
+      printf "***************************JOSYTREAM NODE LOGS****************************\n"
+      printf "**************************************************************************\n\n"
+      docker logs ${NODE_CONTAINER_ID} --tail 50
+      
+      printf "\n\n\n"
+      printf "**************************************************************************\n"
+      printf "****************************HYDRA INDEXER LOGS****************************\n"
+      printf "**************************************************************************\n\n"
+      docker logs indexer --tail 50
+
+      printf "\n\n\n"
+      printf "**************************************************************************\n"
+      printf "*************************QUERY NODE PROCESSOR LOGS************************\n"
+      printf "**************************************************************************\n\n"
+      docker logs indexer --tail 50
+
+
       docker-compose -f ../../docker-compose.yml down -v
   }
   trap cleanup EXIT
