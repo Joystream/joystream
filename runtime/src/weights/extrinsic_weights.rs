@@ -16,22 +16,22 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-09-21 (Y/M/D)
+//! DATE: 2022-10-13 (Y/M/D)
 //!
 //! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
-//! WEIGHT-PATH: `./../runtime/src/weights`
-//! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1`, WEIGHT-ADD: `0`
+//! WEIGHT-PATH: `./scripts/../runtime/src/weights`
+//! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./../target/release/joystream-node
+//   ./scripts/../target/release/joystream-node
 //   benchmark
 //   overhead
 //   --chain=dev
 //   --execution=wasm
 //   --warmup=10
 //   --repeat=100
-//   --weight-path=./../runtime/src/weights
+//   --weight-path=./scripts/../runtime/src/weights
 
 use frame_support::{
     parameter_types,
@@ -40,19 +40,19 @@ use frame_support::{
 
 parameter_types! {
     /// Time to execute a NO-OP extrinsic, for example `System::remark`.
-    /// Calculated by multiplying the *Average* with `1` and adding `0`.
+    /// Calculated by multiplying the *Average* with `1.0` and adding `0`.
     ///
     /// Stats nanoseconds:
-    ///   Min, Max: 105_519, 106_226
-    ///   Average:  105_770
-    ///   Median:   105_744
-    ///   Std-Dev:  155.11
+    ///   Min, Max: 105_589, 191_887
+    ///   Average:  161_778
+    ///   Median:   191_048
+    ///   Std-Dev:  39165.06
     ///
     /// Percentiles nanoseconds:
-    ///   99th: 106_097
-    ///   95th: 106_057
-    ///   75th: 105_880
-    pub const ExtrinsicBaseWeight: Weight = 105_770 * WEIGHT_PER_NANOS;
+    ///   99th: 191_647
+    ///   95th: 191_552
+    ///   75th: 191_268
+    pub const ExtrinsicBaseWeight: Weight = 161_778 * WEIGHT_PER_NANOS;
 }
 
 #[cfg(test)]

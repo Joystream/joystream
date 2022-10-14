@@ -16,22 +16,22 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-09-21 (Y/M/D)
+//! DATE: 2022-10-13 (Y/M/D)
 //!
 //! DATABASE: `RocksDb`, RUNTIME: `Development`
 //! BLOCK-NUM: `BlockId::Number(0)`
 //! SKIP-WRITE: `false`, SKIP-READ: `false`, WARMUPS: `100`
 //! STATE-VERSION: `V1`, STATE-CACHE-SIZE: `0`
-//! WEIGHT-PATH: `./../runtime/src/weights/`
-//! METRIC: `Average`, WEIGHT-MUL: `1`, WEIGHT-ADD: `0`
+//! WEIGHT-PATH: `./scripts/../runtime/src/weights/`
+//! METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./../target/release/joystream-node
+//   ./scripts/../target/release/joystream-node
 //   benchmark
 //   storage
 //   --chain=dev
 //   --warmups=100
-//   --weight-path=./../runtime/src/weights/
+//   --weight-path=./scripts/../runtime/src/weights/
 //   --state-version
 //   1
 
@@ -47,34 +47,34 @@ pub mod constants {
         /// the runtime.
         pub const RocksDbWeight: RuntimeDbWeight = RuntimeDbWeight {
             /// Time to read one storage item.
-            /// Calculated by multiplying the *Average* of all values with `1` and adding `0`.
+            /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 7_650, 273_714
-            ///   Average:  13_282
-            ///   Median:   11_067
-            ///   Std-Dev:  19744.83
+            ///   Min, Max: 7_660, 731_540
+            ///   Average:  15_736
+            ///   Median:   11_100
+            ///   Std-Dev:  53544.53
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 29_980
-            ///   95th: 15_898
-            ///   75th: 13_524
-            read: 13_282 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 18_030
+            ///   95th: 16_140
+            ///   75th: 13_300
+            read: 15_736 * constants::WEIGHT_PER_NANOS,
 
             /// Time to write one storage item.
-            /// Calculated by multiplying the *Average* of all values with `1` and adding `0`.
+            /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 15_781, 4_518_794
-            ///   Average:  55_820
-            ///   Median:   29_598
-            ///   Std-Dev:  335568.91
+            ///   Min, Max: 15_390, 5_928_509
+            ///   Average:  64_115
+            ///   Median:   31_140
+            ///   Std-Dev:  438386.88
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 74_386
-            ///   95th: 47_492
-            ///   75th: 34_690
-            write: 55_820 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 52_550
+            ///   95th: 45_410
+            ///   75th: 35_770
+            write: 64_115 * constants::WEIGHT_PER_NANOS,
         };
     }
 
