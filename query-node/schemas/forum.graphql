@@ -22,6 +22,10 @@ type ForumCategory @entity {
   "Parent category (if none - this is a root category)"
   parent: ForumCategory
 
+  # This exposes the internal Hydra value related to `parent`
+  "The id of the parent category"
+  parentId: ID
+
   "Category title"
   title: String!
 
@@ -76,6 +80,10 @@ type ForumThread @entity {
 
   "Category the thread belongs to"
   category: ForumCategory!
+
+  # This exposes the internal Hydra value related to `category`
+  "The id of the category the thread belongs to"
+  categoryId: ID!
 
   "Thread title"
   title: String! @fulltext(query: "threadsByTitle")
