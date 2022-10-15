@@ -182,18 +182,16 @@ pub trait Config:
     fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
 
-/// Upper bounds for storage maps and double maps. Needed to prevent potential block exhaustion during deletion, etc.
-/// MaxSubcategories, and MaxCategories should be reasonably small because when the category is deleted
-/// all of it's subcategories with their threads and posts will be iterated over and deleted.
+/// Upper bounds for storage maps and double maps.
 pub trait StorageLimits {
     /// Maximum direct subcategories in a category
-    type MaxSubcategories: Get<u64>;
+    type MaxDirectSubcategoriesInCategory: Get<u64>;
 
     /// Maximum moderator count for a single category
     type MaxModeratorsForCategory: Get<u64>;
 
     /// Maximum total of all existing categories
-    type MaxCategories: Get<u64>;
+    type MaxTotalCategories: Get<u64>;
 }
 
 /// Represents a thread post
@@ -499,11 +497,11 @@ decl_module! {
         /// Deposit needed to create a thread
         const ThreadDeposit: BalanceOf<T> = T::ThreadDeposit::get();
 
-        /// MaxSubcategories
-        const MaxSubcategories: u64 = <T::MapLimits as StorageLimits>::MaxSubcategories::get();
+        /// MaxDirectSubcategoriesInCategory
+        const MaxDirectSubcategoriesInCategory: u64 = <T::MapLimits as StorageLimits>::MaxDirectSubcategoriesInCategory::get();
 
-        /// MaxCategories
-        const MaxCategories: u64 = <T::MapLimits as StorageLimits>::MaxCategories::get();
+        /// MaxTotalCategories
+        const MaxTotalCategories: u64 = <T::MapLimits as StorageLimits>::MaxTotalCategories::get();
 
         /// Enable a moderator can moderate a category and its sub categories.
         ///
@@ -1938,7 +1936,7 @@ impl<T: Config> Module<T> {
         // Not signed by forum LEAD
         Self::ensure_is_forum_lead_account(&account_id)?;
 
-        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxCategories>(
+        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxTotalCategories>(
             <CategoryCounter<T>>::get().into() as u64,
         )?;
 
@@ -1949,9 +1947,9 @@ impl<T: Config> Module<T> {
 
             let parent_category = <CategoryById<T>>::get(tmp_parent_category_id);
 
-            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxSubcategories>(
-                parent_category.num_direct_subcategories as u64,
-            )?;
+            Self::ensure_map_limits::<
+                <<T>::MapLimits as StorageLimits>::MaxDirectSubcategoriesInCategory,
+            >(parent_category.num_direct_subcategories as u64)?;
 
             return Ok(Some(parent_category));
         }

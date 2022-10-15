@@ -1273,11 +1273,9 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxSubcategories: u64 = 40; // TODO: adjust
-    pub const MaxThreadsInCategory: u64 = 20; // TODO: adjust
-    pub const MaxPostsInThread: u64 = 20; // TODO: adjust
+    pub const MaxDirectSubcategoriesInCategory: u64 = 5;
+    pub const MaxTotalCategories: u64 = 40;
     pub const MaxModeratorsForCategory: u64 = 10;
-    pub const MaxCategories: u64 = 40;
 
     // Thread bloat bond related:
     pub FroumThreadCleanupTxFee: Balance = compute_fee(
@@ -1319,9 +1317,9 @@ parameter_types! {
 
 pub struct MapLimits;
 impl forum::StorageLimits for MapLimits {
-    type MaxSubcategories = MaxSubcategories;
+    type MaxDirectSubcategoriesInCategory = MaxDirectSubcategoriesInCategory;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
-    type MaxCategories = MaxCategories;
+    type MaxTotalCategories = MaxTotalCategories;
 }
 
 impl forum::Config for Runtime {
@@ -1671,7 +1669,7 @@ parameter_types! {
     // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
     // The new compressed wasm format is much smaller in size ~ 1MB
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = DispatchableCallCodeMaxLen::get();
-    pub const FundingRequestProposalMaxAmount: Balance = dollars!(10_000);
+    pub const FundingRequestProposalMaxTotalAmount: Balance = dollars!(10_000);
     pub const FundingRequestProposalMaxAccounts: u32 = 20;
     pub const SetMaxValidatorCountProposalMaxValidators: u32 = 100;
 }
@@ -1715,7 +1713,7 @@ impl proposals_codex::Config for Runtime {
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
-    type FundingRequestProposalMaxAmount = FundingRequestProposalMaxAmount;
+    type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;

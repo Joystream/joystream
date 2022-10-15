@@ -660,7 +660,7 @@ impl crate::Config for Test {
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
-    type FundingRequestProposalMaxAmount = FundingRequestProposalMaxAmount;
+    type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
 }
@@ -677,7 +677,7 @@ parameter_types! {
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
-    pub const FundingRequestProposalMaxAmount: Balance = 10_000_000_000_000;
+    pub const FundingRequestProposalMaxTotalAmount: Balance = 10_000_000_000_000;
     pub const FundingRequestProposalMaxAccounts: u32 = 100;
     pub const SetMaxValidatorCountProposalMaxValidators: u32 = 300;
 }
