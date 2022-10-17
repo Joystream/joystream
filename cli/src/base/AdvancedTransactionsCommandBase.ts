@@ -130,31 +130,30 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     call: string,
     maxWeight: number
   ): Promise<MultisigAsMulti> {
-    let argsInput: MultisigAsMulti
-    let args: MultisigAsMulti
-    let otherSignatories: string[] = []
     if (input) {
-      // Review: this doesn't look correct..
-      argsInput = await this.getAsMultiInputFromFile(input)
-      // here we have hidden the "others" argument of the function..is that the intent?
-      const others = argsInput.otherSignatories as string[]
-      otherSignatories = sortAddresses(others, JOYSTREAM_ADDRESS_PREFIX) // which 'others' do we intend here?
-      args = argsInput // Object.assign({}, argsInput) instead maybe?
-      args.otherSignatories = otherSignatories
+      const args = await this.getAsMultiInputFromFile(input)
+      const originalArgs = { ...args }
+      const otherSignatories = args.otherSignatories as string[]
+      const otherSignatoriesSorted = sortAddresses(otherSignatories, JOYSTREAM_ADDRESS_PREFIX)
+      const signatoriesChanged = !otherSignatoriesSorted.every(
+        (signatory, index) => signatory === otherSignatories[index]
+      )
+      args.otherSignatories = otherSignatoriesSorted
+      const maxWeightChanged = maxWeight !== (args.maxWeight as number)
       args.maxWeight = maxWeight
-      // This will always be false because of "args = argsInput" assignment. (it is not a 'deep equal' test)
-      if (args !== argsInput) {
+      if (signatoriesChanged || maxWeightChanged) {
         await this.requireConfirmation(
-          `Some file inputs have been overridden:` + `args from file input: ${argsInput}` + `new args: ${args}`
+          `Some file inputs have been overridden:` + `args from file input: ${originalArgs}` + `new args: ${args}`
         )
       }
+      return args
     } else if (threshold && others && timepointHeight && timepointIndex) {
-      otherSignatories = sortAddresses(others.split(','), JOYSTREAM_ADDRESS_PREFIX)
+      const otherSignatories = sortAddresses(others.split(','), JOYSTREAM_ADDRESS_PREFIX)
       const maybeTimepoint: Timepoint = {
         height: timepointHeight,
         index: timepointIndex,
       }
-      args = {
+      return {
         threshold,
         otherSignatories,
         maybeTimepoint,
@@ -165,7 +164,6 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     } else {
       this.error('Missing required input', { exit: ExitCodes.InvalidInput })
     }
-    return args
   }
 
   async getBaseTxInfo(
