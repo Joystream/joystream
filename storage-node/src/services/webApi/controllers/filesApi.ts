@@ -99,13 +99,15 @@ export async function uploadFile(
     const queryNodeUrl = res.locals.queryNodeEndpoint
     const workerId = res.locals.workerId
 
-    const [, hash] = await Promise.all([
+    const api = res.locals.api
+    const bagId = parseBagId(uploadRequest.bagId)
+
+    const [, , hash] = await Promise.all([
       verifyBucketId(queryNodeUrl, workerId, uploadRequest.storageBucketId),
+      verifyBagAssignment(api, bagId, uploadRequest.storageBucketId),
       hashFile(fileObj.path),
     ])
 
-    const api = res.locals.api
-    const bagId = parseBagId(uploadRequest.bagId)
     const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
@@ -340,5 +342,22 @@ async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: 
 
   if (!bucketIds.includes(bucketId.toString())) {
     throw new WebApiError('Incorrect storage bucket ID.', 400)
+  }
+}
+
+/**
+ * Verifies the storage bag assignment to the storage bucket.
+ * It throws an error if storage bag is not stored by the bucket.
+ *
+ * @param api - runtime API promise
+ * @param bagId - bag ID
+ * @param bucketId - storage bucket ID
+ * @returns void promise.
+ */
+async function verifyBagAssignment(api: ApiPromise, bagId: BagId, bucketId: number): Promise<void> {
+  const bag = await api.query.storage.bags(bagId)
+
+  if (![...bag.storedBy].map((s) => s.toNumber()).includes(bucketId)) {
+    throw new WebApiError(`Storage bag ${bagId} is not assigned to storage bucket ${bucketId}.`, 400)
   }
 }
