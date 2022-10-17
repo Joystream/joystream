@@ -588,9 +588,9 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       fundingRequestProposalMaxAccounts: u32 & AugmentedConst<ApiType>;
       /**
-       * Max amount in funding request proposal (per account)
+       * Maximum total amount in funding request proposal
        **/
-      fundingRequestProposalMaxAmount: u128 & AugmentedConst<ApiType>;
+      fundingRequestProposalMaxTotalAmount: u128 & AugmentedConst<ApiType>;
       /**
        * Exports 'Funding Request' proposal parameters.
        **/
