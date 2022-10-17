@@ -321,13 +321,13 @@ declare module '@polkadot/api-base/types/consts' {
     };
     forum: {
       /**
-       * MaxCategories
+       * MaxDirectSubcategoriesInCategory
        **/
-      maxCategories: u64 & AugmentedConst<ApiType>;
+      maxDirectSubcategoriesInCategory: u64 & AugmentedConst<ApiType>;
       /**
-       * MaxSubcategories
+       * MaxTotalCategories
        **/
-      maxSubcategories: u64 & AugmentedConst<ApiType>;
+      maxTotalCategories: u64 & AugmentedConst<ApiType>;
       /**
        * Exports const
        * Deposit needed to create a post
