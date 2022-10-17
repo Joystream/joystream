@@ -16,65 +16,60 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-10-13 (Y/M/D)
+//! DATE: 2022-10-17 (Y/M/D)
 //!
 //! SHORT-NAME: `block`, LONG-NAME: `BlockExecution`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
-//! WEIGHT-PATH: `./scripts/../runtime/src/weights`
+//! WEIGHT-PATH: `./../runtime/src/weights`
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./scripts/../target/release/joystream-node
+//   ./../target/release/joystream-node
 //   benchmark
 //   overhead
+//   --base-path=/mnt/disks/local-ssd/
 //   --chain=dev
 //   --execution=wasm
 //   --warmup=10
 //   --repeat=100
-//   --weight-path=./scripts/../runtime/src/weights
+//   --weight-path=./../runtime/src/weights
 
 use frame_support::{
-    parameter_types,
-    weights::{constants::WEIGHT_PER_NANOS, Weight},
+	parameter_types,
+	weights::{constants::WEIGHT_PER_NANOS, Weight},
 };
 
 parameter_types! {
-    /// Time to execute an empty block.
-    /// Calculated by multiplying the *Average* with `1.0` and adding `0`.
-    ///
-    /// Stats nanoseconds:
-    ///   Min, Max: 7_965_379, 8_164_490
-    ///   Average:  8_056_202
-    ///   Median:   8_058_559
-    ///   Std-Dev:  38738.96
-    ///
-    /// Percentiles nanoseconds:
-    ///   99th: 8_142_859
-    ///   95th: 8_119_059
-    ///   75th: 8_080_610
-    pub const BlockExecutionWeight: Weight = 8_056_202 * WEIGHT_PER_NANOS;
+	/// Time to execute an empty block.
+	/// Calculated by multiplying the *Average* with `1.0` and adding `0`.
+	///
+	/// Stats nanoseconds:
+	///   Min, Max: 5_950_490, 6_104_779
+	///   Average:  5_981_519
+	///   Median:   5_975_009
+	///   Std-Dev:  26659.87
+	///
+	/// Percentiles nanoseconds:
+	///   99th: 6_060_849
+	///   95th: 6_043_830
+	///   75th: 5_984_819
+	pub const BlockExecutionWeight: Weight = 5_981_519 * WEIGHT_PER_NANOS;
 }
 
 #[cfg(test)]
 mod test_weights {
-    use frame_support::weights::constants;
+	use frame_support::weights::constants;
 
-    /// Checks that the weight exists and is sane.
-    // NOTE: If this test fails but you are sure that the generated values are fine,
-    // you can delete it.
-    #[test]
-    fn sane() {
-        let w = super::BlockExecutionWeight::get();
+	/// Checks that the weight exists and is sane.
+	// NOTE: If this test fails but you are sure that the generated values are fine,
+	// you can delete it.
+	#[test]
+	fn sane() {
+		let w = super::BlockExecutionWeight::get();
 
-        // At least 100 µs.
-        assert!(
-            w >= 100 * constants::WEIGHT_PER_MICROS,
-            "Weight should be at least 100 µs."
-        );
-        // At most 50 ms.
-        assert!(
-            w <= 50 * constants::WEIGHT_PER_MILLIS,
-            "Weight should be at most 50 ms."
-        );
-    }
+		// At least 100 µs.
+		assert!(w >= 100 * constants::WEIGHT_PER_MICROS, "Weight should be at least 100 µs.");
+		// At most 50 ms.
+		assert!(w <= 50 * constants::WEIGHT_PER_MILLIS, "Weight should be at most 50 ms.");
+	}
 }
