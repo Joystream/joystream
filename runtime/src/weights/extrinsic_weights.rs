@@ -16,22 +16,23 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-10-13 (Y/M/D)
+//! DATE: 2022-10-17 (Y/M/D)
 //!
 //! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
-//! WEIGHT-PATH: `./scripts/../runtime/src/weights`
+//! WEIGHT-PATH: `./../runtime/src/weights`
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./scripts/../target/release/joystream-node
+//   ./../target/release/joystream-node
 //   benchmark
 //   overhead
+//   --base-path=/mnt/disks/local-ssd/
 //   --chain=dev
 //   --execution=wasm
 //   --warmup=10
 //   --repeat=100
-//   --weight-path=./scripts/../runtime/src/weights
+//   --weight-path=./../runtime/src/weights
 
 use frame_support::{
     parameter_types,
@@ -43,16 +44,16 @@ parameter_types! {
     /// Calculated by multiplying the *Average* with `1.0` and adding `0`.
     ///
     /// Stats nanoseconds:
-    ///   Min, Max: 105_589, 191_887
-    ///   Average:  161_778
-    ///   Median:   191_048
-    ///   Std-Dev:  39165.06
+    ///   Min, Max: 105_814, 107_884
+    ///   Average:  106_535
+    ///   Median:   106_538
+    ///   Std-Dev:  363.91
     ///
     /// Percentiles nanoseconds:
-    ///   99th: 191_647
-    ///   95th: 191_552
-    ///   75th: 191_268
-    pub const ExtrinsicBaseWeight: Weight = 161_778 * WEIGHT_PER_NANOS;
+    ///   99th: 107_525
+    ///   95th: 107_212
+    ///   75th: 106_749
+    pub const ExtrinsicBaseWeight: Weight = 106_535 * WEIGHT_PER_NANOS;
 }
 
 #[cfg(test)]
