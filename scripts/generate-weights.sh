@@ -13,7 +13,7 @@ substrate_pallet_benchmark() {
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
-      --chain=dev \
+      --chain=prod \
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
@@ -40,7 +40,7 @@ joystream_pallet_benchmark() {
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
-      --chain=dev \
+      --chain=prod \
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
@@ -62,7 +62,7 @@ overhead_benchmarks() {
   echo "Generating core weights"
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark overhead \
-      --chain=dev \
+      --chain=prod \
       --execution=wasm \
       --warmup=10 \
       --repeat=100 \
@@ -83,7 +83,7 @@ storage_benchmarks() {
   echo "Generating storage weights"
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark storage \
-      --chain=dev \
+      --chain=prod \
       --warmups=100 \
       --weight-path=$SCRIPT_DIR/../runtime/src/weights/ \
       --state-version 1)

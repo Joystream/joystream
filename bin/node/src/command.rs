@@ -64,12 +64,13 @@ impl SubstrateCli for Cli {
         let spec = match id {
             "" => {
                 return Err(
-                    "Please specify which chain you want to run, e.g. --dev or --chain=local"
+                    "Please specify which chain you want to run, e.g. --dev or --chain=local or --chain=dev-production-config"
                         .into(),
                 )
             }
             "dev" => Box::new(chain_spec::development_config()),
             "local" => Box::new(chain_spec::local_testnet_config()),
+            "prod" => Box::new(chain_spec::production_config()),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),

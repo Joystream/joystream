@@ -421,6 +421,37 @@ pub fn local_testnet_config() -> ChainSpec {
     )
 }
 
+fn production_config_genesis() -> GenesisConfig {
+    testnet_genesis(
+        true,
+        vec![authority_keys_from_seed("//Alice")],
+        vec![],
+        get_account_id_from_seed::<sr25519::Public>("//Alice"),
+        development_endowed_accounts(),
+        vec![],
+        vec![],
+        content_config::production_config(),
+        storage_config::production_config(),
+        project_token_config::production_config(),
+    )
+}
+
+/// Development chain, with production config
+pub fn production_config() -> ChainSpec {
+    ChainSpec::from_genesis(
+        "Development",
+        "dev",
+        ChainType::Development,
+        production_config_genesis,
+        vec![],
+        None,
+        None,
+        None,
+        Some(joy_chain_spec_properties()),
+        Default::default(),
+    )
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
@@ -505,5 +536,10 @@ pub(crate) mod tests {
     #[test]
     fn test_create_local_testnet_chain_spec() {
         local_testnet_config().build_storage().unwrap();
+    }
+
+    #[test]
+    fn test_create_production_chain_spec() {
+        production_config().build_storage().unwrap();
     }
 }
