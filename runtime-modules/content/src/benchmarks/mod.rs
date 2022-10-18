@@ -8,7 +8,7 @@ use crate::{
     permissions::*,
     types::*,
     Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
-    Module as Pallet,
+    Module as Pallet, NftLimitsEnabled,
 };
 
 use balances::Pallet as Balances;
@@ -1431,6 +1431,7 @@ fn set_nft_limits_helper<T: RuntimeConfig>(channel_id: T::ChannelId) {
     let channel_daily_limit = 2u64;
     let channel_weekly_limit = 14u64;
 
+    NftLimitsEnabled::set(true);
     Pallet::<T>::set_nft_limit(NftLimitId::GlobalDaily, global_daily_limit);
     Pallet::<T>::set_nft_limit(NftLimitId::GlobalWeekly, global_weekly_limit);
     Pallet::<T>::set_nft_limit(NftLimitId::ChannelDaily(channel_id), channel_daily_limit);

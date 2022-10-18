@@ -854,6 +854,7 @@ benchmarks! {
             channel_id,
             vec![PausableChannelFeature::VideoCreation, PausableChannelFeature::VideoNftIssuance]
         );
+        set_nft_limits_helper::<T>(channel_id);
     }: create_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1038,6 +1039,7 @@ benchmarks! {
             channel_id,
             vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
         );
+        set_nft_limits_helper::<T>(channel_id);
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1117,6 +1119,7 @@ benchmarks! {
             channel_id,
             vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
         );
+        set_nft_limits_helper::<T>(channel_id);
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1450,6 +1453,7 @@ benchmarks! {
         let params = create_token_issuance_params::<T>(worst_case_scenario_initial_allocation::<T>(a));
         let actor = ContentActor::Curator(group_id, curator_id);
         set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorTokenIssuance]);
+        TokenAccountBloatBond::<T>::set(T::ExistentialDeposit::get());
     }: _ (
         RawOrigin::Signed(curator_acc_id),
         actor,
@@ -1510,7 +1514,7 @@ benchmarks! {
         let outputs = worst_case_scenario_issuer_transfer_outputs::<T>(a);
         let balance_pre = balances::Pallet::<T>::usable_balance(&curator_acc_id);
         let metadata = vec![0xf].repeat(b as usize);
-        TokenAccountBloatBond::<T>::set(100u32.into());
+        TokenAccountBloatBond::<T>::set(T::ExistentialDeposit::get());
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
     }: _ (
@@ -1520,7 +1524,7 @@ benchmarks! {
             let block_number = frame_system::Pallet::<T>::block_number();
             let balance_post = balances::Pallet::<T>::usable_balance(&curator_acc_id);
             // Ensure bloat bond total amount transferred
-            assert_eq!(balance_post, balance_pre - (100u32 * a).into());
+            assert_eq!(balance_post, balance_pre - (T::ExistentialDeposit::get() * a.into()));
             for (member_id, acc_data) in AccountInfoByTokenAndMember::<T>::iter_prefix(token_id) {
                 if member_id == curator_member_id {
                     assert_eq!(
@@ -2309,6 +2313,7 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(curator_account_id);
         let params = worst_case_nft_issuance_params_helper::<T>(w,b);
+        set_nft_limits_helper::<T>(channel_id);
     }: _ (origin, actor, video_id, params)
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_some());
