@@ -1,7 +1,7 @@
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { MembershipFieldsFragment } from './olympia-query-node/generated/queries'
 import { createType } from '@joystream/types'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { BaseMigration, BaseMigrationConfig, BaseMigrationParams, MigrationResult } from './BaseMigration'
 import { Logger } from 'winston'
 import { createLogger } from '../logging'
