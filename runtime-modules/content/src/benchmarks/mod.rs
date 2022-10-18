@@ -21,7 +21,7 @@ use frame_support::{
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
-use project_token::{types::*, AccountInfoByTokenAndMember};
+use project_token::{types::*, AccountInfoByTokenAndMember, MinSaleDuration};
 use sp_arithmetic::traits::One;
 use sp_core::U256;
 use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
@@ -81,7 +81,6 @@ const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksi
 const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
 const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
 const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
-const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
 const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
 const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
 const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
@@ -1344,13 +1343,17 @@ where
     Ok(token_id)
 }
 
+fn default_crt_sale_duration<T: Config>() -> T::BlockNumber {
+    MinSaleDuration::<T>::get() + T::BlockNumber::one()
+}
+
 fn worst_case_scenario_token_sale_params<T: Config>(
     metatada_len: u32,
     starts_at: Option<T::BlockNumber>,
 ) -> TokenSaleParamsOf<T> {
     TokenSaleParamsOf::<T> {
         cap_per_member: Some(1_000_000u32.into()),
-        duration: DEFAULT_CRT_SALE_DURATION.into(),
+        duration: default_crt_sale_duration::<T>(),
         starts_at,
         unit_price: DEFAULT_CRT_SALE_PRICE.into(),
         upper_bound_quantity: DEFAULT_CRT_SALE_UPPER_BOUND.into(),

@@ -1645,7 +1645,7 @@ benchmarks! {
             assert_eq!(token.sale, Some(TokenSale {
                 auto_finalize: false,
                 cap_per_member: Some(DEFAULT_CRT_SALE_CAP_PER_MEMBER.into()),
-                duration: DEFAULT_CRT_SALE_DURATION.into(),
+                duration: default_crt_sale_duration::<T>(),
                 earnings_destination: None,
                 funds_collected: JoyBalanceOf::<T>::zero(),
                 quantity_left: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
@@ -1696,7 +1696,7 @@ benchmarks! {
             sale_params
         )?;
         let new_start_block: Option<T::BlockNumber> = Some(200u32.into());
-        let new_duration: Option<T::BlockNumber> = Some(200u32.into());
+        let new_duration: Option<T::BlockNumber> = Some(default_crt_sale_duration::<T>() + T::BlockNumber::one());
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id, new_start_block, new_duration)
@@ -1750,7 +1750,7 @@ benchmarks! {
             tokens_sold
         )?;
         let council_budget_pre = T::CouncilBudgetManager::get_budget();
-        fastforward_by_blocks::<T>(DEFAULT_CRT_SALE_DURATION.into());
+        fastforward_by_blocks::<T>(default_crt_sale_duration::<T>());
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id)
@@ -2982,7 +2982,7 @@ benchmarks! {
         fastforward_by_blocks::<T>(2u32.into());
         let _ = add_english_auction_bid::<T>(participant_account_id, participant_id, video_id);
 
-        fastforward_by_blocks::<T>(10u32.into());
+        fastforward_by_blocks::<T>(Pallet::<T>::min_auction_duration());
     }: _(origin, video_id)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -3139,7 +3139,7 @@ benchmarks! {
         fastforward_by_blocks::<T>(2u32.into());
 
         let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
-        fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
+        fastforward_by_blocks::<T>(Pallet::<T>::min_bid_lock_duration()); // skip bid lock
 
     }: _(origin, participant_id, video_id)
         verify {
@@ -3186,9 +3186,6 @@ benchmarks! {
         fastforward_by_blocks::<T>(2u32.into());
 
         let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
-
-        fastforward_by_blocks::<T>(10u32.into());
-
     }: _(origin, nft_owner_actor, video_id, participant_id, bid.amount)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -3243,8 +3240,7 @@ benchmarks! {
         let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
         let _ = add_open_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
         let price = nft_buy_now_price::<T>();
-        fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
-
+        fastforward_by_blocks::<T>(Pallet::<T>::min_bid_lock_duration()); // skip bid lock
     }: _(origin, participant_id, video_id, price)
         verify {
             assert_eq!(
