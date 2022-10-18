@@ -7,6 +7,8 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 STEPS=${1:-50}
 REPEAT=${2:-20}
 
+$SCRIPT_DIR/../target/release/joystream-node purge-chain --chain prod -y
+
 substrate_pallet_benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`

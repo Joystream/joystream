@@ -64,7 +64,7 @@ impl SubstrateCli for Cli {
         let spec = match id {
             "" => {
                 return Err(
-                    "Please specify which chain you want to run, e.g. --dev or --chain=local or --chain=dev-production-config"
+                    "Please specify which chain you want to run, e.g. --dev or --chain=local or --chain=prod"
                         .into(),
                 )
             }
