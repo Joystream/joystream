@@ -1270,8 +1270,9 @@ decl_module! {
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoBounty::<T>::announce_work_entry(
-            T::ClosedContractSizeLimit::get().saturated_into(),
-            work_description.len().saturated_into())]
+            work_description.len().saturated_into(),
+            T::ClosedContractSizeLimit::get().saturated_into()
+        )]
         pub fn announce_work_entry(
             origin,
             member_id: MemberId<T>,
