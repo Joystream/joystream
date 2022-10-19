@@ -86,7 +86,7 @@ use sp_runtime::{
     create_runtime_str,
     curve::PiecewiseLinear,
     generic, impl_opaque_keys,
-    traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
+    traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys, Zero},
     Perbill,
 };
 
@@ -123,6 +123,7 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
+use pallet_staking::EraPayout;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 
@@ -581,6 +582,29 @@ pallet_staking_reward_curve::build! {
     );
 }
 
+pub struct NoInflationIfNoEras;
+impl EraPayout<Balance> for NoInflationIfNoEras {
+    fn era_payout(
+        total_staked: Balance,
+        total_issuance: Balance,
+        era_duration_millis: u64,
+    ) -> (Balance, Balance) {
+        let era_index = pallet_staking::Pallet::<Runtime>::active_era()
+            .map_or_else(Zero::zero, |era| era.index);
+
+        if era_index.is_zero() {
+            // PoA mode: no inflation.
+            (0, 0)
+        } else {
+            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
+                total_staked,
+                total_issuance,
+                era_duration_millis,
+            )
+        }
+    }
+}
+
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
@@ -612,7 +636,9 @@ impl pallet_staking::Config for Runtime {
     type SlashDeferDuration = SlashDeferDuration;
     type SlashCancelOrigin = EnsureRoot<AccountId>;
     type SessionInterface = Self;
-    type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
+    // TODO (Mainnet): enable normal curve
+    // type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
+    type EraPayout = NoInflationIfNoEras;
     type NextNewSession = Session;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
@@ -1247,11 +1273,9 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxSubcategories: u64 = 40; // TODO: adjust
-    pub const MaxThreadsInCategory: u64 = 20; // TODO: adjust
-    pub const MaxPostsInThread: u64 = 20; // TODO: adjust
+    pub const MaxDirectSubcategoriesInCategory: u64 = 5;
+    pub const MaxTotalCategories: u64 = 40;
     pub const MaxModeratorsForCategory: u64 = 10;
-    pub const MaxCategories: u64 = 40;
 
     // Thread bloat bond related:
     pub FroumThreadCleanupTxFee: Balance = compute_fee(
@@ -1293,9 +1317,9 @@ parameter_types! {
 
 pub struct MapLimits;
 impl forum::StorageLimits for MapLimits {
-    type MaxSubcategories = MaxSubcategories;
+    type MaxDirectSubcategoriesInCategory = MaxDirectSubcategoriesInCategory;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
-    type MaxCategories = MaxCategories;
+    type MaxTotalCategories = MaxTotalCategories;
 }
 
 impl forum::Config for Runtime {
@@ -1645,7 +1669,7 @@ parameter_types! {
     // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
     // The new compressed wasm format is much smaller in size ~ 1MB
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = DispatchableCallCodeMaxLen::get();
-    pub const FundingRequestProposalMaxAmount: Balance = dollars!(10_000);
+    pub const FundingRequestProposalMaxTotalAmount: Balance = dollars!(10_000);
     pub const FundingRequestProposalMaxAccounts: u32 = 20;
     pub const SetMaxValidatorCountProposalMaxValidators: u32 = 100;
 }
@@ -1689,7 +1713,7 @@ impl proposals_codex::Config for Runtime {
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
-    type FundingRequestProposalMaxAmount = FundingRequestProposalMaxAmount;
+    type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;

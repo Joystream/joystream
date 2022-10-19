@@ -75,6 +75,7 @@ frame-system = { package = 'frame-system',git = 'https://github.com/joystream/su
 frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-transaction-payment = { package = 'pallet-transaction-payment', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
+pallet-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-transaction-storage = { package = 'pallet-transaction-storage', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 
 # node-specific dependencies

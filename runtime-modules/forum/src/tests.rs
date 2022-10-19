@@ -2889,7 +2889,7 @@ fn storage_limit_checks() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
 
-    // test MaxSubcategories and MaxThreadsInCategory
+    // test MaxDirectSubcategoriesInCategory
     with_test_externalities(|| {
         balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
@@ -2902,7 +2902,7 @@ fn storage_limit_checks() {
         );
 
         // test max subcategories limit
-        let max = <<<Runtime as Config>::MapLimits as StorageLimits>::MaxSubcategories>::get();
+        let max = <<<Runtime as Config>::MapLimits as StorageLimits>::MaxDirectSubcategoriesInCategory>::get();
         for i in 0..max {
             create_category_mock(
                 origin.clone(),
@@ -2945,10 +2945,10 @@ fn storage_limit_checks() {
         }
     });
 
-    // test MaxCategories
+    // test MaxTotalCategories
     with_test_externalities(|| {
         let max: usize =
-            <<<Runtime as Config>::MapLimits as StorageLimits>::MaxCategories>::get() as usize;
+            <<<Runtime as Config>::MapLimits as StorageLimits>::MaxTotalCategories>::get() as usize;
         for i in 0..max {
             create_category_mock(
                 origin.clone(),

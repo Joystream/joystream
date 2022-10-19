@@ -2446,6 +2446,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     proposalsCodex: {
       /**
+       * Arithmeic Error
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
        * Invalid 'decrease stake proposal' parameter - cannot decrease by zero balance.
        **/
       DecreasingStakeIsZero: AugmentedError<ApiType>;

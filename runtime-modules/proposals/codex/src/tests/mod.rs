@@ -537,7 +537,7 @@ fn create_funding_request_proposal_common_checks_succeed() {
 }
 
 #[test]
-fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
+fn create_funding_request_proposal_call_fails_with_zero_balance() {
     initial_test_ext().execute_with(|| {
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -561,14 +561,37 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
         );
+    });
+}
 
-        let exceeded_budget = <Test as crate::Config>::FundingRequestProposalMaxAmount::get() + 1;
+#[test]
+fn create_funding_request_proposal_call_fails_with_exceeding_balance() {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+        let accounts_number = 5u64;
+
+        let single_request_budget: u64 =
+            <Test as crate::Config>::FundingRequestProposalMaxTotalAmount::get()
+                .div_ceil(accounts_number);
+
+        let proposal_requests = (0..accounts_number)
+            .map(|account| {
+                increase_total_balance_issuance_using_account_id(account, 15000000);
+                common::FundingRequestParameters {
+                    amount: single_request_budget + 1u64,
+                    account: account,
+                }
+            })
+            .collect::<Vec<_>>();
 
         let funding_request_proposal_exceeded_balance =
-            ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
-                amount: exceeded_budget.into(),
-                account: 2,
-            }]);
+            ProposalDetails::FundingRequest(proposal_requests);
 
         assert_eq!(
             ProposalsCodex::create_proposal(

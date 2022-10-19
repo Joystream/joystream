@@ -321,13 +321,13 @@ declare module '@polkadot/api-base/types/consts' {
     };
     forum: {
       /**
-       * MaxCategories
+       * MaxDirectSubcategoriesInCategory
        **/
-      maxCategories: u64 & AugmentedConst<ApiType>;
+      maxDirectSubcategoriesInCategory: u64 & AugmentedConst<ApiType>;
       /**
-       * MaxSubcategories
+       * MaxTotalCategories
        **/
-      maxSubcategories: u64 & AugmentedConst<ApiType>;
+      maxTotalCategories: u64 & AugmentedConst<ApiType>;
       /**
        * Exports const
        * Deposit needed to create a post
@@ -588,9 +588,9 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       fundingRequestProposalMaxAccounts: u32 & AugmentedConst<ApiType>;
       /**
-       * Max amount in funding request proposal (per account)
+       * Maximum total amount in funding request proposal
        **/
-      fundingRequestProposalMaxAmount: u128 & AugmentedConst<ApiType>;
+      fundingRequestProposalMaxTotalAmount: u128 & AugmentedConst<ApiType>;
       /**
        * Exports 'Funding Request' proposal parameters.
        **/
