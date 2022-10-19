@@ -365,7 +365,7 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       stakingHandlerLockId: U8aFixed & AugmentedConst<ApiType>;
     };
-    gatewayWorkingGroup: {
+    appWorkingGroup: {
       /**
        * Stake needed to create an opening.
        **/

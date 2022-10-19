@@ -599,7 +599,7 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
     };
-    gatewayWorkingGroup: {
+    appWorkingGroup: {
       /**
        * Count of active workers.
        **/

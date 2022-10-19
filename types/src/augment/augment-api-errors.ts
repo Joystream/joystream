@@ -1392,7 +1392,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ZeroTokensFunding: AugmentedError<ApiType>;
     };
-    gatewayWorkingGroup: {
+    appWorkingGroup: {
       /**
        * Trying to fill opening with an application for other opening
        **/

@@ -1051,7 +1051,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       WorkingGroupBudgetFunded: AugmentedEvent<ApiType, [u64, u128, Bytes]>;
     };
-    gatewayWorkingGroup: {
+    appWorkingGroup: {
       /**
        * Emits on withdrawing the application for the regular worker/lead opening.
        * Params:
