@@ -4,8 +4,9 @@
 
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 
-STEPS=${1:-50}
-REPEAT=${2:-20}
+STEPS=${1:-10}
+REPEAT=${2:-5}
+XREPEAT=${3:-10}
 
 substrate_pallet_benchmark() {
   echo "Generating weights for $1..."
@@ -16,6 +17,7 @@ substrate_pallet_benchmark() {
       --chain=dev \
       --steps=$STEPS \
       --repeat=$REPEAT \
+      --external-repeat $XREPEAT \
       --execution=wasm \
       --template=$SCRIPT_DIR/../devops/frame-weight-template.hbs \
       --output=$SCRIPT_DIR/../runtime/src/weights/$1.rs 2>&1 > /dev/null)
@@ -43,6 +45,7 @@ joystream_pallet_benchmark() {
       --chain=dev \
       --steps=$STEPS \
       --repeat=$REPEAT \
+      --external-repeat $XREPEAT \
       --execution=wasm \
       --template=$SCRIPT_DIR/../devops/joystream-pallet-weight-template.hbs \
       --output=$SCRIPT_DIR/../runtime-modules/$2/src/weights.rs 2>&1 > /dev/null)
