@@ -87,6 +87,7 @@ use sp_std::vec::Vec;
 
 use common::costs::{burn_from_usable, has_sufficient_balance_for_payment};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
+use common::to_kb;
 use common::working_group::{WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
 use staking_handler::StakingHandler;
 
@@ -536,10 +537,9 @@ decl_module! {
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::update_profile(
-            handle.as_ref()
-                .map(|handle| handle.len().saturated_into())
-                .unwrap_or_default())
-        ]
+            to_kb(Module::<T>::text_length_unwrap_or_default(&handle)),
+            to_kb(Module::<T>::text_length_unwrap_or_default(&metadata))
+        )]
         pub fn update_profile(
             origin,
             member_id: T::MemberId,
@@ -746,10 +746,9 @@ decl_module! {
         /// - DB:
         ///    - O(V)
         /// # </weight>
-        // TODO: adjust weight
         #[weight = WeightInfoMembership::<T>::invite_member(
-            Module::<T>::text_length_unwrap_or_default(&params.handle),
-            params.metadata.len().saturated_into(),
+            to_kb(Module::<T>::text_length_unwrap_or_default(&params.handle)),
+            to_kb(params.metadata.len().saturated_into()),
         )]
         pub fn invite_member(
             origin,
@@ -818,8 +817,8 @@ decl_module! {
         /// Can optinally apply a lock on a portion of the funds transferred to root and controller
         /// accounts. Gifter also pays the membership fee.
         #[weight = WeightInfoMembership::<T>::gift_membership(
-            Module::<T>::text_length_unwrap_or_default(&params.handle),
-            params.metadata.len().saturated_into(),
+            to_kb(Module::<T>::text_length_unwrap_or_default(&params.handle)),
+            to_kb(params.metadata.len().saturated_into()),
         )]
         pub fn gift_membership(
             origin,
@@ -1212,8 +1211,8 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::create_member(
-            params.handle.len() as u32,
-            params.metadata.len() as u32
+            to_kb(params.handle.len() as u32),
+            to_kb(params.metadata.len() as u32)
         )]
         pub fn create_member(
             origin,
@@ -1264,13 +1263,13 @@ impl<T: Config> Module<T> {
     ) -> Weight {
         if params.referrer_id.is_some() {
             WeightInfoMembership::<T>::buy_membership_with_referrer(
-                Self::text_length_unwrap_or_default(&params.handle),
-                params.metadata.len().saturated_into(),
+                to_kb(Self::text_length_unwrap_or_default(&params.handle)),
+                to_kb(params.metadata.len().saturated_into()),
             )
         } else {
             WeightInfoMembership::<T>::buy_membership_without_referrer(
-                Self::text_length_unwrap_or_default(&params.handle),
-                params.metadata.len().saturated_into(),
+                to_kb(Self::text_length_unwrap_or_default(&params.handle)),
+                to_kb(params.metadata.len().saturated_into()),
             )
         }
     }
