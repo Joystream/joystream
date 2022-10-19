@@ -8,7 +8,7 @@ const workingGroupModules = [
   'contentWorkingGroup',
   'forumWorkingGroup',
   'membershipWorkingGroup',
-  'gatewayWorkingGroup',
+  'appWorkingGroup',
   'operationsWorkingGroupAlpha',
   'operationsWorkingGroupBeta',
   'operationsWorkingGroupGamma',

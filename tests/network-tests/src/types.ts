@@ -53,7 +53,7 @@ export type WorkingGroupModuleName =
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
   | 'operationsWorkingGroupAlpha'
-  | 'gatewayWorkingGroup'
+  | 'appWorkingGroup'
   | 'distributionWorkingGroup'
   | 'operationsWorkingGroupBeta'
   | 'operationsWorkingGroupGamma'

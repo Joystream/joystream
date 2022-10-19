@@ -29,7 +29,7 @@ use staking_handler::{LockComparator, StakingManager};
 use crate as proposals_codex;
 use crate::{
     ContentWorkingGroupInstance, DistributionWorkingGroupInstance, ForumWorkingGroupInstance,
-    GatewayWorkingGroupInstance, MembershipWorkingGroupInstance,
+    AppWorkingGroupInstance, MembershipWorkingGroupInstance,
     OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
     OperationsWorkingGroupInstanceGamma, ProposalDetailsOf, ProposalEncoder, ProposalParameters,
     StorageWorkingGroupInstance,
@@ -101,7 +101,7 @@ frame_support::construct_runtime!(
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
         ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupAlpha: working_group::<Instance4>::{Pallet, Call, Storage, Event<T>},
-        GatewayWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
+        AppWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
         MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
@@ -550,7 +550,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Config<GatewayWorkingGroupInstance> for Test {
+impl working_group::Config<AppWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId5>;

@@ -103,8 +103,8 @@ pub type ContentWorkingGroupInstance = working_group::Instance3;
 // The builder working group instance alias.
 pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
-// The gateway working group instance alias.
-pub type GatewayWorkingGroupInstance = working_group::Instance5;
+// The app working group instance alias.
+pub type AppWorkingGroupInstance = working_group::Instance5;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance6;
@@ -130,7 +130,7 @@ pub trait Config:
     + working_group::Config<StorageWorkingGroupInstance>
     + working_group::Config<ContentWorkingGroupInstance>
     + working_group::Config<OperationsWorkingGroupInstanceAlpha>
-    + working_group::Config<GatewayWorkingGroupInstance>
+    + working_group::Config<AppWorkingGroupInstance>
     + working_group::Config<MembershipWorkingGroupInstance>
     + working_group::Config<OperationsWorkingGroupInstanceBeta>
     + working_group::Config<OperationsWorkingGroupInstanceGamma>
@@ -590,8 +590,8 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_worker_id::<OperationsWorkingGroupInstanceAlpha>(worker_id)
             }
-            WorkingGroup::Gateway => {
-                Self::is_lead_worker_id::<GatewayWorkingGroupInstance>(worker_id)
+            WorkingGroup::App => {
+                Self::is_lead_worker_id::<AppWorkingGroupInstance>(worker_id)
             }
             WorkingGroup::Membership => {
                 Self::is_lead_worker_id::<MembershipWorkingGroupInstance>(worker_id)
@@ -634,8 +634,8 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_opening_id::<OperationsWorkingGroupInstanceAlpha>(opening_id)
             }
-            WorkingGroup::Gateway => {
-                Self::is_lead_opening_id::<GatewayWorkingGroupInstance>(opening_id)
+            WorkingGroup::App => {
+                Self::is_lead_opening_id::<AppWorkingGroupInstance>(opening_id)
             }
             WorkingGroup::Membership => {
                 Self::is_lead_opening_id::<MembershipWorkingGroupInstance>(opening_id)
@@ -685,8 +685,8 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_application_id::<OperationsWorkingGroupInstanceAlpha>(application_id)
             }
-            WorkingGroup::Gateway => {
-                Self::is_lead_application_id::<GatewayWorkingGroupInstance>(application_id)
+            WorkingGroup::App => {
+                Self::is_lead_application_id::<AppWorkingGroupInstance>(application_id)
             }
             WorkingGroup::Membership => {
                 Self::is_lead_application_id::<MembershipWorkingGroupInstance>(application_id)
