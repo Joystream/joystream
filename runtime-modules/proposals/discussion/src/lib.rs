@@ -91,6 +91,7 @@ use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
+use common::to_kb;
 use common::{MemberId, MembershipTypes};
 pub use types::*;
 
@@ -267,7 +268,7 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoDiscussion::<T>::add_post(
-            text.len().saturated_into(),
+            to_kb(text.len().saturated_into()),
         )]
         pub fn add_post(
             origin,
@@ -376,7 +377,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoDiscussion::<T>::update_post(text.len().saturated_into())]
+        #[weight = WeightInfoDiscussion::<T>::update_post(to_kb(text.len().saturated_into()))]
         pub fn update_post(
             origin,
             thread_id: T::ThreadId,
