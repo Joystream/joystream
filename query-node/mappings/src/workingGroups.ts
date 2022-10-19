@@ -484,6 +484,11 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
 
   await store.save<OpeningFilledEvent>(openingFilledEvent)
 
+  // Remove previous lead if necessary
+  if (opening.type === WorkingGroupOpeningType.LEADER && acceptedApplicationIds.length > 0) {
+    await removeIsLeadFromGroup(store, group.id)
+  }
+
   // Update applications and create new workers
   const hiredWorkers = (
     await Promise.all(
@@ -508,11 +513,6 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
                 'Fatal: No worker id found by accepted application when handling OpeningFilled event!',
                 application.id
               )
-            }
-
-            if (opening.type === WorkingGroupOpeningType.LEADER) {
-              // setting isLead of existing leader to false.
-              await removeIsLeadFromGroup(store, group.id)
             }
 
             const worker = new Worker({
