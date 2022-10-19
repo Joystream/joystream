@@ -25,11 +25,9 @@ const DEFAULT_TX_AMOUNT: u32 = 100;
 const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 // Sales
 const DEFAULT_TOKENS_ON_SALE: u32 = 100_000;
-const DEFAULT_SALE_DURATION: u32 = 14400;
 const DEFAULT_SALE_UNIT_PRICE: u32 = 2_000_000;
 const DEFAULT_SALE_PURCHASE: u32 = 100;
 // Revenue splits
-const DEFAULT_SPLIT_DURATION: u32 = 14400;
 const DEFAULT_SPLIT_REVENUE: u64 = 8_000_000;
 const DEFAULT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
 const DEFAULT_SPLIT_ALLOCATION: u64 = 4_000_000; // DEFAULT_REVENUE_SPLIT_RATE * DEFAULT_SPLIT_REVENUE
@@ -46,6 +44,14 @@ const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // Close to the blocksize avail
 
 fn token_owner_account<T: Config>() -> T::AccountId {
     account::<T::AccountId>("owner", 0, SEED)
+}
+
+fn default_split_duration<T: Config>() -> T::BlockNumber {
+    MinRevenueSplitDuration::<T>::get() + T::BlockNumber::one()
+}
+
+fn default_sale_duration<T: Config>() -> T::BlockNumber {
+    MinSaleDuration::<T>::get() + T::BlockNumber::one()
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
@@ -136,7 +142,7 @@ fn init_token_sale<T: Config>(token_id: T::TokenId) -> Result<TokenSaleId, Dispa
             unit_price: DEFAULT_SALE_UNIT_PRICE.into(),
             upper_bound_quantity: DEFAULT_TOKENS_ON_SALE.into(),
             starts_at: None,
-            duration: DEFAULT_SALE_DURATION.into(),
+            duration: default_sale_duration::<T>(),
             cap_per_member: Some(DEFAULT_SALE_PURCHASE.into()),
             vesting_schedule_params: Some(VestingScheduleParams {
                 blocks_before_cliff: 100u32.into(),
@@ -165,7 +171,7 @@ fn issue_revenue_split<T: Config>(token_id: T::TokenId, forced_id: Option<u32>) 
     Token::<T>::issue_revenue_split(
         token_id,
         None,
-        DEFAULT_SPLIT_DURATION.into(),
+        default_split_duration::<T>(),
         token_owner_account::<T>(),
         DEFAULT_SPLIT_REVENUE.saturated_into(),
     )?;
@@ -533,7 +539,7 @@ benchmarks! {
             DEFAULT_SPLIT_PARTICIPATION.into(),
         )?;
         // Go to: Split end
-        System::<T>::set_block_number(System::<T>::block_number() + DEFAULT_SPLIT_DURATION.into());
+        System::<T>::set_block_number(System::<T>::block_number() + default_split_duration::<T>());
     }: _(
         RawOrigin::Signed(participant_acc.clone()),
         token_id,
