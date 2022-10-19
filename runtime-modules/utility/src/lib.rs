@@ -43,6 +43,7 @@ mod benchmarking;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use common::to_kb;
 use common::{working_group::WorkingGroup, BalanceKind};
 use council::Module as Council;
 use frame_support::dispatch::DispatchResultWithPostInfo;
@@ -142,7 +143,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoUtilities::<T>::execute_signal_proposal(signal.len().saturated_into())]
+        #[weight = WeightInfoUtilities::<T>::execute_signal_proposal(to_kb(signal.len().saturated_into()))]
         pub fn execute_signal_proposal(
             origin,
             signal: Vec<u8>,
