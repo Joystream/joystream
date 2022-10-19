@@ -21,6 +21,7 @@ extern crate common;
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{burn_from_usable, has_sufficient_balance_for_fees, pay_fee};
+use common::to_kb;
 use frame_support::BoundedBTreeSet;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -566,8 +567,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::create_category(
             T::MaxCategoryDepth::get() as u32,
-            title.len().saturated_into(),
-            description.len().saturated_into()
+            to_kb(title.len().saturated_into()),
+            to_kb(description.len().saturated_into())
         )]
         fn create_category(origin, parent_category_id: Option<T::CategoryId>, title: Vec<u8>, description: Vec<u8>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
@@ -677,10 +678,10 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::update_category_title_lead(
             T::MaxCategoryDepth::get() as u32,
-            title.len().saturated_into(),
+            to_kb(title.len().saturated_into()),
         ).max(WeightInfoForum::<T>::update_category_title_moderator(
             T::MaxCategoryDepth::get() as u32,
-            title.len().saturated_into(),
+            to_kb(title.len().saturated_into()),
         ))]
         fn update_category_title(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, title: Vec<u8>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
@@ -723,10 +724,10 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::update_category_description_lead(
             T::MaxCategoryDepth::get() as u32,
-            description.len().saturated_into(),
+            to_kb(description.len().saturated_into()),
         ).max(WeightInfoForum::<T>::update_category_description_moderator(
             T::MaxCategoryDepth::get() as u32,
-            description.len().saturated_into(),
+            to_kb(description.len().saturated_into()),
         ))]
         fn update_category_description(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, description: Vec<u8>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
@@ -814,8 +815,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::create_thread(
             T::MaxCategoryDepth::get() as u32,
-            metadata.len().saturated_into(),
-            text.len().saturated_into(),
+            to_kb(metadata.len().saturated_into()),
+            to_kb(text.len().saturated_into()),
         )]
         fn create_thread(
             origin,
@@ -900,7 +901,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::edit_thread_metadata(
             T::MaxCategoryDepth::get() as u32,
-            new_metadata.len().saturated_into(),
+            to_kb(new_metadata.len().saturated_into()),
         )]
         fn edit_thread_metadata(
             origin,
@@ -1052,11 +1053,11 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::moderate_thread_lead(
             T::MaxCategoryDepth::get() as u32,
-            rationale.len().saturated_into(),
+            to_kb(rationale.len().saturated_into()),
         ).max(
             WeightInfoForum::<T>::moderate_thread_moderator(
                 T::MaxCategoryDepth::get() as u32,
-                rationale.len().saturated_into(),
+                to_kb(rationale.len().saturated_into()),
             )
         )]
         fn moderate_thread(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> DispatchResult {
@@ -1095,7 +1096,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::add_post(
             T::MaxCategoryDepth::get() as u32,
-            text.len().saturated_into(),
+            to_kb(text.len().saturated_into()),
         )]
         fn add_post(
             origin,
@@ -1157,7 +1158,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::edit_post_text(
             T::MaxCategoryDepth::get() as u32,
-            new_text.len().saturated_into(),
+            to_kb(new_text.len().saturated_into()),
         )]
         fn edit_post_text(
             origin,
@@ -1214,10 +1215,10 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::moderate_post_lead(
             T::MaxCategoryDepth::get() as u32,
-            rationale.len().saturated_into(),
+            to_kb(rationale.len().saturated_into()),
         ).max(WeightInfoForum::<T>::moderate_post_moderator(
             T::MaxCategoryDepth::get() as u32,
-            rationale.len().saturated_into(),
+            to_kb(rationale.len().saturated_into()),
         ))]
         fn moderate_post(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, rationale: Vec<u8>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
@@ -1262,7 +1263,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoForum::<T>::delete_posts(
             T::MaxCategoryDepth::get() as u32,
-            rationale.len().saturated_into(),
+            to_kb(rationale.len().saturated_into()),
             posts.len().saturated_into(),
         )]
         fn delete_posts(

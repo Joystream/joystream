@@ -65,6 +65,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use common::costs::burn_from_usable;
 use common::council::CouncilOriginValidator;
 use common::membership::{MemberId, MemberOriginValidator};
+use common::to_kb;
 use common::{FundingRequestParameters, StakingAccountValidator};
 use core::marker::PhantomData;
 use frame_support::dispatch::DispatchResult;
@@ -698,7 +699,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = CouncilWeightInfo::<T>::set_candidacy_note(note.len().saturated_into())]
+        #[weight = CouncilWeightInfo::<T>::set_candidacy_note(to_kb(note.len().saturated_into()))]
         pub fn set_candidacy_note(origin, membership_id: T::MemberId, note: Vec<u8>)
             -> Result<(), Error<T>> {
             // ensure action can be started
