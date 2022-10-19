@@ -1590,7 +1590,7 @@ ARGUMENTS
   WGAPPLICATIONID  Working Group Application ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1613,7 +1613,7 @@ USAGE
   $ joystream-cli working-groups:apply
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1654,7 +1654,7 @@ ARGUMENTS
   OPENINGID  Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1680,7 +1680,7 @@ OPTIONS
   -e, --edit
       If provided along with --input - launches in edit mode allowing to modify the input before sending the exstinsic
 
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1726,7 +1726,7 @@ ARGUMENTS
   AMOUNT    Amount of JOY to decrease the current worker stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1752,7 +1752,7 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1781,7 +1781,7 @@ USAGE
   $ joystream-cli working-groups:fillOpening
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1813,7 +1813,7 @@ ARGUMENTS
   AMOUNT  Amount of JOY to increase the current stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1836,7 +1836,7 @@ USAGE
   $ joystream-cli working-groups:leaveRole
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1861,7 +1861,7 @@ USAGE
   $ joystream-cli working-groups:opening
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1890,7 +1890,7 @@ USAGE
   $ joystream-cli working-groups:openings
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1916,7 +1916,7 @@ USAGE
   $ joystream-cli working-groups:overview
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1939,7 +1939,7 @@ USAGE
   $ joystream-cli working-groups:removeUpcomingOpening
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1965,7 +1965,7 @@ USAGE
   $ joystream-cli working-groups:setDefaultGroup
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -1992,7 +1992,7 @@ ARGUMENTS
   AMOUNT    Slash amount
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -2017,7 +2017,7 @@ USAGE
   $ joystream-cli working-groups:updateGroupMetadata
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -2046,7 +2046,7 @@ ARGUMENTS
   ADDRESS  New reward account address (if omitted, can be provided interactivel)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -2072,7 +2072,7 @@ ARGUMENTS
   ADDRESS  New role account address (if omitted, can be provided interactively)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
@@ -2099,7 +2099,7 @@ ARGUMENTS
   NEWREWARD  New reward
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership||builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
       Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
       distributors.
