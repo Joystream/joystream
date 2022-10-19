@@ -537,8 +537,8 @@ decl_module! {
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::update_profile(
-            to_kb(Module::<T>::text_length_unwrap_or_default(&handle)),
-            to_kb(Module::<T>::text_length_unwrap_or_default(&metadata))
+            to_kb(Module::<T>::text_length_unwrap_or_default(handle)),
+            to_kb(Module::<T>::text_length_unwrap_or_default(metadata))
         )]
         pub fn update_profile(
             origin,
