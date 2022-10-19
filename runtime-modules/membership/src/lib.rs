@@ -457,13 +457,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W + V + X + Y)` where:
-        /// - `W` is the member name
-        /// - `V` is the member handle
-        /// - `X` is the member avatar uri
-        /// - `Y` is the member about
+        /// `O (W + M)` where:
+        /// - `W` is the handle size in kilobytes
+        /// - `M` is the metadata size in kilobytes
         /// - DB:
-        ///    - O(V)
+        ///    - O(1)
         /// # </weight>
         #[weight = Module::<T>::calculate_weight_for_buy_membership(params)]
         pub fn buy_membership(
@@ -531,10 +529,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W)` where:
-        /// - `W` is the handle length
+        /// `O (W + M)` where:
+        /// - `W` is the handle size in kilobytes
+        /// - `M` is the metadata size in kilobytes
         /// - DB:
-        ///    - O(W)
+        ///    - O(1)
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::update_profile(
             to_kb(Module::<T>::text_length_unwrap_or_default(handle)),
@@ -738,13 +737,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (W + V + X + Y)` where:
-        /// - `W` is the member name
-        /// - `V` is the member handle
-        /// - `X` is the member avatar uri
-        /// - `Y` is the member about
+        /// `O (W + M)` where:
+        /// - `W` is the handle size in kilobytes
+        /// - `M` is the metadata size in kilobytes
         /// - DB:
-        ///    - O(V)
+        ///    - O(1)
         /// # </weight>
         #[weight = WeightInfoMembership::<T>::invite_member(
             to_kb(Module::<T>::text_length_unwrap_or_default(&params.handle)),
@@ -1205,8 +1202,8 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (I + J)` where:
-        /// - `I` is the length of the handle
-        /// - `J` is the length of the metadata
+        /// - `I` is the handle size in kilobytes
+        /// - `J` is the metadata size in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>

@@ -560,8 +560,8 @@ decl_module! {
         /// ## Weight
         /// `O (W + V + X)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the category title.
-        /// - `X` is the length of the category description.
+        /// - `V` is the size of the category title in kilobytes.
+        /// - `X` is the size of the category description in kilobytes.
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -672,7 +672,7 @@ decl_module! {
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the category title.
+        /// - `V` is the size of the category title in kilobytes.
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -718,7 +718,7 @@ decl_module! {
         /// ## Weight
         /// `O (W)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the category description.
+        /// - `V` is the size of the category description in kilobytes.
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -808,8 +808,8 @@ decl_module! {
         /// ## Weight
         /// `O (W + V + X)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the thread title.
-        /// - `X` is the length of the thread text.
+        /// - `V` is the size of the thread title in kilobytes.
+        /// - `X` is the size of the thread text in kilobytes.
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -895,7 +895,7 @@ decl_module! {
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth
-        /// - `V` is the length of the thread metadata.
+        /// - `V` is the size of the thread metadata in kilobytes.
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -1047,7 +1047,7 @@ decl_module! {
         /// `O (W + V + X)` where:
         /// - `W` is the category depth,
         /// - `V` is the number of thread posts,
-        /// - `X` is the length of the rationale
+        /// - `X` is the size of the rationale in kilobytes
         /// - DB:
         ///    - O(W + V)
         /// # </weight>
@@ -1090,7 +1090,7 @@ decl_module! {
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth,
-        /// - `V` is the length of the text
+        /// - `V` is the size of the text in kilobytes
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -1152,7 +1152,7 @@ decl_module! {
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth,
-        /// - `V` is the length of the new text
+        /// - `V` is the size of the new text in kilobytes
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -1209,7 +1209,7 @@ decl_module! {
         /// ## Weight
         /// `O (W + V)` where:
         /// - `W` is the category depth,
-        /// - `V` is the length of the rationale
+        /// - `V` is the size of the rationale in kilobytes
         /// - DB:
         ///    - O(W)
         /// # </weight>
@@ -1256,7 +1256,7 @@ decl_module! {
         /// ## Weight
         /// `O (W + V + P)` where:
         /// - `W` is the category depth,
-        /// - `V` is the length of the rationale
+        /// - `V` is the size of the rationale in kilobytes
         /// - `P` is the number of posts to delete
         /// - DB:
         ///    - O(W + P)

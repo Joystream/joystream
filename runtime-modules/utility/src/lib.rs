@@ -139,7 +139,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (S)` where:
-        /// - `S` is the length of the signal
+        /// - `S` is the size of the signal in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>

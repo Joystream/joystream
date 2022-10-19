@@ -233,7 +233,7 @@ decl_module! {
         /// ## Weight
         /// `O (T + M)` where:
         /// - `T` is the length of `outputs`
-        /// - `M` is the length of `metadata`
+        /// - `M` is the size of `metadata` in kilobytes
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>

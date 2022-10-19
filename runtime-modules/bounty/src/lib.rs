@@ -936,7 +936,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is the _metadata length.
+        /// - `W` is the _metadata size in kilobytes.
         /// - `M` is closed contract member list length.
         /// - DB:
         ///    - O(M) (O(1) on open contract)
@@ -1265,7 +1265,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (W + M)` where:
-        /// - `W` is the work_description length.
+        /// - `W` is the work_description size in kilobytes.
         /// - `M` is closed contract member list length.
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
@@ -1341,7 +1341,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is the work_data length,
+        /// - `N` is the work_data size in kilobytes,
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1420,8 +1420,8 @@ decl_module! {
         ///
         /// ## weight
         /// `O (J + K + W + R)`
-        /// - `J` is rationale length,
-        /// - `K` is the sum of all action_justification lengths (inside OracleJudgment),
+        /// - `J` is rationale size in kilobytes,
+        /// - `K` is the sum of all action_justification sizes (in kilobytes) inside OracleJudgment,
         /// - `W` is number of winner judgment entries,
         /// - `R` is number of rejected judgment entries,
         /// - db:
@@ -1662,7 +1662,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1692,7 +1692,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1729,7 +1729,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
@@ -1764,7 +1764,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>

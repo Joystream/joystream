@@ -504,9 +504,10 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (T + D + I)` where:
-        /// - `T` is the length of the title
-        /// - `D` is the length of the description
-        /// - `I` is the length of any parameter in `proposal_details`
+        /// - `T` is the title size in kilobytes
+        /// - `D` is the description size in kilobytes
+        /// - `I` is the size of any parameter in `proposal_details`
+        ///   (in kilobytes if it's metadata)
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>

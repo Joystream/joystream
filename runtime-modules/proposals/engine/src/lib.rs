@@ -476,7 +476,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (R)` where:
-        /// - `R` is the length of `rationale`
+        /// - `R` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or paraemters
         /// # </weight>

@@ -263,7 +263,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (L)` where:
-        /// - `L` is the length of `text`
+        /// - `L` is the size of `text` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -373,7 +373,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (L)` where:
-        /// - `L` is the length of `text`
+        /// - `L` is the size of `text` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>

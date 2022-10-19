@@ -2364,7 +2364,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `metadata`
+        /// - `W` is size of `metadata` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -2934,7 +2934,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `metadata`
+        /// - `W` is size of `metadata` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -3016,7 +3016,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `metadata`
+        /// - `W` is size of `metadata` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -3070,7 +3070,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `message`
+        /// - `W` is size of `message` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -3099,7 +3099,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `message`
+        /// - `W` is size of `message` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>

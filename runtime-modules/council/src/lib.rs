@@ -695,7 +695,7 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)` where:
-        /// `N` is the length of `note`
+        /// `N` is the size of `note` in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
