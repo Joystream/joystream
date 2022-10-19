@@ -74,7 +74,7 @@ async function getThread(store: DatabaseManager, threadId: string): Promise<Foru
   return thread
 }
 
-async function getPost(store: DatabaseManager, postId: string, relations?: 'thread'[]): Promise<ForumPost> {
+async function getPost(store: DatabaseManager, postId: string, relations?: string[]): Promise<ForumPost> {
   const post = await store.get(ForumPost, { where: { id: postId }, relations })
   if (!post) {
     throw new Error(`Forum post not found by id: ${postId.toString()}`)
@@ -86,10 +86,10 @@ async function getPost(store: DatabaseManager, postId: string, relations?: 'thre
 type ModerationType = 'runtime' | 'leadRemark' | 'workerRemark'
 
 async function canModerate(store: DatabaseManager, actorId: string, categoryId: string): Promise<boolean> {
-  const category = await getCategory(store, categoryId, ['moderators'])
+  const category = await getCategory(store, categoryId, ['moderators', 'parent'])
   return (
     category.moderators.some(({ id }) => id === actorId) ||
-    (category.parentId ? canModerate(store, actorId, category.parentId) : false)
+    (category.parent ? canModerate(store, actorId, category.parent.id) : false)
   )
 }
 
@@ -101,14 +101,14 @@ export async function moderatePost(
   actor: Worker,
   rationale: string
 ): Promise<void> {
-  const post = await getPost(store, postId, ['thread'])
+  const post = await getPost(store, postId, ['thread', 'thread.category'])
 
   if (type !== 'runtime' && post.status.isTypeOf !== 'PostStatusLocked') {
     return invalidMetadata(
       `Trying to moderate forum post ${post.id}, with status ${post.status.isTypeOf}. Only locked forum post can be moderated with remark`
     )
   }
-  if (type === 'workerRemark' && !(await canModerate(store, actor.id, post.thread.categoryId))) {
+  if (type === 'workerRemark' && !(await canModerate(store, actor.id, post.thread.category.id))) {
     return invalidMetadata(`The worker ${actor.id} can not moderate the post: ${post.id}`)
   }
 
