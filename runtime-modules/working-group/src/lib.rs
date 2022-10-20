@@ -79,6 +79,7 @@ use types::{ApplicationInfo, WorkerInfo};
 
 use common::costs::burn_from_usable;
 use common::membership::MemberOriginValidator;
+use common::to_kb;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
@@ -406,11 +407,11 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (D)` where:
-        /// - `D` is the length of `description`
+        /// - `D` is the size of `description` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::add_opening(description.len().saturated_into())]
+        #[weight = WeightInfoWorkingGroup::<T, I>::add_opening(to_kb(description.len().saturated_into()))]
         pub fn add_opening(
             origin,
             description: Vec<u8>,
@@ -481,11 +482,13 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (D)` where:
-        /// - `D` is the length of `p.description`
+        /// - `D` is the size of `p.description` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(p.description.len().saturated_into())]
+        #[weight = WeightInfoWorkingGroup::<T, I>::apply_on_opening(
+            to_kb(p.description.len().saturated_into())
+        )]
         pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T>) {
             // Ensure the origin of a member with given id.
             T::MemberOriginValidator::ensure_member_controller_account_origin(origin, p.member_id)?;
@@ -692,7 +695,8 @@ decl_module! {
         /// # <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (R)` where:
+        /// - `R` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -727,7 +731,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (P)` where:
-        /// - `P` is the length of `penalty.slashing_text`
+        /// - `P` is the size `penalty.slashing_text` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -769,7 +773,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (P)` where:
-        /// - `P` is the length of `penality.slashing_text`
+        /// - `P` is the size of `penality.slashing_text` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -1082,13 +1086,18 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (S)` where:
-        /// - `S` is the length of the contents of `status_text` when it is not none
+        /// - `S` is the size of the contents of `status_text` in kilobytes when it is not none
         ///
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::set_status_text(
-            status_text.as_ref().map(|status_text| status_text.len().saturated_into()).unwrap_or_default()
+            to_kb(
+                status_text
+                    .as_ref()
+                    .map(|status_text| status_text.len().saturated_into())
+                    .unwrap_or_default()
+            )
         )]
         pub fn set_status_text(
             origin,
@@ -1199,11 +1208,12 @@ decl_module! {
         /// # <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (M)` where:
+        /// - `M` is the size of `msg` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark()]
+        #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark(to_kb(msg.len() as u32))]
         pub fn lead_remark(origin, msg: Vec<u8>) {
             let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
 
@@ -1219,11 +1229,12 @@ decl_module! {
         /// # <weight>
         ///
         /// ## Weight
-        /// `O (1)`
+        /// `O (M)` where:
+        /// - `M` is the size of `msg` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark()]
+        #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark(to_kb(msg.len() as u32))]
         pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
             let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
 
@@ -1262,38 +1273,40 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 
     // Calculate weight for `leave_role`
     fn leave_role_weight(rationale: &Option<Vec<u8>>) -> Weight {
-        WeightInfoWorkingGroup::<T, I>::leave_role(
+        WeightInfoWorkingGroup::<T, I>::leave_role(to_kb(
             rationale
                 .as_ref()
                 .map(|rationale| rationale.len().saturated_into())
                 .unwrap_or_default(),
-        )
+        ))
     }
 
     // Calculate weights for terminate_role
     fn terminate_role_weight(penalty: &Option<Vec<u8>>) -> Weight {
-        WeightInfoWorkingGroup::<T, I>::terminate_role_lead(
-            penalty
-                .as_ref()
-                .map(|penalty| penalty.len().saturated_into())
-                .unwrap_or_default(),
-        )
-        .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
+        WeightInfoWorkingGroup::<T, I>::terminate_role_lead(to_kb(
             penalty
                 .as_ref()
                 .map(|penalty| penalty.len().saturated_into())
                 .unwrap_or_default(),
         ))
+        .max(WeightInfoWorkingGroup::<T, I>::terminate_role_worker(
+            to_kb(
+                penalty
+                    .as_ref()
+                    .map(|penalty| penalty.len().saturated_into())
+                    .unwrap_or_default(),
+            ),
+        ))
     }
 
     // Calculates slash_stake weight
     fn slash_stake_weight(rationale: &Option<Vec<u8>>) -> Weight {
-        WeightInfoWorkingGroup::<T, I>::slash_stake(
+        WeightInfoWorkingGroup::<T, I>::slash_stake(to_kb(
             rationale
                 .as_ref()
                 .map(|text| text.len().saturated_into())
                 .unwrap_or_default(),
-        )
+        ))
     }
 
     // Wrapper-function over frame_system::block_number()

@@ -26,7 +26,7 @@ pub trait MembershipWorkingGroupHelper<AccountId, MemberId, ActorId> {
 }
 
 const SEED: u32 = 0;
-const MAX_BYTES: u32 = 16384;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
@@ -91,15 +91,15 @@ benchmarks! {
 
     buy_membership_without_referrer{
 
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let member_id = 0;
 
         let account_id = account::<T::AccountId>("member", member_id, SEED);
 
-        let handle = handle_from_id::<T>(i);
+        let handle = handle_from_id::<T>(i * 1000);
 
         let member_id = T::MemberId::from(member_id.try_into().unwrap());
 
@@ -109,7 +109,7 @@ benchmarks! {
 
         let fee = Module::<T>::membership_price();
 
-        let metadata = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat((j * 1000) as usize);
 
         let params = BuyMembershipParameters {
             root_account: account_id.clone(),
@@ -150,19 +150,19 @@ benchmarks! {
 
     buy_membership_with_referrer{
 
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let member_id = 0;
 
         let account_id = account::<T::AccountId>("member", member_id, SEED);
 
-        let handle = handle_from_id::<T>(i);
+        let handle = handle_from_id::<T>(i * 1000);
 
         let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
-        let metadata = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat((j * 1000) as usize);
 
         let fee = Module::<T>::membership_price();
 
@@ -226,14 +226,15 @@ benchmarks! {
     }
 
     update_profile{
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
-        let i in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let member_id = 0;
 
         let account_id = account::<T::AccountId>("member", member_id, SEED);
 
-        let handle = handle_from_id::<T>(i);
+        let handle = handle_from_id::<T>(i * 1000);
 
         let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
@@ -249,9 +250,11 @@ benchmarks! {
 
         Module::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-        let handle_updated = handle_from_id::<T>(i + 1);
+        let handle_updated = handle_from_id::<T>((i * 1000) + 1);
 
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id, Some(handle_updated.clone()), None)
+        let metadata_updated = vec![0xff].repeat((j * 1000) as usize);
+
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, Some(handle_updated.clone()), Some(metadata_updated.clone()))
     verify {
 
         // Ensure membership profile is successfully updated
@@ -265,7 +268,7 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::MemberProfileUpdated(
                 member_id,
                 Some(handle_updated),
-                None,
+                Some(metadata_updated),
             ).into()
         );
     }
@@ -451,17 +454,17 @@ benchmarks! {
     invite_member {
         let member_id = 0;
 
-        let i in 1 .. MAX_BYTES;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let member_id = 0;
 
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
 
-        let handle = handle_from_id::<T>(i);
+        let handle = handle_from_id::<T>(i * 1000);
 
-        let metadata = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat((j * 1000) as usize);
 
         let invite_params = InviteMembershipParameters {
             inviting_member_id: member_id,
@@ -507,17 +510,17 @@ benchmarks! {
     }
 
     gift_membership {
-        let i in 1 .. MAX_BYTES;
-        let j in 0 .. MAX_BYTES;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let account_id = account::<T::AccountId>("gifter", 1, SEED);
         let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
         let root_account = account::<T::AccountId>("member", 2, SEED);
         let controller_account = account::<T::AccountId>("member", 4, SEED);
 
-        let handle = handle_from_id::<T>(i);
+        let handle = handle_from_id::<T>(i * 1000);
 
-        let metadata = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat((j * 1000) as usize);
 
         let gift_params = GiftMembershipParameters {
             root_account: root_account.clone(),
@@ -764,17 +767,17 @@ benchmarks! {
 
     create_member{
 
-        let i in 1 .. MAX_BYTES;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let member_id = Module::<T>::members_created();
 
         let account_id = account::<T::AccountId>("member", member_id.saturated_into(), SEED);
 
-        let handle = vec![0u8].repeat(i as usize);
+        let handle = vec![0u8].repeat((i * 1000) as usize);
 
-        let metadata = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat((j * 1000) as usize);
 
         let params = CreateMemberParameters {
             root_account: account_id.clone(),
