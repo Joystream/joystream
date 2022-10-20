@@ -26,10 +26,10 @@
         name: common
         tasks_from: push-binaries
 
-- name: Generate genesis config and secrets
+- name: Generate chain-spec file and node keys on first validator
   hosts: validators
   tasks:
-    - name: Generate chain-spec file and node keys on first validator
+    - name: CreateChain
       include_role:
         name: common
         tasks_from: create-chain-config

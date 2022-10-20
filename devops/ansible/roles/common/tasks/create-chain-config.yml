@@ -27,6 +27,8 @@
   file:
     state: directory
     path: "{{ remote_data_path }}"
+  delegate_to: '{{ first_validator }}'
+  run_once: true
 
 - name: Copying initial balances file to the server
   copy:
@@ -51,7 +53,7 @@
 
 - name: Chain Spec - NEW
   shell: >
-    bin/chain-spec-builder new --fund-accounts {{ ['-a'] | product(authority_seeds) | map('join', ' ') | join(' ') }}
+    bin/chain-spec-builder new {{ ['-a'] | product(authority_seeds) | map('join', ' ') | join(' ') }}
     --chain-spec-path {{ remote_data_path }}/chainspec.json
     --keystore-path {{ remote_data_path }}
     --sudo-account {{ sudo_account }}
