@@ -560,9 +560,9 @@ async function removeIsLeadFromGroup(store: DatabaseManager, groupId: string) {
   const groupWorkers = await store.getMany(Worker, {
     where: {
       group: { id: groupId },
-      isLead: true
+      isLead: true,
     },
-    relations: ['group']
+    relations: ['group'],
   })
 
   await Promise.all(
