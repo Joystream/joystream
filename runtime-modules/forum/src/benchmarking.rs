@@ -48,8 +48,8 @@ type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 const SEED: u32 = 0;
-const MAX_BYTES: u32 = 16384;
-const MAX_POSTS: u32 = 500;
+const MAX_KILOBYTES_METADATA: u32 = 100;
+const MAX_POSTS: u32 = 20;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
@@ -300,7 +300,7 @@ pub fn generate_categories_tree<T: Config>(
 
     let categories_counter_before_tree_construction = <Module<T>>::category_counter();
 
-    let text = vec![0u8].repeat(MAX_BYTES as usize);
+    let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
     for n in 0..category_depth {
         if n > 1 {
@@ -350,13 +350,13 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
-        let k in 0 .. MAX_BYTES;
+        let k in 0 .. MAX_KILOBYTES_METADATA;
 
-        let title = vec![0u8].repeat(j as usize);
+        let title = vec![0u8].repeat((j * 1000) as usize);
 
-        let description = vec![0u8].repeat(k as usize);
+        let description = vec![0u8].repeat((k * 1000) as usize);
 
         // Generate categories tree
         let (_, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -405,7 +405,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(moderator_id);
 
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         // Create category
         let category_id = create_new_category::<T>(caller_id.clone(), None, text.clone(), text.clone());
@@ -446,7 +446,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(moderator_id);
 
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         // Create category
         let category_id = create_new_category::<T>(caller_id.clone(), None, text.clone(), text.clone());
@@ -501,7 +501,7 @@ benchmarks! {
 
     }: update_category_archival_status(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, new_archival_status)
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let new_category = Category {
             title_hash: T::calculate_hash(text.as_slice()),
@@ -546,7 +546,7 @@ benchmarks! {
 
     }: update_category_archival_status(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_archival_status)
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let new_category = Category {
             title_hash: T::calculate_hash(text.as_slice()),
@@ -577,9 +577,9 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES - 1;
+        let j in 0 .. MAX_KILOBYTES_METADATA - 1;
 
-        let new_title = vec![0u8].repeat(j as usize);
+        let new_title = vec![0u8].repeat((j * 1000) as usize);
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -587,7 +587,7 @@ benchmarks! {
 
     }: update_category_title(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, new_title.clone())
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let new_title_hash = T::calculate_hash(new_title.as_slice());
 
         let new_category = Category {
@@ -620,9 +620,9 @@ benchmarks! {
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
 
-        let j in 0 .. MAX_BYTES - 1;
+        let j in 0 .. MAX_KILOBYTES_METADATA - 1;
 
-        let new_title = vec![0u8].repeat(j as usize);
+        let new_title = vec![0u8].repeat((j * 1000) as usize);
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -636,7 +636,7 @@ benchmarks! {
 
     }: update_category_title(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_title.clone())
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let new_title_hash = T::calculate_hash(new_title.as_slice());
 
         let new_category = Category {
@@ -668,9 +668,9 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES - 1;
+        let j in 0 .. MAX_KILOBYTES_METADATA - 1;
 
-        let new_description = vec![0u8].repeat(j as usize);
+        let new_description = vec![0u8].repeat((j * 1000) as usize);
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -678,7 +678,7 @@ benchmarks! {
 
     }: update_category_description(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, new_description.clone())
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let new_description_hash = T::calculate_hash(new_description.as_slice());
 
         let new_category = Category {
@@ -711,9 +711,9 @@ benchmarks! {
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
 
-        let j in 0 .. MAX_BYTES - 1;
+        let j in 0 .. MAX_KILOBYTES_METADATA - 1;
 
-        let new_description = vec![0u8].repeat(j as usize);
+        let new_description = vec![0u8].repeat((j * 1000) as usize);
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -727,7 +727,7 @@ benchmarks! {
 
     }: update_category_description(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_description.clone())
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let new_description_hash = T::calculate_hash(new_description.as_slice());
 
         let new_category = Category {
@@ -767,7 +767,7 @@ benchmarks! {
 
     }: delete_category(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id)
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
+        let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let new_category = CategoryOf::<T> {
             title_hash: T::calculate_hash(text.as_slice()),
@@ -813,19 +813,6 @@ benchmarks! {
 
     }: delete_category(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id)
     verify {
-        let text = vec![0u8].repeat(MAX_BYTES as usize);
-
-        let new_category = CategoryOf::<T> {
-            title_hash: T::calculate_hash(text.as_slice()),
-            description_hash: T::calculate_hash(text.as_slice()),
-            archived: false,
-            num_direct_subcategories: 0,
-            num_direct_threads: 0,
-            num_direct_moderators: 1,
-            parent_category_id: None,
-            sticky_thread_ids: BoundedBTreeSet::default(),
-        };
-
         if let Some(parent_category_id) = parent_category_id {
             // Ensure number of direct subcategories for parent category decremented successfully
             assert_eq!(Module::<T>::category_by_id(parent_category_id).num_direct_subcategories, 0);
@@ -848,17 +835,17 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
-        let k in 0 .. MAX_BYTES;
+        let k in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
         let mut category = Module::<T>::category_by_id(category_id);
 
-        let metadata = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat((j * 1000) as usize);
 
-        let text = vec![0u8].repeat(k as usize);
+        let text = vec![0u8].repeat((k * 1000) as usize);
 
         let next_thread_id = Module::<T>::next_thread_id();
         let next_post_id = Module::<T>::next_post_id();
@@ -924,7 +911,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -932,11 +919,11 @@ benchmarks! {
         // Create thread
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize)
+            vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize), vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize)
         );
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-        let new_metadata = vec![0u8].repeat(j as usize);
+        let new_metadata = vec![0u8].repeat((j * 1000) as usize);
 
     }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, new_metadata.clone())
     verify {
@@ -965,7 +952,7 @@ benchmarks! {
 
         // Create thread
 
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
@@ -1020,7 +1007,7 @@ benchmarks! {
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let forum_user_id = 0;
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
@@ -1085,7 +1072,7 @@ benchmarks! {
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
         let forum_user_id = 0;
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
@@ -1166,7 +1153,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let k in 0 .. MAX_BYTES;
+        let k in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1174,7 +1161,7 @@ benchmarks! {
         // Create thread
 
 
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
             text.clone(), text
@@ -1190,7 +1177,7 @@ benchmarks! {
 
         let mut category = Module::<T>::category_by_id(category_id);
 
-        let rationale = vec![0u8].repeat(k as usize);
+        let rationale = vec![0u8].repeat((k * 1000) as usize);
 
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, rationale.clone())
     verify {
@@ -1227,7 +1214,7 @@ benchmarks! {
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
 
-        let k in 0 .. MAX_BYTES;
+        let k in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1235,7 +1222,7 @@ benchmarks! {
         // Create thread
 
 
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
             text.clone(), text
@@ -1258,7 +1245,7 @@ benchmarks! {
 
         let mut category = Module::<T>::category_by_id(category_id);
 
-        let rationale = vec![0u8].repeat(k as usize);
+        let rationale = vec![0u8].repeat((k * 1000) as usize);
 
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, rationale.clone())
     verify {
@@ -1295,9 +1282,9 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
-        let text = vec![0u8].repeat(j as usize);
+        let text = vec![0u8].repeat((j * 1000) as usize);
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1305,7 +1292,7 @@ benchmarks! {
         // Create thread
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            vec![0u8].repeat(MAX_BYTES as usize), vec![0u8].repeat(MAX_BYTES as usize)
+            vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize), vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize)
         );
 
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
@@ -1351,7 +1338,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1359,7 +1346,7 @@ benchmarks! {
         // Create thread
 
 
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
@@ -1370,7 +1357,7 @@ benchmarks! {
 
         let mut post = Module::<T>::post_by_id(thread_id, post_id);
 
-        let new_text = vec![0u8].repeat(j as usize);
+        let new_text = vec![0u8].repeat((j * 1000) as usize);
 
     }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, post_id, new_text.clone())
     verify {
@@ -1403,7 +1390,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1411,7 +1398,7 @@ benchmarks! {
         // Create thread
 
 
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
@@ -1421,7 +1408,7 @@ benchmarks! {
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-        let rationale = vec![0u8].repeat(j as usize);
+        let rationale = vec![0u8].repeat((j * 1000) as usize);
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, post_id, rationale.clone())
     verify {
@@ -1448,7 +1435,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1456,7 +1443,7 @@ benchmarks! {
         // Create thread
 
 
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
@@ -1473,7 +1460,7 @@ benchmarks! {
             RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
         ).unwrap();
 
-        let rationale = vec![0u8].repeat(j as usize);
+        let rationale = vec![0u8].repeat((j * 1000) as usize);
 
     }: moderate_post(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, post_id, rationale.clone())
     verify {
@@ -1500,7 +1487,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let k in 1 .. MAX_POSTS;
 
@@ -1508,7 +1495,7 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create thread
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
@@ -1544,7 +1531,7 @@ benchmarks! {
             RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
         ).unwrap();
 
-        let rationale = vec![0u8].repeat(j as usize);
+        let rationale = vec![0u8].repeat((j * 1000) as usize);
 
     }: _(
         RawOrigin::Signed(caller_id),
@@ -1582,7 +1569,7 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let stickied_ids: BTreeSet<T::ThreadId> = (0..j)
             .into_iter()
@@ -1619,7 +1606,7 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let text = vec![1u8].repeat(MAX_BYTES as usize);
+        let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
         let stickied_ids: BTreeSet<T::ThreadId> = (0..j)
             .into_iter()

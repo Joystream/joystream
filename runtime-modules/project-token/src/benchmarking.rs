@@ -38,7 +38,7 @@ const DEFAULT_SPLIT_PARTICIPATION: u64 =
 // Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(1));
 // Metadata
-const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // Close to the blocksize available for standard extrinsics
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 // ----- HELPERS
 
@@ -238,7 +238,7 @@ benchmarks! {
     // - bloat_bond is non-zero
     transfer {
         let o in 1 .. MAX_TX_OUTPUTS;
-        let m in 1 .. MAX_BYTES_METADATA;
+        let m in 1 .. MAX_KILOBYTES_METADATA;
 
         let (owner_member_id, owner_account) = create_owner::<T>();
         let outputs = Transfers::<_, _>(
@@ -265,7 +265,7 @@ benchmarks! {
             &owner_account,
             bloat_bond * o.into()
         );
-        let metadata = vec![0xf].repeat(m as usize);
+        let metadata = vec![0xf].repeat((m * 1000) as usize);
     }: _(
         RawOrigin::Signed(owner_account.clone()),
         owner_member_id,
