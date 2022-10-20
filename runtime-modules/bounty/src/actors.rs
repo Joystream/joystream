@@ -9,8 +9,9 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::ensure;
 use frame_support::traits::Currency;
 use frame_system::ensure_root;
-use sp_arithmetic::traits::Saturating;
+use sp_arithmetic::traits::CheckedSub;
 
+use common::costs::burn_from_usable;
 use common::council::CouncilBudgetManager;
 use common::membership::{MemberId, MemberOriginValidator, MembershipInfoProvider};
 
@@ -97,20 +98,20 @@ impl<T: Config> BountyActorManager<T> {
         &self,
         bounty_id: T::BountyId,
         required_balance: BalanceOf<T>,
-    ) {
+    ) -> DispatchResult {
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_from_council_budget(
                     bounty_id,
                     required_balance,
-                );
+                )
             }
             BountyActorManager::Member(account_id, _) => {
                 Module::<T>::transfer_funds_to_bounty_account(
                     account_id,
                     bounty_id,
                     required_balance,
-                );
+                )
             }
         }
     }
@@ -120,43 +121,51 @@ impl<T: Config> BountyActorManager<T> {
         &self,
         bounty_id: T::BountyId,
         required_balance: BalanceOf<T>,
-    ) {
+        allow_death: bool,
+    ) -> DispatchResult {
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_to_council_budget(
                     bounty_id,
                     required_balance,
-                );
+                )
             }
             BountyActorManager::Member(account_id, _) => {
                 Module::<T>::transfer_funds_from_bounty_account(
                     account_id,
                     bounty_id,
                     required_balance,
-                );
+                    allow_death,
+                )
             }
         }
     }
 
     // Remove some balance from the council budget and transfer it to the bounty account.
-    fn transfer_balance_from_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
+    fn transfer_balance_from_council_budget(
+        bounty_id: T::BountyId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
         let budget = T::CouncilBudgetManager::get_budget();
-        let new_budget = budget.saturating_sub(amount);
+        let new_budget = budget
+            .checked_sub(&amount)
+            .ok_or(Error::<T>::ArithmeticError)?;
 
         T::CouncilBudgetManager::set_budget(new_budget);
 
         let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
         let _ = balances::Pallet::<T>::deposit_creating(&bounty_account_id, amount);
+        Ok(())
     }
 
     // Add some balance from the council budget and slash from the bounty account.
-    fn transfer_balance_to_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
+    fn transfer_balance_to_council_budget(
+        bounty_id: T::BountyId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
         let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        let _ = balances::Pallet::<T>::slash(&bounty_account_id, amount);
-
-        let budget = T::CouncilBudgetManager::get_budget();
-        let new_budget = budget.saturating_add(amount);
-
-        T::CouncilBudgetManager::set_budget(new_budget);
+        burn_from_usable::<T>(&bounty_account_id, amount)?;
+        T::CouncilBudgetManager::increase_budget(amount);
+        Ok(())
     }
 }
