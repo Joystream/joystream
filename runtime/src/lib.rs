@@ -385,7 +385,7 @@ impl pallet_babe::Config for Runtime {
     type HandleEquivocation =
         pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
 
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_babe::SubstrateWeight<Runtime>;
     type MaxAuthorities = MaxAuthorities;
 }
 
@@ -409,7 +409,7 @@ impl pallet_grandpa::Config for Runtime {
         ReportLongevity,
     >;
 
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_grandpa::SubstrateWeight<Runtime>;
     type MaxAuthorities = MaxAuthorities;
 }
 
