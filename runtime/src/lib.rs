@@ -10,8 +10,16 @@
 #![allow(clippy::from_over_into)]
 
 // Mutually exclusive feature check
-#[cfg(all(feature = "staging_runtime", feature = "testing_runtime"))]
-compile_error!("feature \"staging_runtime\" and feature \"testing_runtime\" cannot be enabled at the same time");
+#[cfg(all(feature = "staging-runtime", feature = "testing-runtime"))]
+compile_error!("feature \"staging-runtime\" and feature \"testing-runtime\" cannot be enabled at the same time");
+
+// Mutually exclusive feature check
+#[cfg(all(feature = "playground-runtime", feature = "testing-runtime"))]
+compile_error!("feature \"playground-runtime\" and feature \"testing-runtime\" cannot be enabled at the same time");
+
+// Mutually exclusive feature check
+#[cfg(all(feature = "staging-runtime", feature = "playground-runtime"))]
+compile_error!("feature \"staging-runtime\" and feature \"playground-runtime\" cannot be enabled at the same time");
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -78,7 +86,7 @@ use sp_runtime::{
     create_runtime_str,
     curve::PiecewiseLinear,
     generic, impl_opaque_keys,
-    traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
+    traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys, Zero},
     Perbill,
 };
 
@@ -115,6 +123,7 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
+use pallet_staking::EraPayout;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
 
@@ -138,7 +147,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 11,
-    spec_version: 3,
+    spec_version: 4,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -202,52 +211,22 @@ const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO
 parameter_types! {
     /// Minimum deposit per byte of data stored in the runtime state
     pub const MinimumBloatBondPerByte: Balance = currency::MILLICENTS;
-    /// Minimum profit that the user should recieve for cleaning up an object from
-    /// the runtime state. Provided that `x` is a computed cleanup transaction inclusion fee
-    /// and `y` is `MinimumBloatBondPerByte::get() * storage_entry_size`, the recoverable
-    /// bloat bond in this case should be:
-    /// `(x + StorageDepositCleanupProfit::get()).max(y)`
-    pub const StorageDepositCleanupProfit: Balance = currency::CENTS;
+    /// Default minimum profit that the user should recieve for cleaning up an object
+    /// (like channel / video / forum thread / forum post) from the runtime state.
+    /// Provided that `x` is a computed cleanup transaction inclusion fee and `y`
+    /// is `DefaultStorageDepositCleanupProfit::get() * storage_entry_size`, the recoverable
+    /// bloat bond should be:
+    /// `(x + DefaultStorageDepositCleanupProfit::get()).max(y)`
+    pub const DefaultStorageDepositCleanupProfit: Balance = currency::CENTS;
+    /// Minimum profit that the user should recieve for removing a storage data object (asset).
+    /// This is separate from `DefaultStorageDepositCleanupProfit`, because channels / videos will
+    /// usually include multiple data objects and we don't want each of them to increase
+    /// bloat bond significantly.
+    pub const DataObjectDepositCleanupProfit: Balance = currency::MILLICENTS.saturating_mul(200);
 }
 
 /// Our extrinsics call filter
 pub enum CallFilter {}
-
-/// Stage 1: Filter all non-essential calls.
-/// Allow only calls that are essential for successful block authoring, staking, nominating.
-/// Since balances calls are disabled, this means that stash and controller
-/// accounts must already be funded. If this is not practical to setup at genesis
-/// then consider enabling Balances calls?
-/// This will be used at initial launch, and other calls will be enabled as we rollout.
-#[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
-    feature = "runtime-benchmarks"
-)))]
-fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        Call::System(method) =>
-        // All methods except the remark call
-        {
-            !matches!(method, frame_system::Call::<Runtime>::remark { .. })
-        }
-        // confirmed that Utility.batch dispatch does not bypass filter.
-        Call::Utility(_) => true,
-        Call::Babe(_) => true,
-        Call::Timestamp(_) => true,
-        Call::Authorship(_) => true,
-        Call::ElectionProviderMultiPhase(_) => true,
-        Call::Staking(_) => true,
-        Call::Session(_) => true,
-        Call::Grandpa(_) => true,
-        Call::ImOnline(_) => true,
-        Call::Sudo(_) => true,
-        Call::BagsList(_) => true,
-        Call::Multisig(_) => true,
-        // Disable all other calls
-        _ => false,
-    }
-}
 
 // Stage 2: Filter out only a subset of calls on content pallet, some specific proposals
 // and the bounty creation call.
@@ -277,15 +256,11 @@ fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
     }
 }
 
-// Live Production config
-#[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
-    feature = "runtime-benchmarks"
-)))]
+// Production config
+#[cfg(not(feature = "runtime-benchmarks"))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_1(call) && filter_stage_2(call)
+        filter_stage_2(call)
     }
 }
 
@@ -294,14 +269,6 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
         true
-    }
-}
-
-// Staging and Testing - filter joystream pallet calls only to test they are properly disabled
-#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
-impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_2(call)
     }
 }
 
@@ -568,6 +535,29 @@ pallet_staking_reward_curve::build! {
     );
 }
 
+pub struct NoInflationIfNoEras;
+impl EraPayout<Balance> for NoInflationIfNoEras {
+    fn era_payout(
+        total_staked: Balance,
+        total_issuance: Balance,
+        era_duration_millis: u64,
+    ) -> (Balance, Balance) {
+        let era_index = pallet_staking::Pallet::<Runtime>::active_era()
+            .map_or_else(Zero::zero, |era| era.index);
+
+        if era_index.is_zero() {
+            // PoA mode: no inflation.
+            (0, 0)
+        } else {
+            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
+                total_staked,
+                total_issuance,
+                era_duration_millis,
+            )
+        }
+    }
+}
+
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
@@ -575,13 +565,13 @@ parameter_types! {
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
-    pub OffchainRepeat: BlockNumber = 5;
+    pub OffchainRepeat: BlockNumber = UnsignedPhase::get() / 8;
 }
 
 pub struct StakingBenchmarkingConfig;
 impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
-    type MaxNominators = ConstU32<1000>;
-    type MaxValidators = ConstU32<1000>;
+    type MaxNominators = ConstU32<1000>; // Cannot be higher than `max_nominator_count` in genesis config
+    type MaxValidators = ConstU32<400>; // Cannot be higher than `max_validator_count` in genesis config
 }
 
 impl pallet_staking::Config for Runtime {
@@ -599,7 +589,9 @@ impl pallet_staking::Config for Runtime {
     type SlashDeferDuration = SlashDeferDuration;
     type SlashCancelOrigin = EnsureRoot<AccountId>;
     type SessionInterface = Self;
-    type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
+    // TODO (Mainnet): enable normal curve
+    // type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
+    type EraPayout = NoInflationIfNoEras;
     type NextNewSession = Session;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
@@ -614,16 +606,19 @@ impl pallet_staking::Config for Runtime {
 }
 
 parameter_types! {
+    pub const SignedMaxSubmissions: u32 = 16;
+    pub const SignedMaxRefunds: u32 = 16 / 4;
+
     // phase durations. 1/4 of the last session for each.
     pub const SignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
     pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
 
     // signed config
-    pub const SignedRewardBase: Balance = dollars!(1); // TODO: adjust value
-    pub const SignedDepositBase: Balance = dollars!(1); // TODO: adjust value
-    pub const SignedDepositByte: Balance = currency::CENTS; // TODO: adjust value
+    pub const SignedRewardBase: Balance = dollars!(1);
+    pub const SignedDepositBase: Balance = dollars!(10);
+    pub const SignedDepositByte: Balance = MinimumBloatBondPerByte::get();
 
-    pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
+    pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(5u32, 10_000);
 
     // miner configs
     pub const MultiPhaseUnsignedPriority: TransactionPriority = StakingUnsignedPriority::get() - 1u64;
@@ -650,7 +645,7 @@ frame_election_provider_support::generate_solution_type!(
 
 parameter_types! {
     pub MaxNominations: u32 = <NposSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
-    pub MaxElectingVoters: u32 = 10_000;
+    pub MaxElectingVoters: u32 = 12_500;
 }
 
 /// The numbers configured here could always be more than the the maximum limits of staking pallet
@@ -737,11 +732,11 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type OffchainRepeat = OffchainRepeat;
     type MinerTxPriority = MultiPhaseUnsignedPriority;
     type MinerConfig = Self;
-    type SignedMaxSubmissions = ConstU32<10>;
+    type SignedMaxSubmissions = SignedMaxSubmissions;
     type SignedRewardBase = SignedRewardBase;
     type SignedDepositBase = SignedDepositBase;
     type SignedDepositByte = SignedDepositByte;
-    type SignedMaxRefunds = ConstU32<3>;
+    type SignedMaxRefunds = SignedMaxRefunds;
     type SignedDepositWeight = ();
     type SignedMaxWeight = MinerMaxWeight;
     type SlashHandler = (); // burn slashes
@@ -777,7 +772,7 @@ parameter_types! {
     pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
     /// We prioritize im-online heartbeats over election solution submission.
     pub const StakingUnsignedPriority: TransactionPriority = TransactionPriority::max_value() / 2;
-    pub const MaxAuthorities: u32 = 100;
+    pub const MaxAuthorities: u32 = 100_000;
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxPeerDataEncodingSize: u32 = 1_000;
@@ -843,10 +838,10 @@ parameter_types! {
         })
     );
     pub ChannelEntryMaxSize: u32 = map_entry_max_size::<content::ChannelById::<Runtime>>();
-    pub ChannelStateBloatBondValue: Balance = single_bloat_bond_with_cleanup(
+    pub ChannelStateBloatBondValue: Balance = single_existential_deposit_bloat_bond_with_cleanup(
         ChannelEntryMaxSize::get(),
-        true, // serves as channel account's bloat bond
-        ChannelCleanupTxFee::get()
+        ChannelCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Video bloat bond related:
@@ -861,8 +856,8 @@ parameter_types! {
     pub VideoEntryMaxSize: u32 = map_entry_max_size::<content::VideoById::<Runtime>>();
     pub VideoStateBloatBondValue: Balance = single_bloat_bond_with_cleanup(
         VideoEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit,
-        VideoCleanupTxFee::get()
+        VideoCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // TODO: Adjust those?
@@ -913,8 +908,8 @@ parameter_types! {
         map_entry_max_size::<project_token::AccountInfoByTokenAndMember::<Runtime>>();
     pub ProjectTokenAccountBloatBond: Balance = single_bloat_bond_with_cleanup(
         ProjectTokenAccountEntryMaxSize::get(),
-        false, // does not serve as existential deposit
         ProjectTokenAccountCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 }
 
@@ -940,8 +935,9 @@ pub type CouncilModule = council::Module<Runtime>;
 
 // Production coucil and elections configuration
 #[cfg(not(any(
-    feature = "staging_runtime",
-    feature = "testing_runtime",
+    feature = "staging-runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime",
     feature = "runtime-benchmarks"
 )))]
 parameter_types! {
@@ -962,12 +958,11 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = days!(1);
 }
 
-// Common staging, playground and benchmarking coucil and elections configuration
-// CouncilSize is defined separately
+// Common playground and benchmarking coucil and elections configuration
 // Periods are shorter to:
 // - allow easier testing
 // - prevent benchmarks System::events() from accumulating too much data and overflowing the memory
-#[cfg(any(feature = "staging_runtime", feature = "runtime-benchmarks"))]
+#[cfg(any(feature = "playground-runtime", feature = "runtime-benchmarks"))]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -980,27 +975,34 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u32 = 0;
     pub const AnnouncingPeriodDuration: BlockNumber = 300;
     pub const IdlePeriodDuration: BlockNumber = 1;
+    pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: Balance = dollars!(10_000);
     pub const ElectedMemberRewardPeriod: BlockNumber = 33;
     pub const BudgetRefillPeriod: BlockNumber = 33;
 }
 
-// Staging/benchmarking council size
-#[cfg(any(feature = "staging_runtime", feature = "runtime-benchmarks"))]
-#[cfg(not(feature = "playground_runtime"))]
+// Staging coucil and elections configuration
+#[cfg(feature = "staging-runtime")]
 parameter_types! {
-    pub const CouncilSize: u32 = 3;
-}
+    // referendum parameters
+    pub const MaxSaltLength: u64 = 32;
+    pub const VoteStageDuration: BlockNumber = hours!(1);
+    pub const RevealStageDuration: BlockNumber = hours!(1);
+    pub const MinimumVotingStake: Balance = dollars!(10);
+    pub const MaxWinnerTargetCount: u32 = CouncilSize::get();
 
-// Playground council size
-#[cfg(feature = "staging_runtime")]
-#[cfg(feature = "playground_runtime")]
-parameter_types! {
-    pub const CouncilSize: u32 = 1;
+    // council parameteres
+    pub const MinNumberOfExtraCandidates: u32 = 0;
+    pub const AnnouncingPeriodDuration: BlockNumber = hours!(3);
+    pub const IdlePeriodDuration: BlockNumber = 1; // 1 block
+    pub const CouncilSize: u32 = 3;
+    pub const MinCandidateStake: Balance = dollars!(10_000);
+    pub const ElectedMemberRewardPeriod: BlockNumber = days!(1);
+    pub const BudgetRefillPeriod: BlockNumber = days!(1);
 }
 
 // Testing config
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -1130,13 +1132,13 @@ parameter_types! {
     pub DataObjectMaxEntrySize: u32 = map_entry_max_size::<storage::DataObjectsById::<Runtime>>();
     pub DataObjectBloatBond: Balance = single_bloat_bond_with_cleanup(
         DataObjectMaxEntrySize::get(),
-        false, // doesn't serve as existential deposit
-        DataObjectCleanupTxFee::get()
+        DataObjectCleanupTxFee::get(),
+        DataObjectDepositCleanupProfit::get()
     );
 }
 
-// Production storage parameters
-#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+// Production (and staging) storage parameters
+#[cfg(not(any(feature = "playground-runtime", feature = "testing-runtime")))]
 parameter_types! {
     pub const MinStorageBucketsPerBag: u32 = 3;
     pub const MaxStorageBucketsPerBag: u32 = 13;
@@ -1144,8 +1146,8 @@ parameter_types! {
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 5;
 }
 
-// Staging/testing storage parameters
-#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
+// Playground/testing storage parameters
+#[cfg(any(feature = "playground-runtime", feature = "testing-runtime",))]
 parameter_types! {
     pub const MinStorageBucketsPerBag: u32 = 1;
     pub const MaxStorageBucketsPerBag: u32 = 13;
@@ -1224,11 +1226,9 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxSubcategories: u64 = 40; // TODO: adjust
-    pub const MaxThreadsInCategory: u64 = 20; // TODO: adjust
-    pub const MaxPostsInThread: u64 = 20; // TODO: adjust
+    pub const MaxDirectSubcategoriesInCategory: u64 = 5;
+    pub const MaxTotalCategories: u64 = 40;
     pub const MaxModeratorsForCategory: u64 = 10;
-    pub const MaxCategories: u64 = 40;
 
     // Thread bloat bond related:
     pub FroumThreadCleanupTxFee: Balance = compute_fee(
@@ -1240,10 +1240,10 @@ parameter_types! {
         })
     );
     pub ForumThreadEntryMaxSize: u32 = map_entry_max_size::<forum::ThreadById::<Runtime>>();
-    pub ThreadDeposit: Balance = single_bloat_bond_with_cleanup(
+    pub ThreadDeposit: Balance = single_existential_deposit_bloat_bond_with_cleanup(
         ForumThreadEntryMaxSize::get(),
-        true, // serves as existential deposit of thread account
-        FroumThreadCleanupTxFee::get()
+        FroumThreadCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Post bloat bond related:
@@ -1260,8 +1260,8 @@ parameter_types! {
     pub ForumPostEntryMaxSize: u32 = map_entry_max_size::<forum::PostById::<Runtime>>();
     pub PostDeposit: Balance = single_bloat_bond_with_cleanup(
         ForumPostEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        FroumPostCleanupTxFee::get()
+        FroumPostCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
     pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = days!(30);
@@ -1270,9 +1270,9 @@ parameter_types! {
 
 pub struct MapLimits;
 impl forum::StorageLimits for MapLimits {
-    type MaxSubcategories = MaxSubcategories;
+    type MaxDirectSubcategoriesInCategory = MaxDirectSubcategoriesInCategory;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
-    type MaxCategories = MaxCategories;
+    type MaxTotalCategories = MaxTotalCategories;
 }
 
 impl forum::Config for Runtime {
@@ -1570,8 +1570,8 @@ parameter_types! {
         map_entry_max_size::<proposals_discussion::PostThreadIdByPostId::<Runtime>>();
     pub ProposalsPostDeposit: Balance = single_bloat_bond_with_cleanup(
         ProposalDiscussionPostEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        ProposalDiscussionPostCleanupTxFee::get()
+        ProposalDiscussionPostCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 }
 
@@ -1622,7 +1622,7 @@ parameter_types! {
     // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
     // The new compressed wasm format is much smaller in size ~ 1MB
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = DispatchableCallCodeMaxLen::get();
-    pub const FundingRequestProposalMaxAmount: Balance = dollars!(10_000);
+    pub const FundingRequestProposalMaxTotalAmount: Balance = dollars!(10_000);
     pub const FundingRequestProposalMaxAccounts: u32 = 20;
     pub const SetMaxValidatorCountProposalMaxValidators: u32 = 100;
 }
@@ -1666,7 +1666,7 @@ impl proposals_codex::Config for Runtime {
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
-    type FundingRequestProposalMaxAmount = FundingRequestProposalMaxAmount;
+    type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
@@ -1692,8 +1692,8 @@ parameter_types! {
     pub BountyWorkEntryEntryMaxSize: u32 = map_entry_max_size::<bounty::Entries::<Runtime>>();
     pub MinWorkEntrantStake: Balance = single_bloat_bond_with_cleanup(
         BountyWorkEntryEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        BountyWorkEntryCleanupTxFee::get()
+        BountyWorkEntryCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Funder bloat bond related:
@@ -1707,8 +1707,8 @@ parameter_types! {
         map_entry_max_size::<bounty::BountyContributions::<Runtime>>();
     pub FunderStateBloatBondAmount: Balance = single_bloat_bond_with_cleanup(
         BountyContributionEntryMaxSize::get(),
-        false, // doesn't serve as existential deposit
-        BountyContributionCleanupTxFee::get()
+        BountyContributionCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 
     // Creator bloat bond related:
@@ -1718,10 +1718,10 @@ parameter_types! {
         })
     );
     pub BountyEntryMaxSize: u32 = map_entry_max_size::<bounty::Bounties::<Runtime>>();
-    pub CreatorStateBloatBondAmount: Balance = single_bloat_bond_with_cleanup(
+    pub CreatorStateBloatBondAmount: Balance = single_existential_deposit_bloat_bond_with_cleanup(
         BountyEntryMaxSize::get(),
-        true, // serves as existential deposit of bounty account
-        BountyCleanupTxFee::get()
+        BountyCleanupTxFee::get(),
+        DefaultStorageDepositCleanupProfit::get()
     );
 }
 
@@ -1767,7 +1767,6 @@ parameter_types! {
     // Deposit for storing one new item in Multisigs/Calls map
     pub DepositBase: Balance = compute_single_bloat_bond(
         MultisigMapEntryFixedPortionByteSize::get().max(CallMapEntryFixedPortionByteSize::get()),
-        false,
         None
     );
     // Deposit for adding 32 bytes to an already stored item

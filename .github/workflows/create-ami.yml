@@ -28,7 +28,7 @@ jobs:
         id: ami_name
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Ansible
         run: |

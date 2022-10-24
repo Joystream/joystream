@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '11.3.0'
+version = '11.4.0'
 
 [dependencies]
 # Third-party dependencies
@@ -220,7 +220,7 @@ runtime-benchmarks = [
 
 # Staging and testing configurations
 # configuration suitable for staging networks and playground
-staging_runtime = []
-playground_runtime = ['staging_runtime']
+staging-runtime = []
+playground-runtime = []
 # configuration suitable for integration testing
-testing_runtime = []
+testing-runtime = []

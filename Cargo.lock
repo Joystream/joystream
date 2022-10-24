@@ -2735,6 +2735,7 @@ dependencies = [
  "overrides",
  "pallet-balances",
  "pallet-im-online",
+ "pallet-staking",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
@@ -2803,7 +2804,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "11.3.0"
+version = "11.4.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
