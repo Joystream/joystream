@@ -273,6 +273,10 @@ async function verifyDataObjectInfo(
 ): Promise<boolean> {
   const dataObject = await api.query.storage.dataObjectsById(bagId, dataObjectId)
 
+  if (dataObject.isEmpty) {
+    throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${bagId}`, 400)
+  }
+
   // Cannot get 'size' as a regular property.
   const dataObjectSize = dataObject.size_
 
