@@ -357,7 +357,7 @@ fn create_multiple_finalized_proposals<
     (proposers, proposals)
 }
 
-const MAX_BYTES: u32 = 16384;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 benchmarks! {
     // Note: this is the syntax for this macro can't use "+"
@@ -366,13 +366,13 @@ benchmarks! {
     }
 
     vote {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
         let (council, last_id) = elect_council::<T>(0);
         let voter = council[0].clone();
         let (account_voter_id, member_voter_id) = (voter.account_id, voter.member_id);
         let (_, _, proposal_id) = create_proposal::<T>(last_id + 1, 1, 0, 0);
-        let rationale = vec![0u8; i.try_into().unwrap()];
+        let rationale = vec![0u8; (i * 1000).try_into().unwrap()];
     }: _ (
             RawOrigin::Signed(account_voter_id),
             member_voter_id,

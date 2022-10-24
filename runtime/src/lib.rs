@@ -1567,10 +1567,21 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
 parameter_types! {
     pub const ProposalCancellationFee: Balance = dollars!(1);
     pub const ProposalRejectionFee: Balance = dollars!(5);
-    pub const ProposalTitleMaxLength: u32 = 40;
-    pub const ProposalDescriptionMaxLength: u32 = 3_000;
     pub const ProposalMaxActiveProposalLimit: u32 = 20;
     pub const DispatchableCallCodeMaxLen: u32 = mega_bytes!(3);
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+parameter_types! {
+    pub const ProposalTitleMaxLength: u32 = 40;
+    pub const ProposalDescriptionMaxLength: u32 = 3_000;
+}
+
+// Higher limits for benchmarking for more accurate results
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+    pub const ProposalTitleMaxLength: u32 = 20_000;
+    pub const ProposalDescriptionMaxLength: u32 = 20_000;
 }
 
 impl proposals_engine::Config for Runtime {
