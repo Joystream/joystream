@@ -43,7 +43,7 @@
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
 
-pub use pallet_election_provider_support_benchmarking::weights::WeightInfo;
+pub use frame_election_provider_support::weights::WeightInfo;
 
 /// Weights for pallet_election_provider_support_benchmarking using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
