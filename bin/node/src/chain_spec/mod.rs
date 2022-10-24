@@ -32,13 +32,14 @@ use node_runtime::{
     constants::currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
     wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
     ExistentialDeposit, GrandpaConfig, ImOnlineConfig, MaxNominations, ProjectTokenConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SudoConfig,
-    SystemConfig, TransactionPaymentConfig, VestingConfig,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SystemConfig,
+    TransactionPaymentConfig, VestingConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
 
+use pallet_staking::Forcing;
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -172,7 +173,6 @@ pub fn testnet_genesis(
         AuthorityDiscoveryId,
     )>,
     initial_nominators: Vec<AccountId>,
-    root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     mut genesis_balances: Vec<(AccountId, Balance)>,
     vesting_accounts: Vec<(AccountId, BlockNumber, BlockNumber, Balance)>,
@@ -196,7 +196,7 @@ pub fn testnet_genesis(
 
     // How much each initial validator at genesis will bond
     let initial_validator_bond: Balance = GENESIS_MIN_VALIDATOR_BOND
-        .saturating_mul(10)
+        .saturating_mul(4)
         .saturating_add(ExistentialDeposit::get());
     // How much each initial nominator at genesis will bond per nomination
     let initial_nominator_bond: Balance =
@@ -246,20 +246,6 @@ pub fn testnet_genesis(
                 genesis_balances.push((account.clone(), endowment));
             }
         });
-
-        if !funded.contains(&root_key) {
-            funded.push(root_key.clone());
-            genesis_balances.push((root_key.clone(), endowment));
-        }
-    }
-
-    // Make sure sudo is in initial balances sufficient funds
-    if !genesis_balances
-        .iter()
-        .cloned()
-        .any(|(account, _)| account == root_key)
-    {
-        println!("# WARNING - root_key is not assigned an initial balance");
     }
 
     // stakers: all validators and nominators.
@@ -314,16 +300,17 @@ pub fn testnet_genesis(
         },
         staking: StakingConfig {
             validator_count: initial_authorities.len() as u32,
-            minimum_validator_count: initial_authorities.len() as u32,
+            minimum_validator_count: initial_authorities.len().min(4) as u32,
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
+            force_era: Forcing::ForceNone,
             stakers,
             min_nominator_bond: GENESIS_MIN_NOMINATOR_BOND,
             min_validator_bond: GENESIS_MIN_VALIDATOR_BOND,
+            history_depth: 120,
+            max_validator_count: Some(400),
+            max_nominator_count: Some(20_000),
             ..Default::default()
-        },
-        sudo: SudoConfig {
-            key: Some(root_key),
         },
         babe: BabeConfig {
             authorities: vec![],
@@ -356,7 +343,6 @@ fn development_config_genesis() -> GenesisConfig {
             get_account_id_from_seed::<sr25519::Public>("//Bob"),
             get_account_id_from_seed::<sr25519::Public>("//Charlie"),
         ],
-        get_account_id_from_seed::<sr25519::Public>("//Alice"),
         development_endowed_accounts(),
         vec![],
         vec![],
@@ -390,7 +376,6 @@ fn local_testnet_genesis() -> GenesisConfig {
             authority_keys_from_seed("//Bob"),
         ],
         vec![],
-        get_account_id_from_seed::<sr25519::Public>("//Alice"),
         development_endowed_accounts(),
         vec![],
         vec![],
@@ -428,7 +413,6 @@ pub(crate) mod tests {
             true,
             vec![authority_keys_from_seed("//Alice")],
             vec![],
-            get_account_id_from_seed::<sr25519::Public>("//Alice"),
             development_endowed_accounts(),
             vec![],
             vec![],
