@@ -28,11 +28,10 @@ use staking_handler::{LockComparator, StakingManager};
 
 use crate as proposals_codex;
 use crate::{
-    ContentWorkingGroupInstance, DistributionWorkingGroupInstance, ForumWorkingGroupInstance,
-    AppWorkingGroupInstance, MembershipWorkingGroupInstance,
-    OperationsWorkingGroupInstanceAlpha, OperationsWorkingGroupInstanceBeta,
-    OperationsWorkingGroupInstanceGamma, ProposalDetailsOf, ProposalEncoder, ProposalParameters,
-    StorageWorkingGroupInstance,
+    AppWorkingGroupInstance, ContentWorkingGroupInstance, DistributionWorkingGroupInstance,
+    ForumWorkingGroupInstance, MembershipWorkingGroupInstance, OperationsWorkingGroupInstanceAlpha,
+    OperationsWorkingGroupInstanceBeta, OperationsWorkingGroupInstanceGamma, ProposalDetailsOf,
+    ProposalEncoder, ProposalParameters, StorageWorkingGroupInstance,
 };
 use proposals_engine::VotersParameters;
 

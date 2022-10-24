@@ -2,8 +2,8 @@ use super::{
     account_from_member_id, increase_total_balance_issuance_using_account_id, initial_test_ext,
 };
 use crate::{
-    currency, BoundStakingAccountStakingManager, ContentWorkingGroupStakingManager,
-    AppWorkingGroupStakingManager, MinVestedTransfer, Runtime,
+    currency, AppWorkingGroupStakingManager, BoundStakingAccountStakingManager,
+    ContentWorkingGroupStakingManager, MinVestedTransfer, Runtime,
 };
 use frame_support::{assert_err, assert_ok, traits::StoredMap};
 use frame_system::RawOrigin;

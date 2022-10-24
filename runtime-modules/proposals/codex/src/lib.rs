@@ -594,9 +594,7 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_worker_id::<OperationsWorkingGroupInstanceAlpha>(worker_id)
             }
-            WorkingGroup::App => {
-                Self::is_lead_worker_id::<AppWorkingGroupInstance>(worker_id)
-            }
+            WorkingGroup::App => Self::is_lead_worker_id::<AppWorkingGroupInstance>(worker_id),
             WorkingGroup::Membership => {
                 Self::is_lead_worker_id::<MembershipWorkingGroupInstance>(worker_id)
             }
@@ -638,9 +636,7 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_opening_id::<OperationsWorkingGroupInstanceAlpha>(opening_id)
             }
-            WorkingGroup::App => {
-                Self::is_lead_opening_id::<AppWorkingGroupInstance>(opening_id)
-            }
+            WorkingGroup::App => Self::is_lead_opening_id::<AppWorkingGroupInstance>(opening_id),
             WorkingGroup::Membership => {
                 Self::is_lead_opening_id::<MembershipWorkingGroupInstance>(opening_id)
             }

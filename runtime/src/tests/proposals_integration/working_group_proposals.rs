@@ -15,11 +15,11 @@ use working_group::StakeParameters;
 use crate::primitives::{ActorId, MemberId};
 use crate::tests::{max_proposal_stake, run_to_block};
 use crate::{
-    Balance, BlockNumber, ContentWorkingGroup, ContentWorkingGroupInstance,
-    ContentWorkingGroupStakingManager, DistributionWorkingGroup, DistributionWorkingGroupInstance,
+    AppWorkingGroup, AppWorkingGroupInstance, AppWorkingGroupStakingManager, Balance, BlockNumber,
+    ContentWorkingGroup, ContentWorkingGroupInstance, ContentWorkingGroupStakingManager,
+    DistributionWorkingGroup, DistributionWorkingGroupInstance,
     DistributionWorkingGroupStakingManager, ForumWorkingGroup, ForumWorkingGroupInstance,
-    ForumWorkingGroupStakingManager, AppWorkingGroup, AppWorkingGroupInstance,
-    AppWorkingGroupStakingManager, MembershipWorkingGroup, MembershipWorkingGroupInstance,
+    ForumWorkingGroupStakingManager, MembershipWorkingGroup, MembershipWorkingGroupInstance,
     MembershipWorkingGroupStakingManager, OperationsWorkingGroupAlpha,
     OperationsWorkingGroupAlphaStakingManager, OperationsWorkingGroupBeta,
     OperationsWorkingGroupBetaStakingManager, OperationsWorkingGroupGamma,
@@ -167,10 +167,11 @@ fn add_opening(
             Runtime,
             MembershipWorkingGroupInstance,
         >::contains_key(opening_id)),
-        WorkingGroup::App => assert!(working_group::OpeningById::<
-            Runtime,
-            AppWorkingGroupInstance,
-        >::contains_key(opening_id)),
+        WorkingGroup::App => assert!(
+            working_group::OpeningById::<Runtime, AppWorkingGroupInstance>::contains_key(
+                opening_id
+            )
+        ),
         WorkingGroup::OperationsAlpha => assert!(working_group::OpeningById::<
             Runtime,
             OperationsWorkingGroupInstanceAlpha,
@@ -924,13 +925,11 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
                     MembershipWorkingGroupStakingManager,
                 >(group)
             }
-            WorkingGroup::App => {
-                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
-                    Runtime,
-                    AppWorkingGroupInstance,
-                    AppWorkingGroupStakingManager,
-                >(group)
-            }
+            WorkingGroup::App => run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                Runtime,
+                AppWorkingGroupInstance,
+                AppWorkingGroupStakingManager,
+            >(group),
             WorkingGroup::Distribution => {
                 run_create_slash_group_leader_stake_proposal_execution_succeeds::<
                     Runtime,
