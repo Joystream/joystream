@@ -110,8 +110,6 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 #[cfg(any(feature = "std", test))]
-pub use pallet_sudo::Call as SudoCall;
-#[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
 use constants::*;
@@ -147,7 +145,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 11,
-    spec_version: 4,
+    spec_version: 5,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -480,11 +478,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
-}
-
-impl pallet_sudo::Config for Runtime {
-    type Event = Event;
-    type Call = Call;
 }
 
 parameter_types! {
@@ -1827,7 +1820,6 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-        Sudo: pallet_sudo,
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
