@@ -34,7 +34,7 @@ export const workingGroupNameByModuleName = {
   'forumWorkingGroup': 'Forum',
   'membershipWorkingGroup': 'Membership',
   'operationsWorkingGroupAlpha': 'OperationsAlpha',
-  'AppWorkingGroup': 'App',
+  'appWorkingGroup': 'App',
   'distributionWorkingGroup': 'Distribution',
   'operationsWorkingGroupBeta': 'OperationsBeta',
   'operationsWorkingGroupGamma': 'OperationsGamma',
