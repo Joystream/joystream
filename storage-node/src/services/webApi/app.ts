@@ -8,13 +8,15 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
-import { AppConfig } from './controllers/common'
+import { AppConfig, sendResponseWithError, WebApiError } from './controllers/common'
+import { verifyBagAssignment, verifyBucketId } from './controllers/filesApi'
 import {
   createExpressErrorLoggerOptions,
   createExpressDefaultLoggerOptions,
   httpLogger,
   errorLogger,
 } from '../../services/logger'
+import { parseBagId } from '../helpers/bagTypes'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -38,6 +40,20 @@ export async function createApp(config: AppConfig): Promise<Express> {
 
       next()
     },
+
+    // Pre validate file upload params
+    async (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
+      try {
+        if (req.path === '/api/v1/files') {
+          await validateUploadFileParams(req, res)
+        }
+      } catch (error) {
+        sendResponseWithError(res, next, error, 'upload')
+      }
+
+      next()
+    },
+
     // Setup OpenAPiValidator
     OpenApiValidator.middleware({
       apiSpec: spec,
@@ -184,5 +200,29 @@ function verifyUploadTokenData(accountAddress: string, token: UploadToken, reque
 
   if (!checkRemoveNonce(token.data.nonce)) {
     throw new Error('Nonce not found')
+  }
+}
+
+async function validateUploadFileParams(req: express.Request, res: express.Response<unknown, AppConfig>) {
+  const { api, queryNodeEndpoint, workerId } = res.locals
+
+  const storageBucketId = Number(req.query.storageBucketId)
+  const dataObjectId = Number(req.query.dataObjectId)
+  const bagId = req.query.bagId!.toString()
+
+  const parsedBagId = parseBagId(bagId)
+
+  const [dataObject] = await Promise.all([
+    api.query.storage.dataObjectsById(parsedBagId, Number(dataObjectId)),
+    verifyBagAssignment(api, parsedBagId, storageBucketId),
+    verifyBucketId(queryNodeEndpoint, workerId, storageBucketId),
+  ])
+
+  if (dataObject.isEmpty) {
+    throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${parsedBagId}`, 400)
+  }
+
+  if (dataObject.accepted.valueOf()) {
+    throw new WebApiError(`Data object ${dataObjectId} has already been accepted by storage node`, 400)
   }
 }

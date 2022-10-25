@@ -89,26 +89,22 @@ export async function uploadFile(
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
-  const uploadRequest: RequestData = req.body
+  const uploadRequest: RequestData = req.query as any
 
   // saved filename to delete on verification or extrinsic errors
   let cleanupFileName = ''
   try {
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
-    const queryNodeUrl = res.locals.queryNodeEndpoint
+
     const workerId = res.locals.workerId
 
     const api = res.locals.api
     const bagId = parseBagId(uploadRequest.bagId)
 
-    const [, , hash] = await Promise.all([
-      verifyBucketId(queryNodeUrl, workerId, uploadRequest.storageBucketId),
-      verifyBagAssignment(api, bagId, uploadRequest.storageBucketId),
-      hashFile(fileObj.path),
-    ])
+    const hash = await hashFile(fileObj.path)
 
-    const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
+    await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
 
     // Prepare new file name
     const dataObjectId = uploadRequest.dataObjectId.toString()
@@ -122,20 +118,14 @@ export async function uploadFile(
     await fsPromises.rename(fileObj.path, newPath)
     cleanupFileName = newPath
 
-    if (!accepted) {
-      await acceptPendingDataObjects(
-        api,
-        bagId,
-        res.locals.storageProviderAccount,
-        workerId,
-        uploadRequest.storageBucketId,
-        [uploadRequest.dataObjectId]
-      )
-    } else {
-      logger.warn(
-        `Received already accepted data object. DataObjectId = ${uploadRequest.dataObjectId} WorkerId = ${workerId}`
-      )
-    }
+    await acceptPendingDataObjects(
+      api,
+      bagId,
+      res.locals.storageProviderAccount,
+      workerId,
+      uploadRequest.storageBucketId,
+      [uploadRequest.dataObjectId]
+    )
 
     res.status(201).json({
       id: hash,
@@ -341,7 +331,7 @@ export async function getVersion(req: express.Request, res: express.Response<unk
  * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: number): Promise<void> {
+export async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: number): Promise<void> {
   const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
 
   if (!bucketIds.includes(bucketId.toString())) {
@@ -358,7 +348,7 @@ async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: 
  * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-async function verifyBagAssignment(api: ApiPromise, bagId: BagId, bucketId: number): Promise<void> {
+export async function verifyBagAssignment(api: ApiPromise, bagId: BagId, bucketId: number): Promise<void> {
   const bag = await api.query.storage.bags(bagId)
 
   if (![...bag.storedBy].map((s) => s.toNumber()).includes(bucketId)) {
