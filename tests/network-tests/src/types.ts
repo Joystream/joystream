@@ -46,7 +46,6 @@ export type MetadataInput<T> = {
 }
 
 // Working groups
-
 export type WorkingGroupModuleName =
   | 'storageWorkingGroup'
   | 'contentWorkingGroup'
