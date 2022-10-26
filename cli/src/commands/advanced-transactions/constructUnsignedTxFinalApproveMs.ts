@@ -23,9 +23,16 @@ export default class ConstructUnsignedTxFinalApproveMsCommand extends AdvancedTr
       required: true,
       description: 'Path to the file where the output JSON should be saved.',
     }),
-    call: flags.string({
-      required: true,
+    inputCall: flags.string({
+      required: false,
       description: 'The hex-encoded call that is to be executed by the multisig if successfull.',
+      exactlyOne: ['inputCallFile', 'inputCall'],
+    }),
+    inputCallFile: flags.string({
+      required: false,
+      description:
+        'Path to a JSON file with the hex-encoded call that is to be executed by the multisig if successfull.',
+      exactlyOne: ['inputCallFile', 'inputCall'],
     }),
     addressMs: flags.string({
       required: false,
@@ -76,7 +83,8 @@ export default class ConstructUnsignedTxFinalApproveMsCommand extends AdvancedTr
       output,
       addressMs,
       others,
-      call,
+      inputCall,
+      inputCallFile,
       threshold,
       timepointHeight,
       timepointIndex,
@@ -86,6 +94,8 @@ export default class ConstructUnsignedTxFinalApproveMsCommand extends AdvancedTr
     } = this.parse(ConstructUnsignedTxFinalApproveMsCommand).flags
 
     ensureOutputFileIsWriteable(output)
+
+    const call = await this.getCallInput(inputCall, inputCallFile)
 
     const decodedCall: Call = this.createType('Call', call)
     const fetchedWeight = await this.getWeight(decodedCall)

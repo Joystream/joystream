@@ -26,9 +26,16 @@ export default class ConstructUnsignedTxInitiateMsCommand extends AdvancedTransa
       required: false,
       description: 'The address of the multisig that is performing the transaction.',
     }),
-    call: flags.string({
-      required: true,
+    inputCall: flags.string({
+      required: false,
       description: 'The hex-encoded call that is to be executed by the multisig if successfull.',
+      exactlyOne: ['inputCallFile', 'inputCall'],
+    }),
+    inputCallFile: flags.string({
+      required: false,
+      description:
+        'Path to a JSON file with the hex-encoded call that is to be executed by the multisig if successfull.',
+      exactlyOne: ['inputCallFile', 'inputCall'],
     }),
     others: flags.string({
       required: false,
@@ -62,10 +69,23 @@ export default class ConstructUnsignedTxInitiateMsCommand extends AdvancedTransa
   }
 
   async run(): Promise<void> {
-    const { input, addressSigner, output, addressMs, others, call, threshold, nonceIncrement, lifetime, tip } =
-      this.parse(ConstructUnsignedTxInitiateMsCommand).flags
+    let {
+      input,
+      addressSigner,
+      output,
+      addressMs,
+      others,
+      inputCall,
+      inputCallFile,
+      threshold,
+      nonceIncrement,
+      lifetime,
+      tip,
+    } = this.parse(ConstructUnsignedTxInitiateMsCommand).flags
 
     ensureOutputFileIsWriteable(output)
+
+    const call = await this.getCallInput(inputCall, inputCallFile)
 
     const decodedCall: Call = this.createType('Call', call)
     const fetchedWeight = await this.getWeight(decodedCall)

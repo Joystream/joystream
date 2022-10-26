@@ -478,6 +478,24 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
+  async promptForExtrinsicArgs(module: string, method: string): Promise<{ argName: string; argType: string }[]> {
+    const extrinsicMethod = (await this.getUnaugmentedApi().tx)[module][method]
+
+    const param: { argName: string; argType: string }[] = []
+
+    this.openIndentGroup()
+    for (const arg of extrinsicMethod.meta.args.toArray()) {
+      const argName = arg.name.toString()
+      const argType = arg.type.toString()
+      param.push({
+        argName,
+        argType,
+      })
+    }
+    this.closeIndentGroup()
+    return param
+  }
+
   async promptForTxMethod(module: string, method: string, paramsOptions?: ApiParamsOptions): Promise<TxMethod> {
     const extrinsicMethod = (await this.getUnaugmentedApi().tx)[module][method]
     const args: Args = {}

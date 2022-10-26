@@ -137,12 +137,12 @@ export default class SignUnsignedTxCommand extends SignOfflineCommandBase {
       txHash,
     }
 
-    this.log(
-      `The transaction has been signed.\n` +
-        ` - Signed TX: ${signedTx}\n` +
-        ` - Signature: ${signature}\n` +
-        ` - TX Hash: ${txHash}\n`
-    )
+    this.log(`The transaction has been signed.\n` + ` - Signature: ${signature}\n` + ` - TX Hash: ${txHash}\n`)
+    if (signedTx.length > 500) {
+      this.log(`The signed TX too long to log to console - see output file`)
+    } else {
+      this.log(` - Signed TX: ${signedTx}`)
+    }
 
     if (output) {
       saveOutputJsonToFile(output, outputJson)

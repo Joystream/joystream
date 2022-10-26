@@ -1,31 +1,29 @@
 import { flags } from '@oclif/command'
-import { blake2AsHex } from '@polkadot/util-crypto'
+import { TxMethod, OptionsWithMeta } from '@substrate/txwrapper-core'
 import AdvancedTransactionsCommandBase from '../../base/AdvancedTransactionsCommandBase'
-import { registry } from '@joystream/types'
-import { OptionsWithMeta } from '@substrate/txwrapper-core'
 import { ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
-import chalk from 'chalk'
+import { blake2AsHex } from '@polkadot/util-crypto'
+import { registry } from '@joystream/types'
 
-export default class ConstructTxCallCommand extends AdvancedTransactionsCommandBase {
-  static description = 'Construct a call that as argument for a transaction, or to wrap in another call.'
-
+export default class CreateSetCodeCallCommand extends AdvancedTransactionsCommandBase {
+  static description = 'Construct a wrapped transaction call.'
   static flags = {
+    wasmPath: flags.string({
+      required: true,
+      description: 'The address that is performing the final call.',
+    }),
     address: flags.string({
       required: true,
-      description: 'The address that is performing the (final) transaction.',
-    }),
-    module: flags.string({
-      required: true,
-      description: 'The module (a.k.a. section) of the extrinsic',
-    }),
-    method: flags.string({
-      required: true,
-      description: 'The method of the extrinsic',
+      description: 'The address that is performing the final call.',
     }),
     output: flags.string({
       char: 'o',
       required: true,
-      description: 'Path to the file where the output JSON should be saved.',
+      description: 'Path to the file where the call should be saved',
+    }),
+    codeOutput: flags.string({
+      required: false,
+      description: 'Path to where the parsed wasm code shold be saved.',
     }),
     lifetime: flags.integer({
       required: false,
@@ -47,11 +45,24 @@ export default class ConstructTxCallCommand extends AdvancedTransactionsCommandB
   }
 
   async run(): Promise<void> {
-    const { address, module, method, output, lifetime, tip, nonceIncrement } = this.parse(ConstructTxCallCommand).flags
+    let { wasmPath, address, output, codeOutput, nonceIncrement, lifetime, tip } =
+      this.parse(CreateSetCodeCallCommand).flags
 
     ensureOutputFileIsWriteable(output)
 
-    const unsignedMethod = await this.promptForTxMethod(module, method)
+    const code = await this.parseWasm(wasmPath)
+
+    const outCode = {
+      code: `0x${code}`,
+    }
+
+    const unsignedMethod: TxMethod = {
+      args: {
+        code: `0x${code}`,
+      },
+      name: 'setCode',
+      pallet: 'system',
+    }
 
     const txInfo = await this.getTxInfo(address, unsignedMethod, nonceIncrement, lifetime, tip)
 
@@ -64,25 +75,15 @@ export default class ConstructTxCallCommand extends AdvancedTransactionsCommandB
 
     const call = unsigned.method
     const callHash: string = blake2AsHex(call)
-
-    this.log(`The callhash is: ${callHash}`)
-
-    if (call.length > 500) {
-      this.log(`Call too long to log to console - see output file`)
-    } else {
-      this.log(`Call: ${call}`)
-    }
-
-    const outputJson = {
+    const unsignedTxData = {
       call,
-      callHash,
     }
 
-    try {
-      saveOutputJsonToFile(output, outputJson)
-      this.log(chalk.green(`Output successfully saved in: ${chalk.magentaBright(output)}!`))
-    } catch (e) {
-      this.warn(`Could not save output to ${output}!`)
+    saveOutputJsonToFile(output, unsignedTxData)
+    this.log(`Call has callhash ${callHash}`)
+    if (codeOutput) {
+      ensureOutputFileIsWriteable(codeOutput)
+      saveOutputJsonToFile(codeOutput, outCode)
     }
   }
 }

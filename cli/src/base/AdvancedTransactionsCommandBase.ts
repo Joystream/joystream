@@ -17,6 +17,7 @@ import { MultiSigApproveAsMulti, MultisigAsMulti } from '@substrate/txwrapper-su
 import { Timepoint } from '@substrate/txwrapper-substrate/lib/methods/multisig/types'
 import { createKeyMulti, encodeAddress, sortAddresses } from '@polkadot/util-crypto'
 import ExitCodes from '../ExitCodes'
+import fs from 'fs'
 
 export default abstract class AdvancedTransactionsCommandBase extends AccountsCommandBase {
   async getApproveAsMultiInputFromFile(filePath: string): Promise<MultiSigApproveAsMulti> {
@@ -25,6 +26,31 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
 
   async getAsMultiInputFromFile(filePath: string): Promise<MultisigAsMulti> {
     return getInputJson<MultisigAsMulti>(filePath)
+  }
+
+  async parseWasm(inputPath: string): Promise<string> {
+    let code: string
+    try {
+      code = fs.readFileSync(inputPath).toString('hex')
+    } catch (e) {
+      this.error(`Cannot access the input file at: ${inputPath}`, { exit: ExitCodes.FsOperationFailed })
+    }
+    return code
+  }
+
+  async getCallInput(inputCall: string | undefined, inputCallFile: string | undefined): Promise<string> {
+    if (inputCall) {
+      return inputCall
+    } else if (inputCallFile) {
+      const callFile = await this.getCallFromFile(inputCallFile)
+      return callFile.call
+    } else {
+      this.error(`No call provided.`, { exit: ExitCodes.InvalidInput })
+    }
+  }
+
+  async getCallFromFile(filePath: string): Promise<{ call: string }> {
+    return await getInputJson<{ call: string }>(filePath)
   }
 
   async getInitMsInputs(
@@ -55,7 +81,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
       threshold: argsInput.threshold,
       otherSignatories,
       maybeTimepoint: null,
-      callHash: callHash,
+      callHash,
       maxWeight,
     }
     if (argsInput.callHash !== args.callHash) {
@@ -66,7 +92,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     }
 
     if (argsInput.maxWeight.toString() !== args.maxWeight.toString()) {
-      this.warn(`"maxWeight" changed from ${argsInput.maxWeight} to ${args.maxWeight} .`)
+      this.warn(`"maxWeight" changed from ${argsInput.maxWeight} to ${args.maxWeight}.`)
     }
     return args
   }

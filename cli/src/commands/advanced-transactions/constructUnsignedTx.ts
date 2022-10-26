@@ -6,7 +6,7 @@ import { OptionsWithMeta } from '@substrate/txwrapper-core'
 import { ensureOutputFileIsWriteable } from '../../helpers/InputOutput'
 
 export default class CreateUnsignedTxCommand extends AdvancedTransactionsCommandBase {
-  static description = 'Create any unsigned transaction, for signing offline.'
+  static description = 'Create a simple unsigned transaction, for signing offline.'
 
   static flags = {
     address: flags.string({
@@ -22,6 +22,7 @@ export default class CreateUnsignedTxCommand extends AdvancedTransactionsCommand
       description: 'The method of the extrinsic',
     }),
     output: flags.string({
+      char: 'o',
       required: true,
       description: 'Path to the file where the output JSON should be saved.',
     }),
