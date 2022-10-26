@@ -157,12 +157,20 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       videoId,
       videoUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUpdated')
-    if (dataObjectsUploadedEvent) {
-      const [, objectIds] = dataObjectsUploadedEvent.data
+
+    const VideoUpdatedEvent = this.getEvent(result, 'content', 'VideoUpdated')
+    const objectIds = VideoUpdatedEvent.data[3]
+
+    if (objectIds.size !== (assetsToUpload?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of video assets in VideoUpdated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
+
+    if (objectIds.size) {
       await this.uploadAssets(
         `dynamic:channel:${video.inChannel.toString()}`,
-        [...objectIds.values()].map((id, index) => ({
+        [...objectIds].map((id, index) => ({
           dataObjectId: id,
           path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
         })),
