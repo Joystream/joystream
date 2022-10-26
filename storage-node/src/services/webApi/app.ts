@@ -42,13 +42,9 @@ export async function createApp(config: AppConfig): Promise<Express> {
     },
 
     // Pre validate file upload params
-    async (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
-      try {
-        if (req.path === '/api/v1/files') {
-          await validateUploadFileParams(req, res)
-        }
-      } catch (error) {
-        sendResponseWithError(res, next, error, 'upload')
+    (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
+      if (req.path === '/api/v1/files') {
+        validateUploadFileParams(req, res).catch((error) => sendResponseWithError(res, next, error, 'upload'))
       }
 
       next()
@@ -208,12 +204,12 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
 
   const storageBucketId = Number(req.query.storageBucketId)
   const dataObjectId = Number(req.query.dataObjectId)
-  const bagId = req.query.bagId!.toString()
+  const bagId = req.query.bagId?.toString() || ''
 
   const parsedBagId = parseBagId(bagId)
 
   const [dataObject] = await Promise.all([
-    api.query.storage.dataObjectsById(parsedBagId, Number(dataObjectId)),
+    api.query.storage.dataObjectsById(parsedBagId, dataObjectId),
     verifyBagAssignment(api, parsedBagId, storageBucketId),
     verifyBucketId(queryNodeEndpoint, workerId, storageBucketId),
   ])
