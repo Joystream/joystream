@@ -1,5 +1,5 @@
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
-import createAndUpdateChannel from '../flows/clis/createAndUpdateChannel'
+import channelsAndVideos from '../flows/clis/channelsAndVideos'
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import { testVideoCategories } from '../flows/content/videoCategories'
 import curatorModerationActions from '../flows/content/curatorModerationActions'
@@ -17,7 +17,7 @@ scenario('Content directory', async ({ job }) => {
   )
 
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const channelJob = job('Create and Update Channel with assets', createAndUpdateChannel).requires(leadSetupJob)
+  const channelJob = job('manage channels and videos through CLI', channelsAndVideos).requires(leadSetupJob)
   const videoCategoriesJob = job('video categories', testVideoCategories).after(channelJob)
   const subtitlesJob = job('Add and Update Video Subtitles', addAndUpdateVideoSubtitles).after(videoCategoriesJob)
   const videoCountersJob = job('check active video counters', activeVideoCounters).after(subtitlesJob)
