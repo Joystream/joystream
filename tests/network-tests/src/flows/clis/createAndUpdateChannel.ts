@@ -4,13 +4,15 @@ import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership/BuyMemb
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 import { Utils } from '../../utils'
-import { statSync } from 'fs'
+import { statSync, readFileSync } from 'fs'
 import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
 import { createType } from '@joystream/types'
 import { u8aConcat, u8aFixLength } from '@polkadot/util'
+import { Configuration as ArgusApiConfig, DefaultApi as ArgusApi } from '@joystream/distributor-node-client'
+import { AxiosResponse } from 'axios'
 
-export default async function createAndUpdateChannel({ api, query }: FlowProps): Promise<void> {
+export default async function createAndUpdateChannel({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
   debug('Started')
 
@@ -67,7 +69,7 @@ export default async function createAndUpdateChannel({ api, query }: FlowProps):
     .toString()
 
   // Assert channel data after creation
-  await query.tryQueryWithTimeout(
+  const channel = await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
     (channel) => {
       Utils.assert(channel, 'Channel not found')
@@ -77,11 +79,46 @@ export default async function createAndUpdateChannel({ api, query }: FlowProps):
       assert.equal(channel.language?.iso, channelInput.language)
       assert.equal(channel.avatarPhoto?.type.__typename, 'DataObjectTypeChannelAvatar')
       assert.equal(channel.avatarPhoto?.size, statSync(avatarPhotoPath).size)
+      assert.equal(channel.avatarPhoto?.isAccepted, true)
       assert.equal(channel.coverPhoto?.type.__typename, 'DataObjectTypeChannelCoverPhoto')
       assert.equal(channel.coverPhoto?.size, statSync(coverPhotoPath).size)
+      assert.equal(channel.coverPhoto?.isAccepted, true)
       assert.equal(channel.rewardAccount, expectedChannelRewardAccount)
     }
   )
+  // Just to avoid non-null assertions later
+  Utils.assert(channel && channel.avatarPhoto && channel.coverPhoto)
+
+  // Fetch assets from Argus and verify
+  const argusApiConfig = new ArgusApiConfig({
+    basePath: env.DISTRIBUTOR_PUBLIC_API_URL || 'http://localhost:3334/api/v1',
+  })
+  const argusApi = new ArgusApi(argusApiConfig)
+  const avatarPhotoDataFile = [...readFileSync(avatarPhotoPath)]
+  const coverPhotoDataFile = [...readFileSync(coverPhotoPath)]
+  const avatarPhotoDataArgus = [
+    ...Buffer.from(
+      (
+        (await argusApi.publicAsset(channel.avatarPhoto.id, {
+          responseType: 'arraybuffer',
+        })) as AxiosResponse<ArrayBuffer>
+      ).data
+    ),
+  ]
+  const coverPhotoDataArgus = [
+    ...Buffer.from(
+      (
+        (await argusApi.publicAsset(channel.coverPhoto.id, {
+          responseType: 'arraybuffer',
+        })) as AxiosResponse<ArrayBuffer>
+      ).data
+    ),
+  ]
+
+  assert.equal(avatarPhotoDataArgus.length, avatarPhotoDataFile.length)
+  assert.equal(coverPhotoDataArgus.length, coverPhotoDataFile.length)
+  assert.deepEqual(avatarPhotoDataArgus, avatarPhotoDataFile)
+  assert.deepEqual(coverPhotoDataArgus, coverPhotoDataFile)
 
   const updatedCoverPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(1820, 400)
   const updateChannelInput = {
@@ -93,7 +130,7 @@ export default async function createAndUpdateChannel({ api, query }: FlowProps):
   await joystreamCli.updateChannel(channelId, updateChannelInput)
 
   // Assert channel data after update
-  await query.tryQueryWithTimeout(
+  const updatedChannel = await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
     (channel) => {
       Utils.assert(channel, 'Channel not found')
@@ -103,8 +140,25 @@ export default async function createAndUpdateChannel({ api, query }: FlowProps):
       assert.equal(channel.avatarPhoto?.size, statSync(avatarPhotoPath).size)
       assert.equal(channel.coverPhoto?.type.__typename, 'DataObjectTypeChannelCoverPhoto')
       assert.equal(channel.coverPhoto?.size, statSync(updatedCoverPhotoPath).size)
+      assert.equal(channel.coverPhoto?.isAccepted, true)
       assert.equal(channel.rewardAccount, expectedChannelRewardAccount)
     }
   )
   debug('Done')
+  // Just to avoid non-null assertions later
+  Utils.assert(updatedChannel && updatedChannel.coverPhoto)
+
+  // Fetch updated asset from Argus and verify
+  const updatedCoverPhotoDataFile = [...readFileSync(updatedCoverPhotoPath)]
+  const updatedCoverPhotoDataArgus = [
+    ...Buffer.from(
+      (
+        (await argusApi.publicAsset(updatedChannel.coverPhoto.id, {
+          responseType: 'arraybuffer',
+        })) as AxiosResponse<ArrayBuffer>
+      ).data
+    ),
+  ]
+  assert.equal(updatedCoverPhotoDataArgus.length, updatedCoverPhotoDataFile.length)
+  assert.deepEqual(updatedCoverPhotoDataArgus, updatedCoverPhotoDataFile)
 }
