@@ -155,9 +155,9 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
     const token = parseUploadToken(tokenString)
 
     const sourceTokenRequest: RequestData = {
-      dataObjectId: parseInt(req.body.dataObjectId),
-      storageBucketId: parseInt(req.body.storageBucketId),
-      bagId: req.body.bagId,
+      dataObjectId: req.query.dataObjectId?.toString() || '',
+      storageBucketId: req.query.storageBucketId?.toString() || '',
+      bagId: req.query.bagId?.toString() || '',
     }
 
     verifyUploadTokenData(account.address, token, sourceTokenRequest)

@@ -23,6 +23,7 @@ import { timeout } from 'promise-timeout'
 import { WebApiError, sendResponseWithError, getHttpStatusCodeByError, AppConfig } from './common'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { PalletMembershipMembershipObject as Membership, PalletStorageBagIdType as BagId } from '@polkadot/types/lookup'
+import BN from 'bn.js'
 const fsPromises = fs.promises
 
 /**
@@ -85,11 +86,11 @@ export async function getFileHeaders(req: express.Request, res: express.Response
  * A public endpoint: receives file.
  */
 export async function uploadFile(
-  req: express.Request,
+  req: express.Request<unknown, unknown, unknown, RequestData>,
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
-  const uploadRequest: RequestData = req.query as any
+  const uploadRequest = req.query
 
   // saved filename to delete on verification or extrinsic errors
   let cleanupFileName = ''
@@ -104,10 +105,10 @@ export async function uploadFile(
 
     const hash = await hashFile(fileObj.path)
 
-    await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
+    await verifyDataObjectInfo(api, bagId, new BN(uploadRequest.dataObjectId), fileObj.size, hash)
 
     // Prepare new file name
-    const dataObjectId = uploadRequest.dataObjectId.toString()
+    const dataObjectId = uploadRequest.dataObjectId
     const uploadsDir = res.locals.uploadsDir
     const newPath = path.join(uploadsDir, dataObjectId)
 
@@ -123,8 +124,8 @@ export async function uploadFile(
       bagId,
       res.locals.storageProviderAccount,
       workerId,
-      uploadRequest.storageBucketId,
-      [uploadRequest.dataObjectId]
+      new BN(uploadRequest.storageBucketId),
+      [new BN(uploadRequest.dataObjectId)]
     )
 
     res.status(201).json({
@@ -174,7 +175,7 @@ export async function authTokenForUploading(
  * This is a helper function. It parses the request object for a variable and
  * throws an error on failure.
  */
-function getFileObject(req: express.Request): Express.Multer.File {
+function getFileObject(req: express.Request<unknown, unknown, unknown, RequestData>): Express.Multer.File {
   if (req.file) {
     return req.file
   }
@@ -257,7 +258,7 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
 async function verifyDataObjectInfo(
   api: ApiPromise,
   bagId: BagId,
-  dataObjectId: number,
+  dataObjectId: BN,
   fileSize: number,
   hash: string
 ): Promise<boolean> {
