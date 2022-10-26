@@ -84,9 +84,6 @@ export default class DevBatchUpload extends AccountsCommandBase {
         batch.map(async ([, dataObject], k) => {
           const dataObjectId = nextObjectId + k
           const formData = new FormData()
-          formData.append('dataObjectId', dataObjectId.toString())
-          formData.append('storageBucketId', bucketId.toString())
-          formData.append('bagId', bagId)
           formData.append('file', dataObject, { filename: 'test.jpg', knownLength: dataObject.byteLength })
           this.log(`Uploading object ${dataObjectId}`)
           try {
@@ -94,6 +91,11 @@ export default class DevBatchUpload extends AccountsCommandBase {
               method: 'POST',
               url: urljoin(endpoint, 'api/v1/files'),
               data: formData,
+              params: {
+                dataObjectId: dataObject.toString(),
+                storageBucketId: bucketId.toString(),
+                bagId,
+              },
               headers: {
                 'content-type': 'multipart/form-data',
                 ...formData.getHeaders(),
