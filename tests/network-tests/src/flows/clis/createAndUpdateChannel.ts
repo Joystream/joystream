@@ -9,12 +9,18 @@ import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
 import { createType } from '@joystream/types'
 import { u8aConcat, u8aFixLength } from '@polkadot/util'
-import { Configuration as ArgusApiConfig, DefaultApi as ArgusApi } from '@joystream/distributor-node-client'
-import { AxiosResponse } from 'axios'
+import { ArgusApi } from '../../ArgusApi'
+import {
+  ChannelCreationInputParameters,
+  ChannelUpdateInputParameters,
+  VideoInputParameters,
+} from '@joystream/cli/src/Types'
 
 export default async function createAndUpdateChannel({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createChannel')
   debug('Started')
+
+  const argusApi = new ArgusApi(env.DISTRIBUTOR_PUBLIC_API_URL || 'http://localhost:3334/api/v1')
 
   // Create channel owner membership
   const [channelOwnerKeypair] = await api.createKeyPairs(1)
@@ -34,9 +40,10 @@ export default async function createAndUpdateChannel({ api, query, env }: FlowPr
   await joystreamCli.importAccount(channelOwnerKeypair.key)
 
   // Create channel
+  debug('Creating a channel...')
   const avatarPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(300, 300)
   const coverPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(1920, 500)
-  const channelInput = {
+  const channelInput: ChannelCreationInputParameters = {
     title: 'Test channel',
     avatarPhotoPath,
     coverPhotoPath,
@@ -45,12 +52,8 @@ export default async function createAndUpdateChannel({ api, query, env }: FlowPr
     language: 'en',
   }
 
-  const channelId = await joystreamCli.createChannel(channelInput, [
-    '--context',
-    'Member',
-    '--useMemberId',
-    memberId.toString(),
-  ])
+  const memberContextFlags = ['--context', 'Member', '--useMemberId', memberId.toString()]
+  const channelId = await joystreamCli.createChannel(channelInput, memberContextFlags)
 
   const expectedChannelRewardAccount = api
     .createType(
@@ -90,38 +93,13 @@ export default async function createAndUpdateChannel({ api, query, env }: FlowPr
   Utils.assert(channel && channel.avatarPhoto && channel.coverPhoto)
 
   // Fetch assets from Argus and verify
-  const argusApiConfig = new ArgusApiConfig({
-    basePath: env.DISTRIBUTOR_PUBLIC_API_URL || 'http://localhost:3334/api/v1',
-  })
-  const argusApi = new ArgusApi(argusApiConfig)
-  const avatarPhotoDataFile = [...readFileSync(avatarPhotoPath)]
-  const coverPhotoDataFile = [...readFileSync(coverPhotoPath)]
-  const avatarPhotoDataArgus = [
-    ...Buffer.from(
-      (
-        (await argusApi.publicAsset(channel.avatarPhoto.id, {
-          responseType: 'arraybuffer',
-        })) as AxiosResponse<ArrayBuffer>
-      ).data
-    ),
-  ]
-  const coverPhotoDataArgus = [
-    ...Buffer.from(
-      (
-        (await argusApi.publicAsset(channel.coverPhoto.id, {
-          responseType: 'arraybuffer',
-        })) as AxiosResponse<ArrayBuffer>
-      ).data
-    ),
-  ]
+  await argusApi.fetchAndVerifyAsset(channel.coverPhoto.id, readFileSync(coverPhotoPath), 'image/bmp')
+  await argusApi.fetchAndVerifyAsset(channel.avatarPhoto.id, readFileSync(avatarPhotoPath), 'image/bmp')
 
-  assert.equal(avatarPhotoDataArgus.length, avatarPhotoDataFile.length)
-  assert.equal(coverPhotoDataArgus.length, coverPhotoDataFile.length)
-  assert.deepEqual(avatarPhotoDataArgus, avatarPhotoDataFile)
-  assert.deepEqual(coverPhotoDataArgus, coverPhotoDataFile)
-
+  // Update channel
+  debug('Updating channel...')
   const updatedCoverPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(1820, 400)
-  const updateChannelInput = {
+  const updateChannelInput: ChannelUpdateInputParameters = {
     title: 'Test channel [UPDATED!]',
     coverPhotoPath: updatedCoverPhotoPath,
     description: 'This is a test channel [UPDATED!]',
@@ -144,21 +122,157 @@ export default async function createAndUpdateChannel({ api, query, env }: FlowPr
       assert.equal(channel.rewardAccount, expectedChannelRewardAccount)
     }
   )
-  debug('Done')
+
   // Just to avoid non-null assertions later
   Utils.assert(updatedChannel && updatedChannel.coverPhoto)
 
   // Fetch updated asset from Argus and verify
-  const updatedCoverPhotoDataFile = [...readFileSync(updatedCoverPhotoPath)]
-  const updatedCoverPhotoDataArgus = [
-    ...Buffer.from(
-      (
-        (await argusApi.publicAsset(updatedChannel.coverPhoto.id, {
-          responseType: 'arraybuffer',
-        })) as AxiosResponse<ArrayBuffer>
-      ).data
-    ),
-  ]
-  assert.equal(updatedCoverPhotoDataArgus.length, updatedCoverPhotoDataFile.length)
-  assert.deepEqual(updatedCoverPhotoDataArgus, updatedCoverPhotoDataFile)
+  await argusApi.fetchAndVerifyAsset(updatedChannel.coverPhoto.id, readFileSync(updatedCoverPhotoPath), 'image/bmp')
+
+  // Create video
+  debug('Creating a video...')
+  const videoPixelWidth = 1920
+  const videoPixelHeight = 1080
+  const videoPath = joystreamCli.getTmpFileManager().randomImgFile(videoPixelWidth, videoPixelHeight)
+  const thumbnailPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(640, 360)
+  const subtitleAssetPath = joystreamCli.getTmpFileManager().jsonFile([[0, 'Some example subtitle']])
+  const subtitlesMeta = { type: 'subtitle', language: 'en', mimeType: 'text/plain', subtitleAssetPath }
+  const videoInput: VideoInputParameters = {
+    videoPath,
+    thumbnailPhotoPath,
+    subtitles: [subtitlesMeta],
+    title: 'Test video',
+    description: 'This is a test video',
+    isPublic: true,
+    isExplicit: false,
+    hasMarketing: false,
+    language: 'en',
+    license: {
+      code: 1003,
+      attribution: 'Joystream contributors',
+    },
+    enableComments: true,
+  }
+  const expectedDetectedMediaType = {
+    codecName: 'bmp',
+    container: 'bmp',
+    mimeMediaType: 'image/bmp',
+  }
+  const { videoId } = await joystreamCli.createVideo(channelId, videoInput, false)
+
+  // Assert video data after creation
+  const video = await query.tryQueryWithTimeout(
+    () => query.videoById(videoId.toString()),
+    (video) => {
+      Utils.assert(video, 'Video not found')
+      assert.equal(video.title, videoInput.title)
+      assert.equal(video.description, videoInput.description)
+      assert.equal(video.isPublic, videoInput.isPublic)
+      assert.equal(video.isExplicit, videoInput.isExplicit)
+      assert.equal(video.hasMarketing, videoInput.hasMarketing)
+      assert.equal(video.language?.iso, videoInput.language)
+      assert.equal(video.mediaMetadata?.encoding?.codecName, expectedDetectedMediaType.codecName)
+      assert.equal(video.mediaMetadata?.encoding?.container, expectedDetectedMediaType.container)
+      assert.equal(video.mediaMetadata?.encoding?.mimeMediaType, expectedDetectedMediaType.mimeMediaType)
+      assert.equal(video.mediaMetadata?.pixelHeight, videoPixelHeight)
+      assert.equal(video.mediaMetadata?.pixelWidth, videoPixelWidth)
+      assert.equal(video.mediaMetadata?.size, statSync(videoPath).size)
+      assert.equal(video.media?.type.__typename, 'DataObjectTypeVideoMedia')
+      assert.equal(video.media?.size, statSync(videoPath).size)
+      assert.equal(video.media?.isAccepted, true)
+      assert.equal(video.thumbnailPhoto?.type.__typename, 'DataObjectTypeVideoThumbnail')
+      assert.equal(video.thumbnailPhoto?.size, statSync(thumbnailPhotoPath).size)
+      assert.equal(video.thumbnailPhoto?.isAccepted, true)
+      assert.equal(video.license?.code, videoInput.license?.code)
+      assert.equal(video.license?.attribution, videoInput.license?.attribution)
+      assert.equal(video.subtitles[0].language?.iso, subtitlesMeta.language)
+      assert.equal(video.subtitles[0].mimeType, subtitlesMeta.mimeType)
+      assert.equal(video.subtitles[0].type, subtitlesMeta.type)
+      assert.equal(video.subtitles[0].asset?.size, statSync(subtitleAssetPath).size)
+      assert.equal(video.subtitles[0].asset?.type.__typename, 'DataObjectTypeVideoSubtitle')
+      assert.equal(video.subtitles[0].asset?.isAccepted, true)
+      assert.equal(video.isCommentSectionEnabled, videoInput.enableComments)
+    }
+  )
+
+  // Just to avoid non-null assertions later
+  Utils.assert(video && video.subtitles[0].asset && video.media && video.thumbnailPhoto)
+
+  // Fetch assets from Argus and verify
+  await argusApi.fetchAndVerifyAsset(video.subtitles[0].asset.id, readFileSync(subtitleAssetPath), 'text/plain')
+  await argusApi.fetchAndVerifyAsset(video.media.id, readFileSync(videoPath), 'image/bmp')
+  await argusApi.fetchAndVerifyAsset(video.thumbnailPhoto.id, readFileSync(thumbnailPhotoPath), 'image/bmp')
+
+  // Video update
+  debug('Updating video...')
+  const updatedVideoPixelWidth = 1280
+  const updatedVideoPixelHeight = 720
+  const updatedVideoPath = joystreamCli
+    .getTmpFileManager()
+    .randomImgFile(updatedVideoPixelWidth, updatedVideoPixelHeight)
+  const updatedThumbnailPhotoPath = joystreamCli.getTmpFileManager().randomImgFile(800, 450)
+  const videoUpdateInput: VideoInputParameters = {
+    videoPath: updatedVideoPath,
+    thumbnailPhotoPath: updatedThumbnailPhotoPath,
+    clearSubtitles: true,
+    title: 'Test video [UPDATED!]',
+    description: 'This is a test video [UPDATED!]',
+    isPublic: false,
+    isExplicit: true,
+    hasMarketing: true,
+    language: 'fr',
+    license: {
+      code: 1000,
+      attribution: '',
+    },
+    enableComments: false,
+  }
+
+  await joystreamCli.updateVideo(channelId, videoUpdateInput)
+
+  // Assert video data after update
+  const updatedVideo = await query.tryQueryWithTimeout(
+    () => query.videoById(videoId.toString()),
+    (video) => {
+      Utils.assert(video, 'Video not found')
+      assert.equal(video.title, videoUpdateInput.title)
+      assert.equal(video.description, videoUpdateInput.description)
+      assert.equal(video.isPublic, videoUpdateInput.isPublic)
+      assert.equal(video.isExplicit, videoUpdateInput.isExplicit)
+      assert.equal(video.hasMarketing, videoUpdateInput.hasMarketing)
+      assert.equal(video.language?.iso, videoUpdateInput.language)
+      assert.equal(video.mediaMetadata?.pixelHeight, updatedVideoPixelHeight)
+      assert.equal(video.mediaMetadata?.pixelWidth, updatedVideoPixelWidth)
+      assert.equal(video.mediaMetadata?.size, statSync(updatedVideoPath).size)
+
+      // Encoding remains unchanged
+      assert.equal(video.mediaMetadata?.encoding?.codecName, expectedDetectedMediaType.codecName)
+      assert.equal(video.mediaMetadata?.encoding?.container, expectedDetectedMediaType.container)
+      assert.equal(video.mediaMetadata?.encoding?.mimeMediaType, expectedDetectedMediaType.mimeMediaType)
+
+      assert.equal(video.media?.type.__typename, 'DataObjectTypeVideoMedia')
+      assert.equal(video.media?.size, statSync(updatedVideoPath).size)
+      assert.equal(video.media?.isAccepted, true)
+      assert.equal(video.thumbnailPhoto?.type.__typename, 'DataObjectTypeVideoThumbnail')
+      assert.equal(video.thumbnailPhoto?.size, statSync(updatedThumbnailPhotoPath).size)
+      assert.equal(video.thumbnailPhoto?.isAccepted, true)
+      assert.equal(video.license?.code, videoUpdateInput.license?.code)
+      assert.equal(video.license?.attribution, '')
+      assert.isEmpty(video.subtitles)
+      assert.equal(video.isCommentSectionEnabled, videoUpdateInput.enableComments)
+    }
+  )
+
+  // Just to avoid non-null assertions later
+  Utils.assert(updatedVideo && updatedVideo.media && updatedVideo.thumbnailPhoto)
+
+  // Fetch assets from Argus and verify
+  await argusApi.fetchAndVerifyAsset(updatedVideo.media.id, readFileSync(updatedVideoPath), 'image/bmp')
+  await argusApi.fetchAndVerifyAsset(
+    updatedVideo.thumbnailPhoto.id,
+    readFileSync(updatedThumbnailPhotoPath),
+    'image/bmp'
+  )
+
+  debug('Done')
 }

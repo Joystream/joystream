@@ -1,7 +1,7 @@
-import createChannel from '../flows/clis/createAndUpdateChannel'
+import channelsAndVideos from '../flows/clis/createAndUpdateChannel'
 import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Cli', async ({ job }) => {
-  job('create channel via CLI', createChannel)
+  job('Manage channels and videos through CLI', channelsAndVideos)
 })

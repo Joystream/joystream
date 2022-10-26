@@ -95,20 +95,55 @@ export type CommentFieldsFragment = {
   reactions: Array<CommentReactionFieldsFragment>
 }
 
+export type LicenseFieldsFragment = {
+  version: number
+  code?: Types.Maybe<number>
+  attribution?: Types.Maybe<string>
+  customText?: Types.Maybe<string>
+}
+
+export type VideoMediaEncodingFieldsFragment = {
+  codecName?: Types.Maybe<string>
+  container?: Types.Maybe<string>
+  mimeMediaType?: Types.Maybe<string>
+}
+
+export type VideoMediaMetadataFieldsFragment = {
+  pixelWidth?: Types.Maybe<number>
+  pixelHeight?: Types.Maybe<number>
+  size?: Types.Maybe<any>
+  encoding?: Types.Maybe<VideoMediaEncodingFieldsFragment>
+}
+
+export type VideoSubtitleFieldsFragment = {
+  id: string
+  type: string
+  mimeType: string
+  language?: Types.Maybe<{ iso: string }>
+  asset?: Types.Maybe<StorageDataObjectFieldsFragment>
+}
+
 export type VideoFieldsFragment = {
   id: string
   title?: Types.Maybe<string>
   description?: Types.Maybe<string>
+  duration?: Types.Maybe<number>
   isPublic?: Types.Maybe<boolean>
+  isExplicit?: Types.Maybe<boolean>
+  hasMarketing?: Types.Maybe<boolean>
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  license?: Types.Maybe<LicenseFieldsFragment>
+  mediaMetadata?: Types.Maybe<VideoMediaMetadataFieldsFragment>
+  media?: Types.Maybe<StorageDataObjectFieldsFragment>
+  thumbnailPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   category?: Types.Maybe<VideoCategoryFieldsFragment>
   language?: Types.Maybe<{ iso: string }>
   comments: Array<CommentFieldsFragment>
   reactions: Array<VideoReactionFieldsFragment>
   pinnedComment?: Types.Maybe<{ id: string }>
-  subtitles: Array<{ id: string; asset?: Types.Maybe<StorageDataObjectFieldsFragment> }>
+  subtitles: Array<VideoSubtitleFieldsFragment>
 }
 
 export type BidFieldsFragment = {
@@ -2535,6 +2570,32 @@ export const ChannelFields = gql`
   }
   ${StorageDataObjectFields}
 `
+export const LicenseFields = gql`
+  fragment LicenseFields on License {
+    version
+    code
+    attribution
+    customText
+  }
+`
+export const VideoMediaEncodingFields = gql`
+  fragment VideoMediaEncodingFields on VideoMediaEncoding {
+    codecName
+    container
+    mimeMediaType
+  }
+`
+export const VideoMediaMetadataFields = gql`
+  fragment VideoMediaMetadataFields on VideoMediaMetadata {
+    encoding {
+      ...VideoMediaEncodingFields
+    }
+    pixelWidth
+    pixelHeight
+    size
+  }
+  ${VideoMediaEncodingFields}
+`
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
     id
@@ -2584,12 +2645,41 @@ export const VideoReactionFields = gql`
     }
   }
 `
+export const VideoSubtitleFields = gql`
+  fragment VideoSubtitleFields on VideoSubtitle {
+    id
+    type
+    language {
+      iso
+    }
+    mimeType
+    asset {
+      ...StorageDataObjectFields
+    }
+  }
+  ${StorageDataObjectFields}
+`
 export const VideoFields = gql`
   fragment VideoFields on Video {
     id
     title
     description
+    duration
     isPublic
+    isExplicit
+    hasMarketing
+    license {
+      ...LicenseFields
+    }
+    mediaMetadata {
+      ...VideoMediaMetadataFields
+    }
+    media {
+      ...StorageDataObjectFields
+    }
+    thumbnailPhoto {
+      ...StorageDataObjectFields
+    }
     category {
       ...VideoCategoryFields
     }
@@ -2609,16 +2699,16 @@ export const VideoFields = gql`
       id
     }
     subtitles {
-      id
-      asset {
-        ...StorageDataObjectFields
-      }
+      ...VideoSubtitleFields
     }
   }
+  ${LicenseFields}
+  ${VideoMediaMetadataFields}
+  ${StorageDataObjectFields}
   ${VideoCategoryFields}
   ${CommentFields}
   ${VideoReactionFields}
-  ${StorageDataObjectFields}
+  ${VideoSubtitleFields}
 `
 export const BidFields = gql`
   fragment BidFields on Bid {
