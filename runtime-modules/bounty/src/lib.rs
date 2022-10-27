@@ -437,8 +437,11 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord, ClosedContractWhite
     /// Current active work entry counter.
     pub active_work_entry_count: u32,
 
-    ///This flag is set to false, if oracle called withdraw_oracle_reward.
+    /// This flag is set to false, if oracle called withdraw_oracle_reward.
     pub has_unpaid_oracle_reward: bool,
+
+    /// Bloat bond amount paid by the creator, recoverable on bounty deletion
+    pub creator_bloat_bond_amount: Balance,
 }
 
 impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord, ClosedContractWhitelist>
@@ -955,9 +958,10 @@ decl_module! {
                 .try_into()
                 .map_err(|_| Error::<T>::ClosedContractMemberListIsTooLarge)?;
 
+            let bloat_bond_amount = T::CreatorStateBloatBondAmount::get();
             let amount = params.cherry
                 .saturating_add(params.oracle_reward)
-                .saturating_add(T::CreatorStateBloatBondAmount::get());
+                .saturating_add(bloat_bond_amount);
             bounty_creator_manager.validate_balance_sufficiency(amount)?;
 
             //
@@ -979,7 +983,8 @@ decl_module! {
                 creation_params: stored_creation_params,
                 milestone: created_bounty_milestone,
                 active_work_entry_count: 0,
-                has_unpaid_oracle_reward: params.oracle_reward > Zero::zero()
+                has_unpaid_oracle_reward: params.oracle_reward > Zero::zero(),
+                creator_bloat_bond_amount: bloat_bond_amount,
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -1025,15 +1030,14 @@ decl_module! {
 
             //contribution is adjusted to prevent exceeding target funding.
             //If funder already contributed transfer_amount is equal to adjusted_amount
-            let (current_contribution,
-                adjusted_amount,
-                transfer_amount
-                ) = Self::get_adjusted_contribution(
+            let (current_contribution, adjusted_amount, transfer_amount) =
+                Self::get_adjusted_contribution(
                     &bounty_id,
                     &bounty,
                     &funder,
                     amount,
-                    is_target_funding_reached);
+                    is_target_funding_reached
+                );
 
             bounty_funder_manager.validate_balance_sufficiency(transfer_amount)?;
 
@@ -1060,7 +1064,8 @@ decl_module! {
 
             //Update member funding record
             <BountyContributions<T>>::insert(
-                bounty_id, funder.clone(),
+                bounty_id,
+                funder.clone(),
                 current_contribution.add_funds(adjusted_amount)
             );
 
@@ -1844,7 +1849,7 @@ impl<T: Config> Module<T> {
         Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
             *bounty_id,
             funder.clone(),
-            T::FunderStateBloatBondAmount::get(),
+            funding.funder_state_bloat_bond_amount,
         ));
 
         Self::deposit_event(RawEvent::BountyFundingWithdrawal(*bounty_id, funder));
@@ -1870,7 +1875,7 @@ impl<T: Config> Module<T> {
         Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
             *bounty_id,
             funder,
-            T::FunderStateBloatBondAmount::get(),
+            funding.funder_state_bloat_bond_amount,
         ));
 
         Ok(())
@@ -2101,14 +2106,14 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         bounty_creator_manager.transfer_funds_from_bounty_account(
             *bounty_id,
-            T::CreatorStateBloatBondAmount::get(),
+            bounty.creator_bloat_bond_amount,
             true,
         )?;
 
         Self::deposit_event(RawEvent::CreatorStateBloatBondWithdrawn(
             *bounty_id,
             bounty.creation_params.creator.clone(),
-            T::CreatorStateBloatBondAmount::get(),
+            bounty.creator_bloat_bond_amount,
         ));
 
         <Bounties<T>>::remove(bounty_id);

@@ -280,6 +280,8 @@ impl CreateBountyFixture {
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
                 has_unpaid_oracle_reward: params.oracle_reward > 0,
+                creator_bloat_bond_amount:
+                    <Test as crate::Config>::CreatorStateBloatBondAmount::get(),
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
