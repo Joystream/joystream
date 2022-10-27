@@ -115,7 +115,6 @@ export async function processCreateVideoMessage(
     id: contentId.toString(),
     channel,
     isCensored: false,
-    isFeatured: false,
     createdInBlock: event.blockNumber,
     isCommentSectionEnabled: true,
     isReactionFeatureEnabled: true,
