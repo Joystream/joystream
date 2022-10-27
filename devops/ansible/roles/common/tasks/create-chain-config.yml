@@ -98,12 +98,6 @@
 #   run_once: true
 #   when: endow_accounts is defined and endow_accounts|int > 0
 
-- name: generate node keys
-  shell: > 
-    bin/joystream-node key generate-node-key --file {{ remote_data_path }}/node-key-{{ ansible_play_batch.index(inventory_hostname) }}
-  delegate_to: '{{ first_validator }}'
-  register: generate_node_keys_output
-
 - name: Set chain name, id, protocolId, and bootNodes
   update_chainspec_name_id_boot_nodes:
     chain_spec_path: '{{ remote_data_path }}/chainspec.json'

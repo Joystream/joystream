@@ -29,8 +29,8 @@ def main():
 
     boot_node_list = data["bootNodes"]
     for key in all_nodes:
-        if "validators" in all_nodes[key]["group_names"]:
-            public_key = all_nodes[key]["generate_node_keys_output"]["stderr"]
+        if "boot" in all_nodes[key]["group_names"]:
+            public_key = all_nodes[key]["node_keys_output"]["stdout"]
             try:
                 ip = ipaddress.ip_address(key)
                 if ip.version == 6:

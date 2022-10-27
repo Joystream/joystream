@@ -10,9 +10,10 @@ ExecStart={{ template_working_dir }}/bin/joystream-node \
         --chain bin/chain/chainspec-raw.json \
         --pruning archive \
         --base-path bin/chain \
-        --node-key-file {{ template_node_secret_path }} \
         --keystore-path {{ template_keystore_path }} \
-        --validator
+        --validator \
+        --no-mdns
+
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=10000

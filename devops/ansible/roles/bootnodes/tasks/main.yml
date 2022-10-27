@@ -4,12 +4,6 @@
 - set_fact:
     chain_path: "bin/chain"
 
-- set_fact:
-    keystore_path: "{{ chain_path }}/keystore/"
-
-- set_fact:
-    node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
-
 - name: Check if remote chain path dir exists
   stat:
     path: "{{ chain_path }}"
@@ -24,27 +18,35 @@
     path: "{{ item }}"
     state: directory
   loop:
-    - "{{ keystore_path }}"
-
-- name: Copy auth directory to remote host
-  copy:
-    src: "{{ data_path }}/chain/auth-{{ node_index }}/"
-    dest: "{{ keystore_path }}"
+    - "{{ chain_path }}"
 
 - name: Copying raw chain spec file
   copy:
     src: '{{ data_path }}/chain/chainspec-raw.json'
     dest: '{{ chain_path }}/chainspec-raw.json'
 
+# Assume hostname is a DNS name
+- name: Set websocket and http endpoint variables
+  set_fact:
+    listen_multi_addr: '/dns4/{{ inventory_hostname }}/tcp/30333'
+  run_once: true
+
+# If inventory hostname is infact an ip address
+- name: Set websocket and http endpoint variables
+  set_fact:
+    listen_multi_addr: '/ip4/{{ inventory_hostname }}/tcp/30333'
+  run_once: true
+  when: inventory_hostname | ansible.utils.ipaddr
+
 - name: Create a service file
   template:
     src: joystream-node.service.j2
     dest: /etc/systemd/system/joystream-node.service
   vars:
-    template_keystore_path: "{{ keystore_path }}"
     template_chain_spec_path: "{{ chain_path }}/chainspec-raw.json"
     template_user: "{{ ansible_user }}"
     template_working_dir: "{{ ansible_env.HOME }}"
+    template_listen_multi_addr: "{{ listen_multi_addr }}"
   become: true
 
 - name: Start service joystream-node, if not started
