@@ -62,7 +62,7 @@ export default class ConstructWrappedTxCallCommand extends AdvancedTransactionsC
   }
 
   async run(): Promise<void> {
-    let { address, output, fullOutput, module, method, inputCall, inputCallFile, nonceIncrement, lifetime, tip } =
+    const { address, output, fullOutput, module, method, inputCall, inputCallFile, nonceIncrement, lifetime, tip } =
       this.parse(ConstructWrappedTxCallCommand).flags
 
     ensureOutputFileIsWriteable(output)
@@ -71,9 +71,9 @@ export default class ConstructWrappedTxCallCommand extends AdvancedTransactionsC
 
     const getParams = await this.promptForExtrinsicArgs(module, method)
 
-    let args: Args = {}
-    for (let param of getParams) {
-      if (param.argName == 'call') {
+    const args: Args = {}
+    for (const param of getParams) {
+      if (param.argName === 'call') {
         args[param.argName] = callInput
       } else {
         const value: ApiMethodArg = await this.promptForParam(param.argType)

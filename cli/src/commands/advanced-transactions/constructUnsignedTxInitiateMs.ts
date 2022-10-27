@@ -69,7 +69,7 @@ export default class ConstructUnsignedTxInitiateMsCommand extends AdvancedTransa
   }
 
   async run(): Promise<void> {
-    let {
+    const {
       input,
       addressSigner,
       output,

@@ -45,7 +45,7 @@ export default class CreateSetCodeCallCommand extends AdvancedTransactionsComman
   }
 
   async run(): Promise<void> {
-    let { wasmPath, address, output, codeOutput, nonceIncrement, lifetime, tip } =
+    const { wasmPath, address, output, codeOutput, nonceIncrement, lifetime, tip } =
       this.parse(CreateSetCodeCallCommand).flags
 
     ensureOutputFileIsWriteable(output)
