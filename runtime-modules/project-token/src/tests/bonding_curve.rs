@@ -65,6 +65,9 @@ fn activation_fails_when_there_are_ongoing_active_sales() {}
 #[test]
 fn activation_fails_when_there_are_ongoing_active_revenue_splits() {}
 
+#[test]
+fn activation_fails_when_amm_status_already_active() {}
+
 // --------------------- UNBONDING -------------------------------
 
 #[test]
