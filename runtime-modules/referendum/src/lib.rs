@@ -55,7 +55,7 @@ use frame_support::traits::{EnsureOrigin, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin,
-    storage::weak_bounded_vec::WeakBoundedVec, Parameter, StorageValue,
+    storage::weak_bounded_vec::WeakBoundedVec, storage::StorageMap, Parameter, StorageValue,
 };
 use frame_system::ensure_signed;
 use scale_info::TypeInfo;
@@ -312,8 +312,11 @@ decl_storage! { generate_storage_info
         /// A record is finally removed when the user unstakes, which can happen during a voting
         /// stage or after the current cycle ends.
         /// A stake for a vote can be reused in future referendum cycles.
-        pub Votes get(fn votes): map hasher(blake2_128_concat)
-                                          T::AccountId => CastVoteOf<T>;
+        pub Votes get(fn votes): map hasher(blake2_128_concat) T::AccountId => CastVoteOf<T>;
+
+        /// Accounts that permanently opted out of voting in referendum.
+        pub AccountsOptedOut get(fn accounts_opted_out): map hasher(blake2_128_concat)
+            T::AccountId => ();
     }
 }
 
@@ -347,6 +350,9 @@ decl_event! {
 
         /// User released his stake
         StakeReleased(AccountId),
+
+        /// Account permanently opted out of voting in referendum.
+        AccountOptedOutOfVoting(AccountId),
     }
 }
 
@@ -392,6 +398,9 @@ decl_error! {
 
         /// Unstaking has been forbidden for the user (at least for now)
         UnstakingForbidden,
+
+        /// A vote cannot be cast from an account that already opted out of voting.
+        AccountAlreadyOptedOutOfVoting,
     }
 }
 
@@ -525,6 +534,30 @@ decl_module! {
 
             // emit event
             Self::deposit_event(RawEvent::StakeReleased(account_id));
+
+            Ok(())
+        }
+
+        /// Permanently opt out of voting from a given account.
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = ReferendumWeightInfo::<T, I>::opt_out_of_voting()]
+        pub fn opt_out_of_voting(origin) -> Result<(), Error<T, I>> {
+            let account_id = EnsureChecks::<T, I>::ensure_regular_user(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+            Mutations::<T, I>::add_account_to_opted_out_set(account_id.clone());
+
+            // emit event
+            Self::deposit_event(RawEvent::AccountOptedOutOfVoting(account_id));
 
             Ok(())
         }
@@ -905,6 +938,11 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
 
         WeakBoundedVec::force_from(new_winners, Some("Referendum try_winner_insert"))
     }
+
+    // Add a new account to the set of accounts that opted out of voting.
+    fn add_account_to_opted_out_set(account_id: T::AccountId) {
+        AccountsOptedOut::<T, I>::insert(account_id, ());
+    }
 }
 
 /////////////////// Ensure checks //////////////////////////////////////////////
@@ -960,6 +998,11 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
 
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
+
+        // ensure account did not opt out of voting
+        if AccountsOptedOut::<T, I>::contains_key(&account_id) {
+            return Err(Error::<T, I>::AccountAlreadyOptedOutOfVoting);
+        }
 
         // ensure referendum is running
         let current_cycle_id = match Stage::<T, I>::get() {
