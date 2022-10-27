@@ -332,7 +332,7 @@ export async function getVersion(req: express.Request, res: express.Response<unk
  * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-export async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: number): Promise<void> {
+export async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: BN): Promise<void> {
   const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
 
   if (!bucketIds.includes(bucketId.toString())) {
@@ -349,10 +349,10 @@ export async function verifyBucketId(queryNodeUrl: string, workerId: number, buc
  * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-export async function verifyBagAssignment(api: ApiPromise, bagId: BagId, bucketId: number): Promise<void> {
+export async function verifyBagAssignment(api: ApiPromise, bagId: BagId, bucketId: BN): Promise<void> {
   const bag = await api.query.storage.bags(bagId)
 
-  if (![...bag.storedBy].map((s) => s.toNumber()).includes(bucketId)) {
+  if (![...bag.storedBy].map((s) => s.toString()).includes(bucketId.toString())) {
     throw new WebApiError(`Storage bag ${bagId} is not assigned to storage bucket ${bucketId}.`, 400)
   }
 }

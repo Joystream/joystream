@@ -17,6 +17,7 @@ import {
   errorLogger,
 } from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
+import BN from 'bn.js'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -44,10 +45,12 @@ export async function createApp(config: AppConfig): Promise<Express> {
     // Pre validate file upload params
     (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
       if (req.path === '/api/v1/files') {
-        validateUploadFileParams(req, res).catch((error) => sendResponseWithError(res, next, error, 'upload'))
+        validateUploadFileParams(req, res)
+          .then(next)
+          .catch((error) => sendResponseWithError(res, next, error, 'upload'))
+      } else {
+        next()
       }
-
-      next()
     },
 
     // Setup OpenAPiValidator
@@ -202,8 +205,8 @@ function verifyUploadTokenData(accountAddress: string, token: UploadToken, reque
 async function validateUploadFileParams(req: express.Request, res: express.Response<unknown, AppConfig>) {
   const { api, queryNodeEndpoint, workerId } = res.locals
 
-  const storageBucketId = Number(req.query.storageBucketId)
-  const dataObjectId = Number(req.query.dataObjectId)
+  const storageBucketId = new BN(req.query.storageBucketId?.toString() || '')
+  const dataObjectId = new BN(req.query.dataObjectId?.toString() || '')
   const bagId = req.query.bagId?.toString() || ''
 
   const parsedBagId = parseBagId(bagId)

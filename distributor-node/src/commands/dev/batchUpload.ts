@@ -92,7 +92,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
               url: urljoin(endpoint, 'api/v1/files'),
               data: formData,
               params: {
-                dataObjectId: dataObject.toString(),
+                dataObjectId: dataObjectId.toString(),
                 storageBucketId: bucketId.toString(),
                 bagId,
               },
