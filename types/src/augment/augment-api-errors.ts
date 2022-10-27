@@ -2689,6 +2689,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     referendum: {
       /**
+       * A vote cannot be cast from an account that already opted out of voting.
+       **/
+      AccountAlreadyOptedOutOfVoting: AugmentedError<ApiType>;
+      /**
        * Trying to vote multiple time in the same cycle
        **/
       AlreadyVotedThisCycle: AugmentedError<ApiType>;

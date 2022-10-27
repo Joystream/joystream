@@ -537,7 +537,9 @@ declare module '@polkadot/types/lookup' {
     readonly asVoteRevealed: ITuple<[AccountId32, u64, Bytes]>;
     readonly isStakeReleased: boolean;
     readonly asStakeReleased: AccountId32;
-    readonly type: 'ReferendumStarted' | 'ReferendumStartedForcefully' | 'RevealingStageStarted' | 'ReferendumFinished' | 'VoteCast' | 'VoteRevealed' | 'StakeReleased';
+    readonly isAccountOptedOutOfVoting: boolean;
+    readonly asAccountOptedOutOfVoting: AccountId32;
+    readonly type: 'ReferendumStarted' | 'ReferendumStartedForcefully' | 'RevealingStageStarted' | 'ReferendumFinished' | 'VoteCast' | 'VoteRevealed' | 'StakeReleased' | 'AccountOptedOutOfVoting';
   }
 
   /** @name PalletReferendumInstance1 (66) */
@@ -3028,7 +3030,8 @@ declare module '@polkadot/types/lookup' {
       readonly voteOptionId: u64;
     } & Struct;
     readonly isReleaseVoteStake: boolean;
-    readonly type: 'Vote' | 'RevealVote' | 'ReleaseVoteStake';
+    readonly isOptOutOfVoting: boolean;
+    readonly type: 'Vote' | 'RevealVote' | 'ReleaseVoteStake' | 'OptOutOfVoting';
   }
 
   /** @name PalletMembershipCall (379) */
@@ -4743,7 +4746,8 @@ declare module '@polkadot/types/lookup' {
     readonly isUnstakingVoteInSameCycle: boolean;
     readonly isSaltTooLong: boolean;
     readonly isUnstakingForbidden: boolean;
-    readonly type: 'BadOrigin' | 'ReferendumNotRunning' | 'RevealingNotInProgress' | 'ConflictStakesOnAccount' | 'InsufficientBalanceToStake' | 'InsufficientStake' | 'InvalidReveal' | 'InvalidVote' | 'VoteNotExisting' | 'AlreadyVotedThisCycle' | 'UnstakingVoteInSameCycle' | 'SaltTooLong' | 'UnstakingForbidden';
+    readonly isAccountAlreadyOptedOutOfVoting: boolean;
+    readonly type: 'BadOrigin' | 'ReferendumNotRunning' | 'RevealingNotInProgress' | 'ConflictStakesOnAccount' | 'InsufficientBalanceToStake' | 'InsufficientStake' | 'InvalidReveal' | 'InvalidVote' | 'VoteNotExisting' | 'AlreadyVotedThisCycle' | 'UnstakingVoteInSameCycle' | 'SaltTooLong' | 'UnstakingForbidden' | 'AccountAlreadyOptedOutOfVoting';
   }
 
   /** @name PalletMembershipMembershipObject (536) */

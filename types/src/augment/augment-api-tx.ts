@@ -4333,6 +4333,18 @@ declare module '@polkadot/api-base/types/submittable' {
     };
     referendum: {
       /**
+       * Permanently opt out of voting from a given account.
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      optOutOfVoting: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+      /**
        * Release a locked stake.
        * # <weight>
        * 
