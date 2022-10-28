@@ -23,6 +23,7 @@
     "@polkadot/keyring": "9.5.1",
     "@polkadot/util": "9.5.1",
     "@polkadot/util-crypto": "9.5.1",
+    "@substrate/txwrapper-polkadot": "3.2.2",
     "@types/cli-progress": "^3.9.1",
     "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
@@ -132,6 +133,12 @@
       },
       "fee-profile": {
         "description": "Commands for generating the fee profiles of some common extrinsics"
+      },
+      "advanced-transactions": {
+        "description": "Commands for constructing (unsigned) transactions online, which can be signed with 'sign-offline'"
+      },
+      "sign-offline": {
+        "description": "Sign unsigned transactions, created with 'advanced-transactions', offline"
       }
     }
   },
