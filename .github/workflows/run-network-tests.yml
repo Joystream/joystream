@@ -58,15 +58,15 @@ jobs:
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
 
       - id: compute_shasum
         name: Compute runtime code shasum
         env:
-          RUNTIME_PROFILE: "TESTING"
+          RUNTIME_PROFILE: 'TESTING'
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
@@ -75,7 +75,7 @@ jobs:
         run: mkdir ~/docker-images
 
       - name: Cache docker images
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: joystream-node-docker
         with:
@@ -105,18 +105,18 @@ jobs:
         id: check_files
         uses: andstor/file-existence-action@v1
         with:
-          files: "joystream-node-docker-image.tar.gz"
+          files: 'joystream-node-docker-image.tar.gz'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
         id: builder1
         if: steps.check_files.outputs.files_exists == 'false'
-  
+
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
-         path: /tmp/.buildx-cache
-         key: ${{ runner.os }}-buildx
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx
         if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Build
@@ -125,7 +125,7 @@ jobs:
           context: .
           file: joystream-node.Dockerfile
           platforms: linux/amd64
-          build-args: CARGO_FEATURES=testing_runtime
+          build-args: CARGO_FEATURES=testing-runtime
           push: false
           tags: joystream/node
           cache-from: type=local,src=/tmp/.buildx-cache
@@ -142,7 +142,7 @@ jobs:
         if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Save joystream/node image to Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
@@ -153,19 +153,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding']
+        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding', 'carthageNPoSSwitch']
         include:
           - scenario: 'setupNewChain'
             no_storage: 'true'
           - scenario: 'setupNewChainMultiStorage'
             no_storage: 'true'
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - name: Get artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build_images.outputs.use_artifact }}
       - name: Install artifacts
@@ -195,12 +195,12 @@ jobs:
     needs: build_images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - name: Get artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build_images.outputs.use_artifact }}
       - name: Install artifacts

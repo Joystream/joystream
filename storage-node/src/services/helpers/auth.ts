@@ -40,11 +40,11 @@ export interface RequestData {
   /**
    * Runtime data object ID.
    */
-  dataObjectId: number
+  dataObjectId: string
   /**
    * Runtime storage bucket ID.
    */
-  storageBucketId: number
+  storageBucketId: string
   /**
    * Bag ID in the string format.
    */

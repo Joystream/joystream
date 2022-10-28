@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, BTreeSet, Option } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option, Vec } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -20,6 +20,7 @@ import {
   BlockNumber,
   BlockHash,
   LockIdentifier,
+  AccountId32,
 } from '@polkadot/types/interfaces'
 import {
   PalletWorkingGroupGroupWorker as Worker,
@@ -28,6 +29,11 @@ import {
   PalletContentNftTypesOpenAuctionParamsRecord as OpenAuctionParams,
   PalletProposalsEngineProposalParameters as ProposalParameters,
   PalletContentChannelBagWitness,
+  PalletStakingForcing,
+  PalletStakingActiveEraInfo,
+  PalletStakingEraRewardPoints,
+  PalletElectionProviderMultiPhaseRoundSnapshot,
+  PalletElectionProviderMultiPhasePhase,
 } from '@polkadot/types/lookup'
 
 import BN from 'bn.js'
@@ -311,6 +317,22 @@ export class Api {
     return this.api.consts.babe.expectedBlockTime
   }
 
+  public async getBabeAuthorities(): Promise<string[]> {
+    return (await this.api.query.babe.authorities()).map(([k]) => k.toString())
+  }
+
+  public async getNextBabeAuthorities(): Promise<string[]> {
+    return await this.api.query.babe.nextAuthorities().then((key) => key.map(([k]) => k.toString()))
+  }
+
+  public async getSessionAuthorities(): Promise<string[]> {
+    return await this.api.query.session.validators().then((key) => key.map((k) => k.toString()))
+  }
+
+  public async getQueuedKeys(): Promise<string[]> {
+    return await this.api.query.session.queuedKeys().then((key) => key.map(([k]) => k.toString()))
+  }
+
   public durationInMsFromBlocks(durationInBlocks: number): number {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
@@ -321,6 +343,54 @@ export class Api {
 
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber()
+  }
+
+  public async getElectionRounds(): Promise<u32> {
+    return this.api.query.electionProviderMultiPhase.round()
+  }
+
+  public async getElectionSnapshot(): Promise<Option<PalletElectionProviderMultiPhaseRoundSnapshot>> {
+    return this.api.query.electionProviderMultiPhase.snapshot()
+  }
+
+  public async getErasRewardPoints(eraIndex: number): Promise<PalletStakingEraRewardPoints> {
+    return this.api.query.staking.erasRewardPoints(eraIndex)
+  }
+
+  public async getBonded(account: string): Promise<Option<AccountId32>> {
+    return this.api.query.staking.bonded(account)
+  }
+
+  public async getActiveEra(): Promise<Option<PalletStakingActiveEraInfo>> {
+    return this.api.query.staking.activeEra()
+  }
+
+  public async getCurrentSessionIndex(): Promise<u32> {
+    return this.api.query.session.currentIndex()
+  }
+
+  public async getCurrentEra(): Promise<Option<u32>> {
+    return this.api.query.staking.currentEra()
+  }
+
+  public async getCurrentBlockNumber(): Promise<u32> {
+    return this.api.query.system.number()
+  }
+
+  public async getElectionPhase(): Promise<PalletElectionProviderMultiPhasePhase> {
+    return this.api.query.electionProviderMultiPhase.currentPhase()
+  }
+
+  public async getErasStartSessionIndex(era: number): Promise<Option<u32>> {
+    return this.api.query.staking.erasStartSessionIndex(era)
+  }
+
+  public async getForceEra(): Promise<PalletStakingForcing> {
+    return this.api.query.staking.forceEra()
+  }
+
+  public async getEraValidatorReward(index: u32): Promise<Option<u128>> {
+    return this.api.query.staking.erasValidatorReward(index)
   }
 
   public async getBlockHash(blockNumber: number | BlockNumber): Promise<BlockHash> {
