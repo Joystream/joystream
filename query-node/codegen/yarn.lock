@@ -306,10 +306,9 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-cli@^4.0.0-alpha.6":
+"@joystream/hydra-cli@file:../../hydra-cli-v4.0.0-alpha.8.tgz":
   version "4.0.0-alpha.6"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-4.0.0-alpha.6.tgz#418cd5e36c6abebe8c289e9dbfab61810cd8c035"
-  integrity sha512-xry3np6xCREZCMebzAgP8MwMShN3TueKDv45Rg422Bonrip1Z4ONZaE63Cvb+8AcPosepBqYP6sYZLEMGVOiMQ==
+  resolved "file:../../hydra-cli-v4.0.0-alpha.8.tgz#e812bfe0ae42437cae961a47be92be1343bea218"
   dependencies:
     "@inquirer/input" "^0.0.13-alpha.0"
     "@inquirer/password" "^0.0.12-alpha.0"
