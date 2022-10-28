@@ -421,7 +421,7 @@ pub fn local_testnet_config() -> ChainSpec {
     )
 }
 
-fn production_config_genesis() -> GenesisConfig {
+fn prod_test_config_genesis() -> GenesisConfig {
     testnet_genesis(
         true,
         vec![authority_keys_from_seed("//Alice")],
@@ -437,12 +437,12 @@ fn production_config_genesis() -> GenesisConfig {
 }
 
 /// Development chain, with production config
-pub fn production_config() -> ChainSpec {
+pub fn prod_test_config() -> ChainSpec {
     ChainSpec::from_genesis(
         "Development",
         "dev",
         ChainType::Development,
-        production_config_genesis,
+        prod_test_config_genesis,
         vec![],
         None,
         None,
@@ -539,7 +539,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn test_create_production_chain_spec() {
-        production_config().build_storage().unwrap();
+    fn test_create_prod_test_chain_spec() {
+        prod_test_config().build_storage().unwrap();
     }
 }
