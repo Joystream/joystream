@@ -11,3 +11,9 @@
     src: "{{ remote_code_path }}/target/release/chain-spec-builder"
     dest: "{{ data_path }}/chain-spec-builder"
     flat: yes
+
+- name: Fetch session-keys binary
+  fetch:
+    src: "{{ remote_code_path }}/target/release/session-keys"
+    dest: "{{ data_path }}/session-keys"
+    flat: yes
