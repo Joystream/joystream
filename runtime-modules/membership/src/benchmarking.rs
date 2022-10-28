@@ -183,7 +183,7 @@ benchmarks! {
         let member_id = T::MemberId::from(member_id.try_into().unwrap());
 
         params.referrer_id = Some(member_id);
-        let second_handle = handle_from_id::<T>(i + 1);
+        let second_handle = handle_from_id::<T>(i * 1000 + 1);
 
         params.handle = Some(second_handle.clone());
 

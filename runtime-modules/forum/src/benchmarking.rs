@@ -303,7 +303,7 @@ pub fn generate_categories_tree<T: Config>(
     let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
 
     for n in 0..category_depth {
-        if n > 1 {
+        if n >= 1 {
             parent_category_id = Some((n as u64).into());
         }
 
@@ -314,15 +314,18 @@ pub fn generate_categories_tree<T: Config>(
             text.clone(),
         );
 
-        if let Some(moderator_id) = moderator_id {
-            // Set up category membership of moderator.
-            Module::<T>::update_category_membership_of_moderator(
-                RawOrigin::Signed(caller_id.clone()).into(),
-                moderator_id,
-                category_id,
-                true,
-            )
-            .unwrap();
+        // Add moderator only to the root category
+        if n == 0 {
+            if let Some(moderator_id) = moderator_id {
+                // Set up category membership of moderator.
+                Module::<T>::update_category_membership_of_moderator(
+                    RawOrigin::Signed(caller_id.clone()).into(),
+                    moderator_id,
+                    category_id,
+                    true,
+                )
+                .unwrap();
+            }
         }
     }
 
@@ -348,7 +351,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
@@ -491,7 +494,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let new_archival_status = true;
 
@@ -530,20 +533,13 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(moderator_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let new_archival_status = true;
 
         // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
         let moderator_id = ModeratorId::<T>::from(moderator_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
-
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
     }: update_category_archival_status(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_archival_status)
     verify {
         let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
@@ -554,7 +550,7 @@ benchmarks! {
             archived: new_archival_status,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: 1,
+            num_direct_moderators: if i == 1 { 1 } else { 0 },
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -575,7 +571,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA - 1;
 
@@ -617,7 +613,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(moderator_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
 
         let j in 0 .. MAX_KILOBYTES_METADATA - 1;
@@ -625,15 +621,8 @@ benchmarks! {
         let new_title = vec![0u8].repeat((j * 1000) as usize);
 
         // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
         let moderator_id = ModeratorId::<T>::from(moderator_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
-
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
     }: update_category_title(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_title.clone())
     verify {
         let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
@@ -645,7 +634,7 @@ benchmarks! {
             archived: false,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: 1,
+            num_direct_moderators: if i == 1 { 1 } else { 0 },
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -666,7 +655,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA - 1;
 
@@ -708,7 +697,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(moderator_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
 
         let j in 0 .. MAX_KILOBYTES_METADATA - 1;
@@ -716,15 +705,8 @@ benchmarks! {
         let new_description = vec![0u8].repeat((j * 1000) as usize);
 
         // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
         let moderator_id = ModeratorId::<T>::from(moderator_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
-
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
     }: update_category_description(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, new_description.clone())
     verify {
         let text = vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
@@ -736,7 +718,7 @@ benchmarks! {
             archived: false,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: 1,
+            num_direct_moderators: if i == 1 { 1 } else { 0 },
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -758,7 +740,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         // Generate categories tree
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -802,7 +784,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 3 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 3 .. T::MaxCategoryDepth::get() as u32;
 
         let moderator_id = ModeratorId::<T>::from(lead_id.try_into().unwrap());
 
@@ -833,7 +815,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
@@ -909,7 +891,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
@@ -940,7 +922,7 @@ benchmarks! {
     }
 
     delete_thread {
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
         let hide = false;
 
         let forum_user_id = 0;
@@ -1004,7 +986,7 @@ benchmarks! {
     }
 
     move_thread_to_category_lead {
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let forum_user_id = 0;
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
@@ -1069,7 +1051,7 @@ benchmarks! {
     }
 
     move_thread_to_category_moderator {
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let forum_user_id = 0;
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
@@ -1077,45 +1059,15 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        // If category depth is less or equal to one, create two separate categories
-        let (category_id, new_category_id) = if i <= 2 {
-            let category_id = create_new_category::<T>(
-                caller_id.clone(),
-                None,
-                text.clone(),
-                text.clone(),
-            );
+        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
 
-            let new_category_id = create_new_category::<T>(
-                caller_id.clone(),
-                None,
-                text.clone(),
-                text.clone(),
-            );
-
-            (category_id, new_category_id)
-        } else {
-            // Generate categories tree
-            let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
-
-            (category_id, parent_category_id.unwrap())
-        };
+        // Generate categories
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
+        let (new_category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
 
         // Create thread
         let thread_id = create_new_thread::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, text.clone(), text);
         let thread = Module::<T>::thread_by_id(category_id, thread_id);
-
-        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
-
-        // Set up categories membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
-
-        // Set up categories membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, new_category_id, true
-        ).unwrap();
 
         let mut category = Module::<T>::category_by_id(category_id);
         let mut new_category = Module::<T>::category_by_id(new_category_id);
@@ -1151,7 +1103,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let k in 0 .. MAX_KILOBYTES_METADATA;
 
@@ -1211,13 +1163,14 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(lead_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
 
         let k in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+        let moderator_id = ModeratorId::<T>::from(lead_id.try_into().unwrap());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
 
         // Create thread
 
@@ -1235,13 +1188,6 @@ benchmarks! {
             [(ExtendedPostId::<T> { category_id, thread_id, post_id: <T as Config>::PostId::one() }, true)].iter().cloned().collect(),
             Vec::new()
         );
-
-        let moderator_id = ModeratorId::<T>::from(lead_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
 
         let mut category = Module::<T>::category_by_id(category_id);
 
@@ -1280,7 +1226,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
@@ -1336,7 +1282,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
@@ -1388,7 +1334,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
@@ -1433,12 +1379,13 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
 
         // Create thread
 
@@ -1452,13 +1399,6 @@ benchmarks! {
         let post_id = add_thread_post::<T>(caller_id.clone(), forum_user_id.saturated_into(), category_id, thread_id, text);
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
-
-        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
 
         let rationale = vec![0u8].repeat((j * 1000) as usize);
 
@@ -1485,14 +1425,15 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. MAX_KILOBYTES_METADATA;
 
         let k in 1 .. MAX_POSTS;
 
         // Generate categories tree
-        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
+        let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
 
         // Create thread
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
@@ -1524,13 +1465,6 @@ benchmarks! {
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
-
         let rationale = vec![0u8].repeat((j * 1000) as usize);
 
     }: _(
@@ -1561,7 +1495,7 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. T::MaxStickiedThreads::get();
 
@@ -1598,12 +1532,13 @@ benchmarks! {
         let caller_id =
             insert_a_leader::<T>(forum_user_id);
 
-        let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
+        let i in 1 .. T::MaxCategoryDepth::get() as u32;
 
         let j in 0 .. T::MaxStickiedThreads::get();
 
         // Generate categories tree
-        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
+        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
+        let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, Some(moderator_id));
 
         // Create threads
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
@@ -1614,13 +1549,6 @@ benchmarks! {
                 caller_id.clone(), forum_user_id.saturated_into(), category_id,
                 text.clone(), text.clone()
             )).collect();
-
-        let moderator_id = ModeratorId::<T>::from(forum_user_id.try_into().unwrap());
-
-        // Set up category membership of moderator.
-        Module::<T>::update_category_membership_of_moderator(
-            RawOrigin::Signed(caller_id.clone()).into(), moderator_id, category_id, true
-        ).unwrap();
     }: set_stickied_threads(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, stickied_ids.clone())
     verify {
         let category =  Module::<T>::category_by_id(category_id);

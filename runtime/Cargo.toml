@@ -43,7 +43,6 @@ frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', defau
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
-pallet-elections-phragmen = { package = 'pallet-elections-phragmen', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
 pallet-bags-list = { package = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 
 # Pallets
@@ -154,7 +153,6 @@ std = [
     'substrate-utility/std',
     'pallet-bags-list/std',
     'pallet-election-provider-multi-phase/std',
-    'pallet-elections-phragmen/std',
 
     # Joystream
     'common/std',
@@ -198,7 +196,6 @@ runtime-benchmarks = [
     "substrate-utility/runtime-benchmarks",
     "pallet-election-provider-multi-phase/runtime-benchmarks",
     "pallet-election-provider-support-benchmarking/runtime-benchmarks",
-    "pallet-elections-phragmen/runtime-benchmarks",
 
     # Joystream
     "common/runtime-benchmarks",

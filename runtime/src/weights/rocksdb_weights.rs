@@ -16,7 +16,7 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-10-17 (Y/M/D)
+//! DATE: 2022-10-20 (Y/M/D)
 //!
 //! DATABASE: `RocksDb`, RUNTIME: `Development`
 //! BLOCK-NUM: `BlockId::Number(0)`
@@ -51,31 +51,31 @@ pub mod constants {
             /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 8_410, 1_080_090
-            ///   Average:  19_453
-            ///   Median:   12_620
-            ///   Std-Dev:  79324.33
+            ///   Min, Max: 3_780, 590_000
+            ///   Average:  8_997
+            ///   Median:   5_490
+            ///   Std-Dev:  43436.83
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 22_210
-            ///   95th: 19_200
-            ///   75th: 15_620
-            read: 19_453 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 8_780
+            ///   95th: 7_570
+            ///   75th: 6_340
+            read: 8_997 * constants::WEIGHT_PER_NANOS,
 
             /// Time to write one storage item.
             /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 16_710, 5_555_579
-            ///   Average:  64_679
-            ///   Median:   33_490
-            ///   Std-Dev:  410500.81
+            ///   Min, Max: 11_740, 5_390_690
+            ///   Average:  54_966
+            ///   Median:   24_860
+            ///   Std-Dev:  398861.54
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 67_430
-            ///   95th: 49_270
-            ///   75th: 39_090
-            write: 64_679 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 46_410
+            ///   95th: 36_880
+            ///   75th: 29_580
+            write: 54_966 * constants::WEIGHT_PER_NANOS,
         };
     }
 
