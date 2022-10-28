@@ -65,7 +65,7 @@ impl Into<ChainType> for ChainDeployment {
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]
 enum ChainSpecBuilder {
-    /// Create a new chain spec with the given authorities, endowed and sudo
+    /// Create a new chain spec with the given authority seeds, endowed and sudo
     /// accounts.
     New {
         /// Authority key seed.
@@ -399,18 +399,19 @@ async fn main() -> Result<(), String> {
             ..
         } => {
             let authorities = authorities.max(1);
-            let rand_str = || -> String {
-                OsRng
+            let rand_seed = || -> String {
+                let rand_str: String = OsRng
                     .sample_iter(&Alphanumeric)
                     .take(32)
                     .map(char::from)
-                    .collect()
+                    .collect();
+                format!("//{}", rand_str)
             };
 
-            let authority_seeds = (0..authorities).map(|_| rand_str()).collect::<Vec<_>>();
-            let nominator_seeds = (0..nominators).map(|_| rand_str()).collect::<Vec<_>>();
-            let endowed_seeds = (0..endowed).map(|_| rand_str()).collect::<Vec<_>>();
-            let sudo_seed = rand_str();
+            let authority_seeds = (0..authorities).map(|_| rand_seed()).collect::<Vec<_>>();
+            let nominator_seeds = (0..nominators).map(|_| rand_seed()).collect::<Vec<_>>();
+            let endowed_seeds = (0..endowed).map(|_| rand_seed()).collect::<Vec<_>>();
+            let sudo_seed = rand_seed();
 
             print_seeds(
                 &authority_seeds,
