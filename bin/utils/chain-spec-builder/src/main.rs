@@ -25,7 +25,8 @@ use std::{
 
 use joystream_node::chain_spec::{
     self, content_config, initial_balances, joy_chain_spec_properties, project_token_config,
-    storage_config, AccountId, JOY_ADDRESS_PREFIX,
+    storage_config, AccountId, AuthorityDiscoveryId, BabeId, GrandpaId, ImOnlineId,
+    JOY_ADDRESS_PREFIX,
 };
 
 use sc_chain_spec::ChainType;
@@ -68,9 +69,13 @@ enum ChainSpecBuilder {
     /// Create a new chain spec with the given authority seeds, endowed and sudo
     /// accounts.
     New {
-        /// Authority key seed.
+        /// Authorities. Comma separated list. If list has single item it is
+        /// considered a seed. The stash,controller and session keys will be derived from this seed.
+        /// Otherwise the list should be ordered list of accounts:
+        /// stash,controller,grandpa,babe,im_online,authority_discovery
+        /// All the authories should be provided in same form, do not mix and match, seeds and accounts.
         #[clap(long, short, required = true)]
-        authority_seeds: Vec<String>,
+        authorities: Vec<String>,
         /// Active nominators (SS58 format), each backing a random subset of the aforementioned
         /// authorities. Same account used as stash and controller.
         #[clap(long, short)]
@@ -86,6 +91,7 @@ enum ChainSpecBuilder {
         /// At this path, a new folder will be created for each authority's
         /// keystore named `auth-$i` where `i` is the authority index, i.e.
         /// `auth-0`, `auth-1`, etc.
+        /// Only used if seeds are provided for authorities.
         #[clap(long, short)]
         keystore_path: Option<PathBuf>,
         /// The path to an initial balances file
@@ -184,22 +190,40 @@ impl ChainSpecBuilder {
     }
 }
 
+fn authorities_from_seeds(
+    seeds: &[String],
+) -> Vec<(
+    AccountId,
+    AccountId,
+    GrandpaId,
+    BabeId,
+    ImOnlineId,
+    AuthorityDiscoveryId,
+)> {
+    seeds
+        .iter()
+        .map(AsRef::as_ref)
+        .map(chain_spec::authority_keys_from_seed)
+        .collect::<Vec<_>>()
+}
+
 #[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
     deployment: &ChainDeployment,
-    authority_seeds: &[String],
+    authorities: Vec<(
+        AccountId,
+        AccountId,
+        GrandpaId,
+        BabeId,
+        ImOnlineId,
+        AuthorityDiscoveryId,
+    )>,
     nominator_accounts: &[AccountId],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
     initial_balances_path: &Option<PathBuf>,
     fund_accounts: bool,
 ) -> chain_spec::GenesisConfig {
-    let authorities = authority_seeds
-        .iter()
-        .map(AsRef::as_ref)
-        .map(chain_spec::authority_keys_from_seed)
-        .collect::<Vec<_>>();
-
     let genesis_balances = initial_balances_path
         .as_ref()
         .map(|path| initial_balances::balances_from_json(path.as_path()))
@@ -242,7 +266,7 @@ fn genesis_constructor(
 #[allow(clippy::too_many_arguments)]
 fn generate_chain_spec(
     deployment: ChainDeployment,
-    authority_seeds: Vec<String>,
+    authorities: Vec<String>,
     nominator_accounts: Vec<String>,
     endowed_accounts: Vec<String>,
     sudo_account: String,
@@ -252,6 +276,34 @@ fn generate_chain_spec(
     let parse_account = |address: String| {
         AccountId::from_string(&address)
             .map_err(|err| format!("Failed to parse account address: {:?} {:?}", address, err))
+    };
+
+    let authorities = if authorities
+        .iter()
+        .map(|auth| auth.split(',').count())
+        .all(|len| len == 1)
+    {
+        authorities_from_seeds(&authorities)
+    } else {
+        // assume accounts, panic if not as expected
+        authorities
+            .iter()
+            .map(|addresses| addresses.split(',').collect())
+            .map(|addresses: Vec<&str>| {
+                if addresses.len() != 6 {
+                    panic!("Wrong number of addresses provided for authority");
+                }
+                (
+                    parse_account(addresses[0].into()).expect("failed to parse authority"),
+                    parse_account(addresses[1].into()).expect("failed to parse authority"),
+                    GrandpaId::from_string(addresses[2]).expect("failed to parse authority"),
+                    BabeId::from_string(addresses[3]).expect("failed to parse authority"),
+                    ImOnlineId::from_string(addresses[4]).expect("failed to parse authority"),
+                    AuthorityDiscoveryId::from_string(addresses[5])
+                        .expect("failed to parse authority"),
+                )
+            })
+            .collect()
     };
 
     let nominator_accounts = nominator_accounts
@@ -266,10 +318,6 @@ fn generate_chain_spec(
 
     let sudo_account = parse_account(sudo_account)?;
 
-    // let boot_nodes = vec![String::from(
-    //     "/dns4/tesnet.joystream.org/tcp/30333/p2p/QmaTTdEF6YVCtynSjsXmGPSGcEesAahoZ8pmcCmmBwSE7S",
-    // )];
-
     let telemetry_endpoints = Some(
         TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
             .expect("Staging telemetry url is valid; qed"),
@@ -282,7 +330,7 @@ fn generate_chain_spec(
         move || {
             genesis_constructor(
                 &deployment,
-                &authority_seeds,
+                authorities.clone(),
                 &nominator_accounts,
                 &endowed_accounts,
                 &sudo_account,
@@ -311,25 +359,20 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
         let (_, _, grandpa, babe, im_online, authority_discovery) =
             chain_spec::authority_keys_from_seed(seed);
 
-        let insert_key = |key_type, public, n| {
+        let insert_key = |key_type, public| {
             SyncCryptoStore::insert_unknown(&*keystore, key_type, seed, public)
-                .map_err(|_| format!("Failed to insert key: {}", n))
+                .map_err(|_| format!("Failed to insert key: {:?}", key_type))
         };
 
-        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice(), n)?;
+        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice())?;
 
-        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice(), n)?;
+        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice())?;
 
-        insert_key(
-            sp_core::crypto::key_types::IM_ONLINE,
-            im_online.as_slice(),
-            n,
-        )?;
+        insert_key(sp_core::crypto::key_types::IM_ONLINE, im_online.as_slice())?;
 
         insert_key(
             sp_core::crypto::key_types::AUTHORITY_DISCOVERY,
             authority_discovery.as_slice(),
-            n,
         )?;
     }
 
@@ -390,7 +433,7 @@ async fn main() -> Result<(), String> {
     let deployment = builder.chain_deployment();
     let fund_accounts = builder.fund_accounts();
 
-    let (authority_seeds, nominator_accounts, endowed_accounts, sudo_account) = match builder {
+    let (authorities, nominator_accounts, endowed_accounts, sudo_account) = match builder {
         ChainSpecBuilder::Generate {
             authorities,
             nominators,
@@ -449,23 +492,30 @@ async fn main() -> Result<(), String> {
             )
         }
         ChainSpecBuilder::New {
-            authority_seeds,
+            authorities,
             nominator_accounts,
             sudo_account,
             keystore_path,
             ..
         } => {
-            if let Some(keystore_path) = keystore_path {
-                generate_authority_keys_and_store(&authority_seeds, &keystore_path)?;
+            if authorities
+                .iter()
+                .map(|auth| auth.split(',').count())
+                .all(|len| len == 1)
+            {
+                // seeds
+                if let Some(keystore_path) = keystore_path {
+                    generate_authority_keys_and_store(&authorities, &keystore_path)?;
+                }
             }
 
-            (authority_seeds, nominator_accounts, vec![], sudo_account)
+            (authorities, nominator_accounts, vec![], sudo_account)
         }
     };
 
     let json = generate_chain_spec(
         deployment,
-        authority_seeds,
+        authorities,
         nominator_accounts,
         endowed_accounts,
         sudo_account,
