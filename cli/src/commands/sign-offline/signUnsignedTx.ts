@@ -6,7 +6,8 @@ import { IOFlags, ensureOutputFileIsWriteable, getInputJson, saveOutputJsonToFil
 import { decodeSignedTx } from '@substrate/txwrapper-core/lib/core/decode/decodeSignedTx'
 import { decodeSigningPayload } from '@substrate/txwrapper-core/lib/core/decode/decodeSigningPayload'
 import { Keyring } from '@polkadot/api'
-import { waitReady } from '@polkadot/wasm-crypto'
+//import { waitReady } from '@polkadot/wasm-crypto'
+import { initWasm } from '@polkadot/wasm-crypto/initOnlyAsm'
 import { KeyringOptions, KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types'
 import { createSignedTx, getTxHash } from '@substrate/txwrapper-core/lib/core/construct'
 import { KeypairType } from '@polkadot/util-crypto/types'
@@ -14,7 +15,7 @@ import { DEFAULT_ACCOUNT_TYPE } from '../../base/AccountsCommandBase'
 import { u8aToHex } from '@polkadot/util'
 
 export default class SignUnsignedTxCommand extends SignOfflineCommandBase {
-  static description = 'Transfer tokens from any of the available accounts'
+  static description = 'Sign an unsigned transaction. Does not require an api connection.'
   static flags = {
     input: IOFlags.input,
     output: flags.string({
@@ -111,7 +112,7 @@ export default class SignUnsignedTxCommand extends SignOfflineCommandBase {
     }
 
     const metadata = inputFile.unsigned.metadataRpc.slice(2)
-    await waitReady()
+    await initWasm()
 
     const signingPayloadDecoded = decodeSigningPayload(inputFile.signingPayload, {
       metadataRpc: `0x${metadata}`,
