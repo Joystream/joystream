@@ -7,7 +7,9 @@
   "types": "lib/index.d.ts",
   "exports": {
     "./content": "./lib/content/index.js",
-    "./utils": "./lib/utils/index.js"
+    "./lib/content": "./lib/content/index.js",
+    "./utils": "./lib/utils/index.js",
+    "./lib/utils": "./lib/utils/index.js"
   },
   "typesVersions": {
     "*": {
