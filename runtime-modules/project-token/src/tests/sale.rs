@@ -8,7 +8,7 @@ use crate::tests::mock::*;
 use crate::types::Joy;
 use crate::types::MerkleProofOf;
 use crate::{member, merkle_proof, merkle_root};
-use frame_support::{assert_ok};
+use frame_support::assert_ok;
 use sp_arithmetic::Permill;
 use sp_runtime::DispatchError;
 

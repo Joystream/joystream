@@ -140,20 +140,20 @@ fn activation_fails_when_amm_status_already_active() {
 #[test]
 fn amm_activation_successful_with_parameter_set_and_status_update() {
     let slope = 1u64;
-    let intercept = 1u64; 
+    let intercept = 1u64;
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
 
-        ActivateAmmFixture::default().with_function_params(slope,intercept).execute_call().unwrap();
+        ActivateAmmFixture::default()
+            .with_function_params(slope, intercept)
+            .execute_call()
+            .unwrap();
 
         let token = Token::token_info_by_id(1);
         assert_eq!(
             IssuanceState::of::<Test>(&token),
-            IssuanceState::BondingCurve(BondingCurve{
-                slope,
-                intercept,
-            })
+            IssuanceState::BondingCurve(BondingCurve { slope, intercept })
         );
     })
 }
