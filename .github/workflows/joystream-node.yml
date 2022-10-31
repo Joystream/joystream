@@ -15,10 +15,9 @@ jobs:
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
             runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
@@ -51,7 +50,10 @@ jobs:
   # Build and test joystream-node with all runtime profiles
   runtime_profiles:
     name: Runtime Profiles
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -60,10 +62,9 @@ jobs:
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
             runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
