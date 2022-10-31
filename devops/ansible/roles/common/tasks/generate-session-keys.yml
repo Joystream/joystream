@@ -1,0 +1,14 @@
+---
+
+- name: generate new session keys if keystore doesn't exist
+  shell:
+    cmd: |
+      bash -c "
+        bin/session-keys generate --keystore-path keystore
+      "
+    creates: keystore
+
+- name: gather session keys 
+  shell: > 
+    bin/session-keys inspect --keystore-path keystore
+  register: session_keys_output

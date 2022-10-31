@@ -1,21 +1,6 @@
 ---
 # Configure chain spec, start joystream-node and other services on the servers
 
-# - name: Check if remote bin/ path dir exists
-#   hosts: validators,rpc,boot
-#   tasks:
-#     - name: Check if remote bin/ path dir exists
-#       ansible.builtin.stat:
-#         path: "bin/"
-#       register: remote_dir_check
-
-# - name: Exit if remote dir exists
-#   hosts: validators,rpc,boot
-#   tasks:
-#     - name: Exit if remote dir exists
-#       fail: msg="remote bin/ dir already exists"
-#       when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
-
 # Make sure we are using same binaries on all hosts
 - name: Copy joystream-node binary to all hosts
   hosts: validators,rpc,boot
@@ -33,6 +18,15 @@
       include_role:
         name: common
         tasks_from: generate-node-keys
+
+- name: Ensure session-keys store exists
+  hosts: validators
+  tasks:
+    - name: EnsureSessionKeys
+      include_role:
+        name: common
+        tasks_from: generate-session-keys
+      when: chainspec_creation_strategy == "new-with-authority-accounts"
 
 - name: Generate chain-spec file on first validator
   hosts: validators

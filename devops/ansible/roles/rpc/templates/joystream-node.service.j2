@@ -7,8 +7,8 @@ Type=simple
 User={{ template_user }}
 WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/bin/joystream-node \
-        --chain bin/chain/chainspec-raw.json \
-        --base-path bin/chain \
+        --chain chain/chainspec-raw.json \
+        --base-path chain \
         --ws-external \
         --rpc-cors all \
         --pruning archive \

@@ -7,9 +7,9 @@ Type=simple
 User={{ template_user }}
 WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/bin/joystream-node \
-        --chain bin/chain/chainspec-raw.json \
+        --chain {{ template_chain_spec_path }} \
         --pruning archive \
-        --base-path bin/chain \
+        --base-path chain \
         --node-key-file secrets/node-key \
         --no-mdns \
         --listen-addr {{ template_listen_multi_addr }}

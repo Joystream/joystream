@@ -2,16 +2,7 @@
 # Configure chain spec and start joystream-node service on the servers
 
 - set_fact:
-    chain_path: "bin/chain"
-
-- name: Check if remote chain path dir exists
-  stat:
-    path: "{{ chain_path }}"
-  register: remote_dir_check 
-
-- name: Exit if remote dir exists
-  fail: msg="remote {{ chain_path}} dir already exists"
-  when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
+    chain_path: "chain"
 
 - name: Create chain directory
   file:
@@ -26,13 +17,13 @@
     dest: '{{ chain_path }}/chainspec-raw.json'
 
 # Assume hostname is a DNS name
-- name: Set websocket and http endpoint variables
+- name: Set MultiAddress to listen on (dns)
   set_fact:
     listen_multi_addr: '/dns4/{{ inventory_hostname }}/tcp/30333'
   run_once: true
 
 # If inventory hostname is infact an ip address
-- name: Set websocket and http endpoint variables
+- name: Set MultiAddress to listen on (ip)
   set_fact:
     listen_multi_addr: '/ip4/{{ inventory_hostname }}/tcp/30333'
   run_once: true
