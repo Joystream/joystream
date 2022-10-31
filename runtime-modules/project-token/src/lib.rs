@@ -187,7 +187,7 @@ decl_storage! { generate_storage_info
             // - https://github.com/Joystream/joystream/issues/3497
             // - https://github.com/Joystream/joystream/issues/3510
 
-            let module_account_id = crate::Module::<T>::module_treasury_account();
+            let module_account_id = Module::<T>::module_treasury_account();
             let deposit = T::JoyExistentialDeposit::get();
 
             let _ = Joy::<T>::deposit_creating(&module_account_id, deposit);
@@ -798,6 +798,16 @@ decl_module! {
             });
 
             Self::deposit_event(RawEvent::RevenueSplitLeft(token_id, member_id, staking_info.amount));
+            Ok(())
+        }
+
+        pub fn activate_amm(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+            let token_info = Self::ensure_token_exists(token_id)?;
+            let account_info = Self::ensure_account_data_exists(token_id, &member_id)?;
             Ok(())
         }
     }

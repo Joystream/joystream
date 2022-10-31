@@ -159,5 +159,10 @@ decl_error! {
 
         /// Amount of tokens to burn exceeds total amount of tokens owned by the account
         BurnAmountGreaterThanAccountTokensAmount,
+
+        /// ------ AMM ---------------------------------------------------------
+
+        /// User is not authorized to activate AMM functionality
+        UserNotAuthorizedToActivateAMM,
     }
 }

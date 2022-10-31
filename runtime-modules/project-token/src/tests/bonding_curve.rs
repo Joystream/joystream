@@ -1,5 +1,10 @@
 #![cfg(test)]
 
+use crate::tests::fixtures::*;
+use crate::tests::mock::*;
+use crate::{member, token};
+use frame_support::{assert_noop, assert_ok};
+
 // --------------------- BONDING -------------------------------
 
 #[test]
@@ -54,10 +59,33 @@ fn crt_correctly_minted_to_user_during_bonding() {}
 // --------------- ACTIVATION ----------------------------------
 
 #[test]
-fn continuity_condition_is_respected_at_activation() {}
+fn amm_activation_fails_with_invalid_member_id() {
+    let (user_member_id, user_account_id) = member!(2);
+    build_default_test_externalities_with_balances(vec![]).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        let result = ActivateAmmFixture::default()
+            .with_sender(user_account_id)
+            .execute_call();
+
+        assert_noop!(result, Error::<T>::UserNotAuthorizedToActivateAMM)
+    })
+}
 
 #[test]
-fn amm_stage_marked_as_active() {}
+fn amm_activation_fails_with_invalid_token_id() {
+    let token_id = token!(2);
+    build_default_test_externalities_with_balances(vec![]).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        let result = ActivateAmmFixture::default()
+            .with_token_id(token_id)
+            .execute_call();
+
+        assert_noop!(result, Error::<T>::TokenDoesNotExist)
+    })
+}
+
+#[test]
+fn amm_activated_with_status_updated() {}
 
 #[test]
 fn activation_fails_when_there_are_ongoing_active_sales() {}
