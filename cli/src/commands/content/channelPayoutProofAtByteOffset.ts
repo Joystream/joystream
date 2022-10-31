@@ -1,4 +1,4 @@
-import { channelPayoutProofAtByteOffset } from '@joystreamjs/content'
+import { channelPayoutProofAtByteOffset } from '@joystream/js/content'
 import { Command, flags } from '@oclif/command'
 import { displayCollapsedRow } from '../../helpers/display'
 

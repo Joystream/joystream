@@ -1,11 +1,8 @@
+import { prepareClaimChannelRewardExtrinsicArgs } from '@joystream/js/content'
 import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
-import { createType } from '@joystream/types'
 import { MemberId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { PalletCommonMerkleTreeProofElementRecord } from '@polkadot/types/lookup'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { u8aToHex } from '@polkadot/util'
-import { BN } from 'bn.js'
 import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
@@ -43,22 +40,9 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.claimChannelRewardParams.map((params) => {
       // Prepare extrinsic arguments
-      const pullPayment = createType('PalletContentPullPaymentElement', {
-        channelId: params.payoutProof.channelId,
-        cumulativeRewardEarned: new BN(params.payoutProof.cumulativeRewardEarned),
-        reason: u8aToHex(Buffer.from(params.payoutProof.reason, 'hex')),
-      })
+      const { pullPayment, proofElements } = prepareClaimChannelRewardExtrinsicArgs(params.payoutProof)
 
-      const merkleBranch: PalletCommonMerkleTreeProofElementRecord[] = []
-      params.payoutProof.merkleBranch.forEach((m) => {
-        const proofElement = createType('PalletCommonMerkleTreeProofElementRecord', {
-          hash_: u8aToHex(Buffer.from(m.hash, 'hex')),
-          side: m.side ? { Right: null } : { Left: null },
-        })
-        merkleBranch.push(proofElement)
-      })
-
-      return this.api.tx.content.claimChannelReward({ Member: params.asMember }, merkleBranch, pullPayment)
+      return this.api.tx.content.claimChannelReward({ Member: params.asMember }, proofElements, pullPayment)
     })
   }
 

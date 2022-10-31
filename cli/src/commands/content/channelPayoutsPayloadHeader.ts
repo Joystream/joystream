@@ -1,5 +1,5 @@
 import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
-import { serializedPayloadHeader } from '@joystreamjs/content'
+import { serializedPayloadHeader } from '@joystream/js/content'
 import { Command, flags } from '@oclif/command'
 import chalk from 'chalk'
 import { displayCollapsedRow, displayTable } from '../../helpers/display'

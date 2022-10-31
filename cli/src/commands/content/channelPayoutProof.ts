@@ -1,5 +1,5 @@
 import { displayCollapsedRow } from '../../helpers/display'
-import { channelPayoutProof } from '@joystreamjs/content'
+import { channelPayoutProof } from '@joystream/js/lib/content'
 import UploadCommandBase from '../../base/UploadCommandBase'
 
 export default class ChannelPayoutProof extends UploadCommandBase {

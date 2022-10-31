@@ -1,18 +1,52 @@
 {
-  "private": true,
-  "name": "joystreamjs",
+  "name": "@joystream/js",
   "version": "1.0.0",
   "license": "GPL-3.0-only",
-  "scripts": {
-    "build": "yarn workspace @joystreamjs/utils build && yarn workspace @joystreamjs/content build"
+  "description": "Joystream JS package provides  utilities required to work with Joystream network.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    "./content": "./lib/content/index.js",
+    "./utils": "./lib/utils/index.js"
   },
-  "workspaces": [
-    "content",
-    "utils"
-  ],
+  "typesVersions": {
+    "*": {
+      "content": [
+        "lib/content"
+      ],
+      "utils": [
+        "lib/utils"
+      ]
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream",
+    "directory": "joystreamjs"
+  },
+  "scripts": {
+    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "format": "prettier ./ --write",
+    "generate:schema-typings": "rm -rf ./src/utils/typings && json2ts -i ./src/utils/schemas/json/ -o ./typings && yarn format",
+    "generate:all": "yarn generate:schema-typings"
+  },
+  "dependencies": {
+    "@joystream/metadata-protobuf": "2.6.0",
+    "@joystream/types": "0.20.3",
+    "axios": "^0.21.1",
+    "lodash": "4.17.15",
+    "protobufjs": "^6.11.2",
+    "long": "^4.0.0",
+    "@types/long": "^4.0.1",
+    "@polkadot/util-crypto": "^7.3.1",
+    "merkletreejs": "^0.2.31"
+  },
   "devDependencies": {
-    "eslint": "^7.25.0",
-    "@joystream/eslint-config": "^1.0.0"
+    "@joystream/eslint-config": "^1.0.0",
+    "json-schema-to-typescript": "^10.1.4",
+    "typescript": "^4.4.3",
+    "prettier": "^2.2.1",
+    "eslint": "^7.25.0"
   },
   "husky": {
     "hooks": {

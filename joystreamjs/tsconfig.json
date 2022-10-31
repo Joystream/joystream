@@ -2,22 +2,20 @@
   "compilerOptions": {
     "declaration": true,
     "importHelpers": true,
-    "module": "commonjs",
+    "module": "es2020",
     "outDir": "lib",
     "rootDir": "src",
     "strict": true,
     "target": "es2017",
     "esModuleInterop": true,
+    "moduleResolution": "node",
     "types": ["node"],
     "noUnusedLocals": true,
     "baseUrl": ".",
-    "paths": {
-      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
-      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
-    },
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "typeRoots": ["./typings"],
+  "typesRoot": ["./typings"],
+
   "include": ["src/**/*"]
 }

@@ -1,4 +1,4 @@
-import { channelPayoutProof } from '@joystreamjs/content'
+import { channelPayoutProof } from '@joystream/js/content'
 import BN from 'bn.js'
 import fs from 'fs'
 import path from 'path'

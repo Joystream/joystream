@@ -1,6 +1,7 @@
-import { generateJsonPayloadFromPayoutsVector, generateSerializedPayload } from '@joystreamjs/content'
-import { ChannelPayoutsVectorSchema } from '@joystreamjs/utils'
-import { ChannelPayoutsVector } from '@joystreamjs/utils/typings/ChannelPayoutsVector.schema'
+import { generateJsonPayloadFromPayoutsVector, generateSerializedPayload } from '@joystream/js/content'
+import { ChannelPayoutsVectorSchema } from '@joystream/js/utils'
+import { ChannelPayoutsVector } from '@joystream/js/typings/ChannelPayoutsVector.schema'
+
 import { flags } from '@oclif/command'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import chalk from 'chalk'

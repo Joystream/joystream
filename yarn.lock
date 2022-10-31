@@ -2214,20 +2214,6 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/types@^0.19.3":
-  version "0.19.3"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.19.3.tgz#2edae0e2a8fc5ab1e596cf7768adcc280bbf0bf5"
-  integrity sha512-RBxpMoJp09F8SWKI8e969nzKzkrhOInXpeCL7R8Av1OU0IPyHDxw8dI/9qunQy13m/eJndfGMIEjT/TkX/UTEA==
-  dependencies:
-    "@polkadot/api" "5.9.1"
-    "@polkadot/keyring" "7.3.1"
-    "@polkadot/types" "5.9.1"
-    "@types/lodash" "^4.14.157"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-    moment "^2.24.0"
-
 "@joystream/warthog@^2.41.9":
   version "2.41.9"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.9.tgz#7cfb16df80cb43339e541026af09ff38909eae82"
@@ -2721,7 +2707,7 @@
     "@polkadot/util-crypto" "^9.5.1"
     rxjs "^7.5.5"
 
-"@polkadot/api@5.9.1", "@polkadot/api@8.9.1":
+"@polkadot/api@8.9.1":
   version "8.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-8.9.1.tgz#c35c5d583845a5d67edfa8c3579bad143f65bcd6"
   integrity sha512-UwQ5hWPHruqnBO2hriaPhGaOwaWZx9MVECWFJzVs0ZuhKDge9jyBp+JXud/Ly/+8VbeokYUB0DSZG/gTAO5+vg==
@@ -2744,7 +2730,7 @@
     eventemitter3 "^4.0.7"
     rxjs "^7.5.5"
 
-"@polkadot/keyring@7.3.1", "@polkadot/keyring@9.5.1", "@polkadot/keyring@^9.5.1":
+"@polkadot/keyring@9.5.1", "@polkadot/keyring@^9.5.1":
   version "9.5.1"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-9.5.1.tgz#3b0851f8fffe489f1b6020e69dc9a3a8e5696172"
   integrity sha512-ixv2lq1zNzYa+GqZQTzcraNw5ZrTTK+2/sqfeMOIr7gBGk0UCALuK0NCvTRAUtQK1RT2psBkkm2lr/rrNCeK+A==
@@ -2874,7 +2860,7 @@
     "@babel/runtime" "^7.18.3"
     "@polkadot/util" "^9.5.1"
 
-"@polkadot/types@5.9.1", "@polkadot/types@8.9.1":
+"@polkadot/types@8.9.1":
   version "8.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/types/-/types-8.9.1.tgz#e5bf1cef79d8c305faa8691c62dd3d4be9baed53"
   integrity sha512-h43/aPzk+ta0MzzGQz3DiGtearttHxZr08xOdtU5GctI6u9MXm0n0w74clciLpIGu5CI+QxYN3oQ8/5WXTukMw==

@@ -1,11 +1,12 @@
-import { createType } from '@joystream/types'
-import { channelPayoutProof, verifyChannelPayoutProof } from '@joystreamjs/content'
-import { PalletCommonMerkleTreeProofElementRecord as ProofElement } from '@polkadot/types/lookup'
-import { u8aToHex } from '@polkadot/util'
+import {
+  channelPayoutProof,
+  prepareClaimChannelRewardExtrinsicArgs,
+  verifyChannelPayoutProof,
+} from '@joystream/js/content'
+import BN from 'bn.js'
 import chalk from 'chalk'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import ExitCodes from '../../ExitCodes'
-import BN from 'bn.js'
 
 export default class ClaimChannelReward extends UploadCommandBase {
   static description = 'Claim channel payout reward for a given channel id.'
@@ -52,20 +53,7 @@ export default class ClaimChannelReward extends UploadCommandBase {
     }
 
     // Prepare extrinsic arguments
-    const pullPayment = createType('PalletContentPullPaymentElement', {
-      channelId,
-      cumulativeRewardEarned: new BN(payoutProof.cumulativeRewardEarned),
-      reason: u8aToHex(Buffer.from(payoutProof.reason, 'hex')),
-    })
-
-    const merkleBranch: ProofElement[] = []
-    payoutProof.merkleBranch.forEach((m) => {
-      const proofElement = createType('PalletCommonMerkleTreeProofElementRecord', {
-        hash_: u8aToHex(Buffer.from(m.hash, 'hex')),
-        side: m.side ? { Right: null } : { Left: null },
-      })
-      merkleBranch.push(proofElement)
-    })
+    const { pullPayment, proofElements } = prepareClaimChannelRewardExtrinsicArgs(payoutProof)
 
     this.jsonPrettyPrint(JSON.stringify({ channelId }))
 
@@ -73,7 +61,7 @@ export default class ClaimChannelReward extends UploadCommandBase {
 
     const result = await this.sendAndFollowNamedTx(keypair, 'content', 'claimChannelReward', [
       actor,
-      merkleBranch,
+      proofElements,
       pullPayment,
     ])
 

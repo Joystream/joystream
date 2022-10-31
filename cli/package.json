@@ -59,8 +59,7 @@
     "multihashes": "^4.0.3",
     "form-data": "^4.0.0",
     "graphql": "^14.7.0",
-    "@joystreamjs/content": "^1.0.0",
-    "@joystreamjs/utils": "^1.0.0"
+    "@joystream/js": "^1.0.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",

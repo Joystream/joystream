@@ -1,4 +1,4 @@
-import { generateCommitmentFromPayloadFile } from '@joystreamjs/content'
+import { generateCommitmentFromPayloadFile } from '@joystream/js/content'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'

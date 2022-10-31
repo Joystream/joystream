@@ -1,6 +1,6 @@
 import { createType } from '@joystream/types'
 import { MemberId } from '@joystream/types/primitives'
-import { generateCommitmentFromPayloadFile } from '@joystreamjs/content'
+import { generateCommitmentFromPayloadFile } from '@joystream/js/content'
 import BN from 'bn.js'
 import fs from 'fs'
 import { Api } from '../../../Api'

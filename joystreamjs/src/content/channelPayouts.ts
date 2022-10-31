@@ -1,14 +1,18 @@
 import { ChannelPayoutsMetadata, IChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
-import { asValidatedMetadata, readBytesFromFile, ReadFileContext } from '@joystreamjs/utils'
-import { ChannelPayoutProof } from '@joystreamjs/utils/typings/ChannelPayoutsPayload.schema'
-import { ChannelPayoutsVector } from '@joystreamjs/utils/typings/ChannelPayoutsVector.schema'
+import {
+  PalletCommonMerkleTreeProofElementRecord as ProofElement,
+  PalletContentPullPaymentElement,
+} from '@polkadot/types/lookup'
 import { u8aToHex } from '@polkadot/util'
 import { blake2AsU8a } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import Long from 'long'
 import { MerkleTree } from 'merkletreejs'
 import { Reader, Writer } from 'protobufjs'
+import { ChannelPayoutProof } from '../../typings/ChannelPayoutsPayload.schema'
+import { ChannelPayoutsVector } from '../../typings/ChannelPayoutsVector.schema'
+import { asValidatedMetadata, readBytesFromFile, ReadFileContext } from '../utils'
 
 export const hashFunc = blake2AsU8a
 
@@ -39,6 +43,36 @@ export async function channelPayoutProof(
   }
 
   return channelPayoutProofAtByteOffset(context, pathOrUrl, Number(channelPayoutProofOffset.byteOffset))
+}
+
+/**
+ * Get Payout Proof for given channel from
+ * remote source or file
+ * @param channelId Id of the channel
+ * @param payoutProof payoutProof record of given channel
+ * @returns SCALE codec args for claimChannelReward extrinsic
+ */
+export function prepareClaimChannelRewardExtrinsicArgs(payoutProof: ChannelPayoutsMetadata.Body.ChannelPayoutProof): {
+  pullPayment: PalletContentPullPaymentElement
+  proofElements: ProofElement[]
+} {
+  // Prepare extrinsic arguments
+  const pullPayment = createType('PalletContentPullPaymentElement', {
+    channelId: payoutProof.channelId,
+    cumulativeRewardEarned: new BN(payoutProof.cumulativeRewardEarned),
+    reason: u8aToHex(Buffer.from(payoutProof.reason, 'hex')),
+  })
+
+  const proofElements: ProofElement[] = []
+  payoutProof.merkleBranch.forEach((m) => {
+    const proofElement = createType('PalletCommonMerkleTreeProofElementRecord', {
+      hash_: u8aToHex(Buffer.from(m.hash, 'hex')),
+      side: m.side ? { Right: null } : { Left: null },
+    })
+    proofElements.push(proofElement)
+  })
+
+  return { pullPayment, proofElements }
 }
 
 /**

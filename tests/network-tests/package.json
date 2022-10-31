@@ -32,7 +32,7 @@
     "long": "^4.0.0",
     "node-cleanup": "^2.1.2",
     "graphql": "^14.7.0",
-    "@joystreamjs/content": "^1.0.0",
+    "@joystream/js": "^1.0.0",
     "uuid": "^7.0.3"
   },
   "devDependencies": {
