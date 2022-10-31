@@ -1020,7 +1020,6 @@ impl ActivateAmmFixture {
             sender: creator_account_id,
             token_id: TokenId::one(),
             member_id: creator_member_id,
-            
         }
     }
 
