@@ -2,8 +2,9 @@
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
-use crate::{member, token};
-use frame_support::{assert_noop, assert_ok};
+use crate::{member, token, Error};
+use frame_support::assert_noop;
+use sp_runtime::DispatchError;
 
 // --------------------- BONDING -------------------------------
 
@@ -59,15 +60,34 @@ fn crt_correctly_minted_to_user_during_bonding() {}
 // --------------- ACTIVATION ----------------------------------
 
 #[test]
-fn amm_activation_fails_with_invalid_member_id() {
-    let (user_member_id, user_account_id) = member!(2);
+fn amm_activation_fails_with_invalid_account_id() {
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![]).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         let result = ActivateAmmFixture::default()
             .with_sender(user_account_id)
             .execute_call();
 
-        assert_noop!(result, Error::<T>::UserNotAuthorizedToActivateAMM)
+        assert_noop!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    })
+}
+
+#[test]
+fn amm_activation_fails_with_invalid_member_id() {
+    let (user_member_id, _) = member!(2);
+    build_default_test_externalities_with_balances(vec![]).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        let result = ActivateAmmFixture::default()
+            .with_member_id(user_member_id)
+            .execute_call();
+
+        assert_noop!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
     })
 }
 
@@ -80,7 +100,7 @@ fn amm_activation_fails_with_invalid_token_id() {
             .with_token_id(token_id)
             .execute_call();
 
-        assert_noop!(result, Error::<T>::TokenDoesNotExist)
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
     })
 }
 

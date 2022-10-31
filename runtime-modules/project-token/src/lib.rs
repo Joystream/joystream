@@ -801,6 +801,7 @@ decl_module! {
             Ok(())
         }
 
+        #[weight = 100_000_000] // TODO: adjust weight
         pub fn activate_amm(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
