@@ -57,6 +57,10 @@ enum SessionKeysUtil {
         /// The path where the keys are stored.
         #[clap(long, short, default_value = "./keystore")]
         keystore_path: PathBuf,
+        /// The output format, json or list (comma separatd list of the accoutns
+        /// in order grandpa,babe,im_online,authority_discovery)
+        #[clap(long, short, default_value = "list")]
+        output: String,
     },
 }
 
@@ -96,7 +100,7 @@ fn generate_session_keys_and_store(seed: &str, keystore_path: &Path) -> Result<(
     Ok(())
 }
 
-fn inspect_keystore(keystore_path: &Path) -> Result<(), String> {
+fn inspect_keystore(keystore_path: &Path, output: String) -> Result<(), String> {
     if !keystore_path.is_dir() {
         return Err("Keystore does not exist".into());
     }
@@ -133,8 +137,15 @@ fn inspect_keystore(keystore_path: &Path) -> Result<(), String> {
 
     let keys = session_keys(grandpa, babe, im_online, authority_discovery);
 
-    let serialized = serde_json::to_string_pretty(&keys).map_err(|err| err.to_string())?;
-    println!("{}", serialized);
+    if output == "json" {
+        let serialized = serde_json::to_string_pretty(&keys).map_err(|err| err.to_string())?;
+        println!("{}", serialized);
+    } else {
+        println!(
+            "{},{},{},{}",
+            keys.grandpa, keys.babe, keys.im_online, keys.authority_discovery
+        );
+    }
 
     Ok(())
 }
@@ -167,8 +178,12 @@ async fn main() -> Result<(), String> {
         } => {
             generate_session_keys_and_store(&seed, &keystore_path)?;
         }
-        SessionKeysUtil::Inspect { keystore_path, .. } => {
-            inspect_keystore(&keystore_path)?;
+        SessionKeysUtil::Inspect {
+            keystore_path,
+            output,
+            ..
+        } => {
+            inspect_keystore(&keystore_path, output)?;
         }
     };
 
