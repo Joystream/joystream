@@ -115,6 +115,9 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
 
     /// Latest Token Revenue split (active / inactive)
     pub next_revenue_split_id: RevenueSplitId,
+
+    /// Bonding Curve functionality
+    pub bonding_curve: Option<BondingCurve>,
 }
 
 /// Revenue Split State
@@ -569,6 +572,17 @@ where
     }
 }
 
+/// Represents token's bonding curve with linear pricing function y = ax + b
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
+pub struct BondingCurve {
+    /// Slope parameter : a
+    pub slope: u64,
+
+    /// Intercept : b
+    pub intercept: u64,
+}
+
 /// Represents token's offering state
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum OfferingState<TokenSale> {
@@ -583,26 +597,30 @@ pub enum OfferingState<TokenSale> {
 
     /// state for IBCO, it might get decorated with the JOY reserve
     /// amount for the token
-    BondingCurve,
+    BondingCurve(BondingCurve),
 }
 
 impl<TokenSale> OfferingState<TokenSale> {
     pub(crate) fn of<T: crate::Config>(token: &TokenDataOf<T>) -> OfferingStateOf<T> {
-        token
-            .sale
-            .as_ref()
-            .map_or(OfferingStateOf::<T>::Idle, |sale| {
-                let current_block = <frame_system::Pallet<T>>::block_number();
-                if current_block < sale.start_block {
-                    OfferingStateOf::<T>::UpcomingSale(sale.clone())
-                } else if current_block >= sale.start_block
-                    && current_block < sale.start_block.saturating_add(sale.duration)
-                {
-                    OfferingStateOf::<T>::Sale(sale.clone())
-                } else {
-                    OfferingStateOf::<T>::Idle
-                }
-            })
+        if let Some(curve) = token.bonding_curve.clone() {
+            OfferingStateOf::<T>::BondingCurve(curve)
+        } else {
+            token
+                .sale
+                .as_ref()
+                .map_or(OfferingStateOf::<T>::Idle, |sale| {
+                    let current_block = <frame_system::Pallet<T>>::block_number();
+                    if current_block < sale.start_block {
+                        OfferingStateOf::<T>::UpcomingSale(sale.clone())
+                    } else if current_block >= sale.start_block
+                        && current_block < sale.start_block.saturating_add(sale.duration)
+                    {
+                        OfferingStateOf::<T>::Sale(sale.clone())
+                    } else {
+                        OfferingStateOf::<T>::Idle
+                    }
+                })
+        }
     }
 
     pub(crate) fn ensure_idle_of<T: crate::Config>(token: &TokenDataOf<T>) -> DispatchResult {
@@ -626,6 +644,15 @@ impl<TokenSale> OfferingState<TokenSale> {
     ) -> Result<TokenSaleOf<T>, DispatchError> {
         match Self::of::<T>(token) {
             OfferingStateOf::<T>::Sale(sale) => Ok(sale),
+            _ => Err(Error::<T>::NoActiveSale.into()),
+        }
+    }
+
+    pub(crate) fn ensure_bonding_curve_of<T: crate::Config>(
+        token: &TokenDataOf<T>,
+    ) -> Result<BondingCurve, DispatchError> {
+        match Self::of::<T>(token) {
+            OfferingStateOf::<T>::BondingCurve(curve) => Ok(curve),
             _ => Err(Error::<T>::NoActiveSale.into()),
         }
     }
@@ -1291,6 +1318,7 @@ where
             next_revenue_split_id: 0,
             // TODO: revenue split rate might be subjected to constraints: https://github.com/Joystream/atlas/issues/2728
             revenue_split_rate: params.revenue_split_rate,
+            bonding_curve: None,
         })
     }
 }

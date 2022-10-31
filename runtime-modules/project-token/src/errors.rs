@@ -111,6 +111,9 @@ decl_error! {
         /// Amount of tokens to purchase on sale cannot be zero
         SalePurchaseAmountIsZero,
 
+        /// No Sale if Amm is active
+        CannotInitSaleIfAmmIsActive,
+
         // ------ Revenue Split Errors ------------------------------------------------------
 
         /// Specified revenue split starting block is in the past
@@ -160,5 +163,12 @@ decl_error! {
         /// Amount of tokens to burn exceeds total amount of tokens owned by the account
         BurnAmountGreaterThanAccountTokensAmount,
 
+        /// ------ AMM ---------------------------------------------------------
+
+        /// Cannot activate AMM during a token sale
+        CannotActivateAmmDuringSale,
+
+        /// Already in AMM state
+        AlreadyInAmmState,
     }
 }

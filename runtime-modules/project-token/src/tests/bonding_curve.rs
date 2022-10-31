@@ -2,6 +2,7 @@
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
+use crate::types::BondingCurve;
 use crate::{member, token, Error};
 use frame_support::assert_noop;
 use sp_runtime::DispatchError;
@@ -62,7 +63,9 @@ fn crt_correctly_minted_to_user_during_bonding() {}
 #[test]
 fn amm_activation_fails_with_invalid_account_id() {
     let (_, user_account_id) = member!(2);
-    build_default_test_externalities_with_balances(vec![]).execute_with(|| {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         let result = ActivateAmmFixture::default()
             .with_sender(user_account_id)
@@ -78,7 +81,9 @@ fn amm_activation_fails_with_invalid_account_id() {
 #[test]
 fn amm_activation_fails_with_invalid_member_id() {
     let (user_member_id, _) = member!(2);
-    build_default_test_externalities_with_balances(vec![]).execute_with(|| {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         let result = ActivateAmmFixture::default()
             .with_member_id(user_member_id)
@@ -94,7 +99,9 @@ fn amm_activation_fails_with_invalid_member_id() {
 #[test]
 fn amm_activation_fails_with_invalid_token_id() {
     let token_id = token!(2);
-    build_default_test_externalities_with_balances(vec![]).execute_with(|| {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         let result = ActivateAmmFixture::default()
             .with_token_id(token_id)
@@ -105,16 +112,51 @@ fn amm_activation_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn amm_activated_with_status_updated() {}
+fn activation_fails_when_there_are_ongoing_active_sales() {
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+
+        let result = ActivateAmmFixture::default().execute_call();
+
+        assert_noop!(result, Error::<Test>::CannotActivateAmmDuringSale);
+    })
+}
 
 #[test]
-fn activation_fails_when_there_are_ongoing_active_sales() {}
+fn activation_fails_when_amm_status_already_active() {
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let result = ActivateAmmFixture::default().execute_call();
+
+        assert_noop!(result, Error::<Test>::AlreadyInAmmState);
+    })
+}
 
 #[test]
-fn activation_fails_when_there_are_ongoing_active_revenue_splits() {}
+fn amm_activation_successful_with_parameter_set_and_status_update() {
+    let slope = 1u64;
+    let intercept = 1u64; 
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
 
-#[test]
-fn activation_fails_when_amm_status_already_active() {}
+        ActivateAmmFixture::default().with_function_params(slope,intercept).execute_call().unwrap();
+
+        let token = Token::token_info_by_id(1);
+        assert_eq!(
+            IssuanceState::of::<Test>(&token),
+            IssuanceState::BondingCurve(BondingCurve{
+                slope,
+                intercept,
+            })
+        );
+    })
+}
 
 // --------------------- UNBONDING -------------------------------
 

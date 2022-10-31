@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{Joy, Payment, Transfers, TransfersOf};
+use crate::types::{Joy, Payment, Transfers, TransfersOf, BondingCurve};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -1011,6 +1011,7 @@ pub struct ActivateAmmFixture {
     sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
+    bonding_curve: BondingCurve,
 }
 
 impl ActivateAmmFixture {
@@ -1020,6 +1021,7 @@ impl ActivateAmmFixture {
             sender: creator_account_id,
             token_id: TokenId::one(),
             member_id: creator_member_id,
+            bonding_curve: BondingCurve::default(),
         }
     }
 
@@ -1035,10 +1037,20 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
+    pub fn with_function_params(self, a: u64, b: u64) -> Self {
+        Self {
+           bonding_curve: BondingCurve {
+            slope: a,
+            intercept: b,
+           },
+           ..self 
+        }
+    }
+
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result =
-            Token::activate_amm(Origin::signed(self.sender), self.token_id, self.member_id);
+            Token::activate_amm(Origin::signed(self.sender), self.token_id, self.member_id, self.bonding_curve.clone());
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error

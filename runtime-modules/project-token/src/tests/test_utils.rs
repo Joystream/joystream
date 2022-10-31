@@ -48,6 +48,7 @@ impl TokenDataBuilder {
             revenue_split: self.revenue_split,
             next_revenue_split_id: 0u32,
             revenue_split_rate: self.revenue_split_rate,
+            bonding_curve: None,
         }
     }
 

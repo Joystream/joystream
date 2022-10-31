@@ -1145,6 +1145,7 @@ fn issue_token_ok_with_token_info_added() {
                 next_revenue_split_id: 0,
                 revenue_split: RevenueSplitState::Inactive,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
+                bonding_curve: None,
             }
         );
     })
