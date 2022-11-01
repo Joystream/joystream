@@ -636,8 +636,7 @@ impl pallet_staking::Config for Runtime {
     type SlashDeferDuration = SlashDeferDuration;
     type SlashCancelOrigin = EnsureRoot<AccountId>;
     type SessionInterface = Self;
-    // TODO (Mainnet): enable normal curve
-    // type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
+    type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
     type EraPayout = NoInflationIfNoEras;
     type NextNewSession = Session;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
