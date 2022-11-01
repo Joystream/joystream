@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{BondingCurve, Joy, Payment, Transfers, TransfersOf};
+use crate::types::{BondingCurveParams, Joy, Payment, Transfers, TransfersOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -99,6 +99,14 @@ impl IssueTokenFixture {
             }
             .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
             upload_context: default_upload_context(),
+        }
+    }
+
+    pub fn with_empty_allocation(self) -> Self {
+        Self {
+            issuer_account: self.issuer_account,
+            params: self.params.with_allocation(&member!(1).0, 0, None),
+            upload_context: self.upload_context,
         }
     }
 
@@ -1011,7 +1019,7 @@ pub struct ActivateAmmFixture {
     sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
-    param: u64,
+    params: BondingCurveParams,
 }
 
 impl ActivateAmmFixture {
@@ -1021,7 +1029,10 @@ impl ActivateAmmFixture {
             sender: creator_account_id,
             token_id: TokenId::one(),
             member_id: creator_member_id,
-            param: 1u64,
+            params: BondingCurveParams {
+                slope: 1,
+                intercept: 1,
+            },
         }
     }
 
@@ -1037,8 +1048,12 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_linear_function_param(self, b: u64) -> Self {
-        Self { param: b, ..self }
+    pub fn with_linear_function_params(self, a: u64, b: u64) -> Self {
+        let params = BondingCurveParams {
+            slope: a,
+            intercept: b,
+        };
+        Self { params, ..self }
     }
 
     pub fn execute_call(&self) -> DispatchResult {
@@ -1047,7 +1062,7 @@ impl ActivateAmmFixture {
             Origin::signed(self.sender),
             self.token_id,
             self.member_id,
-            self.param,
+            self.params.clone(),
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 

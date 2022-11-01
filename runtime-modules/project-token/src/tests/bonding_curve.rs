@@ -128,7 +128,10 @@ fn activation_fails_when_there_are_ongoing_active_sales() {
 fn activation_fails_when_amm_status_already_active() {
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
+        IssueTokenFixture::default()
+            .with_empty_allocation()
+            .execute_call()
+            .unwrap();
         ActivateAmmFixture::default().execute_call().unwrap();
 
         let result = ActivateAmmFixture::default().execute_call();
@@ -143,10 +146,13 @@ fn amm_activation_fails_with_invalid_curve_parameters_after_sale() {
     let slope = 0;
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
+        IssueTokenFixture::default()
+            .with_empty_allocation()
+            .execute_call()
+            .unwrap();
 
         ActivateAmmFixture::default()
-            .with_linear_function_param(intercept)
+            .with_linear_function_params(slope, intercept)
             .execute_call()
             .unwrap();
 
@@ -164,10 +170,13 @@ fn amm_activation_successful_with_parameter_set_and_status_update() {
     let intercept = 1u64;
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
+        IssueTokenFixture::default()
+            .with_empty_allocation()
+            .execute_call()
+            .unwrap();
 
         ActivateAmmFixture::default()
-            .with_linear_function_param(intercept)
+            .with_linear_function_params(slope, intercept)
             .execute_call()
             .unwrap();
 
@@ -185,10 +194,13 @@ fn amm_activation_successful_with_parameter_set_and_status_update_after_a_sale()
     let intercept = 1u64;
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
+        IssueTokenFixture::default()
+            .with_empty_allocation()
+            .execute_call()
+            .unwrap();
 
         ActivateAmmFixture::default()
-            .with_function_params(slope, intercept)
+            .with_linear_function_params(slope, intercept)
             .execute_call()
             .unwrap();
 

@@ -170,5 +170,8 @@ decl_error! {
 
         /// Already in AMM state
         AlreadyInAmmState,
+
+        /// Invalid bonding curve construction parameters
+        InvalidCurveParameters,
     }
 }
