@@ -802,7 +802,7 @@ decl_module! {
         }
 
         #[weight = 100_000_000] // TODO: adjust weight
-        pub fn activate_amm(origin, token_id: T::TokenId, member_id: T::MemberId, curve: BondingCurve) -> DispatchResult {
+        pub fn activate_amm(origin, token_id: T::TokenId, member_id: T::MemberId, param: u64) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -815,6 +815,11 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
+            let issuance = token_data.total_supply;
+            let curve = BondingCurve {
+                slope: 0, // https://github.com/Joystream/joystream/issues/3754#issuecomment-1145059860
+                intercept: param,
+            }
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.bonding_curve = Some(curve)
             });

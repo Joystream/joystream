@@ -1011,7 +1011,7 @@ pub struct ActivateAmmFixture {
     sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
-    bonding_curve: BondingCurve,
+    param: u64,
 }
 
 impl ActivateAmmFixture {
@@ -1021,7 +1021,7 @@ impl ActivateAmmFixture {
             sender: creator_account_id,
             token_id: TokenId::one(),
             member_id: creator_member_id,
-            bonding_curve: BondingCurve::default(),
+            param: 1u64,
         }
     }
 
@@ -1037,14 +1037,8 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_function_params(self, a: u64, b: u64) -> Self {
-        Self {
-            bonding_curve: BondingCurve {
-                slope: a,
-                intercept: b,
-            },
-            ..self
-        }
+    pub fn with_linear_function_param(self, b: u64) -> Self {
+        Self { param: b, ..self }
     }
 
     pub fn execute_call(&self) -> DispatchResult {
@@ -1053,7 +1047,7 @@ impl ActivateAmmFixture {
             Origin::signed(self.sender),
             self.token_id,
             self.member_id,
-            self.bonding_curve.clone(),
+            self.param,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
