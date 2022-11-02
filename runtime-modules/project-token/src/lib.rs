@@ -821,6 +821,14 @@ decl_module! {
 
             Ok(())
         }
+
+        #[weight = 100_000_000] // TODO: adjust weight
+        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance) -> DispatchResult {
+            if (amount.is_zero()) {
+                return Ok(()); // noop
+            }
+            Ok(())
+        }
     }
 }
 
