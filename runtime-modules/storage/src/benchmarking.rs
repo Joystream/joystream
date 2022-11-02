@@ -463,7 +463,7 @@ fn create_distribution_buckets<T: Config>(
 }
 
 const DISTRIBUTION_BUCKET_FAMILIES_NUMBER: u32 = 7;
-const MAX_BYTE_SIZE: u32 = 1000;
+const MAX_KILOBYTES_METADATA: u32 = 1000;
 const OBJECT_COUNT: u32 = 400;
 
 benchmarks! {
@@ -860,14 +860,14 @@ benchmarks! {
     }
 
     set_storage_operator_metadata {
-        let i in 1 .. MAX_BYTE_SIZE;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
             insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
-        let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+        let metadata = iter::repeat(1).take((i * 1000) as usize).collect::<Vec<_>>();
 
         set_storage_operator::<T>(
             lead_account_id,
@@ -1253,8 +1253,8 @@ benchmarks! {
     }
 
     set_distribution_bucket_family_metadata {
-        let i in 1 .. MAX_BYTE_SIZE;
-        let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let metadata = iter::repeat(1).take((i * 1000) as usize).collect::<Vec<_>>();
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let family_id = create_distribution_family::<T>(lead_account_id.clone());
@@ -1296,8 +1296,8 @@ benchmarks! {
     }
 
     set_distribution_operator_metadata {
-        let i in 1 .. MAX_BYTE_SIZE;
-        let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let metadata = iter::repeat(1).take((i * 1000) as usize).collect::<Vec<_>>();
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
@@ -1332,14 +1332,14 @@ benchmarks! {
     }
 
     storage_operator_remark {
-        let i in 1 .. MAX_BYTE_SIZE;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
             insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
-        let msg = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+        let msg = iter::repeat(1).take((i * 1000) as usize).collect::<Vec<_>>();
 
         set_storage_operator::<T>(
             lead_account_id,
@@ -1365,8 +1365,8 @@ benchmarks! {
     }
 
     distribution_operator_remark {
-        let i in 1 .. MAX_BYTE_SIZE;
-        let msg = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let msg = iter::repeat(1).take((i * 1000) as usize).collect::<Vec<_>>();
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =

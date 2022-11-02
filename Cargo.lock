@@ -2854,7 +2854,6 @@ dependencies = [
  "pallet-council",
  "pallet-election-provider-multi-phase",
  "pallet-election-provider-support-benchmarking",
- "pallet-elections-phragmen",
  "pallet-forum",
  "pallet-grandpa",
  "pallet-im-online",
@@ -4548,6 +4547,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "static_assertions",
 ]
 
 [[package]]
@@ -4675,24 +4675,6 @@ dependencies = [
  "parity-scale-codec",
  "sp-npos-elections",
  "sp-runtime",
-]
-
-[[package]]
-name = "pallet-elections-phragmen"
-version = "5.0.0-dev"
-source = "git+https://github.com/joystream/substrate.git?rev=d29a53b11c3e530d1656eef502cb0f1f8fff3522#d29a53b11c3e530d1656eef502cb0f1f8fff3522"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-npos-elections",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]

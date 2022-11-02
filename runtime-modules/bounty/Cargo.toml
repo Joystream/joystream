@@ -16,6 +16,7 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
+static_assertions = "1.1.0"
 
 # Benchmarking
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', optional = true}
