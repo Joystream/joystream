@@ -23,7 +23,7 @@ FROM rust AS cacher
 LABEL description="Cargo chef cook dependencies"
 WORKDIR /joystream
 COPY --from=planner /joystream/recipe.json /joystream/recipe.json
-ENV WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
+ARG WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
 # Build dependencies - this is the caching Docker layer!
 RUN cargo chef cook --release --recipe-path /joystream/recipe.json
 
@@ -35,6 +35,7 @@ COPY Cargo.lock .
 COPY bin ./bin
 COPY runtime ./runtime
 COPY runtime-modules ./runtime-modules
+COPY scripts/runtime-code-shasum.sh ./runtime-code-shasum.sh
 # Copy over the cached dependencies
 COPY --from=cacher /joystream/target target
 COPY --from=cacher $CARGO_HOME $CARGO_HOME
@@ -43,8 +44,10 @@ COPY --from=cacher $CARGO_HOME $CARGO_HOME
 # Ensure our tests and linter pass before actual build
 ARG CARGO_FEATURES
 RUN echo "CARGO_FEATURES=$CARGO_FEATURES"
-ENV WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
-RUN cargo build --release --features "${CARGO_FEATURES}"
+ARG WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
+ARG GIT_COMMIT_HASH="unknown"
+RUN SUBSTRATE_CLI_GIT_COMMIT_HASH="${GIT_COMMIT_HASH}-code-shasum-$(./runtime-code-shasum.sh)" \
+  cargo build --release --features "${CARGO_FEATURES}"
 
 FROM ubuntu:22.04
 LABEL description="Joystream node"
