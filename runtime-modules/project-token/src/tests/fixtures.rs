@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{BondingCurveParams, Joy, Payment, Transfers, TransfersOf};
+use crate::types::{BondingCurve, Joy, Payment, Transfers, TransfersOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -1019,7 +1019,7 @@ pub struct ActivateAmmFixture {
     sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
-    params: BondingCurveParams,
+    params: BondingCurve,
 }
 
 impl ActivateAmmFixture {
@@ -1029,7 +1029,7 @@ impl ActivateAmmFixture {
             sender: creator_account_id,
             token_id: TokenId::one(),
             member_id: creator_member_id,
-            params: BondingCurveParams {
+            params: BondingCurve {
                 slope: 1,
                 intercept: 1,
             },
@@ -1049,7 +1049,7 @@ impl ActivateAmmFixture {
     }
 
     pub fn with_linear_function_params(self, a: u64, b: u64) -> Self {
-        let params = BondingCurveParams {
+        let params = BondingCurve {
             slope: a,
             intercept: b,
         };

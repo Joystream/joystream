@@ -141,31 +141,7 @@ fn activation_fails_when_amm_status_already_active() {
 }
 
 #[test]
-fn amm_activation_fails_with_invalid_curve_parameters_after_sale() {
-    let intercept = 0;
-    let slope = 0;
-    let config = GenesisConfigBuilder::new_empty().build();
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default()
-            .with_empty_allocation()
-            .execute_call()
-            .unwrap();
-
-        ActivateAmmFixture::default()
-            .with_linear_function_params(slope, intercept)
-            .execute_call()
-            .unwrap();
-
-        let token = Token::token_info_by_id(1);
-        assert_eq!(
-            IssuanceState::of::<Test>(&token),
-            IssuanceState::BondingCurve(BondingCurve { slope, intercept })
-        );
-    })
-}
-
-#[test]
-fn amm_activation_successful_with_parameter_set_and_status_update() {
+fn amm_activation_successful_with_no_outstanding_issuance() {
     let slope = 1u64;
     let intercept = 1u64;
     let config = GenesisConfigBuilder::new_empty().build();
@@ -189,15 +165,12 @@ fn amm_activation_successful_with_parameter_set_and_status_update() {
 }
 
 #[test]
-fn amm_activation_successful_with_parameter_set_and_status_update_after_a_sale() {
+fn amm_activation_successful() {
     let slope = 1u64;
     let intercept = 1u64;
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default()
-            .with_empty_allocation()
-            .execute_call()
-            .unwrap();
+        IssueTokenFixture::default().execute_call().unwrap();
 
         ActivateAmmFixture::default()
             .with_linear_function_params(slope, intercept)
@@ -211,7 +184,6 @@ fn amm_activation_successful_with_parameter_set_and_status_update_after_a_sale()
         );
     })
 }
-
 // --------------------- UNBONDING -------------------------------
 
 #[test]

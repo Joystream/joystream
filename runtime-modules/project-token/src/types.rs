@@ -583,62 +583,6 @@ pub struct BondingCurve {
     pub intercept: u64,
 }
 
-// TODO (mrbovo): look for creational patterns
-/// Represents token's bonding curve with linear pricing function y = ax + b
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
-pub struct BondingCurveParams {
-    /// Slope parameter : a
-    pub slope: u64,
-
-    /// Intercept : b
-    pub intercept: u64,
-}
-
-impl BondingCurveParams {
-    pub fn try_build<T: Config>(
-        self,
-        token_data: &TokenDataOf<T>,
-    ) -> Result<BondingCurve, DispatchError> {
-        let issuance = token_data.total_supply;
-        let fundamental_market_cap = issuance;
-
-        // TODO (mrbovo) : temporary, use types that allows for a more flexible computation rather than resorting to saturated_into
-        // - add a function oracle for fundamental market cap
-        // - this depends on the curve shape, so encapsulation is suitable
-        // - as a refactoring guide I would setup curve_params with a try_build()
-        let a = if !issuance.is_zero() {
-            // see https://github.com/Joystream/joystream/issues/3754#issuecomment-1145059860
-            let _tmp: u64 = (issuance + self.intercept.into()).unique_saturated_into();
-            let split_allocation: u64 = (token_data
-                .revenue_split_rate
-                .mul_floor(fundamental_market_cap))
-            .saturated_into();
-            let num: u64 = (split_allocation / 2)
-                .checked_sub(_tmp * 2)
-                .ok_or(Error::<T>::ArithmeticError)?;
-
-            // boundary check for b parameters
-            ensure!(
-                self.intercept < split_allocation,
-                Error::<T>::InvalidCurveParameters
-            );
-
-            let den: u64 = (issuance * issuance).unique_saturated_into();
-            num / (2 * den)
-        } else {
-            self.slope
-        };
-
-        let curve = BondingCurve {
-            slope: a,
-            intercept: self.intercept,
-        };
-
-        Ok(curve)
-    }
-}
-
 /// Represents token's offering state
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum OfferingState<TokenSale> {
