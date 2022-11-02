@@ -134,10 +134,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ElectionProviderMultiPhase SnapshotMetadata (r:1 w:0)
 	// Storage: ElectionProviderMultiPhase MinimumUntrustedScore (r:1 w:0)
 	// Storage: ElectionProviderMultiPhase Snapshot (r:1 w:0)
-	fn submit_unsigned(v: u32, _t: u32, a: u32, d: u32, ) -> Weight {
+	fn submit_unsigned(v: u32, t: u32, a: u32, d: u32, ) -> Weight {
 		(0 as Weight)
 			// Standard Error: 17_000
 			.saturating_add((1_437_000 as Weight).saturating_mul(v as Weight))
+			// Standard Error: 38_000
+			.saturating_add((651_000 as Weight).saturating_mul(t as Weight))
 			// Standard Error: 58_000
 			.saturating_add((11_297_000 as Weight).saturating_mul(a as Weight))
 			// Standard Error: 87_000

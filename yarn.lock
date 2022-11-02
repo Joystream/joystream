@@ -2707,7 +2707,7 @@
     "@polkadot/util-crypto" "^9.5.1"
     rxjs "^7.5.5"
 
-"@polkadot/api@8.9.1":
+"@polkadot/api@8.9.1", "@polkadot/api@9.3.3":
   version "8.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-8.9.1.tgz#c35c5d583845a5d67edfa8c3579bad143f65bcd6"
   integrity sha512-UwQ5hWPHruqnBO2hriaPhGaOwaWZx9MVECWFJzVs0ZuhKDge9jyBp+JXud/Ly/+8VbeokYUB0DSZG/gTAO5+vg==
@@ -3196,6 +3196,29 @@
   version "1.22.0"
   resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.22.0.tgz#d115bc5dcab8c0f5800e05e4ef265949042b13ec"
   integrity sha512-IKqrPY0B3AeIXEc5/JGgEhPZLy+SmVyQf+k0SIGcNSTqt1GLI3gQFEOFwSScJdem+iYZQUrn6YPPxC3TpdSC3A==
+
+"@substrate/txwrapper-core@^3.2.2":
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.2.2.tgz#55825ff84bd4cd95fa2f869111616300f66db513"
+  integrity sha512-Wj6odIvu69YC7RbxAPRllm48bZhK3nyygw1jRSZLzp/gfIzOAYz8KYvVtm62ZtmKKhs9jggD/H0SO+Nn37N0DA==
+  dependencies:
+    "@polkadot/api" "9.3.3"
+    memoizee "0.4.15"
+
+"@substrate/txwrapper-polkadot@3.2.2":
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-polkadot/-/txwrapper-polkadot-3.2.2.tgz#cb390756f53e277b58582d5643b1326636733b84"
+  integrity sha512-bx+RnRZWfX8hNIWzhOoNZo63A7gZT6/zu2J3Yu76lBebBloWfaX9PInLWdvRvdRDI1R30WGrESefhFuTILVguQ==
+  dependencies:
+    "@substrate/txwrapper-core" "^3.2.2"
+    "@substrate/txwrapper-substrate" "^3.2.2"
+
+"@substrate/txwrapper-substrate@^3.2.2":
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-substrate/-/txwrapper-substrate-3.2.2.tgz#ac736d2f617736231609fcf6f19b7393051cb00b"
+  integrity sha512-kTLgw3TeKVVxfL6eQgPm3ltlcxxxBH9u8CfuEQHa1EmGuL5RyW11JYHDJU5jFbK+8euADZK8Oo7Uo1txXocIUw==
+  dependencies:
+    "@substrate/txwrapper-core" "^3.2.2"
 
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
@@ -14065,7 +14088,7 @@ memoize-one@^5.0.0:
   resolved "https://registry.yarnpkg.com/memoize-one/-/memoize-one-5.2.1.tgz#8337aa3c4335581839ec01c3d594090cebe8f00e"
   integrity sha512-zYiwtZUcYyXKo/np96AGZAckk+FWWsUdJ3cHGGmld7+AhvcWmQyGCYUh1hc4Q/pkOhb65dQR/pqCyK0cOaHz4Q==
 
-memoizee@^0.4.15:
+memoizee@0.4.15, memoizee@^0.4.15:
   version "0.4.15"
   resolved "https://registry.yarnpkg.com/memoizee/-/memoizee-0.4.15.tgz#e6f3d2da863f318d02225391829a6c5956555b72"
   integrity sha512-UBWmJpLZd5STPm7PMUlOw/TSy972M+z8gcyQ5veOnSDRREz/0bmpyTfKt3/51DhEBqCZQn1udM/5flcSPYhkdQ==

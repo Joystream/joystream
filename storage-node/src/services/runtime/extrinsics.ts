@@ -6,6 +6,7 @@ import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as Dynamic
 import logger from '../../services/logger'
 import { timeout } from 'promise-timeout'
 import { createType } from '@joystream/types'
+import BN from 'bn.js'
 
 /**
  * Creates storage bucket.
@@ -164,8 +165,8 @@ export async function acceptPendingDataObjects(
   bagId: BagId,
   account: KeyringPair,
   workerId: number,
-  storageBucketId: number,
-  dataObjects: number[]
+  storageBucketId: BN,
+  dataObjects: BN[]
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const dataObjectSet = api.createType('BTreeSet<u64>', dataObjects)

@@ -30,6 +30,7 @@ import { formatBalance } from '@polkadot/util'
 import cli from 'cli-ux'
 import BN from 'bn.js'
 import _ from 'lodash'
+import { TxMethod, Args } from '@substrate/txwrapper-polkadot'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -475,6 +476,49 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     this.closeIndentGroup()
 
     return values
+  }
+
+  async promptForExtrinsicArgs(module: string, method: string): Promise<{ argName: string; argType: string }[]> {
+    const extrinsicMethod = (await this.getUnaugmentedApi().tx)[module][method]
+
+    const param: { argName: string; argType: string }[] = []
+
+    this.openIndentGroup()
+    for (const arg of extrinsicMethod.meta.args.toArray()) {
+      const argName = arg.name.toString()
+      const argType = arg.type.toString()
+      param.push({
+        argName,
+        argType,
+      })
+    }
+    this.closeIndentGroup()
+    return param
+  }
+
+  async promptForTxMethod(module: string, method: string, paramsOptions?: ApiParamsOptions): Promise<TxMethod> {
+    const extrinsicMethod = (await this.getUnaugmentedApi().tx)[module][method]
+    const args: Args = {}
+
+    this.openIndentGroup()
+    for (const arg of extrinsicMethod.meta.args.toArray()) {
+      const argName = arg.name.toString()
+      const argType = arg.type.toString()
+      let argOptions = paramsOptions && paramsOptions[argName]
+      if (!argOptions?.forcedName) {
+        argOptions = { ...argOptions, forcedName: argName }
+      }
+      const value: ApiMethodArg = await this.promptForParam(argType, argOptions)
+      args[argName] = value.toString()
+    }
+    this.closeIndentGroup()
+
+    const txMethod: TxMethod = {
+      args,
+      name: method,
+      pallet: module,
+    }
+    return txMethod
   }
 
   sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
