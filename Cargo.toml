@@ -21,6 +21,7 @@ members = [
 	"bin/inspect",
 	"bin/utils/chain-spec-builder/",
 	"bin/utils/session-keys/",
+	"bin/utils/call-sizes/",
 	"runtime-modules/support/derive-fixture",
 ]
 exclude = [

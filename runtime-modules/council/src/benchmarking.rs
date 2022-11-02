@@ -297,7 +297,7 @@ fn move_to_block_before_initialize_assert_stage<T: Config>(
     assert_eq!(Stage::<T>::get(), target_stage, "Stage not reached");
 }
 
-const MAX_BYTES: u32 = 16384;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 const MAX_CANDIDATES: u32 = 100;
 const START_ID: u32 = 5000;
 const MAX_FUNDING_REQUESTS: u32 = 100;
@@ -633,11 +633,11 @@ benchmarks! {
     }
 
     set_candidacy_note {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
         let (account_id, member_id) = start_period_announce_candidacy::<T>(0);
 
-        let note = vec![0u8; i.try_into().unwrap()];
+        let note = vec![0u8; (i * 1000).try_into().unwrap()];
 
     }: _(RawOrigin::Signed(account_id.clone()), member_id, note.clone())
     verify {
@@ -655,7 +655,7 @@ benchmarks! {
         );
 
         assert_last_event::<T>(
-            RawEvent::CandidacyNoteSet(member_id, vec![0u8; i.try_into().unwrap()]).into()
+            RawEvent::CandidacyNoteSet(member_id, vec![0u8; (i * 1000).try_into().unwrap()]).into()
         );
     }
 

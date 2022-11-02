@@ -77,6 +77,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 
 use common::membership::MemberOriginValidator;
+use common::to_kb;
 use common::working_group::*;
 use common::MemberId;
 use frame_support::traits::Instance;
@@ -503,9 +504,10 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (T + D + I)` where:
-        /// - `T` is the length of the title
-        /// - `D` is the length of the description
-        /// - `I` is the length of any parameter in `proposal_details`
+        /// - `T` is the title size in kilobytes
+        /// - `D` is the description size in kilobytes
+        /// - `I` is the size of any parameter in `proposal_details`
+        ///   (in kilobytes if it's metadata)
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -943,150 +945,152 @@ impl<T: Config> Module<T> {
         let description_length = general.description.len();
         match details {
             ProposalDetails::Signal(signal) => WeightInfoCodex::<T>::create_proposal_signal(
-                signal.len().saturated_into(),
-                title_length.saturated_into(),
-                description_length.saturated_into(),
+                to_kb(signal.len().saturated_into()),
+                to_kb(title_length.saturated_into()),
+                to_kb(description_length.saturated_into()),
             ),
             ProposalDetails::RuntimeUpgrade(blob) => {
                 WeightInfoCodex::<T>::create_proposal_runtime_upgrade(
-                    blob.len().saturated_into(),
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(blob.len().saturated_into()),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::FundingRequest(params) => {
                 WeightInfoCodex::<T>::create_proposal_funding_request(
                     params.len().saturated_into(),
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetMaxValidatorCount(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_max_validator_count(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::CreateWorkingGroupLeadOpening(opening_params) => {
                 WeightInfoCodex::<T>::create_proposal_create_working_group_lead_opening(
-                    opening_params.description.len().saturated_into(),
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(opening_params.description.len().saturated_into()),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::FillWorkingGroupLeadOpening(..) => {
                 WeightInfoCodex::<T>::create_proposal_fill_working_group_lead_opening(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::UpdateWorkingGroupBudget(..) => {
                 WeightInfoCodex::<T>::create_proposal_update_working_group_budget(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::DecreaseWorkingGroupLeadStake(..) => {
                 WeightInfoCodex::<T>::create_proposal_decrease_working_group_lead_stake(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SlashWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetWorkingGroupLeadReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_working_group_lead_reward(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::TerminateWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_terminate_working_group_lead(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
-                    new_constitution.len().saturated_into(),
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(new_constitution.len().saturated_into()),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetMembershipPrice(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_price(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetCouncilBudgetIncrement(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_council_budget_increment(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetCouncilorReward(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_councilor_reward(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetInitialInvitationBalance(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_initial_invitation_balance(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetInitialInvitationCount(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_initial_invitation_count(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::SetReferralCut(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_referral_cut(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
             }
             ProposalDetails::VetoProposal(..) => {
                 WeightInfoCodex::<T>::create_proposal_veto_proposal(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
                 .saturated_into()
             }
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 WeightInfoCodex::<T>::create_proposal_update_global_nft_limit(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
                 .saturated_into()
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
                 WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-                    params
-                        .payload
-                        .as_ref()
-                        .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    to_kb(
+                        params
+                            .payload
+                            .as_ref()
+                            .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+                    ),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
                 )
                 .saturated_into()
             }
