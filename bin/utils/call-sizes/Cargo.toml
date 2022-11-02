@@ -1,0 +1,27 @@
+[package]
+authors = ['Joystream contributors']
+# build = 'build.rs'
+edition = '2018'
+name = 'call-sizes'
+version = '1.0.0'
+
+[dependencies]
+# Runtime
+joystream-node-runtime = { path = "../../../runtime" }
+# Pallets
+common = { package = 'pallet-common', default-features = false, path = '../../../runtime-modules/common'}
+forum = { package = 'pallet-forum', default-features = false, path = '../../../runtime-modules/forum'}
+membership = { package = 'pallet-membership', default-features = false, path = '../../../runtime-modules/membership'}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../../../runtime-modules/referendum'}
+council = { package = 'pallet-council', default-features = false, path = '../../../runtime-modules/council'}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../../../runtime-modules/working-group'}
+storage = { package = 'pallet-storage', default-features = false, path = '../../../runtime-modules/storage'}
+proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../../../runtime-modules/proposals/engine'}
+proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../../../runtime-modules/proposals/discussion'}
+proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../../../runtime-modules/proposals/codex'}
+pallet-constitution = { package = 'pallet-constitution', default-features = false, path = '../../../runtime-modules/constitution' }
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../../runtime-modules/staking-handler'}
+bounty = { package = 'pallet-bounty', default-features = false, path = '../../../runtime-modules/bounty'}
+content = { package = 'pallet-content', default-features = false, path = '../../../runtime-modules/content'}
+joystream-utility = { package = 'pallet-utility', default-features = false, path = '../../../runtime-modules/utility'}
+project-token = { package = 'pallet-project-token', default-features = false, path = '../../../runtime-modules/project-token'}

@@ -219,7 +219,7 @@ fn elect_council<
     (council, (2 * (council_size + number_of_extra_candidates)))
 }
 
-const MAX_BYTES: u32 = 16384;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 benchmarks! {
     where_clause {
@@ -228,7 +228,7 @@ benchmarks! {
     }
 
     add_post {
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         // We do this to ignore the id 0 because the `Test` runtime
         // returns 0 as an invalid id but 1 as a valid one
@@ -254,7 +254,7 @@ benchmarks! {
 
         assert!(ThreadById::<T>::contains_key(thread_id), "Thread not created");
 
-        let text = vec![0u8; j.try_into().unwrap()];
+        let text = vec![0u8; (j * 1000).try_into().unwrap()];
 
         assert!(Balances::<T>::usable_balance(&account_id) >= T::PostDeposit::get());
     }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text.clone(), true)
@@ -279,7 +279,7 @@ benchmarks! {
     }
 
     update_post {
-        let j in 0 .. MAX_BYTES;
+        let j in 0 .. MAX_KILOBYTES_METADATA;
 
         // We do this to ignore the id 0 because the `Test` runtime
         // returns 0 as an invalid id but 1 as a valid one
@@ -305,7 +305,7 @@ benchmarks! {
 
         assert!(PostThreadIdByPostId::<T>::contains_key(thread_id, post_id), "Post not created");
 
-        let new_text = vec![0u8; j.try_into().unwrap()];
+        let new_text = vec![0u8; (j * 1000).try_into().unwrap()];
     }: _ (RawOrigin::Signed(account_id), thread_id, post_id, new_text.clone())
     verify {
         assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id, thread_id, new_text).into());
