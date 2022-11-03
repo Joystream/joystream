@@ -12,12 +12,11 @@ ExecStart={{ template_working_dir }}/bin/joystream-node \
         --ws-external \
         --rpc-cors all \
         --pruning archive \
-        --ws-max-connections 512 \
+        --ws-max-connections 1000 \
         --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
         --no-mdns \
         --in-peers 128 \
-        --out-peers 128 \
-        --ws-max-connections 1000
+        --out-peers 128
 
 Restart=on-failure
 RestartSec=3
