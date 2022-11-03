@@ -11,7 +11,7 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 
-use sp_std::iter::FromIterator;
+use sp_std::{collections::btree_map::BTreeMap, iter::FromIterator};
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
 pub trait Fixture<S: std::fmt::Debug + std::cmp::PartialEq> {
@@ -1030,8 +1030,10 @@ impl ActivateAmmFixture {
             token_id: TokenId::one(),
             member_id: creator_member_id,
             params: BondingCurve {
-                slope: 1,
-                intercept: 1,
+                // like Deso: https://docs.deso.org/about-deso-chain/readme#the-creator-coin-supply-curve
+                slope: Permill::from_perthousand(3),
+                intercept: Permill::zero(),
+                creator_reward: Permill::from_percent(10),
             },
         }
     }
@@ -1048,10 +1050,21 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_linear_function_params(self, a: u64, b: u64) -> Self {
+    pub fn with_creator_reward(self, creator_reward: Permill) -> Self {
+        Self {
+            params: BondingCurve {
+                creator_reward,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_linear_function_params(self, a: Permill, b: Permill) -> Self {
         let params = BondingCurve {
             slope: a,
             intercept: b,
+            ..self.params
         };
         Self { params, ..self }
     }
@@ -1080,21 +1093,27 @@ pub struct BondFixture {
     token_id: TokenId,
     member_id: MemberId,
     amount: Balance,
+    timestamp: u64,
 }
 
 impl BondFixture {
     pub fn default() -> Self {
-        let (member_id, sender) = member!(1);
+        let (member_id, sender) = member!(2);
         Self {
             sender,
             token_id: One::one(),
             member_id,
             amount: Balance::from(DEFAULT_BONDING_AMOUNT),
+            timestamp: u64::max_value(), // TODO: temporary to have test passing
         }
     }
 
     pub fn with_amount(self, amount: Balance) -> Self {
         Self { amount, ..self }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
     }
 
     pub fn with_sender(self, sender: AccountId) -> Self {

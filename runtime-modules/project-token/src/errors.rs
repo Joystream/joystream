@@ -165,13 +165,16 @@ decl_error! {
 
         /// ------ AMM ---------------------------------------------------------
 
-        /// Cannot activate AMM during a token sale
-        CannotActivateAmmDuringSale,
-
-        /// Already in AMM state
+        /// already in AMM state
         AlreadyInAmmState,
+
+        /// not in AMM state
+        NotInAmmState,
 
         /// Invalid bonding curve construction parameters
         InvalidCurveParameters,
+
+        /// Deadline timestamp lower than now
+        InvalidTimestampSpecified,
     }
 }

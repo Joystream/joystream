@@ -11,7 +11,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
-    traits::{Convert, Hash, UniqueSaturatedInto},
+    traits::{CheckedAdd, CheckedMul, Convert, Hash, UniqueSaturatedInto},
     PerThing, Permill, Perquintill, SaturatedConversion,
 };
 use sp_std::{
@@ -577,10 +577,43 @@ where
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
 pub struct BondingCurve {
     /// Slope parameter : a
-    pub slope: u64,
+    pub slope: Permill,
 
     /// Intercept : b
-    pub intercept: u64,
+    pub intercept: Permill,
+
+    // percentage of minted CRT to the Content Creator
+    pub creator_reward: Permill,
+}
+
+impl BondingCurve {
+    pub fn eval<T: Config>(
+        self,
+        amount: <T as Config>::Balance,
+        supply: <T as Config>::Balance,
+    ) -> Result<<T as Config>::Balance, DispatchError> {
+        // x = amount, X = issuance, a = slope, b = intercept:
+        // a/2 * [(X + x)^2 - X^2] - b * x = a/2 * (x^2 + 2*X*x) - b * x
+        let sq_coeff = self.slope / 2u32;
+        let mixed_term = supply
+            .checked_mul(&amount)
+            .ok_or(Error::<T>::ArithmeticError)?
+            .checked_mul(&2u32.into())
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let amount_sq = amount
+            .checked_mul(&amount)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let supply_sq_diff = amount_sq
+            .checked_add(&mixed_term)
+            .ok_or(Error::<T>::ArithmeticError)?; // new_issuance > issuance
+        let first_term = sq_coeff.mul_floor(supply_sq_diff);
+        let second_term = self.intercept.mul_floor(amount);
+        let res = first_term
+            .checked_add(&second_term)
+            .ok_or(Error::<T>::ArithmeticError)?;
+
+        Ok(res)
+    }
 }
 
 /// Represents token's offering state

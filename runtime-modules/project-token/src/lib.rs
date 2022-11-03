@@ -810,8 +810,7 @@ decl_module! {
             let token_data = Self::ensure_token_exists(token_id)?;
             Self::ensure_account_data_exists(token_id, &member_id).map(|_|())?;
 
-            ensure!(!OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data).is_ok(), Error::<T>::CannotActivateAmmDuringSale);
-            ensure!(!OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data).is_ok(), Error::<T>::AlreadyInAmmState);
+            ensure!(OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data).is_ok(), Error::<T>::TokenIssuanceNotInIdleState);
 
             // == MUTATION SAFE ==
 
@@ -824,9 +823,30 @@ decl_module! {
 
         #[weight = 100_000_000] // TODO: adjust weight
         fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance) -> DispatchResult {
-            if (amount.is_zero()) {
+            if amount.is_zero() {
                 return Ok(()); // noop
             }
+
+            let sender = ensure_signed(origin.clone())?;
+
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            let account_data = Self::ensure_account_data_exists(token_id, &member_id)?;
+            let token_data = Self::ensure_token_exists(token_id)?;
+            let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
+
+            let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
+            let amount_to_bond = curve.eval::<T>(amount, token_data.total_supply)?;
+
+            Self::ensure_can_transfer_joy(&sender, amount_to_bond.into())?;
+
+            // == MUTATION SAFE ==
+
+            Self::transfer_joy(&sender, &amm_reserve_account, amount_to_bond.into())?;
+
             Ok(())
         }
     }
@@ -1646,6 +1666,11 @@ impl<T: Config> Module<T> {
     /// Returns the account for the current module used for both bloat bond & revenue split
     pub fn module_treasury_account() -> T::AccountId {
         <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
+    }
+
+    /// Returns teh account for the bonding curve treasury
+    pub fn module_bonding_curve_reserve_account(token_id: T::TokenId) -> T::AccountId {
+        <T as Config>::ModuleId::get().into_sub_account_truncating(&("BONDING_RESERVE", token_id))
     }
 
     pub(crate) fn validate_destination(
