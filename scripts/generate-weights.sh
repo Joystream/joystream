@@ -7,13 +7,15 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 STEPS=${1:-50}
 REPEAT=${2:-20}
 
+$SCRIPT_DIR/../target/release/joystream-node purge-chain --chain prod-test -y
+
 substrate_pallet_benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
-      --chain=dev \
+      --chain=prod-test \
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
@@ -40,7 +42,7 @@ joystream_pallet_benchmark() {
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
-      --chain=dev \
+      --chain=prod-test \
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
@@ -62,7 +64,7 @@ overhead_benchmarks() {
   echo "Generating core weights"
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark overhead \
-      --chain=dev \
+      --chain=prod-test \
       --execution=wasm \
       --warmup=10 \
       --repeat=100 \
@@ -83,7 +85,7 @@ storage_benchmarks() {
   echo "Generating storage weights"
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark storage \
-      --chain=dev \
+      --chain=prod-test \
       --warmups=100 \
       --weight-path=$SCRIPT_DIR/../runtime/src/weights/ \
       --state-version 1)
