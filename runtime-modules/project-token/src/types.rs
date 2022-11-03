@@ -82,7 +82,10 @@ pub struct AccountData<Balance, StakingStatus, RepayableBloatBond, VestingSchedu
 /// Info for the token
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug, TypeInfo, MaxEncodedLen)]
-pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
+pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState, MemberId> {
+    /// Creator token member id
+    pub creator_member_id: MemberId,
+
     /// Current token's total supply (tokens_issued - tokens_burned)
     pub total_supply: Balance,
 
@@ -680,15 +683,6 @@ impl<TokenSale> OfferingState<TokenSale> {
             _ => Err(Error::<T>::NoActiveSale.into()),
         }
     }
-
-    pub(crate) fn ensure_bonding_curve_of<T: crate::Config>(
-        token: &TokenDataOf<T>,
-    ) -> Result<BondingCurve, DispatchError> {
-        match Self::of::<T>(token) {
-            OfferingStateOf::<T>::BondingCurve(curve) => Ok(curve),
-            _ => Err(Error::<T>::NoActiveSale.into()),
-        }
-    }
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
@@ -700,6 +694,9 @@ pub struct TokenAllocation<Balance, VestingScheduleParams> {
 /// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug, TypeInfo)]
 pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, MemberId: Ord> {
+    /// Creator Member id
+    pub creator_member_id: MemberId,
+
     /// Initial allocation of the token
     pub initial_allocation: BTreeMap<MemberId, TokenAllocation>,
 
@@ -1242,6 +1239,7 @@ impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, MemberId, Ac
         BlockNumber,
         TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId, AccountId>,
         RevenueSplitState<JoyBalance, BlockNumber>,
+        MemberId,
     >
 where
     Balance: Zero + Copy + Saturating + Debug + From<u64> + UniqueSaturatedInto<u64> + Unsigned,
@@ -1339,6 +1337,7 @@ where
             .sum();
 
         Ok(TokenData {
+            creator_member_id: params.creator_member_id,
             symbol: params.symbol,
             total_supply,
             tokens_issued: total_supply,
@@ -1487,6 +1486,7 @@ pub type TokenDataOf<T> = TokenData<
     <T as frame_system::Config>::BlockNumber,
     TokenSaleOf<T>,
     RevenueSplitStateOf<T>,
+    <T as MembershipTypes>::MemberId,
 >;
 
 /// Alias for InitialAllocation

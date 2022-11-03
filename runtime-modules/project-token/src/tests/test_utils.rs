@@ -5,7 +5,7 @@ use sp_std::collections::btree_map::BTreeMap;
 
 use crate::types::VestingScheduleOf;
 use crate::{
-    balance,
+    balance, member,
     tests::mock::*,
     types::{
         AccountData, BlockRate, ConfigAccountDataOf, MerkleProof, MerkleSide, PatronageData,
@@ -32,6 +32,7 @@ pub struct TokenDataBuilder {
         <Test as frame_system::Config>::BlockNumber,
     >,
     pub(crate) revenue_split_rate: Permill,
+    pub(crate) creator_member_id: MemberId,
 }
 
 impl TokenDataBuilder {
@@ -49,12 +50,20 @@ impl TokenDataBuilder {
             next_revenue_split_id: 0u32,
             revenue_split_rate: self.revenue_split_rate,
             bonding_curve: None,
+            creator_member_id: self.creator_member_id,
         }
     }
 
     pub fn with_split_rate(self, revenue_split_rate: Permill) -> Self {
         Self {
             revenue_split_rate,
+            ..self
+        }
+    }
+
+    pub fn with_owner_id(self, creator_member_id: MemberId) -> Self {
+        Self {
+            creator_member_id,
             ..self
         }
     }
@@ -106,6 +115,7 @@ impl TokenDataBuilder {
             symbol: <Test as frame_system::Config>::Hash::default(),
             revenue_split: RevenueSplitState::Inactive,
             revenue_split_rate: Permill::zero(),
+            creator_member_id: member!(1).0,
         }
     }
 }
