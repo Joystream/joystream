@@ -81,27 +81,7 @@ Resources:
           - DeviceName: /dev/sda1
             Ebs:
               VolumeSize: !Ref VolumeSize
-        UserData:
-          Fn::Base64: !Sub |
-            #!/bin/bash -xe
-
-            # send script output to /tmp so we can debug boot failures
-            exec > /tmp/userdata.log 2>&1
-
-            # Prevent interactive prompts that would interrupt the installation
-            export DEBIAN_FRONTEND=noninteractive
-
-            # Update all packages
-            apt-get update -y
-
-            # Get latest cfn scripts and install them;
-            apt-get install -y python3-setuptools
-            mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-
-            /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
-
+ 
   ValInstance1:
     Type: AWS::EC2::Instance
     Properties:
@@ -180,16 +160,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}_build'
-
-  WaitHandle:
-    Type: AWS::CloudFormation::WaitConditionHandle
-
-  WaitCondition:
-    Type: AWS::CloudFormation::WaitCondition
-    Properties:
-      Handle: !Ref 'WaitHandle'
-      Timeout: '1000'
-      Count: 5
 
 Outputs:
   Val1PublicIp:
