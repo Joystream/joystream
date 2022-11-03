@@ -1,6 +1,7 @@
 name: joystream-node
 on:
   pull_request:
+  push:
 
 jobs:
   # test runtime benchmarks code correctness
@@ -15,10 +16,9 @@ jobs:
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
             runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
@@ -60,10 +60,9 @@ jobs:
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
             runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
@@ -77,6 +76,7 @@ jobs:
       - name: Production Runtime
         run: |
           yarn cargo-checks && yarn cargo-build
+          ./target/release/call-sizes
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:

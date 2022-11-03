@@ -23,11 +23,6 @@ fn main() -> Result<(), String> {
         core::mem::size_of::<project_token::Call<Runtime>>()
     );
 
-    println!(
-        "proposals_discussion: {}",
-        core::mem::size_of::<proposals_discussion::Call<Runtime>>()
-    );
-
     println!("bounty: {}", core::mem::size_of::<bounty::Call<Runtime>>());
 
     println!(
