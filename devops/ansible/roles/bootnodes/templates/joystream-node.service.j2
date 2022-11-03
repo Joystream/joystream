@@ -8,11 +8,13 @@ User={{ template_user }}
 WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/bin/joystream-node \
         --chain {{ template_chain_spec_path }} \
-        --pruning archive \
         --base-path chain \
         --node-key-file secrets/node-key \
         --no-mdns \
-        --listen-addr {{ template_listen_multi_addr }}
+        --listen-addr {{ template_listen_multi_addr }} \
+        --in-peers 512 \
+        --out-peers 50 \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
 
 Restart=on-failure
 RestartSec=3

@@ -12,7 +12,9 @@ ExecStart={{ template_working_dir }}/bin/joystream-node \
         --base-path {{ template_base_path }} \
         --keystore-path {{ template_keystore_path }} \
         --validator \
-        --no-mdns
+        --no-mdns \
+        --out-peers 50 \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
 
 Restart=on-failure
 RestartSec=3
