@@ -13,7 +13,8 @@ Parameters:
     AllowedValues: [ t2.micro, t2.large, t2.xlarge ]
   EC2AMI:
     Type: String
-    Default: 'ami-0a8273bdc1bfaedf7'
+    # aws ssm get-parameters --names  /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+    Default: 'ami-0b9a603c10937a61b' # 2022-11-01
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
