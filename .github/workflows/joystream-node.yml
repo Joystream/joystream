@@ -1,6 +1,7 @@
 name: joystream-node
 on:
   pull_request:
+  push:
 
 jobs:
   # test runtime benchmarks code correctness
@@ -50,10 +51,7 @@ jobs:
   # Build and test joystream-node with all runtime profiles
   runtime_profiles:
     name: Runtime Profiles
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
