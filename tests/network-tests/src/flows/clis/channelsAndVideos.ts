@@ -17,7 +17,7 @@ import {
 } from '@joystream/cli/src/Types'
 
 export default async function createAndUpdateChannel({ api, query, env }: FlowProps): Promise<void> {
-  const debug = extendDebug('flow:createChannel')
+  const debug = extendDebug('flow:cliChannelsAndVideos')
   debug('Started')
 
   const argusApi = new ArgusApi(env.DISTRIBUTOR_PUBLIC_API_URL || 'http://localhost:3334/api/v1')

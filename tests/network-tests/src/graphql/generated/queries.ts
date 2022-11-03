@@ -96,7 +96,6 @@ export type CommentFieldsFragment = {
 }
 
 export type LicenseFieldsFragment = {
-  version: number
   code?: Types.Maybe<number>
   attribution?: Types.Maybe<string>
   customText?: Types.Maybe<string>
@@ -2572,7 +2571,6 @@ export const ChannelFields = gql`
 `
 export const LicenseFields = gql`
   fragment LicenseFields on License {
-    version
     code
     attribution
     customText
