@@ -78,6 +78,7 @@ jobs:
       - name: Production Runtime
         run: |
           yarn cargo-checks && yarn cargo-build
+          ./target/release/call-sizes
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:
