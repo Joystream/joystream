@@ -834,7 +834,7 @@ decl_module! {
                 member_id
             )?;
 
-            let account_data = Self::ensure_account_data_exists(token_id, &member_id)?;
+            // let mut user_account_data = Self::ensure_account_data_exists(token_id, &member_id)
             let token_data = Self::ensure_token_exists(token_id)?;
             let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
 
@@ -844,6 +844,22 @@ decl_module! {
             Self::ensure_can_transfer_joy(&sender, amount_to_bond.into())?;
 
             // == MUTATION SAFE ==
+
+            let creator_member_id = token_data.creator_member_id;
+            let creator_amount = curve.creator_reward.mul_floor(amount);
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, creator_member_id, |account_data| {
+                account_data.amount = account_data.amount.saturating_add(creator_amount)
+            });
+
+            let user_amount = amount - creator_amount;
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
+                account_data.amount = account_data.amount.saturating_add(user_amount)
+            });
+
+            TokenInfoById::<T>::mutate(token_id, |token_data| {
+                token_data.total_supply = token_data.total_supply.saturating_add(amount);
+                token_data.tokens_issued = token_data.tokens_issued.saturating_add(amount);
+            });
 
             Self::transfer_joy(&sender, &amm_reserve_account, amount_to_bond.into())?;
 

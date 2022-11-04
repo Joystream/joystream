@@ -591,7 +591,7 @@ pub struct BondingCurve {
 
 impl BondingCurve {
     pub fn eval<T: Config>(
-        self,
+        &self,
         amount: <T as Config>::Balance,
         supply: <T as Config>::Balance,
     ) -> Result<<T as Config>::Balance, DispatchError> {

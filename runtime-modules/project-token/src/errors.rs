@@ -165,9 +165,6 @@ decl_error! {
 
         /// ------ AMM ---------------------------------------------------------
 
-        /// already in AMM state
-        AlreadyInAmmState,
-
         /// not in AMM state
         NotInAmmState,
 

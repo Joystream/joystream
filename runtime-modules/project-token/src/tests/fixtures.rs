@@ -9,7 +9,7 @@ use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
-use sp_runtime::{traits::Hash, DispatchError, Permill};
+use sp_runtime::{testing::H256, traits::Hash, DispatchError, Permill};
 
 use sp_std::{collections::btree_map::BTreeMap, iter::FromIterator};
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
@@ -102,20 +102,75 @@ impl IssueTokenFixture {
         }
     }
 
-    pub fn with_empty_allocation(self) -> Self {
-        Self {
-            issuer_account: self.issuer_account,
-            params: self.params.with_allocation(&member!(1).0, 0, None),
-            upload_context: self.upload_context,
-        }
-    }
-
     pub fn with_transfer_policy(self, transfer_policy: TransferPolicyParams) -> Self {
         Self {
             params: IssuanceParams {
                 transfer_policy,
                 ..self.params
             },
+            ..self
+        }
+    }
+
+    pub fn with_split_rate(self, revenue_split_rate: Permill) -> Self {
+        Self {
+            params: IssuanceParams {
+                revenue_split_rate,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_patronage_rate(self, patronage_rate: YearlyRate) -> Self {
+        Self {
+            params: IssuanceParams {
+                patronage_rate,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_allocation(self, beneficiary_id: MemberId, amount: Balance) -> Self {
+        Self {
+            params: self.params.with_allocation(&beneficiary_id, amount, None),
+            ..self
+        }
+    }
+
+    pub fn with_creator_allocation(self, amount: Balance) -> Self {
+        let creator_member_id = self.params.clone().creator_member_id;
+        self.with_allocation(creator_member_id, amount)
+    }
+
+    pub fn with_empty_allocation(self) -> Self {
+        self.with_creator_allocation(0)
+    }
+
+    pub fn with_symbol(self, symbol: H256) -> Self {
+        Self {
+            params: IssuanceParams {
+                symbol,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_creator_id(self, creator_member_id: MemberId) -> Self {
+        Self {
+            params: IssuanceParams {
+                creator_member_id,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_sender(self, issuer_account: AccountId) -> Self {
+        Self {
+            issuer_account,
             ..self
         }
     }

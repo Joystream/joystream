@@ -61,13 +61,6 @@ impl TokenDataBuilder {
         }
     }
 
-    pub fn with_owner_id(self, creator_member_id: MemberId) -> Self {
-        Self {
-            creator_member_id,
-            ..self
-        }
-    }
-
     pub fn with_symbol(self, symbol: <Test as frame_system::Config>::Hash) -> Self {
         Self { symbol, ..self }
     }
