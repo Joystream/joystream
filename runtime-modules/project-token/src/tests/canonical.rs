@@ -1099,26 +1099,6 @@ fn issue_token_ok_with_token_info_added() {
     let (owner_id, _) = member!(1);
     let transfer_policy = TransferPolicyParams::Permissionless;
     let patronage_rate = yearly_rate!(10);
-    // let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
-    // let (owner_balance, mem1_balance, mem2_balance) = (balance!(100), balance!(200), balance!(300));
-    // let initial_supply = owner_balance + mem1_balance + mem2_balance;
-    // let non_owner_vesting = VestingScheduleParams {
-    //     blocks_before_cliff: block!(100),
-    //     cliff_amount_percentage: Permill::from_percent(50),
-    //     linear_vesting_duration: block!(100),
-    // };
-
-    // let params = TokenIssuanceParametersOf::<Test> {
-    //     symbol: Hashing::hash_of(&token_id),
-    //     transfer_policy: TransferPolicyParams::Permissionless,
-    //     patronage_rate: yearly_rate!(10),
-    //     revenue_split_rate: DEFAULT_SPLIT_RATE,
-    //     ..Default::default()
-    // }
-    // .with_allocation(&owner_id, owner_balance, None)
-    // .with_allocation(&mem1, mem1_balance, Some(non_owner_vesting.clone()))
-    // .with_allocation(&mem2, mem2_balance, Some(non_owner_vesting.clone()));
-
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
