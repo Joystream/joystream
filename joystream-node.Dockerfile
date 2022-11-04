@@ -55,8 +55,11 @@ WORKDIR /joystream
 COPY --from=builder /joystream/target/release/joystream-node /joystream/node
 COPY --from=builder /joystream/target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm /joystream/runtime.compact.wasm
 COPY --from=builder /joystream/target/release/chain-spec-builder /joystream/chain-spec-builder
+COPY --from=builder /joystream/target/release/session-keys /joystream/session-keys
+COPY --from=builder /joystream/target/release/call-sizes /joystream/call-sizes
 
 # confirm it works
+RUN /joystream/call-sizes
 RUN /joystream/node --version
 
 # https://manpages.debian.org/stretch/coreutils/b2sum.1.en.html
