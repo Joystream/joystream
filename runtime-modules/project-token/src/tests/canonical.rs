@@ -1102,17 +1102,15 @@ fn issue_token_ok_with_token_info_added() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default()
+        let arrangement = IssueTokenFixture::default()
             .with_split_rate(DEFAULT_SPLIT_RATE)
             .with_creator_id(owner_id)
             .with_transfer_policy(transfer_policy.clone())
             .with_patronage_rate(patronage_rate)
             .with_symbol(symbol)
-            .with_creator_allocation(DEFAULT_INITIAL_ISSUANCE)
-            .execute_call()
-            .unwrap();
+            .with_creator_allocation(DEFAULT_INITIAL_ISSUANCE);
 
-        // let _ = Token::issue_token(owner_acc, params.clone(), default_upload_context());
+        arrangement.execute_call().unwrap();
 
         assert_eq!(
             <crate::TokenInfoById<Test>>::get(token_id),
