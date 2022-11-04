@@ -11,10 +11,10 @@ ExecStart={{ template_working_dir }}/bin/joystream-node \
         --base-path chain \
         --node-key-file secrets/node-key \
         --no-mdns \
-        --listen-addr {{ template_listen_multi_addr }} \
         --in-peers 512 \
         --out-peers 50 \
-        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+        --listen-addr /ip4/0.0.0.0/tcp/30333
 
 Restart=on-failure
 RestartSec=3

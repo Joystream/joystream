@@ -37,7 +37,6 @@
     template_chain_spec_path: "{{ chain_path }}/chainspec-raw.json"
     template_user: "{{ ansible_user }}"
     template_working_dir: "{{ ansible_env.HOME }}"
-    template_listen_multi_addr: "{{ listen_multi_addr }}"
   become: true
 
 - name: Start service joystream-node, if not started

@@ -45,7 +45,7 @@
     --sudo-account {{ sudo_account }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_data_path }}/initial-balances.json{% endif %}
-  register: chainspec_builder_output
+    {% if fund_accounts is defined and fund_accounts|true %}--fund-accounts{% endif %}
   delegate_to: '{{ first_validator }}'
   run_once: true
   when: chainspec_creation_strategy == "new-with-authority-accounts"
@@ -58,7 +58,7 @@
     --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_data_path }}/initial-balances.json{% endif %}
-  register: chainspec_builder_output
+    {% if fund_accounts is defined and fund_accounts|true %}--fund-accounts{% endif %}
   delegate_to: '{{ first_validator }}'
   run_once: true
   when: chainspec_creation_strategy == "new-with-authority-seeds"
