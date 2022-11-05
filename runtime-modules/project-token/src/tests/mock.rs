@@ -633,6 +633,7 @@ pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) *
 
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_BONDING_AMOUNT: u128 = 1000;
+pub const DEFAULT_UNBONDING_AMOUNT: u128 = 100;
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;

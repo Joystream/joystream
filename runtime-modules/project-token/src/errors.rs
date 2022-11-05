@@ -179,5 +179,8 @@ decl_error! {
 
         /// SLippage tolerance constraint tolerance not respected
         SlippageToleranceExceeded,
+
+        /// SLippage tolerance constraint tolerance not respected
+        UnsufficientTokenAmount,
     }
 }

@@ -835,7 +835,6 @@ decl_module! {
                 member_id
             )?;
 
-            // let mut user_account_data = Self::ensure_account_data_exists(token_id, &member_id)
             let token_data = Self::ensure_token_exists(token_id)?;
             let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
 
@@ -873,6 +872,56 @@ decl_module! {
             });
 
             Self::transfer_joy(&sender, &amm_reserve_account, amount_to_bond.into())?;
+
+            Ok(())
+        }
+
+        #[weight = 100_000_000] // TODO: adjust weight
+        fn unbond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, <T as Config>::Balance)>) -> DispatchResult {
+            if amount.is_zero() {
+                return Ok(()); // noop
+            }
+
+            let sender = ensure_signed(origin.clone())?;
+
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            let token_data = Self::ensure_token_exists(token_id)?;
+            let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
+            let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
+
+            ensure!(user_acc_data.amount >= amount, Error::<T>::UnsufficientTokenAmount);
+
+            let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
+            let amount_to_unbond = curve.eval::<T>(amount, token_data.total_supply)?;
+
+            Self::ensure_can_transfer_joy(&amm_reserve_account, amount_to_unbond.into())?;
+
+            // slippage tolerance check
+            if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
+                ensure!(amount_to_unbond.saturating_sub(desired_price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+            }
+
+            // timestamp deadline check
+            if let Some(deadline) = deadline {
+                ensure!(<timestamp::Pallet<T>>::get() < deadline, Error::<T>::DeadlineExpired);
+            }
+
+            // == MUTATION SAFE ==
+
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
+                account_data.amount = account_data.amount.saturating_sub(amount)
+            });
+
+            TokenInfoById::<T>::mutate(token_id, |token_data| {
+                token_data.total_supply = token_data.total_supply.saturating_sub(amount);
+                token_data.tokens_issued = token_data.tokens_issued.saturating_sub(amount);
+            });
+
+            Self::transfer_joy(&amm_reserve_account, &sender, amount_to_unbond.into())?;
 
             Ok(())
         }
