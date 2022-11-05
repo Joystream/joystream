@@ -4836,7 +4836,6 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-storage",
- "sp-timestamp",
 ]
 
 [[package]]

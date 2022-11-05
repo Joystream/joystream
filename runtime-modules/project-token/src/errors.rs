@@ -178,6 +178,6 @@ decl_error! {
         DeadlineExpired,
 
         /// SLippage tolerance constraint tolerance not respected
-        SlippageTolerenceExceeded,
+        SlippageToleranceExceeded,
     }
 }

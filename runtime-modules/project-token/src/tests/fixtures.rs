@@ -1148,7 +1148,8 @@ pub struct BondFixture {
     token_id: TokenId,
     member_id: MemberId,
     amount: Balance,
-    timestamp: u64,
+    deadline: Option<Moment>,
+    slippage_tolerance: Option<(Permill, Balance)>,
 }
 
 impl BondFixture {
@@ -1159,7 +1160,8 @@ impl BondFixture {
             token_id: One::one(),
             member_id,
             amount: Balance::from(DEFAULT_BONDING_AMOUNT),
-            timestamp: u64::max_value(), // TODO: temporary to have test passing
+            deadline: None,
+            slippage_tolerance: None,
         }
     }
 
@@ -1179,6 +1181,20 @@ impl BondFixture {
         Self { member_id, ..self }
     }
 
+    pub fn with_deadline(self, deadline: Moment) -> Self {
+        Self {
+            deadline: Some(deadline),
+            ..self
+        }
+    }
+
+    pub fn with_slippage_tolerance(self, tolerance: (Permill, Balance)) -> Self {
+        Self {
+            slippage_tolerance: Some(tolerance),
+            ..self
+        }
+    }
+
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::bond(
@@ -1186,7 +1202,8 @@ impl BondFixture {
             self.token_id,
             self.member_id,
             self.amount,
-            self.timestamp,
+            self.deadline,
+            self.slippage_tolerance,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 

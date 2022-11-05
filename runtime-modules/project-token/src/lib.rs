@@ -30,6 +30,7 @@ use frame_support::{
     PalletId,
 };
 use frame_system::ensure_signed;
+use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
@@ -41,7 +42,6 @@ use sp_std::convert::TryInto;
 use sp_std::iter::Sum;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use sp_timestamp::Timestamp;
 use storage::UploadParameters;
 
 // crate modules
@@ -70,7 +70,7 @@ type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
 /// Pallet Configuration
 pub trait Config:
-    frame_system::Config + balances::Config + storage::Config + membership::Config
+    frame_system::Config + balances::Config + storage::Config + membership::Config + timestamp::Config
 {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -823,7 +823,7 @@ decl_module! {
         }
 
         #[weight = 100_000_000] // TODO: adjust weight
-        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Timestamp) -> DispatchResult {
+        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, <T as Config>::Balance)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -844,7 +844,15 @@ decl_module! {
 
             Self::ensure_can_transfer_joy(&sender, amount_to_bond.into())?;
 
-            ensure!(Timestamp::current() < deadline, Error::<T>::DeadlineExpired);
+            // slippage tolerance check
+            if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
+                ensure!(amount_to_bond.saturating_sub(desired_price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+            }
+
+            // timestamp deadline check
+            if let Some(deadline) = deadline {
+                ensure!(<timestamp::Pallet<T>>::get() < deadline, Error::<T>::DeadlineExpired);
+            }
 
             // == MUTATION SAFE ==
 

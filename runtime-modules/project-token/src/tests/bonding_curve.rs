@@ -5,7 +5,7 @@ use crate::tests::mock::*;
 use crate::types::BondingCurve;
 use crate::{joy, member, token, Error};
 use frame_support::{assert_err, assert_ok};
-use sp_runtime::{DispatchError, Permill};
+use sp_runtime::{traits::Zero, DispatchError, Permill};
 
 // --------------------- BONDING -------------------------------
 
@@ -62,7 +62,6 @@ fn bonding_order_fails_with_member_and_origin_auth() {
 
 #[test]
 fn bonding_succeeds_with_new_user() {
-    let config = GenesisConfigBuilder::new_empty().build();
     let (member_id, sender) = member!(2);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
@@ -93,17 +92,37 @@ fn bonding_order_fails_with_token_not_in_amm_state() {
 }
 
 #[test]
-fn bonding_order_fails_with_past_timestamp() {
-    let timestamp = 0u64;
-    let config = GenesisConfigBuilder::new_empty().build();
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-        ActivateAmmFixture::default().execute_call().unwrap();
+fn bonding_order_fails_with_deadline_expired() {
+    let deadline_timestamp = 0u64;
+    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default().execute_call().unwrap();
 
-        let result = BondFixture::default().execute_call();
+            let result = BondFixture::default()
+                .with_deadline(deadline_timestamp)
+                .execute_call();
 
-        assert_err!(result, Error::<Test>::InvalidTimestampSpecified);
-    })
+            assert_err!(result, Error::<Test>::DeadlineExpired);
+        })
+}
+
+#[test]
+fn bonding_order_failed_with_slippage_constraint_violated() {
+    let slippage_tolerance = (Permill::zero(), Balance::zero());
+    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default().execute_call().unwrap();
+
+            let result = BondFixture::default()
+                .with_slippage_tolerance(slippage_tolerance)
+                .execute_call();
+
+            assert_err!(result, Error::<Test>::SlippageToleranceExceeded);
+        })
 }
 
 #[test]
