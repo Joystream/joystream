@@ -406,7 +406,6 @@ fn prod_test_config_genesis() -> GenesisConfig {
         true,
         vec![authority_keys_from_seed("//Alice")],
         vec![],
-        get_account_id_from_seed::<sr25519::Public>("//Alice"),
         development_endowed_accounts(),
         vec![],
         vec![],

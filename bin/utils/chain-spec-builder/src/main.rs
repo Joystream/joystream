@@ -432,9 +432,9 @@ async fn main() -> Result<(), String> {
                 format!("//{}", rand_str)
             };
 
-            let authority_seeds = (0..authorities).map(|_| rand_str()).collect::<Vec<_>>();
-            let nominator_seeds = (0..nominators).map(|_| rand_str()).collect::<Vec<_>>();
-            let endowed_seeds = (0..endowed).map(|_| rand_str()).collect::<Vec<_>>();
+            let authority_seeds = (0..authorities).map(|_| rand_seed()).collect::<Vec<_>>();
+            let nominator_seeds = (0..nominators).map(|_| rand_seed()).collect::<Vec<_>>();
+            let endowed_seeds = (0..endowed).map(|_| rand_seed()).collect::<Vec<_>>();
 
             print_seeds(&authority_seeds, &nominator_seeds, &endowed_seeds);
 
@@ -475,7 +475,7 @@ async fn main() -> Result<(), String> {
                 }
             }
 
-            (authority_seeds, nominator_accounts, vec![])
+            (authorities, nominator_accounts, vec![])
         }
     };
 
