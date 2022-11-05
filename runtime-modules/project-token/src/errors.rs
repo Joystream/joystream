@@ -182,5 +182,8 @@ decl_error! {
 
         /// SLippage tolerance constraint tolerance not respected
         UnsufficientTokenAmount,
+
+        /// CRT balance lower than the unbonding amount specified
+        UnbondingAmountGreaterThanTokenBalance,
     }
 }
