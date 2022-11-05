@@ -50,7 +50,7 @@ fi
 docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
   --fund-accounts \
-  --authority-seeds //Alice \
+  --authorities //Alice \
   --deployment dev \
   --chain-spec-path /spec/chain-spec.json \
   --initial-balances-path /spec/initial-balances.json

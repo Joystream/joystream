@@ -48,11 +48,10 @@ fi
 ../../target/release/chain-spec-builder \
   new \
   --fund-accounts \
-  -a //Alice \
+  --authorities //Alice \
   --chain-spec-path ${DATA_PATH}/chain-spec.json \
   --initial-balances-path ${DATA_PATH}/initial-balances.json \
   --deployment dev \
-  --sudo-account ${ALICE} \
   --keystore-path ${DATA_PATH}
 
 ../../target/release/joystream-node --base-path ${DATA_PATH}/alice \

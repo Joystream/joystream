@@ -16,3 +16,9 @@
     src: "{{ data_path }}/chain-spec-builder"
     dest: "bin/chain-spec-builder"
     mode: "0775"
+
+- name: Copy session-keys binary
+  copy:
+    src: "{{ data_path }}/session-keys"
+    dest: "bin/session-keys"
+    mode: "0775"

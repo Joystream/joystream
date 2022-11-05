@@ -20,6 +20,7 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
+use static_assertions::const_assert;
 
 pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
     let mut current_block = System::<T>::block_number();
@@ -210,11 +211,13 @@ fn create_funded_bounty<T: Config>(params: BountyCreationParameters<T>) -> T::Bo
     bounty_id
 }
 
-const MAX_BYTES: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksize available for regular extrinsics
+const MAX_KILOBYTES_METADATA: u32 = 100;
 const SEED: u32 = 0;
-const MAX_MEMBERS: u32 = 150; //Same as mocks
-const MAX_WORK_ENTRIES_WINNERS: u32 = MAX_MEMBERS / 2 + MAX_MEMBERS % 2;
-const MAX_WORK_ENTRIES_REJECTED: u32 = MAX_MEMBERS / 2;
+const _MAX_MEMBERS: u32 = 150; //Same as mocks
+const MAX_WORK_ENTRIES_WINNERS: u32 = 20;
+const MAX_WORK_ENTRIES_REJECTED: u32 = 20;
+
+const_assert!(MAX_WORK_ENTRIES_WINNERS + MAX_WORK_ENTRIES_REJECTED <= _MAX_MEMBERS);
 
 benchmarks! {
     where_clause {
@@ -226,10 +229,10 @@ benchmarks! {
     }
 
     create_bounty_by_council {
-        let i in 1 .. MAX_BYTES;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
         let j in 1 .. T::ClosedContractSizeLimit::get();
 
-        let metadata = vec![0u8].repeat(i as usize);
+        let metadata = vec![0u8].repeat((i * 1000) as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -268,10 +271,10 @@ benchmarks! {
     }
 
     create_bounty_by_member {
-        let i in 1 .. MAX_BYTES;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
         let j in 1 .. T::ClosedContractSizeLimit::get();
 
-        let metadata = vec![0u8].repeat(i as usize);
+        let metadata = vec![0u8].repeat((i * 1000) as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -854,10 +857,10 @@ benchmarks! {
     }
 
     announce_work_entry {
-        let i in 1 .. MAX_BYTES;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
         let j in 1 .. T::ClosedContractSizeLimit::get();
 
-        let work_description = vec![0u8].repeat(i as usize);
+        let work_description = vec![0u8].repeat((i * 1000) as usize);
 
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
@@ -911,8 +914,8 @@ benchmarks! {
     }
 
     submit_work {
-        let i in 0 .. MAX_BYTES;
-        let work_data = vec![0u8].repeat(i as usize);
+        let i in 0 .. MAX_KILOBYTES_METADATA;
+        let work_data = vec![0u8].repeat((i * 1000) as usize);
 
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
@@ -970,13 +973,12 @@ benchmarks! {
     }
 
     submit_oracle_judgment_by_council {
-        let j in 0 .. MAX_BYTES; //rationale size,
-        let k in 0 .. MAX_BYTES; //sum of each action_justification size
+        let j in 0 .. MAX_KILOBYTES_METADATA; //rationale size,
+        let k in 0 .. MAX_KILOBYTES_METADATA; //sum of each action_justification size
         let w in 1 .. MAX_WORK_ENTRIES_WINNERS; //total winner entries
         let r in 1 .. MAX_WORK_ENTRIES_REJECTED; //total rejected entries
 
-        let rationale = vec![0u8].repeat(j as usize);
-        let action_justification = vec![0u8].repeat(k as usize);
+        let rationale = vec![0u8].repeat((j * 1000) as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
@@ -1031,8 +1033,8 @@ benchmarks! {
                 OracleWorkEntryJudgment::Rejected {
                     slashing_share,
                     action_justification: match entry_id == (w + r).into() {
-                        true => vec![0u8].repeat((k / r + k % r) as usize),
-                        false => vec![0u8].repeat((k / r) as usize)
+                        true => vec![0u8].repeat(((k / r + k % r) * 1000) as usize),
+                        false => vec![0u8].repeat(((k / r) * 1000) as usize)
                     },
                 }
             };
@@ -1075,13 +1077,12 @@ benchmarks! {
     }
 
     submit_oracle_judgment_by_member {
-        let j in 0 .. MAX_BYTES; //rationale size,
-        let k in 0 .. MAX_BYTES; //sum of each action_justification size
+        let j in 0 .. MAX_KILOBYTES_METADATA; //rationale size,
+        let k in 0 .. MAX_KILOBYTES_METADATA; //sum of each action_justification size
         let w in 1 .. MAX_WORK_ENTRIES_WINNERS; //total winner entries
         let r in 1 .. MAX_WORK_ENTRIES_REJECTED - 1; //total rejected entries - 1 for oracle
 
-        let rationale = vec![0u8].repeat(j as usize);
-        let action_justification = vec![0u8].repeat(k as usize);
+        let rationale = vec![0u8].repeat((j * 1000) as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
@@ -1138,8 +1139,8 @@ benchmarks! {
                 OracleWorkEntryJudgment::Rejected {
                     slashing_share,
                     action_justification: match entry_id == (w + r).into() {
-                        true => vec![0u8].repeat((k / r + k % r) as usize),
-                        false => vec![0u8].repeat((k / r) as usize)
+                        true => vec![0u8].repeat(((k / r + k % r) * 1000) as usize),
+                        false => vec![0u8].repeat(((k / r) * 1000) as usize)
                     },
                 }
             };
@@ -1824,9 +1825,9 @@ benchmarks! {
     }
 
     entrant_remark {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
-        let msg = vec![0u8].repeat(i as usize);
+        let msg = vec![0u8].repeat((i * 1000) as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let entrant_stake = T::MinWorkEntrantStake::get();
@@ -1866,9 +1867,9 @@ benchmarks! {
     }
 
     contributor_remark {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
-        let msg = vec![0u8].repeat(i as usize);
+        let msg = vec![0u8].repeat((i * 1000) as usize);
         let funding_period = 1u32;
         let bounty_amount: BalanceOf<T> = 200u32.into();
         let cherry: BalanceOf<T> = 100u32.into();
@@ -1920,9 +1921,9 @@ benchmarks! {
     }
 
     oracle_remark {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
-        let msg = vec![0u8].repeat(i as usize);
+        let msg = vec![0u8].repeat((i * 1000) as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 10000000u32.into();
         let oracle = BountyActor::Council;
@@ -1947,9 +1948,9 @@ benchmarks! {
     }
 
     creator_remark {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
-        let msg = vec![0u8].repeat(i as usize);
+        let msg = vec![0u8].repeat((i * 1000) as usize);
         let cherry: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 10000000u32.into();
         let oracle = BountyActor::Council;

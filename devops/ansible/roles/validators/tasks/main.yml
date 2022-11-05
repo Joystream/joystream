@@ -2,48 +2,45 @@
 # Configure chain spec and start joystream-node service on the servers
 
 - set_fact:
-    chain_path: "bin/chain"
+    chain_path: "chain"
 
 - set_fact:
-    network_path: "{{ chain_path }}/network"
-    keystore_path: "{{ chain_path }}/keystore/"
-
-- set_fact:
-    node_secret_path: "{{ network_path }}/secret"
-
-- set_fact:
-    node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
-
-- name: Check if remote chain path dir exists
-  stat:
-    path: "{{ chain_path }}"
-  register: remote_dir_check 
-
-- name: Exit if remote dir exists
-  fail: msg="remote {{ chain_path}} dir already exists"
-  when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
+    keystore_path: "keystore"
 
 - name: Create chain directory
   file:
     path: "{{ item }}"
     state: directory
   loop:
-    - "{{ network_path }}"
+    - "{{ chain_path }}"
 
 - name: Copying raw chain spec file
   copy:
     src: '{{ data_path }}/chain/chainspec-raw.json'
     dest: '{{ chain_path }}/chainspec-raw.json'
 
-- name: Copy node key to remote host
-  copy:
-    dest: "{{ node_secret_path }}"
-    src: "{{ data_path }}/chain/node-key-{{ node_index }}"
+- set_fact:
+    node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
 
-- name: Copy auth directory to remote host
+- name: Check if (keystore) auth-x dir exists
+  stat:
+    path: "{{ data_path }}/chain/auth-{{ node_index }}/"
+  register: auth_dir_check 
+  delegate_to: localhost
+
+- name: Create keystore directory
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ keystore_path }}"
+  when: auth_dir_check.stat.isdir is defined and auth_dir_check.stat.isdir
+
+- name: Copy keystore to remote host
   copy:
     src: "{{ data_path }}/chain/auth-{{ node_index }}/"
     dest: "{{ keystore_path }}"
+  when: auth_dir_check.stat.isdir is defined and auth_dir_check.stat.isdir
 
 - name: Create a service file
   template:
@@ -51,8 +48,8 @@
     dest: /etc/systemd/system/joystream-node.service
   vars:
     template_keystore_path: "{{ keystore_path }}"
-    template_node_secret_path: "{{ node_secret_path }}"
     template_chain_spec_path: "{{ chain_path }}/chainspec-raw.json"
+    template_base_path: "{{ chain_path }}/"
     template_user: "{{ ansible_user }}"
     template_working_dir: "{{ ansible_env.HOME }}"
   become: true

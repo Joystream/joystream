@@ -34,6 +34,7 @@ import {
   WorkingGroupOpeningDetailsFragment,
 } from './graphql/generated/queries'
 import { EnumVariant } from '@joystream/types'
+import { UnsignedTransaction } from '@substrate/txwrapper-polkadot'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -325,4 +326,17 @@ export type TokenRequestData = {
   dataObjectId: number
   storageBucketId: number
   bagId: string
+}
+
+export type OfflineTransactionData = {
+  unsigned: UnsignedTransaction
+  signingPayload: string
+  txData: {
+    call: string
+    callHash: string
+  }
+  multisigTxData?: {
+    call: string
+    callHash: string
+  }
 }
