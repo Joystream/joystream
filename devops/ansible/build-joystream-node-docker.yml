@@ -15,6 +15,10 @@
         name: common
         tasks_from: get-code-git
 
+    - name: Make sure docker is running
+      command: systemctl start docker
+      become: true
+
     - name: Log into DockerHub
       community.docker.docker_login:
         username: '{{ docker_username }}'
