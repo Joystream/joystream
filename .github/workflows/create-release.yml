@@ -15,7 +15,6 @@ env:
 
 jobs:
   build-mac-binary:
-    # Latest macos now runs on M1/arm64
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -48,7 +47,6 @@ jobs:
 
   create-release:
     runs-on: ubuntu-latest
-    # needs: [build-mac-binary, build-rpi-binary]
     needs: build-mac-binary
     steps:
       - name: Checkout
@@ -86,9 +84,9 @@ jobs:
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
 
-      - name: Rename MacOS and RPi tar
+      - name: Rename MacOS binary and tar
         run: |
-          mv joystream-node-macos.tar.gz joystream-node-${{ steps.extract_binaries.outputs.version_and_commit }}-arm64-macos.tar.gz
+          mv joystream-node-macos.tar.gz joystream-node-${{ steps.extract_binaries.outputs.version_and_commit }}-x86_64-macos.tar.gz
 
       - name: Release
         uses: softprops/action-gh-release@v1

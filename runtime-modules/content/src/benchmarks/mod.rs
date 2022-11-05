@@ -8,7 +8,7 @@ use crate::{
     permissions::*,
     types::*,
     Config, ContentModerationAction, InitTransferParametersOf, ModerationPermissionsByLevel,
-    Module as Pallet,
+    Module as Pallet, NftLimitsEnabled,
 };
 
 use balances::Pallet as Balances;
@@ -21,7 +21,7 @@ use frame_support::{
 };
 use frame_system::{EventRecord, Pallet as System, RawOrigin};
 use membership::Module as Membership;
-use project_token::{types::*, AccountInfoByTokenAndMember};
+use project_token::{types::*, AccountInfoByTokenAndMember, MinSaleDuration};
 use sp_arithmetic::traits::One;
 use sp_core::U256;
 use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
@@ -75,13 +75,12 @@ pub const MAX_MERKLE_PROOF_HASHES: u32 = 10;
 const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001; // must match the mocks
 const CONTENT_WG_LEADER_ACCOUNT_ID: u64 = 100005; // must match the mocks LEAD_ACCOUNT_ID
 const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004; // must match the mocks
-const MAX_BYTES_METADATA: u32 = 3 * 1024 * 1024; // 3 MB is close to the blocksize available for regular extrinsics
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 // Creator tokens
 const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
 const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
 const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
-const DEFAULT_CRT_SALE_DURATION: u32 = 1_000;
 const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
 const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
 const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
@@ -693,7 +692,7 @@ fn generate_channel_creation_params<T>(
     storage_bucket_num: u32,
     distribution_bucket_num: u32,
     objects_num: u32,
-    metadata_length: u32,
+    metadata_kb: u32,
 ) -> ChannelCreationParameters<T>
 where
     T: RuntimeConfig,
@@ -741,7 +740,7 @@ where
 
     let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
 
-    let meta = Some(vec![0xff].repeat(metadata_length as usize));
+    let meta = Some(vec![0xff].repeat((metadata_kb * 1000) as usize));
 
     ChannelCreationParameters::<T> {
         assets,
@@ -805,7 +804,7 @@ where
         storage_buckets_num,
         distribution_buckets_num,
         objects_num,
-        MAX_BYTES_METADATA,
+        MAX_KILOBYTES_METADATA,
     );
 
     let channel_id = Pallet::<T>::next_channel_id();
@@ -1157,7 +1156,7 @@ fn prepare_worst_case_scenario_video_creation_parameters<T>(
     assets_num: Option<u32>,
     storage_buckets_num: u32,
     nft_auction_whitelist_size: Option<u32>,
-    metadata_length: u32,
+    metadata_kb: u32,
 ) -> Result<VideoCreationInputParameters<T>, DispatchError>
 where
     T: RuntimeConfig,
@@ -1182,7 +1181,7 @@ where
         channel_id,
         VideoCreationParameters::<T> {
             assets,
-            meta: Some(vec![0xff].repeat(metadata_length as usize)),
+            meta: Some(vec![0xff].repeat((metadata_kb * 1000) as usize)),
             auto_issue_nft,
             expected_video_state_bloat_bond: video_state_bloat_bond,
             expected_data_object_state_bloat_bond: data_object_state_bloat_bond,
@@ -1203,7 +1202,7 @@ where
         assets_num,
         storage_buckets_num,
         None,
-        MAX_BYTES_METADATA,
+        MAX_KILOBYTES_METADATA,
     )?;
     let video_id = Pallet::<T>::next_video_id();
     Pallet::<T>::create_video(RawOrigin::Signed(p.0.clone()).into(), p.1, p.2, p.3.clone())?;
@@ -1344,18 +1343,22 @@ where
     Ok(token_id)
 }
 
+fn default_crt_sale_duration<T: Config>() -> T::BlockNumber {
+    MinSaleDuration::<T>::get() + T::BlockNumber::one()
+}
+
 fn worst_case_scenario_token_sale_params<T: Config>(
-    metatada_len: u32,
+    metatada_kb: u32,
     starts_at: Option<T::BlockNumber>,
 ) -> TokenSaleParamsOf<T> {
     TokenSaleParamsOf::<T> {
         cap_per_member: Some(1_000_000u32.into()),
-        duration: DEFAULT_CRT_SALE_DURATION.into(),
+        duration: default_crt_sale_duration::<T>(),
         starts_at,
         unit_price: DEFAULT_CRT_SALE_PRICE.into(),
         upper_bound_quantity: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
         vesting_schedule_params: Some(default_vesting_schedule_params::<T>()),
-        metadata: Some(vec![0xf].repeat(metatada_len as usize)),
+        metadata: Some(vec![0xf].repeat((metatada_kb * 1000) as usize)),
     }
 }
 
@@ -1431,6 +1434,7 @@ fn set_nft_limits_helper<T: RuntimeConfig>(channel_id: T::ChannelId) {
     let channel_daily_limit = 2u64;
     let channel_weekly_limit = 14u64;
 
+    NftLimitsEnabled::set(true);
     Pallet::<T>::set_nft_limit(NftLimitId::GlobalDaily, global_daily_limit);
     Pallet::<T>::set_nft_limit(NftLimitId::GlobalWeekly, global_weekly_limit);
     Pallet::<T>::set_nft_limit(NftLimitId::ChannelDaily(channel_id), channel_daily_limit);
@@ -1439,7 +1443,7 @@ fn set_nft_limits_helper<T: RuntimeConfig>(channel_id: T::ChannelId) {
 
 fn worst_case_nft_issuance_params_helper<T: RuntimeConfig>(
     whitelist_size: u32,
-    metadata_size: u32,
+    metadata_kb: u32,
 ) -> NftIssuanceParameters<T>
 where
     T: RuntimeConfig,
@@ -1447,7 +1451,7 @@ where
 {
     NftIssuanceParameters::<T> {
         royalty: Some(Pallet::<T>::max_creator_royalty()),
-        nft_metadata: vec![0xff].repeat(metadata_size as usize),
+        nft_metadata: vec![0xff].repeat((metadata_kb * 1000) as usize),
         non_channel_owner: None,
         init_transactional_status: InitTransactionalStatus::<T>::EnglishAuction(
             EnglishAuctionParams::<T> {

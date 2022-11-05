@@ -8,13 +8,16 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
-import { AppConfig } from './controllers/common'
+import { AppConfig, sendResponseWithError, WebApiError } from './controllers/common'
+import { verifyBagAssignment, verifyBucketId } from './controllers/filesApi'
 import {
   createExpressErrorLoggerOptions,
   createExpressDefaultLoggerOptions,
   httpLogger,
   errorLogger,
 } from '../../services/logger'
+import { parseBagId } from '../helpers/bagTypes'
+import BN from 'bn.js'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -38,6 +41,18 @@ export async function createApp(config: AppConfig): Promise<Express> {
 
       next()
     },
+
+    // Pre validate file upload params
+    (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
+      if (req.path === '/api/v1/files') {
+        validateUploadFileParams(req, res)
+          .then(next)
+          .catch((error) => sendResponseWithError(res, next, error, 'upload'))
+      } else {
+        next()
+      }
+    },
+
     // Setup OpenAPiValidator
     OpenApiValidator.middleware({
       apiSpec: spec,
@@ -143,9 +158,9 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
     const token = parseUploadToken(tokenString)
 
     const sourceTokenRequest: RequestData = {
-      dataObjectId: parseInt(req.body.dataObjectId),
-      storageBucketId: parseInt(req.body.storageBucketId),
-      bagId: req.body.bagId,
+      dataObjectId: req.query.dataObjectId?.toString() || '',
+      storageBucketId: req.query.storageBucketId?.toString() || '',
+      bagId: req.query.bagId?.toString() || '',
     }
 
     verifyUploadTokenData(account.address, token, sourceTokenRequest)
@@ -184,5 +199,29 @@ function verifyUploadTokenData(accountAddress: string, token: UploadToken, reque
 
   if (!checkRemoveNonce(token.data.nonce)) {
     throw new Error('Nonce not found')
+  }
+}
+
+async function validateUploadFileParams(req: express.Request, res: express.Response<unknown, AppConfig>) {
+  const { api, queryNodeEndpoint, workerId } = res.locals
+
+  const storageBucketId = new BN(req.query.storageBucketId?.toString() || '')
+  const dataObjectId = new BN(req.query.dataObjectId?.toString() || '')
+  const bagId = req.query.bagId?.toString() || ''
+
+  const parsedBagId = parseBagId(bagId)
+
+  const [dataObject] = await Promise.all([
+    api.query.storage.dataObjectsById(parsedBagId, dataObjectId),
+    verifyBagAssignment(api, parsedBagId, storageBucketId),
+    verifyBucketId(queryNodeEndpoint, workerId, storageBucketId),
+  ])
+
+  if (dataObject.isEmpty) {
+    throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${parsedBagId}`, 400)
+  }
+
+  if (dataObject.accepted.valueOf()) {
+    throw new WebApiError(`Data object ${dataObjectId} has already been accepted by storage node`, 400)
   }
 }
