@@ -173,5 +173,11 @@ decl_error! {
 
         /// Deadline timestamp lower than now
         InvalidTimestampSpecified,
+
+        /// Deadline constraint not respected
+        DeadlineExpired,
+
+        /// SLippage tolerance constraint tolerance not respected
+        SlippageTolerenceExceeded,
     }
 }

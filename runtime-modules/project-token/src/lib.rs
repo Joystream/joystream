@@ -41,6 +41,7 @@ use sp_std::convert::TryInto;
 use sp_std::iter::Sum;
 use sp_std::vec;
 use sp_std::vec::Vec;
+use sp_timestamp::Timestamp;
 use storage::UploadParameters;
 
 // crate modules
@@ -822,7 +823,7 @@ decl_module! {
         }
 
         #[weight = 100_000_000] // TODO: adjust weight
-        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance) -> DispatchResult {
+        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Timestamp) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -842,6 +843,8 @@ decl_module! {
             let amount_to_bond = curve.eval::<T>(amount, token_data.total_supply)?;
 
             Self::ensure_can_transfer_joy(&sender, amount_to_bond.into())?;
+
+            ensure!(Timestamp::current() < deadline, Error::<T>::DeadlineExpired);
 
             // == MUTATION SAFE ==
 

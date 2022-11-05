@@ -1186,6 +1186,7 @@ impl BondFixture {
             self.token_id,
             self.member_id,
             self.amount,
+            self.timestamp,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
