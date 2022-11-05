@@ -455,10 +455,7 @@ fn unbond_fails_with_user_not_having_enought_crt() {
                 .with_amount(2 * DEFAULT_BONDING_AMOUNT)
                 .execute_call();
 
-            assert_err!(
-                result,
-                Error::<Test>::UnbondingAmountGreaterThanTokenBalance
-            );
+            assert_err!(result, Error::<Test>::UnsufficientTokenAmount);
         })
 }
 
@@ -616,7 +613,7 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
                 .unwrap();
 
             let amm_reserve_post = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount = 3_001_500; // TODO: fix this
+            let correctly_computed_joy_amount = 300_315; // TODO: fix this
             assert_eq!(
                 amm_reserve_pre - amm_reserve_post,
                 correctly_computed_joy_amount
@@ -626,12 +623,21 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
 
 #[test]
 fn unbonding_fails_with_amm_treasury_not_having_sufficient_usable_joy_required() {
+    let token_id = token!(1);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
             BondFixture::default().execute_call().unwrap();
+            // setting the balance of teh bonding curve reserve to 0
+            Balances::set_balance(
+                Origin::root(),
+                Token::module_bonding_curve_reserve_account(token_id),
+                Balance::zero(),
+                Balance::zero(),
+            )
+            .unwrap();
 
             let result = UnbondFixture::default().execute_call();
 
@@ -653,7 +659,7 @@ fn user_joy_balance_correctly_increased_during_unbonding() {
             UnbondFixture::default().execute_call().unwrap();
 
             let user_reserve_post = Balances::usable_balance(user_account);
-            let correctly_computed_joy_amount = 30_315; // TODO: fix this
+            let correctly_computed_joy_amount = 300_315; // TODO: fix this
             assert_eq!(
                 user_reserve_post - user_reserve_pre,
                 correctly_computed_joy_amount
