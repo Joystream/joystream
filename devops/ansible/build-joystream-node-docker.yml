@@ -28,6 +28,7 @@
           platform: '{{ platform }}'
           args:
             CARGO_FEATURES: '{{ cargo_features }}'
+            GIT_COMMIT_HASH: '{{ result_git_checkout.after[:11] }}'
         name: '{{ repository }}'
         tag: '{{ tag_name }}'
         push: true

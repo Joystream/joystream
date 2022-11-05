@@ -26,7 +26,7 @@ pub mod initial_balances;
 pub mod project_token_config;
 pub mod storage_config;
 
-use grandpa_primitives::AuthorityId as GrandpaId;
+pub use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
     constants::currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
@@ -35,15 +35,15 @@ use node_runtime::{
     SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SudoConfig,
     SystemConfig, TransactionPaymentConfig, VestingConfig,
 };
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
 
 use pallet_staking::Forcing;
 use serde::{Deserialize, Serialize};
 use serde_json as json;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_babe::AuthorityId as BabeId;
+pub use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+pub use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
@@ -74,7 +74,7 @@ pub struct Extensions {
 /// Specialized `ChainSpec`.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
-fn session_keys(
+pub fn session_keys(
     grandpa: GrandpaId,
     babe: BabeId,
     im_online: ImOnlineId,

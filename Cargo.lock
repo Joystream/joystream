@@ -7653,6 +7653,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "session-keys"
+version = "1.0.0"
+dependencies = [
+ "async-std",
+ "clap 3.2.22",
+ "enum-utils",
+ "futures-util",
+ "joystream-node",
+ "rand 0.8.5",
+ "sc-chain-spec",
+ "sc-keystore",
+ "sc-telemetry",
+ "serde_json",
+ "sp-core",
+ "sp-keystore",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"

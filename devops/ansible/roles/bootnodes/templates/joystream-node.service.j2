@@ -7,20 +7,18 @@ Type=simple
 User={{ template_user }}
 WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/bin/joystream-node \
-        --chain chain/chainspec-raw.json \
+        --chain {{ template_chain_spec_path }} \
         --base-path chain \
-        --ws-external \
-        --rpc-cors all \
-        --pruning archive \
-        --ws-max-connections 1000 \
-        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+        --node-key-file secrets/node-key \
         --no-mdns \
-        --in-peers 128 \
-        --out-peers 128
+        --in-peers 512 \
+        --out-peers 50 \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+        --listen-addr /ip4/0.0.0.0/tcp/30333
 
 Restart=on-failure
 RestartSec=3
-LimitNOFILE=16384
+LimitNOFILE=10000
 
 [Install]
 WantedBy=multi-user.target

@@ -4,9 +4,6 @@
 - set_fact:
     chain_path: "chain"
 
-- set_fact:
-    keystore_path: "keystore"
-
 - name: Create chain directory
   file:
     path: "{{ item }}"
@@ -19,37 +16,25 @@
     src: '{{ data_path }}/chain/chainspec-raw.json'
     dest: '{{ chain_path }}/chainspec-raw.json'
 
-- set_fact:
-    node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
+# Assume hostname is a DNS name
+- name: Set MultiAddress to listen on (dns)
+  set_fact:
+    listen_multi_addr: '/dns4/{{ inventory_hostname }}/tcp/30333'
+  run_once: true
 
-- name: Check if (keystore) auth-x dir exists
-  stat:
-    path: "{{ data_path }}/chain/auth-{{ node_index }}/"
-  register: auth_dir_check 
-  delegate_to: localhost
-
-- name: Create keystore directory
-  file:
-    path: "{{ item }}"
-    state: directory
-  loop:
-    - "{{ keystore_path }}"
-  when: auth_dir_check.stat.isdir is defined and auth_dir_check.stat.isdir
-
-- name: Copy keystore to remote host
-  copy:
-    src: "{{ data_path }}/chain/auth-{{ node_index }}/"
-    dest: "{{ keystore_path }}"
-  when: auth_dir_check.stat.isdir is defined and auth_dir_check.stat.isdir
+# If inventory hostname is infact an ip address
+- name: Set MultiAddress to listen on (ip)
+  set_fact:
+    listen_multi_addr: '/ip4/{{ inventory_hostname }}/tcp/30333'
+  run_once: true
+  when: inventory_hostname | ansible.utils.ipaddr
 
 - name: Create a service file
   template:
     src: joystream-node.service.j2
     dest: /etc/systemd/system/joystream-node.service
   vars:
-    template_keystore_path: "{{ keystore_path }}"
     template_chain_spec_path: "{{ chain_path }}/chainspec-raw.json"
-    template_base_path: "{{ chain_path }}/"
     template_user: "{{ ansible_user }}"
     template_working_dir: "{{ ansible_env.HOME }}"
   become: true
