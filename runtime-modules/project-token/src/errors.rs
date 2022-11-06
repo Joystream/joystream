@@ -184,9 +184,12 @@ decl_error! {
         UnsufficientTokenAmount,
 
         /// Amm treasury balance is not zero
-        AmmTreasuryBalanceNotZero,
+        AmmTreasuryBalanceNotEmpty,
 
         /// Generic user not authorized error
         UserNotAuthorized,
+
+        /// Unbond amount not available
+        AmountNotAvailable,
     }
 }

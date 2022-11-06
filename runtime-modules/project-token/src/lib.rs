@@ -34,7 +34,7 @@ use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
+    traits::{AccountIdConversion, CheckedSub, Convert, UniqueSaturatedInto},
     Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
@@ -819,6 +819,12 @@ decl_module! {
                 token_data.bonding_curve = Some(curve)
             });
 
+            // deposit existential deposit if the account is newly created
+            let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
+            if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
+                let _ = Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
+            }
+
             Ok(())
         }
 
@@ -896,7 +902,10 @@ decl_module! {
             ensure!(user_acc_data.amount >= amount, Error::<T>::UnsufficientTokenAmount);
 
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
-            let amount_to_unbond = curve.eval::<T>(amount, token_data.total_supply)?;
+
+            let final_supply_value = token_data.total_supply.checked_sub(&amount).ok_or(Error::<T>::AmountNotAvailable)?;
+
+            let amount_to_unbond = curve.eval::<T>(amount, final_supply_value)?;
 
             Self::ensure_can_transfer_joy(&amm_reserve_account, amount_to_unbond.into())?;
 
@@ -917,7 +926,7 @@ decl_module! {
             });
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
-                token_data.total_supply = token_data.total_supply.saturating_sub(amount);
+                token_data.total_supply = final_supply_value;
                 token_data.tokens_issued = token_data.tokens_issued.saturating_sub(amount);
             });
 
@@ -927,7 +936,28 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: Adjust weight
-        fn deactivate_amm(_origin, _token_id: T::TokenId, _member_id: T::MemberId) -> DispatchResult {
+        fn deactivate_amm(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            let token_data = Self::ensure_token_exists(token_id)?;
+
+            ensure!(token_data.creator_member_id == member_id, Error::<T>::UserNotAuthorized);
+
+            ensure!(OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data).is_ok(), Error::<T>::NotInAmmState);
+
+            let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
+            ensure!(Joy::<T>::usable_balance(amm_treasury_account) == T::JoyExistentialDeposit::get(), Error::<T>::AmmTreasuryBalanceNotEmpty);
+
+            // == MUTATION SAFE ==
+
+            TokenInfoById::<T>::mutate(token_id, |token_data| {
+                token_data.bonding_curve = None;
+            });
+
+
             Ok(())
         }
     }

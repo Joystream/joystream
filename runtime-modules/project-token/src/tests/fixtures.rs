@@ -95,6 +95,7 @@ impl IssueTokenFixture {
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
+                creator_member_id: member!(1).0,
                 ..Default::default()
             }
             .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
@@ -1297,7 +1298,7 @@ pub struct DeactivateAmmFixture {
 
 impl DeactivateAmmFixture {
     pub fn default() -> Self {
-        let (sender, member_id) = member!(1);
+        let (member_id, sender) = member!(1);
         Self {
             sender,
             token_id: TokenId::one(),

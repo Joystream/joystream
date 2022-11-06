@@ -683,6 +683,15 @@ impl<TokenSale> OfferingState<TokenSale> {
             _ => Err(Error::<T>::NoActiveSale.into()),
         }
     }
+
+    pub(crate) fn ensure_bonding_curve_of<T: crate::Config>(
+        token: &TokenDataOf<T>,
+    ) -> Result<BondingCurve, DispatchError> {
+        match Self::of::<T>(token) {
+            OfferingStateOf::<T>::BondingCurve(curve) => Ok(curve),
+            _ => Err(Error::<T>::NotInAmmState.into()),
+        }
+    }
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
