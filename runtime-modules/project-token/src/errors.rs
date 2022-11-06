@@ -182,5 +182,11 @@ decl_error! {
 
         /// SLippage tolerance constraint tolerance not respected
         UnsufficientTokenAmount,
+
+        /// Amm treasury balance is not zero
+        AmmTreasuryBalanceNotZero,
+
+        /// Generic user not authorized error
+        UserNotAuthorized,
     }
 }

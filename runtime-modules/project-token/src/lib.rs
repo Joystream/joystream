@@ -925,6 +925,11 @@ decl_module! {
 
             Ok(())
         }
+
+        #[weight = 10_000_000] // TODO: Adjust weight
+        fn deactivate_amm(_origin, _token_id: T::TokenId, _member_id: T::MemberId) -> DispatchResult {
+            Ok(())
+        }
     }
 }
 

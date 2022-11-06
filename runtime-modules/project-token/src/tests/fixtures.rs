@@ -1288,3 +1288,45 @@ impl UnbondFixture {
         result
     }
 }
+
+pub struct DeactivateAmmFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    member_id: MemberId,
+}
+
+impl DeactivateAmmFixture {
+    pub fn default() -> Self {
+        let (sender, member_id) = member!(1);
+        Self {
+            sender,
+            token_id: TokenId::one(),
+            member_id,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result =
+            Token::deactivate_amm(Origin::signed(self.sender), self.token_id, self.member_id);
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}

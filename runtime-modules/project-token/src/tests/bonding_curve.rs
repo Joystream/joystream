@@ -696,3 +696,137 @@ fn unbonding_ok_with_user_crt_amount_correctly_decreased() {
             assert_eq!(user_crt_pre - user_crt_post, DEFAULT_UNBONDING_AMOUNT);
         })
 }
+
+// ------------------- DEACTIVATE ---------------------------------------
+
+#[test]
+fn deactivate_fails_with_token_not_in_amm_state() {
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+
+        let result = DeactivateAmmFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::NotInAmmState);
+    })
+}
+
+#[test]
+fn deactivate_fails_with_failed_member_authentication() {
+    let config = GenesisConfigBuilder::new_empty().build();
+    let (member_id, _) = member!(3);
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let result = DeactivateAmmFixture::default()
+            .with_member_id(member_id)
+            .execute_call();
+
+        assert_err!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    })
+}
+
+#[test]
+fn deactivate_fails_with_invalid_token_id() {
+    let config = GenesisConfigBuilder::new_empty().build();
+    let token_id = token!(2);
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let result = DeactivateAmmFixture::default()
+            .with_token_id(token_id)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::TokenDoesNotExist,);
+    })
+}
+
+#[test]
+fn deactivate_fails_with_amm_treasury_balance_not_zero() {
+    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default().execute_call().unwrap();
+            BondFixture::default()
+                .with_sender(user_account_id)
+                .with_member_id(user_member_id)
+                .execute_call()
+                .unwrap();
+
+            let result = DeactivateAmmFixture::default().execute_call();
+
+            assert_err!(result, Error::<Test>::AmmTreasuryBalanceNotZero);
+        })
+}
+
+#[test]
+fn deactivate_fails_with_user_not_being_the_creator() {
+    let (user_member_id, user_account_id) = member!(2);
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let result = DeactivateAmmFixture::default()
+            .with_sender(user_account_id)
+            .with_member_id(user_member_id)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::UserNotAuthorized)
+    })
+}
+
+#[test]
+fn deactivate_ok_with_status_set_to_idle() {
+    let (user_member_id, user_account_id) = member!(2);
+    let token_id = token!(1);
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        DeactivateAmmFixture::default()
+            .with_sender(user_account_id)
+            .with_member_id(user_member_id)
+            .execute_call()
+            .unwrap();
+
+        let token = Token::token_info_by_id(token_id);
+        assert_eq!(IssuanceState::of::<Test>(&token), IssuanceState::Idle);
+    })
+}
+
+#[test]
+fn deactivate_ok_with_full_cycle_from_activation() {
+    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default()
+                .with_creator_reward(Permill::zero())
+                .execute_call()
+                .unwrap();
+            BondFixture::default()
+                .with_sender(user_account_id)
+                .with_member_id(user_member_id)
+                .with_amount(DEFAULT_BONDING_AMOUNT)
+                .execute_call()
+                .unwrap();
+            UnbondFixture::default()
+                .with_sender(user_account_id)
+                .with_member_id(user_member_id)
+                .with_amount(DEFAULT_BONDING_AMOUNT)
+                .execute_call()
+                .unwrap();
+
+            let result = DeactivateAmmFixture::default().execute_call();
+
+            assert_ok!(result);
+        })
+}
