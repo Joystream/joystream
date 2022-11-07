@@ -6,7 +6,7 @@ import { IOFlags, ensureOutputFileIsWriteable, getInputJson, saveOutputJsonToFil
 import { decodeSignedTx } from '@substrate/txwrapper-core/lib/core/decode/decodeSignedTx'
 import { decodeSigningPayload } from '@substrate/txwrapper-core/lib/core/decode/decodeSigningPayload'
 import { Keyring } from '@polkadot/api'
-//import { waitReady } from '@polkadot/wasm-crypto'
+// import { waitReady } from '@polkadot/wasm-crypto'
 import { initWasm } from '@polkadot/wasm-crypto/initOnlyAsm'
 import { KeyringOptions, KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types'
 import { createSignedTx, getTxHash } from '@substrate/txwrapper-core/lib/core/construct'

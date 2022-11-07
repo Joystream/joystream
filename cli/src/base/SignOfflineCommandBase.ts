@@ -4,7 +4,7 @@ import { Keyring } from '@polkadot/api'
 import { getInputJson } from '../helpers/InputOutput'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { GenericExtrinsicPayload, GenericExtrinsicPayloadV4 } from '@polkadot/types'
-//import { waitReady } from '@polkadot/wasm-crypto'
+// import { waitReady } from '@polkadot/wasm-crypto'
 import { initWasm } from '@polkadot/wasm-crypto/initOnlyAsm'
 import { JOYSTREAM_ADDRESS_PREFIX, registry } from '@joystream/types'
 import inquirer from 'inquirer'
@@ -73,12 +73,11 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
             } has approved already), you need to construct the unsigned transaction again with 'constructUnsignedTxApproveMs'`
           )
         }
-        if (multisigTxData.call.length < 500 ) {
+        if (multisigTxData.call.length < 500) {
           this.log(`the call ${multisigTxData.call}`)
         } else {
           this.log(`the call is to too long for log. Check the output file.`)
         }
-        
       } else {
         this.error(
           `The callHash you want to approve: ${args.callHash.toString()} n\` ` +
