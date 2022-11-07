@@ -142,7 +142,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     }
 
     if (argsInput.maxWeight.toString() !== args.maxWeight.toString()) {
-      this.warn(`"maxWeight" changed from ${argsInput.maxWeight} to ${args.maxWeight} .`)
+      this.warn(`"maxWeight" changed from ${argsInput.maxWeight} to ${args.maxWeight}.`)
     }
     return args
   }
@@ -158,20 +158,14 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
   ): Promise<MultisigAsMulti> {
     if (input) {
       const args = await this.getAsMultiInputFromFile(input)
-      const originalArgs = { ...args }
       const otherSignatories = args.otherSignatories as string[]
       const otherSignatoriesSorted = sortAddresses(otherSignatories, JOYSTREAM_ADDRESS_PREFIX)
-      const signatoriesChanged = !otherSignatoriesSorted.every(
-        (signatory, index) => signatory === otherSignatories[index]
-      )
       args.otherSignatories = otherSignatoriesSorted
       const maxWeightChanged = maxWeight !== (args.maxWeight as number)
-      args.maxWeight = maxWeight
-      if (signatoriesChanged || maxWeightChanged) {
-        await this.requireConfirmation(
-          `Some file inputs have been overridden:` + `args from file input: ${originalArgs}` + `new args: ${args}`
-        )
+      if (maxWeightChanged) {
+          this.warn(`"maxWeight" changed from ${args.maxWeight} to ${maxWeight}.`)
       }
+      args.maxWeight = maxWeight
       return args
     } else if (threshold && others && timepointHeight && timepointIndex) {
       const otherSignatories = sortAddresses(others.split(','), JOYSTREAM_ADDRESS_PREFIX)

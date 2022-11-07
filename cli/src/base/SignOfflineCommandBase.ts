@@ -4,7 +4,8 @@ import { Keyring } from '@polkadot/api'
 import { getInputJson } from '../helpers/InputOutput'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { GenericExtrinsicPayload, GenericExtrinsicPayloadV4 } from '@polkadot/types'
-import { waitReady } from '@polkadot/wasm-crypto'
+//import { waitReady } from '@polkadot/wasm-crypto'
+import { initWasm } from '@polkadot/wasm-crypto/initOnlyAsm'
 import { JOYSTREAM_ADDRESS_PREFIX, registry } from '@joystream/types'
 import inquirer from 'inquirer'
 import { DecodedSigningPayload } from '@substrate/txwrapper-core'
@@ -22,7 +23,7 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
   }
 
   async createPayload(signingPayload: string): Promise<GenericExtrinsicPayload> {
-    await waitReady()
+    await initWasm()
     const payload = registry.createType('ExtrinsicPayload', signingPayload, {
       version: 4,
     })
@@ -30,7 +31,7 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
   }
 
   async createPayloadV4(signingPayload: string): Promise<GenericExtrinsicPayloadV4> {
-    await waitReady()
+    await initWasm()
     const payload = registry.createType('ExtrinsicPayloadV4', signingPayload)
     return payload
   }
@@ -72,7 +73,12 @@ export default abstract class SignOfflineCommandBase extends StateAwareCommandBa
             } has approved already), you need to construct the unsigned transaction again with 'constructUnsignedTxApproveMs'`
           )
         }
-        this.log(`the encoded call ${multisigTxData.call}`)
+        if (multisigTxData.call.length < 500 ) {
+          this.log(`the call ${multisigTxData.call}`)
+        } else {
+          this.log(`the call is to too long for log. Check the output file.`)
+        }
+        
       } else {
         this.error(
           `The callHash you want to approve: ${args.callHash.toString()} n\` ` +

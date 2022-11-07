@@ -6,7 +6,7 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import { registry } from '@joystream/types'
 
 export default class CreateSetCodeCallCommand extends AdvancedTransactionsCommandBase {
-  static description = 'Construct a wrapped transaction call.'
+  static description = 'Construct a "system.setCode" call.'
   static flags = {
     wasmPath: flags.string({
       required: true,
