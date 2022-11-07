@@ -384,8 +384,8 @@ parameter_types! {
 parameter_types! {
     pub const CancellationFee: u64 = 5;
     pub const RejectionFee: u64 = 3;
-    pub const TitleMaxLength: u32 = 100;
-    pub const DescriptionMaxLength: u32 = 10000;
+    pub const TitleMaxLength: u32 = 10_000;
+    pub const DescriptionMaxLength: u32 = 100_000;
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [2; 8];
     pub const DispatchableCallCodeMaxLen: u32 = 1024 * 1024;
@@ -660,7 +660,7 @@ impl crate::Config for Test {
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
-    type FundingRequestProposalMaxAmount = FundingRequestProposalMaxAmount;
+    type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
 }
@@ -677,7 +677,7 @@ parameter_types! {
     pub const BudgetRefillAmount: u64 = 1000;
     // intentionally high number that prevents side-effecting tests other than  budget refill tests
     pub const BudgetRefillPeriod: u64 = 1000;
-    pub const FundingRequestProposalMaxAmount: Balance = 10_000_000_000_000;
+    pub const FundingRequestProposalMaxTotalAmount: Balance = 10_000_000_000_000;
     pub const FundingRequestProposalMaxAccounts: u32 = 100;
     pub const SetMaxValidatorCountProposalMaxValidators: u32 = 300;
 }

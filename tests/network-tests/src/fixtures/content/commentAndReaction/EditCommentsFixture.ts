@@ -62,7 +62,8 @@ export class EditCommentsFixture extends StandardizedFixture {
     qComments: CommentFieldsFragment[],
     qEvents: CommentTextUpdatedEventFieldsFragment[]
   ): void {
-    qEvents.map((qEvent, i) => {
+    this.events.map((e, i) => {
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const qComment = qComments.find((comment) => comment.id === qEvent.comment.id.toString())
       const commentParams = this.editCommentParams[i]
       Utils.assert(qComment, 'Query node: Comment not found')

@@ -178,6 +178,7 @@ services:
       - GRAPHQL_PLAYGROUND_CDN_URL=${GRAPHQL_PLAYGROUND_CDN_URL}
     ports:
       - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
+      - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
     depends_on:
       - db
     volumes:
@@ -198,6 +199,9 @@ services:
       - INDEXER_ENDPOINT_URL=${PROCESSOR_INDEXER_GATEWAY}
       - TYPEORM_HOST=db
       - TYPEORM_DATABASE=${DB_NAME}
+      - BATCH_SIZE=100
+      - QUEUE_FACTOR=1
+      - QUEUE_MAX_CAP_FACTOR=4
     depends_on:
       - db
     volumes:
@@ -208,7 +212,7 @@ services:
     command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
-    image: joystream/hydra-indexer:v4.0.0-alpha.0
+    image: joystream/hydra-indexer:v4.0.0-alpha.7
     container_name: indexer
     restart: unless-stopped
     env_file:
@@ -229,7 +233,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:4.0.0-alpha.0
+    image: joystream/hydra-indexer-gateway:4.0.0-alpha.7
     container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:

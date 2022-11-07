@@ -1,0 +1,19 @@
+---
+
+- name: Create secrets directory if it doesn't exist
+  file:
+    state: directory
+    path: "secrets"
+
+- name: generate node key
+  shell:
+    cmd: |
+      bash -c "
+        bin/joystream-node key generate-node-key --file secrets/node-key
+      "
+    creates: secrets/node-key
+
+- name: gather node public key (PeerIds)
+  shell: > 
+    bin/joystream-node key inspect-node-key --file secrets/node-key
+  register: node_keys_output

@@ -24,9 +24,9 @@ jobs:
         id: extract_branch
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
 
@@ -63,16 +63,13 @@ jobs:
             file: 'joystream-node.Dockerfile'
             ec2ami: 'ami-00266f51b6b22db58'
             ec2type: 't4g.2xlarge'
-          # - platform: 'linux/arm/v7'
-          #   platform_tag: 'arm'
-          #   file: 'joystream-node-armv7.Dockerfile'
     env:
       STACK_NAME: build-joystream-node-docker-ga-${{ github.run_number }}-${{ matrix.platform_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
 
@@ -103,7 +100,7 @@ jobs:
         id: deploy_stack
         with:
           name: ${{ env.STACK_NAME }}
-          template: devops/aws/cloudformation/single-instance-ami-base.yml
+          template: devops/aws/cloudformation/single-instance.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=${{ matrix.ec2ami }},EC2InstanceType=${{ matrix.ec2type }}'
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
@@ -147,7 +144,7 @@ jobs:
       TAG_SHASUM: ${{ needs.repo-check.outputs.shasum }}
     steps:
       - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -159,12 +156,9 @@ jobs:
           echo $IMAGE
           docker pull $IMAGE-amd64
           docker pull $IMAGE-arm64
-          # docker pull $IMAGE-arm
-          # docker manifest create $IMAGE $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
           docker manifest create $IMAGE $IMAGE-amd64 $IMAGE-arm64
           docker manifest annotate $IMAGE $IMAGE-amd64 --arch amd64
           docker manifest annotate $IMAGE $IMAGE-arm64 --arch arm64
-          # docker manifest annotate $IMAGE $IMAGE-arm --arch arm
           docker manifest push $IMAGE
 
       - name: Create manifest with latest tag for master
@@ -172,9 +166,7 @@ jobs:
         run: |
           IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
           LATEST_TAG=${{ env.REPOSITORY }}:latest
-          # docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
           docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64
           docker manifest annotate $LATEST_TAG $IMAGE-amd64 --arch amd64
           docker manifest annotate $LATEST_TAG $IMAGE-arm64 --arch arm64
-          # docker manifest annotate $LATEST_TAG $IMAGE-arm --arch arm
           docker manifest push $LATEST_TAG

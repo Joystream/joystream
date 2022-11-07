@@ -169,6 +169,7 @@ use sp_std::vec::Vec;
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
+use common::to_kb;
 use common::working_group::WorkingGroup;
 use common::working_group::WorkingGroupAuthenticator;
 
@@ -2363,12 +2364,14 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `metadata`
+        /// - `W` is size of `metadata` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight =
-            WeightInfoStorage::<T>::set_storage_operator_metadata(metadata.len().saturated_into())]
+            WeightInfoStorage::<T>::set_storage_operator_metadata(
+                to_kb(metadata.len().saturated_into())
+            )]
         pub fn set_storage_operator_metadata(
             origin,
             worker_id: WorkerId<T>,
@@ -2931,13 +2934,13 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `metadata`
+        /// - `W` is size of `metadata` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight =
             WeightInfoStorage::<T>::set_distribution_bucket_family_metadata(
-                metadata.len().saturated_into()
+                to_kb(metadata.len().saturated_into())
             )
         ]
         pub fn set_distribution_bucket_family_metadata(
@@ -3013,12 +3016,14 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `metadata`
+        /// - `W` is size of `metadata` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight =
-            WeightInfoStorage::<T>::set_distribution_operator_metadata(metadata.len().saturated_into())
+            WeightInfoStorage::<T>::set_distribution_operator_metadata(
+                to_kb(metadata.len().saturated_into())
+            )
         ]
         pub fn set_distribution_operator_metadata(
             origin,
@@ -3053,7 +3058,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if cfg!(feature = "staging_runtime") || cfg!(feature = "testing_runtime") {
+            if cfg!(feature = "playground-runtime") || cfg!(feature = "testing-runtime") {
                 Self::upload_data_objects(params)?;
             } else {
                 return Err(Error::<T>::CallDisabled.into());
@@ -3065,11 +3070,13 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `message`
+        /// - `W` is size of `message` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoStorage::<T>::storage_operator_remark(msg.len().saturated_into())]
+        #[weight = WeightInfoStorage::<T>::storage_operator_remark(
+            to_kb(msg.len().saturated_into())
+        )]
         pub fn storage_operator_remark(
             origin,
             worker_id: WorkerId<T>,
@@ -3092,11 +3099,13 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is length of the `message`
+        /// - `W` is size of `message` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoStorage::<T>::distribution_operator_remark(msg.len().saturated_into())]
+        #[weight = WeightInfoStorage::<T>::distribution_operator_remark(
+            to_kb(msg.len().saturated_into())
+        )]
         pub fn distribution_operator_remark(
             origin,
             worker_id: WorkerId<T>,

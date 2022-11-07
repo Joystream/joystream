@@ -1,6 +1,7 @@
 name: joystream-node
 on:
   pull_request:
+  push:
 
 jobs:
   # test runtime benchmarks code correctness
@@ -8,17 +9,16 @@ jobs:
     name: Benchmarking
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
             runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
@@ -53,17 +53,16 @@ jobs:
     name: Runtime Profiles
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
             runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
@@ -77,6 +76,7 @@ jobs:
       - name: Production Runtime
         run: |
           yarn cargo-checks && yarn cargo-build
+          ./target/release/call-sizes
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:

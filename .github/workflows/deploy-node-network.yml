@@ -20,7 +20,7 @@ jobs:
       STACK_NAME: network-deployment-${{ github.run_number }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set env variables
         id: network_config # set the outputs
@@ -94,7 +94,8 @@ jobs:
           VAL1="${{ steps.deploy_stack.outputs.Val1PublicIp }}"
           VAL2="${{ steps.deploy_stack.outputs.Val2PublicIp }}"
           VAL3="${{ steps.deploy_stack.outputs.Val3PublicIp }}"
-          echo -e "[validators]\n$VAL1\n$VAL2\n$VAL3\n\n" >> inventory
+          echo -e "[validators]\n$VAL1\n$VAL2\n\n" >> inventory
+          echo -e "[boot]\n$VAL3\n\n" >> inventory
           echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n\n" >> inventory
           echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}\n" >> inventory
           cat inventory
@@ -166,7 +167,7 @@ jobs:
           7z a -p${{ steps.network_config.outputs.encryptionKey }} chain-data.7z deploy_artifacts/*
 
       - name: Save the output as an artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: data-chainspec-auth
           path: devops/ansible/chain-data.7z

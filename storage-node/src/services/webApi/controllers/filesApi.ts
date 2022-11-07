@@ -1,11 +1,5 @@
 import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import {
-  RequestData,
-  UploadTokenRequest,
-  UploadTokenBody,
-  createUploadToken,
-  verifyTokenSignature,
-} from '../../helpers/auth'
+import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { hashFile } from '../../helpers/hashing'
 import { registerNewDataObjectId } from '../../caching/newUploads'
 import { addDataObjectIdToCache } from '../../caching/localDataObjects'
@@ -23,20 +17,28 @@ import { timeout } from 'promise-timeout'
 import { WebApiError, sendResponseWithError, getHttpStatusCodeByError, AppConfig } from './common'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { PalletMembershipMembershipObject as Membership, PalletStorageBagIdType as BagId } from '@polkadot/types/lookup'
+import BN from 'bn.js'
+import {
+  UploadFileQueryParams,
+  UploadTokenRequest,
+  UploadTokenBody,
+  GetFileRequestParams,
+  GetFileHeadersRequestParams,
+} from '../types'
 const fsPromises = fs.promises
 
 /**
  * A public endpoint: serves files by data object ID.
  */
 export async function getFile(
-  req: express.Request,
+  req: express.Request<GetFileRequestParams>,
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
   try {
-    const dataObjectId = getDataObjectId(req)
+    const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId)
+    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
 
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
@@ -63,11 +65,14 @@ export async function getFile(
 /**
  * A public endpoint: sends file headers by data object ID.
  */
-export async function getFileHeaders(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
+export async function getFileHeaders(
+  req: express.Request<GetFileHeadersRequestParams>,
+  res: express.Response<unknown, AppConfig>
+): Promise<void> {
   try {
-    const dataObjectId = getDataObjectId(req)
+    const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId)
+    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
 
@@ -85,31 +90,29 @@ export async function getFileHeaders(req: express.Request, res: express.Response
  * A public endpoint: receives file.
  */
 export async function uploadFile(
-  req: express.Request,
+  req: express.Request<unknown, unknown, unknown, UploadFileQueryParams>,
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
-  const uploadRequest: RequestData = req.body
+  const uploadRequest = req.query
 
   // saved filename to delete on verification or extrinsic errors
   let cleanupFileName = ''
   try {
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
-    const queryNodeUrl = res.locals.queryNodeEndpoint
-    const workerId = res.locals.workerId
 
-    const [, hash] = await Promise.all([
-      verifyBucketId(queryNodeUrl, workerId, uploadRequest.storageBucketId),
-      hashFile(fileObj.path),
-    ])
+    const workerId = res.locals.workerId
 
     const api = res.locals.api
     const bagId = parseBagId(uploadRequest.bagId)
-    const accepted = await verifyDataObjectInfo(api, bagId, uploadRequest.dataObjectId, fileObj.size, hash)
+
+    const hash = await hashFile(fileObj.path)
+
+    await verifyDataObjectInfo(api, bagId, new BN(uploadRequest.dataObjectId), fileObj.size, hash)
 
     // Prepare new file name
-    const dataObjectId = uploadRequest.dataObjectId.toString()
+    const dataObjectId = uploadRequest.dataObjectId
     const uploadsDir = res.locals.uploadsDir
     const newPath = path.join(uploadsDir, dataObjectId)
 
@@ -120,20 +123,14 @@ export async function uploadFile(
     await fsPromises.rename(fileObj.path, newPath)
     cleanupFileName = newPath
 
-    if (!accepted) {
-      await acceptPendingDataObjects(
-        api,
-        bagId,
-        res.locals.storageProviderAccount,
-        workerId,
-        uploadRequest.storageBucketId,
-        [uploadRequest.dataObjectId]
-      )
-    } else {
-      logger.warn(
-        `Received already accepted data object. DataObjectId = ${uploadRequest.dataObjectId} WorkerId = ${workerId}`
-      )
-    }
+    await acceptPendingDataObjects(
+      api,
+      bagId,
+      res.locals.storageProviderAccount,
+      workerId,
+      new BN(uploadRequest.storageBucketId),
+      [new BN(uploadRequest.dataObjectId)]
+    )
 
     res.status(201).json({
       id: hash,
@@ -182,7 +179,7 @@ export async function authTokenForUploading(
  * This is a helper function. It parses the request object for a variable and
  * throws an error on failure.
  */
-function getFileObject(req: express.Request): Express.Multer.File {
+function getFileObject(req: express.Request<unknown, unknown, unknown, UploadFileQueryParams>): Express.Multer.File {
   if (req.file) {
     return req.file
   }
@@ -193,22 +190,6 @@ function getFileObject(req: express.Request): Express.Multer.File {
   }
 
   throw new WebApiError('No file uploaded', 400)
-}
-
-/**
- * Returns data object ID from the request.
- *
- * @remarks
- * This is a helper function. It parses the request object for a variable and
- * throws an error on failure.
- */
-function getDataObjectId(req: express.Request): string {
-  const id = req.params.id || ''
-  if (id.length > 0) {
-    return id
-  }
-
-  throw new WebApiError('No data object ID provided.', 400)
 }
 
 /**
@@ -265,11 +246,15 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
 async function verifyDataObjectInfo(
   api: ApiPromise,
   bagId: BagId,
-  dataObjectId: number,
+  dataObjectId: BN,
   fileSize: number,
   hash: string
 ): Promise<boolean> {
   const dataObject = await api.query.storage.dataObjectsById(bagId, dataObjectId)
+
+  if (dataObject.isEmpty) {
+    throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${bagId}`, 400)
+  }
 
   // Cannot get 'size' as a regular property.
   const dataObjectSize = dataObject.size_
@@ -335,10 +320,27 @@ export async function getVersion(req: express.Request, res: express.Response<unk
  * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: number): Promise<void> {
+export async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: BN): Promise<void> {
   const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
 
   if (!bucketIds.includes(bucketId.toString())) {
     throw new WebApiError('Incorrect storage bucket ID.', 400)
+  }
+}
+
+/**
+ * Verifies the storage bag assignment to the storage bucket.
+ * It throws an error if storage bag is not stored by the bucket.
+ *
+ * @param api - runtime API promise
+ * @param bagId - bag ID
+ * @param bucketId - storage bucket ID
+ * @returns void promise.
+ */
+export async function verifyBagAssignment(api: ApiPromise, bagId: BagId, bucketId: BN): Promise<void> {
+  const bag = await api.query.storage.bags(bagId)
+
+  if (![...bag.storedBy].map((s) => s.toString()).includes(bucketId.toString())) {
+    throw new WebApiError(`Storage bag ${bagId} is not assigned to storage bucket ${bucketId}.`, 400)
   }
 }
