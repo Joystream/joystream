@@ -34,7 +34,7 @@ use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, CheckedSub, Convert, UniqueSaturatedInto},
+    traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
     Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
@@ -829,7 +829,7 @@ decl_module! {
         }
 
         #[weight = 100_000_000] // TODO: adjust weight
-        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, <T as Config>::Balance)>) -> DispatchResult {
+        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -844,10 +844,17 @@ decl_module! {
             let token_data = Self::ensure_token_exists(token_id)?;
             let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
 
+            let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
-            let amount_to_bond = curve.eval::<T>(amount, token_data.total_supply)?;
+            let amount_to_bond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
+            let bloat_bond = Self::bloat_bond();
+            let joys_required = if !user_account_data_exists {
+                amount_to_bond.saturating_add(bloat_bond)
+            } else {
+                amount_to_bond
+            };
 
-            Self::ensure_can_transfer_joy(&sender, amount_to_bond.into())?;
+            Self::ensure_can_transfer_joy(&sender, joys_required.into())?;
 
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
@@ -868,9 +875,21 @@ decl_module! {
             });
 
             let user_amount = amount - creator_amount;
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
-                account_data.amount = account_data.amount.saturating_add(user_amount)
-            });
+            if !user_account_data_exists {
+                AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data: &mut AccountDataOf<T>| {
+                    *account_data = AccountDataOf::<T>::new_with_amount_and_bond(
+                            user_amount,
+                            // No restrictions on repayable bloat bond,
+                            // since only usable balance is allowed
+                            RepayableBloatBond::new(Self::bloat_bond(), None)
+                    );
+                });
+                Self::transfer_joy(&sender, &Self::module_treasury_account(), bloat_bond)?;
+            } else {
+                AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
+                    account_data.amount = account_data.amount.saturating_add(user_amount);
+                })
+            }
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.total_supply = token_data.total_supply.saturating_add(amount);
@@ -883,7 +902,7 @@ decl_module! {
         }
 
         #[weight = 100_000_000] // TODO: adjust weight
-        fn unbond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, <T as Config>::Balance)>) -> DispatchResult {
+        fn unbond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -903,9 +922,7 @@ decl_module! {
 
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
 
-            let final_supply_value = token_data.total_supply.checked_sub(&amount).ok_or(Error::<T>::AmountNotAvailable)?;
-
-            let amount_to_unbond = curve.eval::<T>(amount, final_supply_value)?;
+            let amount_to_unbond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
 
             Self::ensure_can_transfer_joy(&amm_reserve_account, amount_to_unbond.into())?;
 
@@ -926,7 +943,7 @@ decl_module! {
             });
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
-                token_data.total_supply = final_supply_value;
+                token_data.total_supply = token_data.total_supply.saturating_sub(amount);
                 token_data.tokens_issued = token_data.tokens_issued.saturating_sub(amount);
             });
 

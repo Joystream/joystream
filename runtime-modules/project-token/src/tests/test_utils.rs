@@ -61,10 +61,6 @@ impl TokenDataBuilder {
         }
     }
 
-    pub fn with_symbol(self, symbol: <Test as frame_system::Config>::Hash) -> Self {
-        Self { symbol, ..self }
-    }
-
     pub fn with_supply(self, supply: Balance) -> Self {
         Self {
             total_supply: supply,

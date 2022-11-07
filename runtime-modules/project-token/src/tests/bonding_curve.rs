@@ -2,10 +2,10 @@
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
-use crate::types::BondingCurve;
-use crate::{joy, member, token, Error};
+use crate::types::{BondOperation, BondingCurve};
+use crate::{joy, member, token, Error, RepayableBloatBondOf};
 use frame_support::{assert_err, assert_ok};
-use sp_runtime::{traits::Zero, DispatchError, Permill};
+use sp_runtime::{traits::Zero, DispatchError, PerThing, Permill};
 
 // --------------------- BONDING -------------------------------
 
@@ -62,20 +62,69 @@ fn bonding_order_fails_with_member_and_origin_auth() {
 
 #[test]
 fn bonding_succeeds_with_new_user() {
-    let (member_id, sender) = member!(2);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
+    let token_id = token!(1);
+    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
 
-            let result = BondFixture::default()
-                .with_sender(sender)
-                .with_member_id(member_id)
-                .execute_call();
+            BondFixture::default()
+                .with_sender(user_account_id)
+                .with_amount(DEFAULT_BONDING_AMOUNT)
+                .with_member_id(user_member_id)
+                .execute_call()
+                .unwrap();
 
-            // TODO: consider existential deposit
-            assert_ok!(result);
+            let account_data =
+                Token::ensure_account_data_exists(token_id, &user_member_id).unwrap();
+            let user_amount = BONDING_CURVE_CREATOR_REWARD
+                .left_from_one()
+                .mul_floor(DEFAULT_BONDING_AMOUNT);
+            assert_eq!(account_data.amount, user_amount);
+            assert_eq!(
+                account_data.bloat_bond,
+                RepayableBloatBondOf::<Test>::new(Token::bloat_bond(), None)
+            );
+        })
+}
+
+#[test]
+fn bonding_succeeds_with_existing_user() {
+    let token_id = token!(1);
+    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            InitTokenSaleFixture::default().execute_call().unwrap();
+            PurchaseTokensOnSaleFixture::default()
+                .with_sender(user_account_id)
+                .with_member_id(user_member_id)
+                .call_and_assert(Ok(()));
+            increase_block_number_by(DEFAULT_SALE_DURATION);
+            FinalizeTokenSaleFixture::default().call_and_assert(Ok(()));
+            ActivateAmmFixture::default()
+                .with_creator_reward(BONDING_CURVE_CREATOR_REWARD)
+                .execute_call()
+                .unwrap();
+            let user_amount_pre = Token::ensure_account_data_exists(token_id, &user_member_id)
+                .unwrap()
+                .amount;
+
+            BondFixture::default()
+                .with_sender(user_account_id)
+                .with_amount(DEFAULT_BONDING_AMOUNT)
+                .with_member_id(user_member_id)
+                .execute_call()
+                .unwrap();
+
+            let user_amount_post = Token::ensure_account_data_exists(token_id, &user_member_id)
+                .unwrap()
+                .amount;
+            let user_amount_increase = BONDING_CURVE_CREATOR_REWARD
+                .left_from_one()
+                .mul_floor(DEFAULT_BONDING_AMOUNT);
+            assert_eq!(user_amount_post - user_amount_pre, user_amount_increase);
         })
 }
 
@@ -216,7 +265,8 @@ fn amm_treasury_balance_correctly_increased_during_bonding() {
                 .unwrap();
 
             let amm_reserve_post = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount = 3_001_500; // TODO: fix this
+            let correctly_computed_joy_amount =
+                pricing_function_with_defaults(token_id, BondOperation::Bond);
             assert_eq!(
                 amm_reserve_post - amm_reserve_pre,
                 correctly_computed_joy_amount
@@ -241,6 +291,8 @@ fn bonding_fails_with_user_not_having_sufficient_usable_joy_required() {
 fn user_joy_balance_correctly_decreased_during_bonding() {
     let (_, user_account) = member!(2);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
+    let correctly_computed_joy_amount =
+        pricing_function_with_defaults(token!(1), BondOperation::Bond);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -253,7 +305,6 @@ fn user_joy_balance_correctly_decreased_during_bonding() {
                 .unwrap();
 
             let user_reserve_post = Balances::usable_balance(user_account);
-            let correctly_computed_joy_amount = 3_001_500; // TODO: fix this
             assert_eq!(
                 user_reserve_pre - user_reserve_post,
                 correctly_computed_joy_amount
@@ -632,7 +683,8 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
                 .unwrap();
 
             let amm_reserve_post = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount = 300_285; // TODO: fix this
+            let correctly_computed_joy_amount =
+                pricing_function_with_defaults(token_id, BondOperation::Unbond);
             assert_eq!(
                 amm_reserve_pre - amm_reserve_post,
                 correctly_computed_joy_amount
@@ -666,19 +718,27 @@ fn unbonding_fails_with_amm_treasury_not_having_sufficient_usable_joy_required()
 
 #[test]
 fn user_joy_balance_correctly_increased_during_unbonding() {
+    let token_id = token!(1);
     let (_, user_account) = member!(2);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
-            IssueTokenFixture::default().execute_call().unwrap();
-            ActivateAmmFixture::default().execute_call().unwrap();
+            IssueTokenFixture::default()
+                .with_empty_allocation()
+                .execute_call()
+                .unwrap();
+            ActivateAmmFixture::default()
+                .with_creator_reward(Permill::zero())
+                .execute_call()
+                .unwrap();
             BondFixture::default().execute_call().unwrap();
             let user_reserve_pre = Balances::usable_balance(user_account);
 
             UnbondFixture::default().execute_call().unwrap();
 
             let user_reserve_post = Balances::usable_balance(user_account);
-            let correctly_computed_joy_amount = 300_285; // TODO: fix this
+            let correctly_computed_joy_amount =
+                pricing_function_with_defaults(token_id, BondOperation::Unbond);
             assert_eq!(
                 user_reserve_post - user_reserve_pre,
                 correctly_computed_joy_amount
@@ -864,4 +924,17 @@ fn deactivate_ok_with_full_cycle_from_activation() {
                 ExistentialDeposit::get()
             );
         })
+}
+
+#[test]
+fn test_pricing_function_values() {
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+
+        let amount = pricing_function_with_defaults(token!(1), BondOperation::Bond);
+        let amount2 = pricing_function_with_defaults(token!(1), BondOperation::Unbond);
+
+        print!("AMOUNT, AMOUNT: {:?}, {:?}", amount, amount2);
+    });
 }

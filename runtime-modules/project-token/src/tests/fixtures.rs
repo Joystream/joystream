@@ -11,7 +11,7 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
 use sp_runtime::{testing::H256, traits::Hash, DispatchError, Permill};
 
-use sp_std::{collections::btree_map::BTreeMap, iter::FromIterator};
+use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
 pub trait Fixture<S: std::fmt::Debug + std::cmp::PartialEq> {
@@ -1087,9 +1087,9 @@ impl ActivateAmmFixture {
             member_id: creator_member_id,
             params: BondingCurve {
                 // like Deso: https://docs.deso.org/about-deso-chain/readme#the-creator-coin-supply-curve
-                slope: Permill::from_perthousand(3),
-                intercept: Permill::zero(),
-                creator_reward: Permill::from_percent(10),
+                slope: BONDING_CURVE_SLOPE,
+                intercept: BONDING_CURVE_INTERCEPT,
+                creator_reward: BONDING_CURVE_CREATOR_REWARD,
             },
         }
     }

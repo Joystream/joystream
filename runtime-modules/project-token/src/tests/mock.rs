@@ -634,6 +634,9 @@ pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) *
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_BONDING_AMOUNT: u128 = 1000;
 pub const DEFAULT_UNBONDING_AMOUNT: u128 = 100;
+pub const BONDING_CURVE_SLOPE: Permill = Permill::from_parts(10);
+pub const BONDING_CURVE_INTERCEPT: Permill = Permill::zero();
+pub const BONDING_CURVE_CREATOR_REWARD: Permill = Permill::from_percent(10);
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -696,4 +699,24 @@ pub fn set_staking_candidate_lock(
     amount: Balance,
 ) {
     <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+}
+
+pub(crate) fn pricing_function_with_defaults(
+    token_id: TokenId,
+    bond_operation: BondOperation,
+) -> JoyBalance {
+    let supply = Token::token_info_by_id(token_id).total_supply;
+    match bond_operation {
+        BondOperation::Bond => {
+            BONDING_CURVE_SLOPE.mul_floor(DEFAULT_BONDING_AMOUNT * DEFAULT_BONDING_AMOUNT) / 2
+                + BONDING_CURVE_INTERCEPT.mul_floor(DEFAULT_BONDING_AMOUNT)
+                + BONDING_CURVE_SLOPE.mul_floor(supply * DEFAULT_BONDING_AMOUNT)
+        }
+        BondOperation::Unbond => {
+            BONDING_CURVE_INTERCEPT.mul_floor(DEFAULT_UNBONDING_AMOUNT)
+                + BONDING_CURVE_SLOPE.mul_floor(supply * DEFAULT_UNBONDING_AMOUNT)
+                - BONDING_CURVE_SLOPE.mul_floor(DEFAULT_UNBONDING_AMOUNT * DEFAULT_BONDING_AMOUNT)
+                    / 2
+        }
+    }
 }

@@ -11,7 +11,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
-    traits::{CheckedAdd, CheckedMul, Convert, Hash, UniqueSaturatedInto},
+    traits::{CheckedAdd, CheckedMul, CheckedSub, Convert, Hash, UniqueSaturatedInto},
     PerThing, Permill, Perquintill, SaturatedConversion,
 };
 use sp_std::{
@@ -589,33 +589,39 @@ pub struct BondingCurve {
     pub creator_reward: Permill,
 }
 
+pub(crate) enum BondOperation {
+    Bond,
+    Unbond,
+}
 impl BondingCurve {
-    pub fn eval<T: Config>(
+    pub(crate) fn eval<T: Config>(
         &self,
         amount: <T as Config>::Balance,
-        supply: <T as Config>::Balance,
-    ) -> Result<<T as Config>::Balance, DispatchError> {
-        // x = amount, X = issuance, a = slope, b = intercept:
-        // a/2 * [(X + x)^2 - X^2] - b * x = a/2 * (x^2 + 2*X*x) - b * x
-        let sq_coeff = self.slope / 2u32;
-        let mixed_term = supply
-            .checked_mul(&amount)
-            .ok_or(Error::<T>::ArithmeticError)?
-            .checked_mul(&2u32.into())
-            .ok_or(Error::<T>::ArithmeticError)?;
+        supply_pre: <T as Config>::Balance,
+        bond_operation: BondOperation,
+    ) -> Result<JoyBalanceOf<T>, DispatchError> {
         let amount_sq = amount
             .checked_mul(&amount)
             .ok_or(Error::<T>::ArithmeticError)?;
-        let supply_sq_diff = amount_sq
-            .checked_add(&mixed_term)
-            .ok_or(Error::<T>::ArithmeticError)?; // new_issuance > issuance
-        let first_term = sq_coeff.mul_floor(supply_sq_diff);
+        let first_term = Permill::from_percent(50).mul_floor(self.slope.mul_floor(amount_sq));
         let second_term = self.intercept.mul_floor(amount);
-        let res = first_term
-            .checked_add(&second_term)
+        let mixed = amount
+            .checked_mul(&supply_pre)
             .ok_or(Error::<T>::ArithmeticError)?;
-
-        Ok(res)
+        let third_term = self.slope.mul_floor(mixed);
+        let res = match bond_operation {
+            BondOperation::Bond => first_term
+                .checked_add(&second_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+            BondOperation::Unbond => second_term
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_sub(&first_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+        };
+        Ok(res.into())
     }
 }
 
