@@ -163,7 +163,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
       args.otherSignatories = otherSignatoriesSorted
       const maxWeightChanged = maxWeight !== (args.maxWeight as number)
       if (maxWeightChanged) {
-          this.warn(`"maxWeight" changed from ${args.maxWeight} to ${maxWeight}.`)
+        this.warn(`"maxWeight" changed from ${args.maxWeight} to ${maxWeight}.`)
       }
       args.maxWeight = maxWeight
       return args

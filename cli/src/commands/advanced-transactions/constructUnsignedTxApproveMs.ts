@@ -130,17 +130,16 @@ export default class ConstructUnsignedTxApproveMsCommand extends AdvancedTransac
 
     this.log(
       `You are approving a multisig transaction from ${multiAddress}, with balances:\n` +
-      ` - free: ${formatBalance(accBalances[0].freeBalance)}\n` +
-      ` - available: ${formatBalance(accBalances[0].availableBalance)}\n` +
-      `If the multisig approves, the transaction will execute:\n` +
-      ` - module:method -  ${decodedCall.section}:${decodedCall.method}\n`
+        ` - free: ${formatBalance(accBalances[0].freeBalance)}\n` +
+        ` - available: ${formatBalance(accBalances[0].availableBalance)}\n` +
+        `If the multisig approves, the transaction will execute:\n` +
+        ` - module:method -  ${decodedCall.section}:${decodedCall.method}\n`
     )
     if (decodedCall.argsEntries.toString().length < 500) {
       this.log(` - ${decodedCall.argsEntries.toString()}\n`)
     } else {
       this.log(`Decoded call is to too long for log. Check the output file.`)
     }
-  
 
     const multisigTxData = {
       call,

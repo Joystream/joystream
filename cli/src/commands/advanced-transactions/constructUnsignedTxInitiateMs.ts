@@ -121,7 +121,7 @@ export default class ConstructUnsignedTxInitiateMsCommand extends AdvancedTransa
     } else {
       this.log(`Decoded call is to too long for log. Check the output file.`)
     }
-    
+
     const multisigTxData = {
       call,
       callHash,
