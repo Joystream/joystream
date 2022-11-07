@@ -63,7 +63,8 @@ export class ModerateCommentsFixture extends StandardizedFixture {
     qComments: CommentFieldsFragment[],
     qEvents: CommentModeratedEventFieldsFragment[]
   ): void {
-    qEvents.map((qEvent) => {
+    this.events.map((e) => {
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const qComment = qComments.find((comment) => comment.id === qEvent.comment.id.toString())
       Utils.assert(qComment, 'Query node: Comment not found')
       assert.equal(qComment.status, CommentStatus.Moderated)

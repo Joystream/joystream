@@ -1,4 +1,5 @@
 /lib
 .eslintrc.js
 **/generated/*
+**/generated.ts
 client
