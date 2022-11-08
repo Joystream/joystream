@@ -14,6 +14,7 @@ enum ExitCodes {
   StorageNodeError = 53,
   ActionCurrentlyUnavailable = 54,
   QueryNodeError = 55,
+  UnexpectedRuntimeState = 56,
 
   // NOTE: never exceed exit code 255 or it will be modulated by `256` and create problems
 }
