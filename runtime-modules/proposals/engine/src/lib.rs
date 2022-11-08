@@ -175,6 +175,7 @@ use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
+use common::to_kb;
 use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
 
@@ -475,11 +476,11 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (R)` where:
-        /// - `R` is the length of `rationale`
+        /// - `R` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or paraemters
         /// # </weight>
-        #[weight = WeightInfoEngine::<T>::vote(rationale.len().saturated_into())]
+        #[weight = WeightInfoEngine::<T>::vote(to_kb(rationale.len().saturated_into()))]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,

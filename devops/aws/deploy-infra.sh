@@ -57,6 +57,8 @@ $BUILD_SERVER
 [validators]
 $VAL1
 $VAL2
+
+[boot]
 $VAL3
 
 [rpc]

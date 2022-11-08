@@ -49,7 +49,8 @@ function create_initial_config {
     \"balances\":[
       [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
       [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
-    ]
+    ],
+    \"vesting\": []
   }" > ${DATA_PATH}/initial-balances.json
 
 }
@@ -67,7 +68,7 @@ function create_chainspec_file {
     docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder \
 	   joystream/node:${RUNTIME_TAG} \
 	   new \
-	   --authority-seeds Alice \
+	   --authorities //Alice \
 	   --sudo-account ${SUDO_ACCOUNT} \
 	   --deployment dev \
 	   --chain-spec-path /data/chain-spec.json \

@@ -16,17 +16,18 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-09-07 (Y/M/D)
+//! DATE: 2022-10-20 (Y/M/D)
 //!
 //! SHORT-NAME: `block`, LONG-NAME: `BlockExecution`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
 //! WEIGHT-PATH: `./../runtime/src/weights`
-//! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1`, WEIGHT-ADD: `0`
+//! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
 //   ./../target/release/joystream-node
 //   benchmark
 //   overhead
+//   --base-path=/mnt/disks/local-ssd/
 //   --chain=dev
 //   --execution=wasm
 //   --warmup=10
@@ -40,19 +41,19 @@ use frame_support::{
 
 parameter_types! {
     /// Time to execute an empty block.
-    /// Calculated by multiplying the *Average* with `1` and adding `0`.
+    /// Calculated by multiplying the *Average* with `1.0` and adding `0`.
     ///
     /// Stats nanoseconds:
-    ///   Min, Max: 4_833_541, 5_045_666
-    ///   Average:  4_870_839
-    ///   Median:   4_869_625
-    ///   Std-Dev:  31113.72
+    ///   Min, Max: 5_881_640, 6_082_189
+    ///   Average:  5_919_668
+    ///   Median:   5_912_480
+    ///   Std-Dev:  30722.3
     ///
     /// Percentiles nanoseconds:
-    ///   99th: 5_010_000
-    ///   95th: 4_909_416
-    ///   75th: 4_883_291
-    pub const BlockExecutionWeight: Weight = 4_870_839 * WEIGHT_PER_NANOS;
+    ///   99th: 6_020_750
+    ///   95th: 5_985_310
+    ///   75th: 5_923_109
+    pub const BlockExecutionWeight: Weight = 5_919_668 * WEIGHT_PER_NANOS;
 }
 
 #[cfg(test)]

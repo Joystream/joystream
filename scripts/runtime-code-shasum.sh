@@ -21,7 +21,6 @@ ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020
     runtime \
     runtime-modules \
     joystream-node.Dockerfile \
-    joystream-node-armv7.Dockerfile \
     bin \
     | if [[ -n "$RUNTIME_PROFILE" ]]; then ${SED} '$a'"$RUNTIME_PROFILE"; else tee; fi \
     | shasum \

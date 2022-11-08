@@ -151,3 +151,8 @@ pub trait BudgetManager<AccountId, Balance: Saturating> {
         Self::set_budget(new_budget);
     }
 }
+
+/// Bytes to kilobytes converter for metadata
+pub fn to_kb(bytes: u32) -> u32 {
+    (bytes.saturating_add(999)).saturating_div(1000)
+}
