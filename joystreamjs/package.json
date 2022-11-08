@@ -6,10 +6,14 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
-    "./content": "./lib/content/index.js",
-    "./lib/content": "./lib/content/index.js",
-    "./utils": "./lib/utils/index.js",
-    "./lib/utils": "./lib/utils/index.js"
+    "./content": {
+      "import": "./lib/mjs/content/index.js",
+      "require": "./lib/cjs/content/index.js"
+    },
+    "./utils": {
+      "import": "./lib/mjs/utils/index.js",
+      "require": "./lib/cjs/utils/index.js"
+    }
   },
   "typesVersions": {
     "*": {
@@ -27,7 +31,7 @@
     "directory": "joystreamjs"
   },
   "scripts": {
-    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "build": "tsc --project tsconfig.esm.json & tsc --project tsconfig.cjs.json",
     "format": "prettier ./ --write",
     "generate:schema-typings": "rm -rf ./src/utils/typings && json2ts -i ./src/utils/schemas/json/ -o ./typings && yarn format",
     "generate:all": "yarn generate:schema-typings"

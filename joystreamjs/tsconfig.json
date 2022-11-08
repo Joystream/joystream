@@ -1,12 +1,10 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "declarationDir": "lib",
     "importHelpers": true,
-    "module": "CommonJS",
-    "outDir": "lib",
     "rootDir": "src",
     "strict": true,
-    "target": "es2017",
     "esModuleInterop": true,
     "moduleResolution": "node",
     "types": ["node"],
