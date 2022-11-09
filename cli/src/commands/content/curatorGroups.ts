@@ -1,5 +1,4 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-// import chalk from 'chalk'
 import { displayTable } from '../../helpers/display'
 
 export default class CuratorGroupsCommand extends ContentDirectoryCommandBase {
@@ -17,6 +16,7 @@ export default class CuratorGroupsCommand extends ContentDirectoryCommandBase {
           'ID': id.toString(),
           'Status': group.active.valueOf() ? 'Active' : 'Inactive',
           'Members': Array.from(group.curators).length,
+          'Permissions': Array.from(group.permissionsByLevel).length,
         })),
         5
       )

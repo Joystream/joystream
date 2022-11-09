@@ -2,23 +2,21 @@
 
 use super::*;
 use frame_benchmarking::{account, benchmarks};
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::One;
-use sp_std::boxed::Box;
 use sp_std::convert::TryInto;
 use sp_std::vec;
-use sp_std::vec::Vec;
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
+fn set_wg_and_council_budget<T: Config>(budget: u32, group: WorkingGroup) {
     Council::<T>::set_budget(RawOrigin::Root.into(), BalanceOf::<T>::from(budget)).unwrap();
 
     T::set_working_group_budget(group, BalanceOf::<T>::from(budget));
@@ -36,7 +34,7 @@ fn set_wg_and_council_budget<T: Trait>(budget: u32, group: WorkingGroup) {
     );
 }
 
-fn assert_new_budgets<T: Trait>(
+fn assert_new_budgets<T: Config>(
     new_budget_council: u32,
     new_budget_working_group: u32,
     group: WorkingGroup,
@@ -61,14 +59,13 @@ fn assert_new_budgets<T: Trait>(
     );
 }
 
-const MAX_BYTES: u32 = 50000;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 benchmarks! {
-    _{ }
 
     execute_signal_proposal {
-        let i in 1 .. MAX_BYTES;
-        let signal = vec![0u8; i.try_into().unwrap()];
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let signal = vec![0u8; (i * 1000).try_into().unwrap()];
     }: _(RawOrigin::Root, signal.clone())
     verify {
         assert_last_event::<T>(RawEvent::Signaled(signal).into());
@@ -101,7 +98,8 @@ benchmarks! {
     burn_account_tokens {
         let account_id = account::<T::AccountId>("caller", 0, 0);
         let initial_issuance = Balances::<T>::total_issuance();
-        let initial_balance: BalanceOf<T> = 15u32.into();
+        let initial_balance: BalanceOf<T> = <T as balances::Config>::ExistentialDeposit::get() + 100_000_000u32.into(); // should be larger than existential deposit
+
         let _ = Balances::<T>::make_free_balance_be(&account_id, initial_balance);
 
         assert_eq!(Balances::<T>::free_balance(&account_id), initial_balance);
@@ -116,35 +114,35 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::mocks::{initial_test_ext, Test};
     use frame_support::assert_ok;
+    type Utility = crate::Module<Test>;
 
     #[test]
     fn test_execute_signal_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_execute_signal_proposal::<Test>());
+            assert_ok!(Utility::test_benchmark_execute_signal_proposal());
         });
     }
 
     #[test]
     fn test_update_working_group_budget_positive() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive::<Test>());
+            assert_ok!(Utility::test_benchmark_update_working_group_budget_positive());
         });
     }
 
     #[test]
     fn test_update_working_group_budget_negative() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative::<Test>());
+            assert_ok!(Utility::test_benchmark_update_working_group_budget_negative());
         });
     }
 
     #[test]
     fn test_burn_tokens() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_burn_account_tokens::<Test>());
+            assert_ok!(Utility::test_benchmark_burn_account_tokens());
         });
     }
 }

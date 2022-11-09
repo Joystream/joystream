@@ -126,6 +126,11 @@ export class ConfigParserService {
       })
   }
 
+  public getNodeVersion(): string {
+    const packageJSON = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../package.json')).toString())
+    return String(packageJSON.version)
+  }
+
   public parse(): Config {
     const { configPath } = this
     let inputConfig: Record<string, unknown> = {}
@@ -166,6 +171,7 @@ export class ConfigParserService {
 
     const parsedConfig: Config = {
       ...configJson,
+      version: this.getNodeVersion(),
       directories,
       keys,
       limits: {

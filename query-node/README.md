@@ -32,6 +32,7 @@ yarn workspace query-node-root start
 ```
 
 This script script will:
+
 - Bring up `joystream-node` service (if not already started)
 - Bring up `db` service (query node is using a PostgreSQL database to store the data)
 - Configure the database (`yarn workspace query-node config:dev`)
@@ -54,31 +55,37 @@ yarn workspace query-node-root kill
 Follow the links for more information about the [indexer](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer) service and [indexer-api-gateway](https://github.com/Joystream/hydra/tree/master/packages/hydra-indexer-gateway).
 
 ## GraphQL Playground assets url
-Query node's user interface, GraphQL Playground, is expecting to be served at `/graphql`. 
+
+Query node's user interface, GraphQL Playground, is expecting to be served at `/graphql`.
 If you are serving the files on path like `/query/server/graphql` via some nginx proxy, aliasing, etc. you will need to provide
 the base url to query node server via `GRAPHQL_PLAYGROUND_CDN` environment variable.
 
 ```
 # use the following when serving playground at `/query/server/graphql`
-GRAPHQL_PLAYGROUND_CDN="query/server" yarn workspace query-node-root query-node:start:dev 
+GRAPHQL_PLAYGROUND_CDN="query/server" yarn workspace query-node-root query-node:start:dev
 ```
+
 ## Development
 
 Run integration tests
+
 ```
 ./query-node/run-tests.sh
 ```
 
 To run tests and keep services alive for further inspection, set `DEBUG` shell variable to any true-ish value.
+
 ```
 DEBUG=true ./query-node/run-tests.sh
 ```
+
 You can then use queries manually in GraphQL Playground (http://localhost:8081/graphql),
 see docker logs (e.g. `docker logs processor`), etc.
 
 After running tests in debug mode, you can run more testing scenarios or repeat some.
 This assumes the scenario is repeatable and any previous test errors didn't break
 the blockchain or processor state in a critical way.
+
 ```
 DEBUG=true ./query-node/run-tests.sh # run tests first and make sure services stay alive
 REUSE_KEYS=true yarn workspace network-tests run-test-scenario content-directory
@@ -88,9 +95,11 @@ Commenting out some of the scenario's flow calls in `network-tests/src/scenarios
 scope of development or debugging might speed out the process.
 
 ### Processor setups
+
 **Running processor with local Joystream node and local indexer.**
 It's useful when you want to interact with Joystream node via Pioneer or Atlas and want to check results
 processed by the processor.
+
 ```
 docker-compose up -d joystream-node indexer hydra-indexer-gateway processor
 
@@ -101,6 +110,7 @@ docker-compose up -d graphql-server
 **Running processor with remote Joystream node and local indexer.**
 It's useful when you want to synchronize the indexer and processor with Joystream node hosted remotely from scratch.
 You can analyze any errors in docker logs and tweak mappings.
+
 ```
 JOYSTREAM_NODE_WS=wss://target-domain.tmp/ws-rpc docker-compose up -d indexer hydra-indexer-gateway processor
 ```
@@ -108,11 +118,13 @@ JOYSTREAM_NODE_WS=wss://target-domain.tmp/ws-rpc docker-compose up -d indexer hy
 **Running processor with remote Joystream node and remote indexer.**
 When debugging an error that happened in processor mappings on a remote server that has its own indexer, you can use it
 and skip potentially time-consuming indexer synchronization
+
 ```
 PROCESSOR_INDEXER_GATEWAY=https://target-domain.tmp/query-node/indexer/graphql docker-compose up -d processor
 ```
 
 ### Restart processor from the beginning
+
 When debugging an error in mappings that breaks the state and processor needs to be restarted
 and mappings processed from the beginning, use the following commands.
 
@@ -128,6 +140,7 @@ docker-compose up -d processor # start processor again
 ```
 
 ### Debugging Hydra errors
+
 In situations when an error inside of Hydra occurs but it's not clear what event caused the issue,
 it might help to add `console.log(nextBlock.events)` to
 `node_modules/@joystream/hydra-processor/lib/process/MappingsProcessor.js`'s `processBlock` function

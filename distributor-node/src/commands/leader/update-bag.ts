@@ -1,5 +1,4 @@
 import { createType } from '@joystream/types'
-import { DistributionBucketIndexSet } from '@joystream/types/storage'
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
 
@@ -43,8 +42,8 @@ export default class LeaderUpdateBag extends AccountsCommandBase {
       this.api.tx.storage.updateDistributionBucketsForBag(
         bagId,
         familyId,
-        createType<DistributionBucketIndexSet, 'DistributionBucketIndexSet'>('DistributionBucketIndexSet', add),
-        createType<DistributionBucketIndexSet, 'DistributionBucketIndexSet'>('DistributionBucketIndexSet', remove)
+        createType('BTreeSet<u64>', add),
+        createType('BTreeSet<u64>', remove)
       )
     )
     this.log('Bag succesfully updated!')

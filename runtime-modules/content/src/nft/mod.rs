@@ -1,11 +1,12 @@
 mod types;
-use sp_runtime::traits::CheckedSub;
+use common::costs::{burn_from_usable, has_sufficient_balance_for_payment};
 use sp_std::borrow::ToOwned;
+use sp_std::cmp::min;
 pub use types::*;
 
 use crate::*;
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     pub(crate) fn ensure_has_sufficient_balance_for_bid(
         participant: &T::AccountId,
         bid: BalanceOf<T>,
@@ -14,7 +15,7 @@ impl<T: Trait> Module<T> {
         let old_bid = old_bid.unwrap_or_else(Zero::zero);
 
         ensure!(
-            Balances::<T>::usable_balance(participant) >= bid.saturating_sub(old_bid),
+            has_sufficient_balance_for_payment::<T>(participant, bid.saturating_sub(old_bid)),
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -30,14 +31,14 @@ impl<T: Trait> Module<T> {
             if bid >= old_bid {
                 // Deposit the difference to the module account.
                 let bid_diff_amount = bid.saturating_sub(old_bid);
-                ContentTreasury::<T>::deposit(&participant, bid_diff_amount)
+                ContentTreasury::<T>::deposit(participant, bid_diff_amount)
             } else {
                 // Withdraw the difference from the module account.
                 let bid_diff_amount = old_bid.saturating_sub(bid);
-                ContentTreasury::<T>::withdraw(&participant, bid_diff_amount)
+                ContentTreasury::<T>::withdraw(participant, bid_diff_amount)
             }
         } else {
-            ContentTreasury::<T>::deposit(&participant, bid)
+            ContentTreasury::<T>::deposit(participant, bid)
         }
     }
 
@@ -46,7 +47,7 @@ impl<T: Trait> Module<T> {
         participant: &T::AccountId,
         bid: BalanceOf<T>,
     ) -> DispatchResult {
-        ContentTreasury::<T>::withdraw(&participant, bid)
+        ContentTreasury::<T>::withdraw(participant, bid)
     }
 
     /// Safety/bound checks for english auction parameters
@@ -75,10 +76,12 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
+        Self::ensure_whitelist_members_exist(&auction_params.whitelist)?;
+
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
-                Error::<T>::BuyNowIsLessThenStartingPrice
+                Error::<T>::BuyNowMustBeGreaterThanStartingPrice,
             );
         }
 
@@ -95,6 +98,8 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
+        Self::ensure_whitelist_members_exist(&auction_params.whitelist)?;
+
         // validate forward start limits
         if let Some(starts_at) = auction_params.starts_at {
             Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
@@ -103,7 +108,7 @@ impl<T: Trait> Module<T> {
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
-                Error::<T>::BuyNowIsLessThenStartingPrice
+                Error::<T>::BuyNowMustBeGreaterThanStartingPrice
             );
         }
 
@@ -115,13 +120,13 @@ impl<T: Trait> Module<T> {
         starts_at: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            starts_at >= <frame_system::Module<T>>::block_number(),
+            starts_at >= <frame_system::Pallet<T>>::block_number(),
             Error::<T>::StartsAtLowerBoundExceeded
         );
 
         ensure!(
             starts_at
-                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
+                <= <frame_system::Pallet<T>>::block_number() + Self::auction_starts_at_max_delta(),
             Error::<T>::StartsAtUpperBoundExceeded
         );
 
@@ -165,12 +170,24 @@ impl<T: Trait> Module<T> {
             1 => Err(Error::<T>::WhitelistHasOnlyOneMember.into()),
             length => {
                 ensure!(
-                    length <= Self::max_auction_whitelist_length() as usize,
+                    length as u32 <= T::MaxNftAuctionWhitelistLength::get(),
                     Error::<T>::MaxAuctionWhiteListLengthUpperBoundExceeded
                 );
                 Ok(())
             }
         }
+    }
+
+    pub(crate) fn ensure_whitelist_members_exist(
+        whitelist: &BTreeSet<T::MemberId>,
+    ) -> DispatchResult {
+        for member_id in whitelist {
+            ensure!(
+                T::MemberAuthenticator::controller_account_id(*member_id).is_ok(),
+                Error::<T>::WhitelistedMemberDoesNotExist
+            );
+        }
+        Ok(())
     }
 
     /// Ensure auction duration bounds satisfied
@@ -235,13 +252,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Ensure given participant have sufficient free balance
-    pub(crate) fn ensure_sufficient_free_balance(
+    /// Ensure given participant has sufficient usable balance to cover the nft purchase
+    pub(crate) fn ensure_sufficient_balance_to_pay_for_nft(
         participant_account_id: &T::AccountId,
-        balance: BalanceOf<T>,
+        price: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            Balances::<T>::can_slash(participant_account_id, balance),
+            has_sufficient_balance_for_payment::<T>(participant_account_id, price),
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -251,11 +268,14 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_buy_now(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
-        offering: BalanceOf<T>,
+        witness_price: BalanceOf<T>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
-            ensure!(*price == offering, Error::<T>::InvalidBuyNowPriceProvided);
-            Self::ensure_sufficient_free_balance(participant_account_id, *price)
+            ensure!(
+                *price == witness_price,
+                Error::<T>::InvalidBuyNowWitnessPriceProvided
+            );
+            Self::ensure_sufficient_balance_to_pay_for_nft(participant_account_id, *price)
         } else {
             Err(Error::<T>::NftNotInBuyNowState.into())
         }
@@ -265,15 +285,22 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_new_pending_offer_available_to_proceed(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
+        witness_price: Option<<T as balances::Config>::Balance>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(member_id, price) =
             &nft.transactional_status
         {
+            // Validate witness price
+            ensure!(
+                *price == witness_price,
+                Error::<T>::InvalidNftOfferWitnessPriceProvided
+            );
+
             // Authorize participant under given member id
-            ensure_member_auth_success::<T>(participant_account_id, &member_id)?;
+            ensure_member_auth_success::<T>(participant_account_id, member_id)?;
 
             if let Some(price) = price {
-                Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
+                Self::ensure_sufficient_balance_to_pay_for_nft(participant_account_id, *price)?;
             }
             Ok(())
         } else {
@@ -288,18 +315,21 @@ impl<T: Trait> Module<T> {
         old_owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
-    ) -> Nft<T> {
+    ) -> Result<Nft<T>, DispatchError> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             Self::complete_payment(
                 royalty_payment,
                 price.to_owned(),
                 new_owner_account_id,
                 old_owner_account_id,
-            );
+            )?;
         }
 
-        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
-            .with_member_owner(new_owner)
+        let updated_nft = nft
+            .with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(new_owner);
+
+        Ok(updated_nft)
     }
 
     /// Completes nft offer
@@ -308,7 +338,7 @@ impl<T: Trait> Module<T> {
         royalty_payment: Option<(Royalty, T::AccountId)>,
         owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
-    ) -> Nft<T> {
+    ) -> Result<Nft<T>, DispatchError> {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
             &nft.transactional_status
         {
@@ -318,15 +348,17 @@ impl<T: Trait> Module<T> {
                     *price,
                     new_owner_account_id,
                     owner_account_id,
-                );
+                )?;
             }
             nft.owner = NftOwner::Member(*to);
         }
 
-        Nft::<T> {
+        let updated_nft = Nft::<T> {
             transactional_status: TransactionalStatus::<T>::Idle,
             ..nft
-        }
+        };
+
+        Ok(updated_nft)
     }
 
     /// Complete payment, either auction related or buy now/offer
@@ -335,42 +367,46 @@ impl<T: Trait> Module<T> {
         amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
-    ) {
-        let _ = Balances::<T>::slash(&sender_account_id, amount);
+    ) -> DispatchResult {
+        // burn sender full amount
+        burn_from_usable::<T>(&sender_account_id, amount)?;
 
-        let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
-        let amount_after_platform_fee = amount.saturating_sub(platform_fee);
-        let royalty_fee = royalty_payment
-            .as_ref()
-            .map_or(<T as balances::Trait>::Balance::zero(), |(r, _)| {
-                r.mul_floor(amount)
-            });
+        // compute platform fee
+        let platform_fee_pct = Self::platform_fee_percentage();
+        let platform_fee = platform_fee_pct.mul_floor(amount);
 
-        let amount_for_receiver = amount_after_platform_fee
-            .checked_sub(&royalty_fee)
-            .unwrap_or(amount_after_platform_fee);
+        // established net amount and pay royalties if necessary
+        let net_amount = if let Some((nominal_royalty_pct, creator_account)) = royalty_payment {
+            // min(creator_royalty, 100% - platform_fee_percentage) is used to avoid underflow
+            let effective_royalty_pct = min(
+                nominal_royalty_pct,
+                Perbill::one().saturating_sub(platform_fee_pct),
+            );
+            let royalty = effective_royalty_pct.mul_floor(amount);
 
-        if let Some(ref receiver_account) = receiver_account_id {
-            if !amount_for_receiver.is_zero() {
-                let _ = Balances::<T>::deposit_creating(receiver_account, amount_for_receiver);
-            }
+            // deposit to creator account
+            let _ = Balances::<T>::deposit_creating(&creator_account, royalty);
+
+            amount.saturating_sub(platform_fee).saturating_sub(royalty)
+        } else {
+            amount.saturating_sub(platform_fee)
+        };
+
+        if let Some(ref nft_owner_account) = receiver_account_id {
+            let _ = Balances::<T>::deposit_creating(nft_owner_account, net_amount);
         }
 
-        if let Some((_, ref royalty_reward_account)) = royalty_payment {
-            if !royalty_fee.is_zero() {
-                let _ = Balances::<T>::deposit_creating(royalty_reward_account, royalty_fee);
-            }
-        }
+        Ok(())
     }
 
     pub(crate) fn complete_auction(
         nft: Nft<T>,
-        in_channel: T::ChannelId,
+        video: &Video<T>,
         royalty_payment: Option<(Royalty, T::AccountId)>,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
-    ) -> Nft<T> {
-        let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
+    ) -> Result<Nft<T>, DispatchError> {
+        let account_deposit_into = Self::ensure_nft_owner_has_beneficiary_account(video, &nft).ok();
         let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
@@ -378,19 +414,29 @@ impl<T: Trait> Module<T> {
             amount,
             account_withdraw_from,
             account_deposit_into,
-        );
+        )?;
 
-        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
-            .with_member_owner(winner_id)
+        let updated_nft = nft
+            .with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(winner_id);
+
+        Ok(updated_nft)
     }
 
-    pub(crate) fn ensure_owner_account_id(
-        channel_id: T::ChannelId,
+    /// NFT owned by:
+    /// - Member: member controller account is used
+    /// - Channel: channel account
+    /// In order to statically guarantee that `video.in_channel` exists, by leveraging the
+    /// Runtime invariant: `video` exists => `video.in_channel` exists
+    pub(crate) fn ensure_nft_owner_has_beneficiary_account(
+        video: &Video<T>,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
-            NftOwner::ChannelOwner => Ok(ContentTreasury::<T>::account_for_channel(channel_id)),
+            NftOwner::ChannelOwner => {
+                Ok(ContentTreasury::<T>::account_for_channel(video.in_channel))
+            }
         }
     }
 

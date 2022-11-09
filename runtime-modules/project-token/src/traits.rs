@@ -1,5 +1,6 @@
 use frame_support::dispatch::DispatchResult;
 use sp_runtime::DispatchError;
+use sp_std::vec::Vec;
 
 use crate::types::YearlyRate;
 
@@ -29,6 +30,7 @@ pub trait PalletToken<
         src_member_id: MemberId,
         bloat_bond_payer: AccountId,
         outputs: TransfersWithVesting,
+        metadata: Vec<u8>,
     ) -> DispatchResult;
 
     /// Update existing, upcoming token sale
@@ -64,13 +66,19 @@ pub trait PalletToken<
         token_id: TokenId,
         start: Option<BlockNumber>,
         duration: BlockNumber,
-        allocation_source: AccountId,
-        allocation_amount: JoyBalance,
-    ) -> DispatchResult;
+        revenue_source_account: AccountId,
+        revenue_amount: JoyBalance,
+    ) -> Result<JoyBalance, DispatchError>;
 
     /// Finalize split by sending back eventual JOYs leftover
     fn finalize_revenue_split(token_id: TokenId, account_id: AccountId) -> DispatchResult;
 
     /// Finalize creator token sale and recover unsold tokens
     fn finalize_token_sale(token_id: TokenId) -> Result<JoyBalance, DispatchError>;
+
+    /// Establish whether the token has an unfinalized revenue split
+    fn is_revenue_split_inactive(token_id: TokenId) -> bool;
+
+    /// Establish whether the token has an unfinalized sale
+    fn is_sale_unscheduled(token_id: TokenId) -> bool;
 }

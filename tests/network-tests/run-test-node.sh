@@ -7,57 +7,57 @@ cd $SCRIPT_PATH
 # Location used to store chain data, generated spec file and initial members
 # and balances for the test chain.
 DATA_PATH=./data
+rm -Rf ${DATA_PATH}/alice
+rm -Rf ${DATA_PATH}/auth-*
 
-# Initial account balance for Alice
-# Alice is the source of funds for all new accounts that are created in the tests.
-ALICE_INITIAL_BALANCE=100000000
+INITIAL_BALANCE="100000000"
+ALICE="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+BOB="5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+CHARLIE="5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
 
 mkdir -p ${DATA_PATH}
 
 echo "{
   \"balances\":[
-    [\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\", ${ALICE_INITIAL_BALANCE}]
+    [\"${ALICE}\", ${INITIAL_BALANCE}],
+    [\"${BOB}\", ${INITIAL_BALANCE}],
+    [\"${CHARLIE}\", ${INITIAL_BALANCE}]
+  ],
+  \"vesting\":[
+    [\"${CHARLIE}\", "0", "25", "10000"]
   ]
 }" > ${DATA_PATH}/initial-balances.json
 
-# Make Alice a member
-echo '
-  [{
-    "member_id": 0,
-    "root_account": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "controller_account": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "handle":"alice_with_a_long_handle",
-    "avatar_uri":"https://alice.com/avatar.png",
-    "about":"Alice",
-    "name": "Alice",
-    "registered_at_time": 0
-  },
-  {
-    "member_id": 1,
-    "root_account": "5FUeDYFzvvizNhhHyidsuchG7jnToKj7zfimbWBpWKzT9Fqe",
-    "controller_account": "5FUeDYFzvvizNhhHyidsuchG7jnToKj7zfimbWBpWKzT9Fqe",
-    "handle":"bob_with_a_long_handle",
-    "avatar_uri":"https://bob.com/avatar.png",
-    "about":"Bob",
-    "name": "Bob",
-    "registered_at_time": 0
-  }
-]
-' > ${DATA_PATH}/initial-members.json
-
-function cleanup() {
-    rm -Rf ${DATA_PATH}/alice
-}
-
-trap cleanup EXIT
+# Override initial balances from external source
+if [[ $INITIAL_BALANCES == http* ]];
+then
+  >&2 echo "fetching ${INITIAL_BALANCES}"
+  wget -O ${DATA_PATH}/initial-balances.json ${INITIAL_BALANCES}
+else
+  if [ ! -z "$INITIAL_BALANCES" ]; then
+    if jq -e . >/dev/null 2>&1 <<<"$INITIAL_BALANCES"; then
+      >&2 echo "Detected some valid JSON in INITIAL_BALANCES"
+      echo $INITIAL_BALANCES > ${DATA_PATH}/initial-balances.json
+    else
+      >&2 echo "Failed to parse INITIAL_BALANCES as JSON, or got false/null"
+    fi
+  fi
+fi
 
 # Create a chain spec file
-../../target/release/chain-spec-builder new -a Alice \
+../../target/release/chain-spec-builder \
+  new \
+  --fund-accounts \
+  --authorities //Alice \
   --chain-spec-path ${DATA_PATH}/chain-spec.json \
   --initial-balances-path ${DATA_PATH}/initial-balances.json \
-  --initial-members-path ${DATA_PATH}/initial-members.json \
   --deployment dev \
-  --sudo-account 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+  --sudo-account ${ALICE} \
+  --keystore-path ${DATA_PATH}
 
 ../../target/release/joystream-node --base-path ${DATA_PATH}/alice \
-  --validator --chain ${DATA_PATH}/chain-spec.json --alice --unsafe-ws-external --rpc-cors all
+  --keystore-path ${DATA_PATH}/auth-0 \
+  --validator --chain ${DATA_PATH}/chain-spec.json \
+  --unsafe-ws-external --unsafe-rpc-external \
+  --rpc-methods Unsafe --rpc-cors=all \
+  --pruning=archive --no-telemetry

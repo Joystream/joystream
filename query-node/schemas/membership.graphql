@@ -10,6 +10,29 @@ type AvatarUri @variant {
 
 union Avatar = AvatarObject | AvatarUri
 
+enum MembershipExternalResourceType {
+  EMAIL
+  HYPERLINK
+  TWITTER
+  TELEGRAM
+  DISCORD
+  FACEBOOK
+  YOUTUBE
+  MATRIX
+  IRC
+  WECHAT
+  WHATSAPP
+}
+
+type MembershipExternalResource @entity {
+  "Unique combination of {MemberMetadata.id}-{resourceType}"
+  id: ID!
+  type: MembershipExternalResourceType!
+  value: String!
+  memberMetadata: MemberMetadata!
+  member: Membership
+}
+
 type MemberMetadata @entity {
   "Member's name"
   name: String
@@ -19,6 +42,11 @@ type MemberMetadata @entity {
 
   "Short text chosen by member to share information about themselves"
   about: String
+
+  member: Membership @derivedFrom(field: "metadata")
+
+  "Social media handles, email address..."
+  externalResources: [MembershipExternalResource] @derivedFrom(field: "memberMetadata")
 }
 
 type MembershipEntryPaid @variant {
@@ -33,11 +61,28 @@ type MembershipEntryInvited @variant {
   memberInvitedEvent: MemberInvitedEvent
 }
 
+type MembershipEntryGifted @variant {
+  "The event the member was gifted in"
+  # Must be optional because of member.entry <=> membershipGiftedEvent.newMember cross relationship
+  membershipGiftedEvent: MembershipGiftedEvent
+}
+
+type MembershipEntryMemberCreated @variant {
+  "The event the member was created in"
+  # Must be optional because of member.entry <=> memberCreatedEvent.newMember cross relationship
+  memberCreatedEvent: MemberCreatedEvent
+}
+
 type MembershipEntryGenesis @variant {
   phantom: Int
 }
 
-union MembershipEntryMethod = MembershipEntryPaid | MembershipEntryInvited | MembershipEntryGenesis
+union MembershipEntryMethod =
+    MembershipEntryPaid
+  | MembershipEntryInvited
+  | MembershipEntryGifted
+  | MembershipEntryMemberCreated
+  | MembershipEntryGenesis
 
 "Stored information about a registered user"
 type Membership @entity {
@@ -86,6 +131,9 @@ type Membership @entity {
   "Whether member is elected in the current council."
   isCouncilMember: Boolean!
 
+  "Social media handles, email address..."
+  externalResources: [MembershipExternalResource] @derivedFrom(field: "member")
+
   "Member's working group roles (current and past)"
   roles: [Worker!] @derivedFrom(field: "membership")
 
@@ -100,9 +148,16 @@ type Membership @entity {
   "Content channels the member owns"
   channels: [Channel!] @derivedFrom(field: "ownerMember")
 
-  "List of channels the member has collaborator access to"
-  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
+  "List of channel collaborators with their permissions"
+  collaboratorInChannels: [Collaborator!]! @derivedFrom(field: "member")
 
+  # Required for Channel->bannedMembers Many-to-Many relationship
+  "List of channels the member is baned from participating in"
+  memberBannedFromChannels: [Channel!] @derivedFrom(field: "bannedMembers")
+
+  # # Required for CommentReaction->members Many-to-Many relationship
+  # "List of comment reactions the member has made globally"
+  # memberGlobalCommentReactions: [CommentReaction!] @derivedFrom(field: "members")
   # Council & Referendum relations
 
   #"Council reward payment made received by the member."
@@ -136,21 +191,4 @@ type Membership @entity {
   # Required for BidMadeCompletingAuctionEvent->members Many-to-Many relationship
   "Member as bidder in BidMadeCompletingAuctionEvent/s."
   memberBidMadeCompletingAuctionEvents: [BidMadeCompletingAuctionEvent!] @derivedFrom(field: "bidders")
-}
-
-type MembershipSystemSnapshot @entity {
-  "The snapshot block number"
-  snapshotBlock: Int!
-
-  "Initial invitation count of a new member."
-  defaultInviteCount: Int!
-
-  "Current price to buy a membership."
-  membershipPrice: BigInt!
-
-  "Percentage of tokens diverted to invitor."
-  referralCut: Int!
-
-  "The initial, locked, balance credited to controller account of invitee."
-  invitedInitialBalance: BigInt!
 }

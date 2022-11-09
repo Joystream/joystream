@@ -1,0 +1,146 @@
+syntax = "proto2";
+
+// reacting, unreacting, and changing reaction to video
+message ReactVideo {
+    // ID of the video to react
+    required uint64 video_id = 1;
+
+    // The enum must be wrapped inside "message", otherwide it breaks protobufjs
+    // Reacting again with the same message option will cancel the previous reaction
+    enum Reaction {
+        LIKE = 0;
+        UNLIKE = 1;
+    }
+
+    // Selected reaction
+    required Reaction reaction = 2;
+}
+
+// reacting, unreacting to a comment
+message ReactComment {
+    // ID of the comment to react
+    required string comment_id = 1;
+
+    // ID of the selected reaction
+    required uint32 reaction_id = 2;
+}
+
+// create comment
+message CreateComment {
+    // ID of the video
+    required uint64 video_id = 1;
+
+    // ID of comment member wants to reply (empty if new comment is parent comment)
+    optional string parent_comment_id = 2;
+
+    // Comment text
+    required string body = 3;
+}
+
+// edit comment by author
+message EditComment {
+    // ID of the comment whose text is being edited
+    required string comment_id = 1;
+
+    // New comment body
+    required string new_body = 2;
+}
+
+// delete comment by author
+message DeleteComment {
+    // ID of the comment which will be deleted
+    required string comment_id = 1;
+}
+
+// pin comment on a video by channel owner
+message PinOrUnpinComment {
+    // ID of the video
+    required uint64 video_id = 1;
+
+    // ID of the comment which will be pinned
+    required string comment_id = 2;
+
+    enum Option {
+        PIN = 0; // Pin comment on video (nothing happens if comment is already pinned)
+        UNPIN = 1; // Unpin comment from video (nothing happens if comment is already unpinned)
+    }
+
+    // Selected option to pin or unpin comment from channel
+    required Option option = 3;
+}
+
+
+// delete comment by moderator or channel owner;
+message ModerateComment {
+    // ID of comment that will be deleted by moderator
+    required string comment_id = 1;
+
+    // why moderator wants to delete this comment
+    required string rationale = 2;
+}
+
+message BanOrUnbanMemberFromChannel {
+    // ID of the member that channel owner wants to ban from participating on any video.
+    required uint64 member_id = 1;
+
+    enum Option {
+        BAN = 0; // Ban member (nothing happens if member is already banned)
+        UNBAN = 1; // Unban member (nothing happens if member is already unbanned)
+    }
+
+    // Selected option to ban or unban member from the channel
+    required Option option = 2;
+}
+
+// Enable or disable reactions on a single video
+message VideoReactionsPreference {
+    // ID of the video
+    required uint64 video_id = 1;
+
+
+    enum Option {
+        ENABLE = 0; // Enable reactions (nothing happens if they are already enabled)
+        DISABLE = 1; // Disable reactions (nothing happens if they are already disabled)
+    }
+
+    // Selected option to enable or disable comment section
+    required Option option = 2;
+}
+
+message CreateVideoCategory {
+    required string name = 1;
+    optional string description = 2;
+    optional string parent_category_id = 3;
+}
+
+message MemberRemarked {
+    // member_remark extrinsic would emit event containing
+    // any one of the following serialized messages
+    oneof member_remarked {
+        ReactVideo react_video = 1;
+        ReactComment react_comment = 2;
+        CreateComment create_comment = 3;
+        EditComment edit_comment = 4;
+        DeleteComment delete_comment = 5;
+        CreateVideoCategory create_video_category = 6;
+    }
+}
+
+message ChannelModeratorRemarked {
+    // channel_moderator_remark extrinsic would emit event containing
+    // any one of the following serialized messages
+    oneof channel_moderator_remarked {
+        ModerateComment moderate_comment = 1;
+    }
+}
+
+message ChannelOwnerRemarked {
+    // channel_owner_remark extrinsic would emit event containing
+    // any one of the following serialized messages
+    oneof channel_owner_remarked {
+        PinOrUnpinComment pin_or_unpin_comment = 1;
+        BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
+        VideoReactionsPreference video_reactions_preference = 3;
+        ModerateComment moderate_comment = 5;
+    }
+}

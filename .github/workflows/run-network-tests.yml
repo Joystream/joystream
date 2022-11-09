@@ -4,26 +4,58 @@ on:
     types: [opened, synchronize]
 
   workflow_dispatch:
-    # TODO: add an input so dispatcher can specify a list of tests to run,
-    # composed of the job ids separated by `:`
-    # for eg.
-    #   'network_tests_1:network_tests_3'
-    #   'network_tests_2'
-    # inputs:
-    #   test_to_run:
-    #     description: 'Tests to run'
-    #     required: false
-    #     default: 'all'
+  push:
 
 jobs:
+  tests_build_ubuntu:
+    name: Ubuntu Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn install --frozen-lockfile
+        yarn workspace @joystream/types build
+        yarn workspace @joystream/metadata-protobuf build
+        yarn workspace @joystream/cli build
+        yarn workspace network-tests build
+
+  tests_build_osx:
+    name: MacOS Checks
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn install --frozen-lockfile --network-timeout 120000
+        yarn workspace @joystream/types build
+        yarn workspace @joystream/metadata-protobuf build
+        yarn workspace @joystream/cli build
+        yarn workspace network-tests build
+
   build_images:
     name: Build joystream/node
+    needs: tests_build_ubuntu
     runs-on: ubuntu-latest
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
 
@@ -39,7 +71,7 @@ jobs:
         run: mkdir ~/docker-images
 
       - name: Cache docker images
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: joystream-node-docker
         with:
@@ -65,35 +97,71 @@ jobs:
             cp joystream-node-docker-image.tar.gz ~/docker-images/
           fi
 
-      - name: Build new joystream/node image
+      - name: Check we now have an image
+        id: check_files
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "joystream-node-docker-image.tar.gz"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
+        id: builder1
+        if: steps.check_files.outputs.files_exists == 'false'
+  
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+         path: /tmp/.buildx-cache
+         key: ${{ runner.os }}-buildx
+        if: steps.check_files.outputs.files_exists == 'false'
+
+      - name: Build
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: joystream-node.Dockerfile
+          platforms: linux/amd64
+          build-args: CARGO_FEATURES=testing-runtime
+          push: false
+          tags: joystream/node
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+          builder: ${{ steps.builder1.outputs.name }}
+          load: true
+        if: steps.check_files.outputs.files_exists == 'false'
+
+      - name: Save joystream/node image to cache
         run: |
-          if ! [ -f joystream-node-docker-image.tar.gz ]; then
-            docker build .\
-              --file joystream-node.Dockerfile\
-              --tag joystream/node\
-              --build-arg CARGO_FEATURES="testing_runtime"
-            docker save --output joystream-node-docker-image.tar joystream/node
-            gzip joystream-node-docker-image.tar
-            cp joystream-node-docker-image.tar.gz ~/docker-images/
-          fi
+          docker save --output joystream-node-docker-image.tar joystream/node
+          gzip joystream-node-docker-image.tar
+          cp joystream-node-docker-image.tar.gz ~/docker-images/
+        if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Save joystream/node image to Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
 
-  basic_runtime:
-    name: Integration Tests (New Chain)
+  run_test_scenarios:
+    name: Tests
     needs: build_images
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding', 'carthageNPoSSwitch']
+        include:
+          - scenario: 'setupNewChain'
+            no_storage: 'true'
+          - scenario: 'setupNewChainMultiStorage'
+            no_storage: 'true'
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - name: Get artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build_images.outputs.use_artifact }}
       - name: Install artifacts
@@ -111,19 +179,22 @@ jobs:
       - name: Execute network tests
         run: |
           export RUNTIME=latest
-          tests/network-tests/run-full-tests.sh
+          export NO_STORAGE=${{ matrix.no_storage }}
+          tests/network-tests/run-tests.sh ${{ matrix.scenario }}
 
-  new_chain_setup:
-    name: Initialize new chain
+  runtime_upgrade:
+    # Re-Enable when we want to test carthage runtime updates
+    if: ${{ false }}
+    name: Runtime Upgrade From Carthage Spec 0
     needs: build_images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - name: Get artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build_images.outputs.use_artifact }}
       - name: Install artifacts
@@ -136,13 +207,14 @@ jobs:
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
           yarn workspace @joystream/cli build
-      - name: Ensure query-node builds
-        run: yarn workspace query-node-root build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
-      # Bring up hydra query-node development instance, then run content directory
-      # integration tests
-      - name: Execute Tests
+      - name: Execute network tests
         run: |
-          export RUNTIME=latest
-          tests/network-tests/test-setup-new-chain.sh
+          export HOME=${PWD}
+          mkdir -p ${HOME}/.local/share/joystream-cli
+          yarn joystream-cli api:setUri ws://localhost:9944
+          # Rhodes release (spec 7) production runtime profile
+          export RUNTIME_TAG=e3f72ac0dbfc3d8dc69b63c2ab991f104411f205
+          export TARGET_RUNTIME_TAG=latest
+          tests/network-tests/run-migration-tests.sh

@@ -5,28 +5,28 @@ import {
   CreateOpeningsFixture,
   WithdrawApplicationsFixture,
   ApplicantDetails,
-  DEFAULT_OPENING_PARAMS,
+  createDefaultOpeningParams,
   OpeningParams,
 } from '../../fixtures/workingGroups'
-
+import { Api } from '../../Api'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { workingGroups, LEADER_OPENING_STAKE } from '../../consts'
+import { workingGroups } from '../../consts'
 import { assert } from 'chai'
 
-const openingsToCreate: OpeningParams[] = [
+const openingsToCreate = (api: Api): OpeningParams[] => [
   // All defaults case:
-  DEFAULT_OPENING_PARAMS,
+  createDefaultOpeningParams(api),
   // Invalid metadata case:
   {
-    ...DEFAULT_OPENING_PARAMS,
+    ...createDefaultOpeningParams(api),
     metadata: '0xff',
     expectMetadataFailure: true,
   },
   // Valid metadata edge-cases:
   {
-    ...DEFAULT_OPENING_PARAMS,
+    ...createDefaultOpeningParams(api),
     metadata: {
       shortDescription: '',
       description: '',
@@ -37,7 +37,7 @@ const openingsToCreate: OpeningParams[] = [
     },
   },
   {
-    ...DEFAULT_OPENING_PARAMS,
+    ...createDefaultOpeningParams(api),
     metadata: {
       shortDescription: null,
       description: null,
@@ -48,11 +48,11 @@ const openingsToCreate: OpeningParams[] = [
     },
   },
   {
-    ...DEFAULT_OPENING_PARAMS,
+    ...createDefaultOpeningParams(api),
     metadata: {},
   },
   {
-    ...DEFAULT_OPENING_PARAMS,
+    ...createDefaultOpeningParams(api),
     metadata: {
       hiringLimit: 1,
       applicationFormQuestions: [{}],
@@ -75,14 +75,17 @@ export default async function openingsAndApplications({ api, query, env }: FlowP
 
       // Transfer funds to leader staking acc to cover opening stake
       const leaderStakingAcc = await api.getLeaderStakingKey(group)
-      await api.treasuryTransferBalance(leaderStakingAcc, LEADER_OPENING_STAKE.muln(openingsToCreate.length))
+      await api.treasuryTransferBalance(
+        leaderStakingAcc,
+        api.consts.contentWorkingGroup.leaderOpeningStake.muln(openingsToCreate(api).length)
+      )
 
       // Create an opening
-      const createOpeningsFixture = new CreateOpeningsFixture(api, query, group, openingsToCreate)
+      const createOpeningsFixture = new CreateOpeningsFixture(api, query, group, openingsToCreate(api))
       const openingsRunner = new FixtureRunner(createOpeningsFixture)
       await openingsRunner.run()
       const [openingId] = createOpeningsFixture.getCreatedOpeningIds()
-      const { stake: openingStake, metadata: openingMetadata } = DEFAULT_OPENING_PARAMS
+      const { stake: openingStake, metadata: openingMetadata } = createDefaultOpeningParams(api)
 
       // Create some applications
       const roleAccounts = (await api.createKeyPairs(APPLICATION_CREATE_N)).map(({ key }) => key.address)

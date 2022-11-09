@@ -1,17 +1,16 @@
+use super::mocks::{Balances, Bounty, Event, System, Test};
+use crate::{
+    AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
+    ClosedContractWhitelist, Config, Entry, FundingType, OracleJudgmentOf, RawEvent,
+};
+use common::council::CouncilBudgetManager;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
-use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
-
-use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::{
-    AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Entry, FundingType, OracleJudgmentOf, RawEvent,
-};
-use common::council::CouncilBudgetManager;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -45,6 +44,14 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
+pub fn get_funder_state_bloat_bond_amount() -> u64 {
+    <Test as Config>::FunderStateBloatBondAmount::get()
+}
+
+pub fn get_creator_state_bloat_bond_amount() -> u64 {
+    <Test as Config>::CreatorStateBloatBondAmount::get()
+}
+
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
@@ -58,7 +65,7 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = TestEvent::bounty(expected_raw_event);
+        let converted_event = Event::Bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -74,12 +81,12 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = TestEvent::bounty(expected_raw_event);
+        let converted_event = Event::Bounty(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -89,21 +96,25 @@ impl EventFixture {
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
 
-    fn contains_global_event(expected_event: TestEvent) {
+    fn contains_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
             topics: vec![],
         };
 
-        assert!(System::events().iter().any(|ev| *ev == expected_event));
+        assert!(
+            System::events().iter().any(|ev| *ev == expected_event),
+            "Event not found: {:?}",
+            expected_event.event
+        );
     }
 }
 
 pub const DEFAULT_BOUNTY_CHERRY: u64 = 10;
+pub const DEFAULT_BOUNTY_ORACLE_REWARD: u64 = 10;
 pub const DEFAULT_BOUNTY_ENTRANT_STAKE: u64 = 10;
-pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
-pub const DEFAULT_BOUNTY_MIN_AMOUNT: u64 = 1;
+pub const DEFAULT_BOUNTY_TARGET_AMOUNT: u64 = 1000;
 pub const DEFAULT_BOUNTY_FUNDING_PERIOD: u64 = 1;
 
 pub struct CreateBountyFixture {
@@ -111,12 +122,11 @@ pub struct CreateBountyFixture {
     metadata: Vec<u8>,
     creator: BountyActor<u64>,
     funding_type: FundingType<u64, u64>,
-    work_period: u64,
-    judging_period: u64,
     cherry: u64,
+    oracle_reward: u64,
     expected_milestone: Option<BountyMilestone<u64>>,
     entrant_stake: u64,
-    contract_type: AssuranceContractType<u64>,
+    contract_type: AssuranceContractType<BTreeSet<u64>>,
     oracle: BountyActor<u64>,
 }
 
@@ -127,11 +137,10 @@ impl CreateBountyFixture {
             metadata: Vec::new(),
             creator: BountyActor::Council,
             funding_type: FundingType::Perpetual {
-                target: DEFAULT_BOUNTY_MAX_AMOUNT,
+                target: DEFAULT_BOUNTY_TARGET_AMOUNT,
             },
-            work_period: 1,
-            judging_period: 1,
             cherry: DEFAULT_BOUNTY_CHERRY,
+            oracle_reward: DEFAULT_BOUNTY_ORACLE_REWARD,
             expected_milestone: None,
             entrant_stake: DEFAULT_BOUNTY_ENTRANT_STAKE,
             contract_type: AssuranceContractType::Open,
@@ -161,30 +170,17 @@ impl CreateBountyFixture {
         Self { metadata, ..self }
     }
 
-    pub fn with_work_period(self, work_period: u64) -> Self {
-        Self {
-            work_period,
-            ..self
-        }
-    }
-
-    pub fn with_limited_funding(
-        self,
-        min_funding_amount: u64,
-        max_funding_amount: u64,
-        funding_period: u64,
-    ) -> Self {
+    pub fn with_limited_funding(self, target: u64, funding_period: u64) -> Self {
         Self {
             funding_type: FundingType::Limited {
                 funding_period,
-                min_funding_amount,
-                max_funding_amount,
+                target,
             },
             ..self
         }
     }
 
-    pub fn with_perpetual_funding(self, target: u64) -> Self {
+    pub fn with_perpetual_period_target_amount(self, target: u64) -> Self {
         Self {
             funding_type: FundingType::Perpetual { target },
             ..self
@@ -195,33 +191,31 @@ impl CreateBountyFixture {
         Self {
             funding_type: FundingType::Limited {
                 funding_period,
-                min_funding_amount: DEFAULT_BOUNTY_MIN_AMOUNT,
-                max_funding_amount: DEFAULT_BOUNTY_MAX_AMOUNT,
+                target: DEFAULT_BOUNTY_TARGET_AMOUNT,
             },
             ..self
         }
     }
 
-    pub fn with_max_funding_amount(self, max_funding_amount: u64) -> Self {
+    pub fn with_limit_period_target_amount(self, target: u64) -> Self {
         Self {
             funding_type: FundingType::Limited {
                 funding_period: DEFAULT_BOUNTY_FUNDING_PERIOD,
-                min_funding_amount: DEFAULT_BOUNTY_MIN_AMOUNT,
-                max_funding_amount,
+                target,
             },
-            ..self
-        }
-    }
-
-    pub fn with_judging_period(self, judging_period: u64) -> Self {
-        Self {
-            judging_period,
             ..self
         }
     }
 
     pub fn with_cherry(self, cherry: u64) -> Self {
         Self { cherry, ..self }
+    }
+
+    pub fn with_oracle_reward(self, oracle_reward: u64) -> Self {
+        Self {
+            oracle_reward,
+            ..self
+        }
     }
 
     pub fn with_entrant_stake(self, entrant_stake: u64) -> Self {
@@ -244,9 +238,8 @@ impl CreateBountyFixture {
         BountyCreationParameters::<Test> {
             creator: self.creator.clone(),
             funding_type: self.funding_type.clone(),
-            work_period: self.work_period.clone(),
-            judging_period: self.judging_period.clone(),
             cherry: self.cherry,
+            oracle_reward: self.oracle_reward,
             entrant_stake: self.entrant_stake,
             contract_type: self.contract_type.clone(),
             oracle: self.oracle.clone(),
@@ -272,103 +265,26 @@ impl CreateBountyFixture {
             assert_eq!(next_bounty_count_value, Bounty::bounty_count());
             assert!(<crate::Bounties<Test>>::contains_key(&bounty_id));
 
-            let expected_milestone = if let Some(milestone) = self.expected_milestone.clone() {
-                milestone
-            } else {
-                BountyMilestone::Created {
+            let expected_milestone = match self.expected_milestone.clone() {
+                Some(milestone) => milestone,
+                None => BountyMilestone::Created {
                     created_at: System::block_number(),
                     has_contributions: false,
-                }
+                },
             };
 
-            let expected_bounty = BountyRecord::<u64, u64, u64> {
-                creation_params: params.clone(),
+            let expected_bounty = BountyRecord::<u64, u64, u64, ClosedContractWhitelist<Test>> {
+                creation_params: params.clone().try_into().unwrap(),
                 total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
+                has_unpaid_oracle_reward: params.oracle_reward > 0,
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
         } else {
             assert_eq!(next_bounty_count_value - 1, Bounty::bounty_count());
             assert!(!<crate::Bounties<Test>>::contains_key(&bounty_id));
-        }
-    }
-}
-
-pub struct CancelBountyFixture {
-    origin: RawOrigin<u128>,
-    creator: BountyActor<u64>,
-    bounty_id: u64,
-}
-
-impl CancelBountyFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Root,
-            creator: BountyActor::Council,
-            bounty_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_creator_member_id(self, member_id: u64) -> Self {
-        Self {
-            creator: BountyActor::Member(member_id),
-            ..self
-        }
-    }
-
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::cancel_bounty(
-            self.origin.clone().into(),
-            self.creator.clone(),
-            self.bounty_id.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
-        }
-    }
-}
-
-pub struct VetoBountyFixture {
-    origin: RawOrigin<u128>,
-    bounty_id: u64,
-}
-
-impl VetoBountyFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Root,
-            bounty_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::veto_bounty(self.origin.clone().into(), self.bounty_id.clone());
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
         }
     }
 }
@@ -435,13 +351,17 @@ impl FundBountyFixture {
             Bounty::contribution_by_bounty_by_actor(self.bounty_id, &self.funder);
         if actual_result.is_ok() {
             let new_bounty = Bounty::bounties(self.bounty_id);
-            if new_bounty.total_funding == new_bounty.maximum_funding() {
+            if new_bounty.total_funding == new_bounty.target_funding() {
                 assert_eq!(
-                    new_bounty_funding,
-                    old_bounty_funding + old_bounty.maximum_funding() - old_bounty.total_funding
+                    new_bounty_funding.amount,
+                    old_bounty_funding.amount + old_bounty.target_funding()
+                        - old_bounty.total_funding
                 );
             } else {
-                assert_eq!(new_bounty_funding, old_bounty_funding + self.amount);
+                assert_eq!(
+                    new_bounty_funding.amount,
+                    old_bounty_funding.amount + self.amount
+                );
             }
         } else {
             assert_eq!(new_bounty_funding, old_bounty_funding);
@@ -502,6 +422,7 @@ pub struct AnnounceWorkEntryFixture {
     bounty_id: u64,
     member_id: u64,
     staking_account_id: u128,
+    work_description: Vec<u8>,
 }
 
 impl AnnounceWorkEntryFixture {
@@ -511,6 +432,7 @@ impl AnnounceWorkEntryFixture {
             bounty_id: 1,
             member_id: 1,
             staking_account_id: 1,
+            work_description: Vec::new(),
         }
     }
 
@@ -533,6 +455,13 @@ impl AnnounceWorkEntryFixture {
         }
     }
 
+    pub fn with_work_description(self, work_description: Vec<u8>) -> Self {
+        Self {
+            work_description,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty = Bounty::bounties(self.bounty_id);
         let next_entry_count_value = Bounty::entry_count() + 1;
@@ -543,6 +472,7 @@ impl AnnounceWorkEntryFixture {
             self.member_id,
             self.bounty_id,
             self.staking_account_id,
+            self.work_description.clone(),
         );
 
         assert_eq!(actual_result, expected_result);
@@ -558,12 +488,13 @@ impl AnnounceWorkEntryFixture {
             let expected_entry = Entry::<Test> {
                 member_id: self.member_id,
                 staking_account_id: self.staking_account_id,
-                submitted_at: System::current_block_number(),
+                submitted_at: System::block_number(),
                 work_submitted: false,
-                oracle_judgment_result: None,
             };
-
-            assert_eq!(expected_entry, Bounty::entries(self.bounty_id, entry_id));
+            assert_eq!(
+                expected_entry,
+                Bounty::entries(self.bounty_id, entry_id).unwrap()
+            );
 
             assert_eq!(
                 new_bounty.active_work_entry_count,
@@ -579,65 +510,6 @@ impl AnnounceWorkEntryFixture {
             assert_eq!(
                 new_bounty.active_work_entry_count,
                 old_bounty.active_work_entry_count
-            );
-        }
-    }
-}
-
-pub struct WithdrawWorkEntryFixture {
-    origin: RawOrigin<u128>,
-    entry_id: u64,
-    bounty_id: u64,
-    member_id: u64,
-}
-
-impl WithdrawWorkEntryFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            entry_id: 1,
-            bounty_id: 1,
-            member_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_member_id(self, member_id: u64) -> Self {
-        Self { member_id, ..self }
-    }
-
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-
-    pub fn with_entry_id(self, entry_id: u64) -> Self {
-        Self { entry_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_bounty = Bounty::bounties(self.bounty_id);
-        let actual_result = Bounty::withdraw_work_entry(
-            self.origin.clone().into(),
-            self.member_id,
-            self.bounty_id,
-            self.entry_id,
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert!(!<crate::Entries<Test>>::contains_key(
-                self.bounty_id,
-                &self.entry_id
-            ));
-
-            let new_bounty = Bounty::bounties(self.bounty_id);
-            assert_eq!(
-                new_bounty.active_work_entry_count,
-                old_bounty.active_work_entry_count - 1
             );
         }
     }
@@ -684,6 +556,7 @@ impl SubmitWorkFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_entry = Bounty::entries(self.bounty_id, self.entry_id);
+
         let actual_result = Bounty::submit_work(
             self.origin.clone().into(),
             self.member_id,
@@ -697,7 +570,7 @@ impl SubmitWorkFixture {
         let new_entry = Bounty::entries(self.bounty_id, self.entry_id);
 
         if actual_result.is_ok() {
-            assert!(new_entry.work_submitted);
+            assert!(new_entry.unwrap().work_submitted);
         } else {
             assert_eq!(new_entry, old_entry);
         }
@@ -707,7 +580,6 @@ impl SubmitWorkFixture {
 pub struct SubmitJudgmentFixture {
     origin: RawOrigin<u128>,
     bounty_id: u64,
-    oracle: BountyActor<u64>,
     judgment: OracleJudgmentOf<Test>,
     rationale: Vec<u8>,
 }
@@ -717,7 +589,6 @@ impl SubmitJudgmentFixture {
         Self {
             origin: RawOrigin::Root,
             bounty_id: 1,
-            oracle: BountyActor::Council,
             judgment: Default::default(),
             rationale: Default::default(),
         }
@@ -731,26 +602,14 @@ impl SubmitJudgmentFixture {
         Self { bounty_id, ..self }
     }
 
-    pub fn with_oracle_member_id(self, member_id: u64) -> Self {
-        Self {
-            oracle: BountyActor::Member(member_id),
-            ..self
-        }
-    }
-
     pub fn with_judgment(self, judgment: OracleJudgmentOf<Test>) -> Self {
         Self { judgment, ..self }
-    }
-
-    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
-        Self { rationale, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty = Bounty::bounties(self.bounty_id);
         let actual_result = Bounty::submit_oracle_judgment(
             self.origin.clone().into(),
-            self.oracle.clone(),
             self.bounty_id,
             self.judgment.clone(),
             self.rationale.clone(),
@@ -773,14 +632,108 @@ impl SubmitJudgmentFixture {
     }
 }
 
-pub struct WithdrawWorkEntrantFundsFixture {
+pub struct SwitchOracleFixture {
+    origin: RawOrigin<u128>,
+    new_oracle: BountyActor<u64>,
+    bounty_id: u64,
+}
+
+impl SwitchOracleFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_oracle: BountyActor::Member(2),
+            bounty_id: 1,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+    pub fn with_new_oracle_member_id(self, bounty_actor: BountyActor<u64>) -> Self {
+        Self {
+            new_oracle: bounty_actor,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::switch_oracle(
+            self.origin.clone().into(),
+            self.new_oracle.clone(),
+            self.bounty_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct TerminateBountyFixture {
+    origin: RawOrigin<u128>,
+    bounty_id: u64,
+}
+
+impl TerminateBountyFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            bounty_id: 1,
+        }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::terminate_bounty(self.origin.clone().into(), self.bounty_id);
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct EndWorkPeriodFixture {
+    origin: RawOrigin<u128>,
+    bounty_id: u64,
+}
+
+impl EndWorkPeriodFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            bounty_id: 1,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::end_working_period(self.origin.clone().into(), self.bounty_id);
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
+pub struct WithdrawEntrantStakeFixture {
     origin: RawOrigin<u128>,
     entry_id: u64,
     bounty_id: u64,
     member_id: u64,
 }
 
-impl WithdrawWorkEntrantFundsFixture {
+impl WithdrawEntrantStakeFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
@@ -808,7 +761,7 @@ impl WithdrawWorkEntrantFundsFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty = Bounty::bounties(self.bounty_id);
-        let actual_result = Bounty::withdraw_work_entrant_funds(
+        let actual_result = Bounty::withdraw_entrant_stake(
             self.origin.clone().into(),
             self.member_id,
             self.bounty_id,
@@ -831,5 +784,30 @@ impl WithdrawWorkEntrantFundsFixture {
                 );
             }
         }
+    }
+}
+
+pub struct WithdrawOracleRewardFixture {
+    origin: RawOrigin<u128>,
+    bounty_id: u64,
+}
+
+impl WithdrawOracleRewardFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            bounty_id: 1,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Bounty::withdraw_oracle_reward(self.origin.clone().into(), self.bounty_id.clone());
+
+        assert_eq!(actual_result, expected_result);
     }
 }

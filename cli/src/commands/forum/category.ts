@@ -1,4 +1,4 @@
-import { CategoryId } from '@joystream/types/forum'
+import { ForumCategoryId as CategoryId } from '@joystream/types/primitives'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import ForumCommandBase from '../../base/ForumCommandBase'
@@ -21,7 +21,7 @@ export default class ForumCategoryCommand extends ForumCommandBase {
     const category = await this.getCategory(categoryId)
     const allCategories = await this.getApi().forumCategories()
     const directSubcategories = allCategories.filter(
-      ([, c]) => c.parent_category_id.unwrapOr(undefined)?.toNumber() === categoryId
+      ([, c]) => c.parentCategoryId.unwrapOr(undefined)?.toNumber() === categoryId
     )
     const moderatorsEntries = await this.getApi().forumCategoryModerators(categoryId)
     const moderators = await Promise.all(
@@ -33,14 +33,18 @@ export default class ForumCategoryCommand extends ForumCommandBase {
 
     displayCollapsedRow({
       'ID': categoryId.toString(),
-      'No. direct subcategories': category.num_direct_subcategories.toString(),
-      'No. direct threads': category.num_direct_threads.toString(),
-      'No. direct moderators': category.num_direct_moderators.toString(),
+      'No. direct subcategories': category.numDirectSubcategories.toString(),
+      'No. direct threads': category.numDirectThreads.toString(),
+      'No. direct moderators': category.numDirectModerators.toString(),
     })
 
     displayHeader('Stickied threads')
-    if (category.sticky_thread_ids.length) {
-      this.log(category.sticky_thread_ids.map((id) => chalk.magentaBright(id.toString())).join(', '))
+    if (category.stickyThreadIds.size) {
+      this.log(
+        Array.from(category.stickyThreadIds.values())
+          .map((id) => chalk.magentaBright(id.toString()))
+          .join(', ')
+      )
     } else {
       this.log('No stickied threads')
     }

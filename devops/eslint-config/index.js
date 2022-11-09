@@ -17,6 +17,7 @@ module.exports = {
     },
     ecmaVersion: 2019,
     sourceType: 'module',
+    project: './tsconfig.json',
   },
   extends: [
     'standard',
@@ -73,6 +74,13 @@ module.exports = {
         custom: { regex: '^([A-Z][a-z0-9]*_?)+', match: true }, // combined PascalCase and snake_case to allow ie. OpeningType_Worker
       }
     ],
+    '@typescript-eslint/no-floating-promises': [
+      'error',
+      {
+        ignoreVoid: true,
+      },
+    ],
+    '@typescript-eslint/no-misused-promises': 'error',
   },
   plugins: ['standard', '@typescript-eslint', 'react', 'react-hooks', 'prettier'],
 }

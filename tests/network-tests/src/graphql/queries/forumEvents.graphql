@@ -98,34 +98,6 @@ query getThreadMetadataUpdatedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-fragment VoteOnPollEventFields on VoteOnPollEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  pollAlternative {
-    id
-    index
-    text
-    poll {
-      thread {
-        id
-      }
-    }
-  }
-  votingMember {
-    id
-  }
-}
-
-query getVoteOnPollEventsByEventIds($eventIds: [ID!]) {
-  voteOnPollEvents(where: { id_in: $eventIds }) {
-    ...VoteOnPollEventFields
-  }
-}
-
 fragment ThreadDeletedEventFields on ThreadDeletedEvent {
   id
   createdAt
@@ -278,37 +250,6 @@ fragment PostModeratedEventFields on PostModeratedEvent {
 query getPostModeratedEventsByEventIds($eventIds: [ID!]) {
   postModeratedEvents(where: { id_in: $eventIds }) {
     ...PostModeratedEventFields
-  }
-}
-
-fragment PostReactedEventFields on PostReactedEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  post {
-    id
-  }
-  reactionResult {
-    __typename
-    ... on PostReactionResultValid {
-      reaction
-      reactionId
-    }
-    ... on PostReactionResultInvalid {
-      invalidReactionId: reactionId
-    }
-  }
-  reactingMember {
-    id
-  }
-}
-
-query getPostReactedEventsByEventIds($eventIds: [ID!]) {
-  postReactedEvents(where: { id_in: $eventIds }) {
-    ...PostReactedEventFields
   }
 }
 

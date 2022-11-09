@@ -5,6 +5,22 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::ensure;
@@ -18,7 +34,7 @@ mod mock;
 #[cfg(test)]
 mod test;
 
-/// Trait for (dis)allowing certain stake locks combinations.
+/// Config for (dis)allowing certain stake locks combinations.
 pub trait LockComparator<Balance> {
     /// Checks if stake lock that is about to be used is conflicting with existing locks.
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool;
@@ -64,10 +80,10 @@ pub trait StakingHandler<AccountId, Balance, MemberId, LockIdentifier> {
 
 /// Implementation of the StakingHandler.
 pub struct StakingManager<
-    T: frame_system::Trait
-        + pallet_balances::Trait
+    T: frame_system::Config
+        + pallet_balances::Config
         + common::membership::MembershipTypes
-        + LockComparator<<T as pallet_balances::Trait>::Balance>,
+        + LockComparator<<T as pallet_balances::Config>::Balance>,
     LockId: Get<LockIdentifier>,
 > {
     trait_marker: PhantomData<T>,
@@ -75,61 +91,61 @@ pub struct StakingManager<
 }
 
 impl<
-        T: frame_system::Trait
-            + pallet_balances::Trait
+        T: frame_system::Config
+            + pallet_balances::Config
             + common::membership::MembershipTypes
-            + LockComparator<<T as pallet_balances::Trait>::Balance>,
+            + LockComparator<<T as pallet_balances::Config>::Balance>,
         LockId: Get<LockIdentifier>,
     >
     StakingHandler<
-        <T as frame_system::Trait>::AccountId,
-        <T as pallet_balances::Trait>::Balance,
+        <T as frame_system::Config>::AccountId,
+        <T as pallet_balances::Config>::Balance,
         <T as common::membership::MembershipTypes>::MemberId,
         LockIdentifier,
     > for StakingManager<T, LockId>
 {
     fn lock(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        amount: <T as pallet_balances::Trait>::Balance,
+        account_id: &<T as frame_system::Config>::AccountId,
+        amount: <T as pallet_balances::Config>::Balance,
     ) {
         Self::lock_with_reasons(account_id, amount, WithdrawReasons::all())
     }
 
     fn lock_with_reasons(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        amount: <T as pallet_balances::Trait>::Balance,
+        account_id: &<T as frame_system::Config>::AccountId,
+        amount: <T as pallet_balances::Config>::Balance,
         reasons: WithdrawReasons,
     ) {
-        <pallet_balances::Module<T>>::set_lock(LockId::get(), &account_id, amount, reasons)
+        <pallet_balances::Pallet<T>>::set_lock(LockId::get(), account_id, amount, reasons)
     }
 
-    fn unlock(account_id: &<T as frame_system::Trait>::AccountId) {
-        <pallet_balances::Module<T>>::remove_lock(LockId::get(), &account_id);
+    fn unlock(account_id: &<T as frame_system::Config>::AccountId) {
+        <pallet_balances::Pallet<T>>::remove_lock(LockId::get(), account_id);
     }
 
     fn slash(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        amount: Option<<T as pallet_balances::Trait>::Balance>,
-    ) -> <T as pallet_balances::Trait>::Balance {
-        let locks = pallet_balances::Module::<T>::locks(&account_id);
+        account_id: &<T as frame_system::Config>::AccountId,
+        amount: Option<<T as pallet_balances::Config>::Balance>,
+    ) -> <T as pallet_balances::Config>::Balance {
+        let locks = pallet_balances::Pallet::<T>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
 
         let mut actually_slashed_balance = Default::default();
         if let Some(existing_lock) = existing_lock {
-            Self::unlock(&account_id);
+            Self::unlock(account_id);
 
             let mut slashable_amount = existing_lock.amount;
             if let Some(amount) = amount {
                 if existing_lock.amount > amount {
                     let new_amount = existing_lock.amount - amount;
-                    Self::lock(&account_id, new_amount);
+                    Self::lock(account_id, new_amount);
 
                     slashable_amount = amount;
                 }
             }
 
-            let _ = pallet_balances::Module::<T>::slash(&account_id, slashable_amount);
+            let _ = pallet_balances::Pallet::<T>::slash(account_id, slashable_amount);
 
             actually_slashed_balance = slashable_amount
         }
@@ -138,8 +154,8 @@ impl<
     }
 
     fn set_stake(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        new_stake: <T as pallet_balances::Trait>::Balance,
+        account_id: &<T as frame_system::Config>::AccountId,
+        new_stake: <T as pallet_balances::Config>::Balance,
     ) -> DispatchResult {
         let current_stake = Self::current_stake(account_id);
 
@@ -164,7 +180,7 @@ impl<
     }
 
     fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool {
-        let locks = <pallet_balances::Module<T>>::locks(&account_id);
+        let locks = <pallet_balances::Pallet<T>>::locks(&account_id);
         let lock_ids: Vec<LockIdentifier> =
             locks.iter().map(|balance_lock| balance_lock.id).collect();
 
@@ -172,10 +188,10 @@ impl<
     }
 
     fn is_enough_balance_for_stake(
-        account_id: &<T as frame_system::Trait>::AccountId,
-        amount: <T as pallet_balances::Trait>::Balance,
+        account_id: &<T as frame_system::Config>::AccountId,
+        amount: <T as pallet_balances::Config>::Balance,
     ) -> bool {
-        <pallet_balances::Module<T>>::free_balance(account_id) >= amount
+        <pallet_balances::Pallet<T>>::free_balance(account_id) >= amount
     }
 
     fn lock_id() -> LockIdentifier {
@@ -183,9 +199,9 @@ impl<
     }
 
     fn current_stake(
-        account_id: &<T as frame_system::Trait>::AccountId,
-    ) -> <T as pallet_balances::Trait>::Balance {
-        let locks = <pallet_balances::Module<T>>::locks(&account_id);
+        account_id: &<T as frame_system::Config>::AccountId,
+    ) -> <T as pallet_balances::Config>::Balance {
+        let locks = <pallet_balances::Pallet<T>>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
 

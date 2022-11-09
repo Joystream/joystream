@@ -2,7 +2,6 @@ import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import {
-  ActiveVideoCountersFixture,
   CreateChannelsAndVideosFixture,
   CreateContentStructureFixture,
   CreateMembersFixture,
@@ -22,7 +21,7 @@ import {
 import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
 
-export default async function nftAuctionAndOffers({ api, query, env }: FlowProps): Promise<void> {
+export default async function nftAuctionAndOffers({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:nft-auction-and-offers')
   debug('Started')
   api.enableDebugTxLogs()
@@ -34,27 +33,26 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const videoCount = 8 // should be equal to number of uses of `nextVideo()` below
   const videoCategoryCount = 1
   const channelCount = 1
-  const channelCategoryCount = 1
   const auctionParticipantsCount = 3
-  const sufficientTopupAmount = new BN(1_000_000) // some very big number to cover fees of all transactions
+  const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // prepare content
 
-  const createContentStructureFixture = new CreateContentStructureFixture(
-    api,
-    query,
-    joystreamCli,
-    videoCategoryCount,
-    channelCategoryCount
-  )
+  const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
-  const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos as well as auction participants
-  const createMembersFixture = new CreateMembersFixture(api, query, auctionParticipantsCount + 1, sufficientTopupAmount)
+  const createMembersFixture = new CreateMembersFixture(
+    api,
+    query,
+    auctionParticipantsCount + 1,
+    0,
+    sufficientTopupAmount
+  )
   await new FixtureRunner(createMembersFixture).run()
-  const [author, ...auctionParticipants] = createMembersFixture.getCreatedItems()
+  const [author, ...auctionParticipants] = createMembersFixture.getCreatedItems().members
 
   const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
     api,
@@ -62,7 +60,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
     joystreamCli,
     channelCount,
     videoCount,
-    channelCategoryIds[0],
     videoCategoryIds[0],
     author
   )

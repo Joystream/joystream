@@ -1,16 +1,16 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
-import { createType } from '@joystream/types'
-import { BagId } from '@joystream/types/storage'
 import ExitCodes from '../../ExitCodes'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
+import { PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
 
 export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Delete the channel and optionally all associated data objects.'
 
   static flags = {
+    context: ContentDirectoryCommandBase.channelManagementContextFlag,
     channelId: flags.integer({
       char: 'c',
       required: true,
@@ -24,54 +24,36 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     ...ContentDirectoryCommandBase.flags,
   }
 
-  async getDataObjectsInfoFromQueryNode(channelId: number): Promise<[string, BN][]> {
-    const dataObjects = await this.getQNApi().dataObjectsByBagId(`dynamic:channel:${channelId}`)
-
-    if (dataObjects.length) {
-      this.log('Following data objects are still associated with the channel:')
-      dataObjects.forEach((o) => {
-        let parentStr = ''
-        if ('video' in o.type && o.type.video) {
-          parentStr = ` (video: ${o.type.video.id})`
-        }
-        this.log(`- ${o.id} - ${o.type.__typename}${parentStr}`)
-      })
-    }
-
-    return dataObjects.map((o) => [o.id, new BN(o.deletionPrize)])
-  }
-
-  async getDataObjectsInfoFromChain(channelId: number): Promise<[string, BN][]> {
-    const dataObjects = await this.getApi().dataObjectsInBag(
-      createType<BagId, 'BagId'>('BagId', { Dynamic: { Channel: channelId } })
-    )
-
-    if (dataObjects.length) {
-      const dataObjectIds = dataObjects.map(([id]) => id.toString())
-      this.log(`Following data objects are still associated with the channel: ${dataObjectIds.join(', ')}`)
-    }
-
-    return dataObjects.map(([id, o]) => [id.toString(), o.deletion_prize])
-  }
-
   async run(): Promise<void> {
-    const {
-      flags: { channelId, force },
-    } = this.parse(DeleteChannelCommand)
+    const { context, channelId, force } = this.parse(DeleteChannelCommand).flags
     // Context
     const channel = await this.getApi().channelById(channelId)
-    const [actor, address] = await this.getChannelOwnerActor(channel)
-
-    if (channel.num_videos.toNumber()) {
-      this.error(
-        `This channel still has ${channel.num_videos.toNumber()} associated video(s)!\n` +
-          `Delete the videos first using ${chalk.magentaBright('content:deleteVideo')} command`
-      )
-    }
+    const [actor, address] = await this.getChannelManagementActor(channel, context)
 
     const dataObjectsInfo = this.isQueryNodeUriSet()
       ? await this.getDataObjectsInfoFromQueryNode(channelId)
       : await this.getDataObjectsInfoFromChain(channelId)
+
+    // Ensure actor is authorized to perform channel deletion
+    const requiredPermissions: ChannelActionPermission['type'][] = dataObjectsInfo.length
+      ? ['DeleteChannel', 'ManageNonVideoChannelAssets']
+      : ['DeleteChannel']
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channelOwner or collaborator with ${requiredPermissions} permissions can perform this deletion!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
+
+    if (channel.numVideos.toNumber()) {
+      this.error(
+        `This channel still has 
+        ${channel.numVideos.toNumber()} associated video(s)!\n` +
+          `Delete the videos first using ${chalk.magentaBright('content:deleteVideo')} command`
+      )
+    }
 
     if (dataObjectsInfo.length) {
       if (!force) {
@@ -79,11 +61,16 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const deletionPrize = dataObjectsInfo.reduce((sum, [, prize]) => sum.add(prize), new BN(0))
+      const dataObjectsStateBloatBond = dataObjectsInfo.reduce((sum, [, bloatBond]) => sum.add(bloatBond), new BN(0))
       this.log(
-        `Data objects deletion prize of ${chalk.cyanBright(
-          formatBalance(deletionPrize)
-        )} will be transferred to ${chalk.magentaBright(address)}`
+        `Channel state bloat bond of ${chalk.cyanBright(
+          formatBalance(channel.channelStateBloatBond.amount)
+        )} will be transferred to ${chalk.magentaBright(
+          channel.channelStateBloatBond.repaymentRestrictedTo.unwrapOr(address).toString()
+        )}\n` +
+          `Data objects state bloat bond of ${chalk.cyanBright(
+            formatBalance(dataObjectsStateBloatBond)
+          )} will be repaid with accordance to the bloat bond policy.`
       )
     }
 
@@ -96,6 +83,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteChannel', [
       actor,
       channelId,
+      await this.getChannelBagWitness(channelId),
       force ? dataObjectsInfo.length : 0,
     ])
   }

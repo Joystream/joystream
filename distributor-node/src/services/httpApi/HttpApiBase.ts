@@ -42,6 +42,7 @@ export abstract class HttpApiBase {
 
   protected createRoutes(routes: HttpApiRoute[]): void {
     routes.forEach(([type, path, handler]) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       this.expressApp[type](path, this.routeWrapper(handler))
     })
   }

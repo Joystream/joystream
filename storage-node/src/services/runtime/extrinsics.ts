@@ -2,9 +2,11 @@ import { sendAndFollowSudoNamedTx, sendAndFollowNamedTx, getEvent } from './api'
 import { getAlicePair } from './accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import { BagId, DynamicBagType } from '@joystream/types/storage'
+import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
 import logger from '../../services/logger'
 import { timeout } from 'promise-timeout'
+import { createType } from '@joystream/types'
+import BN from 'bn.js'
 
 /**
  * Creates storage bucket.
@@ -31,7 +33,7 @@ export async function createStorageBucket(
 ): Promise<[boolean, number | void]> {
   let bucketId: number | void = 0
   const success = await extrinsicWrapper(async () => {
-    const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
+    const invitedWorkerValue = api.createType('Option<u64>', invitedWorker)
 
     const tx = api.tx.storage.createStorageBucket(invitedWorkerValue, allowedNewBags, sizeLimit, objectsLimit)
     bucketId = await sendAndFollowNamedTx(api, account, tx, false, (result) => {
@@ -92,8 +94,8 @@ export async function updateStorageBucketsForBag(
   remove: number[]
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const removeBuckets = api.createType('StorageBucketIdSet', remove)
-    const addBuckets = api.createType('StorageBucketIdSet', add)
+    const removeBuckets = api.createType('BTreeSet<u64>', remove)
+    const addBuckets = api.createType('BTreeSet<u64>', add)
 
     const tx = api.tx.storage.updateStorageBucketsForBag(bagId, addBuckets, removeBuckets)
 
@@ -116,19 +118,23 @@ export async function updateStorageBucketsForBag(
  */
 export async function uploadDataObjects(
   api: ApiPromise,
+  bagId: BagId,
   objectSize: number,
   objectCid: string,
-  dataFee: number
+  dataFee: number,
+  stateBloatBond: number
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const alice = getAlicePair()
 
-    const data = api.createType('UploadParameters', {
-      deletionPrizeSourceAccountId: alice.address,
+    const data = createType('PalletStorageUploadParametersRecord', {
+      bagId,
+      stateBloatBondSourceAccountId: alice.address,
+      expectedDataObjectStateBloatBond: stateBloatBond,
       objectCreationList: [
         {
-          Size: objectSize,
-          IpfsContentId: objectCid,
+          size_: objectSize,
+          ipfsContentId: objectCid,
         },
       ],
       expectedDataSizeFee: dataFee,
@@ -159,11 +165,11 @@ export async function acceptPendingDataObjects(
   bagId: BagId,
   account: KeyringPair,
   workerId: number,
-  storageBucketId: number,
-  dataObjects: number[]
+  storageBucketId: BN,
+  dataObjects: BN[]
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const dataObjectSet = api.createType('DataObjectIdSet', dataObjects)
+    const dataObjectSet = api.createType('BTreeSet<u64>', dataObjects)
 
     const tx = api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, dataObjectSet)
 
@@ -337,19 +343,42 @@ export async function removeStorageBucketOperator(
 }
 
 /**
- * Updates a 'DataSizeFee' variable.
+ * Updates the 'DataSizeFee' variable.
  *
  * @remarks
  * It sends an extrinsic to the runtime.
  *
  * @param api - runtime API promise
- * @param bagId - BagId instance
+ * @param account - KeyringPair instance
  * @param fee - new fee
  * @returns promise with a success flag.
  */
 export async function updateDataSizeFee(api: ApiPromise, account: KeyringPair, fee: number): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const tx = api.tx.storage.updateDataSizeFee(fee)
+
+    return sendAndFollowNamedTx(api, account, tx)
+  })
+}
+
+/**
+ * Updates the 'DataObjectStateBloatBondValue' variable.
+ *
+ * @remarks
+ * It sends an extrinsic to the runtime.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @param value - new value
+ * @returns promise with a success flag.
+ */
+export async function updateDataObjectBloatBond(
+  api: ApiPromise,
+  account: KeyringPair,
+  value: number
+): Promise<boolean> {
+  return await extrinsicWrapper(() => {
+    const tx = api.tx.storage.updateDataObjectStateBloatBond(value)
 
     return sendAndFollowNamedTx(api, account, tx)
   })
@@ -502,8 +531,8 @@ export async function updateBlacklist(
   remove: string[]
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const removeHashes = api.createType('ContentIdSet', remove)
-    const addHashes = api.createType('ContentIdSet', add)
+    const removeHashes = api.createType('BTreeSet<Bytes>', remove)
+    const addHashes = api.createType('BTreeSet<Bytes>', add)
 
     const tx = api.tx.storage.updateBlacklist(removeHashes, addHashes)
 

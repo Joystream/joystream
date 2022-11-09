@@ -33,7 +33,7 @@ export class Job {
     this._manager = manager
     this._flows = flows
     this._outcome = new InvertedPromise<JobOutcome>()
-    this._manager.on('run', this.run.bind(this))
+    this._manager.on('run', this.run.bind(this) as (jobProps: JobProps, resources: ResourceManager) => void)
     this.debug = extendDebug(`job:${this._label}`)
   }
 

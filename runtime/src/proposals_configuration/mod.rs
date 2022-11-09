@@ -1,24 +1,39 @@
 //! This module defines a set of the parameters for each proposal in the runtime like
 //! _SetValidatorCountProposalParameters_.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use crate::{Balance, BlockNumber, ProposalParameters};
 use frame_support::parameter_types;
 
 // This is the default configuration, so only include it if neither staging or testing runtime feature is enabled
-#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+#[cfg(not(any(
+    feature = "staging-runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime"
+)))]
 mod defaults;
-#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+#[cfg(not(any(
+    feature = "staging-runtime",
+    feature = "playground-runtime",
+    feature = "testing-runtime"
+)))]
 use defaults::*;
 
-#[cfg(feature = "staging_runtime")]
+#[cfg(feature = "staging-runtime")]
 mod staging;
-#[cfg(feature = "staging_runtime")]
+#[cfg(feature = "staging-runtime")]
 use staging::*;
 
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 mod testing;
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 use testing::*;
+
+#[cfg(feature = "playground-runtime")]
+mod playground;
+#[cfg(feature = "playground-runtime")]
+use playground::*;
 
 /////////// Proposal parameters definition
 
@@ -47,7 +62,7 @@ parameter_types! {
     pub DecreaseWorkingGroupLeadStakeProposalParameters: ProposalParameters<BlockNumber, Balance> =
         decrease_working_group_lead_stake_proposal();
 
-    pub SlashWorkingGroupLeadProposalParameters: ProposalParameters<BlockNumber, Balance> =
+    pub const SlashWorkingGroupLeadProposalParameters: ProposalParameters<BlockNumber, Balance> =
         slash_working_group_lead_proposal();
 
     pub SetWorkingGroupLeadRewardProposalParameters: ProposalParameters<BlockNumber, Balance> =
@@ -83,20 +98,11 @@ parameter_types! {
     pub SetInvitationCountProposalParameters: ProposalParameters<BlockNumber, Balance> =
         set_invitation_count_proposal();
 
-    pub CreateBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        create_blog_post_proposal();
-
-    pub EditBlogPostProoposalParamters: ProposalParameters<BlockNumber, Balance> =
-        edit_blog_post_proposal();
-
-    pub LockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        lock_blog_post_proposal();
-
-    pub UnlockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        unlock_blog_post_proposal();
-
     pub VetoProposalProposalParameters: ProposalParameters<BlockNumber, Balance> =
         veto_proposal_proposal();
+
+    pub UpdateGlobalNftLimitProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        update_global_nft_limit_proposal();
 
     pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
         update_channel_payouts_proposal();

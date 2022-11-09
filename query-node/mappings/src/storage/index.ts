@@ -16,11 +16,10 @@ import {
   StorageBucketOperatorStatusInvited,
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
-  StorageSystemParameters,
   GeoCoordinates,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
-import { getById, inconsistentState, INT32MAX, toNumber } from '../common'
+import { getById, inconsistentState } from '../common'
 import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
 import {
   processDistributionBucketFamilyMetadata,
@@ -29,7 +28,6 @@ import {
 } from './metadata'
 import {
   createDataObjects,
-  getStorageSystem,
   getStorageBucketWithOperatorMetadata,
   getBag,
   getDynamicBagId,
@@ -41,19 +39,15 @@ import {
   distributionBucketId,
   distributionOperatorId,
   distributionBucketIdByFamilyAndIndex,
+  deleteDataObjects,
 } from './utils'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 // STORAGE BUCKETS
 
 export async function storage_StorageBucketCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [
-    bucketId,
-    invitedWorkerId,
-    acceptingNewBags,
-    dataObjectSizeLimit,
-    dataObjectCountLimit,
-  ] = new Storage.StorageBucketCreatedEvent(event).params
+  const [bucketId, invitedWorkerId, acceptingNewBags, dataObjectSizeLimit, dataObjectCountLimit] =
+    new Storage.StorageBucketCreatedEvent(event).params
 
   const storageBucket = new StorageBucket({
     id: bucketId.toString(),
@@ -201,20 +195,41 @@ export async function storage_StorageBucketDeleted({ event, store }: EventContex
 
 // DYNAMIC BAGS
 export async function storage_DynamicBagCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bagId, , storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
+  const [
+    { bagId, storageBuckets, distributionBuckets, objectCreationList, expectedDataObjectStateBloatBond },
+    objectIds,
+  ] = new Storage.DynamicBagCreatedEvent(event).params
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
-    storageBuckets: Array.from(storageBucketIdsSet).map((id) => new StorageBucket({ id: id.toString() })),
-    distributionBuckets: Array.from(distributionBucketIdsSet).map(
+    storageBuckets: Array.from(storageBuckets).map((id) => new StorageBucket({ id: id.toString() })),
+    distributionBuckets: Array.from(distributionBuckets).map(
       (id) => new DistributionBucket({ id: distributionBucketId(id) })
     ),
   })
   await store.save<StorageBag>(storageBag)
+  if (objectCreationList.length) {
+    await createDataObjects(store, {
+      storageBagOrId: storageBag,
+      objectCreationList,
+      stateBloatBond: expectedDataObjectStateBloatBond,
+      objectIds: Array.from(objectIds),
+    })
+  }
 }
 
 export async function storage_DynamicBagDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [, bagId] = new Storage.DynamicBagDeletedEvent(event).params
+  const [bagId] = new Storage.DynamicBagDeletedEvent(event).params
+
+  // first remove all the data objects in storage bucket
+  const bagDataObjects = await store.getMany(StorageDataObject, {
+    where: { storageBag: { id: getDynamicBagId(bagId) } },
+  })
+
+  for (const dataObject of bagDataObjects) {
+    await unsetAssetRelations(store, dataObject)
+  }
+
   const storageBag = await getDynamicBag(store, bagId, ['objects'])
   await store.remove<StorageBag>(storageBag)
 }
@@ -223,8 +238,32 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [dataObjectIds, uploadParams, deletionPrize] = new Storage.DataObjectsUploadedEvent(event).params
-  await createDataObjects(store, uploadParams, deletionPrize, dataObjectIds)
+  const [objectIds, { bagId, objectCreationList }, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
+  await createDataObjects(store, {
+    storageBagOrId: bagId,
+    objectCreationList,
+    stateBloatBond,
+    objectIds: [...objectIds.values()],
+  })
+}
+
+export async function storage_DataObjectsUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
+  const [
+    { bagId, objectCreationList, expectedDataObjectStateBloatBond: stateBloatBond },
+    uploadedObjectIds,
+    objectsToRemove,
+  ] = new Storage.DataObjectsUpdatedEvent(event).params
+
+  // create new objects
+  await createDataObjects(store, {
+    storageBagOrId: bagId,
+    objectCreationList,
+    stateBloatBond,
+    objectIds: [...uploadedObjectIds.values()],
+  })
+
+  // remove objects
+  await deleteDataObjects(store, bagId, objectsToRemove)
 }
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -305,21 +344,8 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, bagId, dataObjectIds] = new Storage.DataObjectsDeletedEvent(event).params
-  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
-    'videoThumbnail',
-    ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
-    'videoMedia',
-    ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
-  ])
 
-  await Promise.all(
-    dataObjects.map(async (dataObject) => {
-      // update video active counters
-      await getAllManagers(store).storageDataObjects.onMainEntityDeletion(dataObject)
-
-      await unsetAssetRelations(store, dataObject)
-    })
-  )
+  await deleteDataObjects(store, bagId, dataObjectIds)
 }
 
 // DISTRIBUTION FAMILY
@@ -368,7 +394,7 @@ export async function storage_DistributionBucketCreated({ event, store }: EventC
   const family = await getById(store, DistributionBucketFamily, familyId.toString())
   const bucket = new DistributionBucket({
     id: distributionBucketId(bucketId),
-    bucketIndex: bucketId.distribution_bucket_index.toNumber(),
+    bucketIndex: bucketId.distributionBucketIndex.toNumber(),
     acceptingNewBags: acceptingNewBags.valueOf(),
     distributing: true, // Runtime default
     family,
@@ -413,7 +439,7 @@ export async function storage_DistributionBucketDeleted({ event, store }: EventC
   const invitedOperators = await store.getMany(DistributionBucketOperator, {
     where: {
       status: DistributionBucketOperatorStatus.INVITED,
-      distributionBucket,
+      distributionBucket: { id: distributionBucket.id },
     },
   })
   await Promise.all(invitedOperators.map((operator) => removeDistributionBucketOperator(store, operator)))
@@ -424,12 +450,8 @@ export async function storage_DistributionBucketsUpdatedForBag({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [
-    bagId,
-    familyId,
-    addedBucketsIndices,
-    removedBucketsIndices,
-  ] = new Storage.DistributionBucketsUpdatedForBagEvent(event).params
+  const [bagId, familyId, addedBucketsIndices, removedBucketsIndices] =
+    new Storage.DistributionBucketsUpdatedForBagEvent(event).params
   // Get or create bag
   const storageBag = await getBag(store, bagId, ['distributionBuckets'])
   const removedBucketsIds = Array.from(removedBucketsIndices).map((bucketIndex) =>
@@ -530,77 +552,4 @@ async function removeDistributionBucketOperator(store: DatabaseManager, operator
       }
     }
   }
-}
-
-// STORAGE SYSTEM GLOBAL PARAMS
-
-export async function storage_UpdateBlacklist({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [removedContentIds, addedContentIds] = new Storage.UpdateBlacklistEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-  storageSystem.blacklist = storageSystem.blacklist
-    .filter((cid) => !Array.from(removedContentIds).some((id) => id.eq(cid)))
-    .concat(Array.from(addedContentIds).map((id) => id.toString()))
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_DistributionBucketsPerBagLimitUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [newLimit] = new Storage.DistributionBucketsPerBagLimitUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.distributionBucketsPerBagLimit = toNumber(newLimit, INT32MAX)
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_StorageBucketsPerBagLimitUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [newLimit] = new Storage.StorageBucketsPerBagLimitUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.storageBucketsPerBagLimit = toNumber(newLimit, INT32MAX)
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_StorageBucketsVoucherMaxLimitsUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [sizeLimit, countLimit] = new Storage.StorageBucketsVoucherMaxLimitsUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.storageBucketMaxObjectsSizeLimit = sizeLimit
-  storageSystem.storageBucketMaxObjectsCountLimit = countLimit
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_UploadingBlockStatusUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [isBlocked] = new Storage.UploadingBlockStatusUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.uploadingBlocked = isBlocked.isTrue
-
-  await store.save<StorageSystemParameters>(storageSystem)
-}
-
-export async function storage_DataObjectPerMegabyteFeeUpdated({
-  event,
-  store,
-}: EventContext & StoreContext): Promise<void> {
-  const [newFee] = new Storage.DataObjectPerMegabyteFeeUpdatedEvent(event).params
-  const storageSystem = await getStorageSystem(store)
-
-  storageSystem.dataObjectFeePerMb = newFee
-
-  await store.save<StorageSystemParameters>(storageSystem)
 }

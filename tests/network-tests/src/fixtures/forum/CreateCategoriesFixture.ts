@@ -7,12 +7,12 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { CategoryCreatedEventFieldsFragment, ForumCategoryFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId } from '@joystream/types/forum'
+import { ForumCategoryId } from '@joystream/types/primitives'
 
 export type CategoryParams = {
   title: string
   description: string
-  parentId?: CategoryId
+  parentId?: ForumCategoryId
 }
 
 type CategoryCreatedEventDetails = EventDetails<EventType<'forum', 'CategoryCreated'>>
@@ -27,7 +27,7 @@ export class CreateCategoriesFixture extends StandardizedFixture {
     this.categoriesParams = categoriesParams
   }
 
-  public getCreatedCategoriesIds(): CategoryId[] {
+  public getCreatedCategoriesIds(): ForumCategoryId[] {
     if (!this.events.length) {
       throw new Error('Trying to get created categories ids before they were created!')
     }

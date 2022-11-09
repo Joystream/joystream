@@ -8,11 +8,14 @@ import { MembershipFieldsFragment, MemberProfileUpdatedEventFieldsFragment } fro
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { Utils } from '../../utils'
 import { isSet } from '@joystream/metadata-protobuf/utils'
+import { asMembershipExternalResource } from './utils'
 
 export type MemberProfileData = {
   name?: string | null
   handle?: string | null
   about?: string | null
+  avatarUri?: string | null
+  externalResources?: MembershipMetadata.IExternalResource[] | null
 }
 
 export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
@@ -45,8 +48,13 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
     const expected = this.getExpectedValues()
     assert.equal(metadata.name, expected.name)
     assert.equal(handle, expected.handle)
-    // TODO: avatar
     assert.equal(metadata.about, expected.about)
+    assert.equal(metadata.avatar?.avatarUri, expected.avatarUri || undefined)
+    assert.includeDeepMembers(
+      metadata.externalResources ?? [],
+      expected.externalResources?.map(asMembershipExternalResource) ?? []
+    )
+    assert.isFalse(Utils.hasDuplicates(metadata.externalResources?.map(({ type }) => type)))
   }
 
   public getExpectedValues(): MemberProfileData {
@@ -54,6 +62,10 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       handle: isSet(this.newValues.handle) ? this.newValues.handle : this.oldValues.handle,
       name: isSet(this.newValues.name) ? this.newValues.name || null : this.oldValues.name,
       about: isSet(this.newValues.about) ? this.newValues.about || null : this.oldValues.about,
+      avatarUri: isSet(this.newValues.avatarUri) ? this.newValues.avatarUri || null : this.oldValues.avatarUri,
+      externalResources: isSet(this.newValues.externalResources)
+        ? this.newValues.externalResources || null
+        : this.oldValues.externalResources,
     }
   }
 
@@ -75,15 +87,21 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
     assert.equal(newHandle, expected.handle)
     assert.equal(newMetadata.name, expected.name)
     assert.equal(newMetadata.about, expected.about)
-    // TODO: avatar
+    assert.equal(newMetadata.avatar?.avatarUri, expected.avatarUri || undefined)
+    assert.includeDeepMembers(
+      newMetadata.externalResources ?? [],
+      expected.externalResources?.map(asMembershipExternalResource) ?? []
+    )
+    assert.isFalse(Utils.hasDuplicates(newMetadata.externalResources?.map(({ type }) => type)))
   }
 
   async execute(): Promise<void> {
     const metadata = new MembershipMetadata({
       name: this.newValues.name,
       about: this.newValues.about,
+      avatarUri: this.newValues.avatarUri,
+      externalResources: this.newValues.externalResources,
     })
-    // TODO: avatar
     this.tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
       this.newValues.handle || null,
