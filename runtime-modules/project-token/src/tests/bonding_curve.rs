@@ -68,6 +68,7 @@ fn bonding_succeeds_with_new_user() {
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
+            let account_number_pre = Token::token_info_by_id(token_id).accounts_number;
 
             BondFixture::default()
                 .with_sender(user_account_id)
@@ -76,11 +77,13 @@ fn bonding_succeeds_with_new_user() {
                 .execute_call()
                 .unwrap();
 
+            let account_number_post = Token::token_info_by_id(token_id).accounts_number;
             let account_data =
                 Token::ensure_account_data_exists(token_id, &user_member_id).unwrap();
             let user_amount = BONDING_CURVE_CREATOR_REWARD
                 .left_from_one()
                 .mul_floor(DEFAULT_BONDING_AMOUNT);
+            assert_eq!(account_number_post - account_number_pre, 1);
             assert_eq!(account_data.amount, user_amount);
             assert_eq!(
                 account_data.bloat_bond,

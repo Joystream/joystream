@@ -856,11 +856,13 @@ decl_module! {
 
             Self::ensure_can_transfer_joy(&sender, joys_required.into())?;
 
+            // TODO encapsulate into order
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(amount_to_bond.saturating_sub(desired_price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
             }
 
+            // TODO encapsulate into order
             // timestamp deadline check
             if let Some(deadline) = deadline {
                 ensure!(<timestamp::Pallet<T>>::get() < deadline, Error::<T>::DeadlineExpired);
@@ -870,32 +872,32 @@ decl_module! {
 
             let creator_member_id = token_data.creator_member_id;
             let creator_amount = curve.creator_reward.mul_floor(amount);
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, creator_member_id, |account_data| {
-                account_data.amount = account_data.amount.saturating_add(creator_amount)
-            });
+            if AccountInfoByTokenAndMember::<T>::contains_key(token_id, creator_member_id) {
+                AccountInfoByTokenAndMember::<T>::mutate(token_id, creator_member_id, |account_data| {
+                    account_data.amount = account_data.amount.saturating_add(creator_amount)
+                });
+            }
 
             let user_amount = amount - creator_amount;
             if !user_account_data_exists {
-                AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data: &mut AccountDataOf<T>| {
-                    *account_data = AccountDataOf::<T>::new_with_amount_and_bond(
+               let new_account_info = AccountDataOf::<T>::new_with_amount_and_bond(
                             user_amount,
                             // No restrictions on repayable bloat bond,
                             // since only usable balance is allowed
                             RepayableBloatBond::new(Self::bloat_bond(), None)
                     );
-                });
+                Self::do_insert_new_account_for_token(token_id,  member_id, new_account_info);
                 Self::transfer_joy(&sender, &Self::module_treasury_account(), bloat_bond)?;
             } else {
                 AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
                     account_data.amount = account_data.amount.saturating_add(user_amount);
-                })
+                });
             }
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.total_supply = token_data.total_supply.saturating_add(amount);
                 token_data.tokens_issued = token_data.tokens_issued.saturating_add(amount);
             });
-
             Self::transfer_joy(&sender, &amm_reserve_account, amount_to_bond.into())?;
 
             Ok(())
@@ -965,6 +967,7 @@ decl_module! {
 
             ensure!(OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data).is_ok(), Error::<T>::NotInAmmState);
 
+            // TODO: use a is_empty method
             let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
             ensure!(Joy::<T>::usable_balance(amm_treasury_account) == T::JoyExistentialDeposit::get(), Error::<T>::AmmTreasuryBalanceNotEmpty);
 
