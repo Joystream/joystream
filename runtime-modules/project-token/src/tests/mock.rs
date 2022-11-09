@@ -634,7 +634,7 @@ pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) *
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_BONDING_AMOUNT: u128 = 1000;
 pub const DEFAULT_UNBONDING_AMOUNT: u128 = 100;
-pub const BONDING_CURVE_SLOPE: Permill = Permill::from_parts(10);
+pub const BONDING_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
 pub const BONDING_CURVE_INTERCEPT: Permill = Permill::zero();
 pub const BONDING_CURVE_CREATOR_REWARD: Permill = Permill::from_percent(10);
 

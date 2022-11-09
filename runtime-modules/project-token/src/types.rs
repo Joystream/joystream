@@ -589,6 +589,7 @@ pub struct BondingCurve {
     pub creator_reward: Permill,
 }
 
+#[derive(Debug)]
 pub(crate) enum BondOperation {
     Bond,
     Unbond,
@@ -609,6 +610,10 @@ impl BondingCurve {
             .checked_mul(&supply_pre)
             .ok_or(Error::<T>::ArithmeticError)?;
         let third_term = self.slope.mul_floor(mixed);
+        // println!(
+        //     "first term, second term, third term, bond_op: {:?}, {:?}, {:?}, {:?}\n",
+        //     first_term, second_term, third_term, bond_operation
+        // );
         let res = match bond_operation {
             BondOperation::Bond => first_term
                 .checked_add(&second_term)

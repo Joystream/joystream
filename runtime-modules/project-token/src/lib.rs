@@ -846,7 +846,7 @@ decl_module! {
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
-            let amount_to_bond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
+            let amount_to_bond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
             let bloat_bond = Self::bloat_bond();
             let joys_required = if !user_account_data_exists {
                 amount_to_bond.saturating_add(bloat_bond)
@@ -922,7 +922,7 @@ decl_module! {
 
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
 
-            let amount_to_unbond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
+            let amount_to_unbond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
 
             Self::ensure_can_transfer_joy(&amm_reserve_account, amount_to_unbond.into())?;
 

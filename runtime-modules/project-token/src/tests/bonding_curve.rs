@@ -265,8 +265,7 @@ fn amm_treasury_balance_correctly_increased_during_bonding() {
                 .unwrap();
 
             let amm_reserve_post = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount =
-                pricing_function_with_defaults(token_id, BondOperation::Bond);
+            let correctly_computed_joy_amount = 1000500;
             assert_eq!(
                 amm_reserve_post - amm_reserve_pre,
                 correctly_computed_joy_amount
@@ -291,8 +290,7 @@ fn bonding_fails_with_user_not_having_sufficient_usable_joy_required() {
 fn user_joy_balance_correctly_decreased_during_bonding() {
     let (_, user_account) = member!(2);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
-    let correctly_computed_joy_amount =
-        pricing_function_with_defaults(token!(1), BondOperation::Bond);
+    let correctly_computed_joy_amount = 1000500;
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -406,7 +404,6 @@ fn amm_activation_fails_with_invalid_token_id() {
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
-
         let result = ActivateAmmFixture::default()
             .with_token_id(token_id)
             .execute_call();
@@ -584,6 +581,7 @@ fn unbonding_order_fails_with_member_and_origin_auth() {
             );
         })
 }
+
 #[test]
 fn unbonding_order_fails_with_token_not_in_amm_state() {
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
@@ -683,8 +681,7 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
                 .unwrap();
 
             let amm_reserve_post = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount =
-                pricing_function_with_defaults(token_id, BondOperation::Unbond);
+            let correctly_computed_joy_amount = 100095;
             assert_eq!(
                 amm_reserve_pre - amm_reserve_post,
                 correctly_computed_joy_amount
@@ -718,7 +715,6 @@ fn unbonding_fails_with_amm_treasury_not_having_sufficient_usable_joy_required()
 
 #[test]
 fn user_joy_balance_correctly_increased_during_unbonding() {
-    let token_id = token!(1);
     let (_, user_account) = member!(2);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
@@ -732,13 +728,13 @@ fn user_joy_balance_correctly_increased_during_unbonding() {
                 .execute_call()
                 .unwrap();
             BondFixture::default().execute_call().unwrap();
+            println!("{:?}", Token::token_info_by_id(1).total_supply);
             let user_reserve_pre = Balances::usable_balance(user_account);
 
             UnbondFixture::default().execute_call().unwrap();
 
             let user_reserve_post = Balances::usable_balance(user_account);
-            let correctly_computed_joy_amount =
-                pricing_function_with_defaults(token_id, BondOperation::Unbond);
+            let correctly_computed_joy_amount = 95;
             assert_eq!(
                 user_reserve_post - user_reserve_pre,
                 correctly_computed_joy_amount
@@ -927,14 +923,47 @@ fn deactivate_ok_with_full_cycle_from_activation() {
 }
 
 #[test]
-fn test_pricing_function_values() {
-    let config = GenesisConfigBuilder::new_empty().build();
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
+fn review_eval_function() {
+    let token_id = token!(1);
+    let ((_, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default()
+                .with_creator_reward(Permill::zero())
+                .execute_call()
+                .unwrap();
+            let TokenData {
+                total_supply,
+                bonding_curve,
+                ..
+            } = Token::token_info_by_id(token_id);
 
-        let amount = pricing_function_with_defaults(token!(1), BondOperation::Bond);
-        let amount2 = pricing_function_with_defaults(token!(1), BondOperation::Unbond);
+            // .001 * ((1ml + x)^2 - 1ml^2)/2
+            let curve = &bonding_curve.unwrap();
+            let bonding_correct_values: Vec<Balance> = vec![10000, 100005, 1000500, 10050000];
+            let bonding_values = vec![10, 100, 1000, 10000]
+                .into_iter()
+                .map(|x: Balance| {
+                    curve
+                        .eval::<Test>(x, total_supply, BondOperation::Bond)
+                        .unwrap()
+                })
+                .collect::<Vec<_>>();
 
-        print!("AMOUNT, AMOUNT: {:?}, {:?}", amount, amount2);
-    });
+            // -[.001 * ((1ml - x)^2 - 1ml^2)/2]
+            let unbonding_correct_values: Vec<Balance> =
+                vec![10000 /*technically 9999.95*/, 99995, 999500, 9950000];
+            let unbonding_values = vec![10, 100, 1000, 10000]
+                .into_iter()
+                .map(|x: Balance| {
+                    curve
+                        .eval::<Test>(x, total_supply, BondOperation::Unbond)
+                        .unwrap()
+                })
+                .collect::<Vec<_>>();
+
+            assert_eq!(bonding_correct_values, bonding_values);
+            assert_eq!(unbonding_correct_values, unbonding_values);
+        })
 }
