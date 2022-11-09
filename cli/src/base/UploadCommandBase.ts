@@ -339,9 +339,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
         }
       })
     )
+    multiBar.stop()
     errors.forEach(([objectId, message]) => this.warn(`Upload of object ${objectId} failed: ${message}`))
     this.handleRejectedUploads(bagId, assets, results, inputFilePath, outputFilePostfix)
-    multiBar.stop()
+    if (errors.length) {
+      this.exit(ExitCodes.StorageNodeError)
+    }
   }
 
   async prepareAssetsForExtrinsic(
