@@ -846,23 +846,21 @@ decl_module! {
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
-            let amount_to_bond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
+            let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
             let bloat_bond = Self::bloat_bond();
             let joys_required = if !user_account_data_exists {
-                amount_to_bond.saturating_add(bloat_bond)
+                price.saturating_add(bloat_bond)
             } else {
-                amount_to_bond
+                price
             };
 
             Self::ensure_can_transfer_joy(&sender, joys_required.into())?;
 
-            // TODO encapsulate into order
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
-                ensure!(amount_to_bond.saturating_sub(desired_price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+                ensure!(price.saturating_sub(desired_price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
             }
 
-            // TODO encapsulate into order
             // timestamp deadline check
             if let Some(deadline) = deadline {
                 ensure!(<timestamp::Pallet<T>>::get() < deadline, Error::<T>::DeadlineExpired);
@@ -886,7 +884,7 @@ decl_module! {
                             // since only usable balance is allowed
                             RepayableBloatBond::new(Self::bloat_bond(), None)
                     );
-                Self::do_insert_new_account_for_token(token_id,  member_id, new_account_info);
+                Self::do_insert_new_account_for_token(token_id, &member_id, new_account_info);
                 Self::transfer_joy(&sender, &Self::module_treasury_account(), bloat_bond)?;
             } else {
                 AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
@@ -898,7 +896,7 @@ decl_module! {
                 token_data.total_supply = token_data.total_supply.saturating_add(amount);
                 token_data.tokens_issued = token_data.tokens_issued.saturating_add(amount);
             });
-            Self::transfer_joy(&sender, &amm_reserve_account, amount_to_bond.into())?;
+            Self::transfer_joy(&sender, &amm_reserve_account, price.into())?;
 
             Ok(())
         }
@@ -924,13 +922,13 @@ decl_module! {
 
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
 
-            let amount_to_unbond = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
+            let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
 
-            Self::ensure_can_transfer_joy(&amm_reserve_account, amount_to_unbond.into())?;
+            Self::ensure_can_transfer_joy(&amm_reserve_account, price.into())?;
 
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
-                ensure!(amount_to_unbond.saturating_sub(desired_price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+                ensure!(desired_price.saturating_sub(price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
             }
 
             // timestamp deadline check
@@ -949,7 +947,7 @@ decl_module! {
                 token_data.tokens_issued = token_data.tokens_issued.saturating_sub(amount);
             });
 
-            Self::transfer_joy(&amm_reserve_account, &sender, amount_to_unbond.into())?;
+            Self::transfer_joy(&amm_reserve_account, &sender, price.into())?;
 
             Ok(())
         }

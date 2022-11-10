@@ -618,7 +618,7 @@ fn unbonding_order_fails_with_deadline_expired() {
 
 #[test]
 fn unbonding_order_failed_with_slippage_constraint_violated() {
-    let slippage_tolerance = (Permill::zero(), Balance::zero());
+    let slippage_tolerance = (Permill::zero(), joy!(1_000_000_000));
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
