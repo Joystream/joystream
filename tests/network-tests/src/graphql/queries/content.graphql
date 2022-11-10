@@ -119,11 +119,59 @@ fragment CommentFields on Comment {
   }
 }
 
+fragment LicenseFields on License {
+  code
+  attribution
+  customText
+}
+
+fragment VideoMediaEncodingFields on VideoMediaEncoding {
+  codecName
+  container
+  mimeMediaType
+}
+
+fragment VideoMediaMetadataFields on VideoMediaMetadata {
+  encoding {
+    ...VideoMediaEncodingFields
+  }
+  pixelWidth
+  pixelHeight
+  size
+}
+
+fragment VideoSubtitleFields on VideoSubtitle {
+  id
+  type
+  language {
+    iso
+  }
+  mimeType
+  asset {
+    ...StorageDataObjectFields
+  }
+}
+
 fragment VideoFields on Video {
   id
   title
   description
+  duration
   isPublic
+  isExplicit
+  hasMarketing
+  license {
+    ...LicenseFields
+  }
+  mediaMetadata {
+    ...VideoMediaMetadataFields
+  }
+  media {
+    ...StorageDataObjectFields
+  }
+  thumbnailPhoto {
+    ...StorageDataObjectFields
+  }
   category {
     ...VideoCategoryFields
   }
@@ -143,10 +191,7 @@ fragment VideoFields on Video {
     id
   }
   subtitles {
-    id
-    asset {
-      ...StorageDataObjectFields
-    }
+    ...VideoSubtitleFields
   }
 }
 

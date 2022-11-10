@@ -1,5 +1,5 @@
 import { getInputJson } from '../../helpers/InputOutput'
-import { VideoInputParameters } from '../../Types'
+import { VideoFileMetadata, VideoInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
@@ -9,7 +9,7 @@ import {
   PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission,
 } from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
-import { ContentMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
+import { ContentMetadata, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
@@ -67,6 +67,20 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     return assetsToRemove.map((a) => Number(a.id))
   }
 
+  setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {
+    return {
+      duration: videoFileMetadata.duration,
+      mediaPixelWidth: videoFileMetadata.width,
+      mediaPixelHeight: videoFileMetadata.height,
+      mediaType: {
+        codecName: videoFileMetadata.codecName,
+        container: videoFileMetadata.container,
+        mimeMediaType: videoFileMetadata.mimeType,
+      },
+      ...metadata,
+    }
+  }
+
   async run(): Promise<void> {
     const {
       flags: { input, context },
@@ -80,7 +94,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     const keypair = await this.getDecodedPair(address)
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
-    const meta = asValidatedMetadata(VideoMetadata, videoInput)
+    let meta = asValidatedMetadata(VideoMetadata, videoInput)
     const { enableComments } = videoInput
 
     // Video assets
@@ -109,6 +123,13 @@ export default class UpdateVideoCommand extends UploadCommandBase {
         })
       )
     ).filter((r) => r)
+
+    // Try to get updated video file metadata
+    if (videoAssetIndices.videoPath !== undefined) {
+      const videoFileMetadata = await this.getVideoFileMetadata(resolvedVideoAssets[videoAssetIndices.videoPath].path)
+      this.log('Video media file parameters established:', videoFileMetadata)
+      meta = this.setVideoMetadataDefaults(meta, videoFileMetadata)
+    }
 
     // Prepare and send the extrinsic
     const serializedMeta = metadataToBytes(VideoMetadata, meta)
@@ -157,12 +178,20 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       videoId,
       videoUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUpdated')
-    if (dataObjectsUploadedEvent) {
-      const [, objectIds] = dataObjectsUploadedEvent.data
+
+    const VideoUpdatedEvent = this.getEvent(result, 'content', 'VideoUpdated')
+    const objectIds = VideoUpdatedEvent.data[3]
+
+    if (objectIds.size !== (assetsToUpload?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of video assets in VideoUpdated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
+
+    if (objectIds.size) {
       await this.uploadAssets(
         `dynamic:channel:${video.inChannel.toString()}`,
-        [...objectIds.values()].map((id, index) => ({
+        [...objectIds].map((id, index) => ({
           dataObjectId: id,
           path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
         })),
