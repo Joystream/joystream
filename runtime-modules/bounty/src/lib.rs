@@ -105,6 +105,7 @@ use common::membership::{
     MemberId, MemberOriginValidator, MembershipInfoProvider, MembershipTypes,
     StakingAccountValidator,
 };
+use common::to_kb;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
@@ -935,7 +936,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (W)` where:
-        /// - `W` is the _metadata length.
+        /// - `W` is the _metadata size in kilobytes.
         /// - `M` is closed contract member list length.
         /// - DB:
         ///    - O(M) (O(1) on open contract)
@@ -1264,14 +1265,15 @@ decl_module! {
         ///
         /// ## weight
         /// `O (W + M)` where:
-        /// - `W` is the work_description length.
+        /// - `W` is the work_description size in kilobytes.
         /// - `M` is closed contract member list length.
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoBounty::<T>::announce_work_entry(
+            to_kb(work_description.len().saturated_into()),
             T::ClosedContractSizeLimit::get().saturated_into(),
-            work_description.len().saturated_into())]
+        )]
         pub fn announce_work_entry(
             origin,
             member_id: MemberId<T>,
@@ -1339,11 +1341,11 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is the work_data length,
+        /// - `N` is the work_data size in kilobytes,
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight =  WeightInfoBounty::<T>::submit_work(work_data.len().saturated_into())]
+        #[weight =  WeightInfoBounty::<T>::submit_work(to_kb(work_data.len().saturated_into()))]
         pub fn submit_work(
             origin,
             member_id: MemberId<T>,
@@ -1418,8 +1420,8 @@ decl_module! {
         ///
         /// ## weight
         /// `O (J + K + W + R)`
-        /// - `J` is rationale length,
-        /// - `K` is the sum of all action_justification lengths (inside OracleJudgment),
+        /// - `J` is rationale size in kilobytes,
+        /// - `K` is the sum of all action_justification sizes (in kilobytes) inside OracleJudgment,
         /// - `W` is number of winner judgment entries,
         /// - `R` is number of rejected judgment entries,
         /// - db:
@@ -1427,7 +1429,8 @@ decl_module! {
         /// # </weight>
         #[weight = Module::<T>::submit_oracle_judgment_weight(
             judgment,
-            rationale.len().saturated_into())]
+            to_kb(rationale.len().saturated_into())
+        )]
         pub fn submit_oracle_judgment(
             origin,
             bounty_id: T::BountyId,
@@ -1659,11 +1662,11 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::contributor_remark(msg.len().saturated_into())]
+        #[weight = WeightInfoBounty::<T>::contributor_remark(to_kb(msg.len().saturated_into()))]
         pub fn contributor_remark(
             origin,
             contributor: BountyActor<MemberId<T>>,
@@ -1689,11 +1692,11 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::oracle_remark(msg.len().saturated_into())]
+        #[weight = WeightInfoBounty::<T>::oracle_remark(to_kb(msg.len().saturated_into()))]
         pub fn oracle_remark(
             origin,
             oracle: BountyActor<MemberId<T>>,
@@ -1726,11 +1729,11 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::entrant_remark(msg.len().saturated_into())]
+        #[weight = WeightInfoBounty::<T>::entrant_remark(to_kb(msg.len().saturated_into()))]
         pub fn entrant_remark(
             origin,
             entrant_id: MemberId<T>,
@@ -1761,11 +1764,11 @@ decl_module! {
         ///
         /// ## weight
         /// `O (N)`
-        /// - `N` is msg length
+        /// - `N` is msg size in kilobytes
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::creator_remark(msg.len().saturated_into())]
+        #[weight = WeightInfoBounty::<T>::creator_remark(to_kb(msg.len().saturated_into()))]
         pub fn creator_remark(
             origin,
             creator: BountyActor<MemberId<T>>,
@@ -2336,7 +2339,7 @@ impl<T: Config> Module<T> {
 
     // Calculates weight for create_bounty extrinsic.
     fn create_bounty_weight(params: &BountyCreationParameters<T>, metadata: &[u8]) -> Weight {
-        let metadata_length = metadata.len().saturated_into();
+        let metadata_kb = to_kb(metadata.len().saturated_into());
         let member_list_length =
             if let AssuranceContractType::Closed(ref members) = params.contract_type {
                 members.len().saturated_into()
@@ -2344,8 +2347,8 @@ impl<T: Config> Module<T> {
                 1 // consider open contract member list as one.
             };
 
-        WeightInfoBounty::<T>::create_bounty_by_member(metadata_length, member_list_length).max(
-            WeightInfoBounty::<T>::create_bounty_by_council(metadata_length, member_list_length),
+        WeightInfoBounty::<T>::create_bounty_by_member(metadata_kb, member_list_length).max(
+            WeightInfoBounty::<T>::create_bounty_by_council(metadata_kb, member_list_length),
         )
     }
 
@@ -2369,7 +2372,7 @@ impl<T: Config> Module<T> {
                     } => (
                         w,
                         r.saturating_add(1),
-                        k.saturating_add(action_justification.len() as u32),
+                        k.saturating_add(to_kb(action_justification.len() as u32)),
                     ),
                 },
             );

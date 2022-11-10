@@ -3,11 +3,11 @@
 
 - name: Check if remote chain path dir exists
   stat:
-    path: "bin/chain"
+    path: "chain"
   register: remote_dir_check 
 
 - name: Exit if remote dir exists
-  fail: msg="remote bin/chain dir already exists"
+  fail: msg="remote chain/ dir already exists"
   when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
 
 - name: Creating chain directory
@@ -15,12 +15,12 @@
     path: "{{ item }}"
     state: directory
   loop:
-    - "bin/chain/"
+    - "chain/"
 
 - name: Copying raw chain spec file
   copy:
     src: '{{ data_path }}/chain/chainspec-raw.json'
-    dest: 'bin/chain/chainspec-raw.json'
+    dest: 'chain/chainspec-raw.json'
 
 - name: Create a service file
   template:

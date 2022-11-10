@@ -7,8 +7,12 @@ build_local_code: ""
 git_repo: "https://github.com/Joystream/joystream.git"
 branch_name: carthage
 runtime_profile: ""
-chainspec_creation_strategy: "generate" # "generate" or "new"
-authority_seeds: [] # [ "Alice", "Bob" ]
+# "generate" | "new-with-authority-accounts" | "new-with-authority-seeds"
+chainspec_creation_strategy: "generate"
+# ["StashAddress1,ControllerAddress1", "StashAddress2,ControllerAddress2", ... ]
+authority_stash_and_controller_accounts: []
+# or
+authority_seeds: ["//Alice", "//Bob"]
 
 # Paths relative to remote_user working directory
 remote_data_path: artifacts

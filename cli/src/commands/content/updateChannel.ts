@@ -148,9 +148,17 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       channelId,
       channelUpdateParameters,
     ])
-    const channelUpdatedEvent = this.findEvent(result, 'content', 'ChannelUpdated')
-    if (channelUpdatedEvent) {
-      const objectIds = channelUpdatedEvent.data[3]
+
+    const channelUpdatedEvent = this.getEvent(result, 'content', 'ChannelUpdated')
+    const objectIds = channelUpdatedEvent.data[3]
+
+    if (objectIds.size !== (assetsToUpload?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of channel assets in ChannelUpdated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
+
+    if (objectIds.size) {
       await this.uploadAssets(
         `dynamic:channel:${channelId.toString()}`,
         [...objectIds].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
