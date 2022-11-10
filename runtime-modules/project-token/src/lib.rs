@@ -809,7 +809,6 @@ decl_module! {
                 member_id
             )?;
             let token_data = Self::ensure_token_exists(token_id)?;
-            Self::ensure_account_data_exists(token_id, &member_id).map(|_|())?;
 
             ensure!(OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data).is_ok(), Error::<T>::TokenIssuanceNotInIdleState);
 
@@ -824,6 +823,8 @@ decl_module! {
             if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
                 let _ = Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
             }
+
+            Self::deposit_event(RawEvent::BondingCurveActivated(token_id, member_id, curve));
 
             Ok(())
         }
@@ -848,13 +849,14 @@ decl_module! {
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
             let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
             let bloat_bond = Self::bloat_bond();
+
             let joys_required = if !user_account_data_exists {
                 price.saturating_add(bloat_bond)
             } else {
                 price
             };
 
-            Self::ensure_can_transfer_joy(&sender, joys_required.into())?;
+            Self::ensure_can_transfer_joy(&sender, joys_required)?;
 
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
@@ -882,7 +884,7 @@ decl_module! {
                             user_amount,
                             // No restrictions on repayable bloat bond,
                             // since only usable balance is allowed
-                            RepayableBloatBond::new(Self::bloat_bond(), None)
+                            RepayableBloatBond::new(bloat_bond, None)
                     );
                 Self::do_insert_new_account_for_token(token_id, &member_id, new_account_info);
                 Self::transfer_joy(&sender, &Self::module_treasury_account(), bloat_bond)?;
@@ -896,7 +898,9 @@ decl_module! {
                 token_data.total_supply = token_data.total_supply.saturating_add(amount);
                 token_data.tokens_issued = token_data.tokens_issued.saturating_add(amount);
             });
-            Self::transfer_joy(&sender, &amm_reserve_account, price.into())?;
+            Self::transfer_joy(&sender, &amm_reserve_account, price)?;
+
+            Self::deposit_event(RawEvent::TokenBonded(token_id, member_id, amount, price));
 
             Ok(())
         }
@@ -909,8 +913,7 @@ decl_module! {
 
             let sender = ensure_signed(origin.clone())?;
 
-            T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin,
+            T::MemberOriginValidator::ensure_member_controller_account_origin(                origin,
                 member_id
             )?;
 
@@ -947,7 +950,9 @@ decl_module! {
                 token_data.tokens_issued = token_data.tokens_issued.saturating_sub(amount);
             });
 
-            Self::transfer_joy(&amm_reserve_account, &sender, price.into())?;
+            Self::transfer_joy(&amm_reserve_account, &sender, price)?;
+
+            Self::deposit_event(RawEvent::TokenUnbonded(token_id, member_id, amount, price));
 
             Ok(())
         }
@@ -965,7 +970,6 @@ decl_module! {
 
             ensure!(OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data).is_ok(), Error::<T>::NotInAmmState);
 
-            // TODO: use a is_empty method
             let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
             ensure!(Joy::<T>::usable_balance(amm_treasury_account) == T::JoyExistentialDeposit::get(), Error::<T>::AmmTreasuryBalanceNotEmpty);
 
@@ -975,6 +979,7 @@ decl_module! {
                 token_data.bonding_curve = None;
             });
 
+            Self::deposit_event(RawEvent::BondingCurveDeactivated(token_id, member_id));
 
             Ok(())
         }
@@ -2050,4 +2055,5 @@ impl<T: Config> Module<T> {
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
         Ok(Transfers(transfers_set))
     }
+
 }

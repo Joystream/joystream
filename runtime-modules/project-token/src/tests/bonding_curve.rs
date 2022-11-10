@@ -93,6 +93,18 @@ fn bonding_succeeds_with_new_user() {
 }
 
 #[test]
+fn bonding_order_fails_with_token_not_in_amm_state() {
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+
+        let result = BondFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::NotInAmmState);
+    })
+}
+
+#[test]
 fn bonding_succeeds_with_existing_user() {
     let token_id = token!(1);
     let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
@@ -132,18 +144,6 @@ fn bonding_succeeds_with_existing_user() {
 }
 
 #[test]
-fn bonding_order_fails_with_token_not_in_amm_state() {
-    let config = GenesisConfigBuilder::new_empty().build();
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-
-        let result = BondFixture::default().execute_call();
-
-        assert_err!(result, Error::<Test>::NotInAmmState);
-    })
-}
-
-#[test]
 fn bonding_order_fails_with_deadline_expired() {
     let deadline_timestamp = 0u64;
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
@@ -151,7 +151,6 @@ fn bonding_order_fails_with_deadline_expired() {
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
-
             let result = BondFixture::default()
                 .with_deadline(deadline_timestamp)
                 .execute_call();
@@ -193,7 +192,7 @@ fn bonding_order_fails_with_pricing_function_overflow() {
 }
 
 #[test]
-fn creator_reward_correctly_accounted() {
+fn creator_reward_correctly_accounted_during_bonding() {
     let (creator_id, creator_account) = member!(1);
     let token_id = token!(1);
     let creator_reward = Permill::from_percent(10);
@@ -226,7 +225,7 @@ fn creator_reward_correctly_accounted() {
 }
 
 #[test]
-fn crt_issuance_increased_by_amount_during_bonding() {
+fn bonding_ok_with_creator_token_issuance_increased() {
     let token_id = token!(1);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
     let (creator_id, _) = member!(1);
@@ -385,22 +384,6 @@ fn amm_activation_fails_with_invalid_member_id() {
 }
 
 #[test]
-fn amm_activation_fails_with_invalid_creator() {
-    let (creator_member_id, creator_account_id) = member!(2);
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-        let result = ActivateAmmFixture::default()
-            .with_sender(creator_account_id)
-            .with_member_id(creator_member_id)
-            .execute_call();
-
-        assert_err!(result, Error::<Test>::AccountInformationDoesNotExist);
-    })
-}
-
-#[test]
 fn amm_activation_fails_with_invalid_token_id() {
     let token_id = token!(2);
     let config = GenesisConfigBuilder::new_empty().build();
@@ -412,24 +395,6 @@ fn amm_activation_fails_with_invalid_token_id() {
             .execute_call();
 
         assert_err!(result, Error::<Test>::TokenDoesNotExist);
-    })
-}
-
-#[test]
-fn amm_activation_ok_with_amm_treasury_account_having_existential_deposit() {
-    let token_id = token!(1);
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-
-        ActivateAmmFixture::default().execute_call().unwrap();
-
-        let amm_treasury_account = Token::module_bonding_curve_reserve_account(token_id);
-        assert_eq!(
-            Balances::usable_balance(amm_treasury_account),
-            ExistentialDeposit::get()
-        );
     })
 }
 
@@ -487,6 +452,25 @@ fn amm_activation_successful() {
         );
     })
 }
+
+#[test]
+fn amm_activation_ok_with_amm_treasury_account_having_existential_deposit() {
+    let token_id = token!(1);
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let amm_treasury_account = Token::module_bonding_curve_reserve_account(token_id);
+        assert_eq!(
+            Balances::usable_balance(amm_treasury_account),
+            ExistentialDeposit::get()
+        );
+    })
+}
+
 // --------------------- UNBONDING -------------------------------
 
 #[test]

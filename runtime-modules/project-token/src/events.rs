@@ -2,7 +2,7 @@
 
 use crate::types::{
     JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
-    TransferPolicyOf, ValidatedTransfersOf,
+    TransferPolicyOf, ValidatedTransfersOf, BondingCurve,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
@@ -155,5 +155,34 @@ decl_event! {
         /// - member id
         /// - number of tokens burned
         TokensBurned(TokenId, MemberId, Balance),
+
+        /// BondingCurve activated
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - params for the bonding curve
+        BondingCurveActivated(TokenId, MemberId, BondingCurve),
+
+        /// Token Bonded
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amount of CRT minted
+        /// - amount of JOY deposited into curve treasury
+        TokenBonded(TokenId, MemberId, Balance, JoyBalance),
+
+        /// Token Unbonded
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amount of CRT burned
+        /// - amount of JOY withdrawn from curve treasury
+        TokenUnbonded(TokenId, MemberId, Balance, JoyBalance),
+
+        /// Bonding Curve deactivated
+        /// Params:
+        /// - token id
+        /// - member id
+        BondingCurveDeactivated(TokenId, MemberId),
     }
 }
