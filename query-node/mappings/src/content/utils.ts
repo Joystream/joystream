@@ -81,7 +81,7 @@ const ASSET_TYPES = {
 } as const
 
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = ['channel', 'category', 'thumbnailPhoto', 'media']
+export const videoRelationsForCounters = ['channel', 'category', 'thumbnailPhoto', 'media'] as const
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
