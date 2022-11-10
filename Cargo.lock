@@ -2827,7 +2827,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "12.6.0"
+version = "12.1000.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
