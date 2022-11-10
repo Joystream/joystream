@@ -2,129 +2,89 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { In, FindOptionsWhere } from 'typeorm'
-import { Content } from '../../generated/types'
-import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { ContentMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
-  processVideoMetadata,
-  videoRelationsForCounters,
-  convertContentActorToChannelOrNftOwner,
-  convertContentActor,
-} from './utils'
+  PalletContentPermissionsContentActor as ContentActor,
+  PalletContentVideoCreationParametersRecord as VideoCreationParameters,
+  PalletContentVideoUpdateParametersRecord as VideoUpdateParameters,
+} from '@polkadot/types/lookup'
+import { In, FindOptionsWhere } from 'typeorm'
+import { BaseModel } from '@joystream/warthog'
 import {
   Channel,
-  NftIssuedEvent,
-  Video,
-  VideoCategory,
-  CommentReaction,
   Comment,
-  VideoReaction,
-  VideoReactionsCountByReactionType,
-  CommentReactionsCountByReactionId,
-  VideoReactedEvent,
-  CommentReactedEvent,
   CommentCreatedEvent,
-  CommentTextUpdatedEvent,
   CommentDeletedEvent,
   CommentModeratedEvent,
   CommentPinnedEvent,
+  CommentReactedEvent,
+  CommentReaction,
+  CommentReactionsCountByReactionId,
+  CommentTextUpdatedEvent,
+  NftIssuedEvent,
+  Video,
+  VideoReactedEvent,
+  VideoReaction,
+  VideoReactionsCountByReactionType,
   VideoReactionsPreferenceEvent,
+  StorageDataObject,
+  VideoAssetsDeletedByModeratorEvent,
+  VideoDeletedByModeratorEvent,
+  VideoDeletedEvent,
+  VideoVisibilitySetByModeratorEvent,
+  VideoSubtitle,
 } from 'query-node/dist/model'
-import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
-import _ from 'lodash'
-import { createNft } from './nft'
+import { Content } from '../../generated/types'
+import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
-import { BaseModel } from '@joystream/warthog'
+import { createNft } from './nft'
+import {
+  convertContentActor,
+  convertContentActorToChannelOrNftOwner,
+  processVideoMetadata,
+  unsetAssetRelations,
+  videoRelationsForCounters,
+} from './utils'
+import { BTreeSet } from '@polkadot/types'
 
-export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoCategoryId, videoCategoryCreationParameters] = new Content.VideoCategoryCreatedEvent(event).params
-
-  // read metadata
-  const metadata = (await deserializeMetadata(VideoCategoryMetadata, videoCategoryCreationParameters.meta)) || {}
-
-  // create new video category
-  const videoCategory = new VideoCategory({
-    // main data
-    id: videoCategoryId.toString(),
-    videos: [],
-    createdInBlock: event.blockNumber,
-    activeVideosCounter: 0,
-
-    // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
-  })
-  integrateMeta(videoCategory, metadata, ['name'])
-
-  // save video category
-  await store.save<VideoCategory>(videoCategory)
-
-  // emit log event
-  logger.info('Video category has been created', { id: videoCategoryId })
+interface ContentCreatedEventData {
+  contentActor: ContentActor
+  channelId: ChannelId
+  contentId: VideoId // eventually this would be generic `Content` type in runtime
+  contentCreationParameters: VideoCreationParameters
+  newDataObjectIds: BTreeSet<DataObjectId>
 }
 
-export async function content_VideoCategoryUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoCategoryId, videoCategoryUpdateParameters] = new Content.VideoCategoryUpdatedEvent(event).params
-
-  // load video category
-  const videoCategory = await store.get(VideoCategory, {
-    where: { id: videoCategoryId.toString() },
-  })
-
-  // ensure video category exists
-  if (!videoCategory) {
-    return inconsistentState('Non-existing video category update requested', videoCategoryId)
-  }
-
-  // read metadata
-  const newMeta = deserializeMetadata(VideoCategoryMetadata, videoCategoryUpdateParameters.new_meta) || {}
-  integrateMeta(videoCategory, newMeta, ['name'])
-
-  // set last update time
-  videoCategory.updatedAt = new Date(event.blockTimestamp)
-
-  // save video category
-  await store.save<VideoCategory>(videoCategory)
-
-  // emit log event
-  logger.info('Video category has been updated', { id: videoCategoryId })
-}
-
-export async function content_VideoCategoryDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoCategoryId] = new Content.VideoCategoryDeletedEvent(event).params
-
-  // load video category
-  const videoCategory = await store.get(VideoCategory, {
-    where: { id: videoCategoryId.toString() },
-  })
-
-  // ensure video category exists
-  if (!videoCategory) {
-    return inconsistentState('Non-existing video category deletion requested', videoCategoryId)
-  }
-
-  // remove video category
-  await store.remove<VideoCategory>(videoCategory)
-
-  // emit log event
-  logger.info('Video category has been deleted', { id: videoCategoryId })
+interface ContentUpdatedEventData {
+  contentActor: ContentActor
+  contentId: VideoId // eventually this would be generic `Content` type in runtime
+  contentUpdateParameters: VideoUpdateParameters
+  newDataObjectIds: BTreeSet<DataObjectId>
 }
 
 /// //////////////// Video //////////////////////////////////////////////////////
 
-export async function content_VideoCreated(ctx: EventContext & StoreContext): Promise<void> {
+export async function content_ContentCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [actor, channelId, videoId, videoCreationParameters] = new Content.VideoCreatedEvent(event).params
+  const [contentActor, channelId, contentId, contentCreationParameters, newDataObjectIds] =
+    new Content.VideoCreatedEvent(event).params
+  const { meta } = contentCreationParameters
+
+  const contentCreatedEventData: ContentCreatedEventData = {
+    contentActor,
+    channelId,
+    contentId,
+    contentCreationParameters,
+    newDataObjectIds,
+  }
 
   // load channel
   const channel = await store.get(Channel, {
     where: { id: channelId.toString() },
-    relations: ['category', 'ownerMember', 'ownerCuratorGroup'],
+    relations: ['ownerMember', 'ownerCuratorGroup'],
   })
 
   // ensure channel exists
@@ -132,41 +92,59 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     return inconsistentState('Trying to add video to non-existing channel', channelId)
   }
 
+  // deserialize & process metadata
+  const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
+
+  // Content Creation Preference
+  // 1. metadata == `VideoMetadata` || undefined -> create Video
+  // 1. metadata == `PlaylistMetadata` -> create Playlist (Not Supported Yet)
+
+  await processCreateVideoMessage(ctx, channel, contentMetadata?.videoMetadata || undefined, contentCreatedEventData)
+}
+
+export async function processCreateVideoMessage(
+  ctx: EventContext & StoreContext,
+  channel: Channel,
+  metadata: DecodedMetadataObject<IVideoMetadata> | undefined,
+  contentCreatedEventData: ContentCreatedEventData
+): Promise<void> {
+  const { store, event } = ctx
+  const { contentActor, contentId, contentCreationParameters, newDataObjectIds } = contentCreatedEventData
+
   const video = new Video({
-    id: videoId.toString(),
+    id: contentId.toString(),
     channel,
     isCensored: false,
     isFeatured: false,
     createdInBlock: event.blockNumber,
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
     isCommentSectionEnabled: true,
     isReactionFeatureEnabled: true,
+    videoStateBloatBond: contentCreationParameters.expectedVideoStateBloatBond,
     commentsCount: 0,
     reactionsCount: 0,
   })
-  // deserialize & process metadata
-  if (videoCreationParameters.meta.isSome) {
-    const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta.unwrap()) || {}
-    await processVideoMetadata(ctx, video, metadata, videoCreationParameters.assets.unwrapOr(undefined))
+
+  if (metadata) {
+    await processVideoMetadata(ctx, video, metadata, newDataObjectIds)
   }
 
   // save video
   await store.save<Video>(video)
 
-  if (videoCreationParameters.auto_issue_nft.isSome) {
-    const issuanceParameters = videoCreationParameters.auto_issue_nft.unwrap()
+  if (contentCreationParameters.autoIssueNft.isSome) {
+    const issuanceParameters = contentCreationParameters.autoIssueNft.unwrap()
     const nft = await createNft(store, video, issuanceParameters, event.blockNumber)
 
     const nftIssuedEvent = new NftIssuedEvent({
       ...genericEventFields(event),
 
-      contentActor: await convertContentActor(store, actor),
+      contentActor: await convertContentActor(store, contentActor),
       video,
+      videoCategory: nft.videoCategory,
       royalty: nft.creatorRoyalty,
       metadata: nft.metadata,
       // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-      ...(await convertContentActorToChannelOrNftOwner(store, actor)),
+      ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
     })
 
     await store.save<NftIssuedEvent>(nftIssuedEvent)
@@ -175,36 +153,62 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   await getAllManagers(store).videos.onMainEntityCreation(video)
 
   // emit log event
-  logger.info('Video has been created', { id: videoId })
+  logger.info('Video has been created', { id: contentId })
 }
 
-export async function content_VideoUpdated(ctx: EventContext & StoreContext): Promise<void> {
-  const { event, store } = ctx
+export async function content_ContentUpdated(ctx: EventContext & StoreContext): Promise<void> {
+  const { store, event } = ctx
   // read event data
-  const [actor, videoId, videoUpdateParameters] = new Content.VideoUpdatedEvent(event).params
+  const [contentActor, contentId, contentUpdateParameters, newDataObjectIds] = new Content.VideoUpdatedEvent(event)
+    .params
+  const { newMeta } = contentUpdateParameters
+
+  const contentUpdatedEventData: ContentUpdatedEventData = {
+    contentActor,
+    contentId,
+    contentUpdateParameters,
+    newDataObjectIds,
+  }
 
   // load video
   const video = await store.get(Video, {
-    where: { id: videoId.toString() },
-    relations: [...videoRelationsForCounters, 'license', 'channel.ownerMember', 'channel.ownerCuratorGroup'],
+    where: { id: contentId.toString() },
+    relations: [
+      ...videoRelationsForCounters,
+      'license',
+      'channel.ownerMember',
+      'channel.ownerCuratorGroup',
+      'nft',
+      'mediaMetadata',
+      'mediaMetadata.encoding',
+    ],
   })
 
-  // ensure video exists
-  if (!video) {
-    return inconsistentState('Non-existing video update requested', videoId)
+  if (video) {
+    const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
+
+    await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
+    return
   }
 
-  // prepare changed metadata
-  const newMetadataBytes = videoUpdateParameters.new_meta.unwrapOr(null)
+  inconsistentState('Non-existing content update requested', contentId)
+}
 
-  // update metadata if it was changed
-  if (newMetadataBytes) {
-    const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets_to_upload.unwrapOr(undefined))
+export async function processUpdateVideoMessage(
+  ctx: EventContext & StoreContext,
+  video: Video,
+  metadata: DecodedMetadataObject<IVideoMetadata> | undefined,
+  contentUpdatedEventData: ContentUpdatedEventData
+): Promise<void> {
+  const { store, event } = ctx
+  const { contentActor, contentId, contentUpdateParameters, newDataObjectIds } = contentUpdatedEventData
+
+  if (metadata) {
+    await processVideoMetadata(ctx, video, metadata, newDataObjectIds)
   }
 
   // create nft if requested
-  const issuanceParameters = videoUpdateParameters.auto_issue_nft.unwrapOr(null)
+  const issuanceParameters = contentUpdateParameters.autoIssueNft.unwrapOr(null)
   if (issuanceParameters) {
     const nft = await createNft(store, video, issuanceParameters, event.blockNumber)
 
@@ -214,19 +218,17 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
     const nftIssuedEvent = new NftIssuedEvent({
       ...genericEventFields(event),
 
-      contentActor: await convertContentActor(store, actor),
+      contentActor: await convertContentActor(store, contentActor),
       video,
+      videoCategory: nft.videoCategory,
       royalty: nft.creatorRoyalty,
       metadata: nft.metadata,
       // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-      ...(await convertContentActorToChannelOrNftOwner(store, actor)),
+      ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
     })
 
     await store.save<NftIssuedEvent>(nftIssuedEvent)
   }
-
-  // set last update time
-  video.updatedAt = new Date(event.blockTimestamp)
 
   // update video active counters
   await getAllManagers(store).videos.onMainEntityUpdate(video)
@@ -235,13 +237,125 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   await store.save<Video>(video)
 
   // emit log event
-  logger.info('Video has been updated', { id: videoId })
+  logger.info('Video has been updated', { id: contentId })
 }
 
-export async function content_VideoDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function content_ContentDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [, videoId] = new Content.VideoDeletedEvent(event).params
+  const [actor, contentId] = new Content.VideoDeletedEvent(event).params
 
+  await deleteVideo(store, contentId)
+
+  // common event processing - second
+
+  const videoDeletedEvent = new VideoDeletedEvent({
+    ...genericEventFields(event),
+
+    videoId: contentId.toNumber(),
+    actor: await convertContentActor(store, actor),
+  })
+
+  await store.save<VideoDeletedEvent>(videoDeletedEvent)
+}
+
+export async function content_VideoAssetsDeletedByModerator({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [actor, videoId, dataObjectIds, areNftAssets, rationale] = new Content.VideoAssetsDeletedByModeratorEvent(event)
+    .params
+
+  const assets = await store.getMany(StorageDataObject, {
+    where: {
+      id: In(Array.from(dataObjectIds).map((item) => item.toString())),
+    },
+  })
+
+  for (const asset of assets) {
+    await unsetAssetRelations(store, asset)
+  }
+  logger.info('Video assets have been removed', { ids: dataObjectIds })
+
+  // common event processing - second
+
+  const videoAssetsDeletedByModeratorEvent = new VideoAssetsDeletedByModeratorEvent({
+    ...genericEventFields(event),
+
+    // load video
+    videoId: videoId.toNumber(),
+    assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
+    rationale: rationale.toHuman() as string,
+    actor: await convertContentActor(store, actor),
+    areNftAssets: areNftAssets.valueOf(),
+  })
+
+  await store.save<VideoAssetsDeletedByModeratorEvent>(videoAssetsDeletedByModeratorEvent)
+}
+
+export async function content_VideoDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
+  // read event data
+  const [actor, videoId, rationale] = new Content.VideoDeletedByModeratorEvent(event).params
+
+  await deleteVideo(store, videoId)
+
+  // common event processing - second
+
+  const videoDeletedByModeratorEvent = new VideoDeletedByModeratorEvent({
+    ...genericEventFields(event),
+
+    videoId: Number(videoId),
+    rationale: rationale.toHuman() as string,
+    actor: await convertContentActor(store, actor),
+  })
+
+  await store.save<VideoDeletedByModeratorEvent>(videoDeletedByModeratorEvent)
+}
+
+export async function content_VideoVisibilitySetByModerator({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  // read event data
+  const [actor, videoId, isCensored, rationale] = new Content.VideoVisibilitySetByModeratorEvent(event).params
+
+  // load video
+  const video = await store.get(Video, {
+    where: { id: videoId.toString() },
+    relations: [...videoRelationsForCounters],
+  })
+
+  // ensure video exists
+  if (!video) {
+    return inconsistentState('Non-existing video censoring requested', videoId)
+  }
+
+  // update video
+  video.isCensored = isCensored.isTrue
+
+  // update video active counters
+  await getAllManagers(store).videos.onMainEntityUpdate(video)
+
+  // save video
+  await store.save<Video>(video)
+
+  // emit log event
+  logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })
+
+  // common event processing - second
+
+  const videoVisibilitySetByModeratorEvent = new VideoVisibilitySetByModeratorEvent({
+    ...genericEventFields(event),
+
+    videoId: videoId.toNumber(),
+    isHidden: isCensored.isTrue,
+    rationale: rationale.toHuman() as string,
+    actor: await convertContentActor(store, actor),
+  })
+
+  await store.save<VideoVisibilitySetByModeratorEvent>(videoVisibilitySetByModeratorEvent)
+}
+
+async function deleteVideo(store: DatabaseManager, videoId: VideoId) {
   // load video
   const video = await store.get(Video, {
     where: { id: videoId.toString() },
@@ -286,6 +400,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
   // Entities in the list should be removed in the order. i.e. all `Comment` relations
   // should be removed in the last after all other referencing relations has been removed
   const referencingEntities: typeof BaseModel[] = [
+    VideoSubtitle,
     CommentReaction,
     VideoReaction,
     VideoReactionsCountByReactionType,
@@ -321,103 +436,4 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
     // remove comment
     await store.remove<Comment>(comment)
   }
-}
-
-export async function content_VideoCensorshipStatusUpdated({
-  store,
-  event,
-}: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoId, isCensored] = new Content.VideoCensorshipStatusUpdatedEvent(event).params
-
-  // load video
-  const video = await store.get(Video, {
-    where: { id: videoId.toString() },
-    relations: [...videoRelationsForCounters],
-  })
-
-  // ensure video exists
-  if (!video) {
-    return inconsistentState('Non-existing video censoring requested', videoId)
-  }
-
-  // update video
-  video.isCensored = isCensored.isTrue
-
-  // set last update time
-  video.updatedAt = new Date(event.blockTimestamp)
-
-  // update video active counters
-  await getAllManagers(store).videos.onMainEntityUpdate(video)
-
-  // save video
-  await store.save<Video>(video)
-
-  // emit log event
-  logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })
-}
-
-export async function content_FeaturedVideosSet({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoIds] = new Content.FeaturedVideosSetEvent(event).params
-
-  // load old featured videos
-  const existingFeaturedVideos = await store.getMany(Video, { where: { isFeatured: true } })
-
-  // comparsion utility
-  const isSame = (videoIdA: string) => (videoIdB: string) => videoIdA === videoIdB
-
-  // calculate diff sets
-  const videosToRemove = existingFeaturedVideos.filter(
-    (existingFV) => !videoIds.map((videoId) => videoId.toString()).some(isSame(existingFV.id))
-  )
-  const videoIdsToAdd = videoIds.filter(
-    (videoId) => !existingFeaturedVideos.map((existingFV) => existingFV.id).some(isSame(videoId.toString()))
-  )
-
-  // mark previously featured videos as not-featured
-  await Promise.all(
-    videosToRemove.map(async (video) => {
-      video.isFeatured = false
-      // set last update time
-      video.updatedAt = new Date(event.blockTimestamp)
-
-      await store.save<Video>(video)
-    })
-  )
-
-  // read previously not-featured videos that are meant to be featured
-  const videosToAdd = await store.getMany(Video, {
-    where: {
-      id: In(videoIdsToAdd.map((item) => item.toString())),
-    },
-  })
-
-  if (videosToAdd.length !== videoIdsToAdd.length) {
-    // Do not throw, as this is not validated by the runtime
-    console.warn(
-      'Non-existing video(s) in featuredVideos set:',
-      _.difference(
-        videoIdsToAdd.map((v) => v.toString()),
-        videosToAdd.map((v) => v.id)
-      )
-    )
-  }
-
-  // mark previously not-featured videos as featured
-  await Promise.all(
-    videosToAdd.map(async (video) => {
-      video.isFeatured = true
-
-      // set last update time
-      video.updatedAt = new Date(event.blockTimestamp)
-
-      await store.save<Video>(video)
-    })
-  )
-
-  // emit log event
-  const addedVideoIds = videosToAdd.map((v) => v.id)
-  const removedVideoIds = videosToRemove.map((v) => v.id)
-  logger.info('Featured videos have been updated', { addedVideoIds, removedVideoIds })
 }

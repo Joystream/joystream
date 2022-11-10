@@ -3,7 +3,7 @@ import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../membership'
 import { FixtureRunner } from '../../Fixture'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { Balance } from '@polkadot/types/interfaces'
 
 interface IFailToElectResources {
@@ -21,8 +21,8 @@ export async function assertCouncilMembersRuntimeQnMatch(api: Api, query: QueryN
     () => query.getCurrentCouncilMembers(),
     (qnElectedCouncil) => {
       assert.sameMembers(
-        (qnElectedCouncil?.councilMembers || []).map((item: any) => item.member.id.toString()),
-        runtimeCouncilMembers.map((item: any) => item.membership_id.toString())
+        (qnElectedCouncil?.councilMembers || []).map((item) => item.member.id.toString()),
+        runtimeCouncilMembers.map((item) => item.membershipId.toString())
       )
     }
   )
@@ -55,7 +55,7 @@ export async function prepareFailToElectResources(api: Api, query: QueryNodeApi)
 
   // retrieve currently elected council's members
   const councilMembers = await api.query.council.councilMembers()
-  const councilMemberIds = councilMembers.map((item) => item.membership_id)
+  const councilMemberIds = councilMembers.map((item) => item.membershipId)
 
   return {
     candidatesMemberIds,

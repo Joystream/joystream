@@ -68,6 +68,55 @@ query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
   }
 }
 
+fragment MemberCreatedEventFields on MemberCreatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+  isFoundingMember
+}
+
+query getMemberCreatedEventsByEventIds($eventIds: [ID!]) {
+  memberCreatedEvents(where: { id_in: $eventIds }) {
+    ...MemberCreatedEventFields
+  }
+}
+
+fragment MembershipGiftedEventFields on MembershipGiftedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+}
+
+query getMembershipGiftedEventsByEventIds($eventIds: [ID!]) {
+  membershipGiftedEvents(where: { id_in: $eventIds }) {
+    ...MembershipGiftedEventFields
+  }
+}
+
 fragment MemberInvitedEventFields on MemberInvitedEvent {
   id
   createdAt

@@ -8,7 +8,6 @@
     - [BountyWorkData](#.BountyWorkData)
   
 - [proto/Channel.proto](#proto/Channel.proto)
-    - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
   
 - [proto/Council.proto](#proto/Council.proto)
@@ -16,11 +15,7 @@
   
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
-    - [ForumPostReaction](#.ForumPostReaction)
-    - [ForumThreadMetadata](#.ForumThreadMetadata)
-  
-    - [ForumPostReaction.Reaction](#.ForumPostReaction.Reaction)
-  
+      
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
   
@@ -28,8 +23,8 @@
     - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
     - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
     - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
-    - [CommentSectionPreference](#.CommentSectionPreference)
     - [CreateComment](#.CreateComment)
+    - [CreateVideoCategory](#.CreateVideoCategory)
     - [DeleteComment](#.DeleteComment)
     - [EditComment](#.EditComment)
     - [MemberRemarked](#.MemberRemarked)
@@ -40,16 +35,12 @@
     - [VideoReactionsPreference](#.VideoReactionsPreference)
   
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
-    - [CommentSectionPreference.Option](#.CommentSectionPreference.Option)
     - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
     - [ReactVideo.Reaction](#.ReactVideo.Reaction)
     - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
   
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
-  
-- [proto/Playlist.proto](#proto/Playlist.proto)
-    - [PlaylistMetadata](#.PlaylistMetadata)
   
 - [proto/ProposalsDiscussion.proto](#proto/ProposalsDiscussion.proto)
     - [ProposalsDiscussionPostMetadata](#.ProposalsDiscussionPostMetadata)
@@ -69,10 +60,11 @@
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
 - [proto/Video.proto](#proto/Video.proto)
+    - [ContentMetadata](#.ContentMetadata)
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
-    - [VideoCategoryMetadata](#.VideoCategoryMetadata)
+    - [SubtitleMetadata](#.SubtitleMetadata)
     - [VideoMetadata](#.VideoMetadata)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
@@ -149,21 +141,6 @@
 
 
 
-<a name=".ChannelCategoryMetadata"></a>
-
-### ChannelCategoryMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category Name |
-
-
-
-
-
-
 <a name=".ChannelMetadata"></a>
 
 ### ChannelMetadata
@@ -178,7 +155,6 @@
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-| category | [uint64](#uint64) | optional | Channel Category Id |
 
 
 
@@ -381,24 +357,7 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
 | ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
 | video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
-| comment_section_preference | [CommentSectionPreference](#CommentSectionPreference) | optional |  |
 | moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
-
-
-
-
-
-
-<a name=".CommentSectionPreference"></a>
-
-### CommentSectionPreference
-Enable or disable comment section for a single video
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| option | [CommentSectionPreference.Option](#CommentSectionPreference.Option) | required | Selected option to enable or disable comment section |
 
 
 
@@ -416,6 +375,23 @@ create comment
 | video_id | [uint64](#uint64) | required | ID of the video |
 | parent_comment_id | [string](#string) | optional | ID of comment member wants to reply (empty if new comment is parent comment) |
 | body | [string](#string) | required | Comment text |
+
+
+
+
+
+
+<a name=".CreateVideoCategory"></a>
+
+### CreateVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | required |  |
+| description | [string](#string) | optional |  |
+| parent_category_id | [string](#string) | optional |  |
 
 
 
@@ -466,6 +442,7 @@ edit comment by author
 | create_comment | [CreateComment](#CreateComment) | optional |  |
 | edit_comment | [EditComment](#EditComment) | optional |  |
 | delete_comment | [DeleteComment](#DeleteComment) | optional |  |
+| create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
 
 
 
@@ -567,18 +544,6 @@ Enable or disable reactions on a single video
 
 
 
-<a name=".CommentSectionPreference.Option"></a>
-
-### CommentSectionPreference.Option
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENABLE | 0 | Enable comment section (nothing happens if it is already enabled) |
-| DISABLE | 1 | Disable comment section (nothing happens if it is already disabled) |
-
-
-
 <a name=".PinOrUnpinComment.Option"></a>
 
 ### PinOrUnpinComment.Option
@@ -644,38 +609,6 @@ Reacting again with the same message option will cancel the previous reaction
 | about | [string](#string) | optional |  |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="proto/Playlist.proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## proto/Playlist.proto
-
-
-
-<a name=".PlaylistMetadata"></a>
-
-### PlaylistMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional |  |
-| videos | [uint64](#uint64) | repeated | Videos in the playlist |
 
 
 
@@ -917,6 +850,21 @@ Reacting again with the same message option will cancel the previous reaction
 
 
 
+<a name=".ContentMetadata"></a>
+
+### ContentMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_metadata | [VideoMetadata](#VideoMetadata) | optional | ... Other possible metadata standards, e.g. `PlaylistMetadata` |
+
+
+
+
+
+
 <a name=".License"></a>
 
 ### License
@@ -967,15 +915,18 @@ Publication status before joystream
 
 
 
-<a name=".VideoCategoryMetadata"></a>
+<a name=".SubtitleMetadata"></a>
 
-### VideoCategoryMetadata
+### SubtitleMetadata
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category name |
+| type | [string](#string) | required |  |
+| new_asset | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| language | [string](#string) | required | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
+| mimeType | [string](#string) | required |  |
 
 
 
@@ -1005,7 +956,10 @@ Publication status before joystream
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
-| category | [uint64](#uint64) | optional | Video Category Id |
+| category | [string](#string) | optional | Video Category Id |
+| subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
+| enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
+| clear_subtitles | [bool](#bool) | optional | Remove all subtitles; since protobuf doesn&#39;t distinguish b/w empty array and null field, simply removing all subtitles by overriding list with an empty array wont work |
 
 
 
@@ -1219,6 +1173,87 @@ Publication status before joystream
 | <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
 | <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
 
+<!-- 
+    This extra documentation will be appended to the generated docs.
+-->
+
+## Referencing Assets
+<a name=".Assets"></a>
+
+Applications that process messages that contain a `uint32` field that references an asset such as a cover photo or video, should interpret this value as a zero based index into an array/vector that is received external (out of band) to the protobuf message.
+
+Example in context of query-node processing the runtime event `VideoCreated`
+
+```rust
+// Runtime event associated with creating a Video
+VideoCreated(video_id: VideoId, video: Video, assets: Vec<NewAsset>, params: VideoCreationParameters)
+
+struct VideoCreationParameters {
+  in_category: VideoCategoryId,
+  // binary serialized VideoMetadata protobuf message
+  meta: Vec<u8>,
+}
+
+// suppose assets is a vector of two elements. This is the "out of band" array being referenced by the VideoMetadata message
+assets = [
+    NewAsset::Uri("https://mydomain.net/thumbnail.png"),
+    NewAsset::Upload({
+       content_id,
+       ipfs_hash,
+       size,
+       ...
+    }),
+];
+
+meta = VideoMetadata {
+    ...
+    // refers to second element: assets[1] which is being uploaded to the storage system
+    video: 1,
+    // refers to the first element assets[0] which is being referneced by a url string.
+    thumbnail_photo: 0,
+    ...
+};
+```<!-- 
+    This extra documentation will be appended to the generated docs.
+-->
+
+## Referencing Assets
+<a name=".Assets"></a>
+
+Applications that process messages that contain a `uint32` field that references an asset such as a cover photo or video, should interpret this value as a zero based index into an array/vector that is received external (out of band) to the protobuf message.
+
+Example in context of query-node processing the runtime event `VideoCreated`
+
+```rust
+// Runtime event associated with creating a Video
+VideoCreated(video_id: VideoId, video: Video, assets: Vec<NewAsset>, params: VideoCreationParameters)
+
+struct VideoCreationParameters {
+  in_category: VideoCategoryId,
+  // binary serialized VideoMetadata protobuf message
+  meta: Vec<u8>,
+}
+
+// suppose assets is a vector of two elements. This is the "out of band" array being referenced by the VideoMetadata message
+assets = [
+    NewAsset::Uri("https://mydomain.net/thumbnail.png"),
+    NewAsset::Upload({
+       content_id,
+       ipfs_hash,
+       size,
+       ...
+    }),
+];
+
+meta = VideoMetadata {
+    ...
+    // refers to second element: assets[1] which is being uploaded to the storage system
+    video: 1,
+    // refers to the first element assets[0] which is being referneced by a url string.
+    thumbnail_photo: 0,
+    ...
+};
+```
 <!-- 
     This extra documentation will be appended to the generated docs.
 -->

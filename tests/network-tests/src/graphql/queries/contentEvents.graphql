@@ -11,6 +11,12 @@ fragment CommentCreatedEventFields on CommentCreatedEvent {
   text
 }
 
+query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
+  commentCreatedEvents(where: { id_in: $eventIds }) {
+    ...CommentCreatedEventFields
+  }
+}
+
 fragment CommentDeletedEventFields on CommentDeletedEvent {
   id
   createdAt
@@ -21,6 +27,12 @@ fragment CommentDeletedEventFields on CommentDeletedEvent {
   comment {
     id
     status
+  }
+}
+
+query getCommentDeletedEventsByEventIds($eventIds: [ID!]) {
+  commentDeletedEvents(where: { id_in: $eventIds }) {
+    ...CommentDeletedEventFields
   }
 }
 
@@ -38,6 +50,12 @@ fragment CommentTextUpdatedEventFields on CommentTextUpdatedEvent {
   newText
 }
 
+query getCommentEditedEventsByEventIds($eventIds: [ID!]) {
+  commentTextUpdatedEvents(where: { id_in: $eventIds }) {
+    ...CommentTextUpdatedEventFields
+  }
+}
+
 fragment CommentModeratedEventFields on CommentModeratedEvent {
   id
   createdAt
@@ -50,6 +68,12 @@ fragment CommentModeratedEventFields on CommentModeratedEvent {
     status
   }
   rationale
+}
+
+query getCommentModeratedEventsByEventIds($eventIds: [ID!]) {
+  commentModeratedEvents(where: { id_in: $eventIds }) {
+    ...CommentModeratedEventFields
+  }
 }
 
 fragment CommentPinnedEventFields on CommentPinnedEvent {
@@ -68,6 +92,12 @@ fragment CommentPinnedEventFields on CommentPinnedEvent {
   action
 }
 
+query getCommentPinnedEventsByEventIds($eventIds: [ID!]) {
+  commentPinnedEvents(where: { id_in: $eventIds }) {
+    ...CommentPinnedEventFields
+  }
+}
+
 fragment VideoReactedEventFields on VideoReactedEvent {
   id
   createdAt
@@ -81,6 +111,12 @@ fragment VideoReactedEventFields on VideoReactedEvent {
   reactionResult
   reactingMember {
     id
+  }
+}
+
+query getVideoReactedEventsByEventIds($eventIds: [ID!]) {
+  videoReactedEvents(where: { id_in: $eventIds }) {
+    ...VideoReactedEventFields
   }
 }
 
@@ -100,20 +136,10 @@ fragment CommentReactedEventFields on CommentReactedEvent {
   }
 }
 
-fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  channel {
-    id
+query getCommentReactedEventsByEventIds($eventIds: [ID!]) {
+  commentReactedEvents(where: { id_in: $eventIds }) {
+    ...CommentReactedEventFields
   }
-  member {
-    id
-  }
-  action
 }
 
 fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
@@ -130,6 +156,12 @@ fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
     id
   }
   action
+}
+
+query getMemberBannedFromChannelEventsByEventIds($eventIds: [ID!]) {
+  memberBannedFromChannelEvents(where: { id_in: $eventIds }) {
+    ...MemberBannedFromChannelEventFields
+  }
 }
 
 fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
@@ -145,56 +177,96 @@ fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
   reactionsStatus
 }
 
-query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
-  commentCreatedEvents(where: { id_in: $eventIds }) {
-    ...CommentCreatedEventFields
-  }
-}
-
-query getCommentDeletedEventsByEventIds($eventIds: [ID!]) {
-  commentDeletedEvents(where: { id_in: $eventIds }) {
-    ...CommentDeletedEventFields
-  }
-}
-
-query getCommentModeratedEventsByEventIds($eventIds: [ID!]) {
-  commentModeratedEvents(where: { id_in: $eventIds }) {
-    ...CommentModeratedEventFields
-  }
-}
-
-query getCommentEditedEventsByEventIds($eventIds: [ID!]) {
-  commentTextUpdatedEvents(where: { id_in: $eventIds }) {
-    ...CommentTextUpdatedEventFields
-  }
-}
-
-query getCommentPinnedEventsByEventIds($eventIds: [ID!]) {
-  commentPinnedEvents(where: { id_in: $eventIds }) {
-    ...CommentPinnedEventFields
-  }
-}
-
-query getVideoReactedEventsByEventIds($eventIds: [ID!]) {
-  videoReactedEvents(where: { id_in: $eventIds }) {
-    ...VideoReactedEventFields
-  }
-}
-
-query getCommentReactedEventsByEventIds($eventIds: [ID!]) {
-  commentReactedEvents(where: { id_in: $eventIds }) {
-    ...CommentReactedEventFields
-  }
-}
-
-query getMemberBannedFromChannelEventsByEventIds($eventIds: [ID!]) {
-  memberBannedFromChannelEvents(where: { id_in: $eventIds }) {
-    ...MemberBannedFromChannelEventFields
-  }
-}
-
 query getVideoReactionsPreferenceEventsByEventIds($eventIds: [ID!]) {
   videoReactionsPreferenceEvents(where: { id_in: $eventIds }) {
     ...VideoReactionsPreferenceEventFields
+  }
+}
+
+fragment VideoDeletedByModeratorEventFields on VideoDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  videoId
+  rationale
+}
+
+query getVideoDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  videoDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...VideoDeletedByModeratorEventFields
+  }
+}
+
+fragment ChannelDeletedByModeratorEventFields on ChannelDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channelId
+  rationale
+}
+
+query getChannelDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  channelDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...ChannelDeletedByModeratorEventFields
+  }
+}
+
+fragment ChannelAssetsDeletedByModeratorEventFields on ChannelAssetsDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channelId
+  rationale
+  assetIds
+}
+
+query getChannelAssetsDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  channelAssetsDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...ChannelAssetsDeletedByModeratorEventFields
+  }
+}
+
+fragment VideoAssetsDeletedByModeratorEventFields on VideoAssetsDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  videoId
+  assetIds
+  rationale
+}
+
+query getVideoAssetsDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  videoAssetsDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...VideoAssetsDeletedByModeratorEventFields
+  }
+}
+
+fragment VideoVisibilitySetByModeratorEventFields on VideoVisibilitySetByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  videoId
+  isHidden
+  rationale
+}
+
+query getVideoVisibilitySetByModeratorEventsByEventIds($eventIds: [ID!]) {
+  videoVisibilitySetByModeratorEvents(where: { id_in: $eventIds }) {
+    ...VideoVisibilitySetByModeratorEventFields
   }
 }

@@ -54,6 +54,7 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       metadata.externalResources ?? [],
       expected.externalResources?.map(asMembershipExternalResource) ?? []
     )
+    assert.isFalse(Utils.hasDuplicates(metadata.externalResources?.map(({ type }) => type)))
   }
 
   public getExpectedValues(): MemberProfileData {
@@ -91,6 +92,7 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       newMetadata.externalResources ?? [],
       expected.externalResources?.map(asMembershipExternalResource) ?? []
     )
+    assert.isFalse(Utils.hasDuplicates(newMetadata.externalResources?.map(({ type }) => type)))
   }
 
   async execute(): Promise<void> {

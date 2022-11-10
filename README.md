@@ -4,10 +4,10 @@ This is the main code repository for all Joystream software. In this mono-repo y
 
 ## Overview
 
-The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
-functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
+The Joystream network builds on the [substrate](https://substrate.io/) blockchain framework, and adds additional
+functionality to support the [various roles](https://joystream.gitbook.io/testnet-workspace/system/working-groups) that can be entered into on the platform.
 
-## Development Tools
+## Development
 
 The following tools are required for building, testing and contributing to this repo:
 
@@ -22,7 +22,7 @@ If you use VSCode as your code editor we recommend using the workspace [settings
 After cloning the repo run the following initialization scripts:
 
 ```sh
-# Install rust toolchain
+# Install development tools
 ./setup.sh
 
 # build local npm packages
@@ -39,7 +39,7 @@ yarn start
 
 **Substrate blockchain**
 
-- [joystream-node](./node)
+- [joystream-node](./bin/node)
 - [runtime](./runtime)
 - [runtime modules](./runtime-modules)
 
@@ -66,13 +66,13 @@ yarn start
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
-./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-6.json
+WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
+./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-7-carthage.json
 ```
 
-Learn more about [joystream-node](node/README.md).
+Learn more about [joystream-node](bin/node/README.md).
 
-A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
+A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://joystream.gitbook.io/testnet-workspace/system/validation#validator).
 
 ### Integration tests
 

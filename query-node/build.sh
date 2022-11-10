@@ -14,7 +14,7 @@ yarn --cwd codegen install
 
 yarn clean
 yarn codegen:noinstall
-cp mappings/queryTemplates.ts generated/graphql-server/src/
+cp mappings/src/queryTemplates.ts generated/graphql-server/src/
 yarn typegen # if this fails try to run this command outside of yarn workspaces
 
 ################################################
@@ -32,6 +32,7 @@ yarn
 ln -s ../../../../../node_modules/typeorm/cli.js ./generated/graphql-server/node_modules/.bin/typeorm
 
 yarn workspace query-node codegen
+
 yarn workspace query-node build
 
 yarn workspace query-node-mappings build

@@ -1,5 +1,4 @@
-import { Configuration, VersionResponse } from './generated'
-import { FilesApi, StateApi } from './generated/api'
+import { Configuration, VersionResponse, FilesApi, StateApi } from '@joystream/storage-node-client'
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { LoggingService } from '../../logging'
 import { Logger } from 'winston'

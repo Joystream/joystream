@@ -3,10 +3,7 @@
   "description": "This is an awesome example channel!",
   "isPublic": true,
   "language": "en",
-  "category": 1,
   "avatarPhotoPath": "./avatar-photo-1.png",
   "coverPhotoPath": "./cover-photo-1.png",
-  "rewardAccount": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-  "collaborators": [],
-  "moderators": []
+  "collaborators": []
 }

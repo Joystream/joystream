@@ -1,9 +1,9 @@
 import { Api } from '../../Api'
 import { assert } from 'chai'
 import { asMembershipExternalResource, generateParamsFromAccountId } from './utils'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { Membership } from '@joystream/types/members'
+import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { EventDetails, EventType } from '../../types'
@@ -58,6 +58,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
         controllerAccount,
         metadata: { name, about, avatar, externalResources },
         isVerified,
+        isFoundingMember,
         entry,
         inviteCount,
       } = qMember
@@ -74,6 +75,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
         metadata.externalResources?.map(asMembershipExternalResource) ?? []
       )
       assert.equal(isVerified, false)
+      assert.equal(isFoundingMember, false)
       Utils.assert(entry.__typename === 'MembershipEntryPaid', 'Query node: Invalid membership entry method')
       Utils.assert(entry.membershipBoughtEvent)
       assert.equal(entry.membershipBoughtEvent.id, qEvent.id)
@@ -99,7 +101,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
     )
   }
 
-  protected async loadDefaultInviteCount() {
+  protected async loadDefaultInviteCount(): Promise<void> {
     this.defaultInviteCount = (await this.api.query.members.initialInvitationCount()).toNumber()
   }
 

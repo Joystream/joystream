@@ -1,5 +1,5 @@
 import { IEditComment, IMemberRemarked, MemberRemarked } from '@joystream/metadata-protobuf'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -41,7 +41,7 @@ export class EditCommentsFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.editCommentParams.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }
@@ -62,7 +62,8 @@ export class EditCommentsFixture extends StandardizedFixture {
     qComments: CommentFieldsFragment[],
     qEvents: CommentTextUpdatedEventFieldsFragment[]
   ): void {
-    qEvents.map((qEvent, i) => {
+    this.events.map((e, i) => {
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const qComment = qComments.find((comment) => comment.id === qEvent.comment.id.toString())
       const commentParams = this.editCommentParams[i]
       Utils.assert(qComment, 'Query node: Comment not found')

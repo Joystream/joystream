@@ -1,0 +1,200 @@
+# Deploy inftrastructure required to run a new joystream chain.
+# This is comprised of:
+#   - Three validators
+#   - One RPC node
+#   - One Build instance
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  EC2InstanceType:
+    Type: String
+    Default: t2.large
+    AllowedValues: [ t2.micro, t2.large, t2.xlarge ]
+  EC2AMI:
+    Type: String
+    # aws ssm get-parameters --names  /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+    Default: 'ami-0b9a603c10937a61b' # 2022-11-01
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  VolumeSize:
+    Description: volume size in GB for all instances
+    Type: Number
+    Default: 200
+    MinValue: 64
+    MaxValue: 500
+
+Resources:
+  # Common security group for all instances
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Internal Security group for full node ${AWS::StackName}'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9933
+          ToPort: 9933
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9944
+          ToPort: 9944
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 30333
+          ToPort: 30333
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_substrate_node'
+
+  InstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            apt:
+              wget: []
+              unzip: []
+    Properties:
+      LaunchTemplateName: !Sub 'LaunchTemplate_${AWS::StackName}'
+      LaunchTemplateData:
+        ImageId: !Ref EC2AMI
+        InstanceType: !Ref EC2InstanceType
+        KeyName: !Ref KeyName
+        SecurityGroupIds:
+          - !GetAtt SecurityGroup.GroupId
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: !Ref VolumeSize
+ 
+  ValInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref EC2InstanceType
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_val1'
+
+  ValInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref EC2InstanceType
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_val2'
+
+  ValInstance3:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref EC2InstanceType
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_val3'
+
+  RpcInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref EC2InstanceType
+      SecurityGroupIds:
+        - !GetAtt SecurityGroup.GroupId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_rpc'
+
+  BuildInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: c6id.2xlarge
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_build'
+
+Outputs:
+  Val1PublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${ValInstance1.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}Val1PublicIp'
+
+  Val2PublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${ValInstance2.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}Val2PublicIp'
+
+  Val3PublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${ValInstance3.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}Val3PublicIp'
+
+  RpcPublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${RpcInstance.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}RpcPublicIp'
+
+  BuildPublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${BuildInstance.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}BuildPublicIp'
+
+  BuildInstanceId:
+    Description: Build instance ID
+    Value: !Ref BuildInstance
+    Export:
+      Name: !Sub '${AWS::StackName}BuildInstanceId'

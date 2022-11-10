@@ -8,7 +8,7 @@ import {
   FundingType,
   OracleWorkEntryJudgment,
 } from '@joystream/types/augment'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { BN } from '@polkadot/util'
 import {
   Bounty,
@@ -83,7 +83,6 @@ async function updateBounty(
   changes: (bounty: Bounty) => Partial<Bounty>
 ) {
   const bounty = await getBounty(store, bountyId, relations)
-  bounty.updatedAt = new Date(event.blockTimestamp)
   Object.assign(bounty, changes(bounty))
 
   await store.save<Bounty>(bounty)
@@ -98,7 +97,6 @@ async function updateEntry(
   changes: (entry: BountyEntry) => Partial<BountyEntry> = () => ({})
 ) {
   const entry = await getEntry(store, entryId)
-  entry.updatedAt = new Date(event.blockTimestamp)
   Object.assign(entry, changes(entry))
 
   await store.save<BountyEntry>(entry)
@@ -171,18 +169,15 @@ function endFundingPeriod(
   store: DatabaseManager,
   bounty: Bounty,
   blockNumber: number,
-  isFunded: boolean,
-  updatedAt = new Date()
+  isFunded: boolean
 ): Promise<void> {
   if (isFunded) {
     // Go to Working period
-    bounty.updatedAt = updatedAt
     bounty.stage = BountyStage.WorkSubmission
     bountyScheduleWorkSubmissionEnd(bounty, blockNumber + bounty.workPeriod)
     return store.save<Bounty>(bounty)
   } else if (bounty.totalFunding.eqn(0)) {
     // Go to Expired Funding Period
-    bounty.updatedAt = updatedAt
     bounty.stage = BountyStage.Expired
     return store.save<Bounty>(bounty)
   } else {
@@ -194,7 +189,6 @@ function endFundingPeriod(
 function endWorkingPeriod(store: DatabaseManager, bounty: Bounty, blockNumber: number): Promise<void> {
   if (bounty.entries?.some((entry) => entry.workSubmitted)) {
     // Go to Judgement Period
-    bounty.updatedAt = new Date()
     bounty.stage = BountyStage.Judgment
     bountyScheduleJudgmentEnd(bounty, blockNumber + bounty.judgingPeriod)
     return store.save<Bounty>(bounty)
@@ -212,7 +206,6 @@ async function goToWithdrawalPeriod(
 ): Promise<void> {
   // Update the bounty status
   const hasWinners = judgementEntries.some(([, judgment]) => judgment.isWinner)
-  bounty.updatedAt = new Date()
   bounty.stage = BountyStage[hasWinners ? 'Successful' : 'Failed']
   await store.save<Bounty>(bounty)
 
@@ -260,8 +253,6 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   // Create the bounty
   const bounty = new Bounty({
     id: String(bountyId),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     title: whenDef(metadata?.title, perpareString),
     description: whenDef(metadata?.description, perpareString),
     bannerImageUri: whenDef(metadata?.bannerImageUri, perpareString),
@@ -353,7 +344,6 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
   } else {
     contribution = new BountyContribution({ createdAt: eventTime, bounty, contributor, amount })
   }
-  contribution.updatedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
   // Record the event
@@ -365,11 +355,10 @@ export async function bounty_BountyFunded({ event, store }: EventContext & Store
 export async function bounty_BountyMaxFundingReached({ event, store }: EventContext & StoreContext): Promise<void> {
   const maxFundingReachedEvent = new BountyEvents.BountyMaxFundingReachedEvent(event)
   const [bountyId] = maxFundingReachedEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
   // Update the bounty stage
   const bounty = await getBounty(store, bountyId)
-  await endFundingPeriod(store, bounty, event.blockNumber, true, eventTime)
+  await endFundingPeriod(store, bounty, event.blockNumber, true)
 
   // Record the event
   const maxFundingReachedInEvent = new BountyMaxFundingReachedEvent({ ...genericEventFields(event), bounty })
@@ -389,7 +378,6 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
     const actorType = typeof contributor === 'undefined' ? 'council' : `member id ${contributor}`
     throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
   }
-  contribution.updatedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
   // Record the event
@@ -427,13 +415,10 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
 export async function bounty_WorkEntryAnnounced({ event, store }: EventContext & StoreContext): Promise<void> {
   const entryAnnouncedEvent = new BountyEvents.WorkEntryAnnouncedEvent(event)
   const [bountyId, entryId, memberId, accountId] = entryAnnouncedEvent.params
-  const eventTime = new Date(event.blockTimestamp)
 
   // Create the entry
   const entry = new BountyEntry({
     id: String(entryId),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     bounty: new Bounty({ id: String(bountyId) }),
     worker: new Membership({ id: String(memberId) }),
     stakingAccount: String(accountId),
@@ -504,7 +489,7 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   const entryJudgments = Array.from(bountyJudgment.entries())
 
   // Go to Withdrawal Period (and update entries statuses)
-  goToWithdrawalPeriod(store, bounty, entryJudgments)
+  await goToWithdrawalPeriod(store, bounty, entryJudgments)
 
   // Record the event
   const judgmentEvent = new OracleJudgmentSubmittedEvent({

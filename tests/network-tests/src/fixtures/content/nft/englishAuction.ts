@@ -2,15 +2,11 @@ import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
-import { BuyMembershipHappyCaseFixture } from '../../membership'
+import { IMember } from '../createMembersAndCurators'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { Utils } from '../../../utils'
 import { assertNftOwner, assertAuctionAndBids, assertNftEventContentActor } from './utils'
 import BN from 'bn.js'
-
-// settings
-const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
 export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
   private videoId: number
@@ -74,7 +70,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     )
 
     this.debug('Check Nft ownership in EnglishAuctionStarted event')
-    assertNftEventContentActor(
+    await assertNftEventContentActor(
       this.query,
       () => this.query.getEnglishAuctionStartedEvents([auctionStartedRuntimeEvent]),
       this.author.memberId.toString(),

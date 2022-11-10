@@ -1,5 +1,5 @@
 import { IChannelOwnerRemarked, IModerateComment, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -42,7 +42,7 @@ export class ModerateCommentsFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.moderateCommentParams.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }
@@ -55,11 +55,7 @@ export class ModerateCommentsFixture extends StandardizedFixture {
           rationale: params.msg.rationale,
         },
       }
-      return this.api.tx.content.channelOwnerRemark(
-        { Member: params.asMember },
-        params.channelId,
-        Utils.metadataToBytes(ChannelOwnerRemarked, msg)
-      )
+      return this.api.tx.content.channelOwnerRemark(params.channelId, Utils.metadataToBytes(ChannelOwnerRemarked, msg))
     })
   }
 
@@ -67,7 +63,8 @@ export class ModerateCommentsFixture extends StandardizedFixture {
     qComments: CommentFieldsFragment[],
     qEvents: CommentModeratedEventFieldsFragment[]
   ): void {
-    qEvents.map((qEvent) => {
+    this.events.map((e) => {
+      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       const qComment = qComments.find((comment) => comment.id === qEvent.comment.id.toString())
       Utils.assert(qComment, 'Query node: Comment not found')
       assert.equal(qComment.status, CommentStatus.Moderated)

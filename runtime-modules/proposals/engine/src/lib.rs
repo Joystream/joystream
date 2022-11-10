@@ -46,7 +46,7 @@
 //! to create a proposal: they should be members of the Joystream.
 //! - StakingHandler - defines an interface for the staking.
 //!
-//! A full list of the abstractions can be found [here](./trait.Trait.html).
+//! A full list of the abstractions can be found [here](./trait.Config.html).
 //!
 //! ### Supported extrinsics
 //! - [vote](./struct.Module.html#method.vote) - registers a vote for the proposal
@@ -69,15 +69,16 @@
 //! ## Usage
 //!
 //! ```
+//! #![feature(more_qualified_paths)]
 //! use frame_support::{decl_module, print};
 //! use frame_system::ensure_signed;
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
-//! pub trait Trait: engine::Trait + common::membership::MembershipTypes {}
+//! pub trait Config: engine::Config + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         fn executable_proposal(origin) {
 //!             print("executed!");
@@ -93,7 +94,7 @@
 //!             let title = b"Spending proposal".to_vec();
 //!             let description = b"We need to spend some tokens to support the working group lead."
 //!                 .to_vec();
-//!             let encoded_proposal_code = <Call<T>>::executable_proposal().encode();
+//!             let encoded_proposal_code = <Call<T>>::executable_proposal {}.encode();
 //!
 //!             <engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
 //!                 &parameters,
@@ -124,6 +125,23 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 use types::ProposalOf;
 
@@ -139,10 +157,12 @@ mod benchmarking;
 
 #[cfg(test)]
 mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
-use codec::Decode;
+use codec::{Decode, MaxEncodedLen};
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
-use frame_support::storage::IterableStorageMap;
+use frame_support::storage::{bounded_vec::BoundedVec, IterableStorageMap};
 use frame_support::traits::{Get, LockIdentifier};
 use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::{
@@ -150,39 +170,26 @@ use frame_support::{
 };
 use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
+use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
+use common::to_kb;
 use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
 
-/// Proposals engine WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn vote(i: u32) -> Weight;
-    fn cancel_proposal() -> Weight;
-    fn veto_proposal() -> Weight;
-    fn on_initialize_immediate_execution_decode_fails(i: u32) -> Weight;
-    fn on_initialize_pending_execution_decode_fails(i: u32) -> Weight;
-    fn on_initialize_approved_pending_constitutionality(i: u32) -> Weight;
-    fn on_initialize_rejected(i: u32) -> Weight;
-    fn on_initialize_slashed(i: u32) -> Weight;
-    fn cancel_active_and_pending_proposals(i: u32) -> Weight;
-    fn proposer_remark() -> Weight;
-}
-
-type WeightInfoEngine<T> = <T as Trait>::WeightInfo;
+type WeightInfoEngine<T> = <T as Config>::WeightInfo;
 
 /// Proposals engine trait.
-pub trait Trait:
-    frame_system::Trait
-    + pallet_timestamp::Trait
+pub trait Config:
+    frame_system::Config
+    + pallet_timestamp::Config
     + common::membership::MembershipTypes
-    + balances::Trait
+    + balances::Config
 {
     /// Engine event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: MemberOriginValidator<
@@ -202,7 +209,7 @@ pub trait Trait:
     type TotalVotersCounter: VotersParameters;
 
     /// Proposal Id type
-    type ProposalId: From<u32> + Parameter + Default + Copy;
+    type ProposalId: From<u32> + Parameter + Default + Copy + MaxEncodedLen;
 
     /// Provides stake logic implementation.
     type StakingHandler: StakingHandler<
@@ -227,6 +234,9 @@ pub trait Trait:
     /// Defines max simultaneous active proposals number.
     type MaxActiveProposalLimit: Get<u32>;
 
+    /// Defines max size of encoded dispatchable call (to be executed through a proposal)
+    type DispatchableCallCodeMaxLen: Get<u32>;
+
     /// Proposals executable code. Can be instantiated by external module Call enum members.
     type DispatchableCallCode: Parameter
         + UnfilteredDispatchable<Origin = Self::Origin>
@@ -244,14 +254,14 @@ pub trait Trait:
 }
 
 /// Proposal state change observer.
-pub trait ProposalObserver<T: Trait> {
+pub trait ProposalObserver<T: Config> {
     /// Should be called on proposal removing.
     fn proposal_removed(proposal_id: &T::ProposalId);
 }
 
 /// Nesting implementation.
-impl<T: Trait, X: ProposalObserver<T>, Y: ProposalObserver<T>> ProposalObserver<T> for (X, Y) {
-    fn proposal_removed(proposal_id: &<T as Trait>::ProposalId) {
+impl<T: Config, X: ProposalObserver<T>, Y: ProposalObserver<T>> ProposalObserver<T> for (X, Y) {
+    fn proposal_removed(proposal_id: &<T as Config>::ProposalId) {
         X::proposal_removed(proposal_id);
         Y::proposal_removed(proposal_id);
     }
@@ -261,11 +271,10 @@ decl_event!(
     /// Proposals engine events
     pub enum Event<T>
     where
-        <T as Trait>::ProposalId,
+        <T as Config>::ProposalId,
         MemberId = MemberId<T>,
-        <T as frame_system::Trait>::BlockNumber,
+        <T as frame_system::Config>::BlockNumber,
     {
-
         /// Emits on proposal creation.
         /// Params:
         /// - Id of a proposal.
@@ -308,7 +317,10 @@ decl_event!(
 
 decl_error! {
     /// Engine module predefined errors
-    pub enum Error for Module<T: Trait>{
+    pub enum Error for Module<T: Config>{
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Proposal cannot have an empty title"
         EmptyTitleProvided,
 
@@ -371,12 +383,15 @@ decl_error! {
 
         /// Staking account doesn't belong to a member.
         InvalidStakingAccountForMember,
+
+        /// The size of encoded dispatchable call to be executed by the proposal is too big
+        MaxDispatchableCallCodeSizeExceeded,
     }
 }
 
 // Storage for the proposals engine module
-decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalEngine{
+decl_storage! { generate_storage_info
+    pub trait Store for Module<T: Config> as ProposalEngine{
         /// Map proposal by its id.
         pub Proposals get(fn proposals): map hasher(blake2_128_concat)
             T::ProposalId => ProposalOf<T>;
@@ -386,7 +401,7 @@ decl_storage! {
 
         /// Map proposal executable code by proposal id.
         pub DispatchableCallCode get(fn proposal_codes): map hasher(blake2_128_concat)
-            T::ProposalId => Vec<u8>;
+            T::ProposalId => BoundedVec<u8, T::DispatchableCallCodeMaxLen>;
 
         /// Count of active proposals.
         pub ActiveProposalCount get(fn active_proposal_count): u32;
@@ -399,7 +414,7 @@ decl_storage! {
 
 decl_module! {
     /// 'Proposal engine' substrate module
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -461,11 +476,11 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (R)` where:
-        /// - `R` is the length of `rationale`
+        /// - `R` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or paraemters
         /// # </weight>
-        #[weight = WeightInfoEngine::<T>::vote(rationale.len().saturated_into())]
+        #[weight = WeightInfoEngine::<T>::vote(to_kb(rationale.len().saturated_into()))]
         pub fn vote(
             origin,
             voter_id: MemberId<T>,
@@ -591,7 +606,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Create proposal. Requires 'proposal origin' membership.
     pub fn create_proposal(
         creation_params: ProposalCreationParameters<
@@ -610,11 +625,19 @@ impl<T: Trait> Module<T> {
             creation_params.proposer_id,
         )?;
 
+        let encoded_dispatchable_call_code: BoundedVec<u8, T::DispatchableCallCodeMaxLen> =
+            creation_params
+                .encoded_dispatchable_call_code
+                .try_into()
+                .map_err(|_| Error::<T>::MaxDispatchableCallCodeSizeExceeded)?;
+
         //
         // == MUTATION SAFE ==
         //
 
-        let next_proposal_count_value = Self::proposal_count() + 1;
+        let next_proposal_count_value = Self::proposal_count()
+            .checked_add(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
@@ -637,12 +660,9 @@ impl<T: Trait> Module<T> {
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
-        <DispatchableCallCode<T>>::insert(
-            proposal_id,
-            creation_params.encoded_dispatchable_call_code,
-        );
+        <DispatchableCallCode<T>>::insert(proposal_id, encoded_dispatchable_call_code);
         ProposalCount::put(next_proposal_count_value);
-        Self::increase_active_proposal_counter();
+        Self::increase_active_proposal_counter()?;
 
         Ok(proposal_id)
     }
@@ -797,7 +817,7 @@ impl<T: Trait> Module<T> {
                 None
             })
             .for_each(|(proposal_id, proposal)| {
-                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
                 <Proposals<T>>::insert(proposal_id, proposal.clone());
 
                 // fire the proposal status update event
@@ -809,7 +829,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Helper to calculate the weight of the worst `on_initialize` branch
     fn weight_of_worst_on_initialize_branch() -> Weight {
         let max_active_proposals = T::MaxActiveProposalLimit::get();
@@ -849,7 +869,7 @@ impl<T: Trait> Module<T> {
 
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Executes proposal code.
@@ -881,7 +901,7 @@ impl<T: Trait> Module<T> {
 
         Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));
 
-        Self::remove_proposal_data(&proposal_id);
+        let _ = Self::remove_proposal_data(&proposal_id);
 
         execution_code_weight
     }
@@ -939,7 +959,7 @@ impl<T: Trait> Module<T> {
                 <Proposals<T>>::insert(proposal_id, finalized_proposal);
             }
         } else {
-            Self::remove_proposal_data(&proposal_id);
+            let _ = Self::remove_proposal_data(&proposal_id);
         }
 
         executed_weight
@@ -971,49 +991,47 @@ impl<T: Trait> Module<T> {
             ProposalDecision::Canceled => T::CancellationFee::get(),
             ProposalDecision::Slashed => proposal_parameters
                 .required_stake
-                .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
         }
     }
 
     // Increases active proposal counter.
-    fn increase_active_proposal_counter() {
-        let next_active_proposal_count_value = Self::active_proposal_count() + 1;
+    fn increase_active_proposal_counter() -> DispatchResult {
+        let next_active_proposal_count_value = Self::active_proposal_count()
+            .checked_add(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
         ActiveProposalCount::put(next_active_proposal_count_value);
+        Ok(())
     }
 
     // Decreases active proposal counter down to zero. Decreasing below zero has no effect.
-    fn decrease_active_proposal_counter() {
+    fn decrease_active_proposal_counter() -> DispatchResult {
         let current_active_proposal_counter = Self::active_proposal_count();
-
-        if current_active_proposal_counter > 0 {
-            let next_active_proposal_count_value = current_active_proposal_counter - 1;
-            ActiveProposalCount::put(next_active_proposal_count_value);
-        };
+        let next_active_proposal_count_value = current_active_proposal_counter
+            .checked_sub(1)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        ActiveProposalCount::put(next_active_proposal_count_value);
+        Ok(())
     }
 
     // Parse dispatchable execution result.
     fn parse_dispatch_error(error: DispatchError) -> &'static str {
         match error {
-            DispatchError::BadOrigin => error.into(),
             DispatchError::Other(msg) => msg,
-            DispatchError::CannotLookup => error.into(),
-            DispatchError::Module {
-                index: _,
-                error: _,
-                message: msg,
-            } => msg.unwrap_or("Dispatch error."),
+            DispatchError::Module(module) => module.message.unwrap_or("Dispatch error."),
+            _ => error.into(),
         }
     }
 
     // Clean proposal data. Remove proposal, votes from the storage.
-    fn remove_proposal_data(proposal_id: &T::ProposalId) {
+    fn remove_proposal_data(proposal_id: &T::ProposalId) -> DispatchResult {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
-        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
-        Self::decrease_active_proposal_counter();
+        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
+        let _ = Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);
+        Ok(())
     }
 
     /// Perform voting period check, vote result tally, approved proposals

@@ -19,7 +19,6 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/cli checks --quiet
       - name: yarn pack test
         run: |
           yarn workspace @joystream/cli pack --filename cli-pack-test.tgz
@@ -43,7 +42,6 @@ jobs:
           yarn install --frozen-lockfile --network-timeout 120000
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/cli checks --quiet
       - name: yarn pack test
         run: |
           yarn workspace @joystream/cli pack --filename cli-pack-test.tgz

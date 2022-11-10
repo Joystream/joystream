@@ -1,0 +1,123 @@
+---
+# Configure and start joystream-node RPC, QueryNode, Orion and Faucet services on the servers
+
+- name: Check if remote chain path dir exists
+  stat:
+    path: "chain"
+  register: remote_dir_check 
+
+- name: Exit if remote dir exists
+  fail: msg="remote chain/ dir already exists"
+  when: remote_dir_check.stat.isdir is defined and remote_dir_check.stat.isdir
+
+- name: Creating chain directory
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "chain/"
+
+- name: Copying raw chain spec file
+  copy:
+    src: '{{ data_path }}/chain/chainspec-raw.json'
+    dest: 'chain/chainspec-raw.json'
+
+- name: Create a service file
+  template:
+    src: joystream-node.service.j2
+    dest: /etc/systemd/system/joystream-node.service
+  vars:
+    template_user: "{{ ansible_user }}"
+    template_working_dir: "{{ ansible_env.HOME }}"
+  become: true
+
+- name: Start service joystream-node, if not started
+  systemd:
+    name: joystream-node
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  become: true
+
+- name: Make sure docker is running
+  command: systemctl start docker
+  become: true
+
+- name: Start Query Node
+  shell: bash -ic "yarn start"
+  environment:
+    JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
+    # TREASURY_ACCOUNT_URI: '{% if endowed_key is defined %}{{ endowed_key }}{% else %}{{ sudo_key }}{% endif %}'
+    # SUDO_ACCOUNT_URI: '{{ sudo_key }}'
+    # INVITER_KEY: "//Faucet"
+    # BALANCE_CREDIT: "300000000000"
+    # BALANCE_LOCKED: "300000000000"
+  args:
+    chdir: '{{ remote_code_path }}/query-node'
+  async: 3600
+  poll: 0
+  register: compose_result
+
+- name: Check on services startup
+  async_status:
+    jid: '{{ compose_result.ansible_job_id }}'
+  register: job_result
+  until: job_result.finished
+  # Max number of times to check for status
+  retries: 36
+  # Check for the status every 100s
+  delay: 100
+
+# Assume hostname is a DNS name
+- name: Set websocket and http endpoint variables
+  set_fact:
+    hostname: '{{ inventory_hostname }}'
+  run_once: true
+
+# If inventory hostname is infact an ip address, use .nip.io
+- name: Set websocket and http endpoint variables
+  set_fact:
+    hostname: '{{ inventory_hostname }}.nip.io'
+  run_once: true
+  when: inventory_hostname | ansible.utils.ipaddr
+
+- name: Install and configure Caddy
+  include_role:
+    name: caddy_ansible.caddy_ansible
+    apply:
+      become: true
+  vars:
+    caddy_config: "{{ lookup('template', 'templates/Caddyfile.j2') }}"
+    caddy_systemd_capabilities_enabled: true
+    caddy_update: false
+    caddy_home: "/home/caddy"
+
+- name: Set endpoints
+  set_fact:
+    all_services: |
+      websocket_rpc: wss://{{ hostname }}/ws-rpc
+      http_rpc: https://{{ hostname }}/http-rpc
+      graphql_server: https://{{ hostname }}/query-node/server/graphql
+      graphql_server_websocket: wss://{{ hostname }}/query-node/server/graphql
+      indexer: https://{{ hostname }}/query-node/indexer/graphql
+      # member_faucet: https://{{ hostname }}/member-faucet/register
+      config: https://{{ hostname }}/network/config.json
+  run_once: true
+
+- name: Print endpoints
+  debug:
+    msg: '{{ all_services | from_yaml }}'
+  run_once: true
+
+- name: Create config.json to serve as Caddy endpoint
+  copy:
+    content: '{{ all_services | from_yaml | to_json }}'
+    dest: '/home/caddy/endpoints.json'
+    mode: a+r
+  become: true
+
+- name: Save output as file on local
+  copy:
+    content: '{{ all_services | from_yaml | to_json }}'
+    dest: '{{ data_path }}/endpoints.json'
+  delegate_to: localhost

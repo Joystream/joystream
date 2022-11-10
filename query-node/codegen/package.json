@@ -10,7 +10,7 @@
     "bn.js": "^5.2.0"
   },
   "dependencies": {
-    "@joystream/hydra-cli": "^3.1.0-alpha.27",
-    "@joystream/hydra-typegen": "^3.1.0-alpha.27"
+    "@joystream/hydra-cli": "^4.0.0-alpha.8",
+    "@joystream/hydra-typegen": "^4.0.0-alpha.8"
   }
 }

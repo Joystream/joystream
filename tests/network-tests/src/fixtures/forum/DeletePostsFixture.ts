@@ -7,10 +7,10 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumPostFieldsFragment, PostDeletedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { MemberId, PostId } from '@joystream/types/common'
-import { ExtendedPostId, PostsToDeleteMap } from '@joystream/types/forum'
+import { MemberId, ForumPostId } from '@joystream/types/primitives'
+import { PalletForumExtendedPostIdObject as ExtendedPostId } from '@polkadot/types/lookup'
 import _ from 'lodash'
-import { registry } from '@joystream/types'
+import { createType } from '@joystream/types'
 
 const DEFAULT_RATIONALE = 'State cleanup'
 
@@ -35,7 +35,7 @@ export class DeletePostsFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.removals.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }
@@ -45,11 +45,16 @@ export class DeletePostsFixture extends StandardizedFixture {
       const postsToDeleteEntries = r.posts.map(
         ({ hide, categoryId, threadId, postId }) =>
           [
-            this.api.createType('ExtendedPostId', { post_id: postId, thread_id: threadId, category_id: categoryId }),
+            createType('PalletForumExtendedPostIdObject', { postId, threadId, categoryId }),
             hide === undefined || hide,
           ] as [ExtendedPostId, boolean]
       )
-      const postsToDeleteMap = new PostsToDeleteMap(registry as any, new Map(postsToDeleteEntries))
+
+      const postsToDeleteMap = createType(
+        'BTreeMap<PalletForumExtendedPostIdObject, bool>',
+        new Map(postsToDeleteEntries)
+      )
+
       return this.api.tx.forum.deletePosts(r.asMember, postsToDeleteMap, r.rationale || DEFAULT_RATIONALE)
     })
   }
@@ -97,7 +102,10 @@ export class DeletePostsFixture extends StandardizedFixture {
 
     // Query the posts
     const qPosts = await this.query.getPostsByIds(
-      this.removals.reduce((allPostsIds, { posts }) => allPostsIds.concat(posts.map((p) => p.postId)), [] as PostId[])
+      this.removals.reduce(
+        (allPostsIds, { posts }) => allPostsIds.concat(posts.map((p) => p.postId)),
+        [] as ForumPostId[]
+      )
     )
     this.assertQueriedPostsAreValid(qPosts, qEvents)
   }

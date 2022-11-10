@@ -1,17 +1,21 @@
 import { getInputJson } from '../../helpers/InputOutput'
-import { VideoInputParameters } from '../../Types'
+import { VideoFileMetadata, VideoInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
-import { CreateInterface, createType } from '@joystream/types'
-import { VideoUpdateParameters } from '@joystream/types/content'
+import { CreateInterface } from '@joystream/types'
+import {
+  PalletContentVideoUpdateParametersRecord as VideoUpdateParameters,
+  PalletContentIterableEnumsChannelActionPermission as ChannelActionPermission,
+} from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
-import { VideoMetadata } from '@joystream/metadata-protobuf'
+import { ContentMetadata, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
+import ExitCodes from '../../ExitCodes'
 
 export default class UpdateVideoCommand extends UploadCommandBase {
   static description = 'Update video under specific id.'
@@ -37,7 +41,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     videoId: number,
     videoIndex: number | undefined,
     thumbnailIndex: number | undefined
-  ): Promise<string[]> {
+  ): Promise<number[]> {
     let assetsToRemove: DataObjectInfoFragment[] = []
     if (videoIndex !== undefined || thumbnailIndex !== undefined) {
       const currentAssets = await this.getQNApi().dataObjectsByVideoId(videoId.toString())
@@ -52,12 +56,29 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       if (assetsToRemove.length) {
         this.log(`\nData objects to be removed due to replacement:`)
         assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
-        const totalPrize = assetsToRemove.reduce((sum, { deletionPrize }) => sum.add(new BN(deletionPrize)), new BN(0))
-        this.log(`Total deletion prize: ${chalk.cyanBright(formatBalance(totalPrize))}\n`)
+        const totalStateBloatBond = assetsToRemove.reduce(
+          (sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)),
+          new BN(0)
+        )
+        this.log(`Total state bloat bond: ${chalk.cyanBright(formatBalance(totalStateBloatBond))}\n`)
       }
     }
 
-    return assetsToRemove.map((a) => a.id)
+    return assetsToRemove.map((a) => Number(a.id))
+  }
+
+  setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {
+    return {
+      duration: videoFileMetadata.duration,
+      mediaPixelWidth: videoFileMetadata.width,
+      mediaPixelHeight: videoFileMetadata.height,
+      mediaType: {
+        codecName: videoFileMetadata.codecName,
+        container: videoFileMetadata.container,
+        mimeMediaType: videoFileMetadata.mimeType,
+      },
+      ...metadata,
+    }
   }
 
   async run(): Promise<void> {
@@ -68,34 +89,82 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     // Context
     const video = await this.getApi().videoById(videoId)
-    const channel = await this.getApi().channelById(video.in_channel.toNumber())
+    const channel = await this.getApi().channelById(video.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const videoInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
-    const meta = asValidatedMetadata(VideoMetadata, videoInput)
+    let meta = asValidatedMetadata(VideoMetadata, videoInput)
     const { enableComments } = videoInput
 
-    const { videoPath, thumbnailPhotoPath } = videoInput
-    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
+    // Video assets
+    const { videoPath, thumbnailPhotoPath, subtitles } = videoInput
+    const [resolvedVideoAssets, videoAssetIndices] = await this.resolveAndValidateAssets(
+      { videoPath, thumbnailPhotoPath },
+      input
+    )
     // Set assets indices in the metadata
     // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
-    meta.video = assetIndices.videoPath
-    meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
+    meta.video = videoAssetIndices.videoPath
+    meta.thumbnailPhoto = videoAssetIndices.thumbnailPhotoPath
 
-    // Preare and send the extrinsic
-    const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    // Subtitle assets
+    let subtitleAssetIndex = Object.values(videoAssetIndices).filter((v) => v !== undefined).length
+    const resolvedSubtitleAssets = (
+      await Promise.all(
+        (subtitles || []).map(async (subtitleInputParameters, i) => {
+          const { subtitleAssetPath } = subtitleInputParameters
+          const [[resolvedAsset]] = await this.resolveAndValidateAssets({ subtitleAssetPath }, input)
+          // Set assets indices in the metadata
+          if (meta.subtitles && resolvedAsset) {
+            meta.subtitles[i].newAsset = subtitleAssetIndex++
+          }
+          return resolvedAsset
+        })
+      )
+    ).filter((r) => r)
+
+    // Try to get updated video file metadata
+    if (videoAssetIndices.videoPath !== undefined) {
+      const videoFileMetadata = await this.getVideoFileMetadata(resolvedVideoAssets[videoAssetIndices.videoPath].path)
+      this.log('Video media file parameters established:', videoFileMetadata)
+      meta = this.setVideoMetadataDefaults(meta, videoFileMetadata)
+    }
+
+    // Prepare and send the extrinsic
+    const serializedMeta = metadataToBytes(VideoMetadata, meta)
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
+    const assetsToUpload = await this.prepareAssetsForExtrinsic([...resolvedVideoAssets, ...resolvedSubtitleAssets])
     const assetsToRemove = await this.getAssetsToRemove(
       videoId,
-      assetIndices.videoPath,
-      assetIndices.thumbnailPhotoPath
+      videoAssetIndices.videoPath,
+      videoAssetIndices.thumbnailPhotoPath
     )
+
+    // Ensure actor is authorized to perform video update
+    const requiredPermissions: ChannelActionPermission['type'][] = []
+    if (assetsToUpload || assetsToRemove.length) {
+      requiredPermissions.push('ManageVideoAssets')
+    }
+    if (serializedMeta.length) {
+      requiredPermissions.push('UpdateVideoMetadata')
+    }
+    if (!(await this.hasRequiredChannelAgentPermissions(actor, channel, requiredPermissions))) {
+      this.error(
+        `Only channelOwner or collaborator with ${requiredPermissions} permissions can update video ${videoId}!`,
+        {
+          exit: ExitCodes.AccessDenied,
+        }
+      )
+    }
+
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
-      assets_to_upload: assetsToUpload,
-      new_meta: metadataToBytes(VideoMetadata, meta),
-      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
-      enable_comments: enableComments,
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: null,
+      assetsToUpload,
+      newMeta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
+      assetsToRemove,
+      storageBucketsNumWitness: await this.getStorageBucketsNumWitness(video.inChannel),
     }
 
     this.jsonPrettyPrint(
@@ -109,14 +178,23 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       videoId,
       videoUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
-    if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+
+    const VideoUpdatedEvent = this.getEvent(result, 'content', 'VideoUpdated')
+    const objectIds = VideoUpdatedEvent.data[3]
+
+    if (objectIds.size !== (assetsToUpload?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of video assets in VideoUpdated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
+
+    if (objectIds.size) {
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
-        `dynamic:channel:${video.in_channel.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        `dynamic:channel:${video.inChannel.toString()}`,
+        [...objectIds].map((id, index) => ({
+          dataObjectId: id,
+          path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
+        })),
         input
       )
     }

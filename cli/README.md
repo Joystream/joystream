@@ -9,6 +9,7 @@ Command Line Interface for Joystream community and governance activities
 
 <!-- toc -->
 
+- [@joystream/cli](#joystreamcli)
 - [Usage](#usage)
 - [Development](#development)
 - [First steps](#first-steps)
@@ -25,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.7.0 darwin-x64 node-v14.16.1
+@joystream/cli/0.8.0 linux-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -98,30 +99,40 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
 - [`joystream-cli content:channels`](#joystream-cli-contentchannels)
 - [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
-- [`joystream-cli content:createChannelCategory`](#joystream-cli-contentcreatechannelcategory)
 - [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
 - [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
-- [`joystream-cli content:createVideoCategory`](#joystream-cli-contentcreatevideocategory)
+- [`joystream-cli content:createVideoCategory NAME [DESCRIPTION] [PARENTCATEGORYID]`](#joystream-cli-contentcreatevideocategory-name-description-parentcategoryid)
 - [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
 - [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
 - [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
-- [`joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentdeletechannelcategory-channelcategoryid)
+- [`joystream-cli content:deleteChannelAsModerator`](#joystream-cli-contentdeletechannelasmoderator)
+- [`joystream-cli content:deleteChannelAssetsAsModerator`](#joystream-cli-contentdeletechannelassetsasmoderator)
 - [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
-- [`joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentdeletevideocategory-videocategoryid)
+- [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
+- [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
 - [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
 - [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
 - [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
+- [`joystream-cli content:setChannelVisibilityAsModerator`](#joystream-cli-contentsetchannelvisibilityasmoderator)
 - [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
-- [`joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`](#joystream-cli-contentsetfeaturedvideos-featuredvideoids)
+- [`joystream-cli content:setVideoVisibilityAsModerator`](#joystream-cli-contentsetvideovisibilityasmoderator)
 - [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
-- [`joystream-cli content:updateChannelCategory CHANNELCATEGORYID`](#joystream-cli-contentupdatechannelcategory-channelcategoryid)
-- [`joystream-cli content:updateChannelCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatechannelcensorshipstatus-id-status)
-- [`joystream-cli content:updateChannelModerators`](#joystream-cli-contentupdatechannelmoderators)
+- [`joystream-cli content:updateChannelStateBloatBond VALUE`](#joystream-cli-contentupdatechannelstatebloatbond-value)
+- [`joystream-cli content:updateCuratorGroupPermissions [ID]`](#joystream-cli-contentupdatecuratorgrouppermissions-id)
 - [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
-- [`joystream-cli content:updateVideoCategory VIDEOCATEGORYID`](#joystream-cli-contentupdatevideocategory-videocategoryid)
-- [`joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`](#joystream-cli-contentupdatevideocensorshipstatus-id-status)
+- [`joystream-cli content:updateVideoStateBloatBond VALUE`](#joystream-cli-contentupdatevideostatebloatbond-value)
 - [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 - [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+- [`joystream-cli fee-profile:addForumPost`](#joystream-cli-fee-profileaddforumpost)
+- [`joystream-cli fee-profile:addVideoComment`](#joystream-cli-fee-profileaddvideocomment)
+- [`joystream-cli fee-profile:buyMembership`](#joystream-cli-fee-profilebuymembership)
+- [`joystream-cli fee-profile:createChannel`](#joystream-cli-fee-profilecreatechannel)
+- [`joystream-cli fee-profile:createForumThread`](#joystream-cli-fee-profilecreateforumthread)
+- [`joystream-cli fee-profile:createVideo`](#joystream-cli-fee-profilecreatevideo)
+- [`joystream-cli fee-profile:deleteChannel`](#joystream-cli-fee-profiledeletechannel)
+- [`joystream-cli fee-profile:deleteForumPost`](#joystream-cli-fee-profiledeleteforumpost)
+- [`joystream-cli fee-profile:deleteForumThread`](#joystream-cli-fee-profiledeleteforumthread)
+- [`joystream-cli fee-profile:deleteVideo`](#joystream-cli-fee-profiledeletevideo)
 - [`joystream-cli forum:addPost`](#joystream-cli-forumaddpost)
 - [`joystream-cli forum:categories`](#joystream-cli-forumcategories)
 - [`joystream-cli forum:category`](#joystream-cli-forumcategory)
@@ -140,6 +151,7 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli membership:addStakingAccount`](#joystream-cli-membershipaddstakingaccount)
 - [`joystream-cli membership:buy`](#joystream-cli-membershipbuy)
 - [`joystream-cli membership:details`](#joystream-cli-membershipdetails)
+- [`joystream-cli membership:memberRemark MESSAGE`](#joystream-cli-membershipmemberremark-message)
 - [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
 - [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
 - [`joystream-cli staking:validate`](#joystream-cli-stakingvalidate)
@@ -161,7 +173,6 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli working-groups:updateGroupMetadata`](#joystream-cli-working-groupsupdategroupmetadata)
 - [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
 - [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
-- [`joystream-cli working-groups:updateRoleStorage STORAGE`](#joystream-cli-working-groupsupdaterolestorage-storage)
 - [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
 
 ## `joystream-cli account:create`
@@ -406,8 +417,17 @@ ARGUMENTS
   CURATORID  ID of the curator
 
 OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=UpdateChannelMetadata|ManageNonVideoChannelAssets|ManageChannelCollaborators|UpdateVideoMetadata|Add
+  Video|ManageVideoAssets|DeleteChannel|DeleteVideo|ManageVideoNfts|AgentRemark|TransferChannel|ClaimChannelReward|Withd
+  rawFromChannelBalance|IssueCreatorToken|ClaimCreatorTokenPatronage|InitAndManageCreatorTokenSale|CreatorTokenIssuerTra
+  nsfer|MakeCreatorTokenPermissionless|ReduceCreatorTokenPatronageRate|ManageRevenueSplits|DeissueCreatorToken
+      List of permissions to associate with the curator, e.g. -p ManageChannelCollaborators UpdateVideoMetadata
+
+  --useMemberId=useMemberId
+      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId
+      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/addCuratorToGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/addCuratorToGroup.ts)_
@@ -454,30 +474,13 @@ USAGE
   $ joystream-cli content:createChannel
 
 OPTIONS
-  -i, --input=input           (required) Path to JSON file to use as input
-  --context=(Member|Curator)  Actor context to execute the command in (Member/Curator)
-  --useMemberId=useMemberId   Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId   Try using the specified worker id as context whenever possible
+  -i, --input=input                (required) Path to JSON file to use as input
+  --context=(Member|CuratorGroup)  Actor context to execute the command in (Member/CuratorGroup)
+  --useMemberId=useMemberId        Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId        Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createChannel.ts)_
-
-## `joystream-cli content:createChannelCategory`
-
-Create channel category inside content directory.
-
-```
-USAGE
-  $ joystream-cli content:createChannelCategory
-
-OPTIONS
-  -i, --input=input          (required) Path to JSON file to use as input
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/content/createChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createChannelCategory.ts)_
 
 ## `joystream-cli content:createCuratorGroup`
 
@@ -488,44 +491,50 @@ USAGE
   $ joystream-cli content:createCuratorGroup
 
 OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=permissions  Path to JSON file containing moderation permissions by channel privilege level to use
+                                 as input
 
-ALIASES
-  $ joystream-cli createCuratorGroup
+  --status=(ACTIVE|INACTIVE)     (required) Status of newly created Curator Group: (ACTIVE/INACTIVE)
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createCuratorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createCuratorGroup.ts)_
 
 ## `joystream-cli content:createVideo`
 
-Create video under specific channel inside content directory.
+Create video (non nft) under specific channel inside content directory.
 
 ```
 USAGE
   $ joystream-cli content:createVideo
 
 OPTIONS
-  -c, --channelId=channelId       (required) ID of the Channel
-  -i, --input=input               (required) Path to JSON file to use as input
-  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
-  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
+  -c, --channelId=channelId               (required) ID of the Channel
+  -i, --input=input                       (required) Path to JSON file to use as input
+  --context=(Owner|Curator|Collaborator)  Actor context to execute the command in (Owner/Curator/Collaborator)
+  --useMemberId=useMemberId               Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId               Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/createVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/createVideo.ts)_
 
-## `joystream-cli content:createVideoCategory`
+## `joystream-cli content:createVideoCategory NAME [DESCRIPTION] [PARENTCATEGORYID]`
 
 Create video category inside content directory.
 
 ```
 USAGE
-  $ joystream-cli content:createVideoCategory
+  $ joystream-cli content:createVideoCategory NAME [DESCRIPTION] [PARENTCATEGORYID]
+
+ARGUMENTS
+  NAME              Video category name
+  DESCRIPTION       Video category description
+  PARENTCATEGORYID  Parent category ID
 
 OPTIONS
-  -i, --input=input          (required) Path to JSON file to use as input
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
@@ -574,32 +583,52 @@ USAGE
   $ joystream-cli content:deleteChannel
 
 OPTIONS
-  -c, --channelId=channelId  (required) ID of the Channel
-  -f, --force                Force-remove all associated channel data objects
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -c, --channelId=channelId               (required) ID of the Channel
+  -f, --force                             Force-remove all associated channel data objects
+  --context=(Owner|Curator|Collaborator)  Actor context to execute the command in (Owner/Curator/Collaborator)
+  --useMemberId=useMemberId               Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId               Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/deleteChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannel.ts)_
 
-## `joystream-cli content:deleteChannelCategory CHANNELCATEGORYID`
+## `joystream-cli content:deleteChannelAsModerator`
 
-Delete channel category.
+Delete the channel and optionally all associated data objects.
 
 ```
 USAGE
-  $ joystream-cli content:deleteChannelCategory CHANNELCATEGORYID
-
-ARGUMENTS
-  CHANNELCATEGORYID  ID of the Channel Category
+  $ joystream-cli content:deleteChannelAsModerator
 
 OPTIONS
+  -c, --channelId=channelId  (required) ID of the Channel
+  -f, --force                Force-remove all associated channel data objects
+  -r, --rationale=rationale  (required) Reason of deleting the channel by moderator
   --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/deleteChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelCategory.ts)_
+_See code: [src/commands/content/deleteChannelAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelAsModerator.ts)_
+
+## `joystream-cli content:deleteChannelAssetsAsModerator`
+
+Delete the channel assets.
+
+```
+USAGE
+  $ joystream-cli content:deleteChannelAssetsAsModerator
+
+OPTIONS
+  -a, --assetIds=assetIds    (required) List of data object IDs to delete
+  -c, --channelId=channelId  (required) ID of the Channel
+  -r, --rationale=rationale  (required) Reason for removing the channel assets by moderator
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/deleteChannelAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelAssetsAsModerator.ts)_
 
 ## `joystream-cli content:deleteVideo`
 
@@ -610,33 +639,52 @@ USAGE
   $ joystream-cli content:deleteVideo
 
 OPTIONS
-  -f, --force                     Force-remove all associated video data objects
-  -v, --videoId=videoId           (required) ID of the Video
-  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
-  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
+  -f, --force                             Force-remove all associated video data objects
+  -v, --videoId=videoId                   (required) ID of the Video
+  --context=(Owner|Curator|Collaborator)  Actor context to execute the command in (Owner/Curator/Collaborator)
+  --useMemberId=useMemberId               Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId               Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/deleteVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideo.ts)_
 
-## `joystream-cli content:deleteVideoCategory VIDEOCATEGORYID`
+## `joystream-cli content:deleteVideoAsModerator`
 
-Delete video category.
+Delete the video and optionally all associated data objects.
 
 ```
 USAGE
-  $ joystream-cli content:deleteVideoCategory VIDEOCATEGORYID
-
-ARGUMENTS
-  VIDEOCATEGORYID  ID of the Video Category
+  $ joystream-cli content:deleteVideoAsModerator
 
 OPTIONS
+  -f, --force                Force-remove all associated video data objects
+  -r, --rationale=rationale  (required) reason of deleting the video by moderator
+  -v, --videoId=videoId      (required) ID of the Video
   --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/deleteVideoCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoCategory.ts)_
+_See code: [src/commands/content/deleteVideoAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAsModerator.ts)_
+
+## `joystream-cli content:deleteVideoAssetsAsModerator`
+
+Delete the video assets.
+
+```
+USAGE
+  $ joystream-cli content:deleteVideoAssetsAsModerator
+
+OPTIONS
+  -a, --assetIds=assetIds    (required) List of data object IDs to delete
+  -r, --rationale=rationale  (required) Reason for removing the video assets by moderator
+  -v, --videoId=videoId      (required) ID of the Video
+  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/deleteVideoAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAssetsAsModerator.ts)_
 
 ## `joystream-cli content:removeChannelAssets`
 
@@ -647,11 +695,11 @@ USAGE
   $ joystream-cli content:removeChannelAssets
 
 OPTIONS
-  -c, --channelId=channelId       (required) ID of the Channel
-  -o, --objectId=objectId         (required) ID of an object to remove
-  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
-  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
+  -c, --channelId=channelId               (required) ID of the Channel
+  -o, --objectId=objectId                 (required) ID of an object to remove
+  --context=(Owner|Curator|Collaborator)  Actor context to execute the command in (Owner/Curator/Collaborator)
+  --useMemberId=useMemberId               Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId               Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/removeChannelAssets.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/removeChannelAssets.ts)_
@@ -691,6 +739,25 @@ OPTIONS
 
 _See code: [src/commands/content/reuploadAssets.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/reuploadAssets.ts)_
 
+## `joystream-cli content:setChannelVisibilityAsModerator`
+
+Set channel visibility as moderator.
+
+```
+USAGE
+  $ joystream-cli content:setChannelVisibilityAsModerator
+
+OPTIONS
+  -c, --channelId=channelId      (required) ID of the channel
+  -r, --rationale=rationale      (required) Reason for changing visibility of channel
+  -s, --status=(VISIBLE|HIDDEN)  (required) The visibility status of the channel
+  --context=(Lead|Curator)       Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/setChannelVisibilityAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setChannelVisibilityAsModerator.ts)_
+
 ## `joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`
 
 Set Curator Group status (Active/Inactive).
@@ -710,23 +777,24 @@ OPTIONS
 
 _See code: [src/commands/content/setCuratorGroupStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setCuratorGroupStatus.ts)_
 
-## `joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS`
+## `joystream-cli content:setVideoVisibilityAsModerator`
 
-Set featured videos. Requires lead access.
+Set video visibility as moderator.
 
 ```
 USAGE
-  $ joystream-cli content:setFeaturedVideos FEATUREDVIDEOIDS
-
-ARGUMENTS
-  FEATUREDVIDEOIDS  Comma-separated video IDs (ie. 1,2,3)
+  $ joystream-cli content:setVideoVisibilityAsModerator
 
 OPTIONS
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -r, --rationale=rationale      (required) Reason for changing visibility of video
+  -s, --status=(VISIBLE|HIDDEN)  (required) The visibility status of the video
+  -v, --videoId=videoId          (required) ID of the Video
+  --context=(Lead|Curator)       Actor context to execute the command in (Lead/Curator)
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/setFeaturedVideos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setFeaturedVideos.ts)_
+_See code: [src/commands/content/setVideoVisibilityAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/setVideoVisibilityAsModerator.ts)_
 
 ## `joystream-cli content:updateChannel CHANNELID`
 
@@ -740,73 +808,53 @@ ARGUMENTS
   CHANNELID  ID of the Channel
 
 OPTIONS
-  -i, --input=input               (required) Path to JSON file to use as input
-  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
-  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
+  -i, --input=input                       (required) Path to JSON file to use as input
+  --context=(Owner|Curator|Collaborator)  Actor context to execute the command in (Owner/Curator/Collaborator)
+  --useMemberId=useMemberId               Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId               Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannel.ts)_
 
-## `joystream-cli content:updateChannelCategory CHANNELCATEGORYID`
+## `joystream-cli content:updateChannelStateBloatBond VALUE`
 
-Update channel category inside content directory.
+Update channel state bloat bond.
 
 ```
 USAGE
-  $ joystream-cli content:updateChannelCategory CHANNELCATEGORYID
+  $ joystream-cli content:updateChannelStateBloatBond VALUE
 
 ARGUMENTS
-  CHANNELCATEGORYID  ID of the Channel Category
+  VALUE  New state bloat bond value
 
 OPTIONS
-  -i, --input=input          (required) Path to JSON file to use as input
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/updateChannelCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelCategory.ts)_
+_See code: [src/commands/content/updateChannelStateBloatBond.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelStateBloatBond.ts)_
 
-## `joystream-cli content:updateChannelCensorshipStatus ID [STATUS]`
+## `joystream-cli content:updateCuratorGroupPermissions [ID]`
 
-Update Channel censorship status (Censored / Not censored).
+Update existing Curator Group.
 
 ```
 USAGE
-  $ joystream-cli content:updateChannelCensorshipStatus ID [STATUS]
+  $ joystream-cli content:updateCuratorGroupPermissions [ID]
 
 ARGUMENTS
-  ID      ID of the Channel
-  STATUS  New censorship status of the channel (1 - censored, 0 - not censored)
+  ID  ID of the Curator Group
 
 OPTIONS
-  --rationale=rationale      rationale
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+  -p, --permissions=permissions  (required) Path to JSON file containing moderation permissions by channel privilege
+                                 level to use as input
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/updateChannelCensorshipStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelCensorshipStatus.ts)_
-
-## `joystream-cli content:updateChannelModerators`
-
-Update Channel's moderator set.
-
-```
-USAGE
-  $ joystream-cli content:updateChannelModerators
-
-OPTIONS
-  -c, --channelId=channelId    (required) Channel id
-  -m, --moderators=moderators  New set of moderators
-  --useMemberId=useMemberId    Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId    Try using the specified worker id as context whenever possible
-
-EXAMPLE
-  $ content:updateChannelModerators -c 1 -m 1 2 3
-```
-
-_See code: [src/commands/content/updateChannelModerators.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelModerators.ts)_
+_See code: [src/commands/content/updateCuratorGroupPermissions.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateCuratorGroupPermissions.ts)_
 
 ## `joystream-cli content:updateVideo VIDEOID`
 
@@ -820,53 +868,31 @@ ARGUMENTS
   VIDEOID  ID of the Video
 
 OPTIONS
-  -i, --input=input               (required) Path to JSON file to use as input
-  --context=(Owner|Collaborator)  Actor context to execute the command in (Owner/Collaborator)
-  --useMemberId=useMemberId       Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId       Try using the specified worker id as context whenever possible
+  -i, --input=input                       (required) Path to JSON file to use as input
+  --context=(Owner|Curator|Collaborator)  Actor context to execute the command in (Owner/Curator/Collaborator)
+  --useMemberId=useMemberId               Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId               Try using the specified worker id as context whenever possible
 ```
 
 _See code: [src/commands/content/updateVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideo.ts)_
 
-## `joystream-cli content:updateVideoCategory VIDEOCATEGORYID`
+## `joystream-cli content:updateVideoStateBloatBond VALUE`
 
-Update video category inside content directory.
+Update video state bloat bond.
 
 ```
 USAGE
-  $ joystream-cli content:updateVideoCategory VIDEOCATEGORYID
+  $ joystream-cli content:updateVideoStateBloatBond VALUE
 
 ARGUMENTS
-  VIDEOCATEGORYID  ID of the Video Category
+  VALUE  New state bloat bond value
 
 OPTIONS
-  -i, --input=input          (required) Path to JSON file to use as input
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
 ```
 
-_See code: [src/commands/content/updateVideoCategory.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoCategory.ts)_
-
-## `joystream-cli content:updateVideoCensorshipStatus ID [STATUS]`
-
-Update Video censorship status (Censored / Not censored).
-
-```
-USAGE
-  $ joystream-cli content:updateVideoCensorshipStatus ID [STATUS]
-
-ARGUMENTS
-  ID      ID of the Video
-  STATUS  New video censorship status (1 - censored, 0 - not censored)
-
-OPTIONS
-  --rationale=rationale      rationale
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/content/updateVideoCensorshipStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoCensorshipStatus.ts)_
+_See code: [src/commands/content/updateVideoStateBloatBond.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateVideoStateBloatBond.ts)_
 
 ## `joystream-cli content:video VIDEOID`
 
@@ -903,6 +929,255 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
+
+## `joystream-cli fee-profile:addForumPost`
+
+Create fee profile of forum.add_post extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:addForumPost
+
+OPTIONS
+  -e, --editable           If specified - `editable` parameter is set to true when estimating the costs
+  -j, --joyPrice=joyPrice  [default: 6] Joy price in USD cents for estimating costs in USD
+  -p, --postLen=postLen    [default: 200] Post length to use for estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/addForumPost.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/addForumPost.ts)_
+
+## `joystream-cli fee-profile:addVideoComment`
+
+Create fee profile of members.member_remark extrinsic (video comment case).
+
+```
+USAGE
+  $ joystream-cli fee-profile:addVideoComment
+
+OPTIONS
+  -c, --commentLen=commentLen  [default: 50] Comment length to use for estimating tx fee
+  -j, --joyPrice=joyPrice      [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/addVideoComment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/addVideoComment.ts)_
+
+## `joystream-cli fee-profile:buyMembership`
+
+Create fee profile of members.buy_membership extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:buyMembership
+
+OPTIONS
+  -a, --aboutLength=aboutLength          [default: 0] Length of the member's about text (part of metadata) to use for
+                                         estimating tx fee
+
+  -h, --handleLength=handleLength        [default: 10] Length of the membership handle to use for estimating tx fee
+
+  -j, --joyPrice=joyPrice                [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -n, --nameLength=nameLength            [default: 10] Length of the member's name (part of metadata) to use for
+                                         estimating tx fee
+
+  -u, --avatarUriLength=avatarUriLength  [default: 25] Length of the member's avatar uri (part of metadata) to use for
+                                         estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/buyMembership.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/buyMembership.ts)_
+
+## `joystream-cli fee-profile:createChannel`
+
+Create fee profile of content.create_channel extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:createChannel
+
+OPTIONS
+  -C, --collaboratorsNum=collaboratorsNum              [default: 0] Number of channel collaborators to use for
+                                                       estimating tx fee
+
+  -D, --distributionBucketsNum=distributionBucketsNum  Number of distribution buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -S, --storageBucketsNum=storageBucketsNum            Number of storage buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -a, --avatarSize=avatarSize                          [default: 1] Avatar size in MB to use when estimating the costs
+
+  -c, --coverSize=coverSize                            [default: 1] Cover photo size in MB to use when estimating the
+                                                       costs
+
+  -d, --descriptionLen=descriptionLen                  [default: 200] Channel description (part of channel metadata)
+                                                       length to use for estimating tx fee
+
+  -j, --joyPrice=joyPrice                              [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -t, --titleLen=titleLen                              [default: 15] Channel title (part of channel metadata) length to
+                                                       use for estimating tx fee
+
+  --noAvatar                                           If provided - channel with no avatar will be used for estimating
+                                                       the costs
+
+  --noCover                                            If provided - channel with no cover photo will be used for
+                                                       estimating the costs
+```
+
+_See code: [src/commands/fee-profile/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/createChannel.ts)_
+
+## `joystream-cli fee-profile:createForumThread`
+
+Create fee profile of forum.create_thread extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:createForumThread
+
+OPTIONS
+  -G, --tagsNum=tagsNum                [default: 5] Number of forum thread tags (part of thread metadata) to use for
+                                       estimating tx fee
+
+  -g, --tagLen=tagLen                  [default: 10] Single tag length (part of thread metadata) to use for estimating
+                                       tx fee
+
+  -j, --joyPrice=joyPrice              [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -p, --initialPostLen=initialPostLen  [default: 200] Thread's initial post length to use for estimating tx fee
+
+  -t, --titleLen=titleLen              [default: 20] Thread title (part of thread metadata) length to use for estimating
+                                       tx fee
+```
+
+_See code: [src/commands/fee-profile/createForumThread.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/createForumThread.ts)_
+
+## `joystream-cli fee-profile:createVideo`
+
+Create fee profile of content.create_video extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:createVideo
+
+OPTIONS
+  -S, --storageBucketsNum=storageBucketsNum              Number of storage buckets to use for estimating tx fee.
+                                                         By default this number will be based on the current chain's
+                                                         dynamic bag policy for channel bags
+
+  -T, --thumbnailSize=thumbnailSize                      [default: 1] Thumbnail photo size in MB to use for estimating
+                                                         the costs
+
+  -c, --categoryLen=categoryLen                          [default: 10] Video cateogry (part of video metadata) length to
+                                                         use for estimating tx fee
+
+  -d, --descriptionLen=descriptionLen                    [default: 200] Video description (part of video metadata)
+                                                         length to use for estimating tx fee
+
+  -f, --subtitlesFileSize=subtitlesFileSize              [default: 1] Single subtitles file/asset size in MB to use for
+                                                         estimating the costs
+
+  -j, --joyPrice=joyPrice                                [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -m, --mediaSize=mediaSize                              [default: 200] Video media file size in MB to use for
+                                                         estimating the costs
+
+  -s, --subtitlesNum=subtitlesNum                        [default: 1] Number of subtitles (subtitle assets) to use for
+                                                         estimating the costs
+
+  -t, --titleLen=titleLen                                [default: 15] Video title (part of video metadata) length to
+                                                         use for estimating tx fee
+
+  -w, --nftAuctionWhitelistSize=nftAuctionWhitelistSize  If `--withNft` is provided - determines auction whitelist size
+                                                         in nft's InitTransactionalStatus to use when estimating tx fee
+                                                         (Default: 0)
+
+  --noMedia                                              If provided - video with no media asset will be used for
+                                                         estimating the costs
+
+  --noThumbnail                                          If provided - video with no thumbnail asset will be used for
+                                                         estimating the costs
+
+  --withNft                                              If provided - `auto_issue_nft` parameter will be set when
+                                                         estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/createVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/createVideo.ts)_
+
+## `joystream-cli fee-profile:deleteChannel`
+
+Create fee profile of content.delete_channel extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteChannel
+
+OPTIONS
+  -D, --distributionBucketsNum=distributionBucketsNum  Number of distribution buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -S, --storageBucketsNum=storageBucketsNum            Number of storage buckets to use for estimating tx fee.
+                                                       By default this number will be based on the current chain's
+                                                       dynamic bag policy for channel bags
+
+  -a, --assetsNum=assetsNum                            [default: 2] Number of assets to use for estimating the
+                                                       costs/returns
+
+  -j, --joyPrice=joyPrice                              [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/deleteChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteChannel.ts)_
+
+## `joystream-cli fee-profile:deleteForumPost`
+
+Create fee profile of forum.delete_posts extrinsic (single post case).
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteForumPost
+
+OPTIONS
+  -j, --joyPrice=joyPrice          [default: 6] Joy price in USD cents for estimating costs in USD
+  -r, --rationaleLen=rationaleLen  [default: 0] Default rationale length to use for estimating tx fee
+```
+
+_See code: [src/commands/fee-profile/deleteForumPost.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteForumPost.ts)_
+
+## `joystream-cli fee-profile:deleteForumThread`
+
+Create fee profile of forum.delete_thread extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteForumThread
+
+OPTIONS
+  -j, --joyPrice=joyPrice  [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/deleteForumThread.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteForumThread.ts)_
+
+## `joystream-cli fee-profile:deleteVideo`
+
+Create fee profile of forum.delete_video extrinsic.
+
+```
+USAGE
+  $ joystream-cli fee-profile:deleteVideo
+
+OPTIONS
+  -S, --storageBucketsNum=storageBucketsNum  Number of storage buckets to use for estimating tx fee.
+                                             By default this number will be based on the current chain's dynamic bag
+                                             policy for channel bags
+
+  -a, --assetsNum=assetsNum                  [default: 2] Number of assets to use for estimating the costs/returns
+
+  -j, --joyPrice=joyPrice                    [default: 6] Joy price in USD cents for estimating costs in USD
+```
+
+_See code: [src/commands/fee-profile/deleteVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/deleteVideo.ts)_
 
 ## `joystream-cli forum:addPost`
 
@@ -1169,7 +1444,7 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.2/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.3.1/src/commands/help.ts)_
 
 ## `joystream-cli membership:addStakingAccount`
 
@@ -1234,6 +1509,23 @@ ALIASES
 ```
 
 _See code: [src/commands/membership/details.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/details.ts)_
+
+## `joystream-cli membership:memberRemark MESSAGE`
+
+Member remarks
+
+```
+USAGE
+  $ joystream-cli membership:memberRemark MESSAGE
+
+ARGUMENTS
+  MESSAGE  Remark message
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/membership/memberRemark.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/memberRemark.ts)_
 
 ## `joystream-cli membership:update`
 
@@ -1793,32 +2085,6 @@ OPTIONS
 ```
 
 _See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
-
-## `joystream-cli working-groups:updateRoleStorage STORAGE`
-
-Updates the associated worker storage
-
-```
-USAGE
-  $ joystream-cli working-groups:updateRoleStorage STORAGE
-
-ARGUMENTS
-  STORAGE  Worker storage
-
-OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
-      The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
-      distributors.
-
-  --useMemberId=useMemberId
-      Try using the specified member id as context whenever possible
-
-  --useWorkerId=useWorkerId
-      Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/working-groups/updateRoleStorage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleStorage.ts)_
 
 ## `joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`
 
