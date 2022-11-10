@@ -1,8 +1,8 @@
 #![allow(clippy::unused_unit)]
 
 use crate::types::{
-    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
-    TransferPolicyOf, ValidatedTransfersOf, BondingCurve,
+    BondingCurve, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId,
+    TokenSaleOf, TransferPolicyOf, ValidatedTransfersOf,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;

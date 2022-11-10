@@ -815,7 +815,7 @@ decl_module! {
             // == MUTATION SAFE ==
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
-                token_data.bonding_curve = Some(curve)
+                token_data.bonding_curve = Some(curve.clone())
             });
 
             // deposit existential deposit if the account is newly created
@@ -913,7 +913,8 @@ decl_module! {
 
             let sender = ensure_signed(origin.clone())?;
 
-            T::MemberOriginValidator::ensure_member_controller_account_origin(                origin,
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
                 member_id
             )?;
 
@@ -2055,5 +2056,4 @@ impl<T: Config> Module<T> {
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
         Ok(Transfers(transfers_set))
     }
-
 }

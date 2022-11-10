@@ -3,7 +3,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::types::{BondOperation, BondingCurve};
-use crate::{joy, member, token, Error, RepayableBloatBondOf};
+use crate::{joy, last_event_eq, member, token, Error, RawEvent, RepayableBloatBondOf};
 use frame_support::{assert_err, assert_ok};
 use sp_runtime::{traits::Zero, DispatchError, PerThing, Permill};
 
@@ -345,6 +345,30 @@ fn crt_correctly_minted_to_user_during_bonding() {
         })
 }
 
+#[test]
+fn bond_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
+    let price = joy!(1000500);
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default().execute_call().unwrap();
+
+            BondFixture::default()
+                .with_amount(DEFAULT_BONDING_AMOUNT)
+                .execute_call()
+                .unwrap();
+
+            last_event_eq!(RawEvent::TokenBonded(
+                token_id,
+                user_member_id,
+                DEFAULT_BONDING_AMOUNT,
+                price,
+            ));
+        })
+}
+
 // --------------- ACTIVATION ----------------------------------
 
 #[test]
@@ -469,6 +493,31 @@ fn amm_activation_ok_with_amm_treasury_account_having_existential_deposit() {
             ExistentialDeposit::get()
         );
     })
+}
+
+#[test]
+fn amm_activation_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default()
+                .with_linear_function_params(BONDING_CURVE_SLOPE, BONDING_CURVE_INTERCEPT)
+                .with_creator_reward(BONDING_CURVE_CREATOR_REWARD)
+                .execute_call()
+                .unwrap();
+
+            last_event_eq!(RawEvent::BondingCurveActivated(
+                token_id,
+                user_member_id,
+                BondingCurve {
+                    slope: BONDING_CURVE_SLOPE,
+                    intercept: BONDING_CURVE_INTERCEPT,
+                    creator_reward: BONDING_CURVE_CREATOR_REWARD,
+                }
+            ));
+        })
 }
 
 // --------------------- UNBONDING -------------------------------
@@ -619,31 +668,6 @@ fn unbonding_order_failed_with_slippage_constraint_violated() {
 }
 
 #[test]
-fn unbonding_ok_with_crt_issuance_decreased() {
-    let token_id = token!(1);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
-    let (creator_id, _) = member!(1);
-    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
-        .execute_with(|| {
-            IssueTokenFixture::default()
-                .with_creator_id(creator_id)
-                .execute_call()
-                .unwrap();
-            ActivateAmmFixture::default().execute_call().unwrap();
-            BondFixture::default().execute_call().unwrap();
-            let supply_pre = Token::token_info_by_id(token_id).total_supply;
-
-            UnbondFixture::default()
-                .with_amount(DEFAULT_UNBONDING_AMOUNT)
-                .execute_call()
-                .unwrap();
-
-            let supply_post = Token::token_info_by_id(token_id).total_supply;
-            assert_eq!(supply_pre - supply_post, DEFAULT_UNBONDING_AMOUNT);
-        })
-}
-
-#[test]
 fn amm_treasury_balance_correctly_decreased_during_unbonding() {
     let token_id = token!(1);
     let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
@@ -677,6 +701,31 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
 }
 
 #[test]
+fn unbonding_ok_with_crt_issuance_decreased() {
+    let token_id = token!(1);
+    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
+    let (creator_id, _) = member!(1);
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
+            IssueTokenFixture::default()
+                .with_creator_id(creator_id)
+                .execute_call()
+                .unwrap();
+            ActivateAmmFixture::default().execute_call().unwrap();
+            BondFixture::default().execute_call().unwrap();
+            let supply_pre = Token::token_info_by_id(token_id).total_supply;
+
+            UnbondFixture::default()
+                .with_amount(DEFAULT_UNBONDING_AMOUNT)
+                .execute_call()
+                .unwrap();
+
+            let supply_post = Token::token_info_by_id(token_id).total_supply;
+            assert_eq!(supply_pre - supply_post, DEFAULT_UNBONDING_AMOUNT);
+        })
+}
+
+#[test]
 fn unbonding_fails_with_amm_treasury_not_having_sufficient_usable_joy_required() {
     let token_id = token!(1);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
@@ -701,7 +750,7 @@ fn unbonding_fails_with_amm_treasury_not_having_sufficient_usable_joy_required()
 }
 
 #[test]
-fn user_joy_balance_correctly_increased_during_unbonding() {
+fn unbonding_ok_with_user_joy_balance_correctly_increased() {
     let (_, user_account) = member!(2);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
@@ -715,7 +764,6 @@ fn user_joy_balance_correctly_increased_during_unbonding() {
                 .execute_call()
                 .unwrap();
             BondFixture::default().execute_call().unwrap();
-            println!("{:?}", Token::token_info_by_id(1).total_supply);
             let user_reserve_pre = Balances::usable_balance(user_account);
 
             UnbondFixture::default().execute_call().unwrap();
@@ -757,6 +805,41 @@ fn unbonding_ok_with_user_crt_amount_correctly_decreased() {
                 Token::account_info_by_token_and_member(token_id, user_member_id).amount;
             assert_eq!(user_crt_pre - user_crt_post, DEFAULT_UNBONDING_AMOUNT);
         })
+}
+
+#[test]
+fn unbonding_ok_with_event_deposited() {
+    let token_id = token!(1);
+    let ((user_id, user_account), user_balance) = (member!(2), joy!(5_000_000));
+    let price = joy!(95); // see last test
+    build_default_test_externalities_with_balances(vec![(user_account, user_balance)]).execute_with(
+        || {
+            IssueTokenFixture::default()
+                .with_empty_allocation()
+                .execute_call()
+                .unwrap();
+            ActivateAmmFixture::default().execute_call().unwrap();
+            BondFixture::default()
+                .with_sender(user_account)
+                .with_member_id(user_id)
+                .execute_call()
+                .unwrap();
+
+            UnbondFixture::default()
+                .with_amount(DEFAULT_UNBONDING_AMOUNT)
+                .with_sender(user_account)
+                .with_member_id(user_id)
+                .execute_call()
+                .unwrap();
+
+            last_event_eq!(RawEvent::TokenUnbonded(
+                token_id,
+                user_id,
+                DEFAULT_UNBONDING_AMOUNT,
+                price,
+            ));
+        },
+    )
 }
 
 // ------------------- DEACTIVATE ---------------------------------------
@@ -908,6 +991,32 @@ fn deactivate_ok_with_full_cycle_from_activation() {
             );
         })
 }
+
+#[test]
+fn amm_deactivation_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let (creator_id, creator_account) = member!(1);
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default()
+            .with_token_id(token_id)
+            .with_sender(creator_account)
+            .with_member_id(creator_id)
+            .execute_call()
+            .unwrap();
+        DeactivateAmmFixture::default()
+            .with_token_id(token_id)
+            .with_sender(creator_account)
+            .with_member_id(creator_id)
+            .execute_call()
+            .unwrap();
+
+        last_event_eq!(RawEvent::BondingCurveDeactivated(token_id, creator_id,));
+    })
+}
+
+// --------------------------------- EXTRA ----------------------------------------
 
 #[test]
 fn review_eval_function() {
