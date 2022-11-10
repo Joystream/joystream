@@ -21,6 +21,7 @@ ExecStart={{ template_working_dir }}/bin/joystream-node \
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=16384
+TimeoutStartSec=300
 
 [Install]
 WantedBy=multi-user.target

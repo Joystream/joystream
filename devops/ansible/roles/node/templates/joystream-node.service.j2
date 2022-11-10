@@ -9,11 +9,17 @@ WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/joystream-node \
         --chain {{ template_working_dir }}/chainspec.json \
         --pruning archive \
-        --no-mdns
+        --no-mdns \
+        --base-path {{ template_working_dir }} \
+        --in-peers 512 \
+        --out-peers 50 \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+        --listen-addr /ip4/0.0.0.0/tcp/30333
 
 Restart=on-failure
 RestartSec=3
-LimitNOFILE=10000
+LimitNOFILE=16384
+TimeoutStartSec=300
 
 [Install]
 WantedBy=multi-user.target
