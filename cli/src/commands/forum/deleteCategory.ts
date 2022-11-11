@@ -1,5 +1,5 @@
-import { AccountId } from '@joystream/types/common'
-import { PrivilegedActor } from '@joystream/types/forum'
+import { AccountId } from '@polkadot/types/interfaces'
+import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import ForumCommandBase from '../../base/ForumCommandBase'
@@ -24,20 +24,20 @@ export default class ForumDeleteCategoryCommand extends ForumCommandBase {
     const category = await this.getCategory(categoryId)
     let key: AccountId, actor: PrivilegedActor
 
-    if (category.parent_category_id.isNone) {
+    if (category.parentCategoryId.isNone) {
       if (context === 'Moderator') {
         this.error('Moderator cannot delete root categories!', { exit: ExitCodes.AccessDenied })
       }
       ;[key, actor] = await this.getForumLeadContext()
     } else {
-      ;[key, actor] = await this.getForumModerationContext([category.parent_category_id.unwrap()], context)
+      ;[key, actor] = await this.getForumModerationContext([category.parentCategoryId.unwrap()], context)
     }
 
-    if (category.num_direct_subcategories.gtn(0)) {
+    if (category.numDirectSubcategories.gtn(0)) {
       this.error('Cannot remove a category with existing subcategories!', { exit: ExitCodes.InvalidInput })
     }
 
-    if (category.num_direct_threads.gtn(0)) {
+    if (category.numDirectThreads.gtn(0)) {
       this.error('Cannot remove a category with existing threads!', { exit: ExitCodes.InvalidInput })
     }
 

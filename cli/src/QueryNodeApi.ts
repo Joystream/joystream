@@ -46,12 +46,27 @@ import {
   UpcomingWorkingGroupOpeningsByGroupQuery,
   UpcomingWorkingGroupOpeningsByGroupQueryVariables,
   UpcomingWorkingGroupOpeningsByGroup,
+  GetStorageBucketsQuery,
+  GetStorageBucketsQueryVariables,
+  GetStorageBuckets,
+  StorageNodeInfoFragment,
+  DistributionBucketFamilyFieldsFragment,
+  GetDistributionFamiliesAndBucketsQuery,
+  GetDistributionFamiliesAndBucketsQueryVariables,
+  GetDistributionFamiliesAndBuckets,
+  GetChannelByIdQuery,
+  GetChannelByIdQueryVariables,
+  GetChannelById,
+  ChannelFieldsFragment,
+  StorageBucketsCountQuery,
+  StorageBucketsCountQueryVariables,
+  StorageBucketsCount,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
-import { MemberId } from '@joystream/types/common'
-import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { MemberId, ApplicationId, OpeningId } from '@joystream/types/primitives'
 import { apiModuleByGroup } from './Api'
+import BN from 'bn.js'
 
 export default class QueryNodeApi {
   private _qnClient: ApolloClient<NormalizedCacheObject>
@@ -121,6 +136,14 @@ export default class QueryNodeApi {
     )
   }
 
+  async getChannelById(channelId: string): Promise<ChannelFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetChannelByIdQuery, GetChannelByIdQueryVariables>(
+      GetChannelById,
+      { channelId },
+      'channelByUniqueInput'
+    )
+  }
+
   async storageNodesInfoByBagId(bagId: string): Promise<StorageNodeInfo[]> {
     const result = await this.multipleEntitiesQuery<
       GetStorageNodesInfoByBagIdQuery,
@@ -146,6 +169,42 @@ export default class QueryNodeApi {
       }
     }
     return validNodesInfo
+  }
+
+  async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
+    const countQueryResult = await this.uniqueEntityQuery<StorageBucketsCountQuery, StorageBucketsCountQueryVariables>(
+      StorageBucketsCount,
+      {},
+      'storageBucketsConnection'
+    )
+    if (!countQueryResult) {
+      throw Error('Invalid query. Could not fetch storage buckets count information')
+    }
+
+    const buckets = await this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      { count: countQueryResult.totalCount },
+      'storageBuckets'
+    )
+
+    // sorting buckets based on available size, if two buckets have same
+    // available size then sort the two based on available dataObjects count
+    return buckets.sort(
+      (x, y) =>
+        new BN(y.dataObjectsSizeLimit)
+          .sub(new BN(y.dataObjectsSize))
+          .cmp(new BN(x.dataObjectsSizeLimit).sub(new BN(x.dataObjectsSize))) ||
+        new BN(y.dataObjectCountLimit)
+          .sub(new BN(y.dataObjectsCount))
+          .cmp(new BN(x.dataObjectCountLimit).sub(new BN(x.dataObjectsCount)))
+    )
+  }
+
+  async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetDistributionFamiliesAndBucketsQuery,
+      GetDistributionFamiliesAndBucketsQueryVariables
+    >(GetDistributionFamiliesAndBuckets, {}, 'distributionBucketFamilies')
   }
 
   async membersByIds(ids: MemberId[] | string[]): Promise<MembershipFieldsFragment[]> {

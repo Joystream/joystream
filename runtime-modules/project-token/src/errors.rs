@@ -1,8 +1,12 @@
 use crate::Module;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
-    pub enum Error for Module<T: crate::Trait> {
+    pub enum Error for Module<T: crate::Config> {
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Account's transferrable balance is insufficient to perform the transfer or initialize token sale
         InsufficientTransferrableBalance,
 
@@ -24,10 +28,12 @@ decl_error! {
         /// Symbol already in use
         TokenSymbolAlreadyInUse,
 
+        /// At least one of the members provided as part of InitialAllocation does not exist
+        InitialAllocationToNonExistingMember,
+
         /// Account Already exists
         AccountAlreadyExists,
 
-        /// Token's current issuance state is not Idle
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
 
@@ -142,6 +148,9 @@ decl_error! {
 
         /// Attempt to modify supply when revenue split is active
         CannotModifySupplyWhenRevenueSplitsAreActive,
+
+        /// Revenue split rate cannot be 0
+        RevenueSplitRateIsZero,
 
         // ------ Burning ------------------------------------------------------
 

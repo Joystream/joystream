@@ -1,14 +1,27 @@
-import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { WorkingGroup as WGType, WorkerId } from '@joystream/types/augment/all'
-import { Worker, Event, Network, WorkingGroup as WGEntity } from 'query-node/dist/model'
+import { WorkerId } from '@joystream/types/primitives'
+import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WGType } from '@polkadot/types/lookup'
+import {
+  Worker,
+  Event,
+  Network,
+  WorkingGroup as WGEntity,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionErrored,
+  MetaprotocolTransactionSuccessful,
+} from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
+
+// used to create Ids for metaprotocol entities (entities that don't
+// have any runtime existence; and solely exist on the Query node).
+export const METAPROTOCOL = 'METAPROTOCOL'
 
 // Max value the database can store in Int column field
 export const INT32MAX = 2147483647
@@ -46,12 +59,17 @@ class Logger {
 
 export const logger = new Logger()
 
+/*
+  Get Id of new metaprotocol entity in Query node DB
+ */
+export function newMetaprotocolEntityId(substrateEvent: SubstrateEvent): string {
+  const { blockNumber, indexInBlock } = substrateEvent
+  return `${METAPROTOCOL}-${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`
+}
+
 export function genericEventFields(substrateEvent: SubstrateEvent): Partial<BaseModel & Event> {
-  const { blockNumber, indexInBlock, extrinsic, blockTimestamp } = substrateEvent
-  const eventTime = new Date(blockTimestamp)
+  const { blockNumber, indexInBlock, extrinsic } = substrateEvent
   return {
-    createdAt: eventTime,
-    updatedAt: eventTime,
     id: `${CURRENT_NETWORK}-${blockNumber}-${indexInBlock}`,
     inBlock: blockNumber,
     network: CURRENT_NETWORK,
@@ -189,7 +207,7 @@ export async function getWorkingGroupByName(
 ): Promise<WGEntity> {
   const group = await store.get(WGEntity, { where: { name }, relations })
   if (!group) {
-    throw new Error(`Working group ${name} not found!`)
+    return inconsistentState(`Working group ${name} not found!`)
   }
   return group
 }
@@ -203,7 +221,7 @@ export async function getWorker(
   const workerDbId = `${groupName}-${runtimeId}`
   const worker = await store.get(Worker, { where: { id: workerDbId }, relations })
   if (!worker) {
-    inconsistentState(`Expected worker not found by id ${workerDbId}`)
+    return inconsistentState(`Expected worker not found by id ${workerDbId}`)
   }
 
   return worker
@@ -225,7 +243,7 @@ export async function getById<T extends BaseModel>(
   id: string,
   relations?: RelationsArr<T>
 ): Promise<T> {
-  const result = await store.get(entityClass, { where: { id }, relations })
+  const result = await store.get(entityClass, { where: { id }, relations } as FindOneOptions<T>)
   if (!result) {
     throw new Error(`Expected ${entityClass.name} not found by ID: ${id}`)
   }
@@ -258,4 +276,36 @@ export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number 
     )
     return maxValue
   }
+}
+
+export async function saveMetaprotocolTransactionSuccessful(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  info: Partial<MetaprotocolTransactionSuccessful>
+): Promise<void> {
+  const status = new MetaprotocolTransactionSuccessful()
+  Object.assign(status, info)
+
+  const metaprotocolTransaction = new MetaprotocolTransactionStatusEvent({
+    ...genericEventFields(event),
+    status,
+  })
+
+  await store.save(metaprotocolTransaction)
+}
+
+export async function saveMetaprotocolTransactionErrored(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  message: string
+): Promise<void> {
+  const status = new MetaprotocolTransactionErrored()
+  status.message = message
+
+  const metaprotocolTransaction = new MetaprotocolTransactionStatusEvent({
+    ...genericEventFields(event),
+    status,
+  })
+
+  await store.save(metaprotocolTransaction)
 }

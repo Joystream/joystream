@@ -9,9 +9,9 @@ jobs:
       matrix:
         node-version: [14.x]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
     - name: checks
@@ -20,7 +20,6 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
         yarn workspace query-node-root build
-        yarn workspace query-node-mappings checks --quiet
 
   query_node_build_osx:
     name: MacOS Checks
@@ -29,9 +28,9 @@ jobs:
       matrix:
         node-version: [14.x]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
     - name: checks
@@ -40,4 +39,3 @@ jobs:
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
         yarn workspace query-node-root build
-        yarn workspace query-node-mappings checks --quiet

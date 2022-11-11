@@ -1,3 +1,5 @@
+#![allow(clippy::unused_unit)]
+
 use crate::types::{
     JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
     TransferPolicyOf, ValidatedTransfersOf,
@@ -10,12 +12,12 @@ use sp_std::vec::Vec;
 decl_event! {
     pub enum Event<T>
     where
-        Balance = <T as crate::Trait>::Balance,
+        Balance = <T as crate::Config>::Balance,
         JoyBalance = JoyBalanceOf<T>,
-        TokenId = <T as crate::Trait>::TokenId,
-        AccountId = <T as frame_system::Trait>::AccountId,
+        TokenId = <T as crate::Config>::TokenId,
+        AccountId = <T as frame_system::Config>::AccountId,
         MemberId = <T as MembershipTypes>::MemberId,
-        BlockNumber = <T as frame_system::Trait>::BlockNumber,
+        BlockNumber = <T as frame_system::Config>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,
@@ -26,18 +28,19 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - source member id
-        /// - map containing validated outputs (amount, remark) data indexed by
-        ///   (member_id + account existance)
-        TokenAmountTransferred(TokenId, MemberId, ValidatedTransfers),
+        /// - map containing validated outputs (amount indexed by (member_id + account existance))
+        /// - transfer's metadata
+        TokenAmountTransferred(TokenId, MemberId, ValidatedTransfers, Vec<u8>),
 
         /// Token amount transferred by issuer
         /// Params:
         /// - token identifier
         /// - source (issuer) member id
         /// - map containing validated outputs
-        ///   (amount, opt. vesting schedule, opt. vesting cleanup key, remark) data indexed by
+        ///   (amount, opt. vesting schedule, opt. vesting cleanup key) data indexed by
         ///   (account_id + account existance)
-        TokenAmountTransferredByIssuer(TokenId, MemberId, ValidatedTransfers),
+        /// - transfer's metadata
+        TokenAmountTransferredByIssuer(TokenId, MemberId, ValidatedTransfers, Vec<u8>),
 
         /// Patronage rate decreased
         /// Params:
@@ -145,5 +148,12 @@ decl_event! {
         /// Params:
         /// - token id
         TransferPolicyChangedToPermissionless(TokenId),
+
+        /// Tokens Burned
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - number of tokens burned
+        TokensBurned(TokenId, MemberId, Balance),
     }
 }

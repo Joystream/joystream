@@ -5,7 +5,8 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { BaseQueryNodeFixture } from '../../Fixture'
 import { MemberContext, EventDetails } from '../../types'
 import { InvitesTransferredEventFieldsFragment } from '../../graphql/generated/queries'
-import { Membership } from '@joystream/types/members'
+import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/lookup'
+import { Option } from '@polkadot/types'
 
 export class TransferInvitesHappyCaseFixture extends BaseQueryNodeFixture {
   private fromContext: MemberContext
@@ -48,13 +49,13 @@ export class TransferInvitesHappyCaseFixture extends BaseQueryNodeFixture {
   async execute(): Promise<void> {
     const { fromContext, toContext, invitesToTransfer } = this
 
-    const [fromMember, toMember] = await this.api.query.members.membershipById.multi<Membership>([
+    const [fromMember, toMember] = await this.api.query.members.membershipById.multi<Option<Membership>>([
       fromContext.memberId,
       toContext.memberId,
     ])
 
-    this.fromMemberInitialInvites = fromMember.invites.toNumber()
-    this.toMemberInitialInvites = toMember.invites.toNumber()
+    this.fromMemberInitialInvites = fromMember.unwrap().invites.toNumber()
+    this.toMemberInitialInvites = toMember.unwrap().invites.toNumber()
 
     this.tx = this.api.tx.members.transferInvites(fromContext.memberId, toContext.memberId, invitesToTransfer)
     const txFee = await this.api.estimateTxFee(this.tx, fromContext.account)

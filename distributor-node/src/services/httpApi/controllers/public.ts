@@ -18,8 +18,8 @@ import proxy from 'express-http-proxy'
 import { PendingDownload, PendingDownloadStatusType } from '../../networking/PendingDownload'
 import urljoin from 'url-join'
 
-const CACHED_MAX_AGE = 31536000
-const PENDING_MAX_AGE = 180
+const CACHED_MAX_AGE_SEC = 31536000
+const PENDING_MAX_AGE_SEC = 180
 
 export class PublicApiController {
   private config: ReadonlyConfig
@@ -51,10 +51,14 @@ export class PublicApiController {
     res: express.Response,
     next: express.NextFunction,
     objectId: string,
-    sourceApiEndpoint: string
+    sourceApiEndpoint: string,
+    fallbackMimeType?: string
   ) {
     const sourceObjectUrl = new URL(urljoin(sourceApiEndpoint, `files/${objectId}`))
     res.setHeader('x-data-source', 'external')
+    if (fallbackMimeType) {
+      res.setHeader('content-type', fallbackMimeType)
+    }
     this.logger.verbose(`Forwarding request to ${sourceObjectUrl.toString()}`, {
       objectId,
       sourceUrl: sourceObjectUrl.href,
@@ -78,7 +82,7 @@ export class PublicApiController {
     next: express.NextFunction,
     objectData: DataObjectData
   ): Promise<void> {
-    const { objectId, size, contentHash } = objectData
+    const { objectId, size, contentHash, fallbackMimeType } = objectData
 
     const { maxCachedItemSize } = this.config.limits
     if (maxCachedItemSize && size > maxCachedItemSize) {
@@ -89,14 +93,14 @@ export class PublicApiController {
       })
       const source = await this.networking.getDataObjectDownloadSource(objectData)
       res.setHeader('x-cache', 'miss')
-      return this.proxyAssetRequest(req, res, next, objectId, source)
+      return this.proxyAssetRequest(req, res, next, objectId, source, fallbackMimeType)
     }
 
     const downloadResponse = await this.networking.downloadDataObject({ objectData })
 
     if (downloadResponse) {
       // Note: Await will only wait unil the file is created, so we may serve the response from it
-      await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data)
+      await this.content.handleNewContent(objectId, size, contentHash, downloadResponse.data, fallbackMimeType)
       res.setHeader('x-cache', 'miss')
     } else {
       res.setHeader('x-cache', 'pending')
@@ -115,7 +119,7 @@ export class PublicApiController {
 
     const path = this.content.path(objectId)
     const stream = send(req, path, {
-      maxAge: CACHED_MAX_AGE,
+      maxAge: CACHED_MAX_AGE_SEC * 1000, // miliseconds
       lastModified: false,
     })
     const mimeType = this.stateCache.getContentMimeType(objectId)
@@ -161,7 +165,7 @@ export class PublicApiController {
     res.setHeader('content-type', contentType || DEFAULT_CONTENT_TYPE)
     // Allow caching pendingDownload reponse only for very short period of time and requite revalidation,
     // since the data coming from the source may not be valid
-    res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+    res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE_SEC}, must-revalidate`)
 
     // Handle request using pending download file if this makes sense in current context:
     if (this.content.exists(objectId)) {
@@ -177,7 +181,7 @@ export class PublicApiController {
     }
 
     // Range doesn't start from the beginning of the content or the file was not found - froward request to source storage node
-    return this.proxyAssetRequest(req, res, next, objectId, source)
+    return this.proxyAssetRequest(req, res, next, objectId, source, contentType)
   }
 
   private async servePendingDownloadAssetFromFile(
@@ -225,17 +229,18 @@ export class PublicApiController {
       case ObjectStatusType.Available:
         res.status(200)
         res.setHeader('x-cache', 'hit')
-        res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE}`)
+        res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE_SEC}`)
         res.setHeader('content-type', this.stateCache.getContentMimeType(objectId) || DEFAULT_CONTENT_TYPE)
         res.setHeader('content-length', this.content.fileSize(objectId))
         break
       case ObjectStatusType.PendingDownload:
         res.status(200)
         res.setHeader('x-cache', 'pending')
-        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE_SEC}, must-revalidate`)
         res.setHeader('content-length', objectStatus.pendingDownload.getObjectSize())
         break
       case ObjectStatusType.NotFound:
+      case ObjectStatusType.NotUploadedYet:
         res.status(404)
         break
       case ObjectStatusType.NotSupported:
@@ -244,7 +249,7 @@ export class PublicApiController {
       case ObjectStatusType.Missing:
         res.status(200)
         res.setHeader('x-cache', 'miss')
-        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE_SEC}, must-revalidate`)
         res.setHeader('content-length', objectStatus.objectData.size)
         break
     }
@@ -279,6 +284,9 @@ export class PublicApiController {
       case ObjectStatusType.NotSupported:
         res.status(421).json(this.createErrorResponse('Data object not served by this node'))
         return
+      case ObjectStatusType.NotUploadedYet:
+        res.status(404).json(this.createErrorResponse('Data object has not been uploaded yet'))
+        return
       case ObjectStatusType.Missing:
         return this.serveMissingAsset(req, res, next, objectStatus.objectData)
     }
@@ -287,6 +295,7 @@ export class PublicApiController {
   public async status(req: express.Request, res: express.Response<StatusResponse>): Promise<void> {
     const data: StatusResponse = {
       id: this.config.id,
+      version: this.config.version,
       objectsInCache: this.stateCache.getCachedObjectsCount(),
       storageLimit: this.config.limits.storage,
       storageUsed: this.content.usedSpace,

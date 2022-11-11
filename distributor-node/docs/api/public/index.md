@@ -78,6 +78,7 @@ Returns json object describing current node status.
 ```json
 {
   "id": "string",
+  "version": "string",
   "objectsInCache": 0,
   "storageLimit": 0,
   "storageUsed": 0,
@@ -199,7 +200,7 @@ Returns asset response headers (cache status, content type and/or length, accept
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Object is supported and should be send on GET request.|None|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Data object does not exist.|None|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Data object does not exist or has not been uploaded yet.|None|
 |421|[Misdirected request](https://tools.ietf.org/html/rfc7540#section-9.1.2)|Misdirected request. Data object not supported by the node.|None|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Unexpected server error|None|
 
@@ -275,7 +276,7 @@ Returns a media file.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Full available object data sent|string|
 |206|[Partial Content](https://tools.ietf.org/html/rfc7233#section-4.1)|Requested partial object data sent|string|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Data object does not exist.|[ErrorResponse](#schemaerrorresponse)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Data object does not exist or has not been uploaded yet.|[ErrorResponse](#schemaerrorresponse)|
 |421|[Misdirected request](https://tools.ietf.org/html/rfc7540#section-9.1.2)|Misdirected request. Data object not supported.|[ErrorResponse](#schemaerrorresponse)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Unexpected server error|None|
 
@@ -326,6 +327,7 @@ This operation does not require authentication
 ```json
 {
   "id": "string",
+  "version": "string",
   "objectsInCache": 0,
   "storageLimit": 0,
   "storageUsed": 0,
@@ -340,6 +342,7 @@ This operation does not require authentication
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |id|string|true|none|none|
+|version|string|true|none|none|
 |objectsInCache|integer|true|none|none|
 |storageLimit|integer|true|none|none|
 |storageUsed|integer|true|none|none|

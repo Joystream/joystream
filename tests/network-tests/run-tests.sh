@@ -33,10 +33,11 @@ if [ "${NO_STORAGE}" != true ]
 then
   ./start-storage.sh
   export REUSE_KEYS=true
+  export SKIP_STORAGE_AND_DISTRIBUTION=true
 fi
 
 # First scenario..
-./run-test-scenario.sh $1
+IGNORE_HIRED_LEADS=true ./run-test-scenario.sh $1
 
 # In between pickup generated keys from first scenario or bootstrap scene with all well known
 # keys for workers and members..

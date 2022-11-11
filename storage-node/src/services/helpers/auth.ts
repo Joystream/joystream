@@ -3,81 +3,7 @@ import { u8aToHex } from '@polkadot/util'
 import { signatureVerify } from '@polkadot/util-crypto'
 import base64url from 'base64url'
 import stringify from 'fast-safe-stringify'
-
-/**
- * Represents an upload token request.
- */
-export interface UploadTokenRequest {
-  /**
-   * Request data to sign.
-   */
-  data: UploadTokenRequestBody
-  /**
-   * Request body signature.
-   */
-  signature: string
-}
-
-/**
- * Represents upload token request data.
- */
-export interface UploadTokenRequestBody extends RequestData {
-  /**
-   * Joystream runtime Member ID (number).
-   */
-  memberId: number
-
-  /**
-   * Joystream runtime Account ID (public key).
-   */
-  accountId: string
-}
-
-/**
- * Represents request data.
- */
-export interface RequestData {
-  /**
-   * Runtime data object ID.
-   */
-  dataObjectId: number
-  /**
-   * Runtime storage bucket ID.
-   */
-  storageBucketId: number
-  /**
-   * Bag ID in the string format.
-   */
-  bagId: string
-}
-
-/**
- * Represents upload token data.
- */
-export interface UploadTokenBody extends RequestData {
-  /**
-   * Expiration time for the token (timestamp).
-   */
-  validUntil: number
-  /**
-   * Nonce for the request.
-   */
-  nonce: string
-}
-
-/**
- * Represents an upload token.
- */
-export interface UploadToken {
-  /**
-   * Upload token data to sign.
-   */
-  data: UploadTokenBody
-  /**
-   * Upload token data signature.
-   */
-  signature: string
-}
+import { UploadToken, UploadTokenBody, UploadTokenRequest } from '../webApi/types'
 
 /**
  * Parses upload token from the token string.
@@ -111,7 +37,7 @@ export function verifyTokenSignature(token: UploadToken | UploadTokenRequest, ad
  * @param account - KeyringPair instance
  * @returns object signature.
  */
-export function signTokenBody(tokenBody: UploadTokenBody | UploadTokenRequestBody, account: KeyringPair): string {
+export function signTokenBody(tokenBody: UploadTokenBody | UploadTokenRequest['data'], account: KeyringPair): string {
   const message = stringify(tokenBody)
   const signature = u8aToHex(account.sign(message))
 

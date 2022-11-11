@@ -1,0 +1,63 @@
+---
+# Configure chain spec and start joystream-node service on the servers
+
+- set_fact:
+    chain_path: "chain"
+
+- set_fact:
+    keystore_path: "keystore"
+
+- name: Create chain directory
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ chain_path }}"
+
+- name: Copying raw chain spec file
+  copy:
+    src: '{{ data_path }}/chain/chainspec-raw.json'
+    dest: '{{ chain_path }}/chainspec-raw.json'
+
+- set_fact:
+    node_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
+
+- name: Check if (keystore) auth-x dir exists
+  stat:
+    path: "{{ data_path }}/chain/auth-{{ node_index }}/"
+  register: auth_dir_check 
+  delegate_to: localhost
+
+- name: Create keystore directory
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ keystore_path }}"
+  when: auth_dir_check.stat.isdir is defined and auth_dir_check.stat.isdir
+
+- name: Copy keystore to remote host
+  copy:
+    src: "{{ data_path }}/chain/auth-{{ node_index }}/"
+    dest: "{{ keystore_path }}"
+  when: auth_dir_check.stat.isdir is defined and auth_dir_check.stat.isdir
+
+- name: Create a service file
+  template:
+    src: joystream-node.service.j2
+    dest: /etc/systemd/system/joystream-node.service
+  vars:
+    template_keystore_path: "{{ keystore_path }}"
+    template_chain_spec_path: "{{ chain_path }}/chainspec-raw.json"
+    template_base_path: "{{ chain_path }}/"
+    template_user: "{{ ansible_user }}"
+    template_working_dir: "{{ ansible_env.HOME }}"
+  become: true
+
+- name: Start service joystream-node, if not started
+  systemd:
+    name: joystream-node
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  become: true

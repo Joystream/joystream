@@ -7,22 +7,23 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 STEPS=${1:-50}
 REPEAT=${2:-20}
 
-benchmark() {
+$SCRIPT_DIR/../target/release/joystream-node purge-chain --chain prod-test -y
+
+substrate_pallet_benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
-  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark \
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
-      --chain=dev \
+      --chain=prod-test \
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
-      --output=. 2>&1 > /dev/null)
-
+      --template=$SCRIPT_DIR/../devops/frame-weight-template.hbs \
+      --output=$SCRIPT_DIR/../runtime/src/weights/$1.rs 2>&1 > /dev/null)
 
   if [[ $ERROR != *"Error"* ]]; then
       end=`date +%s`
-      mv $SCRIPT_DIR/../*.rs $SCRIPT_DIR/../runtime/src/weights/
       echo "Weights generated successfully for $1"
       echo "It took $((end-start)) seconds"
   else
@@ -32,40 +33,106 @@ benchmark() {
   fi
 }
 
+# $1 pallet name
+# $2 folder name under runtime-modules/ of the pallet crate where weight.rs
+# will be copied to
+joystream_pallet_benchmark() {
+  echo "Generating weights for $1..."
+  start=`date +%s`
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
+      --pallet=$1 \
+      --extrinsic=* \
+      --chain=prod-test \
+      --steps=$STEPS \
+      --repeat=$REPEAT \
+      --execution=wasm \
+      --template=$SCRIPT_DIR/../devops/joystream-pallet-weight-template.hbs \
+      --output=$SCRIPT_DIR/../runtime-modules/$2/src/weights.rs 2>&1 > /dev/null)
+
+  if [[ $ERROR != *"Error"* ]]; then
+      end=`date +%s`
+      echo "Weights generated successfully for $1"
+      echo "It took $((end-start)) seconds"
+  else
+      >&2 echo "$ERROR"
+      >&2 echo "There was a problem generating the weights for $1, check the error above"
+      exit 1
+  fi
+}
+
+overhead_benchmarks() {
+  echo "Generating core weights"
+  start=`date +%s`
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark overhead \
+      --chain=prod-test \
+      --execution=wasm \
+      --warmup=10 \
+      --repeat=100 \
+      --weight-path=$SCRIPT_DIR/../runtime/src/weights)
+
+  if [[ $ERROR != *"Error"* ]]; then
+      end=`date +%s`
+      echo "Core weights generated successfully"
+      echo "It took $((end-start)) seconds"
+  else
+      >&2 echo "$ERROR"
+      >&2 echo "There was a problem generating core weights check the error above"
+      exit 1
+  fi
+}
+
+storage_benchmarks() {
+  echo "Generating storage weights"
+  start=`date +%s`
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark storage \
+      --chain=prod-test \
+      --warmups=100 \
+      --weight-path=$SCRIPT_DIR/../runtime/src/weights/ \
+      --state-version 1)
+
+  if [[ $ERROR != *"Error"* ]]; then
+      end=`date +%s`
+      echo "Storage weights generated successfully"
+      echo "It took $((end-start)) seconds"
+  else
+      >&2 echo "$ERROR"
+      >&2 echo "There was a problem generating storage weights check the error above"
+      exit 1
+  fi
+}
+
+# RocksDb Weights
+storage_benchmarks
+
+# Generate core weights -> BlockExecutionWeight and ExtrinsicBaseWeight
+overhead_benchmarks
+
 # FRAME benchmarks
-# Some FRAME pallets are commented out since the parameter's in some of the extrinsic's
-# benchmarking are being discarded and we can't adjust the trait since it's part of
-# Substrate. This problem has been fixed in this PR: https://github.com/paritytech/substrate/pull/7233
-# So uncomment this when we move to a version that contains that PR.
-# See issue: #1979
-benchmark frame_system
-benchmark substrate_utility
-benchmark pallet_session
-benchmark pallet_timestamp
-
-# Pallet staking benchmarking takes too long.
-# benchmark pallet_staking
-
-# Benchmark should be run on the reference machine because it affects the fee model (transfer fee).
-# benchmark pallet_balances
-
-# This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
-# Will have it commented out until we test it in the reference machine. If there
-# it still takes too long we will get rid of this benchmark for good and use always
-# the default weights.
-# benchmark pallet_im_online
+substrate_pallet_benchmark frame_system
+substrate_pallet_benchmark substrate_utility
+substrate_pallet_benchmark pallet_session
+substrate_pallet_benchmark pallet_timestamp
+substrate_pallet_benchmark pallet_vesting
+substrate_pallet_benchmark pallet_multisig
+substrate_pallet_benchmark pallet_bags_list
+substrate_pallet_benchmark pallet_election_provider_multi_phase
+substrate_pallet_benchmark pallet_election_provider_support_benchmarking
+substrate_pallet_benchmark pallet_staking
+substrate_pallet_benchmark pallet_balances
+substrate_pallet_benchmark pallet_im_online
 
 # Joystrem benchmarks
-benchmark proposals_discussion
-benchmark proposals_engine
-benchmark proposals_codex
-benchmark pallet_constitution
-benchmark working_group
-benchmark council
-benchmark referendum
-benchmark forum
-benchmark membership
-benchmark bounty
-benchmark blog
-benchmark joystream_utility
-#benchmark storage
+joystream_pallet_benchmark proposals_discussion proposals/discussion
+joystream_pallet_benchmark proposals_engine proposals/engine
+joystream_pallet_benchmark proposals_codex proposals/codex
+joystream_pallet_benchmark pallet_constitution constitution
+joystream_pallet_benchmark working_group working-group
+joystream_pallet_benchmark council council
+joystream_pallet_benchmark referendum referendum
+joystream_pallet_benchmark forum forum
+joystream_pallet_benchmark membership membership
+joystream_pallet_benchmark bounty bounty
+joystream_pallet_benchmark joystream_utility utility
+joystream_pallet_benchmark storage storage
+joystream_pallet_benchmark content content
+joystream_pallet_benchmark project_token project-token

@@ -25,7 +25,8 @@ then
     echo "Building ${IMAGE}.."
     docker build . --file joystream-node.Dockerfile \
       --tag ${IMAGE} \
-	    --build-arg CARGO_FEATURES=${FEATURES}
+      --build-arg CARGO_FEATURES=${FEATURES} \
+      --build-arg GIT_COMMIT_HASH=$(git rev-parse --short=11 HEAD)
   fi
 else
   echo "Found ${IMAGE} in local repo"

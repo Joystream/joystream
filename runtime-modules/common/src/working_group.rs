@@ -1,41 +1,51 @@
-use codec::{Decode, Encode};
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 use sp_runtime::DispatchResult;
-#[cfg(feature = "std")]
-use strum_macros::EnumIter;
 
-/// Defines well-known working groups.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord)]
-pub enum WorkingGroup {
-    /// Forum working group: working_group::Instance1.
-    Forum,
+// Proc macro (EnumIter) clippy::integer_arithmetic disable hack
+#[allow(clippy::integer_arithmetic)]
+pub mod iterable_enums {
+    use codec::{Decode, Encode, MaxEncodedLen};
+    use scale_info::TypeInfo;
+    #[cfg(feature = "std")]
+    use serde::{Deserialize, Serialize};
+    #[cfg(feature = "std")]
+    use strum_macros::EnumIter;
 
-    /// Storage working group: working_group::Instance2.
-    Storage,
+    /// Defines well-known working groups.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+    #[derive(
+        Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen,
+    )]
+    pub enum WorkingGroup {
+        /// Forum working group: working_group::Instance1.
+        Forum,
 
-    /// Storage working group: working_group::Instance3.
-    Content,
+        /// Storage working group: working_group::Instance2.
+        Storage,
 
-    /// Operations working group: working_group::Instance4.
-    OperationsAlpha,
+        /// Storage working group: working_group::Instance3.
+        Content,
 
-    /// Gateway working group: working_group::Instance5.
-    Gateway,
+        /// Operations working group: working_group::Instance4.
+        OperationsAlpha,
 
-    /// Distribution working group: working_group::Instance9.
-    Distribution,
+        /// Gateway working group: working_group::Instance5.
+        Gateway,
 
-    /// Operations working group: working_group::Instance7.
-    OperationsBeta,
+        /// Distribution working group: working_group::Instance9.
+        Distribution,
 
-    /// Operations working group: working_group::Instance8.
-    OperationsGamma,
+        /// Operations working group: working_group::Instance7.
+        OperationsBeta,
 
-    /// Membership Working Group: working_group::Instanc6.
-    Membership,
+        /// Operations working group: working_group::Instance8.
+        OperationsGamma,
+
+        /// Membership Working Group: working_group::Instanc6.
+        Membership,
+    }
 }
+
+pub use iterable_enums::WorkingGroup;
 
 /// Working group interface to work with its members - workers and leaders.
 pub trait WorkingGroupAuthenticator<T: crate::MembershipTypes> {

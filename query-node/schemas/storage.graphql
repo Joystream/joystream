@@ -1,30 +1,3 @@
-"Global storage system parameters"
-type StorageSystemParameters @entity {
-  "Blacklisted content hashes"
-  blacklist: [String!]
-
-  "How many buckets can be assigned to store a bag"
-  storageBucketsPerBagLimit: Int!
-
-  "How many buckets can be assigned to distribute a bag"
-  distributionBucketsPerBagLimit: Int!
-
-  "Whether the uploading is globally blocked"
-  uploadingBlocked: Boolean!
-
-  "Additional fee for storing 1 MB of data"
-  dataObjectFeePerMB: BigInt!
-
-  "Global max. number of objects a storage bucket can store (can also be further limitted the provider)"
-  storageBucketMaxObjectsCountLimit: BigInt!
-
-  "Global max. size of objects a storage bucket can store (can also be further limitted the provider)"
-  storageBucketMaxObjectsSizeLimit: BigInt!
-
-  "ID of the next data object when created"
-  nextDataObjectId: BigInt!
-}
-
 type StorageBucketOperatorStatusMissing @variant {
   _phantom: Int
 }
@@ -190,6 +163,16 @@ type DataObjectTypeVideoThumbnail @variant {
   video: Video!
 }
 
+type DataObjectTypeVideoSubtitle @variant {
+  "Related subtitle entity"
+  subtitle: VideoSubtitle!
+
+  # Useful for filtering subtitles against video, since
+  # relationship filtering through variant is not supported
+  "Related video entity"
+  video: Video!
+}
+
 type DataObjectTypeUnknown @variant {
   _phantom: Int
 }
@@ -199,6 +182,7 @@ union DataObjectType =
   | DataObjectTypeChannelCoverPhoto
   | DataObjectTypeVideoMedia
   | DataObjectTypeVideoThumbnail
+  | DataObjectTypeVideoSubtitle
   | DataObjectTypeUnknown
 
 type StorageDataObject @entity {
@@ -221,8 +205,8 @@ type StorageDataObject @entity {
   "The type of the asset that the data object represents (if known)"
   type: DataObjectType!
 
-  "Prize for removing the data object"
-  deletionPrize: BigInt!
+  "State Bloat Bond for removing the data object"
+  stateBloatBond: BigInt!
 
   "If the object is no longer used as an asset - the time at which it was unset (if known)"
   unsetAt: DateTime
@@ -232,6 +216,9 @@ type StorageDataObject @entity {
 
   "Video that has this data object associated as media."
   videoMedia: Video @derivedFrom(field: "media")
+
+  "Video subtitle that has this data object associated as subtitle file."
+  videoSubtitle: VideoSubtitle @derivedFrom(field: "asset")
 }
 
 type DistributionBucketFamilyGeographicArea @entity {
