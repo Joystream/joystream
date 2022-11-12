@@ -2,12 +2,28 @@
   "name": "@joystream/types",
   "version": "0.20.3",
   "description": "Types for Joystream Substrate Runtime - Carthage release",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./lib/mjs/index.js",
+      "require": "./lib/cjs/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      ".": [
+        "lib/index.d.ts"
+      ],
+      "primitives": [
+        "lib/primitives.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "prepublishOnly": "yarn clean && yarn build",
     "prepack": "yarn clean && yarn build",
-    "compile": "tsc --build tsconfig.json",
+    "compile": "tsc --project tsconfig.esm.json & tsc --project tsconfig.cjs.json",
     "clean": "git clean -xdf -e node_modules",
     "build": "yarn generate:all && yarn compile",
     "lint": "eslint ./ --ext .ts",
