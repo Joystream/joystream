@@ -3198,7 +3198,15 @@
   resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.22.0.tgz#d115bc5dcab8c0f5800e05e4ef265949042b13ec"
   integrity sha512-IKqrPY0B3AeIXEc5/JGgEhPZLy+SmVyQf+k0SIGcNSTqt1GLI3gQFEOFwSScJdem+iYZQUrn6YPPxC3TpdSC3A==
 
-"@substrate/txwrapper-core@^3.2.2":
+"@substrate/txwrapper-core@3.1.3":
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.1.3.tgz#ec790e332dd09ee5021b3824b43f11b0fc70f36a"
+  integrity sha512-8QV5wp+V1/KXu/f2K9uTfbBrEXiu86z1N/O6+4858hYGihypZuO2YT0pChfsnj0Uic4K2T2QDzTCj8VJ70yORA==
+  dependencies:
+    "@polkadot/api" "8.9.1"
+    memoizee "0.4.15"
+
+"@substrate/txwrapper-core@^3.1.3", "@substrate/txwrapper-core@^3.2.2":
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.2.2.tgz#55825ff84bd4cd95fa2f869111616300f66db513"
   integrity sha512-Wj6odIvu69YC7RbxAPRllm48bZhK3nyygw1jRSZLzp/gfIzOAYz8KYvVtm62ZtmKKhs9jggD/H0SO+Nn37N0DA==
@@ -3206,15 +3214,22 @@
     "@polkadot/api" "9.3.3"
     memoizee "0.4.15"
 
-"@substrate/txwrapper-polkadot@3.2.2":
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-polkadot/-/txwrapper-polkadot-3.2.2.tgz#cb390756f53e277b58582d5643b1326636733b84"
-  integrity sha512-bx+RnRZWfX8hNIWzhOoNZo63A7gZT6/zu2J3Yu76lBebBloWfaX9PInLWdvRvdRDI1R30WGrESefhFuTILVguQ==
+"@substrate/txwrapper-polkadot@3.1.3":
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-polkadot/-/txwrapper-polkadot-3.1.3.tgz#34c4ad1eaba72f829a8935846503ab15a412f011"
+  integrity sha512-uP48AuHlKjTz6EZzvlIVe7WnKu3xhacJFrVO0pAHZcnFxm/IVLhAItqN8KLd3xZmbIpy4Zlw9nITM+iaDU/ljA==
   dependencies:
-    "@substrate/txwrapper-core" "^3.2.2"
-    "@substrate/txwrapper-substrate" "^3.2.2"
+    "@substrate/txwrapper-core" "^3.1.3"
+    "@substrate/txwrapper-substrate" "^3.1.3"
 
-"@substrate/txwrapper-substrate@^3.2.2":
+"@substrate/txwrapper-substrate@3.1.3":
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-substrate/-/txwrapper-substrate-3.1.3.tgz#81dd8a9a9780f291c3cf111a49c370829f75e975"
+  integrity sha512-v8skSLC40axHJN/dg51wLEAnQxk/5tk/EWr6rBKLFM4T8Kmjirj83lLyzVhRNRVYWdgCAr6Maoe+v1CWNXKoXw==
+  dependencies:
+    "@substrate/txwrapper-core" "^3.1.3"
+
+"@substrate/txwrapper-substrate@^3.1.3":
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/@substrate/txwrapper-substrate/-/txwrapper-substrate-3.2.2.tgz#ac736d2f617736231609fcf6f19b7393051cb00b"
   integrity sha512-kTLgw3TeKVVxfL6eQgPm3ltlcxxxBH9u8CfuEQHa1EmGuL5RyW11JYHDJU5jFbK+8euADZK8Oo7Uo1txXocIUw==
