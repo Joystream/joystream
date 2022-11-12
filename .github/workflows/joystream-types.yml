@@ -23,7 +23,7 @@ jobs:
         cd types
         npm pack | tail -1 | xargs tar xzf
         cd package && npm install
-        node ./lib/index.js
+        node ./lib/cjs/index.js
 
   types_checks_osx:
     name: MacOS Checks
@@ -46,4 +46,4 @@ jobs:
         cd types
         npm pack | tail -1 | xargs tar xzf
         cd package && npm install
-        node ./lib/index.js
+        node ./lib/cjs/index.js
