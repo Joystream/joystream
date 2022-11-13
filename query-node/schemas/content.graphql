@@ -67,6 +67,16 @@ type Channel @entity {
 
   "Channel's privilege level"
   privilegeLevel: Int
+
+  #################
+  # Channel Rewards
+  #################
+
+  "Cumulative rewards claimed by this channel"
+  cumulativeRewardClaimed: BigInt
+
+  "List of all claimed rewards"
+  claimedRewards: [ChannelRewardClaimedEvent!] @derivedFrom(field: "channel")
 }
 
 type VideoCategory @entity {

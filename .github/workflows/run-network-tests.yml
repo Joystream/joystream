@@ -14,18 +14,19 @@ jobs:
       matrix:
         node-version: [14.x]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: checks
-      run: |
-        yarn install --frozen-lockfile
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
-        yarn workspace @joystream/cli build
-        yarn workspace network-tests build
+      - uses: actions/checkout@v1
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: checks
+        run: |
+          yarn install --frozen-lockfile
+          yarn workspace @joystream/types build
+          yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/js build
+          yarn workspace @joystream/cli build
+          yarn workspace network-tests build
 
   tests_build_osx:
     name: MacOS Checks
@@ -34,18 +35,19 @@ jobs:
       matrix:
         node-version: [14.x]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: checks
-      run: |
-        yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
-        yarn workspace @joystream/cli build
-        yarn workspace network-tests build
+      - uses: actions/checkout@v1
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: checks
+        run: |
+          yarn install --frozen-lockfile --network-timeout 120000
+          yarn workspace @joystream/types build
+          yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/js build
+          yarn workspace @joystream/cli build
+          yarn workspace network-tests build
 
   build_images:
     name: Build joystream/node
@@ -62,7 +64,7 @@ jobs:
       - id: compute_shasum
         name: Compute runtime code shasum
         env:
-          RUNTIME_PROFILE: "TESTING"
+          RUNTIME_PROFILE: 'TESTING'
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
@@ -101,18 +103,18 @@ jobs:
         id: check_files
         uses: andstor/file-existence-action@v1
         with:
-          files: "joystream-node-docker-image.tar.gz"
+          files: 'joystream-node-docker-image.tar.gz'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
         id: builder1
         if: steps.check_files.outputs.files_exists == 'false'
-  
+
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
-         path: /tmp/.buildx-cache
-         key: ${{ runner.os }}-buildx
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx
         if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Build
@@ -173,6 +175,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/js build
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build

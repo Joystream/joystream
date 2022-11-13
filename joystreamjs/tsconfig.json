@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "lib",
+    "importHelpers": true,
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "types": ["node"],
+    "noUnusedLocals": true,
+    "baseUrl": ".",
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "typesRoot": ["./typings"],
+
+  "include": ["src/**/*"]
+}

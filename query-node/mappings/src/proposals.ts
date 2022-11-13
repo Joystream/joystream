@@ -56,6 +56,7 @@ import {
   ProposalDiscussionThread,
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
+  UpdateChannelPayoutsProposalDetails,
 } from 'query-node/dist/model'
 import {
   bytesToString,
@@ -64,6 +65,7 @@ import {
   INT32MAX,
   perpareString,
   toNumber,
+  unwrap,
 } from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
@@ -277,6 +279,17 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asVetoProposal
     details.proposalId = specificDetails.toString()
     return details
+  }
+  // UpdateChannelPayoutsProposalDetails
+  else if (proposalDetails.isUpdateChannelPayouts) {
+    const details = new UpdateChannelPayoutsProposalDetails()
+    const specificDetails = proposalDetails.asUpdateChannelPayouts
+
+    details.commitment = unwrap(specificDetails.commitment)?.toString()
+    details.minCashoutAllowed = unwrap(specificDetails.minCashoutAllowed)
+    details.maxCashoutAllowed = unwrap(specificDetails.maxCashoutAllowed)
+    details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
+    return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
   }
@@ -447,7 +460,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
     newStatus = new ProposalStatusExecuted()
   } else if (executionStatus.isExecutionFailed) {
     const status = new ProposalStatusExecutionFailed()
-    status.errorMessage = executionStatus.asExecutionFailed.error.toString()
+    status.errorMessage = executionStatus.asExecutionFailed.error.toHuman() as string
     newStatus = status
   } else {
     throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)

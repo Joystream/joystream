@@ -61,6 +61,10 @@ import {
   StorageBucketsCountQuery,
   StorageBucketsCountQueryVariables,
   StorageBucketsCount,
+  ChannelPayoutsUpdatedEventFragment,
+  GetChannelPayoutsUpdatedEventByCommitmentQuery,
+  GetChannelPayoutsUpdatedEventByCommitmentQueryVariables,
+  GetChannelPayoutsUpdatedEventByCommitment,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -264,5 +268,12 @@ export default class QueryNodeApi {
       UpcomingWorkingGroupOpeningsByGroupQuery,
       UpcomingWorkingGroupOpeningsByGroupQueryVariables
     >(UpcomingWorkingGroupOpeningsByGroup, { workingGroupId: apiModuleByGroup[group] }, 'upcomingWorkingGroupOpenings')
+  }
+
+  async getChannelPayoutsUpdatedEventByCommitment(commitment: string): Promise<ChannelPayoutsUpdatedEventFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetChannelPayoutsUpdatedEventByCommitmentQuery,
+      GetChannelPayoutsUpdatedEventByCommitmentQueryVariables
+    >(GetChannelPayoutsUpdatedEventByCommitment, { commitment }, 'channelPayoutsUpdatedEvents')
   }
 }
