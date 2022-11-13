@@ -53,7 +53,7 @@ jobs:
           context: .
           file: joystream-node.Dockerfile
           platforms: linux/amd64
-          build-args:
+          build-args: |
             CARGO_FEATURES=${{ matrix.cargo_features }}
             CODE_SHASUM=${{ steps.compute_shasum.outputs.shasum }}
           push: true
