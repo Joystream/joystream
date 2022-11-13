@@ -228,7 +228,7 @@ export default async function createAndUpdateChannel({ api, query, env }: FlowPr
     enableComments: false,
   }
 
-  await joystreamCli.updateVideo(channelId, videoUpdateInput)
+  await joystreamCli.updateVideo(videoId, videoUpdateInput)
 
   // Assert video data after update
   const updatedVideo = await query.tryQueryWithTimeout(
