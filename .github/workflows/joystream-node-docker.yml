@@ -123,7 +123,7 @@ jobs:
                           repository=${{ env.REPOSITORY }} dockerfile=${{ matrix.file }} \
                           platform=${{ matrix.platform }} \
                           cargo_features='' \
-                          code_shasum=${{ need.repo_check.outputs.shasum }}"
+                          code_shasum=${{ needs.repo_check.outputs.shasum }}"
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
       - name: Delete CloudFormation Stack
