@@ -498,26 +498,26 @@ fn amm_activation_ok_with_amm_treasury_account_having_existential_deposit() {
 #[test]
 fn amm_activation_ok_with_event_deposit() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
-        .execute_with(|| {
-            IssueTokenFixture::default().execute_call().unwrap();
-            ActivateAmmFixture::default()
-                .with_linear_function_params(BONDING_CURVE_SLOPE, BONDING_CURVE_INTERCEPT)
-                .with_creator_reward(BONDING_CURVE_CREATOR_REWARD)
-                .execute_call()
-                .unwrap();
+    let (creator_id, _) = member!(1);
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default()
+            .with_linear_function_params(BONDING_CURVE_SLOPE, BONDING_CURVE_INTERCEPT)
+            .with_creator_reward(BONDING_CURVE_CREATOR_REWARD)
+            .execute_call()
+            .unwrap();
 
-            last_event_eq!(RawEvent::BondingCurveActivated(
-                token_id,
-                user_member_id,
-                BondingCurve {
-                    slope: BONDING_CURVE_SLOPE,
-                    intercept: BONDING_CURVE_INTERCEPT,
-                    creator_reward: BONDING_CURVE_CREATOR_REWARD,
-                }
-            ));
-        })
+        last_event_eq!(RawEvent::BondingCurveActivated(
+            token_id,
+            creator_id,
+            BondingCurve {
+                slope: BONDING_CURVE_SLOPE,
+                intercept: BONDING_CURVE_INTERCEPT,
+                creator_reward: BONDING_CURVE_CREATOR_REWARD,
+            }
+        ));
+    })
 }
 
 // --------------------- UNBONDING -------------------------------
