@@ -12,7 +12,7 @@
     "@elastic/ecs-winston-format": "^1.1.0",
     "@joystream/metadata-protobuf": "^2.5.0",
     "@joystream/storage-node-client": "^3.0.0",
-    "@joystream/types": "^0.20.3",
+    "@joystream/types": "^0.20.4",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
