@@ -12,7 +12,7 @@
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3.2.3",
     "tslib": "^1",
-    "@joystream/types": "^0.20.3",
+    "@joystream/types": "^0.20.4",
     "@polkadot/api": "8.9.1",
     "@polkadot/types": "8.9.1",
     "@polkadot/keyring": "9.5.1",
