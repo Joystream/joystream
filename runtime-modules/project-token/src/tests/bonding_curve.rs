@@ -1016,6 +1016,20 @@ fn amm_deactivation_ok_with_event_deposit() {
     })
 }
 
+#[test]
+fn token_state_idle_after_amm_deactivation() {
+    let token_id = token!(1);
+    let config = GenesisConfigBuilder::new_empty().build();
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+        DeactivateAmmFixture::default().execute_call().unwrap();
+
+        let token = Token::token_info_by_id(token_id);
+        assert_eq!(IssuanceState::of::<Test>(&token), IssuanceState::Idle);
+    })
+}
+
 // --------------------------------- EXTRA ----------------------------------------
 
 #[test]

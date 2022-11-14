@@ -802,6 +802,16 @@ decl_module! {
             Ok(())
         }
 
+        /// Activate Amm functionality for the token
+        /// Preconditions
+        /// - (origin, member_id) must be a valid authentication pair
+        /// - token_id must exist
+        /// - offering state for `token_id` must be `Idle`
+        ///
+        /// Postconditions
+        /// - token `bonding_curve` activated with specified parameters
+        /// - amm account created with existential deposit (if necessary)
+        /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
         fn activate_amm(origin, token_id: T::TokenId, member_id: T::MemberId, curve: BondingCurve) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
@@ -829,6 +839,21 @@ decl_module! {
             Ok(())
         }
 
+        /// Activate Amm functionality for the token
+        /// Preconditions
+        /// - origin, member_id pair must be a valid authentication pair
+        /// - token_id must exist
+        /// - user usable JOY balance must be enough for bonding (+ existential deposit eventually)
+        /// - deadline constraint respected if provided
+        /// - slippage tolerance constraints respected if provided
+        /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        ///
+        /// Postconditions
+        /// - token `bonding_curve` activated with specified parameters
+        /// - `amount` CRT minted into account (which is created if necessary and existential deposit added to it)
+        /// - respective JOY amount transferred from user balance to amm treasury account
+        /// - percentage of the minted CRT transferred to the token content creator (creator reward)
+        /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
         fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
@@ -905,6 +930,22 @@ decl_module! {
             Ok(())
         }
 
+        /// Mint token and transfer joys to the AMM
+        /// Preconditions
+        /// - origin, member_id pair must be a valid authentication pair
+        /// - token_id must exist
+        /// - token_id, member_id must be valid account coordinates
+        /// - user usable CRT balance must be at least `amount`
+        /// - deadline constraint respected if provided
+        /// - slippage tolerance constraints respected if provided
+        /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        /// - amm treasury acconut must have sufficient JOYs for the operation
+        ///
+        /// Postconditions
+        /// - `amount` burn from user account
+        /// - total supply decreased by amount
+        /// - respective JOY amount transferred from amm treasury account to user account
+        /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
         fn unbond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
@@ -948,7 +989,6 @@ decl_module! {
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.total_supply = token_data.total_supply.saturating_sub(amount);
-                token_data.tokens_issued = token_data.tokens_issued.saturating_sub(amount);
             });
 
             Self::transfer_joy(&amm_reserve_account, &sender, price)?;
@@ -958,6 +998,16 @@ decl_module! {
             Ok(())
         }
 
+        /// Deactivate the amm functionality
+        /// Preconditions
+        /// - (origin, member_id) must be a valid authentication pair
+        /// - token_id must be a valid
+        /// - token must be in `BondigCurve` state
+        ///
+        /// Postconditions
+        /// - Bonding Curve set to None
+        /// - state set to idle
+        /// - event deposited
         #[weight = 10_000_000] // TODO: Adjust weight
         fn deactivate_amm(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
