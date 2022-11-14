@@ -121,8 +121,9 @@ jobs:
                           docker_password=${{ secrets.DOCKERHUB_PASSWORD }} \
                           tag_name=${{ needs.repo-check.outputs.shasum }}-${{ matrix.platform_tag }} \
                           repository=${{ env.REPOSITORY }} dockerfile=${{ matrix.file }} \
-                          platform=${{ matrix.platform }}
-                          cargo_features=''"
+                          platform=${{ matrix.platform }} \
+                          cargo_features='' \
+                          code_shasum=${{ need.repo_check.outputs.shasum }}"
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
       - name: Delete CloudFormation Stack
