@@ -116,7 +116,7 @@ fn issue_token<T: Config>(
             transfer_policy,
             patronage_rate: DEFAULT_PATRONAGE,
             revenue_split_rate: DEFAULT_REVENUE_SPLIT_RATE,
-            creator_member_id: token_owner_account::<T>(),
+            creator_member_id: T::MemberId::zero(),
         },
         UploadContext {
             bag_id: BagId::<T>::default(),
