@@ -146,8 +146,8 @@ pub use content::MaxNumber;
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 12,
-    spec_version: 1000,
+    authoring_version: 11,
+    spec_version: 3,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1023,19 +1023,10 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u32 = 0;
     pub const AnnouncingPeriodDuration: BlockNumber = 300;
     pub const IdlePeriodDuration: BlockNumber = 1;
+    pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: Balance = dollars!(10_000);
     pub const ElectedMemberRewardPeriod: BlockNumber = 33;
     pub const BudgetRefillPeriod: BlockNumber = 33;
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-parameter_types! {
-    pub const CouncilSize: u32 = 3;
-}
-
-#[cfg(feature = "playground-runtime")]
-parameter_types! {
-    pub const CouncilSize: u32 = 1;
 }
 
 // Staging coucil and elections configuration
