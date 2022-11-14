@@ -969,7 +969,7 @@ decl_module! {
 
             let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
 
-            Self::ensure_can_transfer_joy(&amm_reserve_account, price.into())?;
+            Self::ensure_can_transfer_joy(&amm_reserve_account, price)?;
 
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
