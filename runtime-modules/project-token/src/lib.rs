@@ -978,7 +978,7 @@ decl_module! {
 
             // timestamp deadline check
             if let Some(deadline) = deadline {
-                ensure!(<timestamp::Pallet<T>>::get() < deadline, Error::<T>::DeadlineExpired);
+                ensure!(<timestamp::Pallet<T>>::get() <= deadline, Error::<T>::DeadlineExpired);
             }
 
             // == MUTATION SAFE ==
