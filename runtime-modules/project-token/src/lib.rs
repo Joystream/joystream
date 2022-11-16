@@ -1021,7 +1021,7 @@ decl_module! {
 
             ensure!(token_data.creator_member_id == member_id, Error::<T>::UserNotAuthorized);
 
-            ensure!(OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data).is_ok(), Error::<T>::NotInAmmState);
+            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data)?;
 
             let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
             ensure!(Joy::<T>::usable_balance(amm_treasury_account) == T::JoyExistentialDeposit::get(), Error::<T>::AmmTreasuryBalanceNotEmpty);
