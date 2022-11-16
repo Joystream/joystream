@@ -751,9 +751,8 @@ fn unbonding_fails_with_amm_treasury_not_having_sufficient_usable_joy_required()
 
 #[test]
 fn unbonding_ok_with_user_joy_balance_correctly_increased() {
-    let (_, user_account) = member!(2);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+    let (user_account, user_balance) = (member!(2).1, joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default()
                 .with_empty_allocation()
