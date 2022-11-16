@@ -903,7 +903,7 @@ decl_module! {
                 });
             }
 
-            let user_amount = amount - creator_amount;
+            let user_amount = amount.saturating_sub(creator_amount);
             if !user_account_data_exists {
                let new_account_info = AccountDataOf::<T>::new_with_amount_and_bond(
                             user_amount,
