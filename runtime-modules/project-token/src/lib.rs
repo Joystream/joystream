@@ -850,7 +850,7 @@ decl_module! {
         ///
         /// Postconditions
         /// - token `bonding_curve` activated with specified parameters
-        /// - `amount` CRT minted into account (which is created if necessary and existential deposit added to it)
+        /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
         /// - respective JOY amount transferred from user balance to amm treasury account
         /// - percentage of the minted CRT transferred to the token content creator (creator reward)
         /// - event deposited
