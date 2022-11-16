@@ -843,7 +843,7 @@ decl_module! {
         /// Preconditions
         /// - origin, member_id pair must be a valid authentication pair
         /// - token_id must exist
-        /// - user usable JOY balance must be enough for bonding (+ existential deposit eventually)
+        /// - user usable JOY balance must be enough for bonding (+ existential deposit)
         /// - deadline constraint respected if provided
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
