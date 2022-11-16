@@ -942,7 +942,7 @@ decl_module! {
         /// - amm treasury acconut must have sufficient JOYs for the operation
         ///
         /// Postconditions
-        /// - `amount` burn from user account
+        /// - `amount` burned from user account
         /// - total supply decreased by amount
         /// - respective JOY amount transferred from amm treasury account to user account
         /// - event deposited
