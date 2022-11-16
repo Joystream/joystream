@@ -700,3 +700,25 @@ pub fn set_staking_candidate_lock(
 ) {
     <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
+
+pub(crate) fn bonding_function_values(
+    amount: Balance,
+    token_id: TokenId,
+    bond_operation: BondOperation,
+) -> JoyBalance {
+    let supply = Token::token_info_by_id(token_id).total_supply;
+    let supply2 = supply * supply;
+    let sq_coeff = BONDING_CURVE_SLOPE / 2;
+    let res = match bond_operation {
+        BondOperation::Bond => {
+            sq_coeff * ((supply + amount) * (supply + amount) - supply2)
+                + BONDING_CURVE_INTERCEPT * amount
+        }
+        BondOperation::Unbond => {
+            sq_coeff * (supply2 - (supply - amount) * (supply - amount))
+                + BONDING_CURVE_INTERCEPT * amount
+        }
+    };
+
+    res
+}

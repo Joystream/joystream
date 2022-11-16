@@ -964,7 +964,7 @@ decl_module! {
 
             ensure!(
                 user_acc_data.transferrable::<T>(Self::current_block()) >= amount,
-                Error::<T>::InsufficientTokenAmount
+                Error::<T>::AmountNotAvailable,
             );
 
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);

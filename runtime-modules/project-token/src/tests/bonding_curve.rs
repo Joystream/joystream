@@ -258,6 +258,8 @@ fn amm_treasury_balance_correctly_increased_during_bonding() {
             ActivateAmmFixture::default().execute_call().unwrap();
             let amm_reserve_account = Token::module_bonding_curve_reserve_account(token_id);
             let amm_reserve_pre = Balances::usable_balance(amm_reserve_account);
+            let correctly_computed_joy_amount =
+                bonding_function_values(DEFAULT_BONDING_AMOUNT, token_id, BondOperation::Bond);
 
             BondFixture::default()
                 .with_amount(DEFAULT_BONDING_AMOUNT)
@@ -267,7 +269,6 @@ fn amm_treasury_balance_correctly_increased_during_bonding() {
                 .unwrap();
 
             let amm_reserve_post = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount = 1000500;
             assert_eq!(
                 amm_reserve_post - amm_reserve_pre,
                 correctly_computed_joy_amount
@@ -290,13 +291,15 @@ fn bonding_fails_with_user_not_having_sufficient_usable_joy_required() {
 
 #[test]
 fn user_joy_balance_correctly_decreased_during_bonding() {
+    let token_id = token!(1);
     let (_, user_account) = member!(2);
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
-    let correctly_computed_joy_amount = 1000500;
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
+            let correctly_computed_joy_amount =
+                bonding_function_values(DEFAULT_BONDING_AMOUNT, token_id, BondOperation::Bond);
             let user_reserve_pre = Balances::usable_balance(user_account);
 
             BondFixture::default()
@@ -558,7 +561,7 @@ fn unbond_fails_with_user_not_having_enought_crt() {
                 .with_amount(2 * DEFAULT_BONDING_AMOUNT)
                 .execute_call();
 
-            assert_err!(result, Error::<Test>::UnsufficientTokenAmount);
+            assert_err!(result, Error::<Test>::InsufficientTokenBalance);
         })
 }
 
@@ -683,6 +686,8 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
                 .unwrap();
             let amm_reserve_account = Token::module_bonding_curve_reserve_account(token_id);
             let amm_reserve_pre = Balances::usable_balance(amm_reserve_account);
+            let correctly_computed_joy_amount =
+                bonding_function_values(DEFAULT_UNBONDING_AMOUNT, token_id, BondOperation::Unbond);
 
             UnbondFixture::default()
                 .with_amount(DEFAULT_UNBONDING_AMOUNT)
@@ -692,7 +697,6 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
                 .unwrap();
 
             let amm_reserve_post = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount = 100095;
             assert_eq!(
                 amm_reserve_pre - amm_reserve_post,
                 correctly_computed_joy_amount
@@ -751,9 +755,10 @@ fn unbonding_fails_with_amm_treasury_not_having_sufficient_usable_joy_required()
 
 #[test]
 fn unbonding_ok_with_user_joy_balance_correctly_increased() {
+    let token_id = token!(1);
     let (user_account, user_balance) = (member!(2).1, joy!(5_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account, user_balance)])
-        .execute_with(|| {
+    build_default_test_externalities_with_balances(vec![(user_account, user_balance)]).execute_with(
+        || {
             IssueTokenFixture::default()
                 .with_empty_allocation()
                 .execute_call()
@@ -764,16 +769,18 @@ fn unbonding_ok_with_user_joy_balance_correctly_increased() {
                 .unwrap();
             BondFixture::default().execute_call().unwrap();
             let user_reserve_pre = Balances::usable_balance(user_account);
+            let correctly_computed_joy_amount =
+                bonding_function_values(DEFAULT_UNBONDING_AMOUNT, token_id, BondOperation::Unbond);
 
             UnbondFixture::default().execute_call().unwrap();
 
             let user_reserve_post = Balances::usable_balance(user_account);
-            let correctly_computed_joy_amount = 95;
             assert_eq!(
                 user_reserve_post - user_reserve_pre,
                 correctly_computed_joy_amount
             );
-        })
+        },
+    )
 }
 
 #[test]
@@ -1048,7 +1055,7 @@ fn review_eval_function() {
                 ..
             } = Token::token_info_by_id(token_id);
 
-            // 1/2 * a * x^2 + a * s * x + b * x = 
+            // 1/2 * a * x^2 + a * s * x + b * x =
             // 1/2 * .001 * x^2 + .001 * 10^6 * x =
             // 0.0005 * x^2 + 1000 * x
             let curve = &bonding_curve.unwrap();
