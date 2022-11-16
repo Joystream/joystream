@@ -1857,7 +1857,7 @@ impl<T: Config> Module<T> {
 
     /// Returns teh account for the bonding curve treasury
     pub fn module_bonding_curve_reserve_account(token_id: T::TokenId) -> T::AccountId {
-        <T as Config>::ModuleId::get().into_sub_account_truncating(&("BONDING_RESERVE", token_id))
+        <T as Config>::ModuleId::get().into_sub_account_truncating(&("AMM", token_id))
     }
 
     pub(crate) fn validate_destination(
