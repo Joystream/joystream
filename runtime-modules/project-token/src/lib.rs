@@ -973,7 +973,7 @@ decl_module! {
 
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
-                ensure!(desired_price.saturating_sub(price) < slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+                ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
             }
 
             // timestamp deadline check
