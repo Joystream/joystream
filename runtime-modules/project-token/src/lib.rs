@@ -984,7 +984,7 @@ decl_module! {
             // == MUTATION SAFE ==
 
             AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
-                account_data.amount = account_data.amount.saturating_sub(amount)
+                account_data.decrease_amount_by(amount);
             });
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
