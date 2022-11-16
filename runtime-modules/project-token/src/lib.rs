@@ -820,7 +820,7 @@ decl_module! {
             )?;
             let token_data = Self::ensure_token_exists(token_id)?;
 
-            ensure!(OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data).is_ok(), Error::<T>::TokenIssuanceNotInIdleState);
+            OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data)?;
 
             // == MUTATION SAFE ==
 
