@@ -1049,7 +1049,9 @@ fn review_eval_function() {
                 ..
             } = Token::token_info_by_id(token_id);
 
-            // .001 * ((1ml + x)^2 - 1ml^2)/2
+            // 1/2 * a * x^2 + a * s * x + b * x = 
+            // 1/2 * .001 * x^2 + .001 * 10^6 * x =
+            // 0.0005 * x^2 + 1000 * x
             let curve = &bonding_curve.unwrap();
             let bonding_correct_values: Vec<Balance> = vec![10000, 100005, 1000500, 10050000];
             let bonding_values = vec![10, 100, 1000, 10000]
