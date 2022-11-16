@@ -988,7 +988,7 @@ decl_module! {
             });
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
-                token_data.total_supply = token_data.total_supply.saturating_sub(amount);
+                token_data.decrease_supply_by(amount);
             });
 
             Self::transfer_joy(&amm_reserve_account, &sender, price)?;
