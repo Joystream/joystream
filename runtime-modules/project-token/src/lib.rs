@@ -963,7 +963,10 @@ decl_module! {
             let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
             let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
 
-            ensure!(user_acc_data.amount >= amount, Error::<T>::UnsufficientTokenAmount);
+            ensure!(
+                user_acc_data.transferrable::<T>(Self::current_block()) >= amount,
+                Error::<T>::InsufficientTokenAmount
+            );
 
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
 
