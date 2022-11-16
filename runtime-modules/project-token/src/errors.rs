@@ -177,7 +177,7 @@ decl_error! {
         /// Deadline constraint not satisfied
         DeadlineExpired,
 
-        /// SLippage tolerance constraint tolerance not respected
+        /// Slippage tolerance constraint tolerance not satisfied
         SlippageToleranceExceeded,
 
         /// Creator token balance is insufficient 
