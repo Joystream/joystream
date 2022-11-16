@@ -843,8 +843,8 @@ fn deactivate_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn deactivate_fails_with_amm_treasury_balance_not_zero() {
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
+fn deactivate_amm_fails_with_too_much_bonded_amount_outstanding() {
+    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(100_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -852,6 +852,7 @@ fn deactivate_fails_with_amm_treasury_balance_not_zero() {
             BondFixture::default()
                 .with_sender(user_account_id)
                 .with_member_id(user_member_id)
+                .with_amount(joy!(100_000))
                 .execute_call()
                 .unwrap();
 

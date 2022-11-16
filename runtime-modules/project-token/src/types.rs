@@ -578,7 +578,7 @@ where
 /// Represents token's bonding curve with linear pricing function y = ax + b
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
-pub struct BondingCurve {
+pub struct BondingCurve<Balance> {
     /// Slope parameter : a
     pub slope: Permill,
 
@@ -587,6 +587,9 @@ pub struct BondingCurve {
 
     // percentage of minted CRT to the Content Creator
     pub creator_reward: Permill,
+
+    // amount minted via the bonding curve so far
+    pub amount_minted: Balance,
 }
 
 #[derive(Debug)]
@@ -1369,6 +1372,20 @@ where
             bonding_curve: None,
         })
     }
+
+    pub(crate) fn ensure_amm_can_be_deactivated<T: Config>(
+        &self,
+        threshold: Permill,
+    ) -> DispatchResult {
+        let BondingCurveOf::<T> { amount_minted, .. } =
+            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&self)?;
+        let pct_of_issuance_minted = Permill::from_rational(amount_minted, self.total_supply);
+        ensure!(
+            pct_of_issuance_minted <= threshold,
+            Error::<T>::OutstandingBondedAmountTooLarge
+        );
+        Ok(())
+    }
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
@@ -1611,3 +1628,6 @@ pub type VestingSchedulesOf<T> = BoundedBTreeMap<
     VestingScheduleOf<T>,
     <T as Config>::MaxVestingSchedulesPerAccountPerToken,
 >;
+
+/// Alias for the bonding curve
+pub type BondingCurveOf<T> = BondingCurve<<T as Config>::Balance>;

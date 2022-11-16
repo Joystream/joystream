@@ -164,6 +164,9 @@ decl_storage! { generate_storage_info
 
         /// Platform fee (percentage) charged on top of each sale purchase (in JOY) and burned
         pub SalePlatformFee get(fn sale_platform_fee) config(): Permill;
+
+        /// AMM deactivation threshold
+        pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill;
     }
 
     add_extra_genesis {
@@ -1057,7 +1060,7 @@ impl<T: Config>
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
         TransfersWithVestingOf<T>,
-        BondingCurve,
+        BondingCurveOf<T>,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -1606,7 +1609,7 @@ impl<T: Config>
     fn activate_amm(
         token_id: T::TokenId,
         member_id: T::MemberId,
-        curve: BondingCurve,
+        curve: BondingCurveOf<T>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
 
@@ -1646,21 +1649,8 @@ impl<T: Config>
     fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
 
-        ensure!(
-            token_data.creator_member_id == member_id,
-            Error::<T>::UserNotAuthorized
-        );
-
-        ensure!(
-            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data).is_ok(),
-            Error::<T>::NotInAmmState
-        );
-
-        let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
-        ensure!(
-            Joy::<T>::usable_balance(amm_treasury_account) == T::JoyExistentialDeposit::get(),
-            Error::<T>::AmmTreasuryBalanceNotEmpty
-        );
+        let threshold = Self::amm_deactivation_threshold();
+        token_data.ensure_amm_can_be_deactivated(threshold)?;
 
         // == MUTATION SAFE ==
 

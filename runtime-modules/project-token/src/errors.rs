@@ -191,5 +191,8 @@ decl_error! {
 
         /// Unbond amount not available
         AmountNotAvailable,
+
+        /// Outstanding bonded amount too high for the amm to be deactivated
+        OutstandingBondedAmountTooLarge,
     }
 }
