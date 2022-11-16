@@ -915,7 +915,7 @@ decl_module! {
                 Self::transfer_joy(&sender, &Self::module_treasury_account(), bloat_bond)?;
             } else {
                 AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
-                    account_data.amount = account_data.amount.saturating_add(user_amount);
+                    account_data.increase_amount_by(user_amount);
                 });
             }
 
