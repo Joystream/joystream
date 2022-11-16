@@ -180,8 +180,8 @@ decl_error! {
         /// SLippage tolerance constraint tolerance not respected
         SlippageToleranceExceeded,
 
-        /// SLippage tolerance constraint tolerance not respected
-        UnsufficientTokenAmount,
+        /// Creator token balance is insufficient 
+        InsufficientTokenBalance,
 
         /// Amm treasury balance is not zero
         AmmTreasuryBalanceNotEmpty,
