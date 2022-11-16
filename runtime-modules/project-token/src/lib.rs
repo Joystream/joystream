@@ -899,7 +899,7 @@ decl_module! {
             let creator_amount = curve.creator_reward.mul_floor(amount);
             if AccountInfoByTokenAndMember::<T>::contains_key(token_id, creator_member_id) {
                 AccountInfoByTokenAndMember::<T>::mutate(token_id, creator_member_id, |account_data| {
-                    account_data.amount = account_data.amount.saturating_add(creator_amount)
+                    account_data.increase_amount_by(creator_amount);
                 });
             }
 
