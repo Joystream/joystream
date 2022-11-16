@@ -174,7 +174,7 @@ decl_error! {
         /// Deadline timestamp lower than now
         InvalidTimestampSpecified,
 
-        /// Deadline constraint not respected
+        /// Deadline constraint not satisfied
         DeadlineExpired,
 
         /// SLippage tolerance constraint tolerance not respected
