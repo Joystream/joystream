@@ -1072,7 +1072,6 @@ impl ExitRevenueSplitFixture {
 }
 
 pub struct ActivateAmmFixture {
-    sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
     params: BondingCurve,
@@ -1080,9 +1079,8 @@ pub struct ActivateAmmFixture {
 
 impl ActivateAmmFixture {
     pub fn default() -> Self {
-        let (creator_member_id, creator_account_id) = member!(1);
+        let (creator_member_id, _) = member!(1);
         ActivateAmmFixture {
-            sender: creator_account_id,
             token_id: TokenId::one(),
             member_id: creator_member_id,
             params: BondingCurve {
@@ -1096,10 +1094,6 @@ impl ActivateAmmFixture {
 
     pub fn with_token_id(self, token_id: TokenId) -> Self {
         Self { token_id, ..self }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
     }
 
     pub fn with_member_id(self, member_id: MemberId) -> Self {
@@ -1127,12 +1121,7 @@ impl ActivateAmmFixture {
 
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
-        let result = Token::activate_amm(
-            Origin::signed(self.sender),
-            self.token_id,
-            self.member_id,
-            self.params.clone(),
-        );
+        let result = Token::activate_amm(self.token_id, self.member_id, self.params.clone());
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
@@ -1291,23 +1280,17 @@ impl UnbondFixture {
 }
 
 pub struct DeactivateAmmFixture {
-    sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
 }
 
 impl DeactivateAmmFixture {
     pub fn default() -> Self {
-        let (member_id, sender) = member!(1);
+        let (member_id, _) = member!(1);
         Self {
-            sender,
             token_id: TokenId::one(),
             member_id,
         }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
     }
 
     pub fn with_member_id(self, member_id: MemberId) -> Self {
@@ -1319,8 +1302,7 @@ impl DeactivateAmmFixture {
     }
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
-        let result =
-            Token::deactivate_amm(Origin::signed(self.sender), self.token_id, self.member_id);
+        let result = Token::deactivate_amm(self.token_id, self.member_id);
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error

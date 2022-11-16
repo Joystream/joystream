@@ -352,11 +352,12 @@ fn crt_correctly_minted_to_user_during_bonding() {
 fn bond_ok_with_event_deposit() {
     let token_id = token!(1);
     let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
-    let price = joy!(1000500);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
+            let price =
+                bonding_function_values(DEFAULT_BONDING_AMOUNT, token_id, BondOperation::Bond);
 
             BondFixture::default()
                 .with_amount(DEFAULT_BONDING_AMOUNT)
@@ -373,42 +374,6 @@ fn bond_ok_with_event_deposit() {
 }
 
 // --------------- ACTIVATION ----------------------------------
-
-#[test]
-fn amm_activation_fails_with_invalid_account_id() {
-    let (_, user_account_id) = member!(2);
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-        let result = ActivateAmmFixture::default()
-            .with_sender(user_account_id)
-            .execute_call();
-
-        assert_err!(
-            result,
-            DispatchError::Other("origin signer not a member controller account")
-        );
-    })
-}
-
-#[test]
-fn amm_activation_fails_with_invalid_member_id() {
-    let (user_member_id, _) = member!(2);
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-        let result = ActivateAmmFixture::default()
-            .with_member_id(user_member_id)
-            .execute_call();
-
-        assert_err!(
-            result,
-            DispatchError::Other("origin signer not a member controller account")
-        );
-    })
-}
 
 #[test]
 fn amm_activation_fails_with_invalid_token_id() {
@@ -680,7 +645,6 @@ fn amm_treasury_balance_correctly_decreased_during_unbonding() {
             ActivateAmmFixture::default().execute_call().unwrap();
             BondFixture::default()
                 .with_amount(DEFAULT_BONDING_AMOUNT)
-                .with_sender(user_account_id)
                 .with_member_id(user_member_id)
                 .execute_call()
                 .unwrap();
@@ -863,25 +827,6 @@ fn deactivate_fails_with_token_not_in_amm_state() {
 }
 
 #[test]
-fn deactivate_fails_with_failed_member_authentication() {
-    let config = GenesisConfigBuilder::new_empty().build();
-    let (member_id, _) = member!(3);
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-        ActivateAmmFixture::default().execute_call().unwrap();
-
-        let result = DeactivateAmmFixture::default()
-            .with_member_id(member_id)
-            .execute_call();
-
-        assert_err!(
-            result,
-            DispatchError::Other("origin signer not a member controller account")
-        );
-    })
-}
-
-#[test]
 fn deactivate_fails_with_invalid_token_id() {
     let config = GenesisConfigBuilder::new_empty().build();
     let token_id = token!(2);
@@ -918,14 +863,13 @@ fn deactivate_fails_with_amm_treasury_balance_not_zero() {
 
 #[test]
 fn deactivate_fails_with_user_not_being_the_creator() {
-    let (user_member_id, user_account_id) = member!(2);
+    let (user_member_id, _) = member!(2);
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         ActivateAmmFixture::default().execute_call().unwrap();
 
         let result = DeactivateAmmFixture::default()
-            .with_sender(user_account_id)
             .with_member_id(user_member_id)
             .execute_call();
 
@@ -1001,19 +945,17 @@ fn deactivate_ok_with_full_cycle_from_activation() {
 #[test]
 fn amm_deactivation_ok_with_event_deposit() {
     let token_id = token!(1);
-    let (creator_id, creator_account) = member!(1);
+    let (creator_id, _) = member!(1);
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         ActivateAmmFixture::default()
             .with_token_id(token_id)
-            .with_sender(creator_account)
             .with_member_id(creator_id)
             .execute_call()
             .unwrap();
         DeactivateAmmFixture::default()
             .with_token_id(token_id)
-            .with_sender(creator_account)
             .with_member_id(creator_id)
             .execute_call()
             .unwrap();
@@ -1035,6 +977,7 @@ fn token_state_idle_after_amm_deactivation() {
         assert_eq!(IssuanceState::of::<Test>(&token), IssuanceState::Idle);
     })
 }
+<<<<<<< HEAD
 
 // --------------------------------- EXTRA ----------------------------------------
 
@@ -1085,3 +1028,5 @@ fn review_eval_function() {
             assert_eq!(unbonding_correct_values, unbonding_values);
         })
 }
+=======
+>>>>>>> 3a06207646 (fix: activate / deactivate now are methods)

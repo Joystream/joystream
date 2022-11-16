@@ -802,6 +802,7 @@ decl_module! {
             Ok(())
         }
 
+<<<<<<< HEAD
         /// Activate Amm functionality for the token
         /// Preconditions
         /// - (origin, member_id) must be a valid authentication pair
@@ -840,6 +841,9 @@ decl_module! {
         }
 
         /// Activate Amm functionality for the token
+=======
+        /// Mint desired `token_id` amount into user account via JOY exchnage
+>>>>>>> 3a06207646 (fix: activate / deactivate now are methods)
         /// Preconditions
         /// - origin, member_id pair must be a valid authentication pair
         /// - token_id must exist
@@ -929,7 +933,7 @@ decl_module! {
             Ok(())
         }
 
-        /// Mint token and transfer joys to the AMM
+        /// Burn desired `token_id` amount from user account and get JOY from treasury account
         /// Preconditions
         /// - origin, member_id pair must be a valid authentication pair
         /// - token_id must exist
@@ -1000,6 +1004,7 @@ decl_module! {
             Ok(())
         }
 
+<<<<<<< HEAD
         /// Deactivate the amm functionality
         /// Preconditions
         /// - (origin, member_id) must be a valid authentication pair
@@ -1036,6 +1041,8 @@ decl_module! {
 
             Ok(())
         }
+=======
+>>>>>>> 3a06207646 (fix: activate / deactivate now are methods)
     }
 }
 
@@ -1050,6 +1057,7 @@ impl<T: Config>
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
         TransfersWithVestingOf<T>,
+        BondingCurve,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -1583,6 +1591,86 @@ impl<T: Config>
         ));
 
         Ok(sale.funds_collected)
+    }
+
+    /// Activate Amm functionality for the token
+    /// Preconditions
+    /// - (origin, member_id) must be a valid authentication pair
+    /// - token_id must exist
+    /// - offering state for `token_id` must be `Idle`
+    ///
+    /// Postconditions
+    /// - token `bonding_curve` activated with specified parameters
+    /// - amm account created with existential deposit (if necessary)
+    /// - event deposited
+    fn activate_amm(
+        token_id: T::TokenId,
+        member_id: T::MemberId,
+        curve: BondingCurve,
+    ) -> DispatchResult {
+        let token_data = Self::ensure_token_exists(token_id)?;
+
+        ensure!(
+            OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data).is_ok(),
+            Error::<T>::TokenIssuanceNotInIdleState
+        );
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.bonding_curve = Some(curve.clone())
+        });
+
+        // deposit existential deposit if the account is newly created
+        let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
+        if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
+            let _ =
+                Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
+        }
+
+        Self::deposit_event(RawEvent::BondingCurveActivated(token_id, member_id, curve));
+
+        Ok(())
+    }
+
+    /// Deactivate the amm functionality
+    /// Preconditions
+    /// - (origin, member_id) must be a valid authentication pair
+    /// - token_id must be a valid
+    /// - token must be in `BondigCurve` state
+    ///
+    /// Postconditions
+    /// - Bonding Curve set to None
+    /// - state set to idle
+    /// - event deposited
+    fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        let token_data = Self::ensure_token_exists(token_id)?;
+
+        ensure!(
+            token_data.creator_member_id == member_id,
+            Error::<T>::UserNotAuthorized
+        );
+
+        ensure!(
+            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data).is_ok(),
+            Error::<T>::NotInAmmState
+        );
+
+        let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
+        ensure!(
+            Joy::<T>::usable_balance(amm_treasury_account) == T::JoyExistentialDeposit::get(),
+            Error::<T>::AmmTreasuryBalanceNotEmpty
+        );
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.bonding_curve = None;
+        });
+
+        Self::deposit_event(RawEvent::BondingCurveDeactivated(token_id, member_id));
+
+        Ok(())
     }
 }
 
