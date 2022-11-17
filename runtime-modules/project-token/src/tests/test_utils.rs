@@ -122,6 +122,8 @@ impl GenesisConfigBuilder {
             min_revenue_split_time_to_start: MIN_REVENUE_SPLIT_TIME_TO_START.into(),
             sale_platform_fee: Permill::zero(),
             amm_deactivation_threshold: Permill::from_percent(5),
+            bond_tx_fees: Permill::from_percent(1),
+            unbond_tx_fees: Permill::from_percent(10),
         }
     }
 
@@ -196,6 +198,8 @@ impl GenesisConfigBuilder {
             min_revenue_split_time_to_start: self.min_revenue_split_time_to_start,
             sale_platform_fee: self.sale_platform_fee,
             amm_deactivation_threshold: self.amm_deactivation_threshold,
+            bond_tx_fees: self.bond_tx_fees,
+            unbond_tx_fees: self.unbond_tx_fees,
         }
     }
 }

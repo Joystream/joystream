@@ -34,8 +34,8 @@ use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
-    Permill,
+    traits::{AccountIdConversion, CheckedAdd, Convert, UniqueSaturatedInto},
+    PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
@@ -167,6 +167,12 @@ decl_storage! { generate_storage_info
 
         /// Percentage threshold for deactivating the amm functionality
         pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill;
+
+        /// Bond Transaction fee percentage
+        pub BondTxFees get(fn bond_tx_fees) config(): Permill;
+
+        /// Bond Transaction fee percentage
+        pub UnbondTxFees get(fn unbond_tx_fees) config(): Permill;
     }
 
     add_extra_genesis {
@@ -840,11 +846,12 @@ decl_module! {
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
             let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
             let bloat_bond = Self::bloat_bond();
+            let bond_price = Self::bond_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
             let joys_required = if !user_account_data_exists {
-                price.saturating_add(bloat_bond)
+                bond_price.saturating_add(bloat_bond)
             } else {
-                price
+                bond_price
             };
 
             Self::ensure_can_transfer_joy(&sender, joys_required)?;
@@ -881,9 +888,11 @@ decl_module! {
                 token_data.increase_supply_by(amount);
                 token_data.increase_bonded_amount_by(amount);
             });
-            Self::transfer_joy(&sender, &amm_reserve_account, price)?;
 
-            Self::deposit_event(RawEvent::TokenBonded(token_id, member_id, amount, price));
+            // TODO: redirect tx fees revenue to council
+            Self::transfer_joy(&sender, &amm_reserve_account, bond_price)?;
+
+            Self::deposit_event(RawEvent::TokenBonded(token_id, member_id, amount, bond_price));
 
             Ok(())
         }
@@ -930,8 +939,6 @@ decl_module! {
 
             let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
 
-            Self::ensure_can_transfer_joy(&amm_reserve_account, price)?;
-
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
@@ -941,6 +948,11 @@ decl_module! {
             if let Some(deadline) = deadline {
                 ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
+
+            let unbond_price = Self::unbond_tx_fees().left_from_one().mul_floor(price);
+
+            // TODO: redirect tx fees revenue to council
+            Self::ensure_can_transfer_joy(&amm_reserve_account, unbond_price)?;
 
             // == MUTATION SAFE ==
 
@@ -953,9 +965,9 @@ decl_module! {
                 token_data.decrease_bonded_amount_by(amount);
             });
 
-            Self::transfer_joy(&amm_reserve_account, &sender, price)?;
+            Self::transfer_joy(&amm_reserve_account, &sender, unbond_price)?;
 
-            Self::deposit_event(RawEvent::TokenUnbonded(token_id, member_id, amount, price));
+            Self::deposit_event(RawEvent::TokenUnbonded(token_id, member_id, amount, unbond_price));
 
             Ok(())
         }

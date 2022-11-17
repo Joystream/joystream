@@ -504,6 +504,8 @@ pub struct GenesisConfigBuilder {
     pub(crate) min_revenue_split_time_to_start: BlockNumber,
     pub(crate) sale_platform_fee: Permill,
     pub(crate) amm_deactivation_threshold: Permill,
+    pub(crate) bond_tx_fees: Permill,
+    pub(crate) unbond_tx_fees: Permill,
 }
 
 /// test externalities + initial balances allocation
