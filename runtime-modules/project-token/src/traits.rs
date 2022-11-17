@@ -14,7 +14,7 @@ pub trait PalletToken<
     TokenSaleParams,
     UploadContext,
     TransfersWithVesting,
-    BondingCurve,
+    BondingCurveParams,
 >
 {
     /// Issue token with specified characteristics
@@ -84,7 +84,11 @@ pub trait PalletToken<
     fn is_sale_unscheduled(token_id: TokenId) -> bool;
 
     /// Activate Amm functionality for the token
-    fn activate_amm(token_id: TokenId, member_id: MemberId, curve: BondingCurve) -> DispatchResult;
+    fn activate_amm(
+        token_id: TokenId,
+        member_id: MemberId,
+        curve: BondingCurveParams,
+    ) -> DispatchResult;
 
     /// Deactivate Amm functionality for the token
     fn deactivate_amm(token_id: TokenId, member_id: MemberId) -> DispatchResult;

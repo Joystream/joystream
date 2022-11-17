@@ -180,19 +180,13 @@ decl_error! {
         /// Slippage tolerance constraint tolerance not satisfied
         SlippageToleranceExceeded,
 
-        /// Creator token balance is insufficient 
+        /// Creator token balance is insufficient
         InsufficientTokenBalance,
 
         /// Amm treasury balance is not zero
-        AmmTreasuryBalanceNotEmpty,
+        OutstandingBondedAmountTooLarge,
 
         /// Generic user not authorized error
         UserNotAuthorized,
-
-        /// Unbond amount not available
-        AmountNotAvailable,
-
-        /// Outstanding bonded amount too high for the amm to be deactivated
-        OutstandingBondedAmountTooLarge,
     }
 }

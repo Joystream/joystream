@@ -503,6 +503,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) min_revenue_split_duration: BlockNumber,
     pub(crate) min_revenue_split_time_to_start: BlockNumber,
     pub(crate) sale_platform_fee: Permill,
+    pub(crate) amm_deactivation_threshold: Permill,
 }
 
 /// test externalities + initial balances allocation
@@ -636,7 +637,6 @@ pub const DEFAULT_BONDING_AMOUNT: u128 = 1000;
 pub const DEFAULT_UNBONDING_AMOUNT: u128 = 100;
 pub const BONDING_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
 pub const BONDING_CURVE_INTERCEPT: Permill = Permill::from_perthousand(1);
-pub const BONDING_CURVE_CREATOR_REWARD: Permill = Permill::from_percent(10);
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;

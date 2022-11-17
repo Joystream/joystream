@@ -1,7 +1,7 @@
 #![allow(clippy::unused_unit)]
 
 use crate::types::{
-    BondingCurve, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId,
+    BondingCurveOf, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId,
     TokenSaleOf, TransferPolicyOf, ValidatedTransfersOf,
 };
 use common::MembershipTypes;
@@ -22,6 +22,7 @@ decl_event! {
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,
         TokenSale = TokenSaleOf<T>,
+        BondingCurve = BondingCurveOf<T>,
 
     {
         /// Token amount is transferred from src to dst

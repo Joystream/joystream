@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{BondingCurve, Joy, Payment, Transfers, TransfersOf};
+use crate::types::{BondingCurveParams, Joy, Payment, Transfers, TransfersOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -165,13 +165,6 @@ impl IssueTokenFixture {
                 creator_member_id,
                 ..self.params
             },
-            ..self
-        }
-    }
-
-    pub fn with_sender(self, issuer_account: AccountId) -> Self {
-        Self {
-            issuer_account,
             ..self
         }
     }
@@ -1074,7 +1067,7 @@ impl ExitRevenueSplitFixture {
 pub struct ActivateAmmFixture {
     token_id: TokenId,
     member_id: MemberId,
-    params: BondingCurve,
+    params: BondingCurveParams,
 }
 
 impl ActivateAmmFixture {
@@ -1083,11 +1076,10 @@ impl ActivateAmmFixture {
         ActivateAmmFixture {
             token_id: TokenId::one(),
             member_id: creator_member_id,
-            params: BondingCurve {
+            params: BondingCurveParams {
                 // like Deso: https://docs.deso.org/about-deso-chain/readme#the-creator-coin-supply-curve
                 slope: BONDING_CURVE_SLOPE,
                 intercept: BONDING_CURVE_INTERCEPT,
-                creator_reward: BONDING_CURVE_CREATOR_REWARD,
             },
         }
     }
@@ -1100,21 +1092,10 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_creator_reward(self, creator_reward: Permill) -> Self {
-        Self {
-            params: BondingCurve {
-                creator_reward,
-                ..self.params
-            },
-            ..self
-        }
-    }
-
     pub fn with_linear_function_params(self, a: Permill, b: Permill) -> Self {
-        let params = BondingCurve {
+        let params = BondingCurveParams {
             slope: a,
             intercept: b,
-            ..self.params
         };
         Self { params, ..self }
     }

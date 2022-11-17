@@ -165,7 +165,7 @@ decl_storage! { generate_storage_info
         /// Platform fee (percentage) charged on top of each sale purchase (in JOY) and burned
         pub SalePlatformFee get(fn sale_platform_fee) config(): Permill;
 
-        /// AMM deactivation threshold
+        /// Percentage threshold for deactivating the amm functionality
         pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill;
     }
 
@@ -805,48 +805,7 @@ decl_module! {
             Ok(())
         }
 
-<<<<<<< HEAD
-        /// Activate Amm functionality for the token
-        /// Preconditions
-        /// - (origin, member_id) must be a valid authentication pair
-        /// - token_id must exist
-        /// - offering state for `token_id` must be `Idle`
-        ///
-        /// Postconditions
-        /// - token `bonding_curve` activated with specified parameters
-        /// - amm account created with existential deposit (if necessary)
-        /// - event deposited
-        #[weight = 100_000_000] // TODO: adjust weight
-        fn activate_amm(origin, token_id: T::TokenId, member_id: T::MemberId, curve: BondingCurve) -> DispatchResult {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin,
-                member_id
-            )?;
-            let token_data = Self::ensure_token_exists(token_id)?;
-
-            OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data)?;
-
-            // == MUTATION SAFE ==
-
-            TokenInfoById::<T>::mutate(token_id, |token_data| {
-                token_data.bonding_curve = Some(curve.clone())
-            });
-
-            // deposit existential deposit if the account is newly created
-            let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
-            if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
-                let _ = Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
-            }
-
-            Self::deposit_event(RawEvent::BondingCurveActivated(token_id, member_id, curve));
-
-            Ok(())
-        }
-
-        /// Activate Amm functionality for the token
-=======
         /// Mint desired `token_id` amount into user account via JOY exchnage
->>>>>>> 3a06207646 (fix: activate / deactivate now are methods)
         /// Preconditions
         /// - origin, member_id pair must be a valid authentication pair
         /// - token_id must exist
@@ -897,23 +856,15 @@ decl_module! {
 
             // timestamp deadline check
             if let Some(deadline) = deadline {
-                ensure!(<timestamp::Pallet<T>>::get() <= deadline, Error::<T>::DeadlineExpired);
+                println!("DEADLINE: {:?}", deadline);
+                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
             // == MUTATION SAFE ==
 
-            let creator_member_id = token_data.creator_member_id;
-            let creator_amount = curve.creator_reward.mul_floor(amount);
-            if AccountInfoByTokenAndMember::<T>::contains_key(token_id, creator_member_id) {
-                AccountInfoByTokenAndMember::<T>::mutate(token_id, creator_member_id, |account_data| {
-                    account_data.increase_amount_by(creator_amount);
-                });
-            }
-
-            let user_amount = amount.saturating_sub(creator_amount);
             if !user_account_data_exists {
                let new_account_info = AccountDataOf::<T>::new_with_amount_and_bond(
-                            user_amount,
+                            amount,
                             // No restrictions on repayable bloat bond,
                             // since only usable balance is allowed
                             RepayableBloatBond::new(bloat_bond, None)
@@ -922,12 +873,13 @@ decl_module! {
                 Self::transfer_joy(&sender, &Self::module_treasury_account(), bloat_bond)?;
             } else {
                 AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
-                    account_data.increase_amount_by(user_amount);
+                    account_data.increase_amount_by(amount);
                 });
             }
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.increase_supply_by(amount);
+                token_data.increase_bonded_amount_by(amount);
             });
             Self::transfer_joy(&sender, &amm_reserve_account, price)?;
 
@@ -971,7 +923,7 @@ decl_module! {
 
             ensure!(
                 user_acc_data.transferrable::<T>(Self::current_block()) >= amount,
-                Error::<T>::AmountNotAvailable,
+                Error::<T>::InsufficientTokenBalance,
             );
 
             let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
@@ -987,7 +939,7 @@ decl_module! {
 
             // timestamp deadline check
             if let Some(deadline) = deadline {
-                ensure!(<timestamp::Pallet<T>>::get() <= deadline, Error::<T>::DeadlineExpired);
+                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
             // == MUTATION SAFE ==
@@ -998,6 +950,7 @@ decl_module! {
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.decrease_supply_by(amount);
+                token_data.decrease_bonded_amount_by(amount);
             });
 
             Self::transfer_joy(&amm_reserve_account, &sender, price)?;
@@ -1007,45 +960,6 @@ decl_module! {
             Ok(())
         }
 
-<<<<<<< HEAD
-        /// Deactivate the amm functionality
-        /// Preconditions
-        /// - (origin, member_id) must be a valid authentication pair
-        /// - token_id must be a valid
-        /// - token must be in `BondigCurve` state
-        ///
-        /// Postconditions
-        /// - Bonding Curve set to None
-        /// - state set to idle
-        /// - event deposited
-        #[weight = 10_000_000] // TODO: Adjust weight
-        fn deactivate_amm(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
-            T::MemberOriginValidator::ensure_member_controller_account_origin(
-                origin,
-                member_id
-            )?;
-
-            let token_data = Self::ensure_token_exists(token_id)?;
-
-            ensure!(token_data.creator_member_id == member_id, Error::<T>::UserNotAuthorized);
-
-            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_data)?;
-
-            let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
-            ensure!(Joy::<T>::usable_balance(amm_treasury_account) == T::JoyExistentialDeposit::get(), Error::<T>::AmmTreasuryBalanceNotEmpty);
-
-            // == MUTATION SAFE ==
-
-            TokenInfoById::<T>::mutate(token_id, |token_data| {
-                token_data.bonding_curve = None;
-            });
-
-            Self::deposit_event(RawEvent::BondingCurveDeactivated(token_id, member_id));
-
-            Ok(())
-        }
-=======
->>>>>>> 3a06207646 (fix: activate / deactivate now are methods)
     }
 }
 
@@ -1060,7 +974,7 @@ impl<T: Config>
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
         TransfersWithVestingOf<T>,
-        BondingCurveOf<T>,
+        BondingCurveParams,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -1609,7 +1523,7 @@ impl<T: Config>
     fn activate_amm(
         token_id: T::TokenId,
         member_id: T::MemberId,
-        curve: BondingCurveOf<T>,
+        params: BondingCurveParams,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
 
@@ -1620,6 +1534,7 @@ impl<T: Config>
 
         // == MUTATION SAFE ==
 
+        let curve = BondingCurveOf::<T>::from_params(params);
         TokenInfoById::<T>::mutate(token_id, |token_data| {
             token_data.bonding_curve = Some(curve.clone())
         });
@@ -1648,9 +1563,7 @@ impl<T: Config>
     /// - event deposited
     fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
-
-        let threshold = Self::amm_deactivation_threshold();
-        token_data.ensure_amm_can_be_deactivated(threshold)?;
+        Self::ensure_amm_can_be_deactivated(&token_data)?;
 
         // == MUTATION SAFE ==
 
@@ -2185,5 +2098,17 @@ impl<T: Config> Module<T> {
             )
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
         Ok(Transfers(transfers_set))
+    }
+
+    pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {
+        let BondingCurve { amount_minted, .. } =
+            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token)?;
+        let threshold = Self::amm_deactivation_threshold();
+        let pct_of_issuance_minted = Permill::from_rational(amount_minted, token.total_supply);
+        ensure!(
+            pct_of_issuance_minted <= threshold,
+            Error::<T>::OutstandingBondedAmountTooLarge
+        );
+        Ok(())
     }
 }

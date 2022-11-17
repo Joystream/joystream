@@ -35,8 +35,8 @@ pub mod weights;
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
-    JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
-    UploadContextOf, YearlyRate,
+    BondingCurveParams, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf,
+    TransfersWithVestingOf, UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
 pub use weights::WeightInfo;
@@ -184,6 +184,7 @@ pub trait Config:
         TokenSaleParamsOf<Self>,
         UploadContextOf<Self>,
         TransfersWithVestingOf<Self>,
+        BondingCurveParams,
     >;
 
     /// Minimum cashout allowed limit
