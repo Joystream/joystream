@@ -3749,6 +3749,72 @@ decl_module! {
                 channel.creator_token_id = None;
             });
         }
+
+        /// Activate Amm functionality for token
+        #[weight = 100_000_000] // TODO: Adjust weight
+        pub fn activate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: BondingCurveParams,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_activate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::activate_amm(
+                token_id,
+                member_id,
+                params,
+            )?;
+
+        }
+
+        /// Deactivate Amm functionality for token
+        #[weight = 100_000_000] // TODO: Adjust weight
+        pub fn deactivate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_deactivate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::deactivate_amm(
+                token_id,
+                member_id,
+            )?;
+
+        }
     }
 }
 

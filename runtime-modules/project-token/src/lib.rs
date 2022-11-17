@@ -1583,6 +1583,12 @@ impl<T: Config>
             token_data.bonding_curve = None;
         });
 
+        // burn amount exceeding existential deposit
+        let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
+        let amount_to_slash = Joy::<T>::usable_balance(&amm_treasury_account)
+            .saturating_sub(T::JoyExistentialDeposit::get());
+        let _ = Joy::<T>::slash(&amm_treasury_account, amount_to_slash);
+
         Self::deposit_event(RawEvent::BondingCurveDeactivated(token_id, member_id));
 
         Ok(())

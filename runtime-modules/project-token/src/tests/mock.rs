@@ -17,7 +17,7 @@ use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
-use sp_runtime::{DispatchError, DispatchResult, Permill};
+use sp_runtime::{DispatchError, DispatchResult, PerThing, Permill};
 use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::{LockComparator, StakingHandler};
 
@@ -639,6 +639,8 @@ pub const DEFAULT_BONDING_AMOUNT: u128 = 1000;
 pub const DEFAULT_UNBONDING_AMOUNT: u128 = 100;
 pub const BONDING_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
 pub const BONDING_CURVE_INTERCEPT: Permill = Permill::from_perthousand(1);
+pub const DEFAULT_BONDING_FEES: Permill = Permill::from_percent(1);
+pub const DEFAULT_UNBONDING_FEES: Permill = Permill::from_percent(10);
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -722,5 +724,8 @@ pub(crate) fn bonding_function_values(
         }
     };
 
-    res
+    match bond_operation {
+        BondOperation::Bond => res + DEFAULT_BONDING_FEES.mul_floor(res),
+        BondOperation::Unbond => DEFAULT_UNBONDING_FEES.left_from_one().mul_floor(res),
+    }
 }

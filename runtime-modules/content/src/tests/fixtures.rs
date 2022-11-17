@@ -2946,6 +2946,84 @@ impl FinalizeRevenueSplitFixture {
     }
 }
 
+pub struct ActivateAmmFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: BondingCurveParams,
+}
+
+impl ActivateAmmFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            // same setup as Deso
+            params: BondingCurveParams {
+                slope: Permill::from_perthousand(3),
+                intercept: Permill::zero(),
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender);
+
+        let actual_result =
+            Content::activate_amm(origin, self.actor, self.channel_id, self.params.clone());
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+pub struct DeactivateAmmFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl DeactivateAmmFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender);
+
+        let actual_result = Content::deactivate_amm(origin, self.actor, self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
 pub struct FinalizeCreatorTokenSaleFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,

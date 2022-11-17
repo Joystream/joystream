@@ -2,7 +2,7 @@
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
-use crate::types::{BondOperation, BondingCurve};
+use crate::types::{BondOperation, BondingCurve, VestingScheduleParamsOf};
 use crate::{joy, last_event_eq, member, token, Error, RawEvent, RepayableBloatBondOf};
 use frame_support::{assert_err, assert_ok};
 use sp_runtime::{traits::Zero, DispatchError, Permill};
@@ -460,23 +460,80 @@ fn unbonding_noop_ok_with_zero_requested_amount() {
 }
 
 #[test]
-fn unbond_fails_with_user_not_having_enought_crt() {
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
-        .execute_with(|| {
+fn unbond_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
+    const DURATION: u64 = 2 * DEFAULT_SALE_DURATION;
+    let ((alice_id, alice_account), alice_joys) = (member!(2), joy!(5_000_000));
+    let ((bob_id, bob_account), bob_joys) = (member!(3), joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![
+        (alice_account, alice_joys),
+        (bob_account, bob_joys),
+    ])
+    .execute_with(|| {
+        // ------------ arrange -----------------
+
+        // 1. Create token with no allocation
+        IssueTokenFixture::default().execute_call().unwrap();
+
+        // 2. issue a sale and have alice being vested
+        InitTokenSaleFixture::default()
+            .with_vesting_schedule_params(Some(VestingScheduleParamsOf::<Test> {
+                linear_vesting_duration: DURATION,
+                blocks_before_cliff: 0u64,
+                cliff_amount_percentage: Permill::zero(),
+            }))
+            .execute_call()
+            .unwrap();
+        PurchaseTokensOnSaleFixture::default()
+            .with_sender(alice_account)
+            .with_member_id(alice_id)
+            .with_amount(DEFAULT_UNBONDING_AMOUNT)
+            .call_and_assert(Ok(()));
+        increase_block_number_by(DEFAULT_SALE_DURATION);
+        FinalizeTokenSaleFixture::default().call_and_assert(Ok(()));
+
+        // 3. activate amm and have bob minting some tokens
+        ActivateAmmFixture::default().execute_call().unwrap();
+        BondFixture::default()
+            .with_sender(bob_account)
+            .with_member_id(bob_id)
+            .with_amount(DEFAULT_BONDING_AMOUNT)
+            .execute_call()
+            .unwrap();
+
+        // ----------------- act -------------------
+        let result = UnbondFixture::default()
+            .with_amount(DEFAULT_BONDING_AMOUNT)
+            .execute_call();
+
+        // ---------------- assert -----------------
+        // Alice is now being vested but she has 0 transferrable amount
+        assert_err!(result, Error::<Test>::InsufficientTokenBalance);
+    })
+}
+#[test]
+fn unbond_fails_with_user_not_having_enough_token_balance() {
+    let ((user_id, user_account), user_balance) = (member!(2), joy!(5_000_000));
+    build_default_test_externalities_with_balances(vec![(user_account, user_balance)]).execute_with(
+        || {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
             BondFixture::default()
+                .with_sender(user_account)
+                .with_member_id(user_id)
                 .with_amount(DEFAULT_BONDING_AMOUNT)
                 .execute_call()
                 .unwrap();
 
+            // ----------------- act -------------------
             let result = UnbondFixture::default()
                 .with_amount(2 * DEFAULT_BONDING_AMOUNT)
                 .execute_call();
 
+            // ---------------- assert -----------------
+            // Alice is now being vested but she has 0 transferrable amount
             assert_err!(result, Error::<Test>::InsufficientTokenBalance);
-        })
+        },
+    )
 }
 
 #[test]
