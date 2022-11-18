@@ -1131,7 +1131,6 @@ fn issue_token_ok_with_token_info_added() {
                 revenue_split: RevenueSplitState::Inactive,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
                 bonding_curve: None,
-                creator_member_id: owner_id,
             }
         );
     })

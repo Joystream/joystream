@@ -755,7 +755,6 @@ fn unbonding_ok_with_user_crt_amount_correctly_decreased() {
 fn unbonding_ok_with_event_deposited() {
     let token_id = token!(1);
     let ((user_id, user_account), user_balance) = (member!(2), joy!(5_000_000));
-    let price = joy!(95); // see last test
     build_default_test_externalities_with_balances(vec![(user_account, user_balance)]).execute_with(
         || {
             IssueTokenFixture::default()
@@ -768,6 +767,8 @@ fn unbonding_ok_with_event_deposited() {
                 .with_member_id(user_id)
                 .execute_call()
                 .unwrap();
+            let price =
+                bonding_function_values(DEFAULT_UNBONDING_AMOUNT, token_id, BondOperation::Unbond);
 
             UnbondFixture::default()
                 .with_amount(DEFAULT_UNBONDING_AMOUNT)

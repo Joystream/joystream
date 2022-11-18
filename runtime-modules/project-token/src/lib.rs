@@ -862,7 +862,6 @@ decl_module! {
 
             // timestamp deadline check
             if let Some(deadline) = deadline {
-                println!("DEADLINE: {:?}", deadline);
                 ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
@@ -2119,7 +2118,7 @@ impl<T: Config> Module<T> {
 
     pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {
         let BondingCurve { amount_minted, .. } =
-            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token)?;
+            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(token)?;
         let threshold = Self::amm_deactivation_threshold();
         let pct_of_issuance_minted = Permill::from_rational(amount_minted, token.total_supply);
         ensure!(
