@@ -27,7 +27,7 @@ fn unsuccessful_deactivate_amm_token_not_issued() {
 fn unsuccessful_deactivate_member_channel_creator_token_amm_by_collaborator_without_permissions() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel()
-            .with_all_agent_permissions_except(&[ChannelActionPermission::AmmDeactivation])
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AmmControl])
             .setup();
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
 
@@ -46,7 +46,7 @@ fn unsuccessful_deactivate_member_channel_creator_token_amm_by_collaborator_with
 fn successful_deactivate_member_channel_creator_token_amm_by_collaborator() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel()
-            .with_agent_permissions(&[ChannelActionPermission::AmmDeactivation])
+            .with_agent_permissions(&[ChannelActionPermission::AmmControl])
             .setup();
         IssueCreatorTokenFixture::default()
             .with_initial_allocation_to(COLLABORATOR_MEMBER_ID)
@@ -75,7 +75,7 @@ fn successful_deactivate_member_channel_creator_token_amm_by_owner() {
 fn unsuccessful_deactivate_curator_channel_creator_token_amm_by_curator_without_permissions() {
     with_default_mock_builder(|| {
         ContentTest::with_curator_channel()
-            .with_all_agent_permissions_except(&[ChannelActionPermission::AmmDeactivation])
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AmmControl])
             .setup();
         IssueCreatorTokenFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -98,7 +98,7 @@ fn unsuccessful_deactivate_curator_channel_creator_token_amm_by_curator_without_
 fn successful_deactivate_curator_channel_creator_token_amm_by_curator() {
     with_default_mock_builder(|| {
         ContentTest::with_curator_channel()
-            .with_agent_permissions(&[ChannelActionPermission::AmmDeactivation])
+            .with_agent_permissions(&[ChannelActionPermission::AmmControl])
             .setup();
         IssueCreatorTokenFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)

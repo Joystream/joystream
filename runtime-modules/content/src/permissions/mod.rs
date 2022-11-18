@@ -720,7 +720,7 @@ pub fn ensure_actor_authorized_to_activate_amm<T: Config>(
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
-    let required_permissions = vec![ChannelActionPermission::AmmActivation];
+    let required_permissions = vec![ChannelActionPermission::AmmControl];
     ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
@@ -731,7 +731,7 @@ pub fn ensure_actor_authorized_to_deactivate_amm<T: Config>(
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
     let sender = ensure_signed(origin)?;
-    let required_permissions = vec![ChannelActionPermission::AmmDeactivation];
+    let required_permissions = vec![ChannelActionPermission::AmmControl];
     ensure_actor_has_channel_permissions::<T>(&sender, actor, channel, &required_permissions)?;
     Ok(sender)
 }
