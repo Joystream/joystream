@@ -83,9 +83,6 @@ pub struct AccountData<Balance, StakingStatus, RepayableBloatBond, VestingSchedu
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug, TypeInfo, MaxEncodedLen)]
 pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState, MemberId> {
-    /// Creator token member id
-    pub creator_member_id: MemberId,
-
     /// Current token's total supply (tokens_issued - tokens_burned)
     pub total_supply: Balance,
 

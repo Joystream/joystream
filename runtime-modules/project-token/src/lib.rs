@@ -821,7 +821,6 @@ decl_module! {
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
         ///
         /// Postconditions
-        /// - token `bonding_curve` activated with specified parameters
         /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
         /// - respective JOY amount transferred from user balance to amm treasury account
         /// - percentage of the minted CRT transferred to the token content creator (creator reward)
@@ -892,7 +891,7 @@ decl_module! {
             // TODO: redirect tx fees revenue to council
             Self::transfer_joy(&sender, &amm_reserve_account, bond_price)?;
 
-            Self::deposit_event(RawEvent::TokenBonded(token_id, member_id, amount, bond_price));
+            Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, bond_price));
 
             Ok(())
         }
@@ -967,7 +966,7 @@ decl_module! {
 
             Self::transfer_joy(&amm_reserve_account, &sender, unbond_price)?;
 
-            Self::deposit_event(RawEvent::TokenUnbonded(token_id, member_id, amount, unbond_price));
+            Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, unbond_price));
 
             Ok(())
         }
@@ -1558,7 +1557,7 @@ impl<T: Config>
                 Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
         }
 
-        Self::deposit_event(RawEvent::BondingCurveActivated(token_id, member_id, curve));
+        Self::deposit_event(RawEvent::AmmActivated(token_id, member_id, curve));
 
         Ok(())
     }
@@ -1589,7 +1588,7 @@ impl<T: Config>
             .saturating_sub(T::JoyExistentialDeposit::get());
         let _ = Joy::<T>::slash(&amm_treasury_account, amount_to_slash);
 
-        Self::deposit_event(RawEvent::BondingCurveDeactivated(token_id, member_id));
+        Self::deposit_event(RawEvent::AmmDeactivated(token_id, member_id));
 
         Ok(())
     }

@@ -275,31 +275,6 @@ fn user_joy_balance_correctly_decreased_during_bonding() {
 }
 
 #[test]
-fn crt_correctly_minted_to_user_during_bonding() {
-    let token_id = token!(1);
-
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
-        .execute_with(|| {
-            IssueTokenFixture::default().execute_call().unwrap();
-            ActivateAmmFixture::default().execute_call().unwrap();
-            let user_crt_pre =
-                Token::account_info_by_token_and_member(token_id, user_member_id).amount;
-
-            BondFixture::default()
-                .with_amount(DEFAULT_BONDING_AMOUNT)
-                .with_member_id(user_member_id)
-                .with_sender(user_account_id)
-                .execute_call()
-                .unwrap();
-
-            let user_crt_post =
-                Token::account_info_by_token_and_member(token_id, user_member_id).amount;
-            assert_eq!(user_crt_post - user_crt_pre, DEFAULT_BONDING_AMOUNT);
-        })
-}
-
-#[test]
 fn bond_ok_with_event_deposit() {
     let token_id = token!(1);
     let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
@@ -315,7 +290,7 @@ fn bond_ok_with_event_deposit() {
                 .execute_call()
                 .unwrap();
 
-            last_event_eq!(RawEvent::TokenBonded(
+            last_event_eq!(RawEvent::TokensBoughtOnAmm(
                 token_id,
                 user_member_id,
                 DEFAULT_BONDING_AMOUNT,
@@ -425,7 +400,7 @@ fn amm_activation_ok_with_event_deposit() {
             .execute_call()
             .unwrap();
 
-        last_event_eq!(RawEvent::BondingCurveActivated(
+        last_event_eq!(RawEvent::AmmActivated(
             token_id,
             creator_id,
             BondingCurve {
@@ -801,7 +776,7 @@ fn unbonding_ok_with_event_deposited() {
                 .execute_call()
                 .unwrap();
 
-            last_event_eq!(RawEvent::TokenUnbonded(
+            last_event_eq!(RawEvent::TokensSoldOnAmm(
                 token_id,
                 user_id,
                 DEFAULT_UNBONDING_AMOUNT,
@@ -943,20 +918,6 @@ fn amm_deactivation_ok_with_event_deposit() {
             .execute_call()
             .unwrap();
 
-        last_event_eq!(RawEvent::BondingCurveDeactivated(token_id, creator_id,));
-    })
-}
-
-#[test]
-fn token_state_idle_after_amm_deactivation() {
-    let token_id = token!(1);
-    let config = GenesisConfigBuilder::new_empty().build();
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-        ActivateAmmFixture::default().execute_call().unwrap();
-        DeactivateAmmFixture::default().execute_call().unwrap();
-
-        let token = Token::token_info_by_id(token_id);
-        assert_eq!(IssuanceState::of::<Test>(&token), IssuanceState::Idle);
+        last_event_eq!(RawEvent::AmmDeactivated(token_id, creator_id,));
     })
 }

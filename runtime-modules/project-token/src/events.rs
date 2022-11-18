@@ -157,12 +157,12 @@ decl_event! {
         /// - number of tokens burned
         TokensBurned(TokenId, MemberId, Balance),
 
-        /// BondingCurve activated
+        /// AMM activated
         /// Params:
         /// - token id
         /// - member id
         /// - params for the bonding curve
-        BondingCurveActivated(TokenId, MemberId, BondingCurve),
+        AmmActivated(TokenId, MemberId, BondingCurve),
 
         /// Token Bonded
         /// Params:
@@ -170,7 +170,7 @@ decl_event! {
         /// - member id
         /// - amount of CRT minted
         /// - amount of JOY deposited into curve treasury
-        TokenBonded(TokenId, MemberId, Balance, JoyBalance),
+        TokensBoughtOnAmm(TokenId, MemberId, Balance, JoyBalance),
 
         /// Token Unbonded
         /// Params:
@@ -178,12 +178,12 @@ decl_event! {
         /// - member id
         /// - amount of CRT burned
         /// - amount of JOY withdrawn from curve treasury
-        TokenUnbonded(TokenId, MemberId, Balance, JoyBalance),
+        TokensSoldOnAmm(TokenId, MemberId, Balance, JoyBalance),
 
-        /// Bonding Curve deactivated
+        /// AMM deactivated
         /// Params:
         /// - token id
         /// - member id
-        BondingCurveDeactivated(TokenId, MemberId),
+        AmmDeactivated(TokenId, MemberId),
     }
 }
