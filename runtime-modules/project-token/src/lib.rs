@@ -904,7 +904,7 @@ decl_module! {
         /// - deadline constraint respected if provided
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
-        /// - amm treasury acconut must have sufficient JOYs for the operation
+        /// - amm treasury account must have sufficient JOYs for the operation
         ///
         /// Postconditions
         /// - `amount` burned from user account
