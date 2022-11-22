@@ -185,8 +185,5 @@ decl_error! {
 
         /// Amm treasury balance is not zero
         OutstandingBondedAmountTooLarge,
-
-        /// Generic user not authorized error
-        UserNotAuthorized,
     }
 }
