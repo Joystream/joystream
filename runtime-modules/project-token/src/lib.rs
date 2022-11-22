@@ -1522,7 +1522,6 @@ impl<T: Config>
 
     /// Activate Amm functionality for the token
     /// Preconditions
-    /// - (origin, member_id) must be a valid authentication pair
     /// - token_id must exist
     /// - offering state for `token_id` must be `Idle`
     ///
