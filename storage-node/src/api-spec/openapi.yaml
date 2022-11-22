@@ -6,22 +6,20 @@ info:
     email: info@joystream.org
   license:
     name: GPL-3.0-only
-    url: https://opensource.org/licenses/GPL-3.0
+    url: 'https://opensource.org/licenses/GPL-3.0'
   version: 0.1.0
 externalDocs:
   description: Storage node API
-  url: https://github.com/Joystream/joystream/issues/2224
+  url: 'https://github.com/Joystream/joystream/issues/2224'
 servers:
-  - url: http://localhost:3333/api/v1/
-
+  - url: 'http://localhost:3333/api/v1/'
 tags:
   - name: files
     description: Storage node Files API
   - name: state
     description: Storage node State API
-
 paths:
-  /files/{id}:
+  '/files/{id}':
     get:
       operationId: filesApi.getFile
       description: Returns a media file.
@@ -35,7 +33,7 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: Ok
           content:
             video/*:
@@ -54,25 +52,25 @@ paths:
               schema:
                 type: string
                 format: binary
-        400:
+        '400':
           description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        401:
+        '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        404:
+        '404':
           description: File not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        500:
+        '500':
           description: Unknown server error
     head:
       operationId: filesApi.getFileHeaders
@@ -87,13 +85,13 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: Ok
-        400:
+        '400':
           description: Bad request
-        404:
+        '404':
           description: File not found
-        500:
+        '500':
           description: Unknown server error
   /files:
     post:
@@ -101,34 +99,41 @@ paths:
       operationId: filesApi.uploadFile
       tags:
         - files
+      parameters:
+        - name: dataObjectId
+          required: true
+          in: query
+          description: Data object runtime ID
+          schema:
+            type: string
+            pattern: ^\d+$ #integer
+        - name: storageBucketId
+          required: true
+          in: query
+          description: Storage bucket ID
+          schema:
+            type: string
+            pattern: ^\d+$ #integer
+        - name: bagId
+          required: true
+          in: query
+          description: Bag ID
+          schema:
+            type: string
+          allowReserved: true
       requestBody:
         content:
           multipart/form-data:
             schema:
               type: object
-              required:
-                - dataObjectId
-                - storageBucketId
-                - bagId
               properties:
                 file:
                   description: Data file
                   type: string
                   format: binary
-                dataObjectId:
-                  description: Data object runtime ID
-                  type: string
-                  pattern: '^\d+$' #integer
-                storageBucketId:
-                  description: Storage bucket ID
-                  type: string
-                  pattern: '^\d+$' #integer
-                bagId:
-                  description: Bag ID
-                  type: string
         required: true
       responses:
-        201:
+        '201':
           description: Created
           content:
             application/json:
@@ -137,13 +142,12 @@ paths:
                 properties:
                   id:
                     type: string
-        400:
+        '400':
           description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /state/data-objects:
     get:
       operationId: stateApi.getAllLocalDataObjects
@@ -151,14 +155,13 @@ paths:
       tags:
         - state
       responses:
-        200:
+        '200':
           description: Ok
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataObjectResponse'
-
-  /state/bags/{bagId}/data-objects:
+  '/state/bags/{bagId}/data-objects':
     get:
       operationId: stateApi.getLocalDataObjectsByBagId
       description: Returns local data objects for the bag.
@@ -172,13 +175,12 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: Ok
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataObjectResponse'
-
   /version:
     get:
       operationId: stateApi.getVersion
@@ -186,7 +188,7 @@ paths:
       tags:
         - state
       responses:
-        200:
+        '200':
           description: Ok
           content:
             application/json:
@@ -199,13 +201,12 @@ paths:
       tags:
         - state
       responses:
-        200:
+        '200':
           description: Ok
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataStatsResponse'
-
 components:
   schemas:
     TokenRequest:

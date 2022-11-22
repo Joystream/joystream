@@ -66,12 +66,10 @@ export default class FeeProfileCreateForumThread extends FeeProfileCommandBase {
       metadataToBytes(ForumThreadMetadata, mockMetadata),
       _.repeat('x', initialPostLen)
     )
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    const costs = {
-      txFee,
+    const extraCosts = {
       threadDeposit,
       postDeposit,
     }
-    this.profile(costs)
+    await this.profile(tx, extraCosts)
   }
 }

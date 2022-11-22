@@ -406,7 +406,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (W + M)` where:
-       * - `W` is the work_description length.
+       * - `W` is the work_description size in kilobytes.
        * - `M` is closed contract member list length.
        * - db:
        * - `O(1)` doesn't depend on the state or parameters
@@ -420,7 +420,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (N)`
-       * - `N` is msg length
+       * - `N` is msg size in kilobytes
        * - db:
        * - `O(1)` doesn't depend on the state or parameters
        * # </weight>
@@ -432,7 +432,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (W)` where:
-       * - `W` is the _metadata length.
+       * - `W` is the _metadata size in kilobytes.
        * - `M` is closed contract member list length.
        * - DB:
        * - O(M) (O(1) on open contract)
@@ -446,7 +446,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (N)`
-       * - `N` is msg length
+       * - `N` is msg size in kilobytes
        * - db:
        * - `O(1)` doesn't depend on the state or parameters
        * # </weight>
@@ -470,7 +470,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (N)`
-       * - `N` is msg length
+       * - `N` is msg size in kilobytes
        * - db:
        * - `O(1)` doesn't depend on the state or parameters
        * # </weight>
@@ -494,7 +494,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (N)`
-       * - `N` is msg length
+       * - `N` is msg size in kilobytes
        * - db:
        * - `O(1)` doesn't depend on the state or parameters
        * # </weight>
@@ -508,8 +508,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (J + K + W + R)`
-       * - `J` is rationale length,
-       * - `K` is the sum of all action_justification lengths (inside OracleJudgment),
+       * - `J` is rationale size in kilobytes,
+       * - `K` is the sum of all action_justification sizes (in kilobytes) inside OracleJudgment,
        * - `W` is number of winner judgment entries,
        * - `R` is number of rejected judgment entries,
        * - db:
@@ -523,7 +523,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (N)`
-       * - `N` is the work_data length,
+       * - `N` is the work_data size in kilobytes,
        * - db:
        * - `O(1)` doesn't depend on the state or parameters
        * # </weight>
@@ -744,7 +744,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - DB:
        * - O(1)
        * where:
-       * - B is the byte lenght of `msg`
+       * - B is the kilobyte lenght of `msg`
        * # </weight>
        **/
       channelOwnerRemark: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
@@ -795,7 +795,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `B` is the number of items in `params.storage_buckets`
        * - `C` is the number of items in `params.distribution_buckets`
        * - `D` is the number of items in `params.assets.object_creation_list`
-       * - `E` is the length of  `params.meta`
+       * - `E` is the size of  `params.meta` in kilobytes
        * - DB:
        * - `O(A + B + C + D)` - from the the generated weights
        * # </weight>
@@ -822,7 +822,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `A` is the number of items in `params.assets.object_creation_list`
        * - `B` is `params.storage_buckets_num_witness`
        * - `C` is the length of open auction / english auction whitelist (if provided)
-       * - `D` is the length of `params.meta` (if provided)
+       * - `D` is the size of `params.meta` in kilobytes (if provided)
        * - DB:
        * - `O(A + B + C)` - from the the generated weights
        * # </weight>
@@ -836,7 +836,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (A + B)` where:
        * - `A` is the number of entries in `outputs`
-       * - `B` is the length of the `metadata`
+       * - `B` is the size of the `metadata` in kilobytes
        * - DB:
        * - `O(A)` - from the the generated weights
        * # </weight>
@@ -875,7 +875,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * `O (A + B + C)` where:
        * - `A` is the length of `assets_to_remove`
        * - `B` is the value of `storage_buckets_num_witness`
-       * - `C` is the length of `rationale`
+       * - `C` is the size of `rationale` in kilobytes
        * - DB:
        * - `O(A + B)` - from the the generated weights
        * # </weight>
@@ -900,7 +900,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * `O (A + B + C)` where:
        * - `A` is the value of `num_objects_to_delete`
        * - `B` is the value of `storage_buckets_num_witness`
-       * - `C` is the length of `rationale`
+       * - `C` is the size of `rationale` in kilobytes
        * - DB:
        * - `O(A + B)` - from the the generated weights
        * # </weight>
@@ -913,7 +913,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * `O (A + B + C)` where:
        * - `A` is the length of `assets_to_remove`
        * - `B` is the value of `storage_buckets_num_witness`
-       * - `C` is the length of `rationale`
+       * - `C` is the size of `rationale` in kilobytes
        * - DB:
        * - `O(A + B)` - from the the generated weights
        * # </weight>
@@ -962,7 +962,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (A)` where:
-       * - `A` is the length of `params.metadata` (or 0 if not provided)
+       * - `A` is the size of `params.metadata` in kilobytes (or 0 if not provided)
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1005,7 +1005,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(W)
        * where:
        * - W : member whitelist length in case nft initial status is auction
-       * - B : bytelength of metadata parameter
+       * - B : size of metadata parameter in kilobytes
        * # </weight>
        **/
       issueNft: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, params: PalletContentNftTypesNftIssuanceParametersRecord | { royalty?: any; nftMetadata?: any; nonChannelOwner?: any; initTransactionalStatus?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesNftIssuanceParametersRecord]>;
@@ -1134,7 +1134,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (A)` where:
-       * - `A` is the length of `rationale`
+       * - `A` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1147,7 +1147,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (A)` where:
-       * - `A` is the length of `rationale`
+       * - `A` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1184,7 +1184,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (A)` where:
-       * - `A` is the length of `rationale`
+       * - `A` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1257,7 +1257,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `A` is the number of entries in `params.collaborators`
        * - `B` is the number of items in `params.assets_to_upload.object_creation_list` (if provided)
        * - `C` is the number of items in `params.assets_to_remove`
-       * - `D` is the length `params.new_meta`
+       * - `D` is the size of `params.new_meta` in kilobytes
        * - `E` is `params.storage_buckets_num_witness` (if provided)
        * - DB:
        * - `O(A + B + C + E)` - from the the generated weights
@@ -1357,7 +1357,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `B` is params.assets_to_remove.len()
        * - `C` is `params.storage_buckets_num_witness` (if provided)
        * - `D` is the length of open auction / english auction whitelist (if provided)
-       * - `E` is the length of `params.new_meta` (if provided)
+       * - `E` is the size of `params.new_meta` in kilobytes (if provided)
        * - DB:
        * - `O(A + B + C + D)` - from the the generated weights
        * # </weight>
@@ -1398,7 +1398,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1411,7 +1411,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1488,7 +1488,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1499,7 +1500,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1526,7 +1528,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -1541,7 +1543,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1567,7 +1569,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1628,7 +1630,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1751,7 +1754,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## weight
        * `O (N)` where:
-       * `N` is the length of `note`
+       * `N` is the size of `note` in kilobytes
        * - db:
        * - `O(1)` doesn't depend on the state or parameters
        * # </weight>
@@ -1791,7 +1794,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1804,7 +1807,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1881,7 +1884,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1892,7 +1896,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1919,7 +1924,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -1934,7 +1939,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -1960,7 +1965,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2021,7 +2026,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2094,7 +2100,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V)` where:
        * - `W` is the category depth,
-       * - `V` is the length of the text
+       * - `V` is the size of the text in kilobytes
        * - DB:
        * - O(W)
        * # </weight>
@@ -2108,8 +2114,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V + X)` where:
        * - `W` is the category depth
-       * - `V` is the length of the category title.
-       * - `X` is the length of the category description.
+       * - `V` is the size of the category title in kilobytes.
+       * - `X` is the size of the category description in kilobytes.
        * - DB:
        * - O(W)
        * # </weight>
@@ -2123,8 +2129,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V + X)` where:
        * - `W` is the category depth
-       * - `V` is the length of the thread title.
-       * - `X` is the length of the thread text.
+       * - `V` is the size of the thread title in kilobytes.
+       * - `X` is the size of the thread text in kilobytes.
        * - DB:
        * - O(W)
        * # </weight>
@@ -2152,7 +2158,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V + P)` where:
        * - `W` is the category depth,
-       * - `V` is the length of the rationale
+       * - `V` is the size of the rationale in kilobytes
        * - `P` is the number of posts to delete
        * - DB:
        * - O(W + P)
@@ -2180,7 +2186,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V)` where:
        * - `W` is the category depth,
-       * - `V` is the length of the new text
+       * - `V` is the size of the new text in kilobytes
        * - DB:
        * - O(W)
        * # </weight>
@@ -2194,7 +2200,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V)` where:
        * - `W` is the category depth
-       * - `V` is the length of the thread metadata.
+       * - `V` is the size of the thread metadata in kilobytes.
        * - DB:
        * - O(W)
        * # </weight>
@@ -2208,7 +2214,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V)` where:
        * - `W` is the category depth,
-       * - `V` is the length of the rationale
+       * - `V` is the size of the rationale in kilobytes
        * - DB:
        * - O(W)
        * # </weight>
@@ -2223,7 +2229,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * `O (W + V + X)` where:
        * - `W` is the category depth,
        * - `V` is the number of thread posts,
-       * - `X` is the length of the rationale
+       * - `X` is the size of the rationale in kilobytes
        * - DB:
        * - O(W + V)
        * # </weight>
@@ -2277,7 +2283,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W)` where:
        * - `W` is the category depth
-       * - `V` is the length of the category description.
+       * - `V` is the size of the category description in kilobytes.
        * - DB:
        * - O(W)
        * # </weight>
@@ -2303,7 +2309,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (W + V)` where:
        * - `W` is the category depth
-       * - `V` is the length of the category title.
+       * - `V` is the size of the category title in kilobytes.
        * - DB:
        * - O(W)
        * # </weight>
@@ -2319,7 +2325,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2332,7 +2338,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2409,7 +2415,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2420,7 +2427,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2447,7 +2455,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -2462,7 +2470,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2488,7 +2496,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2549,7 +2557,257 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      workerRemark: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
+    };
+    gatewayWorkingGroup: {
+      /**
+       * Add a job opening for a regular worker/lead role.
+       * Require signed leader origin or the root (to add opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the size of `description` in kilobytes
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      addOpening: AugmentedSubmittable<(description: Bytes | string | Uint8Array, openingType: PalletWorkingGroupOpeningType | 'Leader' | 'Regular' | number | Uint8Array, stakePolicy: PalletWorkingGroupStakePolicy | { stakeAmount?: any; leavingUnstakingPeriod?: any } | string | Uint8Array, rewardPerBlock: Option<u128> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, Option<u128>]>;
+      /**
+       * Apply on a worker opening.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (D)` where:
+       * - `D` is the size of `p.description` in kilobytes
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      applyOnOpening: AugmentedSubmittable<(p: PalletWorkingGroupApplyOnOpeningParams | { memberId?: any; openingId?: any; roleAccountId?: any; rewardAccountId?: any; description?: any; stakeParameters?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletWorkingGroupApplyOnOpeningParams]>;
+      /**
+       * Cancel an opening for the regular worker/lead position.
+       * Require signed leader origin or the root (to cancel opening for the leader position).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
        * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      cancelOpening: AugmentedSubmittable<(openingId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Decreases the regular worker/lead stake and returns the remainder to the
+       * worker staking_account_id. Can be decreased to zero, no actions on zero stake.
+       * Accepts the stake amount to decrease.
+       * Requires signed leader origin or the root (to decrease the leader stake).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      decreaseStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, stakeBalanceDelta: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u128]>;
+      /**
+       * Fill opening for the regular/lead position.
+       * Require signed leader origin or the root (to fill opening for the leader position).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (A)` where:
+       * - `A` is the length of `successful_application_ids`
+       * - DB:
+       * - O(A)
+       * # </weight>
+       **/
+      fillOpening: AugmentedSubmittable<(openingId: u64 | AnyNumber | Uint8Array, successfulApplicationIds: BTreeSet<u64>) => SubmittableExtrinsic<ApiType>, [u64, BTreeSet<u64>]>;
+      /**
+       * Fund working group budget by a member.
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)` Doesn't depend on the state or parameters
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      fundWorkingGroupBudget: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u128, Bytes]>;
+      /**
+       * Increases the regular worker/lead stake, demands a worker origin.
+       * Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      increaseStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, stakeBalanceDelta: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u128]>;
+      /**
+       * Lead remark message
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      leadRemark: AugmentedSubmittable<(msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes]>;
+      /**
+       * Leave the role by the active worker.
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      leaveRole: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<Bytes>]>;
+      /**
+       * Sets a new budget for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setBudget: AugmentedSubmittable<(newBudget: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
+      /**
+       * Sets a new status text for the working group.
+       * Requires root origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (S)` where:
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
+       * 
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setStatusText: AugmentedSubmittable<(statusText: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Option<Bytes>]>;
+      /**
+       * Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
+       * If slashing balance greater than the existing stake - stake is slashed to zero.
+       * Requires signed leader origin or the root (to slash the leader stake).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the size of `penality.slashing_text` in kilobytes
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      /**
+       * Terminate the active worker by the lead.
+       * Requires signed leader origin or the root (to terminate the leader role).
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (P)` where:
+       * - `P` is the size `penalty.slashing_text` in kilobytes
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      terminateRole: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: Option<u128> | null | object | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Update the reward account associated with a set reward relationship for the active worker.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRewardAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRewardAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Update the reward per block for the active worker.
+       * Require signed leader origin or the root (to update leader's reward amount).
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRewardAmount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, rewardPerBlock: Option<u128> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<u128>]>;
+      /**
+       * Update the associated role account of the active regular worker/lead.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Withdraw the worker application. Can be done by the worker only.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      withdrawApplication: AugmentedSubmittable<(applicationId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      /**
+       * Worker remark message
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2633,7 +2891,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the signal
+       * - `S` is the size of the signal in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2671,13 +2929,11 @@ declare module '@polkadot/api-base/types/submittable' {
        * <weight>
        * 
        * ## Weight
-       * `O (W + V + X + Y)` where:
-       * - `W` is the member name
-       * - `V` is the member handle
-       * - `X` is the member avatar uri
-       * - `Y` is the member about
+       * `O (W + M)` where:
+       * - `W` is the handle size in kilobytes
+       * - `M` is the metadata size in kilobytes
        * - DB:
-       * - O(V)
+       * - O(1)
        * # </weight>
        **/
       buyMembership: AugmentedSubmittable<(params: PalletMembershipBuyMembershipParameters | { rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any; referrerId?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipBuyMembershipParameters]>;
@@ -2700,8 +2956,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (I + J)` where:
-       * - `I` is the length of the handle
-       * - `J` is the length of the metadata
+       * - `I` is the handle size in kilobytes
+       * - `J` is the metadata size in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2719,13 +2975,11 @@ declare module '@polkadot/api-base/types/submittable' {
        * <weight>
        * 
        * ## Weight
-       * `O (W + V + X + Y)` where:
-       * - `W` is the member name
-       * - `V` is the member handle
-       * - `X` is the member avatar uri
-       * - `Y` is the member about
+       * `O (W + M)` where:
+       * - `W` is the handle size in kilobytes
+       * - `M` is the metadata size in kilobytes
        * - DB:
-       * - O(V)
+       * - O(1)
        * # </weight>
        **/
       inviteMember: AugmentedSubmittable<(params: PalletMembershipInviteMembershipParameters | { invitingMemberId?: any; rootAccount?: any; controllerAccount?: any; handle?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletMembershipInviteMembershipParameters]>;
@@ -2846,10 +3100,11 @@ declare module '@polkadot/api-base/types/submittable' {
        * <weight>
        * 
        * ## Weight
-       * `O (W)` where:
-       * - `W` is the handle length
+       * `O (W + M)` where:
+       * - `W` is the handle size in kilobytes
+       * - `M` is the metadata size in kilobytes
        * - DB:
-       * - O(W)
+       * - O(1)
        * # </weight>
        **/
       updateProfile: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, handle: Option<Bytes> | null | object | string | Uint8Array, metadata: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<Bytes>, Option<Bytes>]>;
@@ -2875,7 +3130,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2888,7 +3143,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2965,7 +3220,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -2976,7 +3232,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3003,7 +3260,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -3018,7 +3275,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3044,7 +3301,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3105,7 +3362,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3257,7 +3515,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3270,7 +3528,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3347,7 +3605,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3358,7 +3617,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3385,7 +3645,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -3400,7 +3660,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3426,7 +3686,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3487,7 +3747,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3503,7 +3764,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3516,7 +3777,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3593,7 +3854,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3604,7 +3866,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3631,7 +3894,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -3646,7 +3909,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3672,7 +3935,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3733,7 +3996,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3749,7 +4013,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3762,7 +4026,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3839,7 +4103,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3850,7 +4115,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3877,7 +4143,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -3892,7 +4158,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3918,7 +4184,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -3979,7 +4245,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -4201,7 +4468,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * ## Weight
        * `O (T + M)` where:
        * - `T` is the length of `outputs`
-       * - `M` is the length of `metadata`
+       * - `M` is the size of `metadata` in kilobytes
        * - DB:
        * - `O(T)` - from the the generated weights
        * # </weight>
@@ -4216,9 +4483,10 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (T + D + I)` where:
-       * - `T` is the length of the title
-       * - `D` is the length of the description
-       * - `I` is the length of any parameter in `proposal_details`
+       * - `T` is the title size in kilobytes
+       * - `D` is the description size in kilobytes
+       * - `I` is the size of any parameter in `proposal_details`
+       * (in kilobytes if it's metadata)
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -4233,7 +4501,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (L)` where:
-       * - `L` is the length of `text`
+       * - `L` is the size of `text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -4272,7 +4540,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (L)` where:
-       * - `L` is the length of `text`
+       * - `L` is the size of `text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -4324,7 +4592,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (R)` where:
-       * - `R` is the length of `rationale`
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or paraemters
        * # </weight>
@@ -4938,7 +5206,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (W)` where:
-       * - `W` is length of the `message`
+       * - `W` is size of `message` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -4994,7 +5262,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (W)` where:
-       * - `W` is length of the `metadata`
+       * - `W` is size of `metadata` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5006,7 +5274,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (W)` where:
-       * - `W` is length of the `metadata`
+       * - `W` is size of `metadata` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5029,7 +5297,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (W)` where:
-       * - `W` is length of the `metadata`
+       * - `W` is size of `metadata` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5041,7 +5309,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (W)` where:
-       * - `W` is length of the `message`
+       * - `W` is size of `message` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5223,7 +5491,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `description`
+       * - `D` is the size of `description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5236,7 +5504,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (D)` where:
-       * - `D` is the length of `p.description`
+       * - `D` is the size of `p.description` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5313,7 +5581,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5324,7 +5593,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (R)` where:
+       * - `R` is the size of `rationale` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5351,7 +5621,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (S)` where:
-       * - `S` is the length of the contents of `status_text` when it is not none
+       * - `S` is the size of the contents of `status_text` in kilobytes when it is not none
        * 
        * - DB:
        * - O(1) doesn't depend on the state or parameters
@@ -5366,7 +5636,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penality.slashing_text`
+       * - `P` is the size of `penality.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5392,7 +5662,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * ## Weight
        * `O (P)` where:
-       * - `P` is the length of `penalty.slashing_text`
+       * - `P` is the size `penalty.slashing_text` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
@@ -5453,7 +5723,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * # <weight>
        * 
        * ## Weight
-       * `O (1)`
+       * `O (M)` where:
+       * - `M` is the size of `msg` in kilobytes
        * - DB:
        * - O(1) doesn't depend on the state or parameters
        * # </weight>

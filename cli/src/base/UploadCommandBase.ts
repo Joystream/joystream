@@ -274,9 +274,6 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
       // cli.action.start('Waiting for the file to be processed...')
     })
     const formData = new FormData()
-    formData.append('dataObjectId', objectId.toString())
-    formData.append('storageBucketId', storageNodeInfo.bucketId)
-    formData.append('bagId', bagId)
     formData.append('file', fileStream, {
       filename: path.basename(filePath),
       filepath: filePath,
@@ -285,6 +282,11 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     this.log(`Uploading object ${objectId.toString()} (${filePath})`)
     try {
       await axios.post(`${storageNodeInfo.apiEndpoint}/files`, formData, {
+        params: {
+          dataObjectId: objectId.toString(),
+          storageBucketId: storageNodeInfo.bucketId,
+          bagId,
+        },
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
         headers: {
@@ -337,9 +339,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
         }
       })
     )
+    multiBar.stop()
     errors.forEach(([objectId, message]) => this.warn(`Upload of object ${objectId} failed: ${message}`))
     this.handleRejectedUploads(bagId, assets, results, inputFilePath, outputFilePostfix)
-    multiBar.stop()
+    if (errors.length) {
+      this.exit(ExitCodes.StorageNodeError)
+    }
   }
 
   async prepareAssetsForExtrinsic(

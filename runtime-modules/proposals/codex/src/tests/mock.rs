@@ -383,8 +383,8 @@ parameter_types! {
 parameter_types! {
     pub const CancellationFee: u64 = 5;
     pub const RejectionFee: u64 = 3;
-    pub const TitleMaxLength: u32 = 100;
-    pub const DescriptionMaxLength: u32 = 10000;
+    pub const TitleMaxLength: u32 = 10_000;
+    pub const DescriptionMaxLength: u32 = 100_000;
     pub const MaxActiveProposalLimit: u32 = 100;
     pub const LockId: LockIdentifier = [2; 8];
     pub const DispatchableCallCodeMaxLen: u32 = 1024 * 1024;

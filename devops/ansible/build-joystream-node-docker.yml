@@ -15,10 +15,15 @@
         name: common
         tasks_from: get-code-git
 
+    - name: Make sure docker is running
+      command: systemctl start docker
+      become: true
+
     - name: Log into DockerHub
       community.docker.docker_login:
         username: '{{ docker_username }}'
         password: '{{ docker_password }}'
+      become: true
 
     - name: Build an image and push it to a private repo
       community.docker.docker_image:
@@ -28,10 +33,12 @@
           platform: '{{ platform }}'
           args:
             CARGO_FEATURES: '{{ cargo_features }}'
+            GIT_COMMIT_HASH: '{{ result_git_checkout.after[:11] }}'
         name: '{{ repository }}'
         tag: '{{ tag_name }}'
         push: true
         source: build
+      become: true
       # Run in async fashion for max duration of 2 hours
       async: 7200
       poll: 0
@@ -46,3 +53,4 @@
       retries: 72
       # Check for the status every 100s
       delay: 100
+      become: true

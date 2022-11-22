@@ -16,7 +16,7 @@ use balances::Pallet as Balances;
 use membership::Module as Membership;
 
 const SEED: u32 = 0;
-const MAX_BYTES: u32 = 16384;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
@@ -506,7 +506,7 @@ benchmarks_instance! {
     }
 
     apply_on_opening {
-        let i in 1 .. MAX_BYTES;
+        let i in 1 .. MAX_KILOBYTES_METADATA;
 
         let (lead_account_id, lead_member_id) = member_funded_account::<T, I>("lead", 0);
         let opening_id = add_opening_helper::<T, I>(
@@ -520,7 +520,7 @@ benchmarks_instance! {
             opening_id,
             role_account_id: lead_account_id.clone(),
             reward_account_id: lead_account_id.clone(),
-            description: vec![0u8; i.try_into().unwrap()],
+            description: vec![0u8; (i * 1000).try_into().unwrap()],
             stake_parameters:
                 StakeParameters {
                     stake: T::MinimumApplicationStake::get(),
@@ -666,7 +666,7 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     slash_stake {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
         let (lead_id, lead_worker_id) =
             insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
@@ -676,7 +676,7 @@ benchmarks_instance! {
             Some(lead_id.clone())
         );
         let slashing_amount = One::one();
-        let rationale = Some(vec![0u8; i.try_into().unwrap()]);
+        let rationale = Some(vec![0u8; (i * 1000).try_into().unwrap()]);
     }: _(
         RawOrigin::Signed(lead_id.clone()),
         worker_id,
@@ -694,7 +694,7 @@ benchmarks_instance! {
     }
 
     terminate_role_worker {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
@@ -707,7 +707,7 @@ benchmarks_instance! {
         let current_budget = BalanceOf::<T>::max_value();
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
         let penalty = Some(One::one());
-        let rationale = Some(vec![0u8; i.try_into().unwrap()]);
+        let rationale = Some(vec![0u8; (i * 1000).try_into().unwrap()]);
     }: terminate_role(
             RawOrigin::Signed(lead_id.clone()),
             worker_id,
@@ -720,7 +720,7 @@ benchmarks_instance! {
     }
 
     terminate_role_lead {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
         let (_, lead_worker_id) =
             insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
@@ -728,7 +728,7 @@ benchmarks_instance! {
         // To be able to pay unpaid reward
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
         let penalty = Some(One::one());
-        let rationale = Some(vec![0u8; i.try_into().unwrap()]);
+        let rationale = Some(vec![0u8; (i * 1000).try_into().unwrap()]);
     }: terminate_role(
             RawOrigin::Root,
             lead_worker_id,
@@ -834,11 +834,11 @@ benchmarks_instance! {
     }
 
     set_status_text {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
-        let status_text = Some(vec![0u8; i.try_into().unwrap()]);
+        let status_text = Some(vec![0u8; (i * 1000).try_into().unwrap()]);
 
     }: _ (RawOrigin::Signed(lead_id), status_text.clone())
     verify {
@@ -883,7 +883,7 @@ benchmarks_instance! {
     // Regular opening is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     add_opening {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
@@ -893,7 +893,7 @@ benchmarks_instance! {
             leaving_unstaking_period: T::BlockNumber::max_value(),
         };
 
-        let description = vec![0u8; i.try_into().unwrap()];
+        let description = vec![0u8; (i * 1000).try_into().unwrap()];
 
     }: _(
             RawOrigin::Signed(lead_id),
@@ -915,7 +915,7 @@ benchmarks_instance! {
     }
 
     leave_role {
-        let i in 0 .. MAX_BYTES;
+        let i in 0 .. MAX_KILOBYTES_METADATA;
         // Workers with stake can't leave immediatly
         let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(
             OpeningType::Leader,
@@ -925,7 +925,7 @@ benchmarks_instance! {
     }: leave_role(
             RawOrigin::Signed(caller_id),
             caller_worker_id,
-            Some(vec![0u8; i.try_into().unwrap()])
+            Some(vec![0u8; (i * 1000).try_into().unwrap()])
         )
     verify {
         assert_eq!(
@@ -936,25 +936,27 @@ benchmarks_instance! {
     }
 
     lead_remark {
+        let i in 0 .. MAX_KILOBYTES_METADATA;
         let (caller_id, _) = insert_a_worker::<T, I>(
             OpeningType::Leader,
             0,
             None
         );
-        let msg = b"test".to_vec();
+        let msg = vec![0xff].repeat((i * 1000) as usize);
     }: _ (RawOrigin::Signed(caller_id), msg.clone())
         verify {
             assert_last_event::<T, I>(RawEvent::LeadRemarked(msg).into());
         }
 
     worker_remark {
+        let i in 0 .. MAX_KILOBYTES_METADATA;
         let (lead_id, _) =
             insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
         let (caller_id, worker_id) = insert_a_worker::<T, I>(
             OpeningType::Regular,
             1,
             Some(lead_id));
-        let msg = b"test".to_vec();
+        let msg = vec![0xff].repeat((i * 1000) as usize);
     }: _ (RawOrigin::Signed(caller_id), worker_id, msg.clone())
         verify {
             assert_last_event::<T, I>(RawEvent::WorkerRemarked(worker_id, msg).into());

@@ -7,12 +7,15 @@ Type=simple
 User={{ template_user }}
 WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/bin/joystream-node \
-        --chain bin/chain/chainspec-raw.json \
+        --chain {{ template_chain_spec_path }} \
         --pruning archive \
-        --base-path bin/chain \
-        --node-key-file {{ template_node_secret_path }} \
+        --base-path {{ template_base_path }} \
         --keystore-path {{ template_keystore_path }} \
-        --validator
+        --validator \
+        --no-mdns \
+        --out-peers 50 \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
+
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=10000

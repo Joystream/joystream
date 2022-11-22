@@ -146,8 +146,8 @@ pub use content::MaxNumber;
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 11,
-    spec_version: 3,
+    authoring_version: 12,
+    spec_version: 1000,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -385,7 +385,7 @@ impl pallet_babe::Config for Runtime {
     type HandleEquivocation =
         pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
 
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_babe::SubstrateWeight<Runtime>;
     type MaxAuthorities = MaxAuthorities;
 }
 
@@ -409,7 +409,7 @@ impl pallet_grandpa::Config for Runtime {
         ReportLongevity,
     >;
 
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_grandpa::SubstrateWeight<Runtime>;
     type MaxAuthorities = MaxAuthorities;
 }
 
@@ -741,7 +741,8 @@ impl onchain::Config for OnChainSeqPhragmen {
         pallet_election_provider_multi_phase::SolutionAccuracyOf<Runtime>,
     >;
     type DataProvider = <Runtime as pallet_election_provider_multi_phase::Config>::DataProvider;
-    type WeightInfo = frame_election_provider_support::weights::SubstrateWeight<Runtime>;
+    type WeightInfo =
+        weights::pallet_election_provider_support_benchmarking::SubstrateWeight<Runtime>;
 }
 
 impl onchain::BoundedConfig for OnChainSeqPhragmen {
@@ -800,7 +801,7 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type MaxElectableTargets = ConstU16<{ u16::MAX }>;
     type MaxElectingVoters = MaxElectingVoters;
     type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
-    type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Self>;
+    type WeightInfo = weights::pallet_election_provider_multi_phase::SubstrateWeight<Self>;
 }
 
 parameter_types! {
@@ -810,7 +811,7 @@ parameter_types! {
 impl pallet_bags_list::Config for Runtime {
     type Event = Event;
     type ScoreProvider = Staking;
-    type WeightInfo = pallet_bags_list::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_bags_list::SubstrateWeight<Runtime>;
     type BagThresholds = BagThresholds;
     type Score = VoteWeight;
 }
@@ -1022,10 +1023,19 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u32 = 0;
     pub const AnnouncingPeriodDuration: BlockNumber = 300;
     pub const IdlePeriodDuration: BlockNumber = 1;
-    pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: Balance = dollars!(10_000);
     pub const ElectedMemberRewardPeriod: BlockNumber = 33;
     pub const BudgetRefillPeriod: BlockNumber = 33;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+    pub const CouncilSize: u32 = 3;
+}
+
+#[cfg(feature = "playground-runtime")]
+parameter_types! {
+    pub const CouncilSize: u32 = 1;
 }
 
 // Staging coucil and elections configuration
@@ -1567,10 +1577,21 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
 parameter_types! {
     pub const ProposalCancellationFee: Balance = dollars!(1);
     pub const ProposalRejectionFee: Balance = dollars!(5);
-    pub const ProposalTitleMaxLength: u32 = 40;
-    pub const ProposalDescriptionMaxLength: u32 = 3_000;
     pub const ProposalMaxActiveProposalLimit: u32 = 20;
     pub const DispatchableCallCodeMaxLen: u32 = mega_bytes!(3);
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+parameter_types! {
+    pub const ProposalTitleMaxLength: u32 = 40;
+    pub const ProposalDescriptionMaxLength: u32 = 3_000;
+}
+
+// Higher limits for benchmarking for more accurate results
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+    pub const ProposalTitleMaxLength: u32 = 20_000;
+    pub const ProposalDescriptionMaxLength: u32 = 20_000;
 }
 
 impl proposals_engine::Config for Runtime {
