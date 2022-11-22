@@ -66,14 +66,10 @@ export default class FeeProfileDeleteChannel extends FeeProfileCommandBase {
       }),
       assetsNum
     )
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    const costs = {
-      txFee,
-    }
     const returns = {
       dataObjectsBloatBond: dataObjectBloatBond.muln(assetsNum),
       channelBloatBond,
     }
-    this.profile(costs, returns)
+    await this.profile(tx, undefined, returns)
   }
 }
