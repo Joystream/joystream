@@ -3068,6 +3068,11 @@ decl_module! {
                     T::ProjectToken::is_sale_unscheduled(token_id),
                     Error::<T>::ChannelTransfersBlockedDuringTokenSales,
                 );
+
+                ensure!(
+                    !T::ProjectToken::is_amm_active(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringActiveAmm
+                );
             }
 
             //
@@ -3760,8 +3765,6 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            channel.ensure_has_no_active_transfer::<T>()?;
-
             // Ensure token was issued
             let token_id = channel.ensure_creator_token_issued::<T>()?;
 
@@ -3792,8 +3795,6 @@ decl_module! {
             channel_id: T::ChannelId,
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
-
-            channel.ensure_has_no_active_transfer::<T>()?;
 
             // Ensure token was issued
             let token_id = channel.ensure_creator_token_issued::<T>()?;

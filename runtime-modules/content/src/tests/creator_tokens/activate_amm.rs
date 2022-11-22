@@ -120,17 +120,3 @@ fn successful_activate_curator_channel_creator_token_amm_by_lead() {
             .call_and_assert(Ok(()));
     })
 }
-
-#[test]
-fn activate_amm_fails_during_channel_transfer() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitializeChannelTransferFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Ok(()));
-
-        ActivateAmmFixture::default()
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
-    })
-}

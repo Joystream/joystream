@@ -190,10 +190,7 @@ fn bonding_ok_with_creator_token_issuance_increased() {
     let (creator_id, _) = member!(1);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
-            IssueTokenFixture::default()
-                .with_creator_id(creator_id)
-                .execute_call()
-                .unwrap();
+            IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
             let supply_pre = Token::token_info_by_id(token_id).total_supply;
 
@@ -446,7 +443,7 @@ fn unbond_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
     .execute_with(|| {
         // ------------ arrange -----------------
 
-        // 1. Create token with no allocation
+        // 1. Create token
         IssueTokenFixture::default().execute_call().unwrap();
 
         // 2. issue a sale and have alice being vested
@@ -461,7 +458,7 @@ fn unbond_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
         PurchaseTokensOnSaleFixture::default()
             .with_sender(alice_account)
             .with_member_id(alice_id)
-            .with_amount(DEFAULT_UNBONDING_AMOUNT)
+            .with_amount(DEFAULT_BONDING_AMOUNT)
             .call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
         FinalizeTokenSaleFixture::default().call_and_assert(Ok(()));
@@ -477,6 +474,8 @@ fn unbond_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
 
         // ----------------- act -------------------
         let result = UnbondFixture::default()
+            .with_sender(alice_account)
+            .with_member_id(alice_id)
             .with_amount(DEFAULT_BONDING_AMOUNT)
             .execute_call();
 
@@ -657,10 +656,7 @@ fn unbonding_ok_with_crt_issuance_decreased() {
     let (creator_id, _) = member!(1);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
-            IssueTokenFixture::default()
-                .with_creator_id(creator_id)
-                .execute_call()
-                .unwrap();
+            IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
             BondFixture::default().execute_call().unwrap();
             let supply_pre = Token::token_info_by_id(token_id).total_supply;
@@ -905,6 +901,7 @@ fn deactivate_ok_with_full_cycle_from_activation() {
 fn amm_deactivation_ok_with_event_deposit() {
     let token_id = token!(1);
     let (creator_id, _) = member!(1);
+    let amount_burned = 0;
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
@@ -913,12 +910,17 @@ fn amm_deactivation_ok_with_event_deposit() {
             .with_member_id(creator_id)
             .execute_call()
             .unwrap();
+
         DeactivateAmmFixture::default()
             .with_token_id(token_id)
             .with_member_id(creator_id)
             .execute_call()
             .unwrap();
 
-        last_event_eq!(RawEvent::AmmDeactivated(token_id, creator_id,));
+        last_event_eq!(RawEvent::AmmDeactivated(
+            token_id,
+            creator_id,
+            amount_burned
+        ));
     })
 }

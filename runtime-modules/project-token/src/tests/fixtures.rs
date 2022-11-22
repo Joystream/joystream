@@ -95,7 +95,6 @@ impl IssueTokenFixture {
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
-                creator_member_id: member!(1).0,
                 ..Default::default()
             }
             .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
@@ -140,29 +139,14 @@ impl IssueTokenFixture {
         }
     }
 
-    pub fn with_creator_allocation(self, amount: Balance) -> Self {
-        let creator_member_id = self.params.clone().creator_member_id;
-        self.with_allocation(creator_member_id, amount)
-    }
-
     pub fn with_empty_allocation(self) -> Self {
-        self.with_creator_allocation(0)
+        self.with_allocation(member!(1).0, 0u64.into())
     }
 
     pub fn with_symbol(self, symbol: H256) -> Self {
         Self {
             params: IssuanceParams {
                 symbol,
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_creator_id(self, creator_member_id: MemberId) -> Self {
-        Self {
-            params: IssuanceParams {
-                creator_member_id,
                 ..self.params
             },
             ..self

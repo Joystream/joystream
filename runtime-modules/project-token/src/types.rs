@@ -733,9 +733,6 @@ pub struct TokenAllocation<Balance, VestingScheduleParams> {
 /// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug, TypeInfo)]
 pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, MemberId: Ord> {
-    /// Creator Member id
-    pub creator_member_id: MemberId,
-
     /// Initial allocation of the token
     pub initial_allocation: BTreeMap<MemberId, TokenAllocation>,
 

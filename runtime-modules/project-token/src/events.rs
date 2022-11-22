@@ -184,6 +184,7 @@ decl_event! {
         /// Params:
         /// - token id
         /// - member id
-        AmmDeactivated(TokenId, MemberId),
+        /// - amm treasury amount burned upon deactivation
+        AmmDeactivated(TokenId, MemberId, JoyBalance),
     }
 }

@@ -83,6 +83,9 @@ pub trait PalletToken<
     /// Establish whether the token has an unfinalized sale
     fn is_sale_unscheduled(token_id: TokenId) -> bool;
 
+    /// Establish weather AMM is active for the token
+    fn is_amm_active(token_id: TokenId) -> bool;
+
     /// Activate Amm functionality for the token
     fn activate_amm(
         token_id: TokenId,

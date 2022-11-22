@@ -823,7 +823,6 @@ decl_module! {
         /// Postconditions
         /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
         /// - respective JOY amount transferred from user balance to amm treasury account
-        /// - percentage of the minted CRT transferred to the token content creator (creator reward)
         /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
         fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
@@ -1003,6 +1002,15 @@ impl<T: Config>
             return token_info.sale.is_none();
         }
         true
+    }
+
+    /// Establish whether AMM is active
+    /// Postconditions: true if token @ token_id exists && has active AMM, false otherwise
+    fn is_amm_active(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_info).is_ok();
+        }
+        false
     }
 
     /// Change to permissionless
@@ -1582,11 +1590,15 @@ impl<T: Config>
 
         // burn amount exceeding existential deposit
         let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
-        let amount_to_slash = Joy::<T>::usable_balance(&amm_treasury_account)
+        let amount_to_burn = Joy::<T>::usable_balance(&amm_treasury_account)
             .saturating_sub(T::JoyExistentialDeposit::get());
-        let _ = Joy::<T>::slash(&amm_treasury_account, amount_to_slash);
+        let _ = burn_from_usable::<T>(&amm_treasury_account, amount_to_burn);
 
-        Self::deposit_event(RawEvent::AmmDeactivated(token_id, member_id));
+        Self::deposit_event(RawEvent::AmmDeactivated(
+            token_id,
+            member_id,
+            amount_to_burn,
+        ));
 
         Ok(())
     }
