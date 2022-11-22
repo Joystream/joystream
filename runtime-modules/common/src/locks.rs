@@ -14,7 +14,7 @@ parameter_types! {
     pub const BoundStakingAccountLockId: LockIdentifier = *b"boundsta";
     pub const BountyLockId: LockIdentifier = *b"bounty  ";
     pub const OperationsWorkingGroupAlphaLockId: LockIdentifier = *b"wg-opera";
-    pub const AppWorkingGroupLockId: LockIdentifier = *b"wg-gatew";
+    pub const AppWorkingGroupLockId: LockIdentifier = *b"wg-appli";
     pub const OperationsWorkingGroupBetaLockId: LockIdentifier = *b"wg-operb";
     pub const OperationsWorkingGroupGammaLockId: LockIdentifier = *b"wg-operg";
     pub const DistributionWorkingGroupLockId: LockIdentifier = *b"wg-distr";
