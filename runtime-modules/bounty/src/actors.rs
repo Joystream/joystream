@@ -158,7 +158,7 @@ impl<T: Config> BountyActorManager<T> {
         Ok(())
     }
 
-    // Add some balance from the council budget and slash from the bounty account.
+    // Add some balance to the council budget and slash from the bounty account usable balance.
     fn transfer_balance_to_council_budget(
         bounty_id: T::BountyId,
         amount: BalanceOf<T>,
