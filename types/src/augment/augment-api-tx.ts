@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, WrapperKeepOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonMerkleTreeProofElementRecord, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
+import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonMerkleTreeProofElementRecord, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenAmmParams, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -384,6 +384,10 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       acceptIncomingOffer: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, witnessPrice: Option<u128> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<u128>]>;
       /**
+       * Activate Amm functionality for token
+       **/
+      activateAmm: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenAmmParams | { slope?: any; intercept?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenAmmParams]>;
+      /**
        * Add curator to curator group under given `curator_group_id`
        * 
        * <weight>
@@ -596,6 +600,10 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       creatorTokenIssuerTransfer: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPaymentWithVesting, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting, Bytes]>;
+      /**
+       * Deactivate Amm functionality for token
+       **/
+      deactivateAmm: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Deissue channel's creator token
        * 
@@ -4021,6 +4029,22 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       burn: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
+       * Mint desired `token_id` amount into user account via JOY exchnage
+       * Preconditions
+       * - origin, member_id pair must be a valid authentication pair
+       * - token_id must exist
+       * - user usable JOY balance must be enough for bonding (+ existential deposit)
+       * - deadline constraint respected if provided
+       * - slippage tolerance constraints respected if provided
+       * - token total supply and amount value must be s.t. `eval` function doesn't overflow
+       * 
+       * Postconditions
+       * - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
+       * - respective JOY amount transferred from user balance to amm treasury account
+       * - event deposited
+       **/
+      buyOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, deadline: Option<u64> | null | object | string | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]>;
+      /**
        * Allow any user to remove an account
        * 
        * Preconditions:
@@ -4178,6 +4202,25 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       purchaseTokensOnSale: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
+      /**
+       * Burn desired `token_id` amount from user account and get JOY from treasury account
+       * Preconditions
+       * - origin, member_id pair must be a valid authentication pair
+       * - token_id must exist
+       * - token_id, member_id must be valid account coordinates
+       * - user usable CRT balance must be at least `amount`
+       * - deadline constraint respected if provided
+       * - slippage tolerance constraints respected if provided
+       * - token total supply and amount value must be s.t. `eval` function doesn't overflow
+       * - amm treasury account must have sufficient JOYs for the operation
+       * 
+       * Postconditions
+       * - `amount` burned from user account
+       * - total supply decreased by amount
+       * - respective JOY amount transferred from amm treasury account to user account
+       * - event deposited
+       **/
+      sellOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, deadline: Option<u64> | null | object | string | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]>;
       /**
        * Allow to transfer from `src_member_id` account to the various `outputs` beneficiaries
        * in the specified amounts.

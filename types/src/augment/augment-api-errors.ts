@@ -384,6 +384,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
+       * Channel Transfers are blocked during active AMM
+       **/
+      ChannelTransfersBlockedDuringActiveAmm: AugmentedError<ApiType>;
+      /**
        * Channel Transfers are blocked during revenue splits
        **/
       ChannelTransfersBlockedDuringRevenueSplits: AugmentedError<ApiType>;
@@ -2277,6 +2281,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CannotDeissueTokenWithOutstandingAccounts: AugmentedError<ApiType>;
       /**
+       * No Sale if Amm is active
+       **/
+      CannotInitSaleIfAmmIsActive: AugmentedError<ApiType>;
+      /**
        * Attempt to issue in a split with zero allocation amount
        **/
       CannotIssueSplitWithZeroAllocationAmount: AugmentedError<ApiType>;
@@ -2292,6 +2300,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to participate in a split with zero token to stake
        **/
       CannotParticipateInSplitWithZeroAmount: AugmentedError<ApiType>;
+      /**
+       * Deadline constraint not satisfied
+       **/
+      DeadlineExpired: AugmentedError<ApiType>;
       /**
        * At least one of the members provided as part of InitialAllocation does not exist
        **/
@@ -2309,9 +2321,21 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InsufficientJoyBalance: AugmentedError<ApiType>;
       /**
+       * Creator token balance is insufficient
+       **/
+      InsufficientTokenBalance: AugmentedError<ApiType>;
+      /**
        * Account's transferrable balance is insufficient to perform the transfer or initialize token sale
        **/
       InsufficientTransferrableBalance: AugmentedError<ApiType>;
+      /**
+       * Invalid bonding curve construction parameters
+       **/
+      InvalidCurveParameters: AugmentedError<ApiType>;
+      /**
+       * Deadline timestamp lower than now
+       **/
+      InvalidTimestampSpecified: AugmentedError<ApiType>;
       /**
        * The amount of JOY to be transferred is not enough to keep the destination account alive
        **/
@@ -2334,6 +2358,11 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NotEnoughTokensOnSale: AugmentedError<ApiType>;
       /**
+       * ------ AMM ---------------------------------------------------------
+       * not in AMM state
+       **/
+      NotInAmmState: AugmentedError<ApiType>;
+      /**
        * There are no remaining tokes to recover from the previous token sale.
        **/
       NoTokensToRecover: AugmentedError<ApiType>;
@@ -2341,6 +2370,10 @@ declare module '@polkadot/api-base/types/errors' {
        * The token has no upcoming sale
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
+      /**
+       * Outstanding amount of CRT bought from AMM too large
+       **/
+      OutstandingBondedAmountTooLarge: AugmentedError<ApiType>;
       /**
        * Previous sale was still not finalized, finalize it first.
        **/
@@ -2415,6 +2448,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Upper bound quantity cannot be zero
        **/
       SaleUpperBoundQuantityIsZero: AugmentedError<ApiType>;
+      /**
+       * Slippage tolerance constraint tolerance not satisfied
+       **/
+      SlippageToleranceExceeded: AugmentedError<ApiType>;
       /**
        * Target Rate is higher than current patronage rate
        **/
