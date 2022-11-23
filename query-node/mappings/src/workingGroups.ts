@@ -358,6 +358,11 @@ async function handleTerminatedWorker({ store, event }: EventContext & StoreCont
   worker.isActive = isWorkerActive(worker)
 
   await store.save<Worker>(worker)
+
+  if (worker.isLead) {
+    group.leader = undefined
+    await store.save<WorkingGroup>(group)
+  }
 }
 
 export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?: string): Promise<LeaderSetEvent> {
