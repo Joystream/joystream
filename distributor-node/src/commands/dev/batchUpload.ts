@@ -51,6 +51,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
     const { bagId, bucketId, batchSize, batchesCount, endpoint } = this.parse(DevBatchUpload).flags
     const sudoKey = (await api.query.sudo.key()).unwrap().toHuman()
     const dataFee = await api.query.storage.dataObjectPerMegabyteFee()
+    const bloatBond = await api.query.storage.dataObjectStateBloatBondValue()
 
     for (let i = 0; i < batchesCount; ++i) {
       const nextObjectId = (await api.query.storage.nextDataObjectId()).toNumber()
@@ -70,6 +71,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
                 },
               ],
               expectedDataSizeFee: dataFee,
+              expectedDataObjectStateBloatBond: bloatBond,
               bagId: new BagIdParserService(bagId).parse(),
             })
           ),

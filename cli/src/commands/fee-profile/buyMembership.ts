@@ -89,8 +89,7 @@ export default class FeeProfileBuyMembershipCommand extends FeeProfileCommandBas
         referrerId: null,
       })
     )
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    const costs = { membershipPrice, txFee }
-    this.profile(costs)
+    const extraCosts = { membershipPrice }
+    await this.profile(tx, extraCosts)
   }
 }

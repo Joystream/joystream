@@ -2,11 +2,12 @@ import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
 import * as express from 'express'
 import _ from 'lodash'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import { WebApiError, sendResponseWithError, AppConfig } from './common'
+import { sendResponseWithError, AppConfig } from './common'
 import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
 import NodeCache from 'node-cache'
+import { DataObjectResponse, DataStatsResponse, GetLocalDataObjectsByBagIdParams, VersionResponse } from '../types'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
@@ -23,7 +24,7 @@ const dataCache = new NodeCache({
  */
 export async function getAllLocalDataObjects(
   req: express.Request,
-  res: express.Response<unknown, AppConfig>,
+  res: express.Response<DataObjectResponse, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
   try {
@@ -42,7 +43,7 @@ export async function getAllLocalDataObjects(
  */
 export async function getLocalDataStats(
   req: express.Request,
-  res: express.Response<unknown, AppConfig>,
+  res: express.Response<DataStatsResponse, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
   try {
@@ -75,7 +76,7 @@ export async function getLocalDataStats(
 
     res.status(200).json({
       objectNumber,
-      totalSize,
+      totalSize: totalSize ?? 0,
       tempDownloads,
       tempDirSize,
     })
@@ -88,13 +89,13 @@ export async function getLocalDataStats(
  * A public endpoint: return local data objects for the bag.
  */
 export async function getLocalDataObjectsByBagId(
-  req: express.Request,
-  res: express.Response<unknown, AppConfig>,
+  req: express.Request<GetLocalDataObjectsByBagIdParams>,
+  res: express.Response<DataObjectResponse, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
   try {
     const queryNodeUrl = res.locals.queryNodeEndpoint
-    const bagId = getBagId(req)
+    const { bagId } = req.params
 
     const [ids, requiredIds] = await Promise.all([
       getDataObjectIDs(),
@@ -112,7 +113,10 @@ export async function getLocalDataObjectsByBagId(
 /**
  * A public endpoint: return the server version.
  */
-export async function getVersion(req: express.Request, res: express.Response<unknown, AppConfig>): Promise<void> {
+export async function getVersion(
+  req: express.Request,
+  res: express.Response<VersionResponse, AppConfig>
+): Promise<void> {
   const config = res.locals.process
 
   // Copy from an object, because the actual object could contain more data.
@@ -120,22 +124,6 @@ export async function getVersion(req: express.Request, res: express.Response<unk
     version: config.version,
     userAgent: config.userAgent,
   })
-}
-
-/**
- * Returns Bag ID from the request.
- *
- * @remarks
- * This is a helper function. It parses the request object for a variable and
- * throws an error on failure.
- */
-function getBagId(req: express.Request): string {
-  const bagId = req.params.bagId || ''
-  if (bagId.length > 0) {
-    return bagId
-  }
-
-  throw new WebApiError('No bagId provided.', 400)
 }
 
 /**

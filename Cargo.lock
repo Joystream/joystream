@@ -658,6 +658,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
+name = "call-sizes"
+version = "1.0.0"
+dependencies = [
+ "joystream-node-runtime",
+ "pallet-bounty",
+ "pallet-common",
+ "pallet-constitution",
+ "pallet-content",
+ "pallet-council",
+ "pallet-forum",
+ "pallet-membership",
+ "pallet-project-token",
+ "pallet-proposals-codex",
+ "pallet-proposals-discussion",
+ "pallet-proposals-engine",
+ "pallet-referendum",
+ "pallet-staking-handler",
+ "pallet-storage",
+ "pallet-utility 2.0.0",
+ "pallet-working-group",
+]
+
+[[package]]
 name = "camino"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -745,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "6.8.0"
+version = "8.0.0"
 dependencies = [
  "async-std",
  "clap 3.2.22",
@@ -2713,7 +2736,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "7.4.1"
+version = "8.0.0"
 dependencies = [
  "assert_cmd",
  "async-std",
@@ -2804,7 +2827,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "11.3.0"
+version = "12.1000.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -2831,7 +2854,6 @@ dependencies = [
  "pallet-council",
  "pallet-election-provider-multi-phase",
  "pallet-election-provider-support-benchmarking",
- "pallet-elections-phragmen",
  "pallet-forum",
  "pallet-grandpa",
  "pallet-im-online",
@@ -4525,6 +4547,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "static_assertions",
 ]
 
 [[package]]
@@ -4652,24 +4675,6 @@ dependencies = [
  "parity-scale-codec",
  "sp-npos-elections",
  "sp-runtime",
-]
-
-[[package]]
-name = "pallet-elections-phragmen"
-version = "5.0.0-dev"
-source = "git+https://github.com/joystream/substrate.git?rev=d29a53b11c3e530d1656eef502cb0f1f8fff3522#d29a53b11c3e530d1656eef502cb0f1f8fff3522"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-npos-elections",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -7645,6 +7650,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e44969a61f5d316be20a42ff97816efb3b407a924d06824c3d8a49fa8450de0e"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "session-keys"
+version = "1.0.0"
+dependencies = [
+ "async-std",
+ "clap 3.2.22",
+ "enum-utils",
+ "futures-util",
+ "joystream-node",
+ "rand 0.8.5",
+ "sc-chain-spec",
+ "sc-keystore",
+ "sc-telemetry",
+ "serde_json",
+ "sp-core",
+ "sp-keystore",
 ]
 
 [[package]]

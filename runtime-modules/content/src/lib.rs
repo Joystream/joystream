@@ -63,6 +63,7 @@ pub use common::{
     council::CouncilBudgetManager,
     membership::MembershipInfoProvider,
     merkle_tree::Side,
+    to_kb,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
     MembershipTypes, StorageOwnership, Url,
 };
@@ -550,7 +551,7 @@ decl_module! {
         /// - `B` is the number of items in `params.storage_buckets`
         /// - `C` is the number of items in `params.distribution_buckets`
         /// - `D` is the number of items in `params.assets.object_creation_list`
-        /// - `E` is the length of  `params.meta`
+        /// - `E` is the size of  `params.meta` in kilobytes
         /// - DB:
         ///    - `O(A + B + C + D)` - from the the generated weights
         /// # </weight>
@@ -668,7 +669,7 @@ decl_module! {
         /// - `A` is the number of entries in `params.collaborators`
         /// - `B` is the number of items in `params.assets_to_upload.object_creation_list` (if provided)
         /// - `C` is the number of items in `params.assets_to_remove`
-        /// - `D` is the length `params.new_meta`
+        /// - `D` is the size of `params.new_meta` in kilobytes
         /// - `E` is `params.storage_buckets_num_witness` (if provided)
         /// - DB:
         ///    - `O(A + B + C + E)` - from the the generated weights
@@ -805,7 +806,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (A)` where:
-        /// - `A` is the length of `rationale`
+        /// - `A` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -905,7 +906,7 @@ decl_module! {
         /// `O (A + B + C)` where:
         /// - `A` is the length of `assets_to_remove`
         /// - `B` is the value of `storage_buckets_num_witness`
-        /// - `C` is the length of `rationale`
+        /// - `C` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - `O(A + B)` - from the the generated weights
         /// # </weight>
@@ -1012,7 +1013,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (A)` where:
-        /// - `A` is the length of `rationale`
+        /// - `A` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -1050,7 +1051,7 @@ decl_module! {
         /// - `A` is the number of items in `params.assets.object_creation_list`
         /// - `B` is `params.storage_buckets_num_witness`
         /// - `C` is the length of open auction / english auction whitelist (if provided)
-        /// - `D` is the length of `params.meta` (if provided)
+        /// - `D` is the size of `params.meta` in kilobytes (if provided)
         /// - DB:
         ///    - `O(A + B + C)` - from the the generated weights
         /// # </weight>
@@ -1185,7 +1186,7 @@ decl_module! {
         /// - `B` is params.assets_to_remove.len()
         /// - `C` is `params.storage_buckets_num_witness` (if provided)
         /// - `D` is the length of open auction / english auction whitelist (if provided)
-        /// - `E` is the length of `params.new_meta` (if provided)
+        /// - `E` is the size of `params.new_meta` in kilobytes (if provided)
         /// - DB:
         ///    - `O(A + B + C + D)` - from the the generated weights
         /// # </weight>
@@ -1364,7 +1365,7 @@ decl_module! {
         /// `O (A + B + C)` where:
         /// - `A` is the length of `assets_to_remove`
         /// - `B` is the value of `storage_buckets_num_witness`
-        /// - `C` is the length of `rationale`
+        /// - `C` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - `O(A + B)` - from the the generated weights
         /// # </weight>
@@ -1434,7 +1435,7 @@ decl_module! {
         /// `O (A + B + C)` where:
         /// - `A` is the value of `num_objects_to_delete`
         /// - `B` is the value of `storage_buckets_num_witness`
-        /// - `C` is the length of `rationale`
+        /// - `C` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - `O(A + B)` - from the the generated weights
         /// # </weight>
@@ -1483,7 +1484,7 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (A)` where:
-        /// - `A` is the length of `rationale`
+        /// - `A` is the size of `rationale` in kilobytes
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
@@ -1799,7 +1800,7 @@ decl_module! {
         ///    - O(W)
         /// where:
         ///    - W : member whitelist length in case nft initial status is auction
-        ///    - B : bytelength of metadata parameter
+        ///    - B : size of metadata parameter in kilobytes
         /// # </weight>
         #[weight = Module::<T>::create_issue_nft_weight(params)]
         pub fn issue_nft(
@@ -2971,9 +2972,9 @@ decl_module! {
         /// - DB:
         ///    - O(1)
         /// where:
-        /// - B is the byte lenght of `msg`
+        /// - B is the kilobyte lenght of `msg`
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::channel_owner_remark(msg.len() as u32)]
+        #[weight = WeightInfoContent::<T>::channel_owner_remark(to_kb(msg.len() as u32))]
         pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2996,7 +2997,7 @@ decl_module! {
         /// where:
         ///   - B is the byte lenght of `msg`
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::channel_agent_remark(msg.len() as u32)]
+        #[weight = WeightInfoContent::<T>::channel_agent_remark(to_kb(msg.len() as u32))]
         pub fn channel_agent_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -3018,7 +3019,7 @@ decl_module! {
         /// where:
         ///   - B is the byte lenght of `msg`
         /// # </weight>
-        #[weight = WeightInfoContent::<T>::nft_owner_remark(msg.len() as u32)]
+        #[weight = WeightInfoContent::<T>::nft_owner_remark(to_kb(msg.len() as u32))]
         pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
@@ -3305,12 +3306,12 @@ decl_module! {
         ///
         /// ## Weight
         /// `O (A)` where:
-        /// - `A` is the length of `params.metadata` (or 0 if not provided)
+        /// - `A` is the size of `params.metadata` in kilobytes (or 0 if not provided)
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoContent::<T>::init_creator_token_sale(
-            params.metadata.as_ref().map_or(0u32, |v| v.len() as u32)
+            to_kb(params.metadata.as_ref().map_or(0u32, |v| v.len() as u32))
         )]
         pub fn init_creator_token_sale(
             origin,
@@ -3412,13 +3413,13 @@ decl_module! {
         /// ## Weight
         /// `O (A + B)` where:
         /// - `A` is the number of entries in `outputs`
-        /// - `B` is the length of the `metadata`
+        /// - `B` is the size of the `metadata` in kilobytes
         /// - DB:
         ///    - `O(A)` - from the the generated weights
         /// # </weight>
         #[weight = WeightInfoContent::<T>::creator_token_issuer_transfer(
             outputs.0.len() as u32,
-            metadata.len() as u32
+            to_kb(metadata.len() as u32)
         )]
         pub fn creator_token_issuer_transfer(
             origin,
@@ -4561,7 +4562,7 @@ impl<T: Config> Module<T> {
             .map_or(0, |v| v.object_creation_list.len()) as u32;
 
         //metadata
-        let e = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
+        let e = to_kb(params.meta.as_ref().map_or(0, |v| v.len()) as u32);
 
         WeightInfoContent::<T>::create_channel(a, b, c, d, e)
     }
@@ -4585,7 +4586,7 @@ impl<T: Config> Module<T> {
             let c = params.assets_to_remove.len() as u32;
 
             //new metadata
-            let d = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+            let d = to_kb(params.new_meta.as_ref().map_or(0, |v| v.len()) as u32);
 
             // storage_buckets_num witness
             let e = params.storage_buckets_num_witness.unwrap_or(0);
@@ -4596,7 +4597,7 @@ impl<T: Config> Module<T> {
             let a = params.collaborators.as_ref().map_or(0, |v| v.len()) as u32;
 
             //new metadata
-            let b = params.new_meta.as_ref().map_or(0, |v| v.len()) as u32;
+            let b = to_kb(params.new_meta.as_ref().map_or(0, |v| v.len()) as u32);
 
             WeightInfoContent::<T>::channel_update_without_assets(a, b)
         }
@@ -4632,10 +4633,10 @@ impl<T: Config> Module<T> {
 
         if let Some(nft_params) = params.auto_issue_nft.as_ref() {
             let c = Self::extract_nft_auction_whitelist_size_len(nft_params);
-            let d = params.meta.as_ref().map_or(0, |m| m.len() as u32);
+            let d = to_kb(params.meta.as_ref().map_or(0, |m| m.len() as u32));
             WeightInfoContent::<T>::create_video_with_nft(a, b, c, d)
         } else {
-            let c = params.meta.as_ref().map_or(0, |m| m.len() as u32);
+            let c = to_kb(params.meta.as_ref().map_or(0, |m| m.len() as u32));
             WeightInfoContent::<T>::create_video_without_nft(a, b, c)
         }
     }
@@ -4647,12 +4648,12 @@ impl<T: Config> Module<T> {
 
         match (assets_touched, params.auto_issue_nft.as_ref()) {
             (false, None) => {
-                let a = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                let a = to_kb(params.new_meta.as_ref().map_or(0, |m| m.len() as u32));
                 WeightInfoContent::<T>::update_video_without_assets_without_nft(a)
             }
             (false, Some(nft_params)) => {
                 let a = Self::extract_nft_auction_whitelist_size_len(nft_params);
-                let b = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                let b = to_kb(params.new_meta.as_ref().map_or(0, |m| m.len() as u32));
                 WeightInfoContent::<T>::update_video_without_assets_with_nft(a, b)
             }
             (true, nft_params) => {
@@ -4664,10 +4665,10 @@ impl<T: Config> Module<T> {
                 let c = params.storage_buckets_num_witness.unwrap_or(0u32);
                 if let Some(nft_params) = nft_params {
                     let d = Self::extract_nft_auction_whitelist_size_len(nft_params);
-                    let e = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                    let e = to_kb(params.new_meta.as_ref().map_or(0, |m| m.len() as u32));
                     WeightInfoContent::<T>::update_video_with_assets_with_nft(a, b, c, d, e)
                 } else {
-                    let d = params.new_meta.as_ref().map_or(0, |m| m.len() as u32);
+                    let d = to_kb(params.new_meta.as_ref().map_or(0, |m| m.len() as u32));
                     WeightInfoContent::<T>::update_video_with_assets_without_nft(a, b, c, d)
                 }
             }
@@ -4754,13 +4755,13 @@ impl<T: Config> Module<T> {
     // calculates nft issuance weights
     fn create_issue_nft_weight(params: &NftIssuanceParameters<T>) -> Weight {
         let whitelist_size = Self::extract_nft_auction_whitelist_size_len(params);
-        let metadata_size = params.nft_metadata.len() as u32;
-        WeightInfoContent::<T>::issue_nft(whitelist_size, metadata_size)
+        let metadata_kb = to_kb(params.nft_metadata.len() as u32);
+        WeightInfoContent::<T>::issue_nft(whitelist_size, metadata_kb)
     }
 
     // Calculates weight for set_channel_paused_features_as_moderator extrinsic.
     fn set_channel_paused_features_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
-        let a = (*rationale).len() as u32;
+        let a = to_kb((*rationale).len() as u32);
 
         WeightInfoContent::<T>::set_channel_paused_features_as_moderator(a)
     }
@@ -4776,7 +4777,7 @@ impl<T: Config> Module<T> {
         //storage_buckets_num_witness storage_buckets_num
         let b = *storage_buckets_num_witness;
         //rationale
-        let c = (*rationale).len() as u32;
+        let c = to_kb((*rationale).len() as u32);
         WeightInfoContent::<T>::delete_channel_assets_as_moderator(a, b, c)
     }
 
@@ -4796,20 +4797,20 @@ impl<T: Config> Module<T> {
         let c = (*channel_bag_witness).distribution_buckets_num;
 
         //rationale
-        let d = (*rationale).len() as u32;
+        let d = to_kb((*rationale).len() as u32);
         WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c, d)
     }
 
     // Calculates weight for set_channel_visibility_as_moderator extrinsic.
     fn set_channel_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
-        let a = (*rationale).len() as u32;
+        let a = to_kb((*rationale).len() as u32);
 
         WeightInfoContent::<T>::set_channel_visibility_as_moderator(a)
     }
 
     // Calculates weight for set_video_visibility_as_moderator extrinsic.
     fn set_video_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
-        let a = (*rationale).len() as u32;
+        let a = to_kb((*rationale).len() as u32);
 
         WeightInfoContent::<T>::set_video_visibility_as_moderator(a)
     }
@@ -4827,7 +4828,7 @@ impl<T: Config> Module<T> {
         let b = *storage_buckets_num_witness;
 
         //rationale
-        let c = (*rationale).len() as u32;
+        let c = to_kb((*rationale).len() as u32);
 
         WeightInfoContent::<T>::delete_video_assets_as_moderator(a, b, c)
     }
@@ -4846,12 +4847,12 @@ impl<T: Config> Module<T> {
             let b = storage_buckets_num_witness.map_or(0, |v| v);
 
             //rationale
-            let c = (*rationale).len() as u32;
+            let c = to_kb((*rationale).len() as u32);
 
             WeightInfoContent::<T>::delete_video_as_moderator_with_assets(a, b, c)
         } else {
             //rationale
-            let a = (*rationale).len() as u32;
+            let a = to_kb((*rationale).len() as u32);
 
             WeightInfoContent::<T>::delete_video_as_moderator_without_assets(a)
         }

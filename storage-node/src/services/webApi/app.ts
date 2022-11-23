@@ -6,7 +6,7 @@ import * as OpenApiValidator from 'express-openapi-validator'
 import { HttpError, OpenAPIV3, ValidateSecurityOpts } from 'express-openapi-validator/dist/framework/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import { RequestData, verifyTokenSignature, parseUploadToken, UploadToken } from '../helpers/auth'
+import { verifyTokenSignature, parseUploadToken } from '../helpers/auth'
 import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
 import { AppConfig, sendResponseWithError, WebApiError } from './controllers/common'
 import { verifyBagAssignment, verifyBucketId } from './controllers/filesApi'
@@ -18,6 +18,7 @@ import {
 } from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
+import { UploadFileQueryParams, UploadToken } from './types'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -157,7 +158,7 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
     const tokenString = req.headers['x-api-key'] as string
     const token = parseUploadToken(tokenString)
 
-    const sourceTokenRequest: RequestData = {
+    const sourceTokenRequest: UploadFileQueryParams = {
       dataObjectId: req.query.dataObjectId?.toString() || '',
       storageBucketId: req.query.storageBucketId?.toString() || '',
       bagId: req.query.bagId?.toString() || '',
@@ -176,16 +177,16 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
  * @param token - token object
  * @param request - data from the request to validate token
  */
-function verifyUploadTokenData(accountAddress: string, token: UploadToken, request: RequestData): void {
+function verifyUploadTokenData(accountAddress: string, token: UploadToken, request: UploadFileQueryParams): void {
   if (!verifyTokenSignature(token, accountAddress)) {
     throw new Error('Invalid signature')
   }
 
-  if (token.data.dataObjectId !== request.dataObjectId) {
+  if (token.data.dataObjectId.toString() !== request.dataObjectId) {
     throw new Error('Unexpected dataObjectId')
   }
 
-  if (token.data.storageBucketId !== request.storageBucketId) {
+  if (token.data.storageBucketId.toString() !== request.storageBucketId) {
     throw new Error('Unexpected storageBucketId')
   }
 

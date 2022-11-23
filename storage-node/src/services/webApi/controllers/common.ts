@@ -3,6 +3,7 @@ import { ExtrinsicFailedError } from '../../runtime/api'
 import { BagIdValidationError } from '../../helpers/bagTypes'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { ErrorResponse } from '../types'
 
 /**
  * Dedicated error for the web api requests.
@@ -42,10 +43,9 @@ export function sendResponseWithError(
 ): void {
   const message = isNofileError(err) ? `File not found.` : err.toString()
 
-  res.status(getHttpStatusCodeByError(err)).json({
-    type: errorType,
-    message,
-  })
+  const response: ErrorResponse = { type: errorType, message }
+
+  res.status(getHttpStatusCodeByError(err)).json(response)
 
   next(err)
 }
