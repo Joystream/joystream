@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-mod bonding_curve;
+mod amm;
 mod canonical;
 mod fixtures;
 pub mod mock;

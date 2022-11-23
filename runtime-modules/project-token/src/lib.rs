@@ -169,10 +169,10 @@ decl_storage! { generate_storage_info
         pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill;
 
         /// Bond Transaction fee percentage
-        pub BondTxFees get(fn bond_tx_fees) config(): Permill;
+        pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill;
 
         /// Bond Transaction fee percentage
-        pub UnbondTxFees get(fn unbond_tx_fees) config(): Permill;
+        pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill;
     }
 
     add_extra_genesis {
@@ -825,7 +825,7 @@ decl_module! {
         /// - respective JOY amount transferred from user balance to amm treasury account
         /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
-        fn bond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+        fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -838,13 +838,13 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
-            let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
+            let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
-            let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
-            let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Bond)?;
+            let amm_treasury_account = Self::amm_treasury_account(token_id);
+            let price = curve.eval::<T>(amount, token_data.total_supply, AmmOperation::Buy)?;
             let bloat_bond = Self::bloat_bond();
-            let bond_price = Self::bond_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
+            let bond_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
             let joys_required = if !user_account_data_exists {
                 bond_price.saturating_add(bloat_bond)
@@ -874,7 +874,7 @@ decl_module! {
                             RepayableBloatBond::new(bloat_bond, None)
                     );
                 Self::do_insert_new_account_for_token(token_id, &member_id, new_account_info);
-                Self::transfer_joy(&sender, &Self::module_treasury_account(), bloat_bond)?;
+                Self::transfer_joy(&sender, &amm_treasury_account, bloat_bond)?;
             } else {
                 AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
                     account_data.increase_amount_by(amount);
@@ -883,11 +883,11 @@ decl_module! {
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.increase_supply_by(amount);
-                token_data.increase_bonded_amount_by(amount);
+                token_data.increase_amm_bought_amount_by(amount);
             });
 
             // TODO: redirect tx fees revenue to council
-            Self::transfer_joy(&sender, &amm_reserve_account, bond_price)?;
+            Self::transfer_joy(&sender, &amm_treasury_account, bond_price)?;
 
             Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, bond_price));
 
@@ -911,7 +911,7 @@ decl_module! {
         /// - respective JOY amount transferred from amm treasury account to user account
         /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
-        fn unbond(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -924,7 +924,7 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
-            let curve = token_data.bonding_curve.ok_or(Error::<T>::NotInAmmState)?;
+            let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
             let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
 
             ensure!(
@@ -932,9 +932,9 @@ decl_module! {
                 Error::<T>::InsufficientTokenBalance,
             );
 
-            let amm_reserve_account = Self::module_bonding_curve_reserve_account(token_id);
+            let amm_treasury_account = Self::amm_treasury_account(token_id);
 
-            let price = curve.eval::<T>(amount, token_data.total_supply, BondOperation::Unbond)?;
+            let price = curve.eval::<T>(amount, token_data.total_supply, AmmOperation::Sell)?;
 
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
@@ -946,10 +946,10 @@ decl_module! {
                 ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
-            let unbond_price = Self::unbond_tx_fees().left_from_one().mul_floor(price);
+            let unbond_price = Self::amm_sell_tx_fees().left_from_one().mul_floor(price);
 
             // TODO: redirect tx fees revenue to council
-            Self::ensure_can_transfer_joy(&amm_reserve_account, unbond_price)?;
+            Self::ensure_can_transfer_joy(&amm_treasury_account, unbond_price)?;
 
             // == MUTATION SAFE ==
 
@@ -959,10 +959,10 @@ decl_module! {
 
             TokenInfoById::<T>::mutate(token_id, |token_data| {
                 token_data.decrease_supply_by(amount);
-                token_data.decrease_bonded_amount_by(amount);
+                token_data.decrease_amm_bought_amount_by(amount);
             });
 
-            Self::transfer_joy(&amm_reserve_account, &sender, unbond_price)?;
+            Self::transfer_joy(&amm_treasury_account, &sender, unbond_price)?;
 
             Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, unbond_price));
 
@@ -983,7 +983,7 @@ impl<T: Config>
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
         TransfersWithVestingOf<T>,
-        BondingCurveParams,
+        AmmParams,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -1534,13 +1534,13 @@ impl<T: Config>
     /// - offering state for `token_id` must be `Idle`
     ///
     /// Postconditions
-    /// - token `bonding_curve` activated with specified parameters
-    /// - amm account created with existential deposit (if necessary)
+    /// - token `amm_curve` activated with specified parameters
+    /// - amm treasuryaccount created with existential deposit (if necessary)
     /// - event deposited
     fn activate_amm(
         token_id: T::TokenId,
         member_id: T::MemberId,
-        params: BondingCurveParams,
+        params: AmmParams,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
 
@@ -1551,13 +1551,13 @@ impl<T: Config>
 
         // == MUTATION SAFE ==
 
-        let curve = BondingCurveOf::<T>::from_params(params);
+        let curve = AmmCurveOf::<T>::from_params(params);
         TokenInfoById::<T>::mutate(token_id, |token_data| {
-            token_data.bonding_curve = Some(curve.clone())
+            token_data.amm_curve = Some(curve.clone())
         });
 
         // deposit existential deposit if the account is newly created
-        let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
+        let amm_treasury_account = Self::amm_treasury_account(token_id);
         if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
             let _ =
                 Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
@@ -1585,11 +1585,11 @@ impl<T: Config>
         // == MUTATION SAFE ==
 
         TokenInfoById::<T>::mutate(token_id, |token_data| {
-            token_data.bonding_curve = None;
+            token_data.amm_curve = None;
         });
 
         // burn amount exceeding existential deposit
-        let amm_treasury_account = Self::module_bonding_curve_reserve_account(token_id);
+        let amm_treasury_account = Self::amm_treasury_account(token_id);
         let amount_to_burn = Joy::<T>::usable_balance(&amm_treasury_account)
             .saturating_sub(T::JoyExistentialDeposit::get());
         let _ = burn_from_usable::<T>(&amm_treasury_account, amount_to_burn);
@@ -1874,7 +1874,7 @@ impl<T: Config> Module<T> {
     }
 
     /// Returns teh account for the bonding curve treasury
-    pub fn module_bonding_curve_reserve_account(token_id: T::TokenId) -> T::AccountId {
+    pub fn amm_treasury_account(token_id: T::TokenId) -> T::AccountId {
         <T as Config>::ModuleId::get().into_sub_account_truncating(&("AMM", token_id))
     }
 
@@ -2128,10 +2128,13 @@ impl<T: Config> Module<T> {
     }
 
     pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {
-        let BondingCurve { amount_minted, .. } =
-            OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(token)?;
+        let AmmCurve {
+            amount_bought_on_amm,
+            ..
+        } = OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(token)?;
         let threshold = Self::amm_deactivation_threshold();
-        let pct_of_issuance_minted = Permill::from_rational(amount_minted, token.total_supply);
+        let pct_of_issuance_minted =
+            Permill::from_rational(amount_bought_on_amm, token.total_supply);
         ensure!(
             pct_of_issuance_minted <= threshold,
             Error::<T>::OutstandingBondedAmountTooLarge

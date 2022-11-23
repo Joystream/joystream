@@ -1096,7 +1096,6 @@ fn issue_token_ok_with_event_deposit() {
 fn issue_token_ok_with_token_info_added() {
     let token_id = token!(1);
     let symbol = Hashing::hash_of(&token_id);
-    let (owner_id, _) = member!(1);
     let transfer_policy = TransferPolicyParams::Permissionless;
     let patronage_rate = yearly_rate!(10);
     let config = GenesisConfigBuilder::new_empty().build();
@@ -1128,7 +1127,7 @@ fn issue_token_ok_with_token_info_added() {
                 next_revenue_split_id: 0,
                 revenue_split: RevenueSplitState::Inactive,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
-                bonding_curve: None,
+                amm_curve: None,
             }
         );
     })

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{BondingCurveParams, Joy, Payment, Transfers, TransfersOf};
+use crate::types::{AmmParams, Joy, Payment, Transfers, TransfersOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -1051,7 +1051,7 @@ impl ExitRevenueSplitFixture {
 pub struct ActivateAmmFixture {
     token_id: TokenId,
     member_id: MemberId,
-    params: BondingCurveParams,
+    params: AmmParams,
 }
 
 impl ActivateAmmFixture {
@@ -1060,10 +1060,10 @@ impl ActivateAmmFixture {
         ActivateAmmFixture {
             token_id: TokenId::one(),
             member_id: creator_member_id,
-            params: BondingCurveParams {
+            params: AmmParams {
                 // like Deso: https://docs.deso.org/about-deso-chain/readme#the-creator-coin-supply-curve
-                slope: BONDING_CURVE_SLOPE,
-                intercept: BONDING_CURVE_INTERCEPT,
+                slope: AMM_CURVE_SLOPE,
+                intercept: AMM_CURVE_INTERCEPT,
             },
         }
     }
@@ -1077,7 +1077,7 @@ impl ActivateAmmFixture {
     }
 
     pub fn with_linear_function_params(self, a: Permill, b: Permill) -> Self {
-        let params = BondingCurveParams {
+        let params = AmmParams {
             slope: a,
             intercept: b,
         };
@@ -1098,7 +1098,7 @@ impl ActivateAmmFixture {
     }
 }
 
-pub struct BondFixture {
+pub struct AmmBuyFixture {
     sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
@@ -1107,14 +1107,14 @@ pub struct BondFixture {
     slippage_tolerance: Option<(Permill, Balance)>,
 }
 
-impl BondFixture {
+impl AmmBuyFixture {
     pub fn default() -> Self {
         let (member_id, sender) = member!(2);
         Self {
             sender,
             token_id: One::one(),
             member_id,
-            amount: Balance::from(DEFAULT_BONDING_AMOUNT),
+            amount: Balance::from(DEFAULT_AMM_BUY_AMOUNT),
             deadline: None,
             slippage_tolerance: None,
         }
@@ -1152,7 +1152,7 @@ impl BondFixture {
 
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
-        let result = Token::bond(
+        let result = Token::buy_on_amm(
             Origin::signed(self.sender),
             self.token_id,
             self.member_id,
@@ -1171,7 +1171,7 @@ impl BondFixture {
     }
 }
 
-pub struct UnbondFixture {
+pub struct AmmSellFixture {
     sender: AccountId,
     token_id: TokenId,
     member_id: MemberId,
@@ -1180,14 +1180,14 @@ pub struct UnbondFixture {
     slippage_tolerance: Option<(Permill, Balance)>,
 }
 
-impl UnbondFixture {
+impl AmmSellFixture {
     pub fn default() -> Self {
         let (member_id, sender) = member!(2);
         Self {
             sender,
             token_id: One::one(),
             member_id,
-            amount: Balance::from(DEFAULT_UNBONDING_AMOUNT),
+            amount: Balance::from(DEFAULT_AMM_SELL_AMOUNT),
             deadline: None,
             slippage_tolerance: None,
         }
@@ -1225,7 +1225,7 @@ impl UnbondFixture {
 
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
-        let result = Token::unbond(
+        let result = Token::sell_on_amm(
             Origin::signed(self.sender),
             self.token_id,
             self.member_id,

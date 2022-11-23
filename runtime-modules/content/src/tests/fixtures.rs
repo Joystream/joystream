@@ -2950,7 +2950,7 @@ pub struct ActivateAmmFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    params: BondingCurveParams,
+    params: AmmParams,
 }
 
 impl ActivateAmmFixture {
@@ -2960,7 +2960,7 @@ impl ActivateAmmFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
             // same setup as Deso
-            params: BondingCurveParams {
+            params: AmmParams {
                 slope: Permill::from_perthousand(3),
                 intercept: Permill::zero(),
             },

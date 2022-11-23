@@ -117,7 +117,7 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
     pub next_revenue_split_id: RevenueSplitId,
 
     /// Bonding Curve functionality
-    pub bonding_curve: Option<BondingCurve<Balance>>,
+    pub amm_curve: Option<AmmCurve<Balance>>,
 }
 
 /// Revenue Split State
@@ -572,10 +572,10 @@ where
     }
 }
 
-/// Represents token's bonding curve with linear pricing function y = ax + b
+/// Represents token's amm with linear pricing function y = ax + b
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
-pub struct BondingCurveParams {
+pub struct AmmParams {
     /// Slope parameter : a
     pub slope: Permill,
 
@@ -586,35 +586,35 @@ pub struct BondingCurveParams {
 /// Represents token's bonding curve with linear pricing function y = ax + b
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
-pub struct BondingCurve<Balance> {
+pub struct AmmCurve<Balance> {
     /// Slope parameter : a
     pub slope: Permill,
 
     /// Intercept : b
     pub intercept: Permill,
 
-    // amount minted via the bonding curve so far
-    pub amount_minted: Balance,
+    // amount public bought on amm so far
+    pub amount_bought_on_amm: Balance,
 }
 
 #[derive(Debug)]
-pub(crate) enum BondOperation {
-    Bond,
-    Unbond,
+pub(crate) enum AmmOperation {
+    Sell,
+    Buy,
 }
-impl<Balance: Zero + Copy + Saturating> BondingCurve<Balance> {
-    pub(crate) fn from_params(params: BondingCurveParams) -> Self {
+impl<Balance: Zero + Copy + Saturating> AmmCurve<Balance> {
+    pub(crate) fn from_params(params: AmmParams) -> Self {
         Self {
             slope: params.slope,
             intercept: params.intercept,
-            amount_minted: Balance::zero(),
+            amount_bought_on_amm: Balance::zero(),
         }
     }
     pub(crate) fn eval<T: Config>(
         &self,
         amount: <T as Config>::Balance,
         supply_pre: <T as Config>::Balance,
-        bond_operation: BondOperation,
+        bond_operation: AmmOperation,
     ) -> Result<JoyBalanceOf<T>, DispatchError> {
         let amount_sq = amount
             .checked_mul(&amount)
@@ -626,12 +626,12 @@ impl<Balance: Zero + Copy + Saturating> BondingCurve<Balance> {
             .ok_or(Error::<T>::ArithmeticError)?;
         let third_term = self.slope.mul_floor(mixed);
         let res = match bond_operation {
-            BondOperation::Bond => first_term
+            AmmOperation::Buy => first_term
                 .checked_add(&second_term)
                 .ok_or(Error::<T>::ArithmeticError)?
                 .checked_add(&third_term)
                 .ok_or(Error::<T>::ArithmeticError)?,
-            BondOperation::Unbond => second_term
+            AmmOperation::Sell => second_term
                 .checked_add(&third_term)
                 .ok_or(Error::<T>::ArithmeticError)?
                 .checked_sub(&first_term)
@@ -640,18 +640,18 @@ impl<Balance: Zero + Copy + Saturating> BondingCurve<Balance> {
         Ok(res.into())
     }
 
-    pub(crate) fn increase_bonded_amount_by(&mut self, amount: Balance) {
-        self.amount_minted = self.amount_minted.saturating_add(amount);
+    pub(crate) fn increase_amm_bought_amount_by(&mut self, amount: Balance) {
+        self.amount_bought_on_amm = self.amount_bought_on_amm.saturating_add(amount);
     }
 
-    pub(crate) fn decrease_bonded_amount_by(&mut self, amount: Balance) {
-        self.amount_minted = self.amount_minted.saturating_sub(amount);
+    pub(crate) fn decrease_amm_bought_amount_by(&mut self, amount: Balance) {
+        self.amount_bought_on_amm = self.amount_bought_on_amm.saturating_sub(amount);
     }
 }
 
 /// Represents token's offering state
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum OfferingState<TokenSale, BondingCurve> {
+pub enum OfferingState<TokenSale, AmmCurve> {
     /// Idle state
     Idle,
 
@@ -661,15 +661,15 @@ pub enum OfferingState<TokenSale, BondingCurve> {
     /// Active sale state
     Sale(TokenSale),
 
-    /// state for IBCO, it might get decorated with the JOY reserve
+    /// state for Amm (Bonding Curve), it might get decorated with the JOY reserve
     /// amount for the token
-    BondingCurve(BondingCurve),
+    Amm(AmmCurve),
 }
 
-impl<TokenSale, BondingCurve> OfferingState<TokenSale, BondingCurve> {
+impl<TokenSale, AmmCurve> OfferingState<TokenSale, AmmCurve> {
     pub(crate) fn of<T: crate::Config>(token: &TokenDataOf<T>) -> OfferingStateOf<T> {
-        if let Some(curve) = token.bonding_curve.clone() {
-            OfferingStateOf::<T>::BondingCurve(curve)
+        if let Some(curve) = token.amm_curve.clone() {
+            OfferingStateOf::<T>::Amm(curve)
         } else {
             token
                 .sale
@@ -716,9 +716,9 @@ impl<TokenSale, BondingCurve> OfferingState<TokenSale, BondingCurve> {
 
     pub(crate) fn ensure_bonding_curve_of<T: crate::Config>(
         token: &TokenDataOf<T>,
-    ) -> Result<BondingCurveOf<T>, DispatchError> {
+    ) -> Result<AmmCurveOf<T>, DispatchError> {
         match Self::of::<T>(token) {
-            OfferingStateOf::<T>::BondingCurve(curve) => Ok(curve),
+            OfferingStateOf::<T>::Amm(curve) => Ok(curve),
             _ => Err(Error::<T>::NotInAmmState.into()),
         }
     }
@@ -1384,19 +1384,19 @@ where
             next_revenue_split_id: 0,
             // TODO: revenue split rate might be subjected to constraints: https://github.com/Joystream/atlas/issues/2728
             revenue_split_rate: params.revenue_split_rate,
-            bonding_curve: None,
+            amm_curve: None,
         })
     }
 
-    pub(crate) fn increase_bonded_amount_by(&mut self, amount: Balance) {
-        if let Some(curve) = self.bonding_curve.as_mut() {
-            curve.increase_bonded_amount_by(amount)
+    pub(crate) fn increase_amm_bought_amount_by(&mut self, amount: Balance) {
+        if let Some(curve) = self.amm_curve.as_mut() {
+            curve.increase_amm_bought_amount_by(amount)
         }
     }
 
-    pub(crate) fn decrease_bonded_amount_by(&mut self, amount: Balance) {
-        if let Some(curve) = self.bonding_curve.as_mut() {
-            curve.decrease_bonded_amount_by(amount)
+    pub(crate) fn decrease_amm_bought_amount_by(&mut self, amount: Balance) {
+        if let Some(curve) = self.amm_curve.as_mut() {
+            curve.decrease_amm_bought_amount_by(amount)
         }
     }
 }
@@ -1588,7 +1588,7 @@ pub(crate) type TokenSaleOf<T> = TokenSale<
 >;
 
 /// Alias for OfferingState
-pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>, BondingCurveOf<T>>;
+pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>, AmmCurveOf<T>>;
 
 /// Alias for UploadContext
 pub type UploadContextOf<T> = UploadContext<<T as frame_system::Config>::AccountId, BagId<T>>;
@@ -1642,4 +1642,4 @@ pub type VestingSchedulesOf<T> = BoundedBTreeMap<
 >;
 
 /// Alias for the bonding curve
-pub type BondingCurveOf<T> = BondingCurve<<T as Config>::Balance>;
+pub type AmmCurveOf<T> = AmmCurve<<T as Config>::Balance>;

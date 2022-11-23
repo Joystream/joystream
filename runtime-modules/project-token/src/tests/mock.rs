@@ -635,12 +635,12 @@ pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
 pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * revenue * rate
 
 // ------ Bonding Curve Constants ------------
-pub const DEFAULT_BONDING_AMOUNT: u128 = 1000;
-pub const DEFAULT_UNBONDING_AMOUNT: u128 = 100;
-pub const BONDING_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
-pub const BONDING_CURVE_INTERCEPT: Permill = Permill::from_perthousand(1);
-pub const DEFAULT_BONDING_FEES: Permill = Permill::from_percent(1);
-pub const DEFAULT_UNBONDING_FEES: Permill = Permill::from_percent(10);
+pub const DEFAULT_AMM_BUY_AMOUNT: u128 = 1000;
+pub const DEFAULT_AMM_SELL_AMOUNT: u128 = 100;
+pub const AMM_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
+pub const AMM_CURVE_INTERCEPT: Permill = Permill::from_perthousand(1);
+pub const DEFAULT_AMM_BUY_FEES: Permill = Permill::from_percent(1);
+pub const DEFAULT_AMM_SELL_FEES: Permill = Permill::from_percent(10);
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -705,27 +705,27 @@ pub fn set_staking_candidate_lock(
     <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
 
-pub(crate) fn bonding_function_values(
+pub(crate) fn amm_function_values(
     amount: Balance,
     token_id: TokenId,
-    bond_operation: BondOperation,
+    bond_operation: AmmOperation,
 ) -> JoyBalance {
     let supply = Token::token_info_by_id(token_id).total_supply;
     let supply2 = supply * supply;
-    let sq_coeff = BONDING_CURVE_SLOPE / 2;
+    let sq_coeff = AMM_CURVE_SLOPE / 2;
     let res = match bond_operation {
-        BondOperation::Bond => {
+        AmmOperation::Buy => {
             sq_coeff * ((supply + amount) * (supply + amount) - supply2)
-                + BONDING_CURVE_INTERCEPT * amount
+                + AMM_CURVE_INTERCEPT * amount
         }
-        BondOperation::Unbond => {
+        AmmOperation::Sell => {
             sq_coeff * (supply2 - (supply - amount) * (supply - amount))
-                + BONDING_CURVE_INTERCEPT * amount
+                + AMM_CURVE_INTERCEPT * amount
         }
     };
 
     match bond_operation {
-        BondOperation::Bond => res + DEFAULT_BONDING_FEES.mul_floor(res),
-        BondOperation::Unbond => DEFAULT_UNBONDING_FEES.left_from_one().mul_floor(res),
+        AmmOperation::Buy => res + DEFAULT_AMM_BUY_FEES.mul_floor(res),
+        AmmOperation::Sell => DEFAULT_AMM_SELL_FEES.left_from_one().mul_floor(res),
     }
 }

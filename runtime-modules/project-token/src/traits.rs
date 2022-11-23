@@ -14,7 +14,7 @@ pub trait PalletToken<
     TokenSaleParams,
     UploadContext,
     TransfersWithVesting,
-    BondingCurveParams,
+    AmmParams,
 >
 {
     /// Issue token with specified characteristics
@@ -87,11 +87,7 @@ pub trait PalletToken<
     fn is_amm_active(token_id: TokenId) -> bool;
 
     /// Activate Amm functionality for the token
-    fn activate_amm(
-        token_id: TokenId,
-        member_id: MemberId,
-        curve: BondingCurveParams,
-    ) -> DispatchResult;
+    fn activate_amm(token_id: TokenId, member_id: MemberId, curve: AmmParams) -> DispatchResult;
 
     /// Deactivate Amm functionality for the token
     fn deactivate_amm(token_id: TokenId, member_id: MemberId) -> DispatchResult;

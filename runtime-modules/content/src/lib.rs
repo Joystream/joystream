@@ -35,8 +35,8 @@ pub mod weights;
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
-    BondingCurveParams, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf,
-    TransfersWithVestingOf, UploadContextOf, YearlyRate,
+    AmmParams, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
+    UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
 pub use weights::WeightInfo;
@@ -184,7 +184,7 @@ pub trait Config:
         TokenSaleParamsOf<Self>,
         UploadContextOf<Self>,
         TransfersWithVestingOf<Self>,
-        BondingCurveParams,
+        AmmParams,
     >;
 
     /// Minimum cashout allowed limit
@@ -3761,7 +3761,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            params: BondingCurveParams,
+            params: AmmParams,
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
