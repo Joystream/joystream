@@ -815,7 +815,7 @@ decl_module! {
         /// Preconditions
         /// - origin, member_id pair must be a valid authentication pair
         /// - token_id must exist
-        /// - user usable JOY balance must be enough for bonding (+ existential deposit)
+        /// - user usable JOY balance must be enough for buying (+ existential deposit)
         /// - deadline constraint respected if provided
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
@@ -844,12 +844,12 @@ decl_module! {
             let amm_treasury_account = Self::amm_treasury_account(token_id);
             let price = curve.eval::<T>(amount, token_data.total_supply, AmmOperation::Buy)?;
             let bloat_bond = Self::bloat_bond();
-            let bond_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
+            let buy_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
             let joys_required = if !user_account_data_exists {
-                bond_price.saturating_add(bloat_bond)
+                buy_price.saturating_add(bloat_bond)
             } else {
-                bond_price
+                buy_price
             };
 
             Self::ensure_can_transfer_joy(&sender, joys_required)?;
@@ -887,9 +887,9 @@ decl_module! {
             });
 
             // TODO: redirect tx fees revenue to council
-            Self::transfer_joy(&sender, &amm_treasury_account, bond_price)?;
+            Self::transfer_joy(&sender, &amm_treasury_account, buy_price)?;
 
-            Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, bond_price));
+            Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, buy_price));
 
             Ok(())
         }
@@ -946,10 +946,10 @@ decl_module! {
                 ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
-            let unbond_price = Self::amm_sell_tx_fees().left_from_one().mul_floor(price);
+            let sell_price = Self::amm_sell_tx_fees().left_from_one().mul_floor(price);
 
             // TODO: redirect tx fees revenue to council
-            Self::ensure_can_transfer_joy(&amm_treasury_account, unbond_price)?;
+            Self::ensure_can_transfer_joy(&amm_treasury_account, sell_price)?;
 
             // == MUTATION SAFE ==
 
@@ -962,9 +962,9 @@ decl_module! {
                 token_data.decrease_amm_bought_amount_by(amount);
             });
 
-            Self::transfer_joy(&amm_treasury_account, &sender, unbond_price)?;
+            Self::transfer_joy(&amm_treasury_account, &sender, sell_price)?;
 
-            Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, unbond_price));
+            Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, sell_price));
 
             Ok(())
         }
@@ -1008,7 +1008,7 @@ impl<T: Config>
     /// Postconditions: true if token @ token_id exists && has active AMM, false otherwise
     fn is_amm_active(token_id: T::TokenId) -> bool {
         if let Ok(token_info) = Self::ensure_token_exists(token_id) {
-            return OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(&token_info).is_ok();
+            return OfferingStateOf::<T>::ensure_amm_of::<T>(&token_info).is_ok();
         }
         false
     }
@@ -2131,7 +2131,7 @@ impl<T: Config> Module<T> {
         let AmmCurve {
             amount_bought_on_amm,
             ..
-        } = OfferingStateOf::<T>::ensure_bonding_curve_of::<T>(token)?;
+        } = OfferingStateOf::<T>::ensure_amm_of::<T>(token)?;
         let threshold = Self::amm_deactivation_threshold();
         let pct_of_issuance_minted =
             Permill::from_rational(amount_bought_on_amm, token.total_supply);

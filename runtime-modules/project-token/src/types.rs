@@ -116,7 +116,7 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
     /// Latest Token Revenue split (active / inactive)
     pub next_revenue_split_id: RevenueSplitId,
 
-    /// Bonding Curve functionality
+    /// Amm Curve functionality
     pub amm_curve: Option<AmmCurve<Balance>>,
 }
 
@@ -583,7 +583,7 @@ pub struct AmmParams {
     pub intercept: Permill,
 }
 
-/// Represents token's bonding curve with linear pricing function y = ax + b
+/// Represents token's amm curve with linear pricing function y = ax + b
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
 pub struct AmmCurve<Balance> {
@@ -661,8 +661,7 @@ pub enum OfferingState<TokenSale, AmmCurve> {
     /// Active sale state
     Sale(TokenSale),
 
-    /// state for Amm (Bonding Curve), it might get decorated with the JOY reserve
-    /// amount for the token
+    /// state for Amm
     Amm(AmmCurve),
 }
 
@@ -714,7 +713,7 @@ impl<TokenSale, AmmCurve> OfferingState<TokenSale, AmmCurve> {
         }
     }
 
-    pub(crate) fn ensure_bonding_curve_of<T: crate::Config>(
+    pub(crate) fn ensure_amm_of<T: crate::Config>(
         token: &TokenDataOf<T>,
     ) -> Result<AmmCurveOf<T>, DispatchError> {
         match Self::of::<T>(token) {
@@ -903,7 +902,7 @@ pub enum ValidatedWithBloatBond<MemberId, RepayableBloatBond> {
 // implementation
 
 /// Default trait for OfferingState
-impl<TokenSale, BondingCurve> Default for OfferingState<TokenSale, BondingCurve> {
+impl<TokenSale, AmmCurve> Default for OfferingState<TokenSale, AmmCurve> {
     fn default() -> Self {
         OfferingState::Idle
     }
@@ -1641,5 +1640,5 @@ pub type VestingSchedulesOf<T> = BoundedBTreeMap<
     <T as Config>::MaxVestingSchedulesPerAccountPerToken,
 >;
 
-/// Alias for the bonding curve
+/// Alias for the amm curve
 pub type AmmCurveOf<T> = AmmCurve<<T as Config>::Balance>;
