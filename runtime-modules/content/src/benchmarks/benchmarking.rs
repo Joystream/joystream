@@ -1481,7 +1481,8 @@ benchmarks! {
                 accounts_number: a as u64,
                 revenue_split_rate: params.revenue_split_rate,
                 revenue_split: RevenueSplitStateOf::<T>::Inactive,
-                next_revenue_split_id: 0
+                next_revenue_split_id: 0,
+                amm_curve: None,
             });
             assert_last_event::<T>(
                 <T as Config>::Event::from(
