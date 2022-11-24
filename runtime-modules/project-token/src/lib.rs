@@ -174,7 +174,7 @@ decl_storage! { generate_storage_info
         /// AMM buy transaction fee percentage
         pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill;
 
-        /// Bond Transaction fee percentage
+        /// AMM sell transaction fee percentage
         pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill;
     }
 
