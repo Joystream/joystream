@@ -430,7 +430,7 @@ fn amm_sell_noop_ok_with_zero_requested_amount() {
 }
 
 #[test]
-fn unbond_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
+fn amm_sell_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
     const DURATION: u64 = 2 * DEFAULT_SALE_DURATION;
     let ((alice_id, alice_account), alice_joys) = (member!(2), joy!(5_000_000));
     let ((bob_id, bob_account), bob_joys) = (member!(3), joy!(5_000_000));
