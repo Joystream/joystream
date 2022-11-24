@@ -1575,7 +1575,7 @@ impl<T: Config>
     /// Preconditions
     /// - (origin, member_id) must be a valid authentication pair
     /// - token_id must be a valid
-    /// - token must be in `BondigCurve` state
+    /// - token must be in `Amm` state
     ///
     /// Postconditions
     /// - Bonding Curve set to None
