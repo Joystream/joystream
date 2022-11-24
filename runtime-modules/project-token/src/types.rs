@@ -593,8 +593,8 @@ pub struct AmmCurve<Balance> {
     /// Intercept : b
     pub intercept: Permill,
 
-    // amount public bought on amm so far
-    pub amount_bought_on_amm: Balance,
+    // amount of token added to circulation by the AMM so far
+    pub provided_supply: Balance,
 }
 
 #[derive(Debug)]
