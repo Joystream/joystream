@@ -47,8 +47,8 @@ macro_rules! call_wg {
             WorkingGroup::Membership =>
                 <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
-            WorkingGroup::Gateway =>
-                <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
+            WorkingGroup::App =>
+                <working_group::Module::<$T, AppWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Distribution =>
                 <working_group::Module::<$T, DistributionWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
@@ -74,8 +74,8 @@ pub type ContentWorkingGroupInstance = working_group::Instance3;
 // The builder working group instance alias.
 pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
-// The gateway working group instance alias.
-pub type GatewayWorkingGroupInstance = working_group::Instance5;
+// The app working group instance alias.
+pub type AppWorkingGroupInstance = working_group::Instance5;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance6;
@@ -329,7 +329,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Config<GatewayWorkingGroupInstance> for Test {
+impl working_group::Config<AppWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;

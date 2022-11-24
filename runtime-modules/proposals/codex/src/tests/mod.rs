@@ -144,7 +144,7 @@ fn setup_lead_opening_and_application(working_group: WorkingGroup) -> (OpeningId
         WorkingGroup::OperationsAlpha => {
             add_and_apply_on_lead_opening::<OperationsWorkingGroupInstanceAlpha>()
         }
-        WorkingGroup::Gateway => add_and_apply_on_lead_opening::<GatewayWorkingGroupInstance>(),
+        WorkingGroup::App => add_and_apply_on_lead_opening::<AppWorkingGroupInstance>(),
         WorkingGroup::Membership => {
             add_and_apply_on_lead_opening::<MembershipWorkingGroupInstance>()
         }
@@ -166,7 +166,7 @@ fn setup_lead(working_group: WorkingGroup) -> WorkerId<Test> {
         WorkingGroup::Storage => insert_leader::<StorageWorkingGroupInstance>(),
         WorkingGroup::Content => insert_leader::<ContentWorkingGroupInstance>(),
         WorkingGroup::OperationsAlpha => insert_leader::<OperationsWorkingGroupInstanceAlpha>(),
-        WorkingGroup::Gateway => insert_leader::<GatewayWorkingGroupInstance>(),
+        WorkingGroup::App => insert_leader::<AppWorkingGroupInstance>(),
         WorkingGroup::Membership => insert_leader::<MembershipWorkingGroupInstance>(),
         WorkingGroup::OperationsBeta => insert_leader::<OperationsWorkingGroupInstanceBeta>(),
         WorkingGroup::OperationsGamma => insert_leader::<OperationsWorkingGroupInstanceGamma>(),

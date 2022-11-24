@@ -61,7 +61,7 @@ export const apiModuleByGroup = {
   [WorkingGroups.Curators]: 'contentWorkingGroup',
   [WorkingGroups.Forum]: 'forumWorkingGroup',
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
-  [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
+  [WorkingGroups.App]: 'appWorkingGroup',
   [WorkingGroups.Builders]: 'operationsWorkingGroupAlpha',
   [WorkingGroups.HumanResources]: 'operationsWorkingGroupBeta',
   [WorkingGroups.Marketing]: 'operationsWorkingGroupGamma',

@@ -22,7 +22,7 @@ export const workingGroups: WorkingGroupModuleName[] = [
   'forumWorkingGroup',
   'membershipWorkingGroup',
   'operationsWorkingGroupAlpha',
-  'gatewayWorkingGroup',
+  'appWorkingGroup',
   'distributionWorkingGroup',
   'operationsWorkingGroupBeta',
   'operationsWorkingGroupGamma',
@@ -34,7 +34,7 @@ export const workingGroupNameByModuleName = {
   'forumWorkingGroup': 'Forum',
   'membershipWorkingGroup': 'Membership',
   'operationsWorkingGroupAlpha': 'OperationsAlpha',
-  'gatewayWorkingGroup': 'Gateway',
+  'appWorkingGroup': 'App',
   'distributionWorkingGroup': 'Distribution',
   'operationsWorkingGroupBeta': 'OperationsBeta',
   'operationsWorkingGroupGamma': 'OperationsGamma',
@@ -52,8 +52,8 @@ export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModu
     return 'storageWorkingGroup'
   } else if (group.isOperationsAlpha) {
     return 'operationsWorkingGroupAlpha'
-  } else if (group.isGateway) {
-    return 'gatewayWorkingGroup'
+  } else if (group.isApp) {
+    return 'appWorkingGroup'
   } else if (group.isDistribution) {
     return 'distributionWorkingGroup'
   } else if (group.isOperationsBeta) {
