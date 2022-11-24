@@ -10,6 +10,48 @@ import type { Observable } from '@polkadot/types/types';
 
 declare module '@polkadot/api-base/types/storage' {
   export interface AugmentedQueries<ApiType extends ApiTypes> {
+    appWorkingGroup: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>, []>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupJobApplication>>, [u64]>;
+      /**
+       * Budget for the working group.
+       **/
+      budget: AugmentedQuery<ApiType, () => Observable<u128>, []>;
+      /**
+       * Current group lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<u64>>, []>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Next identifier value for new job opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Next identifier for a new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Maps identifier to job opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletWorkingGroupOpening>, [u64]>;
+      /**
+       * Status text hash.
+       **/
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
+    };
     authorityDiscovery: {
       /**
        * Keys of the current authority set.
@@ -558,48 +600,6 @@ declare module '@polkadot/api-base/types/storage' {
       threadById: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<PalletForumThread>, [u64, u64]>;
     };
     forumWorkingGroup: {
-      /**
-       * Count of active workers.
-       **/
-      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>, []>;
-      /**
-       * Maps identifier to worker application on opening.
-       **/
-      applicationById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupJobApplication>>, [u64]>;
-      /**
-       * Budget for the working group.
-       **/
-      budget: AugmentedQuery<ApiType, () => Observable<u128>, []>;
-      /**
-       * Current group lead.
-       **/
-      currentLead: AugmentedQuery<ApiType, () => Observable<Option<u64>>, []>;
-      /**
-       * Next identifier value for new worker application.
-       **/
-      nextApplicationId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Next identifier value for new job opening.
-       **/
-      nextOpeningId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Next identifier for a new worker.
-       **/
-      nextWorkerId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Maps identifier to job opening.
-       **/
-      openingById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletWorkingGroupOpening>, [u64]>;
-      /**
-       * Status text hash.
-       **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
-      /**
-       * Maps identifier to corresponding worker.
-       **/
-      workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-    };
-    gatewayWorkingGroup: {
       /**
        * Count of active workers.
        **/

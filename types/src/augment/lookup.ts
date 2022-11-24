@@ -721,7 +721,7 @@ export default {
    * Lookup95: pallet_common::working_group::iterable_enums::WorkingGroup
    **/
   PalletCommonWorkingGroupIterableEnumsWorkingGroup: {
-    _enum: ['Forum', 'Storage', 'Content', 'OperationsAlpha', 'Gateway', 'Distribution', 'OperationsBeta', 'OperationsGamma', 'Membership']
+    _enum: ['Forum', 'Storage', 'Content', 'OperationsAlpha', 'App', 'Distribution', 'OperationsBeta', 'OperationsGamma', 'Membership']
   },
   /**
    * Lookup96: pallet_common::BalanceKind

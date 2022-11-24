@@ -138,20 +138,20 @@ fn unsuccessful_activate_curator_channel_creator_token_amm_with_ongoing_transfer
         ActivateAmmFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus));
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 
 #[test]
 fn unsuccessful_activate_member_channel_creator_token_amm_with_ongoing_transfer() {
     with_default_mock_builder(|| {
-        ContentTest::with_curator_channel().setup();
+        ContentTest::with_member_channel().setup();
         IssueCreatorTokenFixture::default()
             .with_initial_allocation_to(LEAD_MEMBER_ID)
             .call_and_assert(Ok(()));
         InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
 
         ActivateAmmFixture::default()
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus));
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }

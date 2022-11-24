@@ -359,7 +359,7 @@ fn amm_activation_successful() {
             IssuanceState::Amm(AmmCurve {
                 slope,
                 intercept,
-                amount_bought_on_amm: 0u32.into(),
+                provided_supply: 0u32.into(),
             })
         );
     })
@@ -401,7 +401,7 @@ fn amm_activation_ok_with_event_deposit() {
             AmmCurve {
                 slope: AMM_CURVE_SLOPE,
                 intercept: AMM_CURVE_INTERCEPT,
-                amount_bought_on_amm: 0u32.into(),
+                provided_supply: 0u32.into(),
             }
         ));
     })
