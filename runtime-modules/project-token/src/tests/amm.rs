@@ -271,7 +271,7 @@ fn user_joy_balance_correctly_decreased_during_amm_buy() {
 }
 
 #[test]
-fn bond_ok_with_event_deposit() {
+fn amm_buy_ok_with_event_deposit() {
     let token_id = token!(1);
     let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
