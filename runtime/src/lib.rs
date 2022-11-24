@@ -283,10 +283,11 @@ fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
         Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
             general_proposal_parameters: _,
             proposal_details,
-        }) => !matches!(
-            proposal_details,
-            proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
-        ),
+        }) => match proposal_details {
+            proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..) => false,
+            proposals_codex::ProposalDetails::UpdateChannelPayouts(..) => false,
+            _ => true,
+        },
         _ => true,
     }
 }
