@@ -172,7 +172,7 @@ decl_event! {
         /// - amount of JOY deposited into curve treasury
         TokensBoughtOnAmm(TokenId, MemberId, Balance, JoyBalance),
 
-        /// Token Unbonded
+        /// Tokens Sold on AMM
         /// Params:
         /// - token id
         /// - member id
