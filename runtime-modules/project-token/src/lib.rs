@@ -1578,7 +1578,7 @@ impl<T: Config>
     /// - token must be in `Amm` state
     ///
     /// Postconditions
-    /// - Bonding Curve set to None
+    /// - Amm Curve set to None
     /// - state set to idle
     /// - event deposited
     fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
