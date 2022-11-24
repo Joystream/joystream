@@ -1876,7 +1876,7 @@ impl<T: Config> Module<T> {
         <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
     }
 
-    /// Returns teh account for the bonding curve treasury
+    /// Returns the account for the AMM treasury
     pub fn amm_treasury_account(token_id: T::TokenId) -> T::AccountId {
         <T as Config>::ModuleId::get().into_sub_account_truncating(&("AMM", token_id))
     }
