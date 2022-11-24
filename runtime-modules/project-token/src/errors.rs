@@ -183,7 +183,7 @@ decl_error! {
         /// Creator token balance is insufficient
         InsufficientTokenBalance,
 
-        /// Outstanding amount of CRT bought from AMM too large
-        OutstandingBondedAmountTooLarge,
+        /// Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
+        OutstandingAmmProvidedSupplyTooLarge,
     }
 }
