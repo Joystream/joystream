@@ -164,7 +164,7 @@ decl_event! {
         /// - params for the bonding curve
         AmmActivated(TokenId, MemberId, AmmCurve),
 
-        /// Token Bonded
+        /// Tokens Bought on AMM
         /// Params:
         /// - token id
         /// - member id
