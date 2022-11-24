@@ -3766,6 +3766,8 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             // Ensure token was issued
             let token_id = channel.ensure_creator_token_issued::<T>()?;
 

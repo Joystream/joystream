@@ -607,7 +607,7 @@ impl<Balance: Zero + Copy + Saturating> AmmCurve<Balance> {
         Self {
             slope: params.slope,
             intercept: params.intercept,
-            amount_bought_on_amm: Balance::zero(),
+            provided_supply: Balance::zero(),
         }
     }
     pub(crate) fn eval<T: Config>(
@@ -641,11 +641,11 @@ impl<Balance: Zero + Copy + Saturating> AmmCurve<Balance> {
     }
 
     pub(crate) fn increase_amm_bought_amount_by(&mut self, amount: Balance) {
-        self.amount_bought_on_amm = self.amount_bought_on_amm.saturating_add(amount);
+        self.provided_supply = self.provided_supply.saturating_add(amount);
     }
 
     pub(crate) fn decrease_amm_bought_amount_by(&mut self, amount: Balance) {
-        self.amount_bought_on_amm = self.amount_bought_on_amm.saturating_sub(amount);
+        self.provided_supply = self.provided_supply.saturating_sub(amount);
     }
 }
 

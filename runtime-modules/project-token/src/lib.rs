@@ -2132,15 +2132,13 @@ impl<T: Config> Module<T> {
 
     pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {
         let AmmCurve {
-            amount_bought_on_amm,
-            ..
+            provided_supply, ..
         } = OfferingStateOf::<T>::ensure_amm_of::<T>(token)?;
         let threshold = Self::amm_deactivation_threshold();
-        let pct_of_issuance_minted =
-            Permill::from_rational(amount_bought_on_amm, token.total_supply);
+        let pct_of_issuance_minted = Permill::from_rational(provided_supply, token.total_supply);
         ensure!(
             pct_of_issuance_minted <= threshold,
-            Error::<T>::OutstandingBondedAmountTooLarge
+            Error::<T>::OutstandingAmmProvidedSupplyTooLarge,
         );
         Ok(())
     }

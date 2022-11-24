@@ -824,7 +824,7 @@ fn deactivate_fails_with_too_much_amm_provided_supply_outstanding() {
 
             let result = DeactivateAmmFixture::default().execute_call();
 
-            assert_err!(result, Error::<Test>::OutstandingBondedAmountTooLarge);
+            assert_err!(result, Error::<Test>::OutstandingAmmProvidedSupplyTooLarge);
         })
 }
 
