@@ -807,7 +807,7 @@ fn deactivate_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn deactivate_fails_with_too_much_bonded_token_outstanding() {
+fn deactivate_fails_with_too_much_amm_provided_supply_outstanding() {
     let amount = Permill::from_percent(10).mul_floor(DEFAULT_INITIAL_ISSUANCE);
     // give enough balance to bond amount
     let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(10_000_000_000));
