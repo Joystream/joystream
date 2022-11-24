@@ -483,7 +483,7 @@ fn amm_sell_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
     })
 }
 #[test]
-fn unbond_fails_with_user_not_having_enough_token_balance() {
+fn amm_sell_fails_with_user_not_having_enough_token_balance() {
     let ((user_id, user_account), user_balance) = (member!(2), joy!(5_000_000));
     build_default_test_externalities_with_balances(vec![(user_account, user_balance)]).execute_with(
         || {
