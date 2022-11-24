@@ -171,7 +171,7 @@ decl_storage! { generate_storage_info
         /// Percentage threshold for deactivating the amm functionality
         pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill;
 
-        /// Bond Transaction fee percentage
+        /// AMM buy transaction fee percentage
         pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill;
 
         /// Bond Transaction fee percentage
