@@ -33,7 +33,7 @@ macro_rules! wrap_working_group_call {
             WorkingGroup::OperationsGamma => {
                 Call::OperationsWorkingGroupGamma($working_group_instance_call)
             }
-            WorkingGroup::Gateway => Call::GatewayWorkingGroup($working_group_instance_call),
+            WorkingGroup::App => Call::AppWorkingGroup($working_group_instance_call),
         }
     }};
 }

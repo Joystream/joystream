@@ -1387,7 +1387,7 @@ parameter_types! {
     pub const StorageWorkingGroupRewardPeriod: u32 = days!(1) + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = days!(1) + 30;
     pub const MembershipRewardPeriod: u32 = days!(1) + 40;
-    pub const GatewayRewardPeriod: u32 = days!(1) + 50;
+    pub const AppRewardPeriod: u32 = days!(1) + 50;
     pub const OperationsAlphaRewardPeriod: u32 = days!(1) + 60;
     pub const OperationsBetaRewardPeriod: u32 = days!(1) + 70;
     pub const OperationsGammaRewardPeriod: u32 = days!(1) + 80;
@@ -1420,8 +1420,8 @@ pub type InvitedMemberStakingManager =
     staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
 pub type BoundStakingAccountStakingManager =
     staking_handler::StakingManager<Runtime, BoundStakingAccountLockId>;
-pub type GatewayWorkingGroupStakingManager =
-    staking_handler::StakingManager<Runtime, GatewayWorkingGroupLockId>;
+pub type AppWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, AppWorkingGroupLockId>;
 pub type OperationsWorkingGroupAlphaStakingManager =
     staking_handler::StakingManager<Runtime, OperationsWorkingGroupAlphaLockId>;
 pub type OperationsWorkingGroupBetaStakingManager =
@@ -1443,8 +1443,8 @@ pub type ContentWorkingGroupInstance = working_group::Instance3;
 // The builder working group instance alias.
 pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
-// The gateway working group instance alias.
-pub type GatewayWorkingGroupInstance = working_group::Instance5;
+// The app working group instance alias.
+pub type AppWorkingGroupInstance = working_group::Instance5;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance6;
@@ -1523,14 +1523,14 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Config<GatewayWorkingGroupInstance> for Runtime {
+impl working_group::Config<AppWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = GatewayWorkingGroupStakingManager;
+    type StakingHandler = AppWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = GatewayRewardPeriod;
+    type RewardPeriod = AppRewardPeriod;
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
@@ -1651,7 +1651,7 @@ macro_rules! call_wg {
             WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
-            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::App => <AppWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
@@ -1920,7 +1920,7 @@ construct_runtime!(
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
         ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupAlpha: working_group::<Instance4>::{Pallet, Call, Storage, Event<T>},
-        GatewayWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
+        AppWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
         MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
