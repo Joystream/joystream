@@ -59,13 +59,13 @@ fn assert_new_budgets<T: Config>(
     );
 }
 
-const MAX_BYTES: u32 = 50000;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 benchmarks! {
 
     execute_signal_proposal {
-        let i in 1 .. MAX_BYTES;
-        let signal = vec![0u8; i.try_into().unwrap()];
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let signal = vec![0u8; (i * 1000).try_into().unwrap()];
     }: _(RawOrigin::Root, signal.clone())
     verify {
         assert_last_event::<T>(RawEvent::Signaled(signal).into());

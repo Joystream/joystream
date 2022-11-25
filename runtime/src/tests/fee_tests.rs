@@ -30,8 +30,7 @@ fn runtime_upgrade_total_fee_is_correct() {
 
         assert!(x.max(y) - x.min(y) <= 1, "Inaccurate fee estimation");
 
-        // between 10 and 20 DOLLARS
-        assert!(y.gt(&DOLLARS.saturating_mul(10)));
-        assert!(y.lt(&DOLLARS.saturating_mul(20)));
+        assert!(y.lt(&DOLLARS.saturating_mul(80)));
+        // assert!(y.gt(&DOLLARS.saturating_mul(77)));
     });
 }

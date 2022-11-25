@@ -4,7 +4,6 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { VideoInputParameters, VideoFileMetadata } from '../../Types'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
-import { VideoId } from '@joystream/types/primitives'
 import { ContentMetadata, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
@@ -126,15 +125,19 @@ export default class CreateVideoCommand extends UploadCommandBase {
       videoCreationParameters,
     ])
 
-    const videoId: VideoId = this.getEvent(result, 'content', 'VideoCreated').data[2]
+    const [, , videoId, , dataObjects] = this.getEvent(result, 'content', 'VideoCreated').data
     this.log(chalk.green(`Video with id ${chalk.cyanBright(videoId.toString())} successfully created!`))
 
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
-    if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+    if (dataObjects.size !== (assets?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of video assets in VideoCreated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
+
+    if (dataObjects.size) {
       await this.uploadAssets(
         `dynamic:channel:${channelId.toString()}`,
-        [...objectIds.values()].map((id, index) => ({
+        [...dataObjects].map((id, index) => ({
           dataObjectId: id,
           path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
         })),

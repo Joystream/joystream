@@ -29,8 +29,8 @@ def main():
 
     boot_node_list = data["bootNodes"]
     for key in all_nodes:
-        if "validators" in all_nodes[key]["group_names"]:
-            public_key = all_nodes[key]["generate_node_keys_output"]["stderr"]
+        if "boot" in all_nodes[key]["group_names"]:
+            public_key = all_nodes[key]["node_keys_output"]["stdout"]
             try:
                 ip = ipaddress.ip_address(key)
                 if ip.version == 6:
@@ -40,12 +40,12 @@ def main():
             except ValueError:
                 boot_node_list.append(f"/dns4/{key}/tcp/30333/p2p/{public_key}")
 
-    telemetry_endpoints = data["telemetryEndpoints"]
-    telemetry_endpoints.append([
-        "/dns/telemetry.joystream.org/tcp/443/x-parity-wss/%2Fsubmit%2F", 0])
+    # telemetry_endpoints = data["telemetryEndpoints"]
+    # telemetry_endpoints.append([
+    #     "/dns/telemetry.joystream.org/tcp/443/x-parity-wss/%2Fsubmit%2F", 0])
 
     response["bootNodes"] = boot_node_list
-    response["telemetryEndpoints"] = telemetry_endpoints
+    # response["telemetryEndpoints"] = telemetry_endpoints
 
     data.update(response)
     with open(chain_spec_path, 'w') as outfile:

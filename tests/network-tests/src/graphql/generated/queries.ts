@@ -26,6 +26,10 @@ type DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment = {
   subtitle?: Types.Maybe<{ id: string; video: { id: string } }>
 }
 
+type DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment = {
+  __typename: 'DataObjectTypeChannelPayoutsPayload'
+}
+
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
 
 export type DataObjectTypeFieldsFragment =
@@ -34,6 +38,7 @@ export type DataObjectTypeFieldsFragment =
   | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
+  | DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment
   | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 
 export type StorageDataObjectFieldsFragment = {
@@ -50,6 +55,7 @@ export type StorageDataObjectFieldsFragment = {
     | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
+    | DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment
     | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 }
 
@@ -95,20 +101,54 @@ export type CommentFieldsFragment = {
   reactions: Array<CommentReactionFieldsFragment>
 }
 
+export type LicenseFieldsFragment = {
+  code?: Types.Maybe<number>
+  attribution?: Types.Maybe<string>
+  customText?: Types.Maybe<string>
+}
+
+export type VideoMediaEncodingFieldsFragment = {
+  codecName?: Types.Maybe<string>
+  container?: Types.Maybe<string>
+  mimeMediaType?: Types.Maybe<string>
+}
+
+export type VideoMediaMetadataFieldsFragment = {
+  pixelWidth?: Types.Maybe<number>
+  pixelHeight?: Types.Maybe<number>
+  size?: Types.Maybe<any>
+  encoding?: Types.Maybe<VideoMediaEncodingFieldsFragment>
+}
+
+export type VideoSubtitleFieldsFragment = {
+  id: string
+  type: string
+  mimeType: string
+  language?: Types.Maybe<{ iso: string }>
+  asset?: Types.Maybe<StorageDataObjectFieldsFragment>
+}
+
 export type VideoFieldsFragment = {
   id: string
   title?: Types.Maybe<string>
   description?: Types.Maybe<string>
+  duration?: Types.Maybe<number>
   isPublic?: Types.Maybe<boolean>
+  isExplicit?: Types.Maybe<boolean>
+  hasMarketing?: Types.Maybe<boolean>
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  license?: Types.Maybe<LicenseFieldsFragment>
+  mediaMetadata?: Types.Maybe<VideoMediaMetadataFieldsFragment>
+  media?: Types.Maybe<StorageDataObjectFieldsFragment>
+  thumbnailPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   category?: Types.Maybe<VideoCategoryFieldsFragment>
   language?: Types.Maybe<{ iso: string }>
   comments: Array<CommentFieldsFragment>
   reactions: Array<VideoReactionFieldsFragment>
   pinnedComment?: Types.Maybe<{ id: string }>
-  subtitles: Array<{ id: string; asset?: Types.Maybe<StorageDataObjectFieldsFragment> }>
+  subtitles: Array<VideoSubtitleFieldsFragment>
 }
 
 export type BidFieldsFragment = {
@@ -521,6 +561,67 @@ export type GetVideoVisibilitySetByModeratorEventsByEventIdsQuery = {
   videoVisibilitySetByModeratorEvents: Array<VideoVisibilitySetByModeratorEventFieldsFragment>
 }
 
+export type ChannelPayoutsUpdatedEventFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  commitment?: Types.Maybe<string>
+  payloadSize?: Types.Maybe<any>
+  payloadHash?: Types.Maybe<string>
+  minCashoutAllowed?: Types.Maybe<any>
+  maxCashoutAllowed?: Types.Maybe<any>
+  channelCashoutsEnabled?: Types.Maybe<boolean>
+  payloadDataObject: { id: string }
+}
+
+export type GetMostRecentChannelPayoutsUpdatedEventQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetMostRecentChannelPayoutsUpdatedEventQuery = {
+  channelPayoutsUpdatedEvents: Array<ChannelPayoutsUpdatedEventFragment>
+}
+
+export type ChannelRewardClaimedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  amount: any
+  channel: { id: string }
+}
+
+export type GetChannelRewardClaimedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelRewardClaimedEventsByEventIdsQuery = {
+  channelRewardClaimedEvents: Array<ChannelRewardClaimedEventFieldsFragment>
+}
+
+export type ChannelFundsWithdrawnEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  amount: any
+  account: string
+  channel: { id: string }
+}
+
+export type GetChannelFundsWithdrawnEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelFundsWithdrawnEventsByEventIdsQuery = {
+  channelFundsWithdrawnEvents: Array<ChannelFundsWithdrawnEventFieldsFragment>
+}
+
 export type EnglishAuctionStartedEventFieldsFragment = {
   video: { id: string }
   auction: { id: string }
@@ -581,6 +682,26 @@ export type GetReferendumIntermediateWinnersQueryVariables = Types.Exact<{
 }>
 
 export type GetReferendumIntermediateWinnersQuery = { candidates: Array<CandidateFieldsFragment> }
+
+export type CouncilBudgetFundedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  memberId: number
+  amount: any
+  rationale: string
+}
+
+export type GetCouncilBudgetFundedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCouncilBudgetFundedEventsByEventIdsQuery = {
+  councilBudgetFundedEvents: Array<CouncilBudgetFundedEventFieldsFragment>
+}
 
 export type ForumCategoryFieldsFragment = {
   id: string
@@ -1513,6 +1634,14 @@ type ProposalDetailsFields_VetoProposalDetails_Fragment = {
   proposal?: Types.Maybe<{ id: string }>
 }
 
+type ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment = {
+  __typename: 'UpdateChannelPayoutsProposalDetails'
+  commitment?: Types.Maybe<string>
+  minCashoutAllowed?: Types.Maybe<number>
+  maxCashoutAllowed?: Types.Maybe<number>
+  channelCashoutsEnabled?: Types.Maybe<boolean>
+}
+
 export type ProposalDetailsFieldsFragment =
   | ProposalDetailsFields_SignalProposalDetails_Fragment
   | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
@@ -1535,6 +1664,7 @@ export type ProposalDetailsFieldsFragment =
   | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
   | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
   | ProposalDetailsFields_VetoProposalDetails_Fragment
+  | ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment
 
 export type ProposalFieldsFragment = {
   id: string
@@ -1568,6 +1698,7 @@ export type ProposalFieldsFragment = {
     | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
     | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
     | ProposalDetailsFields_VetoProposalDetails_Fragment
+    | ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment
   creator: { id: string }
   proposalStatusUpdates: Array<{
     id: string
@@ -2535,6 +2666,31 @@ export const ChannelFields = gql`
   }
   ${StorageDataObjectFields}
 `
+export const LicenseFields = gql`
+  fragment LicenseFields on License {
+    code
+    attribution
+    customText
+  }
+`
+export const VideoMediaEncodingFields = gql`
+  fragment VideoMediaEncodingFields on VideoMediaEncoding {
+    codecName
+    container
+    mimeMediaType
+  }
+`
+export const VideoMediaMetadataFields = gql`
+  fragment VideoMediaMetadataFields on VideoMediaMetadata {
+    encoding {
+      ...VideoMediaEncodingFields
+    }
+    pixelWidth
+    pixelHeight
+    size
+  }
+  ${VideoMediaEncodingFields}
+`
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
     id
@@ -2584,12 +2740,41 @@ export const VideoReactionFields = gql`
     }
   }
 `
+export const VideoSubtitleFields = gql`
+  fragment VideoSubtitleFields on VideoSubtitle {
+    id
+    type
+    language {
+      iso
+    }
+    mimeType
+    asset {
+      ...StorageDataObjectFields
+    }
+  }
+  ${StorageDataObjectFields}
+`
 export const VideoFields = gql`
   fragment VideoFields on Video {
     id
     title
     description
+    duration
     isPublic
+    isExplicit
+    hasMarketing
+    license {
+      ...LicenseFields
+    }
+    mediaMetadata {
+      ...VideoMediaMetadataFields
+    }
+    media {
+      ...StorageDataObjectFields
+    }
+    thumbnailPhoto {
+      ...StorageDataObjectFields
+    }
     category {
       ...VideoCategoryFields
     }
@@ -2609,16 +2794,16 @@ export const VideoFields = gql`
       id
     }
     subtitles {
-      id
-      asset {
-        ...StorageDataObjectFields
-      }
+      ...VideoSubtitleFields
     }
   }
+  ${LicenseFields}
+  ${VideoMediaMetadataFields}
+  ${StorageDataObjectFields}
   ${VideoCategoryFields}
   ${CommentFields}
   ${VideoReactionFields}
-  ${StorageDataObjectFields}
+  ${VideoSubtitleFields}
 `
 export const BidFields = gql`
   fragment BidFields on Bid {
@@ -2948,6 +3133,54 @@ export const VideoVisibilitySetByModeratorEventFields = gql`
     rationale
   }
 `
+export const ChannelPayoutsUpdatedEvent = gql`
+  fragment ChannelPayoutsUpdatedEvent on ChannelPayoutsUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    commitment
+    payloadSize
+    payloadHash
+    minCashoutAllowed
+    maxCashoutAllowed
+    channelCashoutsEnabled
+    payloadDataObject {
+      id
+    }
+  }
+`
+export const ChannelRewardClaimedEventFields = gql`
+  fragment ChannelRewardClaimedEventFields on ChannelRewardClaimedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    amount
+  }
+`
+export const ChannelFundsWithdrawnEventFields = gql`
+  fragment ChannelFundsWithdrawnEventFields on ChannelFundsWithdrawnEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    amount
+    account
+  }
+`
 export const EnglishAuctionStartedEventFields = gql`
   fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
     video {
@@ -3017,6 +3250,19 @@ export const CandidateFields = gql`
     member {
       id
     }
+  }
+`
+export const CouncilBudgetFundedEventFields = gql`
+  fragment CouncilBudgetFundedEventFields on CouncilBudgetFundedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    memberId
+    amount
+    rationale
   }
 `
 export const ForumCategoryFields = gql`
@@ -3810,6 +4056,12 @@ export const ProposalDetailsFields = gql`
       proposal {
         id
       }
+    }
+    ... on UpdateChannelPayoutsProposalDetails {
+      commitment
+      minCashoutAllowed
+      maxCashoutAllowed
+      channelCashoutsEnabled
     }
   }
   ${OpeningMetadataFields}
@@ -4966,6 +5218,30 @@ export const GetVideoVisibilitySetByModeratorEventsByEventIds = gql`
   }
   ${VideoVisibilitySetByModeratorEventFields}
 `
+export const GetMostRecentChannelPayoutsUpdatedEvent = gql`
+  query getMostRecentChannelPayoutsUpdatedEvent {
+    channelPayoutsUpdatedEvents(orderBy: [createdAt_DESC], limit: 1) {
+      ...ChannelPayoutsUpdatedEvent
+    }
+  }
+  ${ChannelPayoutsUpdatedEvent}
+`
+export const GetChannelRewardClaimedEventsByEventIds = gql`
+  query getChannelRewardClaimedEventsByEventIds($eventIds: [ID!]) {
+    channelRewardClaimedEvents(where: { id_in: $eventIds }) {
+      ...ChannelRewardClaimedEventFields
+    }
+  }
+  ${ChannelRewardClaimedEventFields}
+`
+export const GetChannelFundsWithdrawnEventsByEventIds = gql`
+  query getChannelFundsWithdrawnEventsByEventIds($eventIds: [ID!]) {
+    channelFundsWithdrawnEvents(where: { id_in: $eventIds }) {
+      ...ChannelFundsWithdrawnEventFields
+    }
+  }
+  ${ChannelFundsWithdrawnEventFields}
+`
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
     englishAuctionStartedEvents(where: { id_in: $eventIds }) {
@@ -5009,6 +5285,14 @@ export const GetReferendumIntermediateWinners = gql`
     }
   }
   ${CandidateFields}
+`
+export const GetCouncilBudgetFundedEventsByEventIds = gql`
+  query getCouncilBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+    councilBudgetFundedEvents(where: { id_in: $eventIds }) {
+      ...CouncilBudgetFundedEventFields
+    }
+  }
+  ${CouncilBudgetFundedEventFields}
 `
 export const GetCategoriesByIds = gql`
   query getCategoriesByIds($ids: [ID!]) {

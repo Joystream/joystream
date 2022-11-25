@@ -28,7 +28,7 @@ import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import initDistributionBucket from '../flows/clis/initDistributionBucket'
 import initStorageBucket from '../flows/clis/initStorageBucket'
-import createChannel from '../flows/clis/createAndUpdateChannel'
+import channelsAndVideos from '../flows/clis/channelsAndVideos'
 import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
@@ -36,6 +36,7 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
+import channelPayouts from '../flows/proposals/channelPayouts'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -74,9 +75,13 @@ scenario('Full', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
 
+  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
+    ? job('channel payouts proposal', channelPayouts).requires(proposalsJob)
+    : undefined
+
   // Working groups
   const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    proposalsJob
+    channelPayoutsProposalJob || proposalsJob
   )
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
@@ -97,9 +102,11 @@ scenario('Full', async ({ job, env }) => {
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
   const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
-  const createChannelJob = job('create channel via CLI', createChannel).requires(videoCategoriesJob)
-  job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(createChannelJob)
-  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(createChannelJob)
+  const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
+    videoCategoriesJob
+  )
+  job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(channelsAndVideosCliJob)
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(channelsAndVideosCliJob)
   const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     nftAuctionAndOffersJob

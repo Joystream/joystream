@@ -16,6 +16,9 @@ decl_error! {
         /// Requested account data does not exist
         AccountInformationDoesNotExist,
 
+        /// At least one of the transfer destinations is not an existing member id
+        TransferDestinationMemberDoesNotExist,
+
         /// Merkle proof verification failed
         MerkleProofVerificationFailure,
 
@@ -30,9 +33,6 @@ decl_error! {
 
         /// Account Already exists
         AccountAlreadyExists,
-
-        /// Transfer destination member id invalid
-        TransferDestinationMemberDoesNotExist,
 
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,

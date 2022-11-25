@@ -7,11 +7,10 @@ import {
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
 } from '@joystream/cli/src/Types'
+import { Assets } from '@joystream/cli/src/schemas/typings/Assets.schema'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
-
-type Modify<T, R> = Omit<T, keyof R> & R
 
 // ICreatedContentData
 export interface ICreatedVideoData {
@@ -87,8 +86,7 @@ export class JoystreamCLI extends CLI {
     Decide if CLI error indicates that storage provider is not available.
   */
   private isErrorDueToNoStorage(exitCode: number): boolean {
-    // TODO: remove `% 256` after https://github.com/Joystream/joystream/issues/3251 is fixed
-    return exitCode === ExitCodes.ActionCurrentlyUnavailable % 256
+    return exitCode === ExitCodes.ActionCurrentlyUnavailable
   }
 
   /**
@@ -111,14 +109,15 @@ export class JoystreamCLI extends CLI {
   */
   async createVideo(
     channelId: number,
-    video: Modify<VideoInputParameters, { category?: string }>,
-    canOmitUpload = true
+    video: VideoInputParameters,
+    canOmitUpload = true,
+    args: string[] = []
   ): Promise<ICreatedVideoData> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
     const { stdout, stderr, exitCode } = await this.run(
       'content:createVideo',
-      ['--input', jsonFile, '--channelId', channelId.toString()],
+      ['--input', jsonFile, '--channelId', channelId.toString(), ...args],
       undefined,
       !canOmitUpload
     )
@@ -142,7 +141,7 @@ export class JoystreamCLI extends CLI {
     Creates a new video category.
   */
   async createVideoCategory(name: string): Promise<void> {
-    const { stdout, stderr, exitCode } = await this.run('content:createVideoCategory', [name])
+    const { stderr, exitCode } = await this.run('content:createVideoCategory', [name])
 
     if (exitCode) {
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
@@ -152,7 +151,7 @@ export class JoystreamCLI extends CLI {
   /**
     Updates an existing video.
   */
-  async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category?: string }>): Promise<void> {
+  async updateVideo(videoId: number, video: VideoInputParameters): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
     const { stderr, exitCode } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
@@ -164,7 +163,7 @@ export class JoystreamCLI extends CLI {
   }
 
   async deleteVideo(videoId: number): Promise<void> {
-    const { stdout, stderr, exitCode } = await this.run('content:deleteVideo', ['-v', videoId.toString(), '-f'])
+    const { stderr, exitCode } = await this.run('content:deleteVideo', ['-v', videoId.toString(), '-f'])
 
     if (exitCode) {
       throw new Error(`Unexpected CLI failure on deleting video: "${stderr}"`)
@@ -174,13 +173,41 @@ export class JoystreamCLI extends CLI {
   /**
     Updates a channel.
   */
-  async updateChannel(
-    channelId: number,
-    channel: Modify<ChannelUpdateInputParameters, { category?: number }>
-  ): Promise<void> {
+  async updateChannel(channelId: number, channel: ChannelUpdateInputParameters): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
     const { stderr, exitCode } = await this.run('content:updateChannel', ['--input', jsonFile, channelId.toString()])
+
+    if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+    }
+  }
+
+  /**
+    generate ChannelPayoutsPayload.
+  */
+  async generateChannelPayoutsPayload(inputPath: string, outPath: string): Promise<void> {
+    const { stderr, exitCode } = await this.run('content:generateChannelPayoutsPayload', [
+      '-i',
+      inputPath,
+      '-o',
+      outPath,
+    ])
+
+    if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+    }
+  }
+
+  /**
+    upload/reupload assets.
+  */
+  async reuploadAssets(assetsInput: Assets): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(assetsInput)
+
+    const { stderr, exitCode } = await this.run('content:reuploadAssets', ['-i', jsonFile])
 
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       // ignore warnings

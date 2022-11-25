@@ -57,7 +57,7 @@ benchmarks! {
 
         let d in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
 
-        let e in 1 .. MAX_BYTES_METADATA; //max bytes for metadata
+        let e in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for metadata
 
         let (_, storage_wg_lead_account_id) = insert_storage_leader::<T>();
 
@@ -109,7 +109,7 @@ benchmarks! {
 
         let c in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number to remove
 
-        let d in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
+        let d in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for new metadata
 
         let e in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
@@ -159,7 +159,7 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
-        let new_meta = Some(vec![0xff].repeat(d as usize));
+        let new_meta = Some(vec![0xff].repeat((d * 1000) as usize));
 
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: Some(assets_to_upload),
@@ -196,7 +196,7 @@ benchmarks! {
 
         let a in 1 .. T::MaxNumberOfCollaboratorsPerChannel::get(); //max colaborators
 
-        let b in 1 .. MAX_BYTES_METADATA; //max bytes for new metadata
+        let b in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for new metadata
 
         let (channel_id,
              group_id,
@@ -229,7 +229,7 @@ benchmarks! {
         let expected_data_object_state_bloat_bond =
             Storage::<T>::data_object_state_bloat_bond_value();
 
-        let new_meta = Some(vec![0xff].repeat(b as usize));
+        let new_meta = Some(vec![0xff].repeat((b * 1000) as usize));
 
         let update_params = ChannelUpdateParameters::<T> {
             assets_to_upload: None,
@@ -336,7 +336,7 @@ benchmarks! {
 
     set_channel_paused_features_as_moderator {
 
-        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let a in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
         let (
             channel_id,
@@ -356,7 +356,7 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
 
         let new_paused_features = worst_case_pausable_channel_feature();
-        let rationale = vec![0u8].repeat(a as usize);
+        let rationale = vec![0u8].repeat((a * 1000) as usize);
 
     }: _ (origin, actor,
           channel_id, new_paused_features.clone(), rationale.clone())
@@ -379,7 +379,7 @@ benchmarks! {
 
         let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
-        let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let c in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
         let assets_to_remove: BTreeSet<T::DataObjectId> =
             (0..a).map(|i| i.saturated_into()).collect();
@@ -400,7 +400,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
 
-        let rationale = vec![1u8].repeat(c as usize);
+        let rationale = vec![1u8].repeat((c * 1000) as usize);
         let storage_buckets_num_witness =
             storage_buckets_num_witness::<T>(channel_id)?;
 
@@ -432,7 +432,7 @@ benchmarks! {
 
         let c in (T::MinDistributionBucketsPerBag::get()) .. (T::MaxDistributionBucketsPerBag::get());
 
-        let d in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let d in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
         let (
             channel_id,
@@ -446,7 +446,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
         let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
-        let rationale = vec![1u8].repeat(d as usize);
+        let rationale = vec![1u8].repeat((d * 1000) as usize);
 
         set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin,
@@ -469,7 +469,7 @@ benchmarks! {
 
     set_channel_visibility_as_moderator{
 
-        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let a in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
         let (
             channel_id,
@@ -488,7 +488,7 @@ benchmarks! {
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
 
-        let rationale = vec![0u8].repeat(a as usize);
+        let rationale = vec![0u8].repeat((a * 1000) as usize);
 
         set_all_channel_paused_features::<T>(channel_id);
     }: _ (origin, actor, channel_id, true, rationale.clone())
@@ -511,7 +511,7 @@ benchmarks! {
 
         let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
-        let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let c in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
         let (video_id, (curator_account_id, actor, channel_id, _)) =
             setup_worst_case_scenario_mutable_video::<T>(
@@ -520,7 +520,7 @@ benchmarks! {
             )?;
 
         let origin = RawOrigin::Signed(curator_account_id.clone());
-        let rationale = vec![1u8].repeat(c as usize);
+        let rationale = vec![1u8].repeat((c * 1000) as usize);
 
         let assets_to_remove_start = T::MaxNumberOfAssetsPerChannel::get();
         let assets_to_remove_end = T::MaxNumberOfAssetsPerChannel::get() + a;
@@ -559,9 +559,9 @@ benchmarks! {
 
         let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
 
-        let c in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let c in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
-        let rationale = vec![1u8].repeat(c as usize);
+        let rationale = vec![1u8].repeat((c * 1000) as usize);
         let (video_id, (curator_acc_id, actor, channel_id, _)) =
             setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
 
@@ -586,7 +586,7 @@ benchmarks! {
         }
 
     delete_video_as_moderator_without_assets {
-        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let a in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
         let (video_id, (curator_acc_id, actor, channel_id, _)) =
             setup_worst_case_scenario_mutable_video::<T>(
@@ -594,7 +594,7 @@ benchmarks! {
                 T::MaxStorageBucketsPerBag::get()
             )?;
 
-        let rationale = vec![1u8].repeat(a as usize);
+        let rationale = vec![1u8].repeat((a * 1000) as usize);
 
         set_all_channel_paused_features::<T>(channel_id);
     }: delete_video_as_moderator (
@@ -618,7 +618,7 @@ benchmarks! {
 
     set_video_visibility_as_moderator{
 
-        let a in 1 .. MAX_BYTES_METADATA; //max bytes for rationale
+        let a in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
 
         let (
             video_id,
@@ -627,7 +627,7 @@ benchmarks! {
             Some(T::MaxNumberOfAssetsPerVideo::get()),
             T::MaxStorageBucketsPerBag::get(),
         )?;
-        let rationale = vec![0u8].repeat(a as usize);
+        let rationale = vec![0u8].repeat((a * 1000) as usize);
 
         set_all_channel_paused_features::<T>(channel_id);
     }: _ (
@@ -787,7 +787,7 @@ benchmarks! {
     create_video_without_nft {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-        let c in 1..MAX_BYTES_METADATA;
+        let c in 1..MAX_KILOBYTES_METADATA;
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
             Some(a),
@@ -835,7 +835,7 @@ benchmarks! {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
         let c in 2..T::MaxNftAuctionWhitelistLength::get();
-        let d in 1..MAX_BYTES_METADATA;
+        let d in 1..MAX_KILOBYTES_METADATA;
 
         let (curator_account_id, actor, channel_id, params) = prepare_worst_case_scenario_video_creation_parameters::<T>(
             Some(a),
@@ -854,6 +854,7 @@ benchmarks! {
             channel_id,
             vec![PausableChannelFeature::VideoCreation, PausableChannelFeature::VideoNftIssuance]
         );
+        set_nft_limits_helper::<T>(channel_id);
     }: create_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -891,7 +892,7 @@ benchmarks! {
         }
 
     update_video_without_assets_without_nft {
-        let a in 1..MAX_BYTES_METADATA;
+        let a in 1..MAX_KILOBYTES_METADATA;
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
@@ -905,7 +906,7 @@ benchmarks! {
             auto_issue_nft: None,
             expected_data_object_state_bloat_bond:
             storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: Some(vec![0xff].repeat(a as usize)),
+            new_meta: Some(vec![0xff].repeat((a * 1000) as usize)),
             storage_buckets_num_witness: None
         };
         let existing_asset_ids: BTreeSet<T::DataObjectId> = (
@@ -944,7 +945,7 @@ benchmarks! {
         let a in 1..T::MaxNumberOfAssetsPerVideo::get();
         let b in 1..T::MaxNumberOfAssetsPerVideo::get();
         let c in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-        let d in 1..MAX_BYTES_METADATA;
+        let d in 1..MAX_KILOBYTES_METADATA;
 
         // As many assets as possible, but leaving room for "a" additional assets,
         // provided that "b" assets will be removed
@@ -972,7 +973,7 @@ benchmarks! {
             auto_issue_nft: None,
             expected_data_object_state_bloat_bond:
             storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: Some(vec![0xff].repeat(d as usize)),
+            new_meta: Some(vec![0xff].repeat((d * 1000) as usize)),
             storage_buckets_num_witness:
             Some(storage_buckets_num_witness::<T>(channel_id)).transpose()?
         };
@@ -1009,7 +1010,7 @@ benchmarks! {
 
     update_video_without_assets_with_nft {
         let a in 2..T::MaxNftAuctionWhitelistLength::get();
-        let b in 1..MAX_BYTES_METADATA;
+        let b in 1..MAX_KILOBYTES_METADATA;
 
         let (
             video_id,
@@ -1024,7 +1025,7 @@ benchmarks! {
             auto_issue_nft: Some(worst_case_scenario_video_nft_issuance_params::<T>(a)),
             expected_data_object_state_bloat_bond:
             storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: Some(vec![0xff].repeat(b as usize)),
+            new_meta: Some(vec![0xff].repeat((b * 1000) as usize)),
             storage_buckets_num_witness: None
         };
         let existing_asset_ids: BTreeSet<T::DataObjectId> = (
@@ -1038,6 +1039,7 @@ benchmarks! {
             channel_id,
             vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
         );
+        set_nft_limits_helper::<T>(channel_id);
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1075,7 +1077,7 @@ benchmarks! {
         let b in 1..T::MaxNumberOfAssetsPerVideo::get();
         let c in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
         let d in 2..T::MaxNftAuctionWhitelistLength::get();
-        let e in 1..MAX_BYTES_METADATA;
+        let e in 1..MAX_KILOBYTES_METADATA;
 
         // As many assets as possible, but leaving room for "a" additional assets,
         // provided that "b" assets will be removed
@@ -1103,7 +1105,7 @@ benchmarks! {
             auto_issue_nft: Some(worst_case_scenario_video_nft_issuance_params::<T>(d)),
             expected_data_object_state_bloat_bond:
             storage::Pallet::<T>::data_object_state_bloat_bond_value(),
-            new_meta: Some(vec![0xff].repeat(e as usize)),
+            new_meta: Some(vec![0xff].repeat((e * 1000) as usize)),
             storage_buckets_num_witness:
             Some(storage_buckets_num_witness::<T>(channel_id)).transpose()?
         };
@@ -1117,6 +1119,7 @@ benchmarks! {
             channel_id,
             vec![PausableChannelFeature::VideoUpdate, PausableChannelFeature::VideoNftIssuance]
         );
+        set_nft_limits_helper::<T>(channel_id);
     }: update_video (
         RawOrigin::Signed(curator_account_id.clone()),
         actor,
@@ -1450,6 +1453,7 @@ benchmarks! {
         let params = create_token_issuance_params::<T>(worst_case_scenario_initial_allocation::<T>(a));
         let actor = ContentActor::Curator(group_id, curator_id);
         set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorTokenIssuance]);
+        TokenAccountBloatBond::<T>::set(T::ExistentialDeposit::get());
     }: _ (
         RawOrigin::Signed(curator_acc_id),
         actor,
@@ -1492,7 +1496,7 @@ benchmarks! {
 
     creator_token_issuer_transfer {
         let a in 1 .. MAX_CRT_ISSUER_TRANSFER_OUTPUTS;
-        let b in 1 .. MAX_BYTES_METADATA;
+        let b in 1 .. MAX_KILOBYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1509,8 +1513,8 @@ benchmarks! {
 
         let outputs = worst_case_scenario_issuer_transfer_outputs::<T>(a);
         let balance_pre = balances::Pallet::<T>::usable_balance(&curator_acc_id);
-        let metadata = vec![0xf].repeat(b as usize);
-        TokenAccountBloatBond::<T>::set(100u32.into());
+        let metadata = vec![0xf].repeat((b * 1000) as usize);
+        TokenAccountBloatBond::<T>::set(T::ExistentialDeposit::get());
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
     }: _ (
@@ -1520,7 +1524,7 @@ benchmarks! {
             let block_number = frame_system::Pallet::<T>::block_number();
             let balance_post = balances::Pallet::<T>::usable_balance(&curator_acc_id);
             // Ensure bloat bond total amount transferred
-            assert_eq!(balance_post, balance_pre - (100u32 * a).into());
+            assert_eq!(balance_post, balance_pre - (T::ExistentialDeposit::get() * a.into()));
             for (member_id, acc_data) in AccountInfoByTokenAndMember::<T>::iter_prefix(token_id) {
                 if member_id == curator_member_id {
                     assert_eq!(
@@ -1614,7 +1618,7 @@ benchmarks! {
         }
 
     init_creator_token_sale {
-        let a in 1 .. MAX_BYTES_METADATA;
+        let a in 1 .. MAX_KILOBYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1641,7 +1645,7 @@ benchmarks! {
             assert_eq!(token.sale, Some(TokenSale {
                 auto_finalize: false,
                 cap_per_member: Some(DEFAULT_CRT_SALE_CAP_PER_MEMBER.into()),
-                duration: DEFAULT_CRT_SALE_DURATION.into(),
+                duration: default_crt_sale_duration::<T>(),
                 earnings_destination: None,
                 funds_collected: JoyBalanceOf::<T>::zero(),
                 quantity_left: DEFAULT_CRT_SALE_UPPER_BOUND.into(),
@@ -1664,7 +1668,7 @@ benchmarks! {
                         token_id,
                         token.next_sale_id - 1,
                         token.sale.unwrap(),
-                        Some(vec![0xf].repeat(a as usize))
+                        Some(vec![0xf].repeat((a * 1000) as usize))
                     )
                 ).into()
             );
@@ -1684,7 +1688,7 @@ benchmarks! {
                 curator_member_id
             )?;
         let sale_params =
-            worst_case_scenario_token_sale_params::<T>(MAX_BYTES_METADATA, Some(100u32.into()));
+            worst_case_scenario_token_sale_params::<T>(MAX_KILOBYTES_METADATA, Some(100u32.into()));
         Pallet::<T>::init_creator_token_sale(
             origin.clone().into(),
             actor,
@@ -1692,7 +1696,7 @@ benchmarks! {
             sale_params
         )?;
         let new_start_block: Option<T::BlockNumber> = Some(200u32.into());
-        let new_duration: Option<T::BlockNumber> = Some(200u32.into());
+        let new_duration: Option<T::BlockNumber> = Some(default_crt_sale_duration::<T>() + T::BlockNumber::one());
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id, new_start_block, new_duration)
@@ -1729,7 +1733,7 @@ benchmarks! {
                 curator_member_id
             )?;
         let sale_params =
-            worst_case_scenario_token_sale_params::<T>(MAX_BYTES_METADATA, None);
+            worst_case_scenario_token_sale_params::<T>(MAX_KILOBYTES_METADATA, None);
         Pallet::<T>::init_creator_token_sale(
             origin.clone().into(),
             actor,
@@ -1746,7 +1750,7 @@ benchmarks! {
             tokens_sold
         )?;
         let council_budget_pre = T::CouncilBudgetManager::get_budget();
-        fastforward_by_blocks::<T>(DEFAULT_CRT_SALE_DURATION.into());
+        fastforward_by_blocks::<T>(default_crt_sale_duration::<T>());
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, actor, channel_id)
@@ -2289,13 +2293,13 @@ benchmarks! {
     // INPUT COMPLEXITY
     // - params of type EnglishAuctionParameters with:
     //   - member whitelist size : w
-    //   - metadata bytelength : b
+    //   - metadata kilobytelength : b
     //   - royalty is some
     //   - buy now price is some
     //   - starts at is some
     issue_nft {
         let w in 2..(T::MaxNftAuctionWhitelistLength::get());
-        let b in 1..MAX_BYTES_METADATA;
+        let b in 1..MAX_KILOBYTES_METADATA;
 
         let (
             video_id,
@@ -2309,6 +2313,7 @@ benchmarks! {
 
         let origin = RawOrigin::Signed(curator_account_id);
         let params = worst_case_nft_issuance_params_helper::<T>(w,b);
+        set_nft_limits_helper::<T>(channel_id);
     }: _ (origin, actor, video_id, params)
         verify {
             assert!(Pallet::<T>::video_by_id(video_id).nft_status.is_some());
@@ -2977,7 +2982,7 @@ benchmarks! {
         fastforward_by_blocks::<T>(2u32.into());
         let _ = add_english_auction_bid::<T>(participant_account_id, participant_id, video_id);
 
-        fastforward_by_blocks::<T>(10u32.into());
+        fastforward_by_blocks::<T>(Pallet::<T>::min_auction_duration());
     }: _(origin, video_id)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -3134,7 +3139,7 @@ benchmarks! {
         fastforward_by_blocks::<T>(2u32.into());
 
         let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
-        fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
+        fastforward_by_blocks::<T>(Pallet::<T>::min_bid_lock_duration()); // skip bid lock
 
     }: _(origin, participant_id, video_id)
         verify {
@@ -3181,9 +3186,6 @@ benchmarks! {
         fastforward_by_blocks::<T>(2u32.into());
 
         let bid = add_open_auction_bid::<T>(participant_account_id, participant_id, video_id);
-
-        fastforward_by_blocks::<T>(10u32.into());
-
     }: _(origin, nft_owner_actor, video_id, participant_id, bid.amount)
         verify {
             assert!(matches!(Pallet::<T>::video_by_id(video_id).nft_status, Some(Nft::<T> {
@@ -3238,8 +3240,7 @@ benchmarks! {
         let balance_pre = Balances::<T>::usable_balance(participant_account_id.clone());
         let _ = add_open_auction_bid::<T>(participant_account_id.clone(), participant_id, video_id);
         let price = nft_buy_now_price::<T>();
-        fastforward_by_blocks::<T>(10u32.into()); // skip bid lock
-
+        fastforward_by_blocks::<T>(Pallet::<T>::min_bid_lock_duration()); // skip bid lock
     }: _(origin, participant_id, video_id, price)
         verify {
             assert_eq!(
@@ -3270,10 +3271,10 @@ benchmarks! {
     // INPUT COMPLEXITY
     // - remark message byte-length: b
     channel_owner_remark {
-        let b in 1 .. MAX_BYTES_METADATA;
+        let b in 1 .. MAX_KILOBYTES_METADATA;
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let msg = vec![1u8].repeat(b as usize);
+        let msg = vec![1u8].repeat((b * 1000) as usize);
         let origin = RawOrigin::Signed(lead_account_id);
         set_all_channel_paused_features::<T>(channel_id);
     }: _(origin, channel_id, msg.clone())
@@ -3301,14 +3302,14 @@ benchmarks! {
     // INPUT COMPLEXITY
     // - remark message byte-length: b
     channel_agent_remark {
-        let b in 1 .. MAX_BYTES_METADATA;
+        let b in 1 .. MAX_KILOBYTES_METADATA;
         let (channel_id, group_id, lead_account_id, curator_id, curator_account_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
 
         set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(curator_account_id);
         let actor = ContentActor::Curator(group_id, curator_id);
-        let msg = vec![1u8].repeat(b as usize);
+        let msg = vec![1u8].repeat((b * 1000) as usize);
     }: _(origin, actor, channel_id, msg.clone())
         verify {
             assert_last_event::<T>(
@@ -3339,7 +3340,7 @@ benchmarks! {
     // INPUT COMPLEXITY
     // - remark message byte-length: b
     nft_owner_remark {
-        let b in 1 .. MAX_BYTES_METADATA;
+        let b in 1 .. MAX_KILOBYTES_METADATA;
         let (
             video_id,
             (curator_account_id, actor, channel_id, _)
@@ -3357,7 +3358,7 @@ benchmarks! {
 
         set_all_channel_paused_features::<T>(channel_id);
         let origin = RawOrigin::Signed(owner_account);
-        let msg = vec![1u8].repeat(b as usize);
+        let msg = vec![1u8].repeat((b * 1000) as usize);
     }: _(origin, nft_owner_actor, video_id, msg.clone())
         verify {
             assert_last_event::<T>(

@@ -459,16 +459,16 @@ mod tests {
             .fold(0, |acc, x| acc.checked_add(*x).unwrap());
     }
 
-    #[ignore]
     #[test]
     fn call_size() {
-        let size = core::mem::size_of::<Call>();
+        // https://github.com/Joystream/joystream/pull/4336#discussion_r992359003
+        const SAFE_SIZE: usize = 400;
+        let current_size = core::mem::size_of::<Call>();
         assert!(
-			size <= 208,
-			"size of Call {} is more than 208 bytes: some calls have too big arguments, use Box to reduce the
-			size of Call.
-			If the limit is too strong, maybe consider increase the limit to 300.",
-			size,
-		);
+            current_size <= SAFE_SIZE,
+            "size of Call {} is more than {} bytes: some calls have too big arguments, use Box to reduce the
+            size of Call. If the limit is too strong, maybe consider increase the limit.",
+            current_size, SAFE_SIZE
+        );
     }
 }

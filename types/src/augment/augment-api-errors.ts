@@ -2432,7 +2432,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
       /**
-       * Transfer destination member id invalid
+       * At least one of the transfer destinations is not an existing member id
        **/
       TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
       /**

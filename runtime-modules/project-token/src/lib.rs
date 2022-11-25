@@ -20,7 +20,10 @@
 extern crate common;
 
 use codec::{FullCodec, MaxEncodedLen};
-use common::membership::{MemberId as MemberIdOf, MemberOriginValidator, MembershipInfoProvider};
+use common::{
+    membership::{MemberId as MemberIdOf, MemberOriginValidator, MembershipInfoProvider},
+    to_kb,
+};
 use core::default::Default;
 use frame_support::{
     decl_module, decl_storage,
@@ -230,11 +233,11 @@ decl_module! {
         /// ## Weight
         /// `O (T + M)` where:
         /// - `T` is the length of `outputs`
-        /// - `M` is the length of `metadata`
+        /// - `M` is the size of `metadata` in kilobytes
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, metadata.len() as u32)]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, to_kb(metadata.len() as u32))]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
@@ -1635,6 +1638,10 @@ impl<T: Config> Module<T> {
                 Error::<T>::AccountInformationDoesNotExist
             );
         }
+        ensure!(
+            T::MembershipInfoProvider::controller_account_id(dst).is_ok(),
+            Error::<T>::TransferDestinationMemberDoesNotExist
+        );
         if dst_acc_data.is_some() {
             Ok(Validated::Existing(dst))
         } else {

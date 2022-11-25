@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.8.0 linux-x64 node-v14.18.0
+@joystream/cli/0.8.0 linux-x64 node-v16.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -97,7 +97,11 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
 - [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
 - [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
+- [`joystream-cli content:channelPayoutProof CHANNELID`](#joystream-cli-contentchannelpayoutproof-channelid)
+- [`joystream-cli content:channelPayoutProofAtByteOffset BYTEOFFSET`](#joystream-cli-contentchannelpayoutproofatbyteoffset-byteoffset)
+- [`joystream-cli content:channelPayoutsPayloadHeader`](#joystream-cli-contentchannelpayoutspayloadheader)
 - [`joystream-cli content:channels`](#joystream-cli-contentchannels)
+- [`joystream-cli content:claimChannelReward CHANNELID`](#joystream-cli-contentclaimchannelreward-channelid)
 - [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
 - [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
 - [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
@@ -110,6 +114,9 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
 - [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
 - [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
+- [`joystream-cli content:generateChannelPayoutsCommitment`](#joystream-cli-contentgeneratechannelpayoutscommitment)
+- [`joystream-cli content:generateChannelPayoutsPayload`](#joystream-cli-contentgeneratechannelpayoutspayload)
+- [`joystream-cli content:getPayoutsOnchainCommitment`](#joystream-cli-contentgetpayoutsonchaincommitment)
 - [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
 - [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
 - [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
@@ -450,6 +457,57 @@ OPTIONS
 
 _See code: [src/commands/content/channel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channel.ts)_
 
+## `joystream-cli content:channelPayoutProof CHANNELID`
+
+Show payout information for a channel.
+
+```
+USAGE
+  $ joystream-cli content:channelPayoutProof CHANNELID
+
+ARGUMENTS
+  CHANNELID  ID of the Channel
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/channelPayoutProof.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutProof.ts)_
+
+## `joystream-cli content:channelPayoutProofAtByteOffset BYTEOFFSET`
+
+Get channel payout record from serialized payload at given byte.
+
+```
+USAGE
+  $ joystream-cli content:channelPayoutProofAtByteOffset BYTEOFFSET
+
+ARGUMENTS
+  BYTEOFFSET  Byte offset of payout record from start of payload
+
+OPTIONS
+  --path=path  Path to the serialized payload file
+  --url=url    URL to the serialized payload file
+```
+
+_See code: [src/commands/content/channelPayoutProofAtByteOffset.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutProofAtByteOffset.ts)_
+
+## `joystream-cli content:channelPayoutsPayloadHeader`
+
+Get header from serialized payload file.
+
+```
+USAGE
+  $ joystream-cli content:channelPayoutsPayloadHeader
+
+OPTIONS
+  --path=path  Path to the protobuf serialized payload file
+  --url=url    URL to the protobuf serialized payload file
+```
+
+_See code: [src/commands/content/channelPayoutsPayloadHeader.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutsPayloadHeader.ts)_
+
 ## `joystream-cli content:channels`
 
 List existing content directory channels.
@@ -464,6 +522,24 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/channels.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channels.ts)_
+
+## `joystream-cli content:claimChannelReward CHANNELID`
+
+Claim channel payout reward for a given channel id.
+
+```
+USAGE
+  $ joystream-cli content:claimChannelReward CHANNELID
+
+ARGUMENTS
+  CHANNELID  ID of the Channel
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/claimChannelReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/claimChannelReward.ts)_
 
 ## `joystream-cli content:createChannel`
 
@@ -685,6 +761,55 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/deleteVideoAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAssetsAsModerator.ts)_
+
+## `joystream-cli content:generateChannelPayoutsCommitment`
+
+Generate merkle root (commitment) from channel payouts payload.
+
+```
+USAGE
+  $ joystream-cli content:generateChannelPayoutsCommitment
+
+OPTIONS
+  --path=path                Path to the serialized payload file
+  --url=url                  URL to the serialized payload file
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/generateChannelPayoutsCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutsCommitment.ts)_
+
+## `joystream-cli content:generateChannelPayoutsPayload`
+
+Generate serialized channel payouts payload from JSON input.
+
+```
+USAGE
+  $ joystream-cli content:generateChannelPayoutsPayload
+
+OPTIONS
+  -i, --input=input          (required) Path to JSON file containing channel payouts vector
+  -o, --out=out              (required) Path to output file where serialized channel payouts payload will be saved
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/generateChannelPayoutsPayload.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutsPayload.ts)_
+
+## `joystream-cli content:getPayoutsOnchainCommitment`
+
+Get on-chain commitment (merkle root) for channel payouts payload.
+
+```
+USAGE
+  $ joystream-cli content:getPayoutsOnchainCommitment
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/getPayoutsOnchainCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/getPayoutsOnchainCommitment.ts)_
 
 ## `joystream-cli content:removeChannelAssets`
 
@@ -970,18 +1095,25 @@ USAGE
   $ joystream-cli fee-profile:buyMembership
 
 OPTIONS
-  -a, --aboutLength=aboutLength          [default: 0] Length of the member's about text (part of metadata) to use for
-                                         estimating tx fee
+  -E, --externalResourcesCount=externalResourcesCount  [default: 1] Number of external resources (part of metadata) to
+                                                       use for estimating tx fee
 
-  -h, --handleLength=handleLength        [default: 10] Length of the membership handle to use for estimating tx fee
+  -a, --aboutLength=aboutLength                        [default: 0] Length of the member's about text (part of metadata)
+                                                       to use for estimating tx fee
 
-  -j, --joyPrice=joyPrice                [default: 6] Joy price in USD cents for estimating costs in USD
+  -e, --externalResourceLength=externalResourceLength  [default: 25] Length of a single external resource url (part of
+                                                       metadata) to use for estimating tx fee
 
-  -n, --nameLength=nameLength            [default: 10] Length of the member's name (part of metadata) to use for
-                                         estimating tx fee
+  -h, --handleLength=handleLength                      [default: 10] Length of the membership handle to use for
+                                                       estimating tx fee
 
-  -u, --avatarUriLength=avatarUriLength  [default: 25] Length of the member's avatar uri (part of metadata) to use for
-                                         estimating tx fee
+  -j, --joyPrice=joyPrice                              [default: 6] Joy price in USD cents for estimating costs in USD
+
+  -n, --nameLength=nameLength                          [default: 10] Length of the member's name (part of metadata) to
+                                                       use for estimating tx fee
+
+  -u, --avatarUriLength=avatarUriLength                [default: 25] Length of the member's avatar uri (part of
+                                                       metadata) to use for estimating tx fee
 ```
 
 _See code: [src/commands/fee-profile/buyMembership.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/fee-profile/buyMembership.ts)_

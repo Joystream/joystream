@@ -221,7 +221,7 @@ class ActiveVideoCounterExecutor<
 }
 
 export function createVideoManager(store: DatabaseManager): DerivedPropertiesManager<Video, IAvcChange> {
-  const manager = new DerivedPropertiesManager<Video, IAvcChange>(store, Video, videoRelationsForCounters)
+  const manager = new DerivedPropertiesManager<Video, IAvcChange>(store, Video, [...videoRelationsForCounters])
 
   // listen to video change
   const listener = new VideoUpdateListener()

@@ -7,3 +7,4 @@
     version: '{{ branch_name }}'
     dest: '{{ remote_code_path }}'
     force: yes
+  register: result_git_checkout

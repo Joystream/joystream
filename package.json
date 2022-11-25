@@ -19,7 +19,9 @@
     "cli",
     "types",
     "storage-node",
+    "storage-node/client",
     "distributor-node",
+    "distributor-node/client",
     "devops/eslint-config",
     "devops/prettier-config",
     "utils/api-scripts",
@@ -27,7 +29,8 @@
     "query-node",
     "query-node/mappings",
     "query-node/generated/graphql-server",
-    "metadata-protobuf"
+    "metadata-protobuf",
+    "joystreamjs"
   ],
   "resolutions": {
     "@polkadot/api": "8.9.1",

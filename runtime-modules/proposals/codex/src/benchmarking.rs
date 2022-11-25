@@ -6,6 +6,7 @@ use super::*;
 use crate::Module as Codex;
 use balances::Pallet as Balances;
 
+use common::to_kb;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use content::NftLimitPeriod;
@@ -28,7 +29,7 @@ use working_group::{
 };
 
 const SEED: u32 = 0;
-const MAX_BYTES: u32 = 2 * 1024 * 1024;
+const MAX_KILOBYTES_METADATA: u32 = 100;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
@@ -93,15 +94,15 @@ fn member_funded_account<T: Config + membership::Config>() -> (T::AccountId, T::
 }
 
 fn create_proposal_parameters<T: Config + membership::Config>(
-    title_length: u32,
-    description_length: u32,
+    title_length_kb: u32,
+    description_length_kb: u32,
 ) -> (T::AccountId, T::MemberId, GeneralProposalParameters<T>) {
     let (account_id, member_id) = member_funded_account::<T>();
 
     let general_proposal_paramters = GeneralProposalParameters::<T> {
         member_id,
-        title: vec![0u8; title_length.try_into().unwrap()],
-        description: vec![0u8; description_length.try_into().unwrap()],
+        title: vec![0u8; (title_length_kb * 1000).try_into().unwrap()],
+        description: vec![0u8; (description_length_kb * 1000).try_into().unwrap()],
         staking_account_id: Some(account_id.clone()),
         exact_execution_block: None,
     };
@@ -285,14 +286,14 @@ benchmarks! {
     }
 
     create_proposal_signal {
-        let i in 1 .. MAX_BYTES;
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::Signal(vec![0u8; i.try_into().unwrap()]);
+        let proposal_details = ProposalDetails::Signal(vec![0u8; (i * 1000).try_into().unwrap()]);
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
@@ -308,14 +309,14 @@ benchmarks! {
     }
 
     create_proposal_runtime_upgrade {
-        let i in 1 .. MAX_BYTES;
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::RuntimeUpgrade(vec![0u8; i.try_into().unwrap()]);
+        let proposal_details = ProposalDetails::RuntimeUpgrade(vec![0u8; (i * 1000).try_into().unwrap()]);
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
@@ -332,8 +333,8 @@ benchmarks! {
 
     create_proposal_funding_request {
         let i in 1 .. T::FundingRequestProposalMaxAccounts::get();
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -369,8 +370,8 @@ benchmarks! {
     }
 
     create_proposal_set_max_validator_count {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -391,18 +392,18 @@ benchmarks! {
     }
 
     create_proposal_veto_proposal {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
         // Create proposal to be vetoed first
         let (signal_account_id, signal_member_id, signal_general_proposal_params) = create_proposal_parameters::<T>(
-            T::TitleMaxLength::get(),
-            T::DescriptionMaxLength::get()
+            to_kb(T::TitleMaxLength::get()),
+            to_kb(T::DescriptionMaxLength::get())
         );
-        let signal_proposal_details = ProposalDetails::Signal(vec![0u8].repeat(MAX_BYTES as usize));
+        let signal_proposal_details = ProposalDetails::Signal(vec![0u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize));
         Module::<T>::create_proposal(
             RawOrigin::Signed(signal_account_id).into(),
             signal_general_proposal_params,
@@ -426,16 +427,16 @@ benchmarks! {
     }
 
     create_proposal_create_working_group_lead_opening {
-        let i in 1 .. MAX_BYTES;
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::CreateWorkingGroupLeadOpening(
             CreateOpeningParameters {
-                description: vec![0u8; i.try_into().unwrap()],
+                description: vec![0u8; (i * 1000).try_into().unwrap()],
                 stake_policy: working_group::StakePolicy {
                     stake_amount:
                         <T as working_group::Config<working_group::Instance1>>
@@ -460,8 +461,8 @@ benchmarks! {
     }
 
     create_proposal_fill_working_group_lead_opening {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (opening_id, _, _, application_id) = add_and_apply_on_lead_opening::<T, ForumWorkingGroupInstance>();
 
@@ -488,8 +489,8 @@ benchmarks! {
     }
 
     create_proposal_update_working_group_budget {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -514,8 +515,8 @@ benchmarks! {
     }
 
     create_proposal_decrease_working_group_lead_stake {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
 
@@ -542,8 +543,8 @@ benchmarks! {
     }
 
     create_proposal_slash_working_group_lead {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
 
@@ -570,8 +571,8 @@ benchmarks! {
     }
 
     create_proposal_set_working_group_lead_reward {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
 
@@ -598,8 +599,8 @@ benchmarks! {
     }
 
     create_proposal_terminate_working_group_lead {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (lead_id, _) = insert_leader::<T, ForumWorkingGroupInstance>();
 
@@ -628,15 +629,15 @@ benchmarks! {
     }
 
     create_proposal_amend_constitution {
-        let i in 1 .. MAX_BYTES;
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let i in 1 .. MAX_KILOBYTES_METADATA;
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
         let proposal_details =
-            ProposalDetails::AmendConstitution(vec![0u8; i.try_into().unwrap()]);
+            ProposalDetails::AmendConstitution(vec![0u8; (i * 1000).try_into().unwrap()]);
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
@@ -652,8 +653,8 @@ benchmarks! {
     }
 
     create_proposal_cancel_working_group_lead_opening {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let opening_id = add_lead_opening_helper::<T, ForumWorkingGroupInstance>();
 
@@ -678,8 +679,8 @@ benchmarks! {
     }
 
     create_proposal_set_membership_price {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
@@ -700,8 +701,8 @@ benchmarks! {
     }
 
     create_proposal_set_council_budget_increment {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -722,8 +723,8 @@ benchmarks! {
     }
 
     create_proposal_set_councilor_reward {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -744,8 +745,8 @@ benchmarks! {
     }
 
     create_proposal_set_initial_invitation_balance {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -766,8 +767,8 @@ benchmarks! {
     }
 
     create_proposal_set_initial_invitation_count {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -788,8 +789,8 @@ benchmarks! {
     }
 
     create_proposal_set_membership_lead_invitation_quota {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -810,8 +811,8 @@ benchmarks! {
     }
 
     create_proposal_set_referral_cut {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -832,8 +833,8 @@ benchmarks! {
     }
 
     create_proposal_update_global_nft_limit {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
 
         let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
@@ -857,9 +858,9 @@ benchmarks! {
     }
 
     create_proposal_update_channel_payouts {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
-        let i in 0..MAX_BYTES;
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+        let i in 0..MAX_KILOBYTES_METADATA;
 
         let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
@@ -870,7 +871,7 @@ benchmarks! {
             uploader_account,
             object_creation_params: content::DataObjectCreationParameters {
                 size: u64::MAX,
-                ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))
+                ipfs_content_id: Vec::from_iter((0..(i * 1000)).map(|v| u8::MAX))
             },
             expected_data_size_fee: u128::MAX.saturated_into::<T::Balance>(),
             expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<T::Balance>()

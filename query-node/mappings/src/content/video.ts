@@ -173,7 +173,15 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   // load video
   const video = await store.get(Video, {
     where: { id: contentId.toString() },
-    relations: [...videoRelationsForCounters, 'license', 'channel.ownerMember', 'channel.ownerCuratorGroup', 'nft'],
+    relations: [
+      ...videoRelationsForCounters,
+      'license',
+      'channel.ownerMember',
+      'channel.ownerCuratorGroup',
+      'nft',
+      'mediaMetadata',
+      'mediaMetadata.encoding',
+    ],
   })
 
   if (video) {
