@@ -34,6 +34,7 @@
           args:
             CARGO_FEATURES: '{{ cargo_features }}'
             GIT_COMMIT_HASH: '{{ result_git_checkout.after[:11] }}'
+            CODE_SHASUM: '{{ code_shasum }}'
         name: '{{ repository }}'
         tag: '{{ tag_name }}'
         push: true
