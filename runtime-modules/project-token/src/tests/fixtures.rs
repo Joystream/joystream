@@ -140,7 +140,13 @@ impl IssueTokenFixture {
     }
 
     pub fn with_empty_allocation(self) -> Self {
-        self.with_allocation(member!(1).0, 0u64.into())
+        Self {
+            params: IssuanceParams {
+                initial_allocation: BTreeMap::default(),
+                ..self.params
+            },
+            ..self
+        }
     }
 
     pub fn with_symbol(self, symbol: H256) -> Self {
