@@ -64,7 +64,6 @@ fragment VideoFields on Video {
     pixelHeight
     size
   }
-  isFeatured
   channel {
     id
     ownerMember {
