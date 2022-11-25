@@ -8,6 +8,33 @@ import type { FrameSupportWeightsRuntimeDbWeight, FrameSystemLimitsBlockLength, 
 
 declare module '@polkadot/api-base/types/consts' {
   export interface AugmentedConsts<ApiType extends ApiTypes> {
+    appWorkingGroup: {
+      /**
+       * Stake needed to create an opening.
+       **/
+      leaderOpeningStake: u128 & AugmentedConst<ApiType>;
+      /**
+       * Exports const
+       * Max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Minimum stake required for applying into an opening.
+       **/
+      minimumApplicationStake: u128 & AugmentedConst<ApiType>;
+      /**
+       * Defines min unstaking period in the group.
+       **/
+      minUnstakingPeriodLimit: u32 & AugmentedConst<ApiType>;
+      /**
+       * Defines the period every worker gets paid in blocks.
+       **/
+      rewardPeriod: u32 & AugmentedConst<ApiType>;
+      /**
+       * Staking handler lock id.
+       **/
+      stakingHandlerLockId: U8aFixed & AugmentedConst<ApiType>;
+    };
     authorship: {
       /**
        * The number of blocks back we should accept uncles.
@@ -339,33 +366,6 @@ declare module '@polkadot/api-base/types/consts' {
       threadDeposit: u128 & AugmentedConst<ApiType>;
     };
     forumWorkingGroup: {
-      /**
-       * Stake needed to create an opening.
-       **/
-      leaderOpeningStake: u128 & AugmentedConst<ApiType>;
-      /**
-       * Exports const
-       * Max simultaneous active worker number.
-       **/
-      maxWorkerNumberLimit: u32 & AugmentedConst<ApiType>;
-      /**
-       * Minimum stake required for applying into an opening.
-       **/
-      minimumApplicationStake: u128 & AugmentedConst<ApiType>;
-      /**
-       * Defines min unstaking period in the group.
-       **/
-      minUnstakingPeriodLimit: u32 & AugmentedConst<ApiType>;
-      /**
-       * Defines the period every worker gets paid in blocks.
-       **/
-      rewardPeriod: u32 & AugmentedConst<ApiType>;
-      /**
-       * Staking handler lock id.
-       **/
-      stakingHandlerLockId: U8aFixed & AugmentedConst<ApiType>;
-    };
-    gatewayWorkingGroup: {
       /**
        * Stake needed to create an opening.
        **/

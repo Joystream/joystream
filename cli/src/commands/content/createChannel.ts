@@ -3,6 +3,7 @@ import { createType } from '@joystream/types'
 import { ChannelId } from '@joystream/types/primitives'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
+import ExitCodes from '../../ExitCodes'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
@@ -82,6 +83,12 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     this.log(chalk.green(`Channel with id ${chalk.cyanBright(channelId.toString())} successfully created!`))
     this.output(channelId.toString())
+
+    if (dataObjects.size !== (assets?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of channel assets in ChannelCreated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
 
     if (dataObjects.size) {
       await this.uploadAssets(

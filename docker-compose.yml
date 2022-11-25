@@ -178,6 +178,7 @@ services:
       - GRAPHQL_PLAYGROUND_CDN_URL=${GRAPHQL_PLAYGROUND_CDN_URL}
     ports:
       - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
+      - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
     depends_on:
       - db
     volumes:

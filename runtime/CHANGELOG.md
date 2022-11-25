@@ -1,4 +1,4 @@
-### Version 11.0.0 - Carthage - new chain
+### Version 11.3.0 - Carthage - new chain
   - Update to substrate v0.9.23
   - Introduce project-token pallet into runtime
   - Dropped blog pallet

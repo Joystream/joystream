@@ -4,8 +4,6 @@
 
 The joystream-node is the main server application that connects to the network, synchronizes the blockchain with other nodes and produces blocks if configured as a validator node.
 
-A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
-
 ### Pre-built binaries
 
 The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
@@ -49,7 +47,7 @@ this script will build and run a fresh new local development chain (purging exis
 Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
 ```bash
-./target/release/joystream-node --chain testnets/joy-testnet-5.json
+./target/release/joystream-node --chain testnets/joy-testnet-7-carthage.json
 ```
 
 ### Tests and code quality
@@ -85,5 +83,5 @@ WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 install joystr
 Now you can run and connect to the testnet:
 
 ```bash
-joystream-node --chain testnets/joy-testnet-5.json
+joystream-node --chain testnets/joy-testnet-7-carthage.json
 ```

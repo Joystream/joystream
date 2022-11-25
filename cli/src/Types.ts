@@ -34,6 +34,7 @@ import {
   WorkingGroupOpeningDetailsFragment,
 } from './graphql/generated/queries'
 import { EnumVariant } from '@joystream/types'
+import { UnsignedTransaction } from '@substrate/txwrapper-polkadot'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -63,7 +64,7 @@ export enum WorkingGroups {
   Builders = 'builders',
   HumanResources = 'humanResources',
   Marketing = 'marketing',
-  Gateway = 'gateway',
+  App = 'app',
   Distribution = 'distributors',
 }
 
@@ -72,7 +73,7 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.Curators,
   WorkingGroups.Forum,
   WorkingGroups.Membership,
-  WorkingGroups.Gateway,
+  WorkingGroups.App,
   WorkingGroups.Builders,
   WorkingGroups.HumanResources,
   WorkingGroups.Marketing,
@@ -325,4 +326,17 @@ export type TokenRequestData = {
   dataObjectId: number
   storageBucketId: number
   bagId: string
+}
+
+export type OfflineTransactionData = {
+  unsigned: UnsignedTransaction
+  signingPayload: string
+  txData: {
+    call: string
+    callHash: string
+  }
+  multisigTxData?: {
+    call: string
+    callHash: string
+  }
 }

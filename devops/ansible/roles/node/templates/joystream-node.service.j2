@@ -8,7 +8,9 @@ User={{ template_user }}
 WorkingDirectory={{ template_working_dir }}
 ExecStart={{ template_working_dir }}/joystream-node \
         --chain {{ template_working_dir }}/chainspec.json \
-        --pruning archive
+        --pruning archive \
+        --no-mdns
+
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=10000

@@ -7,13 +7,15 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 STEPS=${1:-50}
 REPEAT=${2:-20}
 
+$SCRIPT_DIR/../target/release/joystream-node purge-chain --chain prod-test -y
+
 substrate_pallet_benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
-      --chain=dev \
+      --chain=prod-test \
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
@@ -40,7 +42,7 @@ joystream_pallet_benchmark() {
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
-      --chain=dev \
+      --chain=prod-test \
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
@@ -62,7 +64,7 @@ overhead_benchmarks() {
   echo "Generating core weights"
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark overhead \
-      --chain=dev \
+      --chain=prod-test \
       --execution=wasm \
       --warmup=10 \
       --repeat=100 \
@@ -83,7 +85,7 @@ storage_benchmarks() {
   echo "Generating storage weights"
   start=`date +%s`
   ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark storage \
-      --chain=dev \
+      --chain=prod-test \
       --warmups=100 \
       --weight-path=$SCRIPT_DIR/../runtime/src/weights/ \
       --state-version 1)
@@ -112,17 +114,11 @@ substrate_pallet_benchmark pallet_session
 substrate_pallet_benchmark pallet_timestamp
 substrate_pallet_benchmark pallet_vesting
 substrate_pallet_benchmark pallet_multisig
-
-# Module staking benchmarking takes too long.
+substrate_pallet_benchmark pallet_bags_list
+substrate_pallet_benchmark pallet_election_provider_multi_phase
+substrate_pallet_benchmark pallet_election_provider_support_benchmarking
 substrate_pallet_benchmark pallet_staking
-
-# Benchmark should be run on the reference machine because it affects the fee model (transfer fee).
 substrate_pallet_benchmark pallet_balances
-
-# This benchmark takes too long with 50 steps and 20 repeats in a normal laptop.
-# Will have it commented out until we test it in the reference machine. If there
-# it still takes too long we will get rid of this benchmark for good and use always
-# the default weights.
 substrate_pallet_benchmark pallet_im_online
 
 # Joystrem benchmarks

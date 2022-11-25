@@ -813,12 +813,12 @@ declare module '@polkadot/types/lookup' {
     readonly isStorage: boolean;
     readonly isContent: boolean;
     readonly isOperationsAlpha: boolean;
-    readonly isGateway: boolean;
+    readonly isApp: boolean;
     readonly isDistribution: boolean;
     readonly isOperationsBeta: boolean;
     readonly isOperationsGamma: boolean;
     readonly isMembership: boolean;
-    readonly type: 'Forum' | 'Storage' | 'Content' | 'OperationsAlpha' | 'Gateway' | 'Distribution' | 'OperationsBeta' | 'OperationsGamma' | 'Membership';
+    readonly type: 'Forum' | 'Storage' | 'Content' | 'OperationsAlpha' | 'App' | 'Distribution' | 'OperationsBeta' | 'OperationsGamma' | 'Membership';
   }
 
   /** @name PalletCommonBalanceKind (96) */

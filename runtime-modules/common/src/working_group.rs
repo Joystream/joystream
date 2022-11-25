@@ -28,8 +28,8 @@ pub mod iterable_enums {
         /// Operations working group: working_group::Instance4.
         OperationsAlpha,
 
-        /// Gateway working group: working_group::Instance5.
-        Gateway,
+        /// App working group: working_group::Instance5.
+        App,
 
         /// Distribution working group: working_group::Instance9.
         Distribution,
