@@ -51,6 +51,8 @@ pub trait WeightInfo {
 	fn participate_in_split() -> Weight;
 	fn exit_revenue_split() -> Weight;
 	fn burn() -> Weight;
+	fn buy_on_amm() -> Weight;
+	fn sell_on_amm() -> Weight;
 }
 
 /// Weights for project_token using the Substrate node and recommended hardware.
@@ -196,6 +198,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+	fn buy_on_amm() -> Weight {
+		0
+	}
+	fn sell_on_amm() -> Weight {
+		0
+	}
 }
 
 // Default implementation for tests
@@ -220,5 +228,11 @@ impl WeightInfo for () {
 	}
 	fn burn() -> Weight {
 		Weight::from_parts(0, 0)
+	}
+	fn buy_on_amm() -> Weight {
+		0
+	}
+	fn sell_on_amm() -> Weight {
+		0
 	}
 }
