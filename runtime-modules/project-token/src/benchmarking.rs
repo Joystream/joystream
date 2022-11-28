@@ -616,7 +616,7 @@ benchmarks! {
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount_to_buy = DEFAULT_AMM_AMOUNT;
         let deadline = Some(100u64);
-        let desired_price = 5100;
+        let desired_price = 5100; // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
         let participant_id = create_member::<T>(&participant_acc, b"participant");
@@ -642,8 +642,9 @@ benchmarks! {
             Token::<T>::(token_id, &owner_member_id).unwrap().amount,
             amount_to_buy,
         );
-        assert!(
-            Joy::<T>::usable_balance(&participant_acc).is_zero()
+        assert_eq!(
+            Joy::<T>::usable_balance(&participant_acc),
+            T::JoyExistentialDeposit::get()
         );
    }
 
@@ -655,7 +656,7 @@ benchmarks! {
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount_to_buy = DEFAULT_AMM_AMOUNT;
         let deadline = Some(100u64);
-        let desired_price = 5100;
+        let desired_price = 5100; // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         Joy::<T>::deposit_creating(participant_id, desired_price);
         let slippage_tolerance = Some((Permill::from_percent(10), desired_price));
@@ -693,7 +694,7 @@ benchmarks! {
         let amount = DEFAULT_AMM_AMOUNT;
         buy_on_amm::<T>(token_id, participant_acc, amount)
         let deadline = Some(100u64);
-        let desired_price = 5100;
+        let desired_price = 5100; // computed using supply = 0  a = 10% and b = 10%
         Joy::<T>::deposit_creating(participant_id, desired_price);
         let slippage_tolerance = Some((Permill::from_percent(10), desired_price));
         pallet_timestamp::Pallet::<Test>::set_timestamp(deadline.unwrap()/2);
