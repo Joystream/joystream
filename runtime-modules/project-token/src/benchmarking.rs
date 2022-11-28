@@ -35,6 +35,10 @@ const DEFAULT_SPLIT_PAYOUT: u64 = 2_000_000;
 const DEFAULT_SPLIT_PARTICIPATION: u64 =
     DEFAULT_SPLIT_PAYOUT * DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION;
 
+// Amm
+const DEFAULT_AMM_BUY_AMOUNT: u64 = 1000;
+const DEFAULT_AMM_SELL_AMOUNT: u64 = 100;
+
 // Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(1));
 // Metadata
@@ -153,6 +157,14 @@ fn init_token_sale<T: Config>(token_id: T::TokenId) -> Result<TokenSaleId, Dispa
         },
     )?;
     Ok(sale_id)
+}
+
+fn activate_amm<T: Config>(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+    let params = AmmParams {
+        slope: Permill::from_percent(10),
+        intercept: Permill::from_percent(10),
+    };
+    Token::<T>::activate_amm(token_id, member_id, params)
 }
 
 fn issue_revenue_split<T: Config>(token_id: T::TokenId, forced_id: Option<u32>) -> DispatchResult {
@@ -585,6 +597,79 @@ benchmarks! {
             ).into()
         );
     }
+
+   buy_on_amm_with_account_creation {
+        let (owner_member_id, owner_account) = create_owner::<T>();
+        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
+        let amount_to_buy = 0;
+        let deadline = Some(100u64);
+        let desired_price = 5100;
+        let bloat_bond = BloatBond::<T>::get();
+        let participant_acc = account::<T::AccountId>("participant", 0, SEED);
+        let participant_id = create_member::<T>(&participant_acc, b"participant");
+        Joy::<T>::deposit_creating(participant_acc, desired_price + bloat_bond);
+        let slippage_tolerance = Some((Permill::from_percent(10), desired_price));
+        pallet_timestamp::Pallet::<Test>::set_timestamp(deadline.unwrap()/2);
+        activate_amm::<T>(token_id, owner_member_id)?;
+    }: buy_on_amm(
+        RawOrigin::Signed(participant_acc.clone()),
+        token_id,
+        amount_to_buy,
+        deadline,
+        slippage_tolerance,
+    )
+    verify {
+        let provided_supply = Token::<T>::ensure_token_exists(token_id).curve.unwrap().provided_supply;
+        assert_eq!(provided_supply, amount_to_buy);
+        assert_eq!(
+            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap().amount,
+            amount_to_buy,
+        );
+        assert_eq!(
+            Token::<T>::(token_id, &owner_member_id).unwrap().amount,
+            amount_to_buy,
+        );
+        assert!(
+            Joy::<T>::usable_balance(&participant_acc).is_zero()
+        );
+   }
+
+   buy_on_amm_with_existing_account {
+        let (owner_member_id, owner_account) = create_owner::<T>();
+        let participant_acc = account::<T::AccountId>("participant", 0, SEED);
+        let participant_id = create_member::<T>(&participant_acc, b"participant");
+        setup_account_with_max_number_of_locks::<T>(token_id, &participant_id, Some(DEFAULT_SPLIT_PARTICIPATION.into()));
+        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
+        let amount_to_buy = 0;
+        let deadline = Some(100u64);
+        let desired_price = 5100;
+        let bloat_bond = BloatBond::<T>::get();
+        Joy::<T>::deposit_creating(participant_id, desired_price);
+        let slippage_tolerance = Some((Permill::from_percent(10), desired_price));
+        pallet_timestamp::Pallet::<Test>::set_timestamp(deadline.unwrap()/2);
+        activate_amm::<T>(token_id, member_id)?;
+    }: buy_on_amm(
+        RawOrigin::Signed(participant_acc.clone()),
+        token_id,
+        amount_to_buy,
+        deadline,
+        slippage_tolerance,
+    )
+    verify {
+        let provided_supply = Token::<T>::ensure_token_exists(token_id).curve.unwrap().provided_supply;
+        assert_eq!(provided_supply, amount_to_buy);
+        assert_eq!(
+            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap().amount,
+            amount_to_buy,
+        );
+        assert_eq!(
+            Token::<T>::(token_id, &owner_member_id).unwrap().amount,
+            amount_to_buy,
+        );
+        assert!(
+            Joy::<T>::usable_balance(&participant_acc).is_zero()
+        );
+   }
 }
 
 #[cfg(test)]
