@@ -2184,10 +2184,9 @@
     lodash "^4.17.20"
     typeorm "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz"
 
-"@joystream/hydra-processor@4.0.0-alpha.8":
+"@joystream/hydra-processor@file:joystream-hydra-processor-v4.0.0-alpha.8.tgz":
   version "4.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-processor/-/hydra-processor-4.0.0-alpha.8.tgz#cad5b8758090c71672cef05a123ea030191bfa14"
-  integrity sha512-INZGEo36ATBdjgv+kdf2omSXUPCNiYx2ycXBX983zlTeOVMCzBDv2ZFaQPosKfbGdchhB1ZTNqHr/x/DuguKcw==
+  resolved "file:joystream-hydra-processor-v4.0.0-alpha.8.tgz#e2abda3335fa3a545cf507be951cd26e5556ad38"
   dependencies:
     "@joystream/hydra-common" "^4.0.0-alpha.8"
     "@joystream/hydra-db-utils" "^4.0.0-alpha.8"
@@ -2205,6 +2204,7 @@
     figlet "^1.5.2"
     graphql "^15.4.0"
     graphql-request "^3.3.0"
+    lodash.debounce "^4.0.8"
     p-immediate "^3.2.0"
     p-throttle "~4.1.1"
     p-wait-for "~3.2.0"
