@@ -122,6 +122,11 @@ export default async function workerActions({ api, query, env }: FlowProps): Pro
       const slashStakesRunner = new FixtureRunner(slashStakesFixture)
       await slashStakesRunner.runWithQueryNodeChecks()
 
+      // Terminate lead
+      const leadId = await api.getLeaderId(group)
+      const terminateLeadFixture = new TerminateWorkersFixture(api, query, group, [leadId], [new BN(0)], true)
+      await new FixtureRunner(terminateLeadFixture).runWithQueryNodeChecks()
+
       await debug('Done')
     })
   )

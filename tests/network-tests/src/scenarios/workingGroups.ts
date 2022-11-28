@@ -8,7 +8,7 @@ import groupBudget from '../flows/working-groups/groupBudget'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Working groups', async ({ job }) => {
-  const sudoHireLead = job('sudo lead opening', leadOpening())
+  const sudoHireLead = job('sudo lead opening', leadOpening(true))
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
   job('group status', groupStatus).requires(sudoHireLead)
