@@ -1676,3 +1676,15 @@ where
 {
     set_all_channel_paused_features_except::<T>(channel_id, vec![]);
 }
+
+fn activate_amm<T: Config>(
+    sender: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+) -> DispatchResult {
+    let params = AmmParams {
+        slope: Permill::from_percent(10),
+        intercept: Permill::from_percent(10),
+    };
+    Pallet::<T>::activate_amm(RawOrigin::Signed(sender).into(), actor, channel_id, params)
+}
