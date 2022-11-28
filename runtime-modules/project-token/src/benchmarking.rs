@@ -777,4 +777,18 @@ mod tests {
             assert_ok!(Token::test_benchmark_burn());
         });
     }
+
+    #[test]
+    fn test_buy_on_amm() {
+        build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
+            assert_ok!(Token::test_benchmark_buy_on_amm());
+        });
+    }
+
+    #[test]
+    fn test_sell_on_amm() {
+        build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
+            assert_ok!(Token::test_benchmark_sell_on_amm());
+        });
+    }
 }
