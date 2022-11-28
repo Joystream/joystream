@@ -1776,6 +1776,43 @@ benchmarks! {
             );
         }
 
+    activate_am {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id,
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let params = worst_case_scenario_token_sale_params::<T>(a, None);
+        let slope = Permill::from_percent(10),
+        let intercept = Permill::from_percent(10),
+        let params = AmmParams{ slope, intercept };
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _(
+        origin,
+        actor,
+        channel_id,
+        params,
+    )
+        verify {
+            let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+           assert_eq!(
+                token.curve.unwrap(),
+                AmmCurve {
+                    slope,
+                    intercept,
+                    provided_supply: BalanceOf::<T>::zero(),
+                }
+           )
+        }
+
     issue_revenue_split {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
