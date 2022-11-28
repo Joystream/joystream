@@ -710,7 +710,10 @@ pub(crate) fn amm_function_values(
     token_id: TokenId,
     bond_operation: AmmOperation,
 ) -> JoyBalance {
-    let supply = Token::token_info_by_id(token_id).total_supply;
+    let supply = Token::token_info_by_id(token_id)
+        .amm_curve
+        .unwrap()
+        .provided_supply;
     let supply2 = supply * supply;
     let sq_coeff = AMM_CURVE_SLOPE / 2;
     let res = match bond_operation {

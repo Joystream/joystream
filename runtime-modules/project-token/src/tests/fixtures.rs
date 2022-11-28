@@ -11,6 +11,7 @@ use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
 use sp_runtime::{testing::H256, traits::Hash, DispatchError, Permill};
 
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
@@ -128,13 +129,6 @@ impl IssueTokenFixture {
                 patronage_rate,
                 ..self.params
             },
-            ..self
-        }
-    }
-
-    pub fn with_allocation(self, beneficiary_id: MemberId, amount: Balance) -> Self {
-        Self {
-            params: self.params.with_allocation(&beneficiary_id, amount, None),
             ..self
         }
     }

@@ -845,7 +845,7 @@ decl_module! {
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
             let amm_treasury_account = Self::amm_treasury_account(token_id);
-            let price = curve.eval::<T>(amount, token_data.total_supply, AmmOperation::Buy)?;
+            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Buy)?;
             let bloat_bond = Self::bloat_bond();
             let buy_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
@@ -937,7 +937,7 @@ decl_module! {
 
             let amm_treasury_account = Self::amm_treasury_account(token_id);
 
-            let price = curve.eval::<T>(amount, token_data.total_supply, AmmOperation::Sell)?;
+            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Sell)?;
 
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
