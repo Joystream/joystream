@@ -7,7 +7,7 @@
 docker create --name temp-container-joystream-node joystream/node
 
 # Copy the compiled wasm blob from the docker container to our host
-docker cp temp-container-joystream-node:/joystream/runtime.compact.wasm joystream_runtime.wasm
+docker cp temp-container-joystream-node:/joystream/runtime.compact.compressed.wasm joystream_runtime.wasm
 docker rm temp-container-joystream-node
 
 # compute blake2_256 hash of the wasm blob - this should match the hash computed when the runtime file is
