@@ -99,7 +99,7 @@ export class TerminateWorkersFixture extends BaseWorkingGroupFixture {
       Utils.assert(worker.status.terminatedWorkerEvent, 'Query node: Missing terminatedWorkerEvent relation')
       assert.equal(worker.status.terminatedWorkerEvent.id, qEvent.id)
       if (this.asSudo) {
-        assert.isUndefined(worker.group.leaderId)
+        assert.equal(worker.group.leaderId, null)
       }
     })
   }
