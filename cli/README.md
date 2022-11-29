@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.9.0 darwin-x64 node-v14.16.1
+@joystream/cli/0.10.0 darwin-x64 node-v14.16.1
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -1889,7 +1889,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1912,7 +1912,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --answers=answers
@@ -1953,7 +1953,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1979,7 +1979,7 @@ OPTIONS
 
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   -i, --input=input
@@ -2025,7 +2025,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2051,7 +2051,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --penalty=penalty
@@ -2080,7 +2080,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --applicationIds=applicationIds
@@ -2112,7 +2112,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2135,7 +2135,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --rationale=rationale
@@ -2160,7 +2160,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --id=id
@@ -2189,7 +2189,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --upcoming
@@ -2215,7 +2215,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2238,7 +2238,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   -i, --id=id
@@ -2264,7 +2264,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2291,7 +2291,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --rationale=rationale
@@ -2316,7 +2316,7 @@ USAGE
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   -i, --input=input
@@ -2345,7 +2345,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2371,7 +2371,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2398,7 +2398,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, , builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
