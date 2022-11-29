@@ -171,9 +171,6 @@ decl_error! {
         /// Invalid bonding curve construction parameters
         InvalidCurveParameters,
 
-        /// Deadline timestamp lower than now
-        InvalidTimestampSpecified,
-
         /// Deadline constraint not satisfied
         DeadlineExpired,
 
