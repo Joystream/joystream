@@ -3,7 +3,7 @@ authors = ['Joystream contributors']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '8.0.0'
+version = '8.1.0'
 default-run = "joystream-node"
 
 [[bin]]
