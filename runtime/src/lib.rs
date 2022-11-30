@@ -147,7 +147,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 12,
-    spec_version: 1001,
+    spec_version: 1002,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1844,7 +1844,10 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-        Sudo: pallet_sudo,
+        // Keeping sudo pallet in runtime but without a Call
+        // to preserve module ordering..?
+        Sudo: pallet_sudo::{Pallet, Storage, Event<T>, Config<T>},
+        // Sudo: pallet_sudo,
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
