@@ -11,7 +11,7 @@ ExecStart={{ template_working_dir }}/joystream-node \
         --pruning archive \
         --no-mdns \
         --base-path {{ template_working_dir }} \
-        --in-peers 512 \
+        --in-peers 128 \
         --out-peers 50 \
         --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
         --listen-addr /ip4/0.0.0.0/tcp/30333
