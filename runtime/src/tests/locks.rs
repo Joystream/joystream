@@ -2,8 +2,8 @@ use super::{
     account_from_member_id, increase_total_balance_issuance_using_account_id, initial_test_ext,
 };
 use crate::{
-    currency, BoundStakingAccountStakingManager, ContentWorkingGroupStakingManager,
-    GatewayWorkingGroupStakingManager, MinVestedTransfer, Runtime,
+    currency, AppWorkingGroupStakingManager, BoundStakingAccountStakingManager,
+    ContentWorkingGroupStakingManager, MinVestedTransfer, Runtime,
 };
 use frame_support::{assert_err, assert_ok, traits::StoredMap};
 use frame_system::RawOrigin;
@@ -58,7 +58,7 @@ fn incompatible_stakes_check_passed_successfully() {
         increase_total_balance_issuance_using_account_id(account_id.clone(), total_amount);
 
         assert_eq!(
-            GatewayWorkingGroupStakingManager::set_stake(&account_id, stake_amount),
+            AppWorkingGroupStakingManager::set_stake(&account_id, stake_amount),
             Ok(())
         );
         assert!(
@@ -146,7 +146,7 @@ fn bonding_with_staked_account_fails() {
         increase_total_balance_issuance_using_account_id(validator_1.clone(), total_amount);
 
         assert_eq!(
-            GatewayWorkingGroupStakingManager::set_stake(&validator_1, stake_amount),
+            AppWorkingGroupStakingManager::set_stake(&validator_1, stake_amount),
             Ok(())
         );
         assert!(

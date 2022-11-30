@@ -64,7 +64,7 @@ export enum WorkingGroups {
   Builders = 'builders',
   HumanResources = 'humanResources',
   Marketing = 'marketing',
-  Gateway = 'gateway',
+  App = 'app',
   Distribution = 'distributors',
 }
 
@@ -73,7 +73,7 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.Curators,
   WorkingGroups.Forum,
   WorkingGroups.Membership,
-  WorkingGroups.Gateway,
+  WorkingGroups.App,
   WorkingGroups.Builders,
   WorkingGroups.HumanResources,
   WorkingGroups.Marketing,

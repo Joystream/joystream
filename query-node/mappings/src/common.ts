@@ -171,7 +171,7 @@ export type WorkingGroupModuleName =
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
   | 'operationsWorkingGroupAlpha'
-  | 'gatewayWorkingGroup'
+  | 'appWorkingGroup'
   | 'distributionWorkingGroup'
   | 'operationsWorkingGroupBeta'
   | 'operationsWorkingGroupGamma'
@@ -187,8 +187,8 @@ export function getWorkingGroupModuleName(group: WGType): WorkingGroupModuleName
     return 'storageWorkingGroup'
   } else if (group.isOperationsAlpha) {
     return 'operationsWorkingGroupAlpha'
-  } else if (group.isGateway) {
-    return 'gatewayWorkingGroup'
+  } else if (group.isApp) {
+    return 'appWorkingGroup'
   } else if (group.isDistribution) {
     return 'distributionWorkingGroup'
   } else if (group.isOperationsBeta) {

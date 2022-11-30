@@ -3,12 +3,13 @@ import { flags } from '@oclif/command'
 import { KEYRING_OPTIONS } from './AccountsCommandBase'
 import { createTestPairs } from '@polkadot/keyring/testingPairs'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { formatBalance } from '@polkadot/util'
+import { formatBalance, formatNumber } from '@polkadot/util'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { PalletStorageDataObjectCreationParameters } from '@polkadot/types/lookup'
 import { createType } from '@joystream/types'
 import chalk from 'chalk'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 
 const DEFAULT_JOY_PRICE = 6 // 6 cents
 
@@ -25,7 +26,16 @@ type SingleValueProfile = {
 
 type ProfileRecord = Record<string, SingleValueProfile>
 
+type TxWeightData = {
+  base: string
+  extra: string
+  total: string
+}
+
 type FullProfile = {
+  txClass: string
+  txLength: number
+  txWeight: TxWeightData
   costs: ProfileRecord
   returns: ProfileRecord
   diff: SingleValueProfile
@@ -72,7 +82,7 @@ export default abstract class FeeProfileCommandBase extends ApiCommandBase {
 
   generateValueProfile(hapi: BN): SingleValueProfile {
     return {
-      hapi: hapi.toString(),
+      hapi: this.formatBN(hapi),
       joy: this.asJoy(hapi),
       usd: this.asUsd(hapi),
     }
@@ -83,11 +93,37 @@ export default abstract class FeeProfileCommandBase extends ApiCommandBase {
     return _.mapValues(values, (hapi) => this.generateValueProfile(hapi))
   }
 
-  profile(costs: Record<string, BN>, returns: Record<string, BN> = {}): void {
+  // format BN as string in a way that allows reusing the string as input for BN constructor,
+  // but is also more human-readible (for example: "1 000 000 000")
+  formatBN(bn: BN): string {
+    return formatNumber(bn).replace(/,/g, ' ')
+  }
+
+  async profile(
+    tx: SubmittableExtrinsic<'promise'>,
+    costs: Record<string, BN> = {},
+    returns: Record<string, BN> = {}
+  ): Promise<void> {
+    await tx.signAsync(this.pairs.alice)
+    const txLength = tx.encodedLength
+    const { weight, partialFee: inclusionFee, class: txClass } = await tx.paymentInfo(this.pairs.alice)
+    const {
+      perClass: {
+        [txClass.type.toLowerCase() as 'normal' | 'operational' | 'mandatory']: { baseExtrinsic: baseExtrinsicWeight },
+      },
+    } = this.getOriginalApi().consts.system.blockWeights
+    costs.inclusionFee = inclusionFee
     const costsProfile = this.generateProfileRecord(costs)
     const returnsProfile = this.generateProfileRecord(returns)
     const diff = this.generateValueProfile(new BN(returnsProfile.total.hapi).sub(new BN(costsProfile.total.hapi)))
     const output: FullProfile = {
+      txClass: txClass.type,
+      txLength,
+      txWeight: {
+        base: this.formatBN(baseExtrinsicWeight),
+        extra: this.formatBN(weight),
+        total: this.formatBN(baseExtrinsicWeight.add(weight)),
+      },
       costs: costsProfile,
       returns: returnsProfile,
       diff,

@@ -602,50 +602,50 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: distributionWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
-    # Gateway working group
-    - event: gatewayWorkingGroup.OpeningAdded
+    # Apps working group
+    - event: appWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
-    - event: gatewayWorkingGroup.AppliedOnOpening
+    - event: appWorkingGroup.AppliedOnOpening
       handler: workingGroups_AppliedOnOpening
-    - event: gatewayWorkingGroup.OpeningFilled
+    - event: appWorkingGroup.OpeningFilled
       handler: workingGroups_OpeningFilled
-    - event: gatewayWorkingGroup.LeaderSet
+    - event: appWorkingGroup.LeaderSet
       handler: workingGroups_LeaderSet
-    - event: gatewayWorkingGroup.WorkerRoleAccountUpdated
+    - event: appWorkingGroup.WorkerRoleAccountUpdated
       handler: workingGroups_WorkerRoleAccountUpdated
-    - event: gatewayWorkingGroup.LeaderUnset
+    - event: appWorkingGroup.LeaderUnset
       handler: workingGroups_LeaderUnset
-    - event: gatewayWorkingGroup.WorkerExited
+    - event: appWorkingGroup.WorkerExited
       handler: workingGroups_WorkerExited
-    - event: gatewayWorkingGroup.TerminatedWorker
+    - event: appWorkingGroup.TerminatedWorker
       handler: workingGroups_TerminatedWorker
-    - event: gatewayWorkingGroup.TerminatedLeader
+    - event: appWorkingGroup.TerminatedLeader
       handler: workingGroups_TerminatedLeader
-    - event: gatewayWorkingGroup.StakeSlashed
+    - event: appWorkingGroup.StakeSlashed
       handler: workingGroups_StakeSlashed
-    - event: gatewayWorkingGroup.StakeDecreased
+    - event: appWorkingGroup.StakeDecreased
       handler: workingGroups_StakeDecreased
-    - event: gatewayWorkingGroup.StakeIncreased
+    - event: appWorkingGroup.StakeIncreased
       handler: workingGroups_StakeIncreased
-    - event: gatewayWorkingGroup.ApplicationWithdrawn
+    - event: appWorkingGroup.ApplicationWithdrawn
       handler: workingGroups_ApplicationWithdrawn
-    - event: gatewayWorkingGroup.OpeningCanceled
+    - event: appWorkingGroup.OpeningCanceled
       handler: workingGroups_OpeningCanceled
-    - event: gatewayWorkingGroup.BudgetSet
+    - event: appWorkingGroup.BudgetSet
       handler: workingGroups_BudgetSet
-    - event: gatewayWorkingGroup.WorkerRewardAccountUpdated
+    - event: appWorkingGroup.WorkerRewardAccountUpdated
       handler: workingGroups_WorkerRewardAccountUpdated
-    - event: gatewayWorkingGroup.WorkerRewardAmountUpdated
+    - event: appWorkingGroup.WorkerRewardAmountUpdated
       handler: workingGroups_WorkerRewardAmountUpdated
-    - event: gatewayWorkingGroup.StatusTextChanged
+    - event: appWorkingGroup.StatusTextChanged
       handler: workingGroups_StatusTextChanged
-    - event: gatewayWorkingGroup.BudgetSpending
+    - event: appWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
-    - event: gatewayWorkingGroup.RewardPaid
+    - event: appWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
-    - event: gatewayWorkingGroup.NewMissedRewardLevelReached
+    - event: appWorkingGroup.NewMissedRewardLevelReached
       handler: workingGroups_NewMissedRewardLevelReached
-    - event: gatewayWorkingGroup.WorkerStartedLeaving
+    - event: appWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
     # Proposals
     - event: proposalsCodex.ProposalCreated
