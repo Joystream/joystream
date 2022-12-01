@@ -12,7 +12,7 @@
     "@apollo/client": "^3.3.13",
     "@ffprobe-installer/ffprobe": "^1.4.1",
     "@joystream/metadata-protobuf": "^2.5.0",
-    "@joystream/types": "^0.20.5",
+    "@joystream/types": "^0.20.6",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
