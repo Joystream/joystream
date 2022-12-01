@@ -1819,6 +1819,12 @@ pub mod opaque {
     pub type BlockId = generic::BlockId<Block>;
 }
 
+// Production and Staging - Sudo call disabled
+#[cfg(not(any(
+    feature = "testing-runtime",
+    feature = "playground-runtime",
+    feature = "runtime-benchmarks"
+)))]
 construct_runtime!(
     pub enum Runtime where
         Block = Block,
@@ -1845,6 +1851,69 @@ construct_runtime!(
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
         Sudo: pallet_sudo::{Pallet, Storage, Event<T>, Config<T>},
+        BagsList: pallet_bags_list,
+        Vesting: pallet_vesting,
+        Multisig: pallet_multisig,
+        // Joystream
+        Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        Members: membership::{Pallet, Call, Storage, Event<T>, Config},
+        Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Constitution: pallet_constitution::{Pallet, Call, Storage, Event<T>},
+        Bounty: bounty::{Pallet, Call, Storage, Event<T>},
+        JoystreamUtility: joystream_utility::{Pallet, Call, Storage, Event<T>},
+        Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},
+        ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
+        // --- Proposals
+        ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>, Config},
+        ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
+        // --- Working groups
+        ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
+        ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Pallet, Call, Storage, Event<T>},
+        AppWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
+    }
+);
+
+// Testing and Playground runtimes - Sudo call enabled
+#[cfg(any(
+    feature = "testing-runtime",
+    feature = "playground-runtime",
+    feature = "runtime-benchmarks"
+))]
+construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = opaque::Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        // Substrate
+        System: frame_system,
+        Utility: substrate_utility,
+        Babe: pallet_babe,
+        Timestamp: pallet_timestamp,
+        // Authorship must be before session in order to note author in the correct session and era
+        // for im-online and staking
+        Authorship: pallet_authorship,
+        Balances: pallet_balances,
+        TransactionPayment: pallet_transaction_payment,
+        ElectionProviderMultiPhase: pallet_election_provider_multi_phase,
+        Staking: pallet_staking,
+        Session: pallet_session,
+        Historical: pallet_session_historical,
+        Grandpa: pallet_grandpa,
+        AuthorityDiscovery: pallet_authority_discovery,
+        ImOnline: pallet_im_online,
+        Offences: pallet_offences,
+        RandomnessCollectiveFlip: pallet_randomness_collective_flip,
+        Sudo: pallet_sudo::{Call, Pallet, Storage, Event<T>, Config<T>},
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
