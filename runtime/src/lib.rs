@@ -1844,10 +1844,7 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-        // Keeping sudo pallet in runtime but without a Call
-        // to preserve module ordering..?
         Sudo: pallet_sudo::{Pallet, Storage, Event<T>, Config<T>},
-        // Sudo: pallet_sudo,
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
