@@ -72,13 +72,11 @@
 - name: Set websocket and http endpoint variables
   set_fact:
     hostname: '{{ inventory_hostname }}'
-  run_once: true
 
 # If inventory hostname is infact an ip address, use .nip.io
 - name: Set websocket and http endpoint variables
   set_fact:
     hostname: '{{ inventory_hostname }}.nip.io'
-  run_once: true
   when: inventory_hostname | ansible.utils.ipaddr
 
 - name: Install and configure Caddy
