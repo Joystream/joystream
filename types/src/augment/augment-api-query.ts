@@ -1447,12 +1447,6 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
     };
-    sudo: {
-      /**
-       * The `AccountId` of the sudo key.
-       **/
-      key: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []>;
-    };
     system: {
       /**
        * The full account information for a particular account ID.
