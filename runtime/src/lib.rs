@@ -147,7 +147,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 12,
-    spec_version: 1000,
+    spec_version: 1001,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -228,79 +228,35 @@ parameter_types! {
 /// Our extrinsics call filter
 pub enum CallFilter {}
 
-/// Stage 1: Filter all non-essential calls.
-/// Allow only calls that are essential for successful block authoring, staking, nominating.
-/// Since balances calls are disabled, this means that stash and controller
-/// accounts must already be funded.
-/// This will be used at initial launch, and other calls will be enabled as we rollout.
-#[cfg(not(any(
-    feature = "playground-runtime",
-    feature = "testing-runtime",
-    feature = "runtime-benchmarks"
-)))]
-fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        Call::System(method) =>
-        // All methods except the remark call
-        {
-            !matches!(method, frame_system::Call::<Runtime>::remark { .. })
-        }
-        // confirmed that Utility.batch dispatch does not bypass filter.
-        Call::Utility(_) => true,
-        Call::Babe(_) => true,
-        Call::Timestamp(_) => true,
-        Call::Authorship(_) => true,
-        Call::ElectionProviderMultiPhase(_) => true,
-        Call::Staking(_) => true,
-        Call::Session(_) => true,
-        Call::Grandpa(_) => true,
-        Call::ImOnline(_) => true,
-        Call::Sudo(_) => true,
-        Call::BagsList(_) => true,
-        Call::Multisig(_) => true,
-        // Disable all other calls
-        _ => false,
-    }
-}
-
-// Stage 2: Filter out only a subset of calls on content pallet, some specific proposals
+// Filter out only a subset of calls on content pallet, some specific proposals
 // and the bounty creation call.
-#[cfg(any(feature = "playground-runtime", feature = "testing-runtime"))]
-fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    // TODO: adjust after Carthage
-    match call {
-        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
-            ..
-        }) => false,
-        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-        Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
-        Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
-        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
-            general_proposal_parameters: _,
-            proposal_details,
-        }) => match proposal_details {
-            proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..) => false,
-            proposals_codex::ProposalDetails::UpdateChannelPayouts(..) => false,
-            _ => true,
-        },
-        _ => true,
-    }
-}
-
-// Production config
-#[cfg(not(any(
-    feature = "playground-runtime",
-    feature = "testing-runtime",
-    feature = "runtime-benchmarks"
-)))]
+#[cfg(not(feature = "runtime-benchmarks"))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_1(call)
+        match call {
+            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+            Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
+            Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
+            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+                general_proposal_parameters: _,
+                proposal_details,
+            }) => !matches!(
+                proposal_details,
+                proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+                    | proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
+            ),
+            _ => true,
+        }
     }
 }
 
@@ -309,14 +265,6 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
         true
-    }
-}
-
-// Playground and Testing - filter joystream pallet calls only to test they are properly disabled
-#[cfg(any(feature = "playground-runtime", feature = "testing-runtime"))]
-impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_2(call)
     }
 }
 
