@@ -10,6 +10,7 @@ use frame_system::EventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::{BuyMembershipParameters, Module as Members};
+use pallet_timestamp::{self as timestamp};
 use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use sp_std::{vec, vec::Vec};
 use storage::BagId;
@@ -36,8 +37,8 @@ const DEFAULT_SPLIT_PARTICIPATION: u64 =
     DEFAULT_SPLIT_PAYOUT * DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION;
 
 // Amm
-const DEFAULT_AMM_AMOUNT: u64 = 1000;
-
+const DEFAULT_AMM_AMOUNT: u32 = 1000;
+const DEFAULT_AMM_jOY_AMOUNT: u32 = 50100;
 // Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(1));
 // Metadata
@@ -166,14 +167,16 @@ fn activate_amm<T: Config>(token_id: T::TokenId, member_id: T::MemberId) -> Disp
     Token::<T>::activate_amm(token_id, member_id, params)
 }
 
-fn buy_on_amm<T: Config>(
+fn call_buy_on_amm<T: Config>(
     token_id: T::TokenId,
     account_id: T::AccountId,
-    amount: BalanceOf<T>,
+    member_id: T::MemberId,
+    amount: TokenBalanceOf<T>,
 ) -> DispatchResult {
     Token::<T>::buy_on_amm(
         RawOrigin::Signed(account_id).into(),
         token_id,
+        member_id,
         amount,
         None,
         None,
@@ -611,116 +614,111 @@ benchmarks! {
         );
     }
 
-   buy_on_amm_with_account_creation {
+    buy_on_amm_with_account_creation {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
-        let amount_to_buy = DEFAULT_AMM_AMOUNT;
-        let deadline = Some(100u64);
-        let desired_price = 5100; // computed using supply = 0  a = 10% and b = 10%
+        let amount_to_buy = DEFAULT_AMM_AMOUNT.into();
+        let deadline = <T as timestamp::Config>::Moment::from(100u32);
+        let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
+        let tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
         let participant_id = create_member::<T>(&participant_acc, b"participant");
-        Joy::<T>::deposit_creating(participant_acc, desired_price + bloat_bond);
-        let slippage_tolerance = Some((Permill::from_percent(10), desired_price));
-        pallet_timestamp::Pallet::<Test>::set_timestamp(deadline.unwrap()/2);
+        let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + tx_fee_amount);
+        let slippage_tolerance = (Permill::from_percent(10), desired_price);
+        pallet_timestamp::Pallet::<T>::set_timestamp(deadline);
         activate_amm::<T>(token_id, owner_member_id)?;
     }: buy_on_amm(
         RawOrigin::Signed(participant_acc.clone()),
         token_id,
+        participant_id,
         amount_to_buy,
-        deadline,
-        slippage_tolerance,
+        Some(deadline),
+        Some(slippage_tolerance)
     )
     verify {
-        let provided_supply = Token::<T>::ensure_token_exists(token_id).curve.unwrap().provided_supply;
+        let provided_supply = Token::<T>::ensure_token_exists(token_id).unwrap().amm_curve.unwrap().provided_supply;
         assert_eq!(provided_supply, amount_to_buy);
         assert_eq!(
-            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap().amount,
-            amount_to_buy,
-        );
-        assert_eq!(
-            Token::<T>::(token_id, &owner_member_id).unwrap().amount,
+            Token::<T>::ensure_account_data_exists(token_id, &participant_id).unwrap().amount,
             amount_to_buy,
         );
         assert_eq!(
             Joy::<T>::usable_balance(&participant_acc),
             T::JoyExistentialDeposit::get()
         );
-   }
+    }
 
-   buy_on_amm_with_existing_account {
+    buy_on_amm_with_existing_account {
         let (owner_member_id, owner_account) = create_owner::<T>();
+        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
+        let amount_to_buy = DEFAULT_AMM_AMOUNT.into();
+        let deadline = <T as timestamp::Config>::Moment::from(100u32);
+        let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
+        let bloat_bond = BloatBond::<T>::get();
+        let tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
         let participant_id = create_member::<T>(&participant_acc, b"participant");
-        setup_account_with_max_number_of_locks::<T>(token_id, &participant_id, Some(DEFAULT_SPLIT_PARTICIPATION.into()));
-        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
-        let amount_to_buy = DEFAULT_AMM_AMOUNT;
-        let deadline = Some(100u64);
-        let desired_price = 5100; // computed using supply = 0  a = 10% and b = 10%
-        let bloat_bond = BloatBond::<T>::get();
-        Joy::<T>::deposit_creating(participant_id, desired_price);
-        let slippage_tolerance = Some((Permill::from_percent(10), desired_price));
-        pallet_timestamp::Pallet::<Test>::set_timestamp(deadline.unwrap()/2);
-        activate_amm::<T>(token_id, member_id)?;
+        activate_amm::<T>(token_id, owner_member_id)?;
+        let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + tx_fee_amount);
+        let slippage_tolerance = (Permill::from_percent(10), desired_price);
+        pallet_timestamp::Pallet::<T>::set_timestamp(deadline);
     }: buy_on_amm(
         RawOrigin::Signed(participant_acc.clone()),
         token_id,
+        participant_id,
         amount_to_buy,
-        deadline,
-        slippage_tolerance,
+        Some(deadline),
+        Some(slippage_tolerance)
     )
     verify {
-        let provided_supply = Token::<T>::ensure_token_exists(token_id).curve.unwrap().provided_supply;
+        let provided_supply = Token::<T>::ensure_token_exists(token_id).unwrap().amm_curve.unwrap().provided_supply;
         assert_eq!(provided_supply, amount_to_buy);
         assert_eq!(
-            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap().amount,
+            Token::<T>::ensure_account_data_exists(token_id, &participant_id).unwrap().amount,
             amount_to_buy,
         );
         assert_eq!(
-            Token::<T>::(token_id, &owner_member_id).unwrap().amount,
-            amount_to_buy,
-        );
-        assert!(
-            Joy::<T>::usable_balance(&participant_acc).is_zero()
+            Joy::<T>::usable_balance(&participant_acc),
+            T::JoyExistentialDeposit::get(),
         );
     }
 
     sell_on_amm {
         let (owner_member_id, owner_account) = create_owner::<T>();
+        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
+        let amount = DEFAULT_AMM_AMOUNT.into();
+        let deadline = <T as timestamp::Config>::Moment::from(100u32);
+        let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
+        let bloat_bond = BloatBond::<T>::get();
+        let buy_tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
+        let sell_tx_fee_amount = Token::<T>::amm_sell_tx_fees().mul_floor(desired_price);
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
         let participant_id = create_member::<T>(&participant_acc, b"participant");
-        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
-        setup_account_with_max_number_of_locks::<T>(token_id, &participant_id, Some(DEFAULT_SPLIT_PARTICIPATION.into()));
-        let amount = DEFAULT_AMM_AMOUNT;
-        buy_on_amm::<T>(token_id, participant_acc, amount)
-        let deadline = Some(100u64);
-        let desired_price = 5100; // computed using supply = 0  a = 10% and b = 10%
-        Joy::<T>::deposit_creating(participant_id, desired_price);
-        let slippage_tolerance = Some((Permill::from_percent(10), desired_price));
-        pallet_timestamp::Pallet::<Test>::set_timestamp(deadline.unwrap()/2);
-        activate_amm::<T>(token_id, member_id)?;
+        let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + buy_tx_fee_amount);
+        let slippage_tolerance = (Permill::from_percent(10), desired_price);
+        pallet_timestamp::Pallet::<T>::set_timestamp(deadline);
+        activate_amm::<T>(token_id, owner_member_id)?;
+        call_buy_on_amm::<T>(token_id, participant_acc.clone(), participant_id, amount)?;
     }:_ (
         RawOrigin::Signed(participant_acc.clone()),
         token_id,
+        participant_id,
         amount,
-        deadline,
-        slippage_tolerance,
+        Some(deadline),
+        Some(slippage_tolerance)
     )
     verify {
-        let provided_supply = Token::<T>::ensure_token_exists(token_id).curve.unwrap().provided_supply;
+        let provided_supply = Token::<T>::ensure_token_exists(token_id).unwrap().amm_curve.unwrap().provided_supply;
         assert!(provided_supply.is_zero());
         assert!(
-            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap().amount.is_zero(),
+            Token::<T>::ensure_account_data_exists(token_id, &participant_id).unwrap().amount.is_zero(),
         );
         assert_eq!(
-            Token::<T>::(token_id, &owner_member_id).unwrap().amount,
-            amount_to_buy,
-        );
-        assert!(
             Joy::<T>::usable_balance(&participant_acc),
-            desired_price + T::JoyExistentialDeposit::get(),
+            desired_price + T::JoyExistentialDeposit::get() - sell_tx_fee_amount,
         );
-   }
+    }
 }
 
 #[cfg(test)]
@@ -779,9 +777,16 @@ mod tests {
     }
 
     #[test]
-    fn test_buy_on_amm() {
+    fn test_buy_on_amm_with_account_creation() {
         build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
-            assert_ok!(Token::test_benchmark_buy_on_amm());
+            assert_ok!(Token::test_benchmark_buy_on_amm_with_account_creation());
+        });
+    }
+
+    #[test]
+    fn test_buy_on_amm_with_existing_account() {
+        build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
+            assert_ok!(Token::test_benchmark_buy_on_amm_with_existing_account());
         });
     }
 
