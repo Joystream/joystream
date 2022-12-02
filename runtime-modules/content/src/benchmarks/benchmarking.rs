@@ -22,8 +22,7 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use project_token::{
-    types::*, AccountInfoByTokenAndMember, AmmCurveOf, AmmParams,
-    BloatBond as TokenAccountBloatBond, TokenInfoById,
+    types::*, AccountInfoByTokenAndMember, BloatBond as TokenAccountBloatBond, TokenInfoById,
 };
 use sp_arithmetic::traits::One;
 use sp_runtime::traits::Hash;
@@ -1785,13 +1784,13 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                curator_acc_id,
+                curator_acc_id.clone(),
                 actor,
                 channel_id,
                 curator_member_id
             )?;
-        let slope = Permill::from_percent(10),
-        let intercept = Permill::from_percent(10),
+        let slope = Permill::from_percent(10);
+        let intercept = Permill::from_percent(10);
         let params = AmmParams{ slope, intercept };
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
@@ -1799,16 +1798,16 @@ benchmarks! {
         origin,
         actor,
         channel_id,
-        params,
+        params
     )
         verify {
             let token = project_token::Pallet::<T>::token_info_by_id(token_id);
            assert_eq!(
-                token.curve.unwrap(),
-                AmmCurveOf::<T> {
+                token.amm_curve.unwrap(),
+                AmmCurve {
                     slope,
                     intercept,
-                    provided_supply: BalanceOf::<T>::zero(),
+                    provided_supply: 0u32.into(),
                 }
            )
         }
@@ -1821,23 +1820,23 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                curator_acc_id,
+                curator_acc_id.clone(),
                 actor,
                 channel_id,
                 curator_member_id
             )?;
         // No pausable feature prevents this
-        activate_amm::<T>(curator_acc_id, actor, channel_id)?;
+        call_activate_amm::<T>(curator_acc_id, actor, channel_id);
         set_all_channel_paused_features::<T>(channel_id);
     }: _(
         origin,
         actor,
-        channel_id,
+        channel_id
     )
         verify {
             let token = project_token::Pallet::<T>::token_info_by_id(token_id);
            assert!(
-                token.curve.is_none(),
+                token.amm_curve.is_none(),
            )
         }
 
@@ -4007,6 +4006,20 @@ pub mod tests {
     fn claim_creator_token_patronage_credit() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_claim_creator_token_patronage_credit());
+        });
+    }
+
+    #[test]
+    fn activate_amm() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_activate_amm());
+        });
+    }
+
+    #[test]
+    fn deactivate_amm() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_deactivate_amm());
         });
     }
 }
