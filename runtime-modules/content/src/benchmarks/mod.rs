@@ -87,7 +87,7 @@ const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
 const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
 const DEFAULT_CRT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
 
-const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
+const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 22] = [
     ChannelActionPermission::UpdateChannelMetadata,
     ChannelActionPermission::ManageNonVideoChannelAssets,
     ChannelActionPermission::ManageChannelCollaborators,
@@ -109,6 +109,7 @@ const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
     ChannelActionPermission::ReduceCreatorTokenPatronageRate,
     ChannelActionPermission::ManageRevenueSplits,
     ChannelActionPermission::DeissueCreatorToken,
+    ChannelActionPermission::AmmControl,
 ];
 
 const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
@@ -227,19 +228,20 @@ fn get_byte(num: u64, byte_number: u8) -> u8 {
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Config>(id: u64) -> Vec<u8> {
-    let min_handle_length = 1;
+    id.to_be_bytes().to_vec()
+    // let min_handle_length = 1;
 
-    let mut handle = vec![];
+    // let mut handle = vec![];
 
-    for i in 0..16 {
-        handle.push(get_byte(id, i));
-    }
+    // for i in 0..16 {
+    //     handle.push(get_byte(id, i));
+    // }
 
-    while handle.len() < (min_handle_length as usize) {
-        handle.push(0u8);
-    }
+    // while handle.len() < (min_handle_length as usize) {
+    //     handle.push(0u8);
+    // }
 
-    handle
+    // handle
 }
 
 fn apply_on_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
@@ -1679,14 +1681,14 @@ where
     set_all_channel_paused_features_except::<T>(channel_id, vec![]);
 }
 
-fn activate_amm<T: Config>(
+fn call_activate_amm<T: Config>(
     sender: T::AccountId,
     actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel_id: T::ChannelId,
-) -> DispatchResult {
+) {
     let params = AmmParams {
         slope: Permill::from_percent(10),
         intercept: Permill::from_percent(10),
     };
-    Pallet::<T>::activate_amm(RawOrigin::Signed(sender).into(), actor, channel_id, params)
+    Pallet::<T>::activate_amm(RawOrigin::Signed(sender).into(), actor, channel_id, params).unwrap()
 }
