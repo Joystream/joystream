@@ -3,19 +3,19 @@
 //! HOSTNAME: `Mokhtars-MacBook-Pro.local`, CPU: `<UNKNOWN>`
 //!
 //! DATABASE: `RocksDb`, RUNTIME: `Development`
-//! BLOCK-NUM: `BlockId::Number(0)`
+//! BLOCK-NUM: `BlockId::Number(81)`
 //! SKIP-WRITE: `false`, SKIP-READ: `false`, WARMUPS: `100`
 //! STATE-VERSION: `V1`, STATE-CACHE-SIZE: ``
 //! WEIGHT-PATH: `./../runtime/src/weights/`
 //! METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./../target/release/joystream-node
+//   ./scripts/../target/release/joystream-node
 //   benchmark
 //   storage
 //   --chain=prod-test
 //   --warmups=100
-//   --weight-path=./../runtime/src/weights/
+//   --weight-path=./scripts/../runtime/src/weights/
 //   --state-version
 //   1
 

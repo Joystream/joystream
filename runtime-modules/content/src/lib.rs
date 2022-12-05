@@ -3765,7 +3765,7 @@ decl_module! {
         }
 
         /// Activate Amm functionality for token
-        #[weight = 100_000_000] // TODO: Adjust weight
+        #[weight = WeightInfoContent::<T>::activate_amm()]
         pub fn activate_amm(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -3799,7 +3799,7 @@ decl_module! {
         }
 
         /// Deactivate Amm functionality for token
-        #[weight = 100_000_000] // TODO: Adjust weight
+        #[weight = WeightInfoContent::<T>::deactivate_amm()]
         pub fn deactivate_amm(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
