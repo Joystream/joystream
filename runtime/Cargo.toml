@@ -56,7 +56,6 @@ pallet-session = { package = 'pallet-session', features = [ "historical" ], defa
 pallet-offences = { package = 'pallet-offences', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-authority-discovery = { package = 'pallet-authority-discovery', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
-pallet-sudo = { package = 'pallet-sudo', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522'}
@@ -145,7 +144,6 @@ std = [
     'pallet-authorship/std',
     'pallet-randomness-collective-flip/std',
     'pallet-staking/std',
-    'pallet-sudo/std',
     'pallet-im-online/std',
     'pallet-offences/std',
     'pallet-vesting/std',

@@ -3329,9 +3329,6 @@ export default {
         bucketId: 'PalletStorageDistributionBucketIdRecord',
         metadata: 'Bytes',
       },
-      sudo_upload_data_objects: {
-        params: 'PalletStorageUploadParametersRecord',
-      },
       storage_operator_remark: {
         workerId: 'u64',
         storageBucketId: 'u64',
