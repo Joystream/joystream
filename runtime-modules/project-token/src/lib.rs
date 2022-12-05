@@ -827,7 +827,7 @@ decl_module! {
         /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
         /// - respective JOY amount transferred from user balance to amm treasury account
         /// - event deposited
-        #[weight = 100_000_000] // TODO: adjust weight
+        #[weight = WeightInfoToken::<T>::buy_on_amm_with_existing_account()]
         fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
@@ -913,7 +913,7 @@ decl_module! {
         /// - total supply decreased by amount
         /// - respective JOY amount transferred from amm treasury account to user account
         /// - event deposited
-        #[weight = 100_000_000] // TODO: adjust weight
+        #[weight = WeightInfoToken::<T>::sell_on_amm()]
         fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
