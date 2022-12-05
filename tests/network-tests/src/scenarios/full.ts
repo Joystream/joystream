@@ -74,6 +74,9 @@ scenario('Full', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
 
+  return
+  // Below flows depend on sudo which has been disabled. So skipping for now.
+
   // Working groups
   const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
     proposalsJob
