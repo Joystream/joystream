@@ -3049,7 +3049,8 @@ decl_module! {
             );
         }
 
-        /// Create a dynamic bag. Development mode.
+        /// Deposit a StorageOperatorRemarked event
+        /// containing a generic message.
         /// <weight>
         ///
         /// ## Weight
