@@ -151,11 +151,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding', 'carthageNPoSSwitch']
+        scenario: ['full']
         include:
-          - scenario: 'setupNewChain'
-            no_storage: 'true'
-          - scenario: 'setupNewChainMultiStorage'
+          - scenario: 'full'
             no_storage: 'true'
     steps:
       - uses: actions/checkout@v3

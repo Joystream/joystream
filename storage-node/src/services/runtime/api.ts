@@ -4,7 +4,7 @@ import { ISubmittableResult, IEvent } from '@polkadot/types/types'
 import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
-import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
+import { DispatchError } from '@polkadot/types/interfaces/system'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
@@ -121,23 +121,7 @@ async function sendExtrinsic(
                 })
               )
             } else if (event.method === 'ExtrinsicSuccess') {
-              const sudid = result.findRecord('sudo', 'Sudid')
-
-              if (sudid) {
-                const dispatchResult = sudid.event.data[0] as DispatchResult
-                if (dispatchResult.isOk) {
-                  resolve(result)
-                } else {
-                  const errorMsg = formatDispatchError(api, dispatchResult.asErr)
-                  reject(
-                    new ExtrinsicFailedError(`Sudo extrinsic execution error! ${errorMsg}`, {
-                      exit: ExitCodes.ApiError,
-                    })
-                  )
-                }
-              } else {
-                resolve(result)
-              }
+              resolve(result)
             }
           })
       } else if (result.isError) {
@@ -204,8 +188,6 @@ function formatDispatchError(api: ApiPromise, error: DispatchError): string {
  * @param api - API promise
  * @param account - KeyPair instance
  * @param tx - prepared extrinsic with arguments
- * @param sudoCall - defines whether the transaction call should be wrapped in
- * the sudo call (false by default).
  * @param eventParser - defines event parsing function (null by default) for
  * getting any information from the successful extrinsic events.
  * @returns void or event parsing result promise.
@@ -214,13 +196,10 @@ export async function sendAndFollowNamedTx<T>(
   api: ApiPromise,
   account: KeyringPair,
   tx: SubmittableExtrinsic<'promise'>,
-  sudoCall = false,
   eventParser: ((result: ISubmittableResult) => T) | null = null
 ): Promise<T | void> {
   logger.debug(`Sending ${tx.method.section}.${tx.method.method} extrinsic...`)
-  if (sudoCall) {
-    tx = api.tx.sudo.sudo(tx)
-  }
+
   const result = await sendExtrinsic(api, account, tx)
   let eventResult: T | void
   if (eventParser) {
@@ -229,26 +208,6 @@ export async function sendAndFollowNamedTx<T>(
   logger.debug(`Extrinsic successful!`)
 
   return eventResult
-}
-
-/**
- * Helper function for sending an extrinsic to the runtime. It constructs an
- * actual transaction object and sends a transactions wrapped in sudo call.
- *
- * @param api - API promise
- * @param account - KeyPair instance
- * @param tx - prepared extrinsic with arguments
- * @param eventParser - defines event parsing function (null by default) for
- * getting any information from the successful extrinsic events.
- * @returns void promise.
- */
-export async function sendAndFollowSudoNamedTx<T>(
-  api: ApiPromise,
-  account: KeyringPair,
-  tx: SubmittableExtrinsic<'promise'>,
-  eventParser: ((result: ISubmittableResult) => T) | null = null
-): Promise<T | void> {
-  return sendAndFollowNamedTx(api, account, tx, true, eventParser)
 }
 
 /**

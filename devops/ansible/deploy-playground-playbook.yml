@@ -66,7 +66,6 @@
         INIT_CHAIN_SCENARIO: '{{ init_chain_scenario }}'
         BALANCE_CREDIT: 1000000000000000
         BALANCE_LOCKED: 1000000000000000
-        SUDO_ACCOUNT_URI: '{{ sudo_suri }}'
         TREASURY_ACCOUNT_URI: '{{ treasury_suri }}'
         INITIAL_BALANCES: '{{ initial_balances }}'
         SKIP_NODE: 'true'

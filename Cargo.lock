@@ -768,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "8.0.0"
+version = "8.2.0"
 dependencies = [
  "async-std",
  "clap 3.2.22",
@@ -2736,7 +2736,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "8.0.0"
+version = "8.2.0"
 dependencies = [
  "assert_cmd",
  "async-std",
@@ -2827,7 +2827,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "12.1000.0"
+version = "12.1002.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -2873,7 +2873,6 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
  "pallet-storage",
- "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -5074,20 +5073,6 @@ dependencies = [
  "serde",
  "sp-arithmetic",
  "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-sudo"
-version = "4.0.0-dev"
-source = "git+https://github.com/joystream/substrate.git?rev=d29a53b11c3e530d1656eef502cb0f1f8fff3522#d29a53b11c3e530d1656eef502cb0f1f8fff3522"
-dependencies = [
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
  "sp-io",
  "sp-runtime",
  "sp-std",

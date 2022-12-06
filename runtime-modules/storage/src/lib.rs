@@ -153,7 +153,7 @@ use frame_support::{
     storage::{bounded_btree_set::BoundedBTreeSet, bounded_vec::BoundedVec},
     IterableStorageDoubleMap, PalletId, Parameter,
 };
-use frame_system::{ensure_root, ensure_signed};
+use frame_system::ensure_signed;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -3047,22 +3047,6 @@ decl_module! {
             Self::deposit_event(
                 RawEvent::DistributionBucketMetadataSet(worker_id, bucket_id, metadata)
             );
-        }
-
-        /// Upload new data objects. Development mode.
-        #[weight = 10_000_000]
-        pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
-            ensure_root(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            if cfg!(feature = "playground-runtime") || cfg!(feature = "testing-runtime") {
-                Self::upload_data_objects(params)?;
-            } else {
-                return Err(Error::<T>::CallDisabled.into());
-            }
         }
 
         /// Create a dynamic bag. Development mode.
