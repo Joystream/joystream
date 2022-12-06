@@ -181,6 +181,7 @@ services:
       - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
     depends_on:
       - db
+      - processor
     volumes:
       - type: bind
         source: .
