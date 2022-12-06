@@ -46,8 +46,6 @@ On successfull deployment you should find the endpoints file on local machine
 
 You can use the network config endpoint in pioneer to connect it to the playground.
 
-Remember this playground has no initial members, and Alice is sudo with all the initial balance. (Equivalent of joystream-node --dev)
-
 # How to deploy a network infrastructure
 Copy and edit the file `deploy-infra.sample.cfg` and update parameters like AWS_KEY_PAIR_NAME, KEY_PATH
 Run the `deploy-infra.sh` script to deploy the new network.

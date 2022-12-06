@@ -47,10 +47,6 @@
   shell: bash -ic "yarn start"
   environment:
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
-    # TREASURY_ACCOUNT_URI: '{% if endowed_key is defined %}{{ endowed_key }}{% else %}{{ sudo_key }}{% endif %}'
-    # INVITER_KEY: "//Faucet"
-    # BALANCE_CREDIT: "300000000000"
-    # BALANCE_LOCKED: "300000000000"
   args:
     chdir: '{{ remote_code_path }}/query-node'
   async: 3600

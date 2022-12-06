@@ -52,17 +52,20 @@ scenario('Full', async ({ job, env }) => {
 
   // Membership:
   job('buying members', buyingMemberships).after(coreJob)
-  job('creating members', creatingMembers).after(coreJob)
-  job('creating founding members', creatingFoundingMembers).after(coreJob)
+  // job('creating members', creatingMembers).after(coreJob)
+  // job('creating founding members', creatingFoundingMembers).after(coreJob)
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
-  job('inviting members', invitingMebers).after(coreJob)
+  // job('inviting members', invitingMebers).after(coreJob)
   job('transferring invites', transferringInvites).after(coreJob)
   job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
   // Council (should not interrupt proposalsJob!)
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
+
+  return
+  // Below flows depend on sudo which has been disabled. So skipping for now.
 
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
@@ -73,9 +76,6 @@ scenario('Full', async ({ job, env }) => {
     expireProposal,
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
-
-  return
-  // Below flows depend on sudo which has been disabled. So skipping for now.
 
   // Working groups
   const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(

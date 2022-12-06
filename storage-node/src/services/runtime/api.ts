@@ -188,8 +188,6 @@ function formatDispatchError(api: ApiPromise, error: DispatchError): string {
  * @param api - API promise
  * @param account - KeyPair instance
  * @param tx - prepared extrinsic with arguments
- * @param sudoCall - defines whether the transaction call should be wrapped in
- * the sudo call (false by default).
  * @param eventParser - defines event parsing function (null by default) for
  * getting any information from the successful extrinsic events.
  * @returns void or event parsing result promise.
