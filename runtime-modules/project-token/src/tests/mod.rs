@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+mod amm;
 mod canonical;
 mod fixtures;
 pub mod mock;

@@ -238,6 +238,10 @@ pub mod iterable_enums {
         /// Allows deissuing a creator token (provided it has 0 supply)
         /// - `deissue_creator_token`
         DeissueCreatorToken,
+        /// Allow activating/deactivating the AMM functionality for a token,
+        /// - activate_amm
+        /// - deactivate_amm
+        AmmControl,
     }
 }
 

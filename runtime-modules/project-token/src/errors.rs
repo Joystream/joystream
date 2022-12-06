@@ -111,6 +111,9 @@ decl_error! {
         /// Amount of tokens to purchase on sale cannot be zero
         SalePurchaseAmountIsZero,
 
+        /// No Sale if Amm is active
+        CannotInitSaleIfAmmIsActive,
+
         // ------ Revenue Split Errors ------------------------------------------------------
 
         /// Specified revenue split starting block is in the past
@@ -159,5 +162,25 @@ decl_error! {
 
         /// Amount of tokens to burn exceeds total amount of tokens owned by the account
         BurnAmountGreaterThanAccountTokensAmount,
+
+        /// ------ AMM ---------------------------------------------------------
+
+        /// not in AMM state
+        NotInAmmState,
+
+        /// Invalid bonding curve construction parameters
+        InvalidCurveParameters,
+
+        /// Deadline constraint not satisfied
+        DeadlineExpired,
+
+        /// Slippage tolerance constraint tolerance not satisfied
+        SlippageToleranceExceeded,
+
+        /// Creator token balance is insufficient
+        InsufficientTokenBalance,
+
+        /// Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
+        OutstandingAmmProvidedSupplyTooLarge,
     }
 }

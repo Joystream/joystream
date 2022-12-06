@@ -17,7 +17,7 @@ use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
-use sp_runtime::{DispatchError, DispatchResult, Permill};
+use sp_runtime::{DispatchError, DispatchResult, PerThing, Permill};
 use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::{LockComparator, StakingHandler};
 
@@ -51,6 +51,7 @@ pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Config>::Hashing;
 pub type HashOut = <Test as frame_system::Config>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
+pub type Moment = <Test as pallet_timestamp::Config>::Moment;
 pub type MemberId = u64;
 
 #[macro_export]
@@ -502,6 +503,9 @@ pub struct GenesisConfigBuilder {
     pub(crate) min_revenue_split_duration: BlockNumber,
     pub(crate) min_revenue_split_time_to_start: BlockNumber,
     pub(crate) sale_platform_fee: Permill,
+    pub(crate) amm_deactivation_threshold: Permill,
+    pub(crate) bond_tx_fees: Permill,
+    pub(crate) unbond_tx_fees: Permill,
 }
 
 /// test externalities + initial balances allocation
@@ -630,6 +634,14 @@ pub const DEFAULT_SPLIT_DURATION: u64 = 100;
 pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
 pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * revenue * rate
 
+// ------ Bonding Curve Constants ------------
+pub const DEFAULT_AMM_BUY_AMOUNT: u128 = 1000;
+pub const DEFAULT_AMM_SELL_AMOUNT: u128 = 100;
+pub const AMM_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
+pub const AMM_CURVE_INTERCEPT: Permill = Permill::from_perthousand(1);
+pub const DEFAULT_AMM_BUY_FEES: Permill = Permill::from_percent(1);
+pub const DEFAULT_AMM_SELL_FEES: Permill = Permill::from_percent(10);
+
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
@@ -691,4 +703,32 @@ pub fn set_staking_candidate_lock(
     amount: Balance,
 ) {
     <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+}
+
+pub(crate) fn amm_function_values(
+    amount: Balance,
+    token_id: TokenId,
+    bond_operation: AmmOperation,
+) -> JoyBalance {
+    let supply = Token::token_info_by_id(token_id)
+        .amm_curve
+        .unwrap()
+        .provided_supply;
+    let supply2 = supply * supply;
+    let sq_coeff = AMM_CURVE_SLOPE / 2;
+    let res = match bond_operation {
+        AmmOperation::Buy => {
+            sq_coeff * ((supply + amount) * (supply + amount) - supply2)
+                + AMM_CURVE_INTERCEPT * amount
+        }
+        AmmOperation::Sell => {
+            sq_coeff * (supply2 - (supply - amount) * (supply - amount))
+                + AMM_CURVE_INTERCEPT * amount
+        }
+    };
+
+    match bond_operation {
+        AmmOperation::Buy => res + DEFAULT_AMM_BUY_FEES.mul_floor(res),
+        AmmOperation::Sell => DEFAULT_AMM_SELL_FEES.left_from_one().mul_floor(res),
+    }
 }

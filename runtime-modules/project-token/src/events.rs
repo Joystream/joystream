@@ -1,7 +1,7 @@
 #![allow(clippy::unused_unit)]
 
 use crate::types::{
-    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
+    AmmCurveOf, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
     TransferPolicyOf, ValidatedTransfersOf,
 };
 use common::MembershipTypes;
@@ -22,6 +22,7 @@ decl_event! {
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,
         TokenSale = TokenSaleOf<T>,
+        AmmCurve = AmmCurveOf<T>,
 
     {
         /// Token amount is transferred from src to dst
@@ -155,5 +156,35 @@ decl_event! {
         /// - member id
         /// - number of tokens burned
         TokensBurned(TokenId, MemberId, Balance),
+
+        /// AMM activated
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - params for the bonding curve
+        AmmActivated(TokenId, MemberId, AmmCurve),
+
+        /// Tokens Bought on AMM
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amount of CRT minted
+        /// - amount of JOY deposited into curve treasury
+        TokensBoughtOnAmm(TokenId, MemberId, Balance, JoyBalance),
+
+        /// Tokens Sold on AMM
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amount of CRT burned
+        /// - amount of JOY withdrawn from curve treasury
+        TokensSoldOnAmm(TokenId, MemberId, Balance, JoyBalance),
+
+        /// AMM deactivated
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amm treasury amount burned upon deactivation
+        AmmDeactivated(TokenId, MemberId, JoyBalance),
     }
 }
