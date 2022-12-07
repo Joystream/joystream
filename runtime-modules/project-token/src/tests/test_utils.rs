@@ -121,6 +121,7 @@ impl GenesisConfigBuilder {
             amm_deactivation_threshold: Permill::from_percent(5),
             bond_tx_fees: DEFAULT_AMM_BUY_FEES,
             unbond_tx_fees: DEFAULT_AMM_SELL_FEES,
+            max_yearly_patronage_rate: DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into(),
         }
     }
 
@@ -197,6 +198,7 @@ impl GenesisConfigBuilder {
             amm_deactivation_threshold: self.amm_deactivation_threshold,
             amm_buy_tx_fees: self.bond_tx_fees,
             amm_sell_tx_fees: self.unbond_tx_fees,
+            max_yearly_patronage_rate: self.max_yearly_patronage_rate,
         }
     }
 }

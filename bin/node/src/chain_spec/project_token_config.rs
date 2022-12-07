@@ -11,6 +11,7 @@ pub fn production_config() -> ProjectTokenConfig {
         min_revenue_split_duration: days!(21),
         min_revenue_split_time_to_start: 0,
         sale_platform_fee: Permill::from_percent(2),
+        max_yearly_patronage_rate: Permill::from_percent(5).into(),
         ..Default::default()
     }
 }
@@ -23,6 +24,7 @@ pub fn testing_config() -> ProjectTokenConfig {
         min_revenue_split_duration: 5,
         min_revenue_split_time_to_start: 0,
         sale_platform_fee: Permill::from_percent(2),
+        max_yearly_patronage_rate: Permill::from_percent(5).into(),
         ..Default::default()
     }
 }

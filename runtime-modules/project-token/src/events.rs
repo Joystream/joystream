@@ -2,7 +2,7 @@
 
 use crate::types::{
     AmmCurveOf, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
-    TransferPolicyOf, ValidatedTransfersOf,
+    TransferPolicyOf, ValidatedTransfersOf, YearlyRate,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
@@ -186,5 +186,11 @@ decl_event! {
         /// - member id
         /// - amm treasury amount burned upon deactivation
         AmmDeactivated(TokenId, MemberId, JoyBalance),
+
+
+        /// Max patronage yearly rate updated
+        /// Params:
+        /// - new rate
+        MaxYearlyPatronageRateUpdated(YearlyRate),
     }
 }
