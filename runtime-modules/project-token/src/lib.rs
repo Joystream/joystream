@@ -32,7 +32,7 @@ use frame_support::{
     traits::{Currency, ExistenceRequirement, Get},
     PalletId,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
@@ -162,6 +162,7 @@ decl_storage! { generate_storage_info
 
         /// Minimum revenue split duration constraint
         pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
+
         /// Minimum revenue split time to start constraint
         pub MinRevenueSplitTimeToStart get(fn min_revenue_split_time_to_start) config(): T::BlockNumber;
 
@@ -176,6 +177,10 @@ decl_storage! { generate_storage_info
 
         /// AMM sell transaction fee percentage
         pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill;
+
+        /// Max patronage rate allowed
+        pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate;
+
     }
 
     add_extra_genesis {
@@ -968,6 +973,21 @@ decl_module! {
             Self::transfer_joy(&amm_treasury_account, &sender, sell_price)?;
 
             Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, sell_price));
+
+            Ok(())
+        }
+
+        #[weight = 100_000_000] // TODO: adjust weight
+        fn update_max_yearly_patronage_rate(origin, rate: YearlyRate) -> DispatchResult {
+            let _ = ensure_root(origin)?;
+
+            ensure!(!rate.is_zero(), Error::<T>::MaxYearlyPatronageRateCannotBeZero);
+
+            // == MUTATION SAFE ==
+
+            MaxYearlyPatronageRate::mutate(|v| *v = rate);
+
+            Self::deposit_event(RawEvent::MaxYearlyPatronageRateUpdated(rate));
 
             Ok(())
         }

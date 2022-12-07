@@ -20,6 +20,7 @@ use sp_std::{
     collections::btree_map::BTreeMap,
     convert::{TryFrom, TryInto},
     iter::Sum,
+    ops::Add,
     vec::Vec,
 };
 use storage::{BagId, DataObjectCreationParameters};
@@ -789,8 +790,33 @@ pub enum MerkleSide {
 }
 
 /// Yearly rate used for patronage info initialization
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, Default, TypeInfo)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(
+    Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, PartialOrd, Default, TypeInfo, MaxEncodedLen,
+)]
 pub struct YearlyRate(pub Permill);
+
+impl From<Permill> for YearlyRate {
+    fn from(a: Permill) -> Self {
+        Self(a)
+    }
+}
+
+impl Add for YearlyRate {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0.add(rhs.0))
+    }
+}
+impl Zero for YearlyRate {
+    fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+
+    fn zero() -> Self {
+        Self(Permill::zero())
+    }
+}
 
 /// Block rate used for patronage accounting
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -1355,6 +1381,11 @@ where
         ensure!(
             !params.revenue_split_rate.is_zero(),
             Error::<T>::RevenueSplitRateIsZero
+        );
+
+        ensure!(
+            params.patronage_rate <= crate::Pallet::<T>::max_yearly_patronage_rate(),
+            Error::<T>::YearlyPatronageRateLimitExceeded
         );
 
         let patronage_info =

@@ -1,6 +1,6 @@
 #[cfg(test)]
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::{Permill, Perquintill};
+use sp_runtime::{traits::Zero, Permill, Perquintill};
 
 use crate::tests::fixtures::{default_upload_context, IssueRevenueSplitFixture};
 use crate::tests::mock::*;
@@ -37,7 +37,7 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 #[test]
 fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     let token_id = token!(1);
-    let (patronage_rate, blocks) = (yearly_rate!(20), block!(10));
+    let (patronage_rate, blocks) = (yearly_rate!(10), block!(10));
     let ((owner_id, owner_acc), init_supply) = (member!(1), balance!(1_000_000_000));
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -48,8 +48,8 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     .with_allocation(&owner_id, init_supply, None);
     let config = GenesisConfigBuilder::new_empty().build();
 
-    // K = 1/blocks_per_years => floor(20% * 10 * K * 1bill) = floor(K * 2bill) = 380
-    let expected = balance!(380);
+    // K = 1/blocks_per_years => floor(10% * 10 * K * 1bill) = floor(K * 2bill) = 380
+    let expected = balance!(190);
 
     build_test_externalities(config).execute_with(|| {
         let _ = Token::issue_token(owner_acc, params, default_upload_context());
@@ -530,5 +530,31 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
                 .unclaimed_patronage_tally_amount,
             balance!(0)
         );
+    })
+}
+
+#[test]
+fn update_max_yearly_patronage_rate_fails_with_zero_value() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            Token::update_max_yearly_patronage_rate(Origin::root(), YearlyRate::zero()),
+            Error::<Test>::MaxYearlyPatronageRateCannotBeZero
+        );
+    })
+}
+
+#[test]
+fn update_max_yearly_patronage_rate_fails_with_non_root_origin() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let res = Token::update_max_yearly_patronage_rate(
+            Origin::signed(1u64),
+            Permill::from_percent(7).into(),
+        );
+
+        assert!(res.is_err());
     })
 }

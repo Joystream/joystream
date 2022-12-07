@@ -22,6 +22,12 @@ decl_error! {
         /// Target Rate is higher than current patronage rate
         TargetPatronageRateIsHigherThanCurrentRate,
 
+        /// Provided value for patronage is too big (yearly format)
+        YearlyPatronageRateLimitExceeded,
+
+        /// Max yearly patronage rate cannot be zero
+        MaxYearlyPatronageRateCannotBeZero,
+
         /// Symbol already in use
         TokenSymbolAlreadyInUse,
 
