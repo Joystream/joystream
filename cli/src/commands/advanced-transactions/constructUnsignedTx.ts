@@ -21,6 +21,11 @@ export default class CreateUnsignedTxCommand extends AdvancedTransactionsCommand
       required: true,
       description: 'The method of the extrinsic',
     }),
+    params: flags.string({
+      char: 'p',
+      required: false,
+      description: 'Optional parameters to the extrinsic',
+    }),       
     output: flags.string({
       char: 'o',
       required: true,
@@ -45,11 +50,11 @@ export default class CreateUnsignedTxCommand extends AdvancedTransactionsCommand
   }
 
   async run(): Promise<void> {
-    const { address, module, method, lifetime, tip, nonceIncrement, output } = this.parse(CreateUnsignedTxCommand).flags
+    const { address, module, method, params, lifetime, tip, nonceIncrement, output } = this.parse(CreateUnsignedTxCommand).flags
 
     ensureOutputFileIsWriteable(output)
 
-    const unsignedMethod = await this.promptForTxMethod(module, method)
+    const unsignedMethod = await this.promptForTxMethod(module, method, params)
 
     const txInfo = await this.getTxInfo(address, unsignedMethod, nonceIncrement, lifetime, tip)
 
