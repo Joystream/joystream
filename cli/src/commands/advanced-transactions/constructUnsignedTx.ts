@@ -1,5 +1,6 @@
 import { flags } from '@oclif/command'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { ApiParamsOptions } from '../../Types'
 import AdvancedTransactionsCommandBase from '../../base/AdvancedTransactionsCommandBase'
 import { registry } from '@joystream/types'
 import { OptionsWithMeta } from '@substrate/txwrapper-core'
@@ -54,7 +55,7 @@ export default class CreateUnsignedTxCommand extends AdvancedTransactionsCommand
 
     ensureOutputFileIsWriteable(output)
 
-    const unsignedMethod = await this.promptForTxMethod(module, method, params)
+    const unsignedMethod = await this.promptForTxMethod(module, method, JSON.parse(params) as ApiParamsOptions)
 
     const txInfo = await this.getTxInfo(address, unsignedMethod, nonceIncrement, lifetime, tip)
 
