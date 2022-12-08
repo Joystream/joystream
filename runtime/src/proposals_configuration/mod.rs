@@ -106,4 +106,7 @@ parameter_types! {
 
     pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
         update_channel_payouts_proposal();
+
+    pub UpdateMaxYearlyPatronageRateProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        update_max_yearly_patronage_rate_proposal();
 }

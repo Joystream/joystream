@@ -634,6 +634,7 @@ pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
 
 // ------ Patronage Constants ----------------
 pub const DEFAULT_MAX_YEARLY_PATRONAGE_RATE: Permill = Permill::from_percent(15);
+pub const DEFAULT_YEARLY_PATRONAGE_RATE: Permill = Permill::from_percent(10);
 
 // ------ Sale Constants ---------------------
 pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;

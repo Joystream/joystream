@@ -19,7 +19,7 @@ use working_group::StakePolicy;
 use crate::*;
 use crate::{Error, ProposalDetails};
 pub use mock::*;
-use sp_runtime::traits::One;
+use sp_runtime::traits::{One, Zero};
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, WorkerId,
@@ -2581,6 +2581,30 @@ fn create_update_channel_payouts_proposal_fails_when_min_cashout_exceeds_max_cas
                 details,
             ),
             Err(Error::<Test>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout.into())
+        );
+    });
+}
+
+#[test]
+fn create_update_max_yearly_patronage_rate_fails_with_zero_rate() {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let details = ProposalDetailsOf::<Test>::UpdateMaxYearlyPatronageRate(Zero::zero());
+
+        assert_eq!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                details,
+            ),
+            Err(Error::<Test>::MaxYearlyPatronageRateCannotBeZero.into())
         );
     });
 }

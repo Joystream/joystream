@@ -5551,6 +5551,7 @@ dependencies = [
  "pallet-content",
  "pallet-council",
  "pallet-membership",
+ "pallet-project-token",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
  "pallet-referendum",
