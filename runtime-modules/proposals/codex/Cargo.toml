@@ -24,6 +24,7 @@ constitution = { package = 'pallet-constitution', default-features = false, path
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 content = { package = 'pallet-content', default-features = false, path = '../../content'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', optional = true}
+token = { package = 'pallet-project-token', default-features = false, path = '../../project-token'}
 
 # Benchmarking dependencies
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', optional = true}
@@ -69,6 +70,7 @@ std = [
     'council/std',
     'membership/std',
     'content/std',
+    'token/std',
     'staking/std',
     'scale-info/std',
     'frame-election-provider-support/std',

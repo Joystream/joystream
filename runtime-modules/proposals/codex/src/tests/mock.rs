@@ -662,6 +662,7 @@ impl crate::Config for Test {
     type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
+    type UpdateMaxYearlyPatronageRateProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {

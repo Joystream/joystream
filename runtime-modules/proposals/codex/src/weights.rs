@@ -68,6 +68,7 @@ pub trait WeightInfo {
 	fn create_proposal_set_referral_cut(_t: u32, _d: u32, ) -> Weight;
 	fn create_proposal_update_global_nft_limit(_t: u32, _d: u32, ) -> Weight;
 	fn create_proposal_update_channel_payouts(_t: u32, _d: u32, _i: u32, ) -> Weight;
+	fn create_proposal_update_max_yearly_patronage_rate(_t: u32, _d: u32, ) -> Weight;
 }
 
 /// Weights for proposals_codex using the Substrate node and recommended hardware.
@@ -551,6 +552,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(9 as Weight))
 	}
+	fn create_proposal_update_max_yearly_patronage_rate(_t: u32, _d: u32, ) -> Weight {
+		0
+	}
 }
 
 // Default implementation for tests
@@ -622,6 +626,9 @@ impl WeightInfo for () {
 		0
 	}
 	fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32, ) -> Weight {
+		0
+	}
+	fn create_proposal_update_max_yearly_patronage_rate(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
 }

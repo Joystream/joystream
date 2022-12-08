@@ -153,6 +153,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::UpdateChannelPayouts(params) => {
                 Call::Content(content::Call::update_channel_payouts { params })
             }
+            ProposalDetails::UpdateMaxYearlyPatronageRate(rate) => {
+                Call::ProjectToken(project_token::Call::update_max_yearly_patronage_rate { rate })
+            }
         };
 
         call.encode()

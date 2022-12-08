@@ -273,6 +273,11 @@ pub trait Config:
 
     /// Max allowed number of validators in set max validator count proposal
     type SetMaxValidatorCountProposalMaxValidators: Get<u32>;
+
+    /// `Update Max Yearly Patronage Rate` proposal parameters
+    type UpdateMaxYearlyPatronageRateProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -379,7 +384,11 @@ decl_error! {
 
         /// Arithmeic Error
         ArithmeticError,
+
+        /// Max yearly patronage rate cannot be zero
+        MaxYearlyPatronageRateCannotBeZero,
     }
+
 }
 
 // Storage for the proposals codex module
@@ -497,6 +506,9 @@ decl_module! {
         const SetMaxValidatorCountProposalMaxValidators: u32 =
             T::SetMaxValidatorCountProposalMaxValidators::get();
 
+        /// Max yearly patronage rate update proposal
+        const UpdateMaxYearlyPatronageRate:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateMaxYearlyPatronageRateProposalParameters::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
@@ -862,6 +874,12 @@ impl<T: Config> Module<T> {
                     );
                 }
             }
+            ProposalDetails::UpdateMaxYearlyPatronageRate(rate) => {
+                ensure!(
+                    !rate.is_zero(),
+                    Error::<T>::MaxYearlyPatronageRateCannotBeZero,
+                );
+            }
         }
 
         Ok(())
@@ -928,6 +946,9 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateChannelPayouts(..) => {
                 T::UpdateChannelPayoutsProposalParameters::get()
+            }
+            ProposalDetails::UpdateMaxYearlyPatronageRate(..) => {
+                T::UpdateMaxYearlyPatronageRateProposalParameters::get()
             }
         }
     }
@@ -1085,6 +1106,13 @@ impl<T: Config> Module<T> {
                             .as_ref()
                             .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
                     ),
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+                .saturated_into()
+            }
+            ProposalDetails::UpdateMaxYearlyPatronageRate(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_max_yearly_patronage_rate(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )

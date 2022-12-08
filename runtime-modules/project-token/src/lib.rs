@@ -179,7 +179,7 @@ decl_storage! { generate_storage_info
         pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill;
 
         /// Max patronage rate allowed
-        pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate;
+        pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate = YearlyRate(Permill::from_percent(15));
 
     }
 
@@ -979,9 +979,7 @@ decl_module! {
 
         #[weight = 100_000_000] // TODO: adjust weight
         fn update_max_yearly_patronage_rate(origin, rate: YearlyRate) -> DispatchResult {
-            let _ = ensure_root(origin)?;
-
-            ensure!(!rate.is_zero(), Error::<T>::MaxYearlyPatronageRateCannotBeZero);
+            ensure_root(origin)?;
 
             // == MUTATION SAFE ==
 

@@ -11,6 +11,7 @@ use common::BalanceKind;
 use common::FundingRequestParameters;
 
 use content::NftLimitPeriod;
+use token::types::YearlyRate;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
@@ -115,6 +116,9 @@ pub enum ProposalDetails<
 
     /// `Update Channel Payouts` proposal
     UpdateChannelPayouts(UpdateChannelPayoutsParameters),
+
+    /// `Update Max Yearly Patronage Rate` proposal
+    UpdateMaxYearlyPatronageRate(YearlyRate),
 }
 
 impl<

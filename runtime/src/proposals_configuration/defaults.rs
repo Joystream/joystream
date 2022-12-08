@@ -343,3 +343,18 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the 'Update Max Yearly Patronage Rate' proposal
+pub(crate) fn update_max_yearly_patronage_rate_proposal() -> ProposalParameters<BlockNumber, Balance>
+{
+    ProposalParameters {
+        voting_period: days!(7),
+        grace_period: days!(1),
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: ALL,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(100)),
+        constitutionality: 1,
+    }
+}

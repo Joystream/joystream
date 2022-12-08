@@ -1,6 +1,6 @@
 #[cfg(test)]
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::{traits::Zero, Permill, Perquintill};
+use sp_runtime::{Permill, Perquintill};
 
 use crate::tests::fixtures::{default_upload_context, IssueRevenueSplitFixture};
 use crate::tests::mock::*;
@@ -11,7 +11,7 @@ use crate::{balance, block, last_event_eq, member, rate, token, yearly_rate, Err
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
-    let patronage_rate = yearly_rate!(50);
+    let patronage_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
     let token_id = token!(1);
     let ((owner_id, owner_acc), init_supply) = (member!(1), balance!(10));
 
@@ -37,7 +37,7 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 #[test]
 fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     let token_id = token!(1);
-    let (patronage_rate, blocks) = (yearly_rate!(10), block!(10));
+    let (patronage_rate, blocks) = (DEFAULT_YEARLY_PATRONAGE_RATE.into(), block!(10));
     let ((owner_id, owner_acc), init_supply) = (member!(1), balance!(1_000_000_000));
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -65,7 +65,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 #[test]
 fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
     let token_id = token!(1);
-    let (patronage_rate, blocks) = (yearly_rate!(20), block!(10));
+    let (patronage_rate, blocks) = (DEFAULT_YEARLY_PATRONAGE_RATE.into(), block!(10));
     let ((owner_id, owner_acc), initial_supply) = (member!(1), balance!(0));
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -88,7 +88,7 @@ fn decrease_patronage_ok() {
     let rate = rate!(50);
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner_id = member!(1).0;
-    let decrement = yearly_rate!(20);
+    let decrement = DEFAULT_YEARLY_PATRONAGE_RATE.into();
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -110,7 +110,7 @@ fn decrease_patronage_ok_with_tally_count_correctly_updated() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner_id = member!(1).0;
     let blocks = block!(10);
-    let target_rate = yearly_rate!(20);
+    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -141,7 +141,7 @@ fn decrease_patronage_ok_noop_with_current_patronage_rate_specified_as_target() 
     let rate = BlockRate::from_yearly_rate(yearly_rate!(10), BlocksPerYear::get());
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner_id = member!(1).0;
-    let target_rate = yearly_rate!(10);
+    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -161,9 +161,9 @@ fn decrease_patronage_ok_noop_with_current_patronage_rate_specified_as_target() 
 // for correct final rate approximation see next test
 #[test]
 fn decrease_patronage_ok_with_event_deposit() {
-    let init_rate = yearly_rate!(50);
+    let init_rate = DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into();
     let token_id = token!(1);
-    let decrement = yearly_rate!(20);
+    let decrement = DEFAULT_YEARLY_PATRONAGE_RATE.into();
 
     let params = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
@@ -184,12 +184,12 @@ fn decrease_patronage_ok_with_event_deposit() {
 
 #[test]
 fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
-    let init_rate = yearly_rate!(50);
+    let init_rate = DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into();
     let token_id = token!(1);
-    let target_rate = yearly_rate!(30);
+    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
 
-    // K = 1/blocks_per_years => 30% * K ~= 57039783537.8 * 1e-18
-    let expected = BlockRate(Perquintill::from_parts(57039783537));
+    // K = 1/blocks_per_years => 10% * K ~= 19013261179 * 1e-18
+    let expected = BlockRate(Perquintill::from_parts(19013261179));
 
     let params = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
@@ -214,8 +214,8 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
 #[test]
 fn decrease_patronage_ok_with_last_tally_block_updated() {
     let token_id = token!(1);
-    let target_rate = yearly_rate!(10);
-    let (init_rate, blocks) = (yearly_rate!(20), block!(10));
+    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
+    let (init_rate, blocks) = (DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into(), block!(10));
 
     let params = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
@@ -240,10 +240,10 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
 
 #[test]
 fn decreasing_patronage_rate_fails_with_target_rate_exceeding_current_rate() {
-    let init_rate = yearly_rate!(50);
+    let init_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner_id = member!(1).0;
-    let target_rate = yearly_rate!(70);
+    let target_rate = DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into();
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
@@ -529,18 +529,6 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
             balance!(0)
-        );
-    })
-}
-
-#[test]
-fn update_max_yearly_patronage_rate_fails_with_zero_value() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            Token::update_max_yearly_patronage_rate(Origin::root(), YearlyRate::zero()),
-            Error::<Test>::MaxYearlyPatronageRateCannotBeZero
         );
     })
 }
