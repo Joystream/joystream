@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{AmmParams, Joy, Payment, Transfers, TransfersOf};
+use crate::types::{AmmParams, Joy, Payment, TransfersParamsOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -12,6 +12,7 @@ use sp_arithmetic::traits::One;
 use sp_runtime::{testing::H256, traits::Hash, DispatchError, Permill};
 
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryFrom;
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
@@ -955,13 +956,13 @@ pub struct TransferFixture {
     sender: AccountId,
     token_id: TokenId,
     src_member_id: MemberId,
-    outputs: TransfersOf<Test>,
+    outputs: TransfersParamsOf<Test>,
     metadata: Vec<u8>,
 }
 
 impl TransferFixture {
     pub fn default() -> Self {
-        let outputs = Transfers::<_, _>(
+        let outputs = TransfersParamsOf::<Test>::try_from(
             vec![(
                 member!(2).0,
                 Payment::<Balance> {
@@ -969,8 +970,10 @@ impl TransferFixture {
                 },
             )]
             .into_iter()
-            .collect(),
-        );
+            .collect::<BTreeMap<_, _>>(),
+        )
+        .ok()
+        .unwrap();
         Self {
             sender: member!(1).1,
             token_id: 1u64.into(),

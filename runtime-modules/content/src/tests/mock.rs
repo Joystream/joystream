@@ -1064,6 +1064,7 @@ parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MaxOutputs: u32 = 256;
 }
 
 impl project_token::Config for Test {
@@ -1078,6 +1079,7 @@ impl project_token::Config for Test {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type MaxOutputs = MaxOutputs;
     type WeightInfo = ();
 }
 

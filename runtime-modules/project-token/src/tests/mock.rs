@@ -80,6 +80,7 @@ parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MaxOutputs: u32 = 256;
     // --------- balances::Config parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
     // constants for storage::Config
@@ -173,6 +174,7 @@ impl Config for Test {
     type WeightInfo = ();
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type MaxOutputs = MaxOutputs;
 }
 
 // Working group integration

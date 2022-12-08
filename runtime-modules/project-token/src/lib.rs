@@ -131,6 +131,9 @@ pub trait Config:
 
     /// Membership info provider
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
+
+    /// Max outputs number for a transfer
+    type MaxOutputs: Get<u32>;
 }
 
 decl_storage! { generate_storage_info
@@ -252,12 +255,12 @@ decl_module! {
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, to_kb(metadata.len() as u32))]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.len() as u32, to_kb(metadata.len() as u32))]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
             token_id: T::TokenId,
-            outputs: TransfersOf<T>,
+            outputs: TransfersParamsOf<T>,
             metadata: Vec<u8>
         ) -> DispatchResult {
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
@@ -266,7 +269,8 @@ decl_module! {
             )?;
 
             // Currency transfer preconditions
-            let validated_transfers = Self::ensure_can_transfer(token_id, &sender, &src_member_id, outputs.into(), false)?;
+            let transfers: TransfersOf<T> = outputs.into();
+            let validated_transfers = Self::ensure_can_transfer(token_id, &sender, &src_member_id, transfers.into(), false)?;
 
             // == MUTATION SAFE ==
 
@@ -1003,7 +1007,7 @@ impl<T: Config>
         T::BlockNumber,
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
-        TransfersWithVestingOf<T>,
+        TransfersWithVestingParamsOf<T>,
         AmmParams,
     > for Module<T>
 {
@@ -1222,12 +1226,17 @@ impl<T: Config>
         token_id: T::TokenId,
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
-        outputs: TransfersWithVestingOf<T>,
+        outputs: TransfersWithVestingParamsOf<T>,
         metadata: Vec<u8>,
     ) -> DispatchResult {
         // Currency transfer preconditions
-        let validated_transfers =
-            Self::ensure_can_transfer(token_id, &bloat_bond_payer, &src_member_id, outputs, true)?;
+        let validated_transfers = Self::ensure_can_transfer(
+            token_id,
+            &bloat_bond_payer,
+            &src_member_id,
+            outputs.into(),
+            true,
+        )?;
 
         // == MUTATION SAFE ==
 
