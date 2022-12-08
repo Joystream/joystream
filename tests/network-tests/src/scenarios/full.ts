@@ -96,7 +96,11 @@ scenario('Full', async ({ job, env }) => {
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
+  const sudoHireContentLead = job(
+    'Set content working group leads',
+    leadOpening(true, ['contentWorkingGroup', 'storageWorkingGroup', 'distributionWorkingGroup'])
+  )
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireContentLead)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
   )
