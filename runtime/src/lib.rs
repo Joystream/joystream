@@ -901,6 +901,7 @@ parameter_types! {
     pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 5;
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
+    pub const MaxOutputs: u32 = 256; // TODO(Martin, Ignazio) : find a suitable value
     // Account bloat bond related:
     pub ProjectTokenAccountCleanupTxFee: Balance = compute_fee(
         RuntimeCall::ProjectToken(project_token::Call::<Runtime>::dust_account {
@@ -929,6 +930,7 @@ impl project_token::Config for Runtime {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = Members;
     type MembershipInfoProvider = Members;
+    type MaxOutputs = MaxOutputs;
     type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
 }
 

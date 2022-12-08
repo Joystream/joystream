@@ -15,16 +15,15 @@ use frame_support::{assert_noop, assert_ok};
 use frame_support::{
     storage_root,
     traits::{Currency, StoredMap, WithdrawReasons},
-    StateVersion,
+    BoundedBTreeMap, StateVersion,
 };
 use frame_system::RawOrigin;
 use project_token::types::TransferPolicyParamsOf;
-use project_token::types::{
-    PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
-};
+use project_token::types::{PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf};
 use sp_core::U256;
 use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryFrom;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
 use staking_handler::StakingHandler;
@@ -2686,7 +2685,7 @@ pub struct CreatorTokenIssuerTransferFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    outputs: TransfersWithVestingOf<Test>,
+    outputs: TransfersWithVestingParamsOf<Test>,
     metadata: Vec<u8>,
 }
 
@@ -2696,7 +2695,7 @@ impl CreatorTokenIssuerTransferFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
-            outputs: Transfers(
+            outputs: BoundedBTreeMap::<_, _, MaxOutputs>::try_from(
                 [(
                     SECOND_MEMBER_ID,
                     PaymentWithVestingOf::<Test> {
@@ -2706,8 +2705,10 @@ impl CreatorTokenIssuerTransferFixture {
                 )]
                 .iter()
                 .cloned()
-                .collect(),
-            ),
+                .collect::<BTreeMap<_, _>>(),
+            )
+            .ok()
+            .unwrap(),
             metadata: b"metadata".to_vec(),
         }
     }
