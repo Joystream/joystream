@@ -2165,32 +2165,32 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-common@^4.0.0-alpha.8":
-  version "4.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-common/-/hydra-common-4.0.0-alpha.8.tgz#b40a921af05ba3b1d2b1c563712164ed0d660fbd"
-  integrity sha512-SZj12jEThwmrbsBK0QX9hDihveJhlOdCHDYzPB9mXAQeBdz61ugEdxav6DtvTapvKyZTSoYR3whwSTSbICprfA==
+"@joystream/hydra-common@4.0.0-alpha.9", "@joystream/hydra-common@^4.0.0-alpha.9":
+  version "4.0.0-alpha.9"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-common/-/hydra-common-4.0.0-alpha.9.tgz#0ffa897ea7206944fa0ab9613dc537da874afeb1"
+  integrity sha512-XFUFkHM11hhyovZGwDLZyybXTJHh4M92NZn+GhUPjnygJNF3gtjklkxFHv70bz7FpAA8R+lWk7z3JptexOwNbg==
   dependencies:
     bn.js "^5.2.1"
 
-"@joystream/hydra-db-utils@^4.0.0-alpha.8":
-  version "4.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-db-utils/-/hydra-db-utils-4.0.0-alpha.8.tgz#a6475ea2e61029208c64ab5098d204562af98c21"
-  integrity sha512-qC6mtu+E+POVX6Mb/ZhNYYuQjPwS/JomKpTQWZ2+gVlP3OpxfE8MY2TXvGlZ933/fYAbzvc6qg3gtyA18yVEgQ==
+"@joystream/hydra-db-utils@4.0.0-alpha.9", "@joystream/hydra-db-utils@^4.0.0-alpha.9":
+  version "4.0.0-alpha.9"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-db-utils/-/hydra-db-utils-4.0.0-alpha.9.tgz#7bf89a819a1372e227023c368805b952ae01b3bf"
+  integrity sha512-NpVuHC9/emLvB8qDl/cWWn/rikcalch8+/wRHw1R5INbWM3i3LBLLN2DVWtRGCfZW8aKPNzrjEFwmLKocgJ0Iw==
   dependencies:
-    "@joystream/hydra-common" "^4.0.0-alpha.8"
+    "@joystream/hydra-common" "^4.0.0-alpha.9"
     "@types/ioredis" "^4.17.4"
     bn.js "^5.2.1"
     ioredis "^4.17.3"
     lodash "^4.17.20"
     typeorm "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz"
 
-"@joystream/hydra-processor@4.0.0-alpha.8":
-  version "4.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-processor/-/hydra-processor-4.0.0-alpha.8.tgz#cad5b8758090c71672cef05a123ea030191bfa14"
-  integrity sha512-INZGEo36ATBdjgv+kdf2omSXUPCNiYx2ycXBX983zlTeOVMCzBDv2ZFaQPosKfbGdchhB1ZTNqHr/x/DuguKcw==
+"@joystream/hydra-processor@4.0.0-alpha.9":
+  version "4.0.0-alpha.9"
+  resolved "https://registry.yarnpkg.com/@joystream/hydra-processor/-/hydra-processor-4.0.0-alpha.9.tgz#6611ac1e557db54953a972309aeb1ebfc5703363"
+  integrity sha512-1xEx5LM+xfStDMRRgOFLLPw0tnzhHNuqjwE9mr7alIdlDI1cvyOa5MAleamZIogLY1jWFgVctLzFMFrXjS7TNQ==
   dependencies:
-    "@joystream/hydra-common" "^4.0.0-alpha.8"
-    "@joystream/hydra-db-utils" "^4.0.0-alpha.8"
+    "@joystream/hydra-common" "^4.0.0-alpha.9"
+    "@joystream/hydra-db-utils" "^4.0.0-alpha.9"
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
     "@oclif/errors" "^1.3.3"
@@ -2205,6 +2205,7 @@
     figlet "^1.5.2"
     graphql "^15.4.0"
     graphql-request "^3.3.0"
+    lodash.debounce "^4.0.8"
     p-immediate "^3.2.0"
     p-throttle "~4.1.1"
     p-wait-for "~3.2.0"
@@ -2708,7 +2709,7 @@
     "@polkadot/util-crypto" "^9.5.1"
     rxjs "^7.5.5"
 
-"@polkadot/api@8.9.1", "@polkadot/api@9.3.3":
+"@polkadot/api@8.9.1":
   version "8.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-8.9.1.tgz#c35c5d583845a5d67edfa8c3579bad143f65bcd6"
   integrity sha512-UwQ5hWPHruqnBO2hriaPhGaOwaWZx9MVECWFJzVs0ZuhKDge9jyBp+JXud/Ly/+8VbeokYUB0DSZG/gTAO5+vg==
@@ -3198,20 +3199,12 @@
   resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.22.0.tgz#d115bc5dcab8c0f5800e05e4ef265949042b13ec"
   integrity sha512-IKqrPY0B3AeIXEc5/JGgEhPZLy+SmVyQf+k0SIGcNSTqt1GLI3gQFEOFwSScJdem+iYZQUrn6YPPxC3TpdSC3A==
 
-"@substrate/txwrapper-core@3.1.3":
+"@substrate/txwrapper-core@3.1.3", "@substrate/txwrapper-core@=3.1.3", "@substrate/txwrapper-core@^3.1.3", "@substrate/txwrapper-core@^3.2.2":
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.1.3.tgz#ec790e332dd09ee5021b3824b43f11b0fc70f36a"
   integrity sha512-8QV5wp+V1/KXu/f2K9uTfbBrEXiu86z1N/O6+4858hYGihypZuO2YT0pChfsnj0Uic4K2T2QDzTCj8VJ70yORA==
   dependencies:
     "@polkadot/api" "8.9.1"
-    memoizee "0.4.15"
-
-"@substrate/txwrapper-core@^3.1.3", "@substrate/txwrapper-core@^3.2.2":
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.2.2.tgz#55825ff84bd4cd95fa2f869111616300f66db513"
-  integrity sha512-Wj6odIvu69YC7RbxAPRllm48bZhK3nyygw1jRSZLzp/gfIzOAYz8KYvVtm62ZtmKKhs9jggD/H0SO+Nn37N0DA==
-  dependencies:
-    "@polkadot/api" "9.3.3"
     memoizee "0.4.15"
 
 "@substrate/txwrapper-polkadot@3.1.3":

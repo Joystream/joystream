@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "0.20.4",
+  "version": "0.20.5",
   "description": "Types for Joystream Substrate Runtime - Carthage release",
   "main": "lib/cjs/index.js",
   "types": "lib/index.d.ts",

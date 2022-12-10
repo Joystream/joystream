@@ -39,7 +39,7 @@ export const allStaticBags: CreateInterface<StaticBagId>[] = [
   'Council',
   { WorkingGroup: 'Content' },
   { WorkingGroup: 'Distribution' },
-  { WorkingGroup: 'Gateway' },
+  { WorkingGroup: 'App' },
   { WorkingGroup: 'OperationsAlpha' },
   { WorkingGroup: 'OperationsBeta' },
   { WorkingGroup: 'OperationsGamma' },
