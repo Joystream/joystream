@@ -3,7 +3,7 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::assert_noop;
-use project_token::types::PaymentWithVestingOf;
+use project_token::types::PaymentWithVesting;
 use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
@@ -135,19 +135,16 @@ fn unsuccessful_curator_channel_creator_token_issuer_transfer_during_transfer() 
                 Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
-                [(
+                vec![(
                     SECOND_MEMBER_ID,
-                    PaymentWithVestingOf::<Test> {
+                    PaymentWithVesting {
                         amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
                         vesting_schedule: None,
                     },
                 )]
-                .iter()
-                .cloned()
+                .into_iter()
                 .collect::<BTreeMap<_, _>>()
-                .try_into()
-                .ok()
-                .unwrap(),
+                .into(),
                 vec![]
             ),
             Error::<Test>::InvalidChannelTransferStatus,

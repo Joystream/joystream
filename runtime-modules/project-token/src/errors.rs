@@ -31,6 +31,9 @@ decl_error! {
         /// Transfer destination member id invalid
         TransferDestinationMemberDoesNotExist,
 
+        /// Transfer destination member id invalid
+        TooManyTransferOutputs,
+
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
 

@@ -897,11 +897,9 @@ impl<Balance, VestingScheduleParams>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Transfers<MemberId, Payment>(pub BTreeMap<MemberId, Payment>);
 
-impl<MemberId: Ord, Payment, MaxOutputs: Get<u32>>
-    From<BoundedBTreeMap<MemberId, Payment, MaxOutputs>> for Transfers<MemberId, Payment>
-{
-    fn from(v: BoundedBTreeMap<MemberId, Payment, MaxOutputs>) -> Self {
-        Self(BTreeMap::from(v))
+impl<MemberId, Payment> Transfers<MemberId, Payment> {
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 }
 
@@ -1501,6 +1499,12 @@ where
     }
 }
 
+impl<MemberId, Payment> From<BTreeMap<MemberId, Payment>> for Transfers<MemberId, Payment> {
+    fn from(v: BTreeMap<MemberId, Payment>) -> Self {
+        Self(v)
+    }
+}
+
 impl<MemberId, Payment> From<Transfers<MemberId, Payment>> for BTreeMap<MemberId, Payment> {
     fn from(v: Transfers<MemberId, Payment>) -> Self {
         v.0
@@ -1648,24 +1652,10 @@ pub(crate) type ValidatedPaymentOf<T> = ValidatedPayment<PaymentWithVestingOf<T>
 pub(crate) type TransfersOf<T> =
     Transfers<<T as MembershipTypes>::MemberId, Payment<TokenBalanceOf<T>>>;
 
-pub(crate) type TransfersParamsOf<T> = BoundedBTreeMap<
-    <T as MembershipTypes>::MemberId,
-    Payment<TokenBalanceOf<T>>,
-    <T as crate::Config>::MaxOutputs,
->;
-
 /// Alias for Transfers w/ PaymentWithVesting
 pub type TransfersWithVestingOf<T> =
     Transfers<<T as MembershipTypes>::MemberId, PaymentWithVestingOf<T>>;
 
-/// Alias for Transfers extrinsics Params to be converted in TransfersWithVestingOf
-pub type TransfersWithVestingParamsOf<T> = BoundedBTreeMap<
-    <T as MembershipTypes>::MemberId,
-    PaymentWithVestingOf<T>,
-    <T as crate::Config>::MaxOutputs,
->;
-
-/// Validated transfers
 /// Alias for Timeline
 pub type TimelineOf<T> = Timeline<<T as frame_system::Config>::BlockNumber>;
 
@@ -1694,3 +1684,8 @@ pub type VestingSchedulesOf<T> = BoundedBTreeMap<
 
 /// Alias for the amm curve
 pub type AmmCurveOf<T> = AmmCurve<<T as Config>::Balance>;
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct Outputs<AccountId, Balance, MaxOutputs: Get<u32>>(
+    BoundedBTreeMap<AccountId, Balance, MaxOutputs>,
+);

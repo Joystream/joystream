@@ -1,9 +1,7 @@
-use frame_support::BoundedBTreeMap;
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::{Permill, Perquintill};
 use sp_std::collections::btree_map::BTreeMap;
-use sp_std::convert::TryFrom;
 
 use crate::{
     balance,
@@ -287,22 +285,28 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-pub fn new_transfers(
-    v: Vec<(MemberId, Balance)>,
-) -> BoundedBTreeMap<MemberId, Payment<Balance>, MaxOutputs> {
-    BoundedBTreeMap::<_, _, MaxOutputs>::try_from(
+impl From<Vec<(MemberId, Balance)>> for Transfers<MemberId, Payment<Balance>> {
+    fn from(v: Vec<(MemberId, Balance)>) -> Self {
+        Self(
+            v.into_iter()
+                .map(|(member_id, amount)| (member_id, Payment { amount }))
+                .collect::<BTreeMap<_, _>>(),
+        )
+    }
+}
+
+pub fn new_transfers(v: Vec<(MemberId, Balance)>) -> Transfers<MemberId, Payment<Balance>> {
+    Transfers::<_, _>(
         v.into_iter()
-            .map(|(acc, amount)| (acc, Payment::<Balance> { amount }))
+            .map(|(member_id, amount)| (member_id, Payment { amount }))
             .collect::<BTreeMap<_, _>>(),
     )
-    .ok()
-    .unwrap()
 }
 
 pub fn new_issuer_transfers(
     v: Vec<(MemberId, Balance, Option<VestingScheduleParams>)>,
-) -> BoundedBTreeMap<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>, MaxOutputs> {
-    BoundedBTreeMap::<_, _, MaxOutputs>::try_from(
+) -> Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>> {
+    Transfers::<_, _>(
         v.into_iter()
             .map(|(member_id, amount, vesting_schedule)| {
                 (
@@ -315,8 +319,6 @@ pub fn new_issuer_transfers(
             })
             .collect::<BTreeMap<_, _>>(),
     )
-    .ok()
-    .unwrap()
 }
 
 impl<Balance, VestingScheduleParams, MemberId>

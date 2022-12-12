@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{AmmParams, Joy, Payment, TransfersParamsOf};
+use crate::tests::test_utils::new_transfers;
+use crate::types::{AmmParams, Joy, TransfersOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -12,7 +13,6 @@ use sp_arithmetic::traits::One;
 use sp_runtime::{testing::H256, traits::Hash, DispatchError, Permill};
 
 use sp_std::collections::btree_map::BTreeMap;
-use sp_std::convert::TryFrom;
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
@@ -956,24 +956,13 @@ pub struct TransferFixture {
     sender: AccountId,
     token_id: TokenId,
     src_member_id: MemberId,
-    outputs: TransfersParamsOf<Test>,
+    outputs: TransfersOf<Test>,
     metadata: Vec<u8>,
 }
 
 impl TransferFixture {
     pub fn default() -> Self {
-        let outputs = TransfersParamsOf::<Test>::try_from(
-            vec![(
-                member!(2).0,
-                Payment::<Balance> {
-                    amount: DEFAULT_SPLIT_PARTICIPATION,
-                },
-            )]
-            .into_iter()
-            .collect::<BTreeMap<_, _>>(),
-        )
-        .ok()
-        .unwrap();
+        let outputs = new_transfers(vec![(member!(2).0, DEFAULT_SPLIT_PARTICIPATION)]);
         Self {
             sender: member!(1).1,
             token_id: 1u64.into(),
@@ -1106,7 +1095,6 @@ pub struct AmmBuyFixture {
     token_id: TokenId,
     member_id: MemberId,
     amount: Balance,
-    deadline: Option<Moment>,
     slippage_tolerance: Option<(Permill, Balance)>,
 }
 
@@ -1118,7 +1106,6 @@ impl AmmBuyFixture {
             token_id: One::one(),
             member_id,
             amount: Balance::from(DEFAULT_AMM_BUY_AMOUNT),
-            deadline: None,
             slippage_tolerance: None,
         }
     }
@@ -1139,13 +1126,6 @@ impl AmmBuyFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_deadline(self, deadline: Moment) -> Self {
-        Self {
-            deadline: Some(deadline),
-            ..self
-        }
-    }
-
     pub fn with_slippage_tolerance(self, tolerance: (Permill, Balance)) -> Self {
         Self {
             slippage_tolerance: Some(tolerance),
@@ -1160,7 +1140,6 @@ impl AmmBuyFixture {
             self.token_id,
             self.member_id,
             self.amount,
-            self.deadline,
             self.slippage_tolerance,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
@@ -1179,7 +1158,6 @@ pub struct AmmSellFixture {
     token_id: TokenId,
     member_id: MemberId,
     amount: Balance,
-    deadline: Option<Moment>,
     slippage_tolerance: Option<(Permill, Balance)>,
 }
 
@@ -1191,7 +1169,6 @@ impl AmmSellFixture {
             token_id: One::one(),
             member_id,
             amount: Balance::from(DEFAULT_AMM_SELL_AMOUNT),
-            deadline: None,
             slippage_tolerance: None,
         }
     }
@@ -1212,13 +1189,6 @@ impl AmmSellFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_deadline(self, deadline: Moment) -> Self {
-        Self {
-            deadline: Some(deadline),
-            ..self
-        }
-    }
-
     pub fn with_slippage_tolerance(self, tolerance: (Permill, Balance)) -> Self {
         Self {
             slippage_tolerance: Some(tolerance),
@@ -1233,7 +1203,6 @@ impl AmmSellFixture {
             self.token_id,
             self.member_id,
             self.amount,
-            self.deadline,
             self.slippage_tolerance,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);

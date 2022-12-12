@@ -260,9 +260,16 @@ decl_module! {
             origin,
             src_member_id: T::MemberId,
             token_id: T::TokenId,
-            outputs: TransfersParamsOf<T>,
+            outputs: TransfersOf<T>,
             metadata: Vec<u8>
         ) -> DispatchResult {
+
+            // security check
+            ensure!(
+                outputs.len() <= T::MaxOutputs::get() as usize,
+                Error::<T>::TooManyTransferOutputs,
+            );
+
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 src_member_id
@@ -828,7 +835,6 @@ decl_module! {
         /// - origin, member_id pair must be a valid authentication pair
         /// - token_id must exist
         /// - user usable JOY balance must be enough for buying (+ existential deposit)
-        /// - deadline constraint respected if provided
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
         ///
@@ -837,7 +843,7 @@ decl_module! {
         /// - respective JOY amount transferred from user balance to amm treasury account
         /// - event deposited
         #[weight = WeightInfoToken::<T>::buy_on_amm_with_existing_account()]
-        fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+        fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -869,11 +875,6 @@ decl_module! {
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(price.saturating_sub(desired_price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
-            }
-
-            // timestamp deadline check
-            if let Some(deadline) = deadline {
-                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
             // == MUTATION SAFE ==
@@ -912,7 +913,6 @@ decl_module! {
         /// - token_id must exist
         /// - token_id, member_id must be valid account coordinates
         /// - user usable CRT balance must be at least `amount`
-        /// - deadline constraint respected if provided
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
         /// - amm treasury account must have sufficient JOYs for the operation
@@ -923,7 +923,7 @@ decl_module! {
         /// - respective JOY amount transferred from amm treasury account to user account
         /// - event deposited
         #[weight = WeightInfoToken::<T>::sell_on_amm()]
-        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -951,11 +951,6 @@ decl_module! {
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
-            }
-
-            // timestamp deadline check
-            if let Some(deadline) = deadline {
-                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
             let sell_price = Self::amm_sell_tx_fees().left_from_one().mul_floor(price);
@@ -1007,7 +1002,7 @@ impl<T: Config>
         T::BlockNumber,
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
-        TransfersWithVestingParamsOf<T>,
+        TransfersWithVestingOf<T>,
         AmmParams,
     > for Module<T>
 {
@@ -1226,9 +1221,15 @@ impl<T: Config>
         token_id: T::TokenId,
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
-        outputs: TransfersWithVestingParamsOf<T>,
+        outputs: TransfersWithVestingOf<T>,
         metadata: Vec<u8>,
     ) -> DispatchResult {
+        // Security check
+        ensure!(
+            outputs.len() <= T::MaxOutputs::get() as usize,
+            Error::<T>::TooManyTransferOutputs
+        );
+
         // Currency transfer preconditions
         let validated_transfers = Self::ensure_can_transfer(
             token_id,
