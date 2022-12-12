@@ -30,6 +30,10 @@
     "url": "https://github.com/Joystream/joystream",
     "directory": "joystreamjs"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "scripts": {
     "build": "tsc --project tsconfig.esm.json & tsc --project tsconfig.cjs.json",
     "format": "prettier ./ --write",
