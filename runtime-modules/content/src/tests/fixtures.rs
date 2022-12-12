@@ -23,6 +23,7 @@ use project_token::types::{TokenAllocationOf, TokenIssuanceParametersOf};
 use sp_core::U256;
 use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryFrom;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
 use staking_handler::StakingHandler;
@@ -2681,21 +2682,25 @@ pub struct CreatorTokenIssuerTransferFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    outputs: TransfersWithVestingOf<Test>,
+    outputs: TransferWithVestingOutputsOf<Test>,
     metadata: Vec<u8>,
 }
 
 impl CreatorTokenIssuerTransferFixture {
     pub fn default() -> Self {
+        let outputs = TransferWithVestingOutputsOf::<Test>::try_from(
+            vec![(SECOND_MEMBER_ID, DEFAULT_ISSUER_TRANSFER_AMOUNT)]
+                .into_iter()
+                .map(|(member, amount)| (member, amount.into()))
+                .collect::<BTreeMap<_, _>>(),
+        )
+        .ok()
+        .unwrap();
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
-            outputs: new_issuer_transfer(vec![(
-                SECOND_MEMBER_ID,
-                DEFAULT_ISSUER_TRANSFER_AMOUNT,
-                None,
-            )]),
+            outputs,
             metadata: b"metadata".to_vec(),
         }
     }

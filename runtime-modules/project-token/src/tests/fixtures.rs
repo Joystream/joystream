@@ -2,7 +2,7 @@
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::new_transfers;
-use crate::types::{AmmParams, Joy, TransfersOf};
+use crate::types::{AmmParams, Joy, TransferOutputsOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -956,7 +956,7 @@ pub struct TransferFixture {
     sender: AccountId,
     token_id: TokenId,
     src_member_id: MemberId,
-    outputs: TransfersOf<Test>,
+    outputs: TransferOutputsOf<Test>,
     metadata: Vec<u8>,
 }
 

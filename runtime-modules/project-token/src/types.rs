@@ -1,10 +1,10 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use common::{bloat_bond::RepayableBloatBond, MembershipTypes};
-use frame_support::storage::bounded_btree_map::BoundedBTreeMap;
 use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
     ensure,
     traits::Get,
+    BoundedBTreeMap,
 };
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
@@ -829,13 +829,6 @@ pub struct BlockRate(pub Perquintill);
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct MerkleProof<Hasher: Hash>(pub Vec<(Hasher::Output, MerkleSide)>);
 
-/// Information about a payment
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct Payment<Balance> {
-    /// Amount
-    pub amount: Balance,
-}
-
 /// Information about a payment with optional vesting schedule
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PaymentWithVesting<Balance, VestingScheduleParams> {
@@ -846,12 +839,12 @@ pub struct PaymentWithVesting<Balance, VestingScheduleParams> {
     pub vesting_schedule: Option<VestingScheduleParams>,
 }
 
-impl<Balance, VestingScheduleParams> From<Payment<Balance>>
+impl<Balance, VestingScheduleParams> From<Balance>
     for PaymentWithVesting<Balance, VestingScheduleParams>
 {
-    fn from(payment: Payment<Balance>) -> Self {
+    fn from(amount: Balance) -> Self {
         Self {
-            amount: payment.amount,
+            amount,
             vesting_schedule: None,
         }
     }
@@ -897,11 +890,10 @@ impl<Balance, VestingScheduleParams>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Transfers<MemberId, Payment>(pub BTreeMap<MemberId, Payment>);
 
-impl<MemberId, Payment> Transfers<MemberId, Payment> {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-}
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub struct TestTransfers<MemberId, Payment, MaxOutputs: Get<u32>>(
+    pub BoundedBTreeMap<MemberId, Payment, MaxOutputs>,
+);
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
@@ -1484,30 +1476,29 @@ where
     }
 }
 
-impl<MemberId, Balance, VestingScheduleParams> From<Transfers<MemberId, Payment<Balance>>>
+// BoundedBTreeMap<K, Balance, S> -> Transfers<K, Vesting>
+impl<MemberId, Balance, VestingScheduleParams, MaxOutputs: Get<u32>>
+    From<BoundedBTreeMap<MemberId, Balance, MaxOutputs>>
     for Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
 where
     MemberId: Ord + Clone,
     Balance: Clone,
 {
-    fn from(v: Transfers<MemberId, Payment<Balance>>) -> Self {
+    fn from(v: BoundedBTreeMap<MemberId, Balance, MaxOutputs>) -> Self {
         Self(
-            v.0.iter()
+            v.iter()
                 .map(|(a, p)| (a.clone(), p.clone().into()))
-                .collect(),
+                .collect::<BTreeMap<_, _>>(),
         )
     }
 }
 
-impl<MemberId, Payment> From<BTreeMap<MemberId, Payment>> for Transfers<MemberId, Payment> {
-    fn from(v: BTreeMap<MemberId, Payment>) -> Self {
-        Self(v)
-    }
-}
-
-impl<MemberId, Payment> From<Transfers<MemberId, Payment>> for BTreeMap<MemberId, Payment> {
-    fn from(v: Transfers<MemberId, Payment>) -> Self {
-        v.0
+// BoundedBTreeMap<K,V,S> -> Transfers<K,V>
+impl<MemberId: Ord, Payment, MaxOutputs: Get<u32>>
+    From<BoundedBTreeMap<MemberId, Payment, MaxOutputs>> for Transfers<MemberId, Payment>
+{
+    fn from(v: BoundedBTreeMap<MemberId, Payment, MaxOutputs>) -> Self {
+        Self(v.into_inner())
     }
 }
 
@@ -1648,13 +1639,22 @@ pub type PaymentWithVestingOf<T> =
 /// Alias for ValidatedPayment
 pub(crate) type ValidatedPaymentOf<T> = ValidatedPayment<PaymentWithVestingOf<T>>;
 
-/// Alias for Transfers w/ Payment
-pub(crate) type TransfersOf<T> =
-    Transfers<<T as MembershipTypes>::MemberId, Payment<TokenBalanceOf<T>>>;
+/// Alias used for issuer_transfer
+pub(crate) type TransferOutputsOf<T> = BoundedBTreeMap<
+    <T as MembershipTypes>::MemberId,
+    TokenBalanceOf<T>,
+    <T as crate::Config>::MaxOutputs,
+>;
 
 /// Alias for Transfers w/ PaymentWithVesting
-pub type TransfersWithVestingOf<T> =
-    Transfers<<T as MembershipTypes>::MemberId, PaymentWithVestingOf<T>>;
+pub type TransfersOf<T> = Transfers<<T as MembershipTypes>::MemberId, PaymentWithVestingOf<T>>;
+
+/// Alias used for transfers
+pub type TransferWithVestingOutputsOf<T> = BoundedBTreeMap<
+    <T as MembershipTypes>::MemberId,
+    PaymentWithVestingOf<T>,
+    <T as crate::Config>::MaxOutputs,
+>;
 
 /// Alias for Timeline
 pub type TimelineOf<T> = Timeline<<T as frame_system::Config>::BlockNumber>;
@@ -1684,8 +1684,3 @@ pub type VestingSchedulesOf<T> = BoundedBTreeMap<
 
 /// Alias for the amm curve
 pub type AmmCurveOf<T> = AmmCurve<<T as Config>::Balance>;
-
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
-pub struct Outputs<AccountId, Balance, MaxOutputs: Get<u32>>(
-    BoundedBTreeMap<AccountId, Balance, MaxOutputs>,
-);
