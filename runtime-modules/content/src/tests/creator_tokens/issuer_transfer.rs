@@ -5,6 +5,7 @@ use crate::*;
 use frame_support::assert_noop;
 use project_token::types::PaymentWithVesting;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryInto;
 
 #[test]
 fn unsuccessful_creator_token_issuer_transfer_non_existing_channel() {
@@ -129,22 +130,25 @@ fn unsuccessful_curator_channel_creator_token_issuer_transfer_during_transfer() 
         InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
+        let outputs = vec![(
+            SECOND_MEMBER_ID,
+            PaymentWithVesting {
+                amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
+                vesting_schedule: None,
+            },
+        )]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>()
+        .try_into()
+        .ok()
+        .unwrap();
 
         assert_noop!(
             Content::creator_token_issuer_transfer(
                 RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
-                vec![(
-                    SECOND_MEMBER_ID,
-                    PaymentWithVesting {
-                        amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
-                        vesting_schedule: None,
-                    },
-                )]
-                .into_iter()
-                .collect::<BTreeMap<_, _>>()
-                .into(),
+                outputs,
                 vec![]
             ),
             Error::<Test>::InvalidChannelTransferStatus,

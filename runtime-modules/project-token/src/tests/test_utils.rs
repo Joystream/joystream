@@ -1,14 +1,16 @@
+use frame_support::BoundedBTreeMap;
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::{Permill, Perquintill};
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryFrom;
 
 use crate::{
     balance,
     tests::mock::*,
     types::{
         AccountData, BlockRate, ConfigAccountDataOf, MerkleProof, MerkleSide, PatronageData,
-        Payment, PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
+        PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
         TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf,
         Transfers, Validated, ValidatedPayment, VestingSchedule, VestingScheduleOf, VestingSource,
     },
@@ -285,40 +287,43 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl From<Vec<(MemberId, Balance)>> for Transfers<MemberId, Payment<Balance>> {
+impl From<Vec<(MemberId, Balance)>> for Transfers<MemberId, Balance> {
     fn from(v: Vec<(MemberId, Balance)>) -> Self {
         Self(
             v.into_iter()
-                .map(|(member_id, amount)| (member_id, Payment { amount }))
+                .map(|(member_id, amount)| (member_id, amount))
                 .collect::<BTreeMap<_, _>>(),
         )
     }
 }
 
-pub fn new_transfers(v: Vec<(MemberId, Balance)>) -> Transfers<MemberId, Payment<Balance>> {
-    Transfers::<_, _>(
-        v.into_iter()
-            .map(|(member_id, amount)| (member_id, Payment { amount }))
-            .collect::<BTreeMap<_, _>>(),
-    )
+pub fn new_transfers(
+    v: Vec<(MemberId, Balance)>,
+) -> BoundedBTreeMap<MemberId, Balance, MaxOutputs> {
+    let tmp = v
+        .into_iter()
+        .map(|(member_id, amount)| (member_id, amount))
+        .collect::<BTreeMap<_, _>>();
+
+    BoundedBTreeMap::<_, _, _>::try_from(tmp).ok().unwrap()
 }
 
 pub fn new_issuer_transfers(
     v: Vec<(MemberId, Balance, Option<VestingScheduleParams>)>,
-) -> Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>> {
-    Transfers::<_, _>(
-        v.into_iter()
-            .map(|(member_id, amount, vesting_schedule)| {
-                (
-                    member_id,
-                    PaymentWithVesting {
-                        amount,
-                        vesting_schedule,
-                    },
-                )
-            })
-            .collect::<BTreeMap<_, _>>(),
-    )
+) -> BoundedBTreeMap<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>, MaxOutputs> {
+    let tmp = v
+        .into_iter()
+        .map(|(member_id, amount, vesting_schedule)| {
+            (
+                member_id,
+                PaymentWithVesting {
+                    amount,
+                    vesting_schedule,
+                },
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    BoundedBTreeMap::<_, _, _>::try_from(tmp).ok().unwrap()
 }
 
 impl<Balance, VestingScheduleParams, MemberId>

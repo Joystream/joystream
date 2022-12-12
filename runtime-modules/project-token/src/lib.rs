@@ -260,7 +260,7 @@ decl_module! {
             origin,
             src_member_id: T::MemberId,
             token_id: T::TokenId,
-            outputs: TransfersOf<T>,
+            outputs: TransferOutputsOf<T>,
             metadata: Vec<u8>
         ) -> DispatchResult {
 
@@ -276,8 +276,7 @@ decl_module! {
             )?;
 
             // Currency transfer preconditions
-            let transfers: TransfersOf<T> = outputs.into();
-            let validated_transfers = Self::ensure_can_transfer(token_id, &sender, &src_member_id, transfers.into(), false)?;
+            let validated_transfers = Self::ensure_can_transfer(token_id, &sender, &src_member_id, outputs.into(), false)?;
 
             // == MUTATION SAFE ==
 
@@ -922,10 +921,10 @@ decl_module! {
         /// - total supply decreased by amount
         /// - respective JOY amount transferred from amm treasury account to user account
         /// - event deposited
-        #[weight = WeightInfoToken::<T>::sell_on_amm()]
-        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+       #[weight = WeightInfoToken::<T>::sell_on_amm()]
+       fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
-                return Ok(()); // noop
+               return Ok(()); // noop
             }
 
             let sender = ensure_signed(origin.clone())?;
@@ -1002,7 +1001,7 @@ impl<T: Config>
         T::BlockNumber,
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
-        TransfersWithVestingOf<T>,
+        TransferWithVestingOutputsOf<T>,
         AmmParams,
     > for Module<T>
 {
@@ -1221,15 +1220,9 @@ impl<T: Config>
         token_id: T::TokenId,
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
-        outputs: TransfersWithVestingOf<T>,
+        outputs: TransferWithVestingOutputsOf<T>,
         metadata: Vec<u8>,
     ) -> DispatchResult {
-        // Security check
-        ensure!(
-            outputs.len() <= T::MaxOutputs::get() as usize,
-            Error::<T>::TooManyTransferOutputs
-        );
-
         // Currency transfer preconditions
         let validated_transfers = Self::ensure_can_transfer(
             token_id,
@@ -1670,7 +1663,7 @@ impl<T: Config> Module<T> {
         token_id: T::TokenId,
         bloat_bond_payer: &T::AccountId,
         src_member_id: &T::MemberId,
-        transfers: TransfersWithVestingOf<T>,
+        transfers: TransfersOf<T>,
         is_issuer: bool,
     ) -> Result<ValidatedTransfersOf<T>, DispatchError> {
         // ensure token validity
@@ -1968,7 +1961,7 @@ impl<T: Config> Module<T> {
 
     pub(crate) fn validate_transfers(
         token_id: T::TokenId,
-        transfers: TransfersWithVestingOf<T>,
+        transfers: TransfersOf<T>,
         transfer_policy: &TransferPolicyOf<T>,
         is_issuer: bool,
     ) -> Result<ValidatedTransfersOf<T>, DispatchError> {
