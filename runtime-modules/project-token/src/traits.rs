@@ -13,7 +13,7 @@ pub trait PalletToken<
     BlockNumber,
     TokenSaleParams,
     UploadContext,
-    TransfersWithVestingParams,
+    TransfersWithVesting,
     AmmParams,
 >
 {
@@ -30,7 +30,7 @@ pub trait PalletToken<
         token_id: TokenId,
         src_member_id: MemberId,
         bloat_bond_payer: AccountId,
-        outputs: TransfersWithVestingParams,
+        outputs: TransfersWithVesting,
         metadata: Vec<u8>,
     ) -> DispatchResult;
 

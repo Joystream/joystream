@@ -35,8 +35,8 @@ pub mod weights;
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
-    AmmParams, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf,
-    TransfersWithVestingParamsOf, UploadContextOf, YearlyRate,
+    AmmParams, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
+    UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
 pub use weights::WeightInfo;
@@ -184,7 +184,7 @@ pub trait Config:
         Self::BlockNumber,
         TokenSaleParamsOf<Self>,
         UploadContextOf<Self>,
-        TransfersWithVestingParamsOf<Self>,
+        TransfersWithVestingOf<Self>,
         AmmParams,
     >;
 
@@ -3433,7 +3433,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            outputs: TransfersWithVestingParamsOf<T>,
+            outputs: TransfersWithVestingOf<T>,
             metadata: Vec<u8>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;

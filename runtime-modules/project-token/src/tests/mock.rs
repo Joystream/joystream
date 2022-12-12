@@ -51,7 +51,6 @@ pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Config>::Hashing;
 pub type HashOut = <Test as frame_system::Config>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
-pub type Moment = <Test as pallet_timestamp::Config>::Moment;
 pub type MemberId = u64;
 
 #[macro_export]
