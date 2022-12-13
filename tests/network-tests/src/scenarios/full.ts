@@ -17,6 +17,7 @@ import upcomingOpenings from '../flows/working-groups/upcomingOpenings'
 import groupStatus from '../flows/working-groups/groupStatus'
 import workerActions from '../flows/working-groups/workerActions'
 import groupBudget from '../flows/working-groups/groupBudget'
+import terminateLeads from '../flows/working-groups/terminateLeads'
 import proposals from '../flows/proposals'
 import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
@@ -92,14 +93,17 @@ scenario('Full', async ({ job, env }) => {
   job('forum threads', threads).requires(sudoHireLead)
   job('forum thread tags', threadTags).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
-  job('forum moderation', moderation).requires(sudoHireLead)
+  const moderationJob = job('forum moderation', moderation).requires(sudoHireLead)
+
+  // Terminate all WG leads, and then re-hire them because subsequent jobs depend on Leads being already set
+  const terminateLeadsJob = job('terminate working-group leads', terminateLeads).requires(moderationJob)
+  const sudoHireContentLead = job(
+    'Set content working group leads',
+    leadOpening(false, ['contentWorkingGroup', 'storageWorkingGroup', 'distributionWorkingGroup'])
+  ).requires(terminateLeadsJob)
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const sudoHireContentLead = job(
-    'Set content working group leads',
-    leadOpening(true, ['contentWorkingGroup', 'storageWorkingGroup', 'distributionWorkingGroup'])
-  )
   const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireContentLead)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
