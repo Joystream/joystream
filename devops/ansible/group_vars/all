@@ -1,0 +1,20 @@
+---
+# Variables applicable to all hosts
+
+# Path to root of local source code repo if we want to build from local repo
+# blank string -> repo will be cloned from remote location
+build_local_code: ""
+git_repo: "https://github.com/Joystream/joystream.git"
+branch_name: carthage
+runtime_profile: ""
+# "generate" | "new-with-authority-accounts" | "new-with-authority-seeds"
+chainspec_creation_strategy: "generate"
+# ["StashAddress1,ControllerAddress1", "StashAddress2,ControllerAddress2", ... ]
+authority_stash_and_controller_accounts: []
+# or
+authority_seeds: ["//Alice", "//Bob"]
+
+# Paths relative to remote_user working directory
+remote_data_path: artifacts
+remote_code_path: joystream
+

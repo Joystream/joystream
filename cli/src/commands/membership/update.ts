@@ -31,7 +31,7 @@ export default class MembershipUpdateCommand extends MembershipsCommandBase {
     const { newHandle, newName, newAvatarUri, newAbout } = this.parse(MembershipUpdateCommand).flags
     const {
       id: memberId,
-      membership: { controller_account: controllerKey },
+      membership: { controllerAccount: controllerKey },
     } = await this.getRequiredMemberContext()
 
     const newMetadata: IMembershipMetadata | null =

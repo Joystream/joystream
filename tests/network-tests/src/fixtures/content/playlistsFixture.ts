@@ -5,7 +5,7 @@ import { ICreatedPlaylistData, JoystreamCLI } from '../../cli/joystream'
 import { BaseQueryNodeFixture } from '../../Fixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { getPlaylistDefaults } from './contentTemplates'
-import { IMember } from './createMembers'
+import { IMember } from './createMembersAndCurators'
 import _ from 'lodash'
 
 const cliExamplesFolderPath = path.dirname(require.resolve('@joystream/cli/package.json')) + '/examples/content'

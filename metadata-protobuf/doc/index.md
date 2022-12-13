@@ -8,7 +8,6 @@
     - [BountyWorkData](#.BountyWorkData)
   
 - [proto/Channel.proto](#proto/Channel.proto)
-    - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
   
 - [proto/Council.proto](#proto/Council.proto)
@@ -16,13 +15,33 @@
   
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
-    - [ForumPostReaction](#.ForumPostReaction)
     - [ForumThreadMetadata](#.ForumThreadMetadata)
-  
-    - [ForumPostReaction.Reaction](#.ForumPostReaction.Reaction)
   
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
+    - [MembershipMetadata.ExternalResource](#.MembershipMetadata.ExternalResource)
+  
+    - [MembershipMetadata.ExternalResource.ResourceType](#.MembershipMetadata.ExternalResource.ResourceType)
+  
+- [proto/Metaprotocol.proto](#proto/Metaprotocol.proto)
+    - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
+    - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
+    - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
+    - [CreateComment](#.CreateComment)
+    - [CreateVideoCategory](#.CreateVideoCategory)
+    - [DeleteComment](#.DeleteComment)
+    - [EditComment](#.EditComment)
+    - [MemberRemarked](#.MemberRemarked)
+    - [ModerateComment](#.ModerateComment)
+    - [PinOrUnpinComment](#.PinOrUnpinComment)
+    - [ReactComment](#.ReactComment)
+    - [ReactVideo](#.ReactVideo)
+    - [VideoReactionsPreference](#.VideoReactionsPreference)
+  
+    - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
+    - [PinOrUnpinComment.Option](#.PinOrUnpinComment.Option)
+    - [ReactVideo.Reaction](#.ReactVideo.Reaction)
+    - [VideoReactionsPreference.Option](#.VideoReactionsPreference.Option)
   
 - [proto/Person.proto](#proto/Person.proto)
     - [PersonMetadata](#.PersonMetadata)
@@ -52,7 +71,7 @@
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
-    - [VideoCategoryMetadata](#.VideoCategoryMetadata)
+    - [SubtitleMetadata](#.SubtitleMetadata)
     - [VideoMetadata](#.VideoMetadata)
   
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
@@ -129,21 +148,6 @@
 
 
 
-<a name=".ChannelCategoryMetadata"></a>
-
-### ChannelCategoryMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category Name |
-
-
-
-
-
-
 <a name=".ChannelMetadata"></a>
 
 ### ChannelMetadata
@@ -158,7 +162,6 @@
 | language | [string](#string) | optional | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
 | cover_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | avatar_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
-| category | [uint64](#uint64) | optional | Channel Category Id |
 
 
 
@@ -231,16 +234,6 @@
 
 
 
-<a name=".ForumPostReaction"></a>
-
-### ForumPostReaction
-The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
-
-
-
-
-
-
 <a name=".ForumThreadMetadata"></a>
 
 ### ForumThreadMetadata
@@ -257,18 +250,6 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
  
-
-
-<a name=".ForumPostReaction.Reaction"></a>
-
-### ForumPostReaction.Reaction
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CANCEL | 0 | This means cancelling any previous reaction |
-| LIKE | 1 |  |
-
 
  
 
@@ -297,12 +278,330 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | avatar_object | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
 | avatar_uri | [string](#string) | optional | Url to member&#39;s avatar |
 | about | [string](#string) | optional | Member&#39;s md-formatted about text |
+| externalResources | [MembershipMetadata.ExternalResource](#MembershipMetadata.ExternalResource) | repeated |  |
+
+
+
+
+
+
+<a name=".MembershipMetadata.ExternalResource"></a>
+
+### MembershipMetadata.ExternalResource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [MembershipMetadata.ExternalResource.ResourceType](#MembershipMetadata.ExternalResource.ResourceType) | optional |  |
+| value | [string](#string) | optional |  |
 
 
 
 
 
  
+
+
+<a name=".MembershipMetadata.ExternalResource.ResourceType"></a>
+
+### MembershipMetadata.ExternalResource.ResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EMAIL | 0 |  |
+| HYPERLINK | 1 |  |
+| TWITTER | 2 |  |
+| TELEGRAM | 3 |  |
+| DISCORD | 4 |  |
+| FACEBOOK | 5 |  |
+| YOUTUBE | 6 |  |
+| MATRIX | 7 |  |
+| IRC | 8 |  |
+| WECHAT | 9 |  |
+| WHATSAPP | 10 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/Metaprotocol.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Metaprotocol.proto
+
+
+
+<a name=".BanOrUnbanMemberFromChannel"></a>
+
+### BanOrUnbanMemberFromChannel
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member_id | [uint64](#uint64) | required | ID of the member that channel owner wants to ban from participating on any video. |
+| option | [BanOrUnbanMemberFromChannel.Option](#BanOrUnbanMemberFromChannel.Option) | required | Selected option to ban or unban member from the channel |
+
+
+
+
+
+
+<a name=".ChannelModeratorRemarked"></a>
+
+### ChannelModeratorRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
+
+
+
+
+
+
+<a name=".ChannelOwnerRemarked"></a>
+
+### ChannelOwnerRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pin_or_unpin_comment | [PinOrUnpinComment](#PinOrUnpinComment) | optional |  |
+| ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
+| video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
+
+
+
+
+
+
+<a name=".CreateComment"></a>
+
+### CreateComment
+create comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| parent_comment_id | [string](#string) | optional | ID of comment member wants to reply (empty if new comment is parent comment) |
+| body | [string](#string) | required | Comment text |
+
+
+
+
+
+
+<a name=".CreateVideoCategory"></a>
+
+### CreateVideoCategory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | required |  |
+| description | [string](#string) | optional |  |
+| parent_category_id | [string](#string) | optional |  |
+
+
+
+
+
+
+<a name=".DeleteComment"></a>
+
+### DeleteComment
+delete comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment which will be deleted |
+
+
+
+
+
+
+<a name=".EditComment"></a>
+
+### EditComment
+edit comment by author
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment whose text is being edited |
+| new_body | [string](#string) | required | New comment body |
+
+
+
+
+
+
+<a name=".MemberRemarked"></a>
+
+### MemberRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| react_video | [ReactVideo](#ReactVideo) | optional |  |
+| react_comment | [ReactComment](#ReactComment) | optional |  |
+| create_comment | [CreateComment](#CreateComment) | optional |  |
+| edit_comment | [EditComment](#EditComment) | optional |  |
+| delete_comment | [DeleteComment](#DeleteComment) | optional |  |
+| create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
+
+
+
+
+
+
+<a name=".ModerateComment"></a>
+
+### ModerateComment
+delete comment by moderator or channel owner;
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of comment that will be deleted by moderator |
+| rationale | [string](#string) | required | why moderator wants to delete this comment |
+
+
+
+
+
+
+<a name=".PinOrUnpinComment"></a>
+
+### PinOrUnpinComment
+pin comment on a video by channel owner
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| comment_id | [string](#string) | required | ID of the comment which will be pinned |
+| option | [PinOrUnpinComment.Option](#PinOrUnpinComment.Option) | required | Selected option to pin or unpin comment from channel |
+
+
+
+
+
+
+<a name=".ReactComment"></a>
+
+### ReactComment
+reacting, unreacting to a comment
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of the comment to react |
+| reaction_id | [uint32](#uint32) | required | ID of the selected reaction |
+
+
+
+
+
+
+<a name=".ReactVideo"></a>
+
+### ReactVideo
+reacting, unreacting, and changing reaction to video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video to react |
+| reaction | [ReactVideo.Reaction](#ReactVideo.Reaction) | required | Selected reaction |
+
+
+
+
+
+
+<a name=".VideoReactionsPreference"></a>
+
+### VideoReactionsPreference
+Enable or disable reactions on a single video
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [uint64](#uint64) | required | ID of the video |
+| option | [VideoReactionsPreference.Option](#VideoReactionsPreference.Option) | required | Selected option to enable or disable comment section |
+
+
+
+
+
+ 
+
+
+<a name=".BanOrUnbanMemberFromChannel.Option"></a>
+
+### BanOrUnbanMemberFromChannel.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BAN | 0 | Ban member (nothing happens if member is already banned) |
+| UNBAN | 1 | Unban member (nothing happens if member is already unbanned) |
+
+
+
+<a name=".PinOrUnpinComment.Option"></a>
+
+### PinOrUnpinComment.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PIN | 0 | Pin comment on video (nothing happens if comment is already pinned) |
+| UNPIN | 1 | Unpin comment from video (nothing happens if comment is already unpinned) |
+
+
+
+<a name=".ReactVideo.Reaction"></a>
+
+### ReactVideo.Reaction
+The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
+Reacting again with the same message option will cancel the previous reaction
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LIKE | 0 |  |
+| UNLIKE | 1 |  |
+
+
+
+<a name=".VideoReactionsPreference.Option"></a>
+
+### VideoReactionsPreference.Option
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENABLE | 0 | Enable reactions (nothing happens if they are already enabled) |
+| DISABLE | 1 | Disable reactions (nothing happens if they are already disabled) |
+
 
  
 
@@ -617,8 +916,8 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| video_metadata | [VideoMetadata](#VideoMetadata) | optional | For backward compatibility reasons, apps that deserialize metadata (e.g. Query Node) need to handle the deserialization of `VideoMetadata` message both as independent message and as a variant of `ContentMetadata`. Though, apps that serialize protobuf messages (mostly frontend apps) are advised to use `ContentMetadata` message for all new videos &amp; playlists |
-| playlist_metadata | [PlaylistMetadata](#PlaylistMetadata) | optional |  |
+| video_metadata | [VideoMetadata](#VideoMetadata) | optional |  |
+| playlist_metadata | [PlaylistMetadata](#PlaylistMetadata) | optional | ... Other possible metadata standards, e.g. `ArticleMetadata` |
 
 
 
@@ -675,15 +974,18 @@ Publication status before joystream
 
 
 
-<a name=".VideoCategoryMetadata"></a>
+<a name=".SubtitleMetadata"></a>
 
-### VideoCategoryMetadata
+### SubtitleMetadata
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional | Category name |
+| type | [string](#string) | required |  |
+| new_asset | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| language | [string](#string) | required | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
+| mimeType | [string](#string) | required |  |
 
 
 
@@ -713,7 +1015,10 @@ Publication status before joystream
 | is_public | [bool](#bool) | optional | Should video be publicy visible yet |
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
-| category | [uint64](#uint64) | optional | Video Category Id |
+| category | [string](#string) | optional | Video Category Id |
+| subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
+| enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
+| clear_subtitles | [bool](#bool) | optional | Remove all subtitles; since protobuf doesn&#39;t distinguish b/w empty array and null field, simply removing all subtitles by overriding list with an empty array wont work |
 
 
 

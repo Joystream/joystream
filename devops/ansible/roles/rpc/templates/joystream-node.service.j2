@@ -1,0 +1,29 @@
+[Unit]
+Description=Joystream Node
+After=network.target
+
+[Service]
+Type=simple
+User={{ template_user }}
+WorkingDirectory={{ template_working_dir }}
+ExecStart={{ template_working_dir }}/bin/joystream-node \
+        --chain chain/chainspec-raw.json \
+        --base-path chain \
+        --ws-external \
+        --rpc-external \
+        --rpc-cors all \
+        --pruning archive \
+        --ws-max-connections 512 \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+        --no-mdns \
+        --in-peers 64 \
+        --out-peers 64 \
+        --max-runtime-instances 64
+
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=16384
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

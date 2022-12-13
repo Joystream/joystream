@@ -42,7 +42,6 @@ async function getThread(store: DatabaseManager, id: string) {
 
 export async function proposalsDiscussion_PostCreated({ event, store }: EventContext & StoreContext): Promise<void> {
   const [postId, memberId, threadId, metadataBytes, editable] = new ProposalsDiscussion.PostCreatedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
 
   const metadata = deserializeMetadata(ProposalsDiscussionPostMetadata, metadataBytes)
 
@@ -55,8 +54,6 @@ export async function proposalsDiscussion_PostCreated({ event, store }: EventCon
 
   const post = new ProposalDiscussionPost({
     id: postId.toString(),
-    createdAt: eventTime,
-    updatedAt: eventTime,
     author: new Membership({ id: memberId.toString() }),
     status: editable.isTrue ? new ProposalDiscussionPostStatusActive() : new ProposalDiscussionPostStatusLocked(),
     isVisible: true,
@@ -81,7 +78,6 @@ export async function proposalsDiscussion_PostUpdated({ event, store }: EventCon
   const newText = bytesToString(newTextBytes)
 
   post.text = newText
-  post.updatedAt = new Date(event.blockTimestamp)
   await store.save<ProposalDiscussionPost>(post)
 
   const postUpdatedEvent = new ProposalDiscussionPostUpdatedEvent({
@@ -97,7 +93,6 @@ export async function proposalsDiscussion_ThreadModeChanged({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [threadId, threadMode, memberId] = new ProposalsDiscussion.ThreadModeChangedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
 
   const thread = await getThread(store, threadId.toString())
 
@@ -105,11 +100,9 @@ export async function proposalsDiscussion_ThreadModeChanged({
     const newMode = new ProposalDiscussionThreadModeClosed()
     const whitelistMemberIds = threadMode.asClosed
     const members = await store.getMany(Membership, {
-      where: { id: In(whitelistMemberIds.map((id) => id.toString())) },
+      where: { id: In(Array.from(whitelistMemberIds.values()).map((id) => id.toString())) },
     })
     const whitelist = new ProposalDiscussionWhitelist({
-      createdAt: eventTime,
-      updatedAt: eventTime,
       members,
     })
     await store.save<ProposalDiscussionWhitelist>(whitelist)
@@ -122,7 +115,6 @@ export async function proposalsDiscussion_ThreadModeChanged({
     throw new Error(`Unrecognized proposal thread mode: ${threadMode.type}`)
   }
 
-  thread.updatedAt = eventTime
   await store.save<ProposalDiscussionThread>(thread)
 
   const threadModeChangedEvent = new ProposalDiscussionThreadModeChangedEvent({
@@ -136,7 +128,6 @@ export async function proposalsDiscussion_ThreadModeChanged({
 
 export async function proposalsDiscussion_PostDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [memberId, , postId, hide] = new ProposalsDiscussion.PostDeletedEvent(event).params
-  const eventTime = new Date(event.blockTimestamp)
   const post = await getPost(store, postId.toString())
 
   const postDeletedEvent = new ProposalDiscussionPostDeletedEvent({
@@ -150,6 +141,5 @@ export async function proposalsDiscussion_PostDeleted({ event, store }: EventCon
   newStatus.deletedInEventId = postDeletedEvent.id
   post.isVisible = hide.isFalse
   post.status = newStatus
-  post.updatedAt = eventTime
   await store.save<ProposalDiscussionPost>(post)
 }

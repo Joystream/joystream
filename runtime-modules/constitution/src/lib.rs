@@ -6,32 +6,44 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
 
-#[cfg(test)]
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
+
 pub(crate) mod tests;
 
 mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
-use codec::{Decode, Encode};
-use frame_support::weights::Weight;
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{decl_event, decl_module, decl_storage};
 use frame_system::ensure_root;
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
-/// pallet_constitution WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn amend_constitution(i: u32) -> Weight;
-}
+type WeightInfoConstitution<T> = <T as Config>::WeightInfo;
 
-type WeightInfoConstitution<T> = <T as Trait>::WeightInfo;
-
-pub trait Trait: frame_system::Trait {
-    type Event: From<Event> + Into<<Self as frame_system::Trait>::Event>;
+pub trait Config: frame_system::Config {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -39,30 +51,30 @@ pub trait Trait: frame_system::Trait {
 
 /// Contains constitution text hash and its amendment number.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct ConstitutionInfo {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
+pub struct ConstitutionInfo<Hash> {
     /// Constitution text hash.
-    pub text_hash: Vec<u8>,
+    pub text_hash: Hash,
 }
 
-decl_storage! {
-    trait Store for Module<T: Trait> as Constitution {
-        Constitution get(fn constitution) : ConstitutionInfo;
+decl_storage! { generate_storage_info
+    trait Store for Module<T: Config> as Constitution {
+        Constitution get(fn constitution) : ConstitutionInfo<<T as frame_system::Config>::Hash>;
     }
 }
 
 decl_event! {
-    pub enum Event {
+    pub enum Event<T> where Hash = <T as frame_system::Config>::Hash {
         /// Emits on constitution amendment.
         /// Parameters:
         /// - constitution text hash
         /// - constitution text
-        ConstutionAmended(Vec<u8>, Vec<u8>),
+        ConstutionAmended(Hash, Vec<u8>),
     }
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
         /// Sets the current constitution hash. Requires root origin.
@@ -79,16 +91,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let hashed = T::Hashing::hash(&constitution_text);
-            let hash = hashed.as_ref().to_vec();
+            let hash = T::Hashing::hash(&constitution_text);
 
-            let constitution = ConstitutionInfo{
-                text_hash: hash.clone(),
+            let constitution = ConstitutionInfo {
+                text_hash: hash,
             };
 
-            Constitution::put(constitution);
+            Constitution::<T>::put(constitution);
 
-            Self::deposit_event(Event::ConstutionAmended(hash, constitution_text));
+            Self::deposit_event(Event::<T>::ConstutionAmended(hash, constitution_text));
         }
     }
 }

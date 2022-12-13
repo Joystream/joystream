@@ -1,10 +1,11 @@
 import { ContentMetadata, PlaylistMetadata } from '@joystream/metadata-protobuf'
-import { CreateInterface, createType } from '@joystream/types'
-import { VideoUpdateParameters } from '@joystream/types/content'
+import { CreateInterface } from '@joystream/types'
 import { flags } from '@oclif/command'
+import { PalletContentVideoUpdateParametersRecord as VideoUpdateParameters } from '@polkadot/types/lookup'
 import { formatBalance } from '@polkadot/util'
 import BN from 'bn.js'
 import chalk from 'chalk'
+import ExitCodes from '../../ExitCodes'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
@@ -33,7 +34,7 @@ export default class UpdatePlaylistCommand extends UploadCommandBase {
     },
   ]
 
-  async getAssetsToRemove(playlistId: number, thumbnailIndex: number | undefined): Promise<string[]> {
+  async getAssetsToRemove(playlistId: number, thumbnailIndex: number | undefined): Promise<BN[]> {
     let assetsToRemove: DataObjectInfoFragment[] = []
     if (thumbnailIndex) {
       const currentAssets = await this.getQNApi().dataObjectsByVideoId(playlistId.toString())
@@ -44,12 +45,15 @@ export default class UpdatePlaylistCommand extends UploadCommandBase {
       if (assetsToRemove.length) {
         this.log(`\nData objects to be removed due to replacement:`)
         assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
-        const totalPrize = assetsToRemove.reduce((sum, { deletionPrize }) => sum.add(new BN(deletionPrize)), new BN(0))
+        const totalPrize = assetsToRemove.reduce(
+          (sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)),
+          new BN(0)
+        )
         this.log(`Total deletion prize: ${chalk.cyanBright(formatBalance(totalPrize))}\n`)
       }
     }
 
-    return assetsToRemove.map((a) => a.id)
+    return assetsToRemove.map((a) => new BN(a.id))
   }
 
   async run(): Promise<void> {
@@ -60,14 +64,12 @@ export default class UpdatePlaylistCommand extends UploadCommandBase {
 
     // Context
     const playlist = await this.getApi().videoById(playlistId) // video & playlist have same runtime representation
-    const channel = await this.getApi().channelById(playlist.in_channel.toNumber())
+    const channel = await this.getApi().channelById(playlist.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     const playlistInput = await getInputJson<PlaylistInputParameters>(input, PlaylistInputSchema)
     const meta = asValidatedMetadata(PlaylistMetadata, playlistInput)
-    const { enableComments } = playlistInput
 
     const { thumbnailPhotoPath } = playlistInput
     const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ thumbnailPhotoPath }, input)
@@ -75,18 +77,21 @@ export default class UpdatePlaylistCommand extends UploadCommandBase {
     // "undefined" values will be omitted when the metadata is encoded. It's not possible to "unset" an asset this way.
     meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
-    // Preare and send the extrinsic
+    // Prepare and send the extrinsic
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(playlistId, assetIndices.thumbnailPhotoPath)
     const playlistUpdateParameters: CreateInterface<VideoUpdateParameters> = {
-      assets_to_upload: assetsToUpload,
-      new_meta: metadataToBytes(ContentMetadata, { playlistMetadata: meta }),
-      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
-      enable_comments: enableComments,
+      assetsToUpload,
+      assetsToRemove,
+      autoIssueNft: null,
+      expectedDataObjectStateBloatBond,
+      newMeta: metadataToBytes(ContentMetadata, { playlistMetadata: meta }),
+      storageBucketsNumWitness: await this.getStorageBucketsNumWitness(playlist.inChannel),
     }
 
     this.jsonPrettyPrint(
-      JSON.stringify({ assetsToUpload: assetsToUpload?.toJSON(), newMetadata: meta, assetsToRemove, enableComments })
+      JSON.stringify({ assetsToUpload: assetsToUpload?.toJSON(), newMetadata: meta, assetsToRemove })
     )
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
@@ -96,14 +101,23 @@ export default class UpdatePlaylistCommand extends UploadCommandBase {
       playlistId,
       playlistUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
-    if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+
+    const playlistUpdatedEvent = this.getEvent(result, 'content', 'VideoUpdated')
+    const objectIds = playlistUpdatedEvent.data[3]
+
+    if (objectIds.size !== (assetsToUpload?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of video assets in VideoUpdated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
+
+    if (objectIds.size) {
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
-        `dynamic:channel:${playlist.in_channel.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        `dynamic:channel:${playlist.inChannel.toString()}`,
+        [...objectIds].map((id, index) => ({
+          dataObjectId: id,
+          path: resolvedAssets[index].path,
+        })),
         input
       )
     }

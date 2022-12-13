@@ -37,7 +37,7 @@ export class BuyMembershipWithInsufficienFundsFixture extends BaseFixture {
 
     assert.isBelow(
       balance.toNumber(),
-      membershipFee.add(membershipTransactionFee).toNumber(),
+      membershipFee.add(membershipTransactionFee).add(this.api.consts.balances.existentialDeposit).toNumber(),
       'Account already has sufficient balance to purchase membership'
     )
 

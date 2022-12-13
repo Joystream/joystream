@@ -26,7 +26,7 @@ ${CLI} leader:update-bag -b static:wg:content -f ${FAMILY_ID} -a ${BUCKET_1_INDE
 ${CLI} leader:update-bag -b static:wg:operationsAlpha -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
 ${CLI} leader:update-bag -b static:wg:operationsBeta -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
 ${CLI} leader:update-bag -b static:wg:operationsGamma -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
-${CLI} leader:update-bag -b static:wg:gateway -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
+${CLI} leader:update-bag -b static:wg:app -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
 ${CLI} leader:update-bag -b static:wg:distribution -f ${FAMILY_ID} -a ${BUCKET_1_INDEX}
 # Update bucket status / mode
 ${CLI} leader:update-bucket-status -B ${BUCKET_1_ID}  --acceptingBags yes

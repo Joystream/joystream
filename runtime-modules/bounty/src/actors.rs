@@ -3,7 +3,7 @@
 //! BountyActorManager contains methods to validate actor origin, transfer funds to/from the bounty
 //! account, etc.
 
-use crate::{BalanceOf, BountyActor, Error, Module, Trait};
+use crate::{BalanceOf, BountyActor, Config, Error, Module};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::ensure;
@@ -15,7 +15,8 @@ use common::council::CouncilBudgetManager;
 use common::membership::{MemberId, MemberOriginValidator, MembershipInfoProvider};
 
 // Helper enum for the bounty management.
-pub(crate) enum BountyActorManager<T: Trait> {
+#[derive(Eq, PartialEq)]
+pub(crate) enum BountyActorManager<T: Config> {
     // Bounty was created or funded by a council.
     Council,
 
@@ -23,7 +24,7 @@ pub(crate) enum BountyActorManager<T: Trait> {
     Member(T::AccountId, MemberId<T>),
 }
 
-impl<T: Trait> BountyActorManager<T> {
+impl<T: Config> BountyActorManager<T> {
     // Construct BountyActor by extrinsic origin and optional member_id.
     pub(crate) fn ensure_bounty_actor_manager(
         origin: T::Origin,
@@ -43,7 +44,13 @@ impl<T: Trait> BountyActorManager<T> {
             }
         }
     }
-
+    // Construct BountyActor.
+    pub(crate) fn get_bounty_actor(&self) -> BountyActor<MemberId<T>> {
+        match self {
+            BountyActorManager::Member(_, member_id) => BountyActor::Member(*member_id),
+            BountyActorManager::Council => BountyActor::Council,
+        }
+    }
     // Construct BountyActor.
     pub(crate) fn get_bounty_actor_manager(
         actor: BountyActor<MemberId<T>>,
@@ -85,24 +92,12 @@ impl<T: Trait> BountyActorManager<T> {
         T::CouncilBudgetManager::get_budget() >= amount
     }
 
-    // Validate that provided actor relates to the initial BountyActor.
-    pub(crate) fn validate_actor(&self, actor: &BountyActor<MemberId<T>>) -> DispatchResult {
-        let initial_actor = match self {
-            BountyActorManager::Council => BountyActor::Council,
-            BountyActorManager::Member(_, member_id) => BountyActor::Member(*member_id),
-        };
-
-        ensure!(initial_actor == actor.clone(), Error::<T>::NotBountyActor);
-
-        Ok(())
-    }
-
     // Transfer funds for the bounty creation.
     pub(crate) fn transfer_funds_to_bounty_account(
         &self,
         bounty_id: T::BountyId,
         required_balance: BalanceOf<T>,
-    ) -> DispatchResult {
+    ) {
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_from_council_budget(
@@ -115,11 +110,9 @@ impl<T: Trait> BountyActorManager<T> {
                     account_id,
                     bounty_id,
                     required_balance,
-                )?;
+                );
             }
         }
-
-        Ok(())
     }
 
     // Restore a balance for the bounty creator.
@@ -127,7 +120,7 @@ impl<T: Trait> BountyActorManager<T> {
         &self,
         bounty_id: T::BountyId,
         required_balance: BalanceOf<T>,
-    ) -> DispatchResult {
+    ) {
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_to_council_budget(
@@ -140,11 +133,9 @@ impl<T: Trait> BountyActorManager<T> {
                     account_id,
                     bounty_id,
                     required_balance,
-                )?;
+                );
             }
         }
-
-        Ok(())
     }
 
     // Remove some balance from the council budget and transfer it to the bounty account.
@@ -155,13 +146,13 @@ impl<T: Trait> BountyActorManager<T> {
         T::CouncilBudgetManager::set_budget(new_budget);
 
         let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        let _ = balances::Module::<T>::deposit_creating(&bounty_account_id, amount);
+        let _ = balances::Pallet::<T>::deposit_creating(&bounty_account_id, amount);
     }
 
     // Add some balance from the council budget and slash from the bounty account.
     fn transfer_balance_to_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
         let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        let _ = balances::Module::<T>::slash(&bounty_account_id, amount);
+        let _ = balances::Pallet::<T>::slash(&bounty_account_id, amount);
 
         let budget = T::CouncilBudgetManager::get_budget();
         let new_budget = budget.saturating_add(amount);

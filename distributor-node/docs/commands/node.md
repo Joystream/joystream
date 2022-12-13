@@ -37,7 +37,7 @@ EXAMPLES
   $ joystream-distributor node:set-buckets --all
 ```
 
-_See code: [src/commands/node/set-buckets.ts](https://github.com/Joystream/joystream/blob/v0.1.1/src/commands/node/set-buckets.ts)_
+_See code: [src/commands/node/set-buckets.ts](https://github.com/Joystream/joystream/blob/master/src/commands/node/set-buckets.ts)_
 
 ## `joystream-distributor node:set-worker`
 
@@ -60,7 +60,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/node/set-worker.ts](https://github.com/Joystream/joystream/blob/v0.1.1/src/commands/node/set-worker.ts)_
+_See code: [src/commands/node/set-worker.ts](https://github.com/Joystream/joystream/blob/master/src/commands/node/set-worker.ts)_
 
 ## `joystream-distributor node:shutdown`
 
@@ -81,7 +81,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/node/shutdown.ts](https://github.com/Joystream/joystream/blob/v0.1.1/src/commands/node/shutdown.ts)_
+_See code: [src/commands/node/shutdown.ts](https://github.com/Joystream/joystream/blob/master/src/commands/node/shutdown.ts)_
 
 ## `joystream-distributor node:start-public-api`
 
@@ -102,7 +102,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/node/start-public-api.ts](https://github.com/Joystream/joystream/blob/v0.1.1/src/commands/node/start-public-api.ts)_
+_See code: [src/commands/node/start-public-api.ts](https://github.com/Joystream/joystream/blob/master/src/commands/node/start-public-api.ts)_
 
 ## `joystream-distributor node:stop-public-api`
 
@@ -123,4 +123,4 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/node/stop-public-api.ts](https://github.com/Joystream/joystream/blob/v0.1.1/src/commands/node/stop-public-api.ts)_
+_See code: [src/commands/node/stop-public-api.ts](https://github.com/Joystream/joystream/blob/master/src/commands/node/stop-public-api.ts)_

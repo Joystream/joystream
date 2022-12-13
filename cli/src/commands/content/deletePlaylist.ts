@@ -36,7 +36,7 @@ export default class DeletePlaylistCommand extends ContentDirectoryCommandBase {
       })
     }
 
-    return dataObjects.map((o) => [o.id, new BN(o.deletionPrize)])
+    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
   }
 
   async run(): Promise<void> {
@@ -45,7 +45,7 @@ export default class DeletePlaylistCommand extends ContentDirectoryCommandBase {
     } = this.parse(DeletePlaylistCommand)
     // Context
     const playlist = await this.getApi().videoById(playlistId)
-    const channel = await this.getApi().channelById(playlist.in_channel.toNumber())
+    const channel = await this.getApi().channelById(playlist.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
 
     const dataObjectsInfo = await this.getDataObjectsInfo(playlistId)
@@ -72,10 +72,8 @@ export default class DeletePlaylistCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideo', [
       actor,
       playlistId,
-      createType(
-        'BTreeSet<DataObjectId>',
-        dataObjectsInfo.map(([id]) => id)
-      ),
+      createType('u64', dataObjectsInfo.length),
+      createType('Option<u32>', await this.getStorageBucketsNumWitness(playlist.inChannel)),
     ])
   }
 }

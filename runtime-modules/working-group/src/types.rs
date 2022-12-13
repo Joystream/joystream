@@ -1,6 +1,7 @@
 #![warn(missing_docs)]
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
 #[cfg(feature = "std")]
@@ -10,7 +11,11 @@ use sp_std::marker::PhantomData;
 use common::{ActorId, MemberId};
 
 /// Working group job application type alias.
-pub type Application<T> = JobApplication<<T as frame_system::Trait>::AccountId, MemberId<T>>;
+pub type Application<T> = JobApplication<
+    <T as frame_system::Config>::AccountId,
+    MemberId<T>,
+    <T as frame_system::Config>::Hash,
+>;
 
 /// Type identifier for a worker role, which must be same as membership actor identifier.
 pub type WorkerId<T> = ActorId<T>;
@@ -22,7 +27,7 @@ pub type ApplicationId = u64;
 pub type OpeningId = u64;
 
 // ApplicationId - Application - helper struct.
-pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
+pub(crate) struct ApplicationInfo<T: crate::Config<I>, I: crate::Instance> {
     pub application_id: ApplicationId,
     pub application: Application<T>,
     pub marker: PhantomData<I>,
@@ -30,13 +35,13 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
 
 // WorkerId - Worker - helper struct.
 pub(crate) struct WorkerInfo<
-    T: common::membership::MembershipTypes + frame_system::Trait + balances::Trait,
+    T: common::membership::MembershipTypes + frame_system::Config + balances::Config,
 > {
     pub worker_id: WorkerId<T>,
     pub worker: Worker<T>,
 }
 
-impl<T: common::membership::MembershipTypes + frame_system::Trait + balances::Trait>
+impl<T: common::membership::MembershipTypes + frame_system::Config + balances::Config>
     From<(WorkerId<T>, Worker<T>)> for WorkerInfo<T>
 {
     fn from((worker_id, worker): (WorkerId<T>, Worker<T>)) -> Self {
@@ -46,20 +51,20 @@ impl<T: common::membership::MembershipTypes + frame_system::Trait + balances::Tr
 
 /// Group worker type alias.
 pub type Worker<T> = GroupWorker<
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     MemberId<T>,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     BalanceOf<T>,
 >;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Job opening for the normal or leader position.
 /// An opening represents the process of hiring one or more new actors into some available role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
-pub struct Opening<BlockNumber: Ord, Balance> {
+#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct Opening<BlockNumber: Ord, Balance, Hash> {
     /// Defines opening type: Leader or worker.
     pub opening_type: OpeningType,
 
@@ -67,7 +72,7 @@ pub struct Opening<BlockNumber: Ord, Balance> {
     pub created: BlockNumber,
 
     /// Hash of the opening description.
-    pub description_hash: Vec<u8>,
+    pub description_hash: Hash,
 
     /// Stake policy for the job opening.
     pub stake_policy: StakePolicy<BlockNumber, Balance>,
@@ -79,9 +84,16 @@ pub struct Opening<BlockNumber: Ord, Balance> {
     pub creation_stake: Balance,
 }
 
+/// Alias for Opening
+pub type OpeningOf<T> = Opening<
+    <T as frame_system::Config>::BlockNumber,
+    <T as balances::Config>::Balance,
+    <T as frame_system::Config>::Hash,
+>;
+
 /// Defines type of the opening: regular working group fellow or group leader.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy, TypeInfo, MaxEncodedLen)]
 pub enum OpeningType {
     /// Group leader.
     Leader,
@@ -100,8 +112,8 @@ impl Default for OpeningType {
 
 /// An application for the regular worker/lead role opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct JobApplication<AccountId, MemberId> {
+#[derive(Encode, Decode, Debug, Clone, PartialEq, TypeInfo, MaxEncodedLen)]
+pub struct JobApplication<AccountId, MemberId, Hash> {
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
 
@@ -115,13 +127,13 @@ pub struct JobApplication<AccountId, MemberId> {
     pub member_id: MemberId,
 
     /// Hash of the application description.
-    pub description_hash: Vec<u8>,
+    pub description_hash: Hash,
 
     /// Opening ID for the application
     pub opening_id: OpeningId,
 }
 
-impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
+impl<AccountId: Clone, MemberId: Clone, Hash> JobApplication<AccountId, MemberId, Hash> {
     /// Creates a new job application using parameters.
     pub fn new(
         role_account_id: &AccountId,
@@ -129,7 +141,7 @@ impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
         staking_account_id: &AccountId,
         member_id: &MemberId,
         opening_id: OpeningId,
-        description_hash: Vec<u8>,
+        description_hash: Hash,
     ) -> Self {
         JobApplication {
             role_account_id: role_account_id.clone(),
@@ -144,7 +156,7 @@ impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
 
 /// Working group participant: regular worker or lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, TypeInfo, MaxEncodedLen)]
 pub struct GroupWorker<AccountId, MemberId, BlockNumber, Balance> {
     /// Member id related to the worker/lead.
     pub member_id: MemberId,
@@ -210,7 +222,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
 
 /// Stake policy for the job opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct StakePolicy<BlockNumber, Balance> {
     /// Stake amount for applicants.
     pub stake_amount: Balance,
@@ -221,7 +233,7 @@ pub struct StakePolicy<BlockNumber, Balance> {
 
 /// Parameters container for the apply_on_opening extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, TypeInfo)]
 pub struct ApplyOnOpeningParams<MemberId, OpeningId, AccountId, Balance> {
     /// Applying member id.
     pub member_id: MemberId,
@@ -244,7 +256,7 @@ pub struct ApplyOnOpeningParams<MemberId, OpeningId, AccountId, Balance> {
 
 /// Contains information for the stakes when applying for opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, TypeInfo)]
 pub struct StakeParameters<AccountId, Balance> {
     /// Stake balance.
     pub stake: Balance,
@@ -257,13 +269,13 @@ pub struct StakeParameters<AccountId, Balance> {
 pub type ApplyOnOpeningParameters<T> = ApplyOnOpeningParams<
     MemberId<T>,
     OpeningId,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
 >;
 
 /// Reward payment type enum.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy, TypeInfo)]
 pub enum RewardPaymentType {
     /// The reward was missed.
     MissedReward,

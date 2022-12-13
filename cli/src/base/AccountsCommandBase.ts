@@ -9,7 +9,7 @@ import { formatBalance } from '@polkadot/util'
 import { NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { toFixedLength } from '../helpers/display'
-import { MemberId, AccountId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { KeyringPair, KeyringInstance, KeyringOptions } from '@polkadot/keyring/types'
 import { KeypairType } from '@polkadot/util-crypto/types'
 import { createTestKeyring } from '@polkadot/keyring/testing'
@@ -17,14 +17,16 @@ import chalk from 'chalk'
 import { mnemonicGenerate } from '@polkadot/util-crypto'
 import { validateAddress } from '../helpers/validation'
 import slug from 'slug'
-import { Membership } from '@joystream/types/members'
-import { LockIdentifier } from '@polkadot/types/interfaces'
+import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/lookup'
+import { LockIdentifier, AccountId } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
+import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
 const ACCOUNTS_DIRNAME = 'accounts'
 export const DEFAULT_ACCOUNT_TYPE = 'sr25519'
 export const KEYRING_OPTIONS: KeyringOptions = {
   type: DEFAULT_ACCOUNT_TYPE,
+  ss58Format: JOYSTREAM_ADDRESS_PREFIX,
 }
 export const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
 
@@ -347,13 +349,13 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const { balances } = await this.getApi().getAccountSummary(address)
     const stakingStatus = await this.getApi().stakingAccountStatus(address)
 
-    if (lockId && !this.getApi().areAccountLocksCompatibleWith(address, lockId)) {
+    if (lockId && !(await this.getApi().areAccountLocksCompatibleWith(address, lockId))) {
       throw new CLIError(
         'This account is already used for other, incompatible staking purposes. Choose a different account...'
       )
     }
 
-    if (stakingStatus && !stakingStatus.member_id.eq(memberId)) {
+    if (stakingStatus && !stakingStatus.memberId.eq(memberId)) {
       throw new CLIError(
         'This account is already used as staking accout by other member, choose a different account...'
       )
@@ -417,7 +419,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
     if (!stakingStatus || stakingStatus.confirmed.isFalse) {
       await this.sendAndFollowNamedTx(
-        await this.getDecodedPair(member.controller_account.toString()),
+        await this.getDecodedPair(member.controllerAccount.toString()),
         'members',
         'confirmStakingAccount',
         [memberId, address]

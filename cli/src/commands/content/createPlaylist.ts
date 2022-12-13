@@ -1,6 +1,5 @@
 import { ContentMetadata, PlaylistMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
-import { VideoCreationParameters, VideoId } from '@joystream/types/content'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
@@ -9,6 +8,7 @@ import { getInputJson } from '../../helpers/InputOutput'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { PlaylistInputSchema } from '../../schemas/ContentDirectory'
 import { PlaylistInputParameters } from '../../Types'
+import ExitCodes from '../../ExitCodes'
 
 export default class CreatePlaylistCommand extends UploadCommandBase {
   static description = 'Create playlist under specific channel inside content directory.'
@@ -33,7 +33,6 @@ export default class CreatePlaylistCommand extends UploadCommandBase {
     // Get context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     // Get input from file
@@ -47,16 +46,19 @@ export default class CreatePlaylistCommand extends UploadCommandBase {
     // Set assets indices in the metadata
     meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
+    const expectedVideoStateBloatBond = await this.getApi().videoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
+
     // Preare and send the extrinsic
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const playlistCreationParameters = createType<VideoCreationParameters, 'VideoCreationParameters'>(
-      'VideoCreationParameters',
-      {
-        assets,
-        meta: metadataToBytes(ContentMetadata, { playlistMetadata: meta }),
-        enable_comments: enableComments,
-      }
-    )
+    const playlistCreationParameters = createType('PalletContentVideoCreationParametersRecord', {
+      assets,
+      meta: metadataToBytes(ContentMetadata, { playlistMetadata: meta }),
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: null,
+      storageBucketsNumWitness: await this.getStorageBucketsNumWitness(channelId),
+    })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, enableComments }))
 
@@ -68,17 +70,19 @@ export default class CreatePlaylistCommand extends UploadCommandBase {
       playlistCreationParameters,
     ])
 
-    const playlistId: VideoId = this.getEvent(result, 'content', 'VideoCreated').data[2]
+    const [, , playlistId, , dataObjects] = this.getEvent(result, 'content', 'VideoCreated').data
     this.log(chalk.green(`Playlist with id ${chalk.cyanBright(playlistId.toString())} successfully created!`))
 
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
-    if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+    if (dataObjects.size !== (assets?.objectCreationList.length || 0)) {
+      this.error('Unexpected number of channel assets in ChannelCreated event!', {
+        exit: ExitCodes.UnexpectedRuntimeState,
+      })
+    }
+
+    if (dataObjects.size) {
       await this.uploadAssets(
-        keypair,
-        memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...dataObjects].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )
     }

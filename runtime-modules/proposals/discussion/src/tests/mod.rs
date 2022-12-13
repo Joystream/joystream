@@ -1,11 +1,14 @@
 mod mock;
 
+use frame_support::assert_noop;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_system::RawOrigin;
 use frame_system::{EventRecord, Phase};
+use sp_std::iter::FromIterator;
 
 use crate::*;
 
+pub(crate) use mock::Balances;
 pub(crate) use mock::*;
 
 struct EventFixture;
@@ -15,7 +18,7 @@ impl EventFixture {
             .iter()
             .map(|ev| EventRecord {
                 phase: Phase::Initialization,
-                event: TestEvent::discussion(ev.clone()),
+                event: mock::Event::Discussions(ev.clone()),
                 topics: vec![],
             })
             .collect::<Vec<EventRecord<_, _>>>();
@@ -23,7 +26,7 @@ impl EventFixture {
         let actual_events: Vec<_> = System::events()
             .into_iter()
             .filter(|e| match e.event {
-                TestEvent::discussion(..) => true,
+                mock::Event::Discussions(..) => true,
                 _ => false,
             })
             .collect();
@@ -31,15 +34,17 @@ impl EventFixture {
     }
 }
 
+#[allow(dead_code)]
 struct TestPostEntry {
-    pub post_id: u64,
-    pub text: Vec<u8>,
-    pub edition_number: u32,
+    post_id: u64,
+    text: Vec<u8>,
+    edition_number: u32,
 }
 
+#[allow(dead_code)]
 struct TestThreadEntry {
-    pub thread_id: u64,
-    pub title: Vec<u8>,
+    thread_id: u64,
+    title: Vec<u8>,
 }
 
 fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPostEntry>) {
@@ -58,19 +63,20 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = DiscussionPost {
             author_id: 1,
-            cleanup_pay_off: <Test as Trait>::PostDeposit::get(),
-            last_edited: frame_system::Module::<Test>::block_number(),
+            cleanup_pay_off: RepayableBloatBond::new(<Test as Config>::PostDeposit::get(), None),
+            last_edited: frame_system::Pallet::<Test>::block_number(),
         };
 
         assert_eq!(actual_post, expected_post);
     }
 }
 
+#[allow(dead_code)]
 struct DiscussionFixture {
     pub title: Vec<u8>,
     pub origin: RawOrigin<u64>,
     pub author_id: u64,
-    pub mode: ThreadMode<u64>,
+    pub mode: ThreadMode<BTreeSet<u64>>,
 }
 
 impl Default for DiscussionFixture {
@@ -85,7 +91,7 @@ impl Default for DiscussionFixture {
 }
 
 impl DiscussionFixture {
-    fn with_mode(self, mode: ThreadMode<u64>) -> Self {
+    fn with_mode(self, mode: ThreadMode<BTreeSet<u64>>) -> Self {
         Self { mode, ..self }
     }
 
@@ -118,7 +124,7 @@ impl PostFixture {
             thread_id,
             origin: RawOrigin::Signed(1),
             post_id: None,
-            initial_balance: <Test as Trait>::PostDeposit::get(),
+            initial_balance: ed() + <Test as Config>::PostDeposit::get(),
             account_id: 1,
             editable: true,
         }
@@ -159,8 +165,8 @@ impl PostFixture {
     }
 
     fn add_post_and_assert(&mut self, result: DispatchResult) -> Option<u64> {
-        balances::Module::<Test>::make_free_balance_be(&self.account_id, self.initial_balance);
-        let initial_balance = balances::Module::<Test>::usable_balance(&self.account_id);
+        balances::Pallet::<Test>::make_free_balance_be(&self.account_id, self.initial_balance);
+        let initial_balance = balances::Pallet::<Test>::usable_balance(&self.account_id);
         let add_post_result = Discussions::add_post(
             self.origin.clone().into(),
             self.author_id,
@@ -180,8 +186,8 @@ impl PostFixture {
                     post_id
                 ));
                 assert_eq!(
-                    balances::Module::<Test>::usable_balance(&self.account_id),
-                    initial_balance - <Test as Trait>::PostDeposit::get()
+                    balances::Pallet::<Test>::usable_balance(&self.account_id),
+                    initial_balance - <Test as Config>::PostDeposit::get()
                 );
             } else {
                 assert!(!<PostThreadIdByPostId<Test>>::contains_key(
@@ -195,7 +201,11 @@ impl PostFixture {
     }
 
     fn delete_post_and_assert(&mut self, result: DispatchResult) -> Option<u64> {
-        let initial_balance = balances::Module::<Test>::usable_balance(&self.account_id);
+        let post =
+            PostThreadIdByPostId::<Test>::get(self.thread_id, self.post_id.unwrap_or_default());
+        let bloat_bond_reciever = post.cleanup_pay_off.get_recipient(&self.account_id);
+        let bloat_bond_reciever_initial_balance =
+            balances::Pallet::<Test>::free_balance(bloat_bond_reciever);
         let add_post_result = Discussions::delete_post(
             self.origin.clone().into(),
             self.author_id,
@@ -208,8 +218,8 @@ impl PostFixture {
 
         if result.is_ok() {
             assert_eq!(
-                balances::Module::<Test>::usable_balance(&self.account_id),
-                initial_balance + <Test as Trait>::PostDeposit::get()
+                balances::Pallet::<Test>::free_balance(bloat_bond_reciever),
+                bloat_bond_reciever_initial_balance + <Test as Config>::PostDeposit::get()
             );
             assert!(!<PostThreadIdByPostId<Test>>::contains_key(
                 self.thread_id,
@@ -329,9 +339,9 @@ fn delete_post_call_fails_with_any_user_before_post_lifetime() {
 
         post_fixture.add_post_and_assert(Ok(()));
 
-        let current_block = frame_system::Module::<Test>::block_number();
+        let current_block = frame_system::Pallet::<Test>::block_number();
 
-        run_to_block(current_block + <Test as Trait>::PostLifeTime::get());
+        run_to_block(current_block + <Test as Config>::PostLifeTime::get());
 
         post_fixture
             .with_origin(RawOrigin::Signed(10))
@@ -357,9 +367,9 @@ fn delete_post_call_succeds_with_any_user_after_post_lifetime() {
         // Erasing manually to prevent circular dependency with proposal codex
         <ThreadById<Test>>::remove(thread_id);
 
-        let current_block = frame_system::Module::<Test>::block_number();
+        let current_block = frame_system::Pallet::<Test>::block_number();
 
-        run_to_block(current_block + <Test as Trait>::PostLifeTime::get());
+        run_to_block(current_block + <Test as Config>::PostLifeTime::get());
 
         post_fixture
             .with_origin(RawOrigin::Signed(10))
@@ -367,6 +377,78 @@ fn delete_post_call_succeds_with_any_user_after_post_lifetime() {
             .with_account_id(10)
             .delete_post_and_assert(Ok(()));
     });
+}
+
+#[test]
+fn delete_post_call_succeds_with_bloat_bond_repaid_to_correct_account() {
+    let creator_id: <Test as frame_system::Config>::AccountId = 1;
+    let remover_id: <Test as frame_system::Config>::AccountId = 2;
+    let post_deposit = <Test as Config>::PostDeposit::get();
+
+    let test_cases = [
+        (
+            ed() + post_deposit, // locked balance
+            creator_id,          // expected bloat bond reciever
+        ),
+        (
+            ed() + 1,   // locked balance
+            creator_id, // expected bloat bond reciever
+        ),
+        (
+            ed(),       // locked balance
+            remover_id, // expected bloat bond reciever
+        ),
+    ];
+
+    for case in test_cases {
+        let (locked_balance, bloat_bond_reciever) = case;
+        initial_test_ext().execute_with(|| {
+            let creator_balance = ed() + post_deposit;
+            let _ = Balances::make_free_balance_be(&creator_id, creator_balance);
+            let _ = Balances::make_free_balance_be(&remover_id, ed());
+            set_invitation_lock(&creator_id, locked_balance);
+
+            let discussion_fixture = DiscussionFixture::default();
+            let thread_id = discussion_fixture
+                .create_discussion_and_assert(Ok(1))
+                .unwrap();
+
+            Discussions::add_post(
+                RawOrigin::Signed(creator_id).into(),
+                creator_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            )
+            .unwrap();
+            let post_id = Discussions::post_count();
+
+            // Remove the thread and skip PostLifeTime blocks to make the post
+            // removeable by anyone
+            <ThreadById<Test>>::remove(thread_id);
+            let current_block = frame_system::Pallet::<Test>::block_number();
+            run_to_block(current_block + <Test as Config>::PostLifeTime::get());
+
+            // Delete the post as different user
+            Discussions::delete_post(
+                RawOrigin::Signed(remover_id).into(),
+                remover_id as u64,
+                post_id,
+                thread_id,
+                true,
+            )
+            .unwrap();
+
+            // Make sure bloat bond was removed from module account
+            let module_account_id = Discussions::module_account_id();
+            assert_eq!(Balances::usable_balance(module_account_id), ed());
+            // Make sure the correct account recieved the bloat bond
+            assert_eq!(
+                Balances::free_balance(bloat_bond_reciever),
+                ed() + post_deposit
+            );
+        });
+    }
 }
 
 #[test]
@@ -380,7 +462,7 @@ fn create_post_call_fails_editable_insufficient_funds() {
 
         let mut post_fixture = PostFixture::default_for_thread(thread_id)
             .with_editable(true)
-            .with_initial_balance(<Test as Trait>::PostDeposit::get() - 1);
+            .with_initial_balance(<Test as Config>::PostDeposit::get() - 1);
 
         post_fixture.add_post_and_assert(Err(Error::<Test>::InsufficientBalanceForPost.into()));
     });
@@ -407,7 +489,7 @@ struct ChangeThreadModeFixture {
     pub origin: RawOrigin<u128>,
     pub thread_id: u64,
     pub member_id: u64,
-    pub mode: ThreadMode<u64>,
+    pub mode: ThreadMode<BTreeSet<u64>>,
 }
 
 impl ChangeThreadModeFixture {
@@ -420,7 +502,7 @@ impl ChangeThreadModeFixture {
         }
     }
 
-    fn with_mode(self, mode: ThreadMode<u64>) -> Self {
+    fn with_mode(self, mode: ThreadMode<BTreeSet<u64>>) -> Self {
         Self { mode, ..self }
     }
 
@@ -552,6 +634,139 @@ fn add_post_call_with_invalid_thread_failed() {
 }
 
 #[test]
+fn add_post_call_with_invitation_locked_funds_succeeded() {
+    let user_id: <Test as frame_system::Config>::AccountId = 1;
+    let post_deposit = <Test as Config>::PostDeposit::get();
+
+    let test_cases = [
+        (
+            ed() + post_deposit, // locked balance
+            Some(user_id),       // expected bloat bond `restricted_to` value
+        ),
+        (
+            ed() + 1,      // locked balance
+            Some(user_id), // expected bloat bond reciever
+        ),
+        (
+            ed(), // locked balance
+            None, // expected bloat bond reciever
+        ),
+    ];
+
+    for case in test_cases {
+        let (locked_balance, bloat_bond_restricted_to) = case;
+        initial_test_ext().execute_with(|| {
+            let user_balance = ed() + post_deposit;
+            let _ = Balances::make_free_balance_be(&user_id, user_balance);
+            set_invitation_lock(&user_id, locked_balance);
+
+            let discussion_fixture = DiscussionFixture::default();
+            let thread_id = discussion_fixture
+                .create_discussion_and_assert(Ok(1))
+                .unwrap();
+
+            Discussions::add_post(
+                RawOrigin::Signed(user_id).into(),
+                user_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            )
+            .unwrap();
+            let post_id = Discussions::post_count();
+
+            let module_account_id = Discussions::module_account_id();
+            assert_eq!(
+                Balances::usable_balance(module_account_id),
+                ed() + <Test as Config>::PostDeposit::get()
+            );
+            assert_eq!(
+                PostThreadIdByPostId::<Test>::get(thread_id, post_id).cleanup_pay_off,
+                RepayableBloatBond::new(post_deposit, bloat_bond_restricted_to)
+            );
+            assert_eq!(
+                System::account(user_id).data,
+                balances::AccountData {
+                    free: ed(),
+                    reserved: 0,
+                    misc_frozen: locked_balance,
+                    fee_frozen: 0
+                }
+            )
+        });
+    }
+}
+
+#[test]
+fn add_post_call_with_insufficient_locked_funds_fails() {
+    initial_test_ext().execute_with(|| {
+        let user_id: <Test as frame_system::Config>::AccountId = 1;
+
+        let user_balance = ed() + <Test as Config>::PostDeposit::get() - 1;
+        let _ = Balances::make_free_balance_be(&user_id, user_balance);
+        set_invitation_lock(&user_id, user_balance);
+
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        assert_noop!(
+            Discussions::add_post(
+                RawOrigin::Signed(user_id).into(),
+                user_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            ),
+            Error::<Test>::InsufficientBalanceForPost
+        );
+
+        // Increase balance by 1, but lock ED and those funds with another, not-allowed lock
+        let _ = Balances::deposit_creating(&user_id, 1);
+        set_staking_candidate_lock(&user_id, ed() + 1);
+
+        assert_noop!(
+            Discussions::add_post(
+                RawOrigin::Signed(user_id).into(),
+                user_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            ),
+            Error::<Test>::InsufficientBalanceForPost
+        );
+    });
+}
+
+#[test]
+fn add_post_call_with_incompatible_locked_funds_fails() {
+    initial_test_ext().execute_with(|| {
+        let user_id: <Test as frame_system::Config>::AccountId = 1;
+
+        let user_balance = ed() + <Test as Config>::PostDeposit::get();
+        let _ = Balances::make_free_balance_be(&user_id, user_balance);
+        set_staking_candidate_lock(&user_id, user_balance);
+
+        let discussion_fixture = DiscussionFixture::default();
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        assert_noop!(
+            Discussions::add_post(
+                RawOrigin::Signed(user_id).into(),
+                user_id as u64,
+                thread_id,
+                b"text".to_vec(),
+                true,
+            ),
+            Error::<Test>::InsufficientBalanceForPost
+        );
+    });
+}
+
+#[test]
 fn update_post_call_with_invalid_post_failed() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
@@ -615,7 +830,7 @@ fn change_thread_mode_succeeds() {
             .create_discussion_and_assert(Ok(1))
             .unwrap();
 
-        let thread_mode = ThreadMode::Closed(vec![2, 3]);
+        let thread_mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3]));
         let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
             .with_mode(thread_mode.clone());
         change_thread_mode_fixture.call_and_assert(Ok(()));
@@ -689,7 +904,7 @@ fn change_thread_mode_succeeds_with_councilor() {
 #[test]
 fn create_post_call_succeeds_with_closed_mode_by_author() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 11]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 11]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -707,7 +922,7 @@ fn create_post_call_succeeds_with_closed_mode_by_author() {
 #[test]
 fn create_post_call_succeeds_with_closed_mode_by_councilor() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 11]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 11]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -726,7 +941,7 @@ fn create_post_call_succeeds_with_closed_mode_by_councilor() {
 #[test]
 fn create_post_call_succeeds_with_closed_mode_by_white_listed_member() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 11]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 11]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -745,7 +960,7 @@ fn create_post_call_succeeds_with_closed_mode_by_white_listed_member() {
 #[test]
 fn create_post_call_fails_with_closed_mode_by_not_allowed_member() {
     initial_test_ext().execute_with(|| {
-        let mode = ThreadMode::Closed(vec![2, 10]);
+        let mode = ThreadMode::Closed(BTreeSet::from_iter(vec![2, 10]));
         let discussion_fixture = DiscussionFixture::default().with_mode(mode);
 
         let thread_id = discussion_fixture
@@ -770,17 +985,33 @@ fn change_thread_mode_fails_with_exceeded_max_author_list_size() {
             .unwrap();
 
         let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
-            .with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+            .with_mode(ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3, 4, 5, 6])));
         change_thread_mode_fixture
             .call_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
     });
 }
 
 #[test]
+fn change_thread_mode_fails_with_invalid_whitelisted_member_id() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_mode(ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3, 9999])));
+        change_thread_mode_fixture
+            .call_and_assert(Err(Error::<Test>::WhitelistedMemberDoesNotExist.into()));
+    });
+}
+
+#[test]
 fn create_discussion_call_fails_with_exceeded_max_author_list_size() {
     initial_test_ext().execute_with(|| {
-        let discussion_fixture =
-            DiscussionFixture::default().with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+        let discussion_fixture = DiscussionFixture::default()
+            .with_mode(ThreadMode::Closed(BTreeSet::from_iter(vec![2, 3, 4, 5, 6])));
 
         discussion_fixture
             .create_discussion_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));

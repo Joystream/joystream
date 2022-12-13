@@ -1,0 +1,6 @@
+# Ignore files created by deployment scripts
+bash-config.cfg
+inventory
+data-*
+chain_spec_output.txt
+endpoints.json

@@ -25,6 +25,14 @@ fragment DataObjectTypeFields on DataObjectType {
       id
     }
   }
+  ... on DataObjectTypeVideoSubtitle {
+    subtitle {
+      id
+      video {
+        id
+      }
+    }
+  }
 }
 
 fragment StorageDataObjectFields on StorageDataObject {
@@ -35,7 +43,7 @@ fragment StorageDataObjectFields on StorageDataObject {
   type {
     ...DataObjectTypeFields
   }
-  deletionPrize
+  stateBloatBond
   unsetAt
   storageBagId
 }
@@ -49,7 +57,6 @@ fragment ChannelFields on Channel {
   language {
     iso
   }
-  rewardAccount
   isCensored
   ownerMember {
     id
@@ -57,25 +64,140 @@ fragment ChannelFields on Channel {
   ownerCuratorGroup {
     id
   }
-  category {
-    name
-  }
   avatarPhoto {
     ...StorageDataObjectFields
   }
   coverPhoto {
     ...StorageDataObjectFields
   }
-}
 
-fragment ChannelCategoryFields on ChannelCategory {
-  id
-  activeVideosCounter
+  bannedMembers {
+    id
+  }
+  rewardAccount
 }
 
 fragment VideoCategoryFields on VideoCategory {
   id
+  name
   activeVideosCounter
+}
+
+fragment VideoReactionFields on VideoReaction {
+  id
+  reaction
+  member {
+    id
+  }
+  video {
+    id
+  }
+}
+
+fragment CommentReactionFields on CommentReaction {
+  id
+  reactionId
+  member {
+    id
+  }
+  comment {
+    id
+  }
+}
+
+fragment CommentFields on Comment {
+  id
+  author {
+    id
+  }
+
+  video {
+    id
+  }
+
+  text
+  status
+  isEdited
+
+  reactions {
+    ...CommentReactionFields
+  }
+}
+
+fragment LicenseFields on License {
+  code
+  attribution
+  customText
+}
+
+fragment VideoMediaEncodingFields on VideoMediaEncoding {
+  codecName
+  container
+  mimeMediaType
+}
+
+fragment VideoMediaMetadataFields on VideoMediaMetadata {
+  encoding {
+    ...VideoMediaEncodingFields
+  }
+  pixelWidth
+  pixelHeight
+  size
+}
+
+fragment VideoSubtitleFields on VideoSubtitle {
+  id
+  type
+  language {
+    iso
+  }
+  mimeType
+  asset {
+    ...StorageDataObjectFields
+  }
+}
+
+fragment VideoFields on Video {
+  id
+  title
+  description
+  duration
+  isPublic
+  isExplicit
+  hasMarketing
+  license {
+    ...LicenseFields
+  }
+  mediaMetadata {
+    ...VideoMediaMetadataFields
+  }
+  media {
+    ...StorageDataObjectFields
+  }
+  thumbnailPhoto {
+    ...StorageDataObjectFields
+  }
+  category {
+    ...VideoCategoryFields
+  }
+  language {
+    iso
+  }
+  commentsCount
+  reactionsCount
+  comments {
+    ...CommentFields
+  }
+  reactions {
+    ...VideoReactionFields
+  }
+  isCommentSectionEnabled
+  pinnedComment {
+    id
+  }
+  subtitles {
+    ...VideoSubtitleFields
+  }
 }
 
 fragment BidFields on Bid {
@@ -107,7 +229,10 @@ fragment BidFields on Bid {
 fragment OwnedNftFields on OwnedNft {
   id
   video {
-    id
+    ...VideoFields
+  }
+  videoCategory {
+    ...VideoCategoryFields
   }
   ownerMember {
     id
@@ -191,15 +316,35 @@ fragment PlaylistFields on Playlist {
   isPublic
 }
 
+fragment CuratorAgentPermissionsFields on CuratorAgentPermissions {
+  curator {
+    id
+  }
+  curatorGroup {
+    id
+  }
+  permissions
+}
+
+fragment CollaboratorsFields on Collaborator {
+  member {
+    id
+  }
+  channel {
+    id
+  }
+  permissions
+}
+
 query getChannelById($id: ID!) {
   channelByUniqueInput(where: { id: $id }) {
     ...ChannelFields
   }
 }
 
-query getChannelCategoryById($id: ID!) {
-  channelCategoryByUniqueInput(where: { id: $id }) {
-    ...ChannelCategoryFields
+query getChannelsByIds($ids: [ID!]) {
+  channels(where: { id_in: $ids }) {
+    ...ChannelFields
   }
 }
 
@@ -209,9 +354,33 @@ query getVideoCategoryById($id: ID!) {
   }
 }
 
+query getVideoCategories($order: [VideoCategoryOrderByInput!] = [createdAt_DESC]) {
+  videoCategories(orderBy: $order) {
+    ...VideoCategoryFields
+  }
+}
+
 query getOwnedNftByVideoId($videoId: ID!) {
   ownedNfts(where: { video: { id_eq: $videoId } }) {
     ...OwnedNftFields
+  }
+}
+
+query getCommentsByIds($ids: [ID!]) {
+  comments(where: { id_in: $ids }) {
+    ...CommentFields
+  }
+}
+
+query getVideoById($videoId: ID!) {
+  videoByUniqueInput(where: { id: $videoId }) {
+    ...VideoFields
+  }
+}
+
+query getVideosByIds($ids: [ID!]) {
+  videos(where: { id_in: $ids }) {
+    ...VideoFields
   }
 }
 
@@ -230,5 +399,23 @@ query getChannelNftCollectors {
 query getPlaylistById($id: ID!) {
   playlistByUniqueInput(where: { id: $id }) {
     ...PlaylistFields
+  }
+}
+
+query getDataObjectsByVideoId($videoId: ID) {
+  storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...StorageDataObjectFields
+  }
+}
+
+query getCuratorPermissionsByIdAndGroupId($curatorGroupId: ID!, $curatorId: ID!) {
+  curatorAgentPermissions(where: { curatorGroup: { id_eq: $curatorGroupId }, curator: { id_eq: $curatorId } }) {
+    ...CuratorAgentPermissionsFields
+  }
+}
+
+query getCollaboratorsByChannelId($channelId: ID!) {
+  collaborators(where: { channel: { id_eq: $channelId } }) {
+    ...CollaboratorsFields
   }
 }

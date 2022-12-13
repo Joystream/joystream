@@ -49,8 +49,9 @@ export default class DevBatchUpload extends AccountsCommandBase {
   async run(): Promise<void> {
     const { api } = this
     const { bagId, bucketId, batchSize, batchesCount, endpoint } = this.parse(DevBatchUpload).flags
-    const sudoKey = (await api.query.sudo.key()).toHuman()
+    const sudoKey = (await api.query.sudo.key()).unwrap().toHuman()
     const dataFee = await api.query.storage.dataObjectPerMegabyteFee()
+    const bloatBond = await api.query.storage.dataObjectStateBloatBondValue()
 
     for (let i = 0; i < batchesCount; ++i) {
       const nextObjectId = (await api.query.storage.nextDataObjectId()).toNumber()
@@ -62,7 +63,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
         batch.push([
           api.tx.sudo.sudo(
             api.tx.storage.sudoUploadDataObjects({
-              deletionPrizeSourceAccountId: sudoKey,
+              stateBloatBondSourceAccountId: sudoKey,
               objectCreationList: [
                 {
                   Size: dataObject.byteLength,
@@ -70,6 +71,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
                 },
               ],
               expectedDataSizeFee: dataFee,
+              expectedDataObjectStateBloatBond: bloatBond,
               bagId: new BagIdParserService(bagId).parse(),
             })
           ),
@@ -84,9 +86,6 @@ export default class DevBatchUpload extends AccountsCommandBase {
         batch.map(async ([, dataObject], k) => {
           const dataObjectId = nextObjectId + k
           const formData = new FormData()
-          formData.append('dataObjectId', dataObjectId.toString())
-          formData.append('storageBucketId', bucketId.toString())
-          formData.append('bagId', bagId)
           formData.append('file', dataObject, { filename: 'test.jpg', knownLength: dataObject.byteLength })
           this.log(`Uploading object ${dataObjectId}`)
           try {
@@ -94,6 +93,11 @@ export default class DevBatchUpload extends AccountsCommandBase {
               method: 'POST',
               url: urljoin(endpoint, 'api/v1/files'),
               data: formData,
+              params: {
+                dataObjectId: dataObjectId.toString(),
+                storageBucketId: bucketId.toString(),
+                bagId,
+              },
               headers: {
                 'content-type': 'multipart/form-data',
                 ...formData.getHeaders(),

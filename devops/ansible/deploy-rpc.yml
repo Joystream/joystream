@@ -1,0 +1,18 @@
+---
+
+- name: Copy joystream-node binary to all hosts
+  hosts: rpc
+  gather_facts: no
+  tasks:
+    - name: Push joystream-node
+      include_role:
+        name: common
+        tasks_from: push-binaries
+
+- name: Configure and start RPC and QueryNode services
+  hosts: rpc
+  tasks:
+    - name: DeployRpc
+      include_role:
+        name: rpc
+        tasks_from: main
