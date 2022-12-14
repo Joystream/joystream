@@ -1,7 +1,6 @@
 import { ApiPromise, WsProvider, SubmittableResult } from '@polkadot/api'
 import type { Index } from '@polkadot/types/interfaces/runtime'
 import { ISubmittableResult, IEvent } from '@polkadot/types/types'
-import { types } from '@joystream/types/'
 import { TypeRegistry } from '@polkadot/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
@@ -9,6 +8,7 @@ import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
+import { formatBalance } from '@polkadot/util'
 import stringify from 'fast-safe-stringify'
 import sleep from 'sleep-promise'
 import AwaitLock from 'await-lock'
@@ -28,9 +28,20 @@ export async function createApi(apiUrl: string): Promise<ApiPromise> {
   const provider = new WsProvider(apiUrl)
   provider.on('error', (err) => logger.error(`Api provider error: ${err.target?._url}`, { err }))
 
-  const api = new ApiPromise({ provider, types })
+  const api = new ApiPromise({ provider })
   await api.isReadyOrError
   await untilChainIsSynced(api)
+
+  const properties = await api.rpc.system.properties()
+
+  const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString()
+  const tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber()
+
+  // formatBlanace config
+  formatBalance.setDefaults({
+    decimals: tokenDecimals,
+    unit: tokenSymbol,
+  })
 
   api.on('error', (err) => logger.error(`Api promise error: ${err.target?._url}`, { err }))
 

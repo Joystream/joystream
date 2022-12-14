@@ -1,6 +1,5 @@
-import { types } from '@joystream/types'
 import { ApiPromise, SubmittableResult } from '@polkadot/api'
-import { SubmittableExtrinsic, AugmentedEvent, ApiOptions, AugmentedQuery } from '@polkadot/api/types'
+import { SubmittableExtrinsic, AugmentedEvent, AugmentedQuery } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Call } from '@polkadot/types/interfaces'
 import { Codec, IEvent } from '@polkadot/types/types'
@@ -21,10 +20,6 @@ type EventType<
 > = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
 
 export class RuntimeApi extends ApiPromise {
-  constructor(options: Omit<ApiOptions, 'types'>) {
-    super({ ...options, types })
-  }
-
   public findEvent<S extends EventSection, M extends EventMethod<S>>(
     result: SubmittableResult,
     section: S,
@@ -58,7 +53,7 @@ export class RuntimeApi extends ApiPromise {
           `Expected: ${expectedCount}, Got: ${events.length}`
       )
     }
-    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
+    return events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown as EventType<S, M>[]
   }
 
   public formatDispatchError(err: DispatchError): string {
@@ -73,7 +68,7 @@ export class RuntimeApi extends ApiPromise {
   async entriesByIds<IDType extends UInt, ValueType extends Codec>(
     apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>, [IDType]>
   ): Promise<[IDType, ValueType][]> {
-    const entries: [IDType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+    const entries: [IDType, ValueType][] = (await apiMethod.entries<ValueType>()).map(([storageKey, value]) => [
       storageKey.args[0] as IDType,
       value,
     ])
@@ -116,7 +111,7 @@ export class RuntimeApi extends ApiPromise {
                   if (dispatchResult.isErr) {
                     return reject(
                       new ExtrinsicFailedError(
-                        `Sudo extrinsic execution error! ${this.formatDispatchError(dispatchResult.asErr)}`
+                        `Sudo extrinsic execution error! ${dispatchResult.asErr.asModule.toHuman()}`
                       )
                     )
                   }
@@ -125,7 +120,7 @@ export class RuntimeApi extends ApiPromise {
                 if (txName === 'sudo.sudoAs') {
                   const sudoAsDoneEvent = this.getEvent(result, 'sudo', 'SudoAsDone')
                   const [sudoAsDone] = sudoAsDoneEvent.data
-                  if (sudoAsDone.isFalse) {
+                  if (sudoAsDone.isErr) {
                     return reject(new ExtrinsicFailedError(`SudoAs failed!`))
                   }
                 }

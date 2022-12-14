@@ -81,7 +81,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
     const applicationsRows = opening.applications.map((a) => ({
       'ID': a.applicationId,
       Member: memberHandle(a.member),
-      'Role Acc': shortAddress(a.roleAccout),
+      'Role Acc': shortAddress(a.roleAccount),
       'Reward Acc': shortAddress(a.rewardAccount),
       'Staking Acc': a.stakingAccount ? shortAddress(a.stakingAccount) : 'NONE',
     }))

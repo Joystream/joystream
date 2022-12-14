@@ -10,14 +10,13 @@ import {
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { MemberId, ThreadId } from '@joystream/types/common'
-import { CreateInterface } from '@joystream/types'
-import { ThreadMode } from '@joystream/types/proposals'
+import { MemberId, ProposalDiscussionThreadId as ThreadId } from '@joystream/types/primitives'
+import { PalletProposalsDiscussionThreadModeBTreeSet as ThreadMode } from '@polkadot/types/lookup'
 import _ from 'lodash'
 
 export type ThreadModeChangeParams = {
   threadId: ThreadId | number
-  newMode: CreateInterface<ThreadMode>
+  newMode: ThreadMode
   asMember: MemberId
 }
 
@@ -58,8 +57,8 @@ export class ChangeThreadsModeFixture extends StandardizedFixture {
         qEvents.filter((e) => e.thread.id === qThread.id).map((e) => e.id)
       )
       Utils.assert(finalUpdate)
-      const newMode = this.api.createType('ThreadMode', finalUpdate.newMode)
-      if (newMode.isOfType('Closed')) {
+      const { newMode } = finalUpdate
+      if (newMode.isClosed) {
         Utils.assert(
           qThread.mode.__typename === 'ProposalDiscussionThreadModeClosed',
           `Invalid thread status ${qThread.mode.__typename}`
@@ -67,9 +66,9 @@ export class ChangeThreadsModeFixture extends StandardizedFixture {
         Utils.assert(qThread.mode.whitelist, 'Query node: Missing thread.mode.whitelist')
         assert.sameDeepMembers(
           qThread.mode.whitelist.members.map((m) => m.id),
-          newMode.asType('Closed').map((memberId) => memberId.toString())
+          Array.from(newMode.asClosed.values()).map((memberId) => memberId.toString())
         )
-      } else if (newMode.isOfType('Open')) {
+      } else if (newMode.isOpen) {
         assert.equal(qThread.mode.__typename, 'ProposalDiscussionThreadModeOpen')
       } else {
         throw new Error(`Unknown thread mode: ${newMode.type}`)

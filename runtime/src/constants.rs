@@ -1,5 +1,7 @@
 use super::Balance;
+use super::ExtrinsicBaseWeight;
 use crate::{BlockNumber, Moment};
+pub use common::locks::*;
 use frame_support::parameter_types;
 use frame_support::traits::LockIdentifier;
 use sp_std::vec::Vec;
@@ -20,21 +22,26 @@ use sp_std::vec::Vec;
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
 
 // Normal 6s block interval
-#[cfg(not(feature = "testing_runtime"))]
+#[cfg(not(feature = "testing-runtime"))]
 pub const MILLISECS_PER_BLOCK: Moment = 6000;
-#[cfg(not(feature = "testing_runtime"))]
+#[cfg(not(feature = "testing-runtime"))]
 pub const SLOT_DURATION: Moment = 6000;
 
 // 1s block interval for integration testing
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 pub const MILLISECS_PER_BLOCK: Moment = 1000;
-#[cfg(feature = "testing_runtime")]
+#[cfg(feature = "testing-runtime")]
 pub const SLOT_DURATION: Moment = 1000;
 
 pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-pub const BONDING_DURATION: u32 = 24 * 7;
+pub const BONDING_DURATION: u32 = 4 * 28; // 4 * 28 eras = 28 days (since 1 era = 6h)
+pub const SLASH_DEFER_DURATION: u32 = BONDING_DURATION - 1;
 
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
+#[cfg(feature = "testing-runtime")] // 30 seconds sessions for faster tests
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES / 2;
+#[cfg(not(feature = "testing-runtime"))]
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = HOURS;
+
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
 
@@ -45,15 +52,19 @@ pub const EPOCH_DURATION_IN_SLOTS: u64 = {
 pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
+pub const WEEKS: BlockNumber = DAYS * 7;
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
+// ss58 Encoding address prefix for Joystream
+pub const JOY_ADDRESS_PREFIX: u16 = 126;
+
 /// This module is based on https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#relay-chain-transaction-fees-and-per-block-transaction-limits
 /// It was copied from Polkadot's implementation
 pub mod fees {
+    use super::ExtrinsicBaseWeight;
     use super::{parameter_types, Balance};
-    use frame_support::weights::constants::ExtrinsicBaseWeight;
     use frame_support::weights::{
         WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
     };
@@ -81,9 +92,6 @@ pub mod fees {
     pub type SlowAdjustingFeeUpdate<R> =
         TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 
-    /// The block saturation level. Fees will be updates based on this value.
-    pub const TARGET_BLOCK_FULLNESS: Perbill = Perbill::from_percent(25);
-
     /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
     /// node's balance type.
     ///
@@ -98,43 +106,17 @@ pub mod fees {
     impl WeightToFeePolynomial for WeightToFee {
         type Balance = Balance;
         fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-            // in Polkadot, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
             let p = super::currency::CENTS;
-            let q = 10 * Balance::from(ExtrinsicBaseWeight::get());
+            let q = 50 * Balance::from(ExtrinsicBaseWeight::get());
             smallvec![WeightToFeeCoefficient {
                 degree: 1,
                 negative: false,
-                coeff_frac: Perbill::from_rational_approximation(p % q, q),
+                coeff_frac: Perbill::from_rational(p % q, q),
                 coeff_integer: p / q,
             }]
         }
     }
 }
-
-parameter_types! {
-    pub const VotingLockId: LockIdentifier = *b"voting  ";
-    pub const CandidacyLockId: LockIdentifier = *b"candidac";
-    pub const CouncilorLockId: LockIdentifier = *b"councilo";
-    pub const ProposalsLockId: LockIdentifier = *b"proposal";
-    pub const StorageWorkingGroupLockId: LockIdentifier = *b"wg-storg";
-    pub const ContentWorkingGroupLockId: LockIdentifier = *b"wg-contt";
-    pub const ForumGroupLockId: LockIdentifier = *b"wg-forum";
-    pub const MembershipWorkingGroupLockId: LockIdentifier = *b"wg-membr";
-    pub const InvitedMemberLockId: LockIdentifier = *b"invitemb";
-    pub const BoundStakingAccountLockId: LockIdentifier = *b"boundsta";
-    pub const BountyLockId: LockIdentifier = *b"bounty  ";
-    pub const OperationsWorkingGroupAlphaLockId: LockIdentifier = *b"wg-opera";
-    pub const GatewayWorkingGroupLockId: LockIdentifier = *b"wg-gatew";
-    pub const OperationsWorkingGroupBetaLockId: LockIdentifier = *b"wg-operb";
-    pub const OperationsWorkingGroupGammaLockId: LockIdentifier = *b"wg-operg";
-    pub const DistributionWorkingGroupLockId: LockIdentifier = *b"wg-distr";
-}
-
-// Staking lock ID used by nomination and validation in the staking pallet.
-// This is a copye because the current Substrate staking lock ID is not exported.
-pub const STAKING_LOCK_ID: LockIdentifier = *b"staking ";
-
-pub const VESTING_LOCK_ID: LockIdentifier = *b"vesting ";
 
 lazy_static! {
     pub static ref NON_RIVALROUS_LOCKS: Vec<LockIdentifier> = [
@@ -146,59 +128,129 @@ lazy_static! {
     .to_vec();
 }
 
-// Change it when changing the currency constants!
-parameter_types! {
-    pub const ExistentialDeposit: u128 = 1;
-}
-
 pub mod currency {
     use super::Balance;
 
-    pub const JOYS: Balance = 250_000_000;
-    pub const DOLLARS: Balance = JOYS / 12500; // 20_000
-    pub const CENTS: Balance = DOLLARS / 100; // 200
+    /// One JOY equals 10 Billion base units (HAPIs). Hence we use 10 decimal places in
+    /// currency representation.
+    pub const BASE_UNIT_PER_JOY: Balance = 10_000_000_000;
+    /// Total base unit issuance. 1 Billion JOY
+    const BASE_UNIT_ISSUANCE: Balance = BASE_UNIT_PER_JOY.saturating_mul(1_000_000_000);
+    /// Valuation of total issued base unit tokens in USD.
+    const BASE_UNIT_ISSUANCE_USD_MCAP: Balance = 60_000_000;
+    // Constants used to derive balance configurations of pallets more human readable
 
+    /// Balance estimated worth one USD.
+    pub const DOLLARS: Balance = BASE_UNIT_ISSUANCE.saturating_div(BASE_UNIT_ISSUANCE_USD_MCAP);
+    /// Balance estimated worth one hundredth of a USD.
+    pub const CENTS: Balance = DOLLARS.saturating_div(100);
+    /// Balance estimated worth one thousandths of a cent.
+    pub const MILLICENTS: Balance = CENTS.saturating_div(1_000);
+
+    /// Minium Validator Bond to be set at genesis
+    pub const MIN_VALIDATOR_BOND: Balance = DOLLARS.saturating_mul(2_500);
+    /// Minium Nominator Bond to be set at genesis
+    pub const MIN_NOMINATOR_BOND: Balance = DOLLARS.saturating_mul(100);
+
+    /// Helper function to configure some bond/deposit amounts based cost of used storage.
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+        (items as Balance)
+            .saturating_mul(CENTS)
+            .saturating_mul(15)
+            .saturating_add((bytes as Balance).saturating_mul(CENTS).saturating_mul(6))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::currency::{CENTS, DOLLARS};
+    use super::currency::{CENTS, MILLICENTS};
     use super::fees::WeightToFee;
-    use crate::{ExtrinsicBaseWeight, MaximumBlockWeight};
-    use frame_support::weights::WeightToFeePolynomial;
+    use super::ExtrinsicBaseWeight;
+    #[cfg(not(feature = "testing-runtime"))]
+    use crate::{
+        constants::currency::DOLLARS, Balance, MaximumBlockLength, Runtime, Weight,
+        MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO,
+    };
+    use frame_support::weights::WeightToFee as WeightToFeeT;
     use pallet_balances::WeightInfo;
 
     #[test]
     // This function tests that the fee for `pallet_balances::transfer` of weight is correct
     fn extrinsic_transfer_fee_is_correct() {
-        // Transfer fee should be less than 100 tokens and should be non-zero (Initially ~30)
-        let transfer_weight = crate::weights::pallet_balances::WeightInfo::transfer();
+        // Transfer fee should be less than 1 CENTS
+        let transfer_weight =
+            crate::weights::pallet_balances::SubstrateWeight::<crate::Runtime>::transfer();
         println!("Transfer weight: {}", transfer_weight);
-        let transfer_fee = WeightToFee::calc(&transfer_weight);
+        let transfer_fee = WeightToFee::weight_to_fee(&transfer_weight);
         println!("Transfer fee: {}", transfer_fee);
-        assert!(0 < transfer_fee && transfer_fee < 100);
+        assert!(0 < transfer_fee && transfer_fee < CENTS);
     }
 
+    // This test does not make sense for `testing-runtime`, because of 1s blocks
+    #[cfg(not(feature = "testing-runtime"))]
     #[test]
-    // This function tests that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight is correct
-    fn full_block_fee_is_correct() {
-        // A full block should cost 16 DOLLARS
-        println!("Base: {}", ExtrinsicBaseWeight::get());
-        let x = WeightToFee::calc(&MaximumBlockWeight::get());
-        let y = 16 * DOLLARS;
-        assert!(x.max(y) - x.min(y) < 1);
+    // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
+    // total weight for 1 day is within the pre-determined bounds
+    fn block_weight_fill_cost_per_day_is_correct() {
+        // The bounds that we epect the cost to be within
+        const BLOCK_WEIGHT_FILL_MIN_DAILY_COST: Balance = DOLLARS.saturating_mul(30_000);
+        const BLOCK_WEIGHT_FILL_MAX_DAILY_COST: Balance = DOLLARS.saturating_mul(120_000);
+
+        // Max normal dispatch block weight
+        let max_normal_dispatch_block_weight: Weight = NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT;
+
+        let full_block_cost: Balance =
+            WeightToFee::weight_to_fee(&max_normal_dispatch_block_weight);
+        let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
+
+        println!(
+            "weight per block: {}, block cost: {}¢, cost/day: ${}",
+            max_normal_dispatch_block_weight,
+            full_block_cost.saturating_div(CENTS),
+            day_of_full_blocks_cost.saturating_div(DOLLARS),
+        );
+
+        assert!(day_of_full_blocks_cost >= BLOCK_WEIGHT_FILL_MIN_DAILY_COST);
+        assert!(day_of_full_blocks_cost <= BLOCK_WEIGHT_FILL_MAX_DAILY_COST);
+    }
+
+    // This test does not make sense for `testing-runtime`, because of 1s blocks
+    #[cfg(not(feature = "testing-runtime"))]
+    #[test]
+    // This test verifies that the cost of filling blocks with max. normal dispatch extrinsics
+    // total length for 1 day is within the pre-determined bounds
+    fn block_length_fill_cost_per_day_is_correct() {
+        // The bounds that we epect the cost to be within
+        const BLOCK_LENGTH_FILL_MIN_DAILY_COST: Balance = DOLLARS.saturating_mul(30_000);
+        const BLOCK_LENGTH_FILL_MAX_DAILY_COST: Balance = DOLLARS.saturating_mul(120_000);
+        // Max normal dispatch block length
+        let max_normal_dispatch_block_length: u64 =
+            (NORMAL_DISPATCH_RATIO * MaximumBlockLength::get()) as u64;
+
+        let full_block_cost: Balance =
+            <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
+                &max_normal_dispatch_block_length,
+            );
+        let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
+
+        println!(
+            "bytes per block: {}, block cost: {}¢, cost/day: ${}",
+            max_normal_dispatch_block_length,
+            full_block_cost.saturating_div(CENTS),
+            day_of_full_blocks_cost.saturating_div(DOLLARS),
+        );
+
+        assert!(day_of_full_blocks_cost >= BLOCK_LENGTH_FILL_MIN_DAILY_COST);
+        assert!(day_of_full_blocks_cost <= BLOCK_LENGTH_FILL_MAX_DAILY_COST);
     }
 
     #[test]
     // This function tests that the fee for `ExtrinsicBaseWeight` of weight is correct
     fn extrinsic_base_fee_is_correct() {
-        // `ExtrinsicBaseWeight` should cost 1/10 of a CENT
+        // `ExtrinsicBaseWeight` should cost 1/50 of a CENT
         println!("Base: {}", ExtrinsicBaseWeight::get());
-        let x = WeightToFee::calc(&ExtrinsicBaseWeight::get());
-        let y = CENTS / 10;
-        assert!(x.max(y) - x.min(y) < 1);
+        let x = WeightToFee::weight_to_fee(&ExtrinsicBaseWeight::get());
+        let y = CENTS.saturating_div(50);
+        assert!(x.max(y) - x.min(y) < MILLICENTS);
     }
 }

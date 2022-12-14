@@ -1,8 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { Option } from '@polkadot/types'
 import { apiModuleByGroup } from '../../Api'
-import { CreateInterface } from '@joystream/types'
-import { ApplicationId, StakeParameters } from '@joystream/types/working-group'
+import { createType } from '@joystream/types'
+import { ApplicationId } from '@joystream/types/primitives'
 import { flags } from '@oclif/command'
 import ExitCodes from '../../ExitCodes'
 import { metadataToBytes } from '../../helpers/serialization'
@@ -50,31 +49,28 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
       rewardAccount = await this.promptForAnyAddress('Choose reward account')
     }
 
-    let stakeParams: CreateInterface<Option<StakeParameters>> = null
     const stakeLockId = this.getOriginalApi().consts[apiModuleByGroup[this.group]].stakingHandlerLockId
-    if (opening.stake) {
-      if (!stakingAccount) {
-        stakingAccount = await this.promptForStakingAccount(
-          opening.stake.value,
-          memberContext.id,
-          memberContext.membership,
-          stakeLockId
-        )
-      } else {
-        await this.setupStakingAccount(
-          memberContext.id,
-          memberContext.membership,
-          stakingAccount,
-          opening.stake.value,
-          undefined,
-          stakeLockId
-        )
-      }
+    if (!stakingAccount) {
+      stakingAccount = await this.promptForStakingAccount(
+        opening.stake.value,
+        memberContext.id,
+        memberContext.membership,
+        stakeLockId
+      )
+    } else {
+      await this.setupStakingAccount(
+        memberContext.id,
+        memberContext.membership,
+        stakingAccount,
+        opening.stake.value,
+        undefined,
+        stakeLockId
+      )
+    }
 
-      stakeParams = {
-        stake: opening.stake.value,
-        staking_account_id: stakingAccount,
-      }
+    const stakeParams = {
+      stake: opening.stake.value,
+      stakingAccountId: stakingAccount,
     }
 
     let applicationFormAnswers = (answers || []).map((answer, i) => ({ question: `Question ${i}`, answer }))
@@ -107,22 +103,22 @@ export default class WorkingGroupsApply extends WorkingGroupsCommandBase {
     await this.requireConfirmation('Do you confirm the provided input?')
 
     const result = await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(memberContext.membership.controller_account.toString()),
+      await this.getDecodedPair(memberContext.membership.controllerAccount.toString()),
       apiModuleByGroup[this.group],
       'applyOnOpening',
       [
-        this.createType('ApplyOnOpeningParameters', {
-          member_id: memberContext.id,
-          opening_id: openingId,
-          role_account_id: roleAccount,
-          reward_account_id: rewardAccount,
-          stake_parameters: stakeParams,
+        createType('PalletWorkingGroupApplyOnOpeningParams', {
+          memberId: memberContext.id,
+          openingId: openingId,
+          roleAccountId: roleAccount,
+          rewardAccountId: rewardAccount,
+          stakeParameters: stakeParams,
           description: metadataToBytes(ApplicationMetadata, { answers }),
         }),
       ]
     )
     const applicationId: ApplicationId = this.getEvent(result, apiModuleByGroup[this.group], 'AppliedOnOpening').data[1]
-    this.log(chalk.greenBright(`Application with id ${chalk.magentaBright(applicationId)} succesfully created!`))
+    this.log(chalk.greenBright(`Application with id ${chalk.magentaBright(applicationId)} successfully created!`))
     this.output(applicationId.toString())
   }
 }

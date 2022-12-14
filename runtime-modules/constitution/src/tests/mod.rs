@@ -6,7 +6,7 @@ use crate::{ConstitutionInfo, Event};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
-use mocks::{build_test_externalities, Constitution, System, Test, TestEvent};
+use mocks::{build_test_externalities, Constitution, System, Test};
 use sp_runtime::traits::Hash;
 use sp_runtime::DispatchError;
 
@@ -24,13 +24,13 @@ fn run_to_block(n: u64) {
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: Event) {
-        let converted_event = TestEvent::constitution(expected_raw_event);
+    pub fn assert_last_crate_event(expected_raw_event: Event<Test>) {
+        let converted_event = mocks::Event::Constitution(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: mocks::Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -71,8 +71,7 @@ impl AmendConstitutionFixture {
 
         let new_constitution = Constitution::constitution();
         if actual_result.is_ok() {
-            let hashed = <Test as frame_system::Trait>::Hashing::hash(&self.text);
-            let hash = hashed.as_ref().to_vec();
+            let hash = <Test as frame_system::Config>::Hashing::hash(&self.text);
 
             assert_eq!(new_constitution, ConstitutionInfo { text_hash: hash });
         } else {
@@ -89,14 +88,13 @@ fn amend_contitution_succeeds() {
 
         let text = b"Constitution text".to_vec();
 
-        let hashed = <Test as frame_system::Trait>::Hashing::hash(&text);
-        let hash = hashed.as_ref().to_vec();
+        let hash = <Test as frame_system::Config>::Hashing::hash(&text);
 
         let amend_constitution_fixture =
             AmendConstitutionFixture::default().with_text(text.clone());
         amend_constitution_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(Event::ConstutionAmended(hash, text));
+        EventFixture::assert_last_crate_event(Event::<Test>::ConstutionAmended(hash, text));
     });
 }
 

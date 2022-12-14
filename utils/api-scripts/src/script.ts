@@ -3,7 +3,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import * as types from '@polkadot/types'
 import * as util from '@polkadot/util'
-import joy, { types as joyTypes } from '@joystream/types'
 import * as hashing from '@polkadot/util-crypto'
 import { Keyring } from '@polkadot/keyring'
 import fs from 'fs'
@@ -23,7 +22,7 @@ async function main() {
 
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
-  const api = new ApiPromise({ provider, types: joyTypes })
+  const api = new ApiPromise({ provider })
 
   await api.isReady
 
@@ -46,12 +45,12 @@ async function main() {
   }
 
   try {
-    await script({ api, types, util, hashing, keyring, joy, userAddress })
+    await script({ api, types, util, hashing, keyring, userAddress })
   } catch (err) {
     console.error(err)
   }
 
-  api.disconnect()
+  await api.disconnect()
 }
 
-main()
+main().catch(console.error)

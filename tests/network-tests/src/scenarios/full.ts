@@ -1,17 +1,17 @@
 import categories from '../flows/forum/categories'
-import polls from '../flows/forum/polls'
 import threads from '../flows/forum/threads'
 import posts from '../flows/forum/posts'
 import moderation from '../flows/forum/moderation'
 import threadTags from '../flows/forum/threadTags'
 import leadOpening from '../flows/working-groups/leadOpening'
-import creatingMemberships from '../flows/membership/creatingMemberships'
+import buyingMemberships from '../flows/membership/buyingMemberships'
+import creatingMembers from '../flows/membership/creatingMembers'
+import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
 import invitingMebers from '../flows/membership/invitingMembers'
 import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
-import membershipSystem from '../flows/membership/membershipSystem'
 import openingsAndApplications from '../flows/working-groups/openingsAndApplications'
 import upcomingOpenings from '../flows/working-groups/upcomingOpenings'
 import groupStatus from '../flows/working-groups/groupStatus'
@@ -28,13 +28,17 @@ import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import initDistributionBucket from '../flows/clis/initDistributionBucket'
 import initStorageBucket from '../flows/clis/initStorageBucket'
-import createChannel from '../flows/clis/createChannel'
+import channelsAndVideos from '../flows/clis/channelsAndVideos'
 import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import channelPlaylists from '../flows/content/channelPlaylists'
+import commentsAndReactions from '../flows/content/commentsAndReactions'
+import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
+import { testVideoCategories } from '../flows/content/videoCategories'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
@@ -43,23 +47,22 @@ scenario('Full', async ({ job, env }) => {
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
     : undefined
 
-  const membershipSystemJob = job('membership system', membershipSystem).requires(
-    runtimeUpgradeProposalJob || councilJob
-  )
+  const coreJob = runtimeUpgradeProposalJob || councilJob
 
-  // All other jobs should be executed after membershipSystemJob,
-  // otherwise changing membershipPrice etc. may break them
+  // All other jobs should be executed after coreJob
 
   // Membership:
-  job('creating members', creatingMemberships).after(membershipSystemJob)
-  job('updating member profile', updatingMemberProfile).after(membershipSystemJob)
-  job('updating member accounts', updatingMemberAccounts).after(membershipSystemJob)
-  job('inviting members', invitingMebers).after(membershipSystemJob)
-  job('transferring invites', transferringInvites).after(membershipSystemJob)
-  job('managing staking accounts', managingStakingAccounts).after(membershipSystemJob)
+  job('buying members', buyingMemberships).after(coreJob)
+  job('creating members', creatingMembers).after(coreJob)
+  job('creating founding members', creatingFoundingMembers).after(coreJob)
+  job('updating member profile', updatingMemberProfile).after(coreJob)
+  job('updating member accounts', updatingMemberAccounts).after(coreJob)
+  job('inviting members', invitingMebers).after(coreJob)
+  job('transferring invites', transferringInvites).after(coreJob)
+  job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
   // Council (should not interrupt proposalsJob!)
-  const secondCouncilJob = job('electing second council', electCouncil).requires(membershipSystemJob)
+  const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
 
   // Proposals:
@@ -89,18 +92,27 @@ scenario('Full', async ({ job, env }) => {
   job('forum categories', categories).requires(sudoHireLead)
   job('forum threads', threads).requires(sudoHireLead)
   job('forum thread tags', threadTags).requires(sudoHireLead)
-  job('forum polls', polls).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
 
   // Content directory
-  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
-  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
-  job('channel playlists', channelPlaylists).after(videoCountersJob)
+  // following jobs must be run sequentially due to some QN queries that could interfere
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
+  const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
+    videoCategoriesJob
+  )
+  job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(channelsAndVideosCliJob)
+  job('channel playlists', channelPlaylists).after(channelsAndVideosCliJob)
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(channelsAndVideosCliJob)
+  const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
+    nftAuctionAndOffersJob
+  )
 
-  // CLIs:
-  const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)
+  const contentDirectoryJob = commentsAndReactionsJob // keep updated to last job above
+
+  // Storage & distribution CLIs
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
-    createChannelJob
+    contentDirectoryJob
   )
 })

@@ -6,7 +6,11 @@ import ExitCodes from '../ExitCodes'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 
 export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
-  return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
+  return createType('Bytes', metadataToString(metaClass, obj))
+}
+
+export function metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
+  return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
 }
 
 export function metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): DecodedMetadataObject<T> {

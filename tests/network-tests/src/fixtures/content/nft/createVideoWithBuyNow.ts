@@ -1,7 +1,7 @@
 import { Api } from '../../../Api'
-import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
+import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import BN from 'bn.js'
 import { assertNftOwner } from './utils'
 import { assert } from 'chai'
@@ -36,6 +36,7 @@ export class NftCreateVideoWithBuyNowFixture extends BaseQueryNodeFixture {
     await assertNftOwner(this.query, event.data[2].toNumber(), this.author, (ownedNft) => {
       Utils.assert(ownedNft.transactionalStatus)
       assert.equal(ownedNft.transactionalStatus.__typename, 'TransactionalStatusBuyNow')
+      assert.equal(ownedNft.videoCategory?.id, ownedNft.video.category?.id)
     })
   }
 }

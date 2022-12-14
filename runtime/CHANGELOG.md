@@ -1,3 +1,47 @@
+### Version 12.1000.0 - Mainnet
+  - Disabled channel payouts proposal
+  - Renamed 'Gateway' working group to 'App' working group
+
+### Version 11.3.0 - Carthage - new chain
+  - Update to substrate v0.9.23
+  - Introduce project-token pallet into runtime
+  - Dropped blog pallet
+  - Updated existing pallets, various enhancements and security fixes
+  - Computed weights and enabled fees
+
+### Version 10.8.0 - upgrade
+Collection of runtime fixes for council elections:
+  - Referendum bug fix 1 - fix referendum intermediate winners - [3797](https://github.com/Joystream/joystream/pull/3797)
+  - Referendum bug fix 2 - prevent multiple vote reveals - [3801](https://github.com/Joystream/joystream/pull/3801)
+  - Referendum bug fix 3 - fix inability to unlock vote stake - [3783](https://github.com/Joystream/joystream/pull/3783)
+- Change some council parameters community-[768](https://github.com/Joystream/community-repo/issues/768)
+  - Reduce council size to 3
+  - Increase the IdlePeriod "Council Term" duration of the council
+
+No types or query-node mappings are changed, and no application requires any updates.
+
+### Version 10.7.0 - upgrade
+- NFT channel proceeds bug fix [#3763](https://github.com/Joystream/joystream/pull/3763)
+  - Fix logic in dispatch calls: `content::claim_channel_reward()`, `content::pick_open_auction_winner()`
+- No runtime types changed
+
+### Version 10.6.0 - Rhodes - upgrade
+- Enable NFT functionality
+- Types updated - types pacakge version v0.19.3
+- Modified some runtime constants and initial [values](https://github.com/Joystream/joystream/pull/3678):
+  - Changed NFT parameters `MaxStartingPrice` and `MaxBidStep`
+  - Changed inflation curve, to reduce validator rewards
+  - Changed grace period for proposal types Set council budget increment
+  - Changed forum `MaxSubcategories` and `MaxCategories`
+
+### Version 10.5.0 - Olympia - new chain
+- New feature new Membership system
+- New feature Improved Council and Election system
+- New feature Bounties
+- New NFT feature - Disabled to simplify next update
+- Forum improvements
+- New types package - version v0.18.3
+
 ### Version 9.14.0 - Giza - upgrade
 - New storage and distribution runtime module
 - Renaming of working groups and adding new working group for distributor role

@@ -1,0 +1,9 @@
+---
+
+- name: Install toolchain on hosts
+  hosts: all
+  tasks:
+    - name: Install
+      include_role:
+        name: common
+        tasks_from: install-tools

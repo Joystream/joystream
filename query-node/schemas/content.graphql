@@ -1,18 +1,3 @@
-"Category of media channel"
-type ChannelCategory @entity {
-  id: ID!
-
-  "The name of the category"
-  name: String @fulltext(query: "channelCategoriesByName")
-
-  "Count of channel's videos with an uploaded asset that are public and not censored."
-  activeVideosCounter: Int!
-
-  channels: [Channel!]! @derivedFrom(field: "category")
-
-  createdInBlock: Int!
-}
-
 type Language @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -32,11 +17,6 @@ type Channel @entity {
 
   "Curator group owning the channel (if any)"
   ownerCuratorGroup: CuratorGroup
-
-  category: ChannelCategory
-
-  "Reward account where revenue is sent if set."
-  rewardAccount: String
 
   "The title of the Channel"
   title: String @fulltext(query: "search")
@@ -70,8 +50,11 @@ type Channel @entity {
   "Number of the block the channel was created in"
   createdInBlock: Int!
 
-  "List of channel collaborators (members)"
-  collaborators: [Membership!]
+  "List of channel collaborators with their permissions"
+  collaborators: [Collaborator!]! @derivedFrom(field: "channel")
+
+  "List of members blocked from from participating on any video of the channel."
+  bannedMembers: [Membership!]
 
   "Owners of video NFTs belonging to this channel."
   channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
@@ -80,6 +63,17 @@ type Channel @entity {
 
   "List of channel's playlists"
   channelPlaylists: [Playlist!] @derivedFrom(field: "channel")
+
+  ##########################
+
+  "Channel's reward account, storing the income from the nft sales and channel payouts."
+  rewardAccount: String!
+
+  "Value of channel state bloat bond fee paid by channel creator"
+  channelStateBloatBond: BigInt!
+
+  "Channel's privilege level"
+  privilegeLevel: Int
 }
 
 type VideoCategory @entity {
@@ -89,10 +83,18 @@ type VideoCategory @entity {
   "The name of the category"
   name: String @fulltext(query: "videoCategoriesByName")
 
-  "Count of channel's videos with an uploaded asset that are public and not censored."
+  "The description of the category"
+  description: String
+
+  "Count of category's videos with an uploaded asset that are public and not censored."
   activeVideosCounter: Int!
 
+  "Parent category if defined"
+  parentCategory: VideoCategory
+
   videos: [Video!]! @derivedFrom(field: "category")
+
+  nfts: [OwnedNft!]! @derivedFrom(field: "videoCategory")
 
   createdInBlock: Int!
 }
@@ -148,6 +150,9 @@ type Video @entity {
   "Video media asset"
   media: StorageDataObject
 
+  "Value of video state bloat bond fee paid by channel owner"
+  videoStateBloatBond: BigInt!
+
   ##########################
 
   "Video file metadata"
@@ -155,8 +160,33 @@ type Video @entity {
 
   createdInBlock: Int!
 
-  "Is video featured or not"
-  isFeatured: Boolean!
+  "List of video subtitles"
+  subtitles: [VideoSubtitle!] @derivedFrom(field: "video")
+  ##########################
+
+  "Is comment section enabled (true if enabled)"
+  isCommentSectionEnabled: Boolean!
+
+  "channel owner pinned comment"
+  pinnedComment: Comment @derivedFrom(field: "video")
+
+  "List of all video comments"
+  comments: [Comment!] @derivedFrom(field: "video")
+
+  "Comments count"
+  commentsCount: Int!
+
+  "Is reactions feature enabled on video (true if enabled i.e. video can be reacted)"
+  isReactionFeatureEnabled: Boolean!
+
+  "List of all video reactions"
+  reactions: [VideoReaction!] @derivedFrom(field: "video")
+
+  "Reactions count by reaction Id"
+  reactionsCountByReactionId: [VideoReactionsCountByReactionType!] @derivedFrom(field: "video")
+
+  "Reactions count"
+  reactionsCount: Int!
 }
 
 type VideoMediaMetadata @entity {
@@ -250,4 +280,170 @@ type Playlist @entity {
 
   "Playlist thumbnail asset (If not provided, the thumbnail of the first video will be used)"
   thumbnailPhoto: StorageDataObject
+}
+
+type VideoSubtitle @entity {
+  "{type}-{language}"
+  id: ID!
+
+  "Subtitle's video"
+  video: Video!
+
+  # Atlas will use 'subtitles' | 'closed-captions' for now and possible other types in the future.
+  "Subtitle's type"
+  type: String!
+
+  "Subtitle's language"
+  language: Language
+
+  "MIME type description of format used for this subtitle"
+  mimeType: String!
+
+  "Storage object representing the subtitle file"
+  asset: StorageDataObject
+}
+
+type VideoReactionsCountByReactionType @entity {
+  "{videoId}-{reactionId}"
+  id: ID!
+
+  "The reaction option"
+  reaction: VideoReactionOptions!
+
+  "No of times the video has been reacted with given reaction"
+  count: Int!
+
+  "The video which has been react with given reaction"
+  video: Video!
+}
+
+enum VideoReactionOptions {
+  "Reacting again with the same option will cancel the previous reaction"
+  LIKE
+  UNLIKE
+}
+
+type VideoReaction @entity {
+  "{memberId}-{videoId}"
+  id: ID!
+
+  "The Reaction"
+  reaction: VideoReactionOptions!
+
+  "The member that reacted"
+  member: Membership!
+
+  "ID of the member that reacted"
+  memberId: String!
+
+  "The video that has been reacted to"
+  video: Video!
+}
+
+type CommentReaction @entity {
+  "{memberId}-{commentId}-{reactionId}"
+  id: ID!
+
+  "The Reaction id"
+  reaction_id: Int!
+
+  "The member that reacted"
+  member: Membership!
+
+  "ID of the member that reacted"
+  memberId: String!
+
+  "The comment that has been reacted to"
+  comment: Comment!
+
+  # Added to efficiently delete all reactions of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
+}
+
+enum CommentStatus {
+  VISIBLE
+  DELETED
+  MODERATED
+}
+
+type CommentReactionsCountByReactionId @entity {
+  "{commentId}-{reactionId}"
+  id: ID!
+
+  "The reaction id"
+  reaction_id: Int!
+
+  "No of times the comment has been reacted with given reaction Id"
+  count: Int!
+
+  "The comment which has been react with given reaction Id"
+  comment: Comment!
+
+  # Added to efficiently delete all reactions counts of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
+}
+
+type Comment @entity {
+  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Author of the video comment"
+  author: Membership!
+
+  "Comment text"
+  text: String! @fulltext(query: "commentText")
+
+  "Video the comment was added to"
+  video: Video!
+
+  "Status of the comment; either it is visible, deleted, or moderated (deleted by moderator)"
+  status: CommentStatus!
+
+  "List of all reactions to the comment"
+  reactions: [CommentReaction!] @derivedFrom(field: "comment")
+
+  "Reactions count by reaction Id"
+  reactionsCountByReactionId: [CommentReactionsCountByReactionId!] @derivedFrom(field: "comment")
+
+  "A (parent) comment that this comment replies to (if any)"
+  parentComment: Comment
+
+  "How many comments has replied to this comment"
+  repliesCount: Int!
+
+  "Total number of reactions to this comment"
+  reactionsCount: Int!
+
+  "Sum of replies and reactions"
+  reactionsAndRepliesCount: Int!
+
+  "Whether comment has been edited or not"
+  isEdited: Boolean!
+
+  "List of all text update events (edits)"
+  edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
+
+  "The event the comment was deleted in (if any)"
+  deletedInEvent: CommentDeletedEvent @derivedFrom(field: "comment")
+
+  "The event the comment was moderated in (if any)"
+  moderatedInEvent: CommentModeratedEvent @derivedFrom(field: "comment")
+}
+
+type Collaborator @entity {
+  "Relevant channel"
+  channel: Channel!
+
+  "Related member"
+  member: Membership!
+
+  # unfortunately permissions can't be modeled as ist of enums
+  # `permissions: [ChannelActionPermission!]!`
+  # TODO: rework it after this feature is available https://github.com/Joystream/hydra/issues/507
+  "List of member's permissions"
+  permissions: [String!]!
 }

@@ -1,5 +1,7 @@
-import { FlowProps } from '../../Flow'
+import { createType } from '@joystream/types'
+import { ProposalDiscussionThreadId as ThreadId } from '@joystream/types/primitives'
 import Debugger from 'debug'
+import { ALL_BYTES } from '../../consts'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { CreateProposalsFixture, ExpireProposalsFixture } from '../../fixtures/proposals'
@@ -13,9 +15,8 @@ import {
   ThreadModeChangeParams,
   UpdatePostsFixture,
 } from '../../fixtures/proposalsDiscussion'
+import { FlowProps } from '../../Flow'
 import { Resource } from '../../Resources'
-import { ThreadId } from '@joystream/types/common'
-import { ALL_BYTES } from '../../consts'
 
 export default async function proposalsDiscussion({ api, query, lock }: FlowProps): Promise<void> {
   const debug = Debugger('flow:proposals-discussion')
@@ -35,7 +36,7 @@ export default async function proposalsDiscussion({ api, query, lock }: FlowProp
     query,
     Array.from({ length: threadsN }, (v, i) => ({
       type: 'Signal',
-      details: `Discussion test ${i}`,
+      details: createType('Bytes', `Discussion test ${i}`),
       asMember: memberIds[i],
       title: `Discussion test proposal ${i}`,
       description: `Proposals discussion test proposal ${i}`,
@@ -77,9 +78,21 @@ export default async function proposalsDiscussion({ api, query, lock }: FlowProp
   const postIds = createPostsFixture.getCreatedPostsIds()
 
   const threadModeChangesParams: ThreadModeChangeParams[] = [
-    { threadId: threadIds[0], asMember: memberIds[0], newMode: { Closed: memberIds } },
-    { threadId: threadIds[1], asMember: memberIds[1], newMode: { Closed: [memberIds[0]] } },
-    { threadId: threadIds[1], asMember: memberIds[1], newMode: 'Open' },
+    {
+      threadId: threadIds[0],
+      asMember: memberIds[0],
+      newMode: createType('PalletProposalsDiscussionThreadModeBTreeSet', { Closed: memberIds }),
+    },
+    {
+      threadId: threadIds[1],
+      asMember: memberIds[1],
+      newMode: createType('PalletProposalsDiscussionThreadModeBTreeSet', { Closed: [memberIds[0]] }),
+    },
+    {
+      threadId: threadIds[1],
+      asMember: memberIds[1],
+      newMode: createType('PalletProposalsDiscussionThreadModeBTreeSet', 'Open'),
+    },
   ]
   const threadModeChanges = new ChangeThreadsModeFixture(api, query, threadModeChangesParams)
   const threadModeChangesRunner = new FixtureRunner(threadModeChanges)

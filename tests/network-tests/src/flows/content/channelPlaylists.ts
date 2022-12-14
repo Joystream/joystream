@@ -28,21 +28,17 @@ export default async function channelPlaylists({ api, query }: FlowProps): Promi
   // flow itself
 
   // create channel categories and video categories
-  const createContentStructureFixture = new CreateContentStructureFixture(
-    api,
-    query,
-    joystreamCli,
-    videoCategoryCount,
-    channelCategoryCount
-  )
+  const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
-  const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
 
   // create author of channels and videos
-  const createMembersFixture = new CreateMembersFixture(api, query, 1, sufficientTopupAmount)
+  const createMembersFixture = new CreateMembersFixture(api, query, 1, 0, sufficientTopupAmount)
   await new FixtureRunner(createMembersFixture).run()
-  const author = createMembersFixture.getCreatedItems()[0]
+  const {
+    members: [author],
+  } = createMembersFixture.getCreatedItems()
 
   // create channels and videos
   const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
@@ -51,7 +47,6 @@ export default async function channelPlaylists({ api, query }: FlowProps): Promi
     joystreamCli,
     channelCount,
     videoCount,
-    channelCategoryIds[0],
     videoCategoryIds[0],
     author
   )
@@ -68,7 +63,7 @@ export default async function channelPlaylists({ api, query }: FlowProps): Promi
     joystreamCli,
     'CREATE',
     channelId,
-    videosData.map((d) => (d.videoId as unknown) as Long),
+    videosData.map((d) => d.videoId as unknown as Long),
     author,
     undefined
   )
@@ -83,7 +78,7 @@ export default async function channelPlaylists({ api, query }: FlowProps): Promi
     joystreamCli,
     'UPDATE',
     channelId,
-    videosData.reverse().map((d) => (d.videoId as unknown) as Long),
+    videosData.reverse().map((d) => d.videoId as unknown as Long),
     author,
     playlistId
   )

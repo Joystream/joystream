@@ -1,6 +1,14 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type ChannelFieldsFragment = { id: string; videos: Array<{ id: string; videoStateBloatBond: any }> }
+
+export type GetChannelByIdQueryVariables = Types.Exact<{
+  channelId: Types.Scalars['ID']
+}>
+
+export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = { id: string; handle: string; metadata: MemberMetadataFieldsFragment }
@@ -13,6 +21,10 @@ export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment
 
 export type StorageNodeInfoFragment = {
   id: string
+  dataObjectsSize: any
+  dataObjectsSizeLimit: any
+  dataObjectsCount: any
+  dataObjectCountLimit: any
   operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>
 }
 
@@ -22,17 +34,39 @@ export type GetStorageNodesInfoByBagIdQueryVariables = Types.Exact<{
 
 export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
 
+export type GetStorageBucketsQueryVariables = Types.Exact<{
+  count?: Types.Maybe<Types.Scalars['Int']>
+}>
+
+export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
+
+export type StorageBucketsCountQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type StorageBucketsCountQuery = { storageBucketsConnection: { totalCount: number } }
+
+export type DistributionBucketFamilyFieldsFragment = { id: string; buckets: Array<{ id: string; bucketIndex: number }> }
+
+export type GetDistributionFamiliesAndBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetDistributionFamiliesAndBucketsQuery = {
+  distributionBucketFamilies: Array<DistributionBucketFamilyFieldsFragment>
+}
+
 export type DataObjectInfoFragment = {
   id: string
   size: any
-  deletionPrize: any
+  stateBloatBond: any
   type:
     | { __typename: 'DataObjectTypeChannelAvatar'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoMedia'; video?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoThumbnail'; video?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypePlaylistThumbnail'; playlist?: Types.Maybe<{ id: string }> }
-    | { __typename: 'DataObjectTypeVideoSubtitle' }
+    | {
+        __typename: 'DataObjectTypeVideoSubtitle'
+        video?: Types.Maybe<{ id: string }>
+        subtitle?: Types.Maybe<{ id: string }>
+      }
     | { __typename: 'DataObjectTypeUnknown' }
 }
 
@@ -125,6 +159,15 @@ export type UpcomingWorkingGroupOpeningByIdQuery = {
   upcomingWorkingGroupOpeningByUniqueInput?: Types.Maybe<UpcomingWorkingGroupOpeningDetailsFragment>
 }
 
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    videos {
+      id
+      videoStateBloatBond
+    }
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -144,8 +187,21 @@ export const MembershipFields = gql`
 export const StorageNodeInfo = gql`
   fragment StorageNodeInfo on StorageBucket {
     id
+    dataObjectsSize
+    dataObjectsSizeLimit
+    dataObjectsCount
+    dataObjectCountLimit
     operatorMetadata {
       nodeEndpoint
+    }
+  }
+`
+export const DistributionBucketFamilyFields = gql`
+  fragment DistributionBucketFamilyFields on DistributionBucketFamily {
+    id
+    buckets {
+      id
+      bucketIndex
     }
   }
 `
@@ -153,7 +209,7 @@ export const DataObjectInfo = gql`
   fragment DataObjectInfo on StorageDataObject {
     id
     size
-    deletionPrize
+    stateBloatBond
     type {
       __typename
       ... on DataObjectTypeVideoMedia {
@@ -168,6 +224,14 @@ export const DataObjectInfo = gql`
       }
       ... on DataObjectTypePlaylistThumbnail {
         playlist {
+          id
+        }
+      }
+      ... on DataObjectTypeVideoSubtitle {
+        video {
+          id
+        }
+        subtitle {
           id
         }
       }
@@ -228,6 +292,14 @@ export const UpcomingWorkingGroupOpeningDetails = gql`
   }
   ${WorkingGroupOpeningMetadataFields}
 `
+export const GetChannelById = gql`
+  query getChannelById($channelId: ID!) {
+    channelByUniqueInput(where: { id: $channelId }) {
+      ...ChannelFields
+    }
+  }
+  ${ChannelFields}
+`
 export const GetMembersByIds = gql`
   query getMembersByIds($ids: [ID!]) {
     memberships(where: { id_in: $ids }) {
@@ -249,6 +321,29 @@ export const GetStorageNodesInfoByBagId = gql`
     }
   }
   ${StorageNodeInfo}
+`
+export const GetStorageBuckets = gql`
+  query getStorageBuckets($count: Int) {
+    storageBuckets(where: { acceptingNewBags_eq: true }, limit: $count) {
+      ...StorageNodeInfo
+    }
+  }
+  ${StorageNodeInfo}
+`
+export const StorageBucketsCount = gql`
+  query storageBucketsCount {
+    storageBucketsConnection(where: { acceptingNewBags_eq: true }) {
+      totalCount
+    }
+  }
+`
+export const GetDistributionFamiliesAndBuckets = gql`
+  query getDistributionFamiliesAndBuckets {
+    distributionBucketFamilies {
+      ...DistributionBucketFamilyFields
+    }
+  }
+  ${DistributionBucketFamilyFields}
 `
 export const GetDataObjectsByBagId = gql`
   query getDataObjectsByBagId($bagId: ID) {

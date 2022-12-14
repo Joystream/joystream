@@ -29,20 +29,40 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
+#![allow(clippy::result_unit_err)]
+#![cfg_attr(
+    not(any(test, feature = "runtime-benchmarks")),
+    deny(clippy::panic),
+    deny(clippy::panic_in_result_fn),
+    deny(clippy::unwrap_used),
+    deny(clippy::expect_used),
+    deny(clippy::indexing_slicing),
+    deny(clippy::integer_arithmetic),
+    deny(clippy::match_on_vec_items),
+    deny(clippy::unreachable)
+)]
+
+#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate common;
 
 // used dependencies
-use codec::{Codec, Decode, Encode};
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
 use frame_support::traits::{EnsureOrigin, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
-    StorageValue,
+    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin,
+    storage::weak_bounded_vec::WeakBoundedVec, Parameter, StorageValue,
 };
 use frame_system::ensure_signed;
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::traits::{MaybeSerialize, Member, Saturating, Zero};
 use sp_runtime::SaturatedConversion;
+use sp_std::convert::TryInto;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -58,55 +78,66 @@ pub use benchmarking::OptionCreator;
 // declared modules
 mod benchmarking;
 mod mock;
+#[cfg(test)]
 mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
 /// Possible referendum states.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug)]
-pub enum ReferendumStage<BlockNumber, MemberId, VotePower> {
+#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub enum ReferendumStage<BlockNumber, IntermediateWinners> {
     /// The referendum is dormant and waiting to be started by external source.
     Inactive,
     /// In the voting stage, users can cast their sealed votes.
     Voting(ReferendumStageVoting<BlockNumber>),
     /// In the revealing stage, users can reveal votes they cast in the voting stage.
-    Revealing(ReferendumStageRevealing<BlockNumber, MemberId, VotePower>),
+    Revealing(ReferendumStageRevealing<BlockNumber, IntermediateWinners>),
 }
 
-impl<BlockNumber, MemberId, VotePower: Encode + Decode> Default
-    for ReferendumStage<BlockNumber, MemberId, VotePower>
+impl<BlockNumber, IntermediateWinners> Default
+    for ReferendumStage<BlockNumber, IntermediateWinners>
 {
-    fn default() -> ReferendumStage<BlockNumber, MemberId, VotePower> {
+    fn default() -> ReferendumStage<BlockNumber, IntermediateWinners> {
         ReferendumStage::Inactive
     }
 }
 
 /// Representation for voting stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct ReferendumStageVoting<BlockNumber> {
     pub started: BlockNumber,      // block in which referendum started
-    pub winning_target_count: u64, // target number of winners
+    pub winning_target_count: u32, // target number of winners
     pub current_cycle_id: u64,     // index of current election
+    // Block at which the stage is supposed to end.
+    // We store the pre-computed end block in case the duration of the voting stage is changed
+    // via runtime upgrade during already ongoing voting stage.
+    pub ends_at: BlockNumber,
 }
 
 /// Representation for revealing stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
+pub struct ReferendumStageRevealing<BlockNumber, IntermediateWinners> {
     // block in which referendum started
     pub started: BlockNumber,
     // target number of winners
-    pub winning_target_count: u64,
+    pub winning_target_count: u32,
     // intermediate winning options
-    pub intermediate_winners: Vec<OptionResult<MemberId, VotePower>>,
+    pub intermediate_winners: IntermediateWinners,
     // index of current election
     pub current_cycle_id: u64,
+    // Block at which the stage is supposed to end.
+    // We store the pre-computed end block in case the duration of the revealing stage is changed
+    // via runtime upgrade during already ongoing revealing stage.
+    pub ends_at: BlockNumber,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone, TypeInfo, MaxEncodedLen)]
 pub struct OptionResult<MemberId, VotePower> {
     pub option_id: MemberId,
     pub vote_power: VotePower,
@@ -114,7 +145,7 @@ pub struct OptionResult<MemberId, VotePower> {
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo, MaxEncodedLen)]
 pub struct CastVote<Hash, Currency, MemberId> {
     // A commitment that a user submits in the voting stage before revealing what this vote is
     // actually for
@@ -133,47 +164,33 @@ pub struct CastVote<Hash, Currency, MemberId> {
 // short names aliasing existing structs and enums
 
 // types simplifying access to common structs and enums
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 pub type CastVoteOf<T> = CastVote<
-    <T as frame_system::Trait>::Hash,
+    <T as frame_system::Config>::Hash,
     BalanceOf<T>,
     <T as common::membership::MembershipTypes>::MemberId,
 >;
+pub type IntermediateWinnersOf<T, I> =
+    WeakBoundedVec<OptionResultOf<T, I>, <T as Config<I>>::MaxWinnerTargetCount>;
 pub type ReferendumStageVotingOf<T> =
-    ReferendumStageVoting<<T as frame_system::Trait>::BlockNumber>;
-pub type ReferendumStageRevealingOf<T, I> = ReferendumStageRevealing<
-    <T as frame_system::Trait>::BlockNumber,
-    <T as common::membership::MembershipTypes>::MemberId,
-    <T as Trait<I>>::VotePower,
->;
+    ReferendumStageVoting<<T as frame_system::Config>::BlockNumber>;
+pub type ReferendumStageRevealingOf<T, I> =
+    ReferendumStageRevealing<<T as frame_system::Config>::BlockNumber, IntermediateWinnersOf<T, I>>;
 pub type OptionResultOf<T, I> =
-    OptionResult<<T as common::membership::MembershipTypes>::MemberId, <T as Trait<I>>::VotePower>;
+    OptionResult<<T as common::membership::MembershipTypes>::MemberId, <T as Config<I>>::VotePower>;
 
 // types aliases for check functions return values
 pub type CanRevealResult<T, I> = (
     ReferendumStageRevealingOf<T, I>,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     CastVoteOf<T>,
 );
 
-/////////////////// Traits, Storage, Errors, and Events /////////////////////////
+/////////////////// Configs, Storage, Errors, and Events /////////////////////////
 
-/// referendum WeightInfo
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn on_initialize_revealing(i: u32) -> Weight;
-    fn on_initialize_voting() -> Weight;
-    fn vote() -> Weight;
-    fn reveal_vote_space_for_new_winner(i: u32) -> Weight;
-    fn reveal_vote_space_not_in_winners(i: u32) -> Weight;
-    fn reveal_vote_space_replace_last_winner(i: u32) -> Weight;
-    fn reveal_vote_already_existing(i: u32) -> Weight;
-    fn release_vote_stake() -> Weight;
-}
+type ReferendumWeightInfo<T, I> = <T as Config<I>>::WeightInfo;
 
-type ReferendumWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
-
-/// Trait that should be used by other modules to start the referendum, etc.
+/// Config that should be used by other modules to start the referendum, etc.
 pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// Power of vote(s) used to determine the referendum winner(s).
     type VotePower: Parameter
@@ -183,14 +200,15 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     // TODO: Disabled during the 'Olympia - Sumer' merge. Refactor on the next pallet change.
     #[allow(clippy::result_unit_err)]
     /// Start a new referendum.
     fn start_referendum(
         origin: Origin,
-        extra_winning_target_count: u64,
+        extra_winning_target_count: u32,
         cycle_id: u64,
     ) -> Result<(), ()>;
 
@@ -199,7 +217,7 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
     /// any winners selected.
     /// If it is called with a bigger winning target count greated than the max allowed the max
     /// will be used
-    fn force_start(extra_winning_target_count: u64, cycle_id: u64);
+    fn force_start(extra_winning_target_count: u32, cycle_id: u64);
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
@@ -211,11 +229,11 @@ pub trait ReferendumManager<Origin, AccountId, MemberId, Hash> {
 }
 
 /// The main Referendum module's trait.
-pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + common::membership::MembershipTypes + balances::Trait
+pub trait Config<I: Instance = DefaultInstance>:
+    frame_system::Config + common::membership::MembershipTypes + balances::Config
 {
     /// The overarching event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
     /// e.g. std::u64::MAX.
@@ -240,7 +258,8 @@ pub trait Trait<I: Instance = DefaultInstance>:
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + MaxEncodedLen;
 
     /// Duration of voting stage (number of blocks)
     type VoteStageDuration: Get<Self::BlockNumber>;
@@ -254,13 +273,13 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type WeightInfo: WeightInfo;
 
     /// Maximum number of winning target count
-    type MaxWinnerTargetCount: Get<u64>;
+    type MaxWinnerTargetCount: Get<u32>;
 
     /// Calculate the vote's power for user and his stake.
     fn calculate_vote_power(
-        account_id: &<Self as frame_system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Config>::AccountId,
         stake: &BalanceOf<Self>,
-    ) -> <Self as Trait<I>>::VotePower;
+    ) -> <Self as Config<I>>::VotePower;
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
@@ -281,11 +300,11 @@ pub trait Trait<I: Instance = DefaultInstance>:
     fn increase_option_power(option_id: &Self::MemberId, amount: &Self::VotePower);
 }
 
-decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance = DefaultInstance> as Referendum {
+decl_storage! { generate_storage_info
+    trait Store for Module<T: Config<I>, I: Instance = DefaultInstance> as Referendum {
         /// Current referendum stage.
-        pub Stage get(fn stage) config():
-            ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>;
+        pub Stage get(fn stage):
+        ReferendumStage<T::BlockNumber, IntermediateWinnersOf<T, I>>;
 
         /// Votes cast in the referendum. A new record is added to this map when a user casts a
         /// sealed vote.
@@ -293,7 +312,7 @@ decl_storage! {
         /// A record is finally removed when the user unstakes, which can happen during a voting
         /// stage or after the current cycle ends.
         /// A stake for a vote can be reused in future referendum cycles.
-        pub Votes get(fn votes) config(): map hasher(blake2_128_concat)
+        pub Votes get(fn votes): map hasher(blake2_128_concat)
                                           T::AccountId => CastVoteOf<T>;
     }
 }
@@ -301,20 +320,21 @@ decl_storage! {
 decl_event! {
     pub enum Event<T, I = DefaultInstance>
     where
+        BlockNumber = <T as frame_system::Config>::BlockNumber,
         Balance = BalanceOf<T>,
-        <T as frame_system::Trait>::Hash,
-        <T as frame_system::Trait>::AccountId,
-        <T as Trait<I>>::VotePower,
+        <T as frame_system::Config>::Hash,
+        <T as frame_system::Config>::AccountId,
+        <T as Config<I>>::VotePower,
         <T as common::membership::MembershipTypes>::MemberId,
     {
         /// Referendum started
-        ReferendumStarted(u64),
+        ReferendumStarted(u32, BlockNumber),
 
         /// Referendum started
-        ReferendumStartedForcefully(u64),
+        ReferendumStartedForcefully(u32, BlockNumber),
 
         /// Revealing phase has begun
-        RevealingStageStarted(),
+        RevealingStageStarted(BlockNumber),
 
         /// Referendum ended and winning option was selected
         ReferendumFinished(Vec<OptionResult<MemberId, VotePower>>),
@@ -332,7 +352,8 @@ decl_event! {
 
 decl_error! {
     /// Referendum errors
-    pub enum Error for Module<T: Trait<I>, I: Instance> {
+    #[derive(PartialEq)]
+    pub enum Error for Module<T: Config<I>, I: Instance> {
         /// Origin is invalid
         BadOrigin,
 
@@ -374,13 +395,7 @@ decl_error! {
     }
 }
 
-impl<T: Trait<I>, I: Instance> PartialEq for Error<T, I> {
-    fn eq(&self, other: &Self) -> bool {
-        self.as_u8() == other.as_u8()
-    }
-}
-
-impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
+impl<T: Config<I>, I: Instance> From<BadOrigin> for Error<T, I> {
     fn from(_error: BadOrigin) -> Self {
         Error::<T, I>::BadOrigin
     }
@@ -389,7 +404,7 @@ impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
-    pub struct Module<T: Trait<I>, I: Instance = DefaultInstance> for enum Call
+    pub struct Module<T: Config<I>, I: Instance = DefaultInstance> for enum Call
         where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T, I>;
@@ -417,7 +432,7 @@ decl_module! {
 
         // No origin so this is a priviledged call
         fn on_initialize() -> Weight {
-            Self::try_progress_stage(frame_system::Module::<T>::block_number());
+            Self::try_progress_stage(frame_system::Pallet::<T>::block_number());
 
             ReferendumWeightInfo::<T, I>::on_initialize_voting()
                 .max(ReferendumWeightInfo::<T, I>::on_initialize_revealing(
@@ -480,7 +495,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // reveal the vote - it can return error when stake fails to unlock
+            // reveal the vote
             Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote);
 
             // emit event
@@ -518,7 +533,7 @@ decl_module! {
 
 /////////////////// Inner logic ////////////////////////////////////////////////
 
-impl<T: Trait<I>, I: Instance> Module<T, I> {
+impl<T: Config<I>, I: Instance> Module<T, I> {
     // Calculate reveal_vote weight
     fn calculate_reveal_vote_weight(number_of_winners: u32) -> Weight {
         ReferendumWeightInfo::<T, I>::reveal_vote_space_for_new_winner(number_of_winners)
@@ -543,12 +558,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
-                if now == stage_data.started + T::VoteStageDuration::get() {
+                if now == stage_data.ends_at {
                     Self::end_voting_period(stage_data);
                 }
             }
             ReferendumStage::Revealing(stage_data) => {
-                if now == stage_data.started + T::RevealStageDuration::get() {
+                if now == stage_data.ends_at {
                     Self::end_reveal_period(stage_data);
                 }
             }
@@ -558,10 +573,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Finish voting and start ravealing.
     fn end_voting_period(stage_data: ReferendumStageVotingOf<T>) {
         // start revealing phase
-        Mutations::<T, I>::start_revealing_period(stage_data);
+        let revealing_period_end_block = Mutations::<T, I>::start_revealing_period(stage_data);
 
         // emit event
-        Self::deposit_event(RawEvent::RevealingStageStarted());
+        Self::deposit_event(RawEvent::RevealingStageStarted(revealing_period_end_block));
     }
 
     // Conclude the referendum.
@@ -579,7 +594,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 /////////////////// ReferendumManager //////////////////////////////////////////
 
-impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>
+impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>
     for Module<T, I>
 {
     type VotePower = T::VotePower;
@@ -587,10 +602,10 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
     // Start new referendum run.
     fn start_referendum(
         origin: T::Origin,
-        extra_winning_target_count: u64,
+        extra_winning_target_count: u32,
         cycle_id: u64,
     ) -> Result<(), ()> {
-        let winning_target_count = extra_winning_target_count + 1;
+        let winning_target_count = extra_winning_target_count.saturating_add(1);
 
         // ensure action can be started
         EnsureChecks::<T, I>::can_start_referendum(origin)?;
@@ -603,10 +618,14 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
         //
 
         // update state
-        Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
+        let voting_period_end_block =
+            Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
+        Self::deposit_event(RawEvent::ReferendumStarted(
+            winning_target_count,
+            voting_period_end_block,
+        ));
 
         Ok(())
     }
@@ -614,8 +633,8 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
     // Start referendum independent of the current state.
     // If an election is running before calling this function, it will be discontinued without any
     // winners selected.
-    fn force_start(extra_winning_target_count: u64, cycle_id: u64) {
-        let winning_target_count = extra_winning_target_count + 1;
+    fn force_start(extra_winning_target_count: u32, cycle_id: u64) {
+        let winning_target_count = extra_winning_target_count.saturating_add(1);
 
         // If a greater than the max allowed target count is used the max will be used in its place
         let winning_target_count = winning_target_count.min(T::MaxWinnerTargetCount::get());
@@ -624,19 +643,26 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
         let referendum_running = !matches!(Stage::<T, I>::get(), ReferendumStage::Inactive);
 
         // update state
-        Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
+        let voting_period_end_block =
+            Mutations::<T, I>::start_voting_period(&winning_target_count, &cycle_id);
 
         // emit event
         if referendum_running {
-            Self::deposit_event(RawEvent::ReferendumStartedForcefully(winning_target_count));
+            Self::deposit_event(RawEvent::ReferendumStartedForcefully(
+                winning_target_count,
+                voting_period_end_block,
+            ));
         } else {
-            Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
+            Self::deposit_event(RawEvent::ReferendumStarted(
+                winning_target_count,
+                voting_period_end_block,
+            ));
         }
     }
 
     // Calculate commitment for a vote.
     fn calculate_commitment(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
         vote_option_id: &<T as common::membership::MembershipTypes>::MemberId,
@@ -656,35 +682,45 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Mem
 
 /////////////////// Mutations //////////////////////////////////////////////////
 
-struct Mutations<T: Trait<I>, I: Instance> {
+struct Mutations<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait<I>, I: Instance> Mutations<T, I> {
+impl<T: Config<I>, I: Instance> Mutations<T, I> {
     // Change the referendum stage from inactive to voting stage.
-    fn start_voting_period(winning_target_count: &u64, cycle_id: &u64) {
+    fn start_voting_period(winning_target_count: &u32, cycle_id: &u64) -> T::BlockNumber {
+        let now = <frame_system::Pallet<T>>::block_number();
+        let ends_at = now.saturating_add(T::VoteStageDuration::get());
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            started: <frame_system::Module<T>>::block_number(),
+            started: now,
             winning_target_count: *winning_target_count,
             current_cycle_id: *cycle_id,
+            ends_at,
         }));
+
+        ends_at
     }
 
     // Change the referendum stage from inactive to the voting stage.
-    fn start_revealing_period(old_stage: ReferendumStageVotingOf<T>) {
+    fn start_revealing_period(old_stage: ReferendumStageVotingOf<T>) -> T::BlockNumber {
+        let now = <frame_system::Pallet<T>>::block_number();
+        let ends_at = now.saturating_add(T::RevealStageDuration::get());
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(ReferendumStageRevealingOf::<
             T,
             I,
         > {
-            started: <frame_system::Module<T>>::block_number(),
+            started: now,
             winning_target_count: old_stage.winning_target_count,
-            intermediate_winners: vec![],
+            intermediate_winners: WeakBoundedVec::default(),
             current_cycle_id: old_stage.current_cycle_id,
+            ends_at,
         }));
+
+        ends_at
     }
 
     // Conclude referendum, count votes, and select the winners.
@@ -693,19 +729,19 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     ) -> Vec<
         OptionResult<
             <T as common::membership::MembershipTypes>::MemberId,
-            <T as Trait<I>>::VotePower,
+            <T as Config<I>>::VotePower,
         >,
     > {
         // reset referendum state
         Stage::<T, I>::put(ReferendumStage::Inactive);
 
         // return winning option
-        revealing_stage.intermediate_winners
+        revealing_stage.intermediate_winners.to_vec()
     }
 
     // Cast a user's sealed vote for the current referendum cycle.
     fn vote(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         commitment: &T::Hash,
         stake: &BalanceOf<T>,
         current_cycle_id: &u64,
@@ -728,15 +764,16 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     // Reveal user's vote target and check the commitment proof.
     fn reveal_vote(
         stage_data: ReferendumStageRevealingOf<T, I>,
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         option_id: &<T as common::membership::MembershipTypes>::MemberId,
         cast_vote: CastVoteOf<T>,
     ) {
         // prepare new values
-        let vote_power = T::calculate_vote_power(&account_id, &cast_vote.stake);
+        let vote_power = T::calculate_vote_power(account_id, &cast_vote.stake);
+        let total_vote_power = T::get_option_power(option_id) + vote_power;
         let option_result = OptionResult {
             option_id: *option_id,
-            vote_power,
+            vote_power: total_vote_power,
         };
         // try to insert option to winner list or update it's value when already present
         let new_winners = Self::try_winner_insert(
@@ -752,15 +789,15 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         // let runtime update option's vote power
         T::increase_option_power(option_id, &vote_power);
 
-        // store revealed vote
+        // update stage data, store new calculated winners
         Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
 
-        // remove user commitment to prevent repeated revealing
+        // store revealed vote
         Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
     }
 
     // Release stake associated to the user's last vote.
-    fn release_vote_stake(account_id: &<T as frame_system::Trait>::AccountId) {
+    fn release_vote_stake(account_id: &<T as frame_system::Config>::AccountId) {
         // unlock stake amount
         T::StakingHandler::unlock(account_id);
 
@@ -773,15 +810,16 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn try_winner_insert(
         option_result: OptionResultOf<T, I>,
         current_winners: &[OptionResultOf<T, I>],
-        winning_target_count: u64,
-    ) -> Vec<OptionResultOf<T, I>> {
+        winning_target_count: u32,
+    ) -> IntermediateWinnersOf<T, I> {
         // Tries to place record to temporary place in the winning list.
-        fn place_record_to_winner_list<T: Trait<I>, I: Instance>(
+        fn place_record_to_winner_list<T: Config<I>, I: Instance>(
             option_result: OptionResultOf<T, I>,
             current_winners: &[OptionResultOf<T, I>],
-            winning_target_count: u64,
+            winning_target_count: u32,
         ) -> (Vec<OptionResultOf<T, I>>, Option<usize>) {
             let current_winners_count = current_winners.len();
+            debug_assert!(current_winners_count != 0);
 
             // check if option is already somewhere in list
             let current_winners_index_of_vote_recipient: Option<usize> = current_winners
@@ -792,9 +830,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
             // espace when item is currently not in winning list and still has not enough vote
             // power to make it to already full list
+            let lowest_winner_score = current_winners
+                .get(current_winners_count.saturating_sub(1))
+                .map_or(T::VotePower::zero(), |w| w.vote_power);
             if current_winners_index_of_vote_recipient.is_none()
-                && current_winners_count as u64 == winning_target_count
-                && option_result.vote_power <= current_winners[current_winners_count - 1].vote_power
+                && current_winners_count as u32 == winning_target_count
+                && option_result.vote_power <= lowest_winner_score
             {
                 return (current_winners.to_vec(), None);
             }
@@ -803,13 +844,10 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
             // update record in list when it is already present
             if let Some(index) = current_winners_index_of_vote_recipient {
-                let old_option_total = T::get_option_power(&option_result.option_id);
-                let new_option_total = old_option_total + option_result.vote_power;
-
-                new_winners[index] = OptionResult {
-                    option_id: option_result.option_id,
-                    vote_power: new_option_total,
-                };
+                match new_winners.get_mut(index) {
+                    Some(w) => *w = option_result,
+                    None => debug_assert!(false),
+                }
 
                 return (new_winners, Some(index));
             }
@@ -817,9 +855,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             // at this point record needs to be added to list
 
             // replace last winner if list is already full
-            if current_winners_count as u64 == winning_target_count {
-                let last_index = current_winners_count - 1;
-                new_winners[last_index] = option_result;
+            if current_winners_count as u32 == winning_target_count {
+                let last_index = current_winners_count.saturating_sub(1);
+                match new_winners.get_mut(last_index) {
+                    Some(w) => *w = option_result,
+                    None => debug_assert!(false),
+                }
 
                 return (new_winners, Some(last_index));
             }
@@ -832,7 +873,10 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
         // if there are no winners right now return list with only current option
         if current_winners.is_empty() {
-            return vec![option_result];
+            return WeakBoundedVec::force_from(
+                vec![option_result],
+                Some("Referendum try_winner_insert"),
+            );
         }
 
         // get new possibly updated list and record's position in it
@@ -845,25 +889,31 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         // resort list in case it was updated
         if let Some(index) = current_record_index {
             for i in (1..=index).rev() {
-                if new_winners[i].vote_power <= new_winners[i - 1].vote_power {
-                    break;
+                let maybe_curr = new_winners.get(i);
+                let maybe_prev = new_winners.get(i.saturating_sub(1));
+                if let (Some(curr), Some(prev)) = (maybe_curr, maybe_prev) {
+                    if curr.vote_power <= prev.vote_power {
+                        break;
+                    }
+                } else {
+                    debug_assert!(false);
                 }
 
-                new_winners.swap(i, i - 1);
+                new_winners.swap(i, i.saturating_sub(1));
             }
         }
 
-        new_winners.to_vec()
+        WeakBoundedVec::force_from(new_winners, Some("Referendum try_winner_insert"))
     }
 }
 
 /////////////////// Ensure checks //////////////////////////////////////////////
 
-struct EnsureChecks<T: Trait<I>, I: Instance> {
+struct EnsureChecks<T: Config<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
+impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
     /////////////////// Common checks //////////////////////////////////////////
 
     fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
@@ -890,7 +940,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         stake: &BalanceOf<T>,
     ) -> Result<(u64, T::AccountId), Error<T, I>> {
-        fn prevent_repeated_vote<T: Trait<I>, I: Instance>(
+        fn prevent_repeated_vote<T: Config<I>, I: Instance>(
             cycle_id: &u64,
             account_id: &T::AccountId,
         ) -> Result<(), Error<T, I>> {
@@ -962,6 +1012,11 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         // ensure vote was cast for the running referendum
         if stage_data.current_cycle_id != cast_vote.cycle_id {
             return Err(Error::InvalidVote);
+        }
+
+        // ensure vote was not already revealed
+        if cast_vote.vote_for.is_some() {
+            return Err(Error::InvalidReveal);
         }
 
         // ensure salt is not too long

@@ -10,8 +10,11 @@ import {
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
-import { PROPOSALS_POST_DEPOSIT } from '../../consts'
+import {
+  MemberId,
+  ProposalDiscussionPostId as PostId,
+  ProposalDiscussionThreadId as ThreadId,
+} from '@joystream/types/primitives'
 import { ProposalsDiscussionPostMetadata, IProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
 import { EventDetails } from '@joystream/cli/src/Types'
 
@@ -47,7 +50,9 @@ export class CreatePostsFixture extends StandardizedFixture {
   public async execute(): Promise<void> {
     const accounts = await this.getSignerAccountOrAccounts()
     // Send required funds to accounts (ProposalsPostDeposit)
-    await Promise.all(accounts.map((a) => this.api.treasuryTransferBalance(a, PROPOSALS_POST_DEPOSIT)))
+    await Promise.all(
+      accounts.map((a) => this.api.treasuryTransferBalance(a, this.api.consts.proposalsDiscussion.postDeposit))
+    )
     await super.execute()
   }
 

@@ -1,6 +1,10 @@
-import { BagId, DynamicBagType, DynamicBagTypeKey, Static, Dynamic } from '@joystream/types/storage'
-import { WorkingGroup } from '@joystream/types/common'
-import { createType } from '@joystream/types'
+import {
+  PalletStorageBagIdType as BagId,
+  PalletStorageDynamicBagType as DynamicBagType,
+  PalletStorageStaticBagId as Static,
+  PalletCommonWorkingGroupIterableEnumsWorkingGroup,
+} from '@polkadot/types/lookup'
+import { createType, keysOf } from '@joystream/types'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
 
@@ -26,8 +30,8 @@ export class BagIdValidationError extends CLIError {
  * @param bagType - dynamic bag type string
  * @returns The DynamicBagType instance.
  */
-export function parseDynamicBagType(bagType: DynamicBagTypeKey): DynamicBagType {
-  return createType('DynamicBagType', bagType)
+export function parseDynamicBagType(bagType: DynamicBagType['type']): DynamicBagType {
+  return createType('PalletStorageDynamicBagType', bagType)
 }
 
 /**
@@ -87,8 +91,8 @@ class BagIdParser {
     // Try to construct static council bag ID.
     if (this.bagIdParts[1] === 'council') {
       if (this.bagIdParts.length === 2) {
-        const staticBagId: Static = createType('Static', 'Council')
-        const constructedBagId: BagId = createType('BagId', {
+        const staticBagId = createType('PalletStorageStaticBagId', 'Council')
+        const constructedBagId: BagId = createType('PalletStorageBagIdType', {
           'Static': staticBagId,
         })
 
@@ -99,17 +103,20 @@ class BagIdParser {
     // Try to construct static working group bag ID.
     if (this.bagIdParts[1] === 'wg') {
       if (this.bagIdParts.length === 3) {
-        const groups = Object.keys(WorkingGroup.typeDefinitions)
+        const groups = keysOf<
+          PalletCommonWorkingGroupIterableEnumsWorkingGroup,
+          'PalletCommonWorkingGroupIterableEnumsWorkingGroup'
+        >('PalletCommonWorkingGroupIterableEnumsWorkingGroup')
         const actualGroup = this.bagIdParts[2]
 
         for (const group of groups) {
           if (group.toLowerCase() === actualGroup) {
-            const workingGroup: WorkingGroup = createType('WorkingGroup', group)
-            const staticBagId: Static = createType('Static', {
+            const workingGroup = createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', group)
+            const staticBagId: Static = createType('PalletStorageStaticBagId', {
               'WorkingGroup': workingGroup,
             })
-            const constructedBagId: BagId = createType('BagId', {
-              'Static': staticBagId,
+            const constructedBagId: BagId = createType('PalletStorageBagIdType', {
+              Static: staticBagId,
             })
 
             return constructedBagId
@@ -131,18 +138,18 @@ class BagIdParser {
 
       // Verify successful entity ID parsing
       if (!isNaN(parsedId)) {
-        const dynamicBagTypes = Object.keys(DynamicBagType.typeDefinitions)
+        const dynamicBagTypes = keysOf<DynamicBagType, 'PalletStorageDynamicBagType'>('PalletStorageDynamicBagType')
         const actualType = this.bagIdParts[1]
 
         // Try to construct dynamic bag ID.
         for (const dynamicBagType of dynamicBagTypes) {
           if (dynamicBagType.toLowerCase() === actualType) {
-            const dynamic = {} as Record<DynamicBagTypeKey, number>
-            dynamic[dynamicBagType as DynamicBagTypeKey] = parsedId
+            const dynamic = {} as Record<DynamicBagType['type'], number>
+            dynamic[dynamicBagType as DynamicBagType['type']] = parsedId
 
-            const dynamicBagId: Dynamic = createType('Dynamic', dynamic)
-            const constructedBagId: BagId = createType('BagId', {
-              'Dynamic': dynamicBagId,
+            const dynamicBagId = createType('PalletStorageDynamicBagIdType', dynamic)
+            const constructedBagId: BagId = createType('PalletStorageBagIdType', {
+              Dynamic: dynamicBagId,
             })
 
             return constructedBagId

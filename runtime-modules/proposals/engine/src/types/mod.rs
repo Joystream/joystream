@@ -3,11 +3,12 @@
 
 #![warn(missing_docs)]
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::dispatch::DispatchResult;
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::Perbill;
+use sp_runtime::{traits::Saturating, Perbill};
 use sp_std::boxed::Box;
 use sp_std::cmp::PartialOrd;
 use sp_std::ops::Add;
@@ -23,7 +24,7 @@ pub use proposal_statuses::{
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum VoteKind {
     /// Pass, an alternative or a ranking, for binary, multiple choice
     /// and ranked choice propositions, respectively.
@@ -47,7 +48,7 @@ impl Default for VoteKind {
 
 /// Proposal parameters required to manage proposal risk.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct ProposalParameters<BlockNumber, Balance> {
     /// During this period, votes can be accepted
     pub voting_period: BlockNumber,
@@ -78,7 +79,7 @@ pub struct ProposalParameters<BlockNumber, Balance> {
 
 /// Contains current voting results
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct VotingResults {
     /// 'Abstain' votes counter
     pub abstentions: u32,
@@ -97,16 +98,19 @@ impl VotingResults {
     /// Add vote to the related counter
     pub fn add_vote(&mut self, vote: VoteKind) {
         match vote {
-            VoteKind::Abstain => self.abstentions += 1,
-            VoteKind::Approve => self.approvals += 1,
-            VoteKind::Reject => self.rejections += 1,
-            VoteKind::Slash => self.slashes += 1,
+            VoteKind::Abstain => self.abstentions = self.abstentions.saturating_add(1),
+            VoteKind::Approve => self.approvals = self.approvals.saturating_add(1),
+            VoteKind::Reject => self.rejections = self.rejections.saturating_add(1),
+            VoteKind::Slash => self.slashes = self.slashes.saturating_add(1),
         }
     }
 
     /// Calculates number of votes so far
     pub fn votes_number(&self) -> u32 {
-        self.abstentions + self.approvals + self.rejections + self.slashes
+        self.abstentions
+            .saturating_add(self.approvals)
+            .saturating_add(self.rejections)
+            .saturating_add(self.slashes)
     }
 
     /// Returns True if there were no votes. False otherwise.
@@ -117,7 +121,7 @@ impl VotingResults {
 
 /// 'Proposal' contains information necessary for the proposal frame_system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposals parameter, characterize different proposal types.
     pub parameters: ProposalParameters<BlockNumber, Balance>,
@@ -146,20 +150,39 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     pub staking_account_id: Option<AccountId>,
 }
 
+impl<BlockNumber: Default, ProposerId: Default, Balance: Default, AccountId> Default
+    for Proposal<BlockNumber, ProposerId, Balance, AccountId>
+{
+    fn default() -> Self {
+        Self {
+            parameters: Default::default(),
+            proposer_id: Default::default(),
+            activated_at: Default::default(),
+            status: Default::default(),
+            voting_results: Default::default(),
+            exact_execution_block: Default::default(),
+            nr_of_council_confirmations: Default::default(),
+            staking_account_id: None,
+        }
+    }
+}
+
 impl<BlockNumber, ProposerId, Balance, AccountId>
     Proposal<BlockNumber, ProposerId, Balance, AccountId>
 where
-    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy + Saturating,
     AccountId: Clone,
 {
     /// Increases proposal constitutionality level.
     pub fn increase_constitutionality_level(&mut self) {
-        self.nr_of_council_confirmations += 1;
+        self.nr_of_council_confirmations = self.nr_of_council_confirmations.saturating_add(1);
     }
 
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
-        now >= self.activated_at + self.parameters.voting_period
+        now >= self
+            .activated_at
+            .saturating_add(self.parameters.voting_period)
     }
 
     /// Returns whether grace period expired by now.
@@ -167,7 +190,7 @@ where
     /// Returns false otherwise.
     pub fn is_grace_period_expired(&self, now: BlockNumber) -> bool {
         if let ProposalStatus::PendingExecution(finalized_at) = self.status.clone() {
-            return now >= finalized_at + self.parameters.grace_period;
+            return now >= finalized_at.saturating_add(self.parameters.grace_period);
         }
 
         false
@@ -202,7 +225,6 @@ where
             proposal: self,
             approvals: self.voting_results.approvals,
             slashes: self.voting_results.slashes,
-            abstentions: self.voting_results.abstentions,
             now,
             votes_count: self.voting_results.votes_number(),
             total_voters_count,
@@ -263,24 +285,14 @@ pub(crate) struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance,
     pub approvals: u32,
     /// Slash votes number
     pub slashes: u32,
-    /// Abstain votes number
-    pub abstentions: u32,
 }
 
 impl<'a, BlockNumber, ProposerId, Balance, AccountId>
     ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, AccountId>
 where
-    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
+    BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy + Saturating,
     AccountId: Clone,
 {
-    // Defines vote count during the quorum and threshold calculations.
-    // It subtracts the abstentions from the all votes count.
-    // We alter the `votes count for quorum and threshold calculations` after this issue:
-    // https://github.com/Joystream/joystream/issues/2953
-    pub fn votes_count_without_abstentions(&self) -> u32 {
-        self.votes_count.saturating_sub(self.abstentions)
-    }
-
     // Proposal has been expired and quorum not reached.
     pub fn is_expired(&self) -> bool {
         self.proposal.is_voting_period_expired(self.now)
@@ -289,10 +301,8 @@ where
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes number.
     pub(crate) fn is_approval_quorum_reached(&self) -> bool {
-        let actual_votes_fraction = Perbill::from_rational_approximation(
-            self.votes_count_without_abstentions(),
-            self.total_voters_count,
-        );
+        let actual_votes_fraction =
+            Perbill::from_rational(self.votes_count, self.total_voters_count);
         let approval_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_quorum_percentage);
 
@@ -302,10 +312,10 @@ where
     // Verifies that approval threshold is still achievable for the proposal.
     // Compares actual approval votes sum with remaining possible votes number.
     pub(crate) fn is_approval_threshold_achievable(&self) -> bool {
-        let remaining_votes_count = self.total_voters_count - self.votes_count;
-        let possible_approval_votes_fraction = Perbill::from_rational_approximation(
-            self.approvals + remaining_votes_count,
-            self.votes_count_without_abstentions() + remaining_votes_count,
+        let remaining_votes_count = self.total_voters_count.saturating_sub(self.votes_count);
+        let possible_approval_votes_fraction = Perbill::from_rational(
+            self.approvals.saturating_add(remaining_votes_count),
+            self.votes_count.saturating_add(remaining_votes_count),
         );
 
         let required_threshold_fraction =
@@ -322,10 +332,10 @@ where
     // Verifies that slashing threshold is still achievable for the proposal.
     // Compares actual slashing votes sum with remaining possible votes number.
     pub(crate) fn is_slashing_threshold_achievable(&self) -> bool {
-        let remaining_votes_count = self.total_voters_count - self.votes_count;
-        let possible_slashing_votes_fraction = Perbill::from_rational_approximation(
-            self.slashes + remaining_votes_count,
-            self.votes_count_without_abstentions() + remaining_votes_count,
+        let remaining_votes_count = self.total_voters_count.saturating_sub(self.votes_count);
+        let possible_slashing_votes_fraction = Perbill::from_rational(
+            self.slashes.saturating_add(remaining_votes_count),
+            self.votes_count.saturating_add(remaining_votes_count),
         );
 
         let required_threshold_fraction =
@@ -337,10 +347,8 @@ where
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
     // votes sum divided by total possible votes number.
     pub fn is_slashing_quorum_reached(&self) -> bool {
-        let actual_votes_fraction = Perbill::from_rational_approximation(
-            self.votes_count_without_abstentions(),
-            self.total_voters_count,
-        );
+        let actual_votes_fraction =
+            Perbill::from_rational(self.votes_count, self.total_voters_count);
         let slashing_quorum_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_quorum_percentage);
 
@@ -350,10 +358,7 @@ where
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes number.
     pub fn is_approval_threshold_reached(&self) -> bool {
-        let approval_votes_fraction = Perbill::from_rational_approximation(
-            self.approvals,
-            self.votes_count_without_abstentions(),
-        );
+        let approval_votes_fraction = Perbill::from_rational(self.approvals, self.votes_count);
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
 
@@ -363,10 +368,7 @@ where
     // Slashing threshold reached for the proposal. Compares predefined parameter with 'approve'
     // votes sum divided by actual votes count.
     pub fn is_slashing_threshold_reached(&self) -> bool {
-        let slashing_votes_fraction = Perbill::from_rational_approximation(
-            self.slashes,
-            self.votes_count_without_abstentions(),
-        );
+        let slashing_votes_fraction = Perbill::from_rational(self.slashes, self.votes_count);
         let required_threshold_fraction =
             Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
 
@@ -380,7 +382,8 @@ where
 
     // Council approved the proposal enough times.
     pub fn is_constitutionality_reached_on_approval(&self) -> bool {
-        self.proposal.nr_of_council_confirmations + 1 >= self.proposal.parameters.constitutionality
+        self.proposal.nr_of_council_confirmations.saturating_add(1)
+            >= self.proposal.parameters.constitutionality
     }
 }
 
@@ -391,7 +394,7 @@ pub trait ProposalExecutable {
 }
 
 /// Proposal code binary converter
-pub trait ProposalCodeDecoder<T: frame_system::Trait> {
+pub trait ProposalCodeDecoder<T: frame_system::Config> {
     /// Converts proposal code binary to executable representation
     fn decode_proposal(
         proposal_type: u32,
@@ -428,12 +431,12 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
 }
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 // Simplification of the 'Proposal' type
 pub(crate) type ProposalOf<T> = Proposal<
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     MemberId<T>,
     BalanceOf<T>,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
 >;

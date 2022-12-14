@@ -1,0 +1,25 @@
+[Unit]
+Description=Joystream Node
+After=network.target
+
+[Service]
+Type=simple
+User={{ template_user }}
+WorkingDirectory={{ template_working_dir }}
+ExecStart={{ template_working_dir }}/bin/joystream-node \
+        --chain {{ template_chain_spec_path }} \
+        --pruning archive \
+        --base-path {{ template_base_path }} \
+        --keystore-path {{ template_keystore_path }} \
+        --validator \
+        --no-mdns \
+        --out-peers 50 \
+        --telemetry-url "wss://telemetry.polkadot.io/submit/ 0"
+
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=16384
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

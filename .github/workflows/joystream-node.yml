@@ -1,22 +1,24 @@
 name: joystream-node
 on:
   pull_request:
+  push:
 
 jobs:
+  # test runtime benchmarks code correctness
   benchmarking:
     name: Benchmarking
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
+            runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
@@ -33,17 +35,17 @@ jobs:
         if: env.GIT_DIFF
 
       - name: Build
+        env:
+          WASM_BUILD_TOOLCHAIN: nightly-2022-05-11 
         run: |
-          pushd node
-          WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release --features runtime-benchmarks
-          popd
+          cargo +nightly-2022-05-11 clippy --release --features runtime-benchmarks &&
+          cargo +nightly-2022-05-11 test --release --features runtime-benchmarks &&
+          cargo +nightly-2022-05-11 build --release --features runtime-benchmarks
         if: env.GIT_DIFF
 
-      - name: Generate Weights
+      - name: Test Generate Weights
         run: |
-          ./scripts/generate-weights.sh 5 2
-          # Show any changes in computed weights
-          git diff
+          ./scripts/generate-weights.sh 1 1 && git diff
         if: env.GIT_DIFF
 
   # Build and test joystream-node with all runtime profiles
@@ -51,16 +53,16 @@ jobs:
     name: Runtime Profiles
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            node
+            bin
+            runtime
             runtime-modules
-            utils/chain-spec-builder
           SUFFIX_FILTER: |
             .rs
           FILES: |
@@ -74,26 +76,23 @@ jobs:
       - name: Production Runtime
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
+          ./target/release/call-sizes
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:
-          RUNTIME_PROFILE: STAGING
+          RUNTIME_PROFILE: "STAGING"
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
         if: env.GIT_DIFF
       - name: Playground Runtime
         env:
-          RUNTIME_PROFILE: PLAYGROUND
+          RUNTIME_PROFILE: "PLAYGROUND"
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
         if: env.GIT_DIFF
       - name: Testing Runtime
         env:
-          RUNTIME_PROFILE: TESTING
+          RUNTIME_PROFILE: "TESTING"
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
         if: env.GIT_DIFF
