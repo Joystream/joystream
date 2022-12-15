@@ -360,6 +360,9 @@ async function createBid(
 
     await store.save<Bid>(bid)
   }
+  auction.bids?.forEach((b) => {
+    if (cancelledBidsIds.includes(b.id)) b.isCanceled = true
+  })
 
   const amount = bidAmount ? new BN(bidAmount.toString()) : (auction.buyNowPrice as BN)
   const previousTopBid = auction.topBid
@@ -374,6 +377,7 @@ async function createBid(
     indexInBlock: event.indexInBlock,
     isCanceled: false,
   })
+  auction.bids ? auction.bids.push(newBid) : (auction.bids = [newBid])
 
   // check if the auction's top bid needs to be updated, this can happen in those cases:
   // 1. auction doesn't have the top bid at the moment, new bid should be new top bid
@@ -386,10 +390,7 @@ async function createBid(
     auction.topBid = newBid
   } else if (cancelledBidsIds.includes(auction.topBid.id)) {
     // handle case 3
-    const allAuctionBids = [...(auction.bids || []), newBid]
-    // filter canceled bids - auction.bids will be stale in memory
-    const notCanceledAuctionBids = allAuctionBids.filter((auctionBid) => !cancelledBidsIds.includes(auctionBid.id))
-    const newTopBid = findTopBid(notCanceledAuctionBids)
+    const newTopBid = findTopBid(auction.bids)
     if (newTopBid) {
       if (newTopBid.id !== newBid.id) {
         // only save newTopBid if it's not the newBid, otherwise store.save(newBid) below will overwrite it
