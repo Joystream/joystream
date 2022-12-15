@@ -14,7 +14,7 @@ export async function assertAuctionAndBids(
   query: QueryNodeApi,
   videoId: number,
   topBidder: IMember,
-  endBlock?: number
+  plannedEndAtBlock?: number
 ): Promise<void> {
   await query.tryQueryWithTimeout(
     () => query.ownedNftByVideoId(videoId.toString()),
@@ -28,8 +28,13 @@ export async function assertAuctionAndBids(
         topBidder.memberId.toString(),
         'Invalid last bidder'
       )
-      if (endBlock !== undefined) {
-        assert.equal(ownedNft.transactionalStatusAuction.endedAtBlock, endBlock, 'Unexpected auction end block')
+      if (plannedEndAtBlock !== undefined) {
+        Utils.assert(ownedNft.transactionalStatusAuction.auctionType.__typename === 'AuctionTypeEnglish')
+        assert.equal(
+          ownedNft.transactionalStatusAuction.auctionType.plannedEndAtBlock,
+          plannedEndAtBlock,
+          'Unexpected english auction planned end block'
+        )
       }
     }
   )
