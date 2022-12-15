@@ -731,13 +731,14 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
   )
 
   // extend auction duration when needed
-  if (
-    auction.auctionType instanceof AuctionTypeEnglish &&
+  if (auction.auctionType.isTypeOf === AuctionTypeEnglish.name) {
+    const auctionType = auction.auctionType as AuctionTypeEnglish
+    const { plannedEndAtBlock, extensionPeriod } = auctionType
     // The condition has to be the same as in `runtime-modules/content/src/nft/types.rs`
-    auction.auctionType.plannedEndAtBlock - auction.auctionType.extensionPeriod <= event.blockNumber
-  ) {
-    auction.auctionType.plannedEndAtBlock += auction.auctionType.extensionPeriod
-    await store.save<Auction>(auction)
+    if (plannedEndAtBlock - extensionPeriod <= event.blockNumber) {
+      auctionType.plannedEndAtBlock += extensionPeriod
+      await store.save<Auction>(auction)
+    }
   }
 
   // common event processing - second
