@@ -1012,7 +1012,10 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
+  async createEnglishAuctionParameters(
+    whitelist: number[] = [],
+    options: { extensionPeriod?: BN; duration?: BN } = {}
+  ): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -1022,11 +1025,11 @@ export class Api {
     const boundaries = await this.getAuctionParametersBoundaries()
 
     // auction duration must be larger than extension period (enforced in runtime)
-    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    const auctionDuration = options.duration ?? BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
 
     const startingPrice = boundaries.startingPrice.min
     const minimalBidStep = boundaries.bidStep.min
-    const extensionPeriod = boundaries.extensionPeriod.min
+    const extensionPeriod = options.extensionPeriod ?? boundaries.extensionPeriod.min
 
     const auctionParams = createType('PalletContentNftTypesEnglishAuctionParamsRecord', {
       startingPrice,

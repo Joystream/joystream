@@ -10,7 +10,12 @@ export interface NftOwnerInEventEntity {
   ownerCuratorGroup?: Maybe<{ id: string }>
 }
 
-export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number, topBidder: IMember): Promise<void> {
+export async function assertAuctionAndBids(
+  query: QueryNodeApi,
+  videoId: number,
+  topBidder: IMember,
+  endBlock?: number
+): Promise<void> {
   await query.tryQueryWithTimeout(
     () => query.ownedNftByVideoId(videoId.toString()),
     (ownedNft) => {
@@ -23,6 +28,9 @@ export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number,
         topBidder.memberId.toString(),
         'Invalid last bidder'
       )
+      if (endBlock !== undefined) {
+        assert.equal(ownedNft.transactionalStatusAuction.endedAtBlock, endBlock, 'Unexpected auction end block')
+      }
     }
   )
 }
