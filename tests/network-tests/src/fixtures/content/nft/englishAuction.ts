@@ -97,7 +97,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await this.api.untilBlock(runtimeEndBlockNumber.toNumber())
 
     this.debug('Check NFT Auction and bids')
-    await assertAuctionAndBids(this.query, this.videoId, winner)
+    await assertAuctionAndBids(this.query, this.videoId, winner, runtimeEndBlockNumber.toNumber())
 
     this.debug('Complete auction')
     const settleEnglishAuctionResult = await this.api.settleEnglishAuction(
