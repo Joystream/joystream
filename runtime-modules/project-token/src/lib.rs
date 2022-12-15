@@ -1081,6 +1081,7 @@ impl<T: Config>
 
         let new_yearly_rate =
             target_rate_per_block.to_yearly_rate_representation(T::BlocksPerYear::get());
+
         Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
             token_id,
             new_yearly_rate,
@@ -1173,6 +1174,7 @@ impl<T: Config>
         );
 
         // == MUTATION SAFE ==
+
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
