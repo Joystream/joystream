@@ -20,7 +20,7 @@ use sp_std::{
     collections::btree_map::BTreeMap,
     convert::{TryFrom, TryInto},
     iter::Sum,
-    ops::Add,
+    ops::{Add, Div},
     vec::Vec,
 };
 use storage::{BagId, DataObjectCreationParameters};
@@ -1308,7 +1308,15 @@ where
     }
 }
 /// Token Data implementation
-impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, MemberId, AccountId>
+impl<
+        JoyBalance,
+        Balance: CheckedAdd,
+        Hash,
+        BlockNumber,
+        VestingScheduleParams,
+        MemberId,
+        AccountId,
+    >
     TokenData<
         Balance,
         Hash,
@@ -1363,13 +1371,20 @@ where
         self.patronage_info.unclaimed_patronage_tally_amount = amount;
     }
 
-    /// Computes: period * rate * supply + tally
+    /// Computes supply inflation since last patronage event, used when updating patronage rate
     pub(crate) fn unclaimed_patronage_at_block(&self, block: BlockNumber) -> Balance {
         let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
-        let unclaimed_patronage_percent = self.patronage_info.rate.for_period(blocks);
-        unclaimed_patronage_percent
+        let (integer_part, unclaimed_patronage_percent) =
+            self.patronage_info.rate.for_period(blocks);
+        let common_term = unclaimed_patronage_percent
             .mul_floor(self.total_supply)
-            .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
+            .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount);
+        if !integer_part.is_zero() {
+            let integer_part_term = self.total_supply.saturating_mul(integer_part.into());
+            integer_part_term.saturating_add(common_term)
+        } else {
+            common_term
+        }
     }
 
     pub fn set_new_patronage_rate_at_block(&mut self, new_rate: BlockRate, block: BlockNumber) {
@@ -1533,14 +1548,32 @@ impl BlockRate {
     }
 
     pub fn to_yearly_rate_representation(self, blocks_per_year: u32) -> Perquintill {
-        self.for_period(blocks_per_year)
+        self.for_period(blocks_per_year).1
     }
 
-    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> Perquintill
+    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> (u64, Perquintill)
     where
         BlockNumber: AtLeast32BitUnsigned + Clone,
     {
-        Perquintill::from_parts(self.0.deconstruct().saturating_mul(blocks.saturated_into()))
+        // x = yearly_rate * (blocks) / blocks_per_year
+        // (1 + yearly_rate)^(blocks/blocks_per_year) - 1 ~= x + x^2/2 + x^3/6
+        let first_term =
+            Perquintill::from_parts(self.0.deconstruct().saturating_mul(blocks.saturated_into()));
+        let second_term = first_term.saturating_mul(first_term).div(2);
+        let third_term = second_term.saturating_mul(first_term).div(3);
+        let res = first_term
+            .deconstruct()
+            .saturating_add(second_term.deconstruct())
+            .saturating_add(third_term.deconstruct());
+
+        // case : res > 100 %
+        if res > <Perquintill as PerThing>::ACCURACY {
+            let integer_part = res.div(<Perquintill as PerThing>::ACCURACY);
+            let float_part = res.saturating_sub(integer_part);
+            (integer_part, Perquintill::from_parts(float_part))
+        } else {
+            (0u64, Perquintill::from_parts(res))
+        }
     }
 
     pub fn saturating_sub(self, other: Self) -> Self {

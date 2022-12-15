@@ -178,6 +178,7 @@ fn decrease_patronage_ok_with_event_deposit() {
             .patronage_info
             .rate
             .to_yearly_rate_representation(BlocksPerYear::get());
+
         last_event_eq!(RawEvent::PatronageRateDecreasedTo(token_id, final_rate));
     })
 }
