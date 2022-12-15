@@ -383,6 +383,7 @@ async function createBid(
   if (!auction.topBid || newBid.amount.gt(auction.topBid.amount)) {
     // handle cases 1 and 2
     newBid.auctionTopBid = auction
+    auction.topBid = newBid
   } else if (cancelledBidsIds.includes(auction.topBid.id)) {
     // handle case 3
     const allAuctionBids = [...(auction.bids || []), newBid]
@@ -393,9 +394,11 @@ async function createBid(
       if (newTopBid.id !== newBid.id) {
         // only save newTopBid if it's not the newBid, otherwise store.save(newBid) below will overwrite it
         newTopBid.auctionTopBid = auction
+        auction.topBid = newTopBid
         await store.save<Bid>(newTopBid)
       } else {
         newBid.auctionTopBid = auction
+        auction.topBid = newBid
       }
     }
   }
