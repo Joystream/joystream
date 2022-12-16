@@ -76,9 +76,12 @@ scenario('Full', async ({ job, env }) => {
   ]).requires(councilFailuresJob)
 
   // Working groups
-  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    proposalsJob
+  // Before any other jobs hire then terminate all WG leads
+  const terminateLeadsJob = job('terminate working-group leads', terminateLeads).after(
+    job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(proposalsJob)
   )
+  // Re-hire leads then go on
+  const sudoHireLead = job('sudo re-hire leads', leadOpening(true)).after(terminateLeadsJob)
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
   job('group status', groupStatus).requires(sudoHireLead)
@@ -93,18 +96,11 @@ scenario('Full', async ({ job, env }) => {
   job('forum threads', threads).requires(sudoHireLead)
   job('forum thread tags', threadTags).requires(sudoHireLead)
   job('forum posts', posts).requires(sudoHireLead)
-  const moderationJob = job('forum moderation', moderation).requires(sudoHireLead)
-
-  // Terminate all WG leads, and then re-hire them because subsequent jobs depend on Leads being already set
-  const terminateLeadsJob = job('terminate working-group leads', terminateLeads).requires(moderationJob)
-  const sudoHireContentLead = job(
-    'Set content working group leads',
-    leadOpening(false, ['contentWorkingGroup', 'storageWorkingGroup', 'distributionWorkingGroup'])
-  ).requires(terminateLeadsJob)
+  job('forum moderation', moderation).requires(sudoHireLead)
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireContentLead)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
   )
