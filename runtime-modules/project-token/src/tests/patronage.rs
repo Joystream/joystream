@@ -1,32 +1,24 @@
 #[cfg(test)]
-use frame_support::{assert_noop, assert_ok};
-use sp_runtime::{Permill, Perquintill};
+use frame_support::{assert_err, assert_ok};
+use sp_runtime::{traits::Zero, Permill, Perquintill};
 
-use crate::tests::fixtures::{default_upload_context, IssueRevenueSplitFixture};
+use crate::tests::fixtures::{ClaimPatronageCreditFixture, Fixture, IssueTokenFixture};
+use crate::tests::fixtures::{IssueRevenueSplitFixture, ReducePatronageRateToFixture};
 use crate::tests::mock::*;
-use crate::tests::test_utils::TokenDataBuilder;
-use crate::traits::PalletToken;
-use crate::types::{BlockRate, TokenIssuanceParametersOf, YearlyRate};
-use crate::{balance, block, last_event_eq, member, rate, token, yearly_rate, Error, RawEvent};
+use crate::types::{BlockRate, YearlyRate};
+use crate::{balance, block, last_event_eq, yearly_rate, Error, RawEvent};
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
-    let patronage_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
-    let token_id = token!(1);
-    let ((owner_id, owner_acc), init_supply) = (member!(1), balance!(10));
-
-    let params = TokenIssuanceParametersOf::<Test> {
-        patronage_rate,
-        ..Default::default()
-    }
-    .with_allocation(&owner_id, init_supply, None);
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(owner_acc, params, default_upload_context());
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(10u64.into())
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
         assert_eq!(
-            Token::token_info_by_id(token_id)
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
             balance!(0),
@@ -36,27 +28,22 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 
 #[test]
 fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
-    let token_id = token!(1);
-    let (patronage_rate, blocks) = (DEFAULT_YEARLY_PATRONAGE_RATE.into(), block!(10));
-    let ((owner_id, owner_acc), init_supply) = (member!(1), balance!(1_000_000_000));
-
-    let params = TokenIssuanceParametersOf::<Test> {
-        patronage_rate,
-        revenue_split_rate: DEFAULT_SPLIT_RATE,
-        ..Default::default()
-    }
-    .with_allocation(&owner_id, init_supply, None);
-    let config = GenesisConfigBuilder::new_empty().build();
-
     // K = 1/blocks_per_years => floor(10% * 10 * K * 1bill) = floor(K * 2bill) = 380
     let expected = balance!(190);
 
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(owner_acc, params, default_upload_context());
-        increase_block_number_by(blocks);
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(1_000_000u128.into())
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .with_split_rate(DEFAULT_SPLIT_RATE)
+            .execute_call()
+            .unwrap();
+
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
         assert_eq!(
-            Token::token_info_by_id(token_id).unclaimed_patronage_at_block(System::block_number()),
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
+                .unclaimed_patronage_at_block(System::block_number()),
             expected,
         );
     })
@@ -64,41 +51,34 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 
 #[test]
 fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
-    let token_id = token!(1);
-    let (patronage_rate, blocks) = (DEFAULT_YEARLY_PATRONAGE_RATE.into(), block!(10));
-    let ((owner_id, owner_acc), initial_supply) = (member!(1), balance!(0));
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_empty_allocation()
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let params = TokenIssuanceParametersOf::<Test> {
-        patronage_rate,
-        ..Default::default()
-    }
-    .with_allocation(&owner_id, initial_supply, None);
-    let config = GenesisConfigBuilder::new_empty().build();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(owner_acc, params, default_upload_context());
-        increase_block_number_by(blocks);
-
-        assert_eq!(Token::token_info_by_id(token_id).total_supply, balance!(0),);
+        assert_eq!(
+            Token::token_info_by_id(DEFAULT_TOKEN_ID).total_supply,
+            balance!(0)
+        );
     })
 }
 
 #[test]
 fn decrease_patronage_ok() {
-    let rate = rate!(50);
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let owner_id = member!(1).0;
-    let decrement = DEFAULT_YEARLY_PATRONAGE_RATE.into();
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(100u64.into())
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let result = Token::reduce_patronage_rate_to(token_id, decrement);
+        let result = ReducePatronageRateToFixture::default()
+            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call();
 
         assert_ok!(result);
     })
@@ -106,29 +86,24 @@ fn decrease_patronage_ok() {
 
 #[test]
 fn decrease_patronage_ok_with_tally_count_correctly_updated() {
-    let rate = rate!(1);
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let owner_id = member!(1).0;
-    let blocks = block!(10);
-    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
-
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
-
     // 10% * 100 = 10
     let expected = balance!(10);
 
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-        let result = Token::reduce_patronage_rate_to(token_id, target_rate);
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(100u64.into())
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-        assert_ok!(result);
+        ReducePatronageRateToFixture::default()
+            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+
         assert_eq!(
-            Token::token_info_by_id(token_id)
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
             expected
@@ -139,70 +114,69 @@ fn decrease_patronage_ok_with_tally_count_correctly_updated() {
 #[test]
 fn decrease_patronage_ok_noop_with_current_patronage_rate_specified_as_target() {
     let rate = BlockRate::from_yearly_rate(yearly_rate!(10), BlocksPerYear::get());
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let owner_id = member!(1).0;
-    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
 
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    build_test_externalities(config).execute_with(|| {
-        let result = Token::reduce_patronage_rate_to(token_id, target_rate);
+        ReducePatronageRateToFixture::default()
+            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-        assert_ok!(result);
-        assert_eq!(Token::token_info_by_id(token_id).patronage_info.rate, rate);
+        assert_eq!(
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
+                .patronage_info
+                .rate,
+            rate,
+        );
     })
 }
 
 // for correct final rate approximation see next test
 #[test]
 fn decrease_patronage_ok_with_event_deposit() {
-    let init_rate = DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into();
-    let token_id = token!(1);
-    let decrement = DEFAULT_YEARLY_PATRONAGE_RATE.into();
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let params = TokenDataBuilder::new_empty()
-        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .build();
+        ReducePatronageRateToFixture::default()
+            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::reduce_patronage_rate_to(token_id, decrement);
-
-        let final_rate = Token::token_info_by_id(token_id)
+        let final_rate = Token::token_info_by_id(1u64)
             .patronage_info
             .rate
             .to_yearly_rate_representation(BlocksPerYear::get());
-
-        last_event_eq!(RawEvent::PatronageRateDecreasedTo(token_id, final_rate));
+        last_event_eq!(RawEvent::PatronageRateDecreasedTo(
+            DEFAULT_TOKEN_ID,
+            final_rate
+        ));
     })
 }
 
 #[test]
 fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
-    let init_rate = DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into();
-    let token_id = token!(1);
-    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
-
     // K = 1/blocks_per_years => 10% * K ~= 19013261179 * 1e-18
     let expected = BlockRate(Perquintill::from_parts(19013261179));
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let params = TokenDataBuilder::new_empty()
-        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::reduce_patronage_rate_to(token_id, target_rate);
+        ReducePatronageRateToFixture::default()
+            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
         assert_eq!(
-            Token::token_info_by_id(token_id)
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .rate
                 .0
@@ -214,25 +188,21 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
 
 #[test]
 fn decrease_patronage_ok_with_last_tally_block_updated() {
-    let token_id = token!(1);
-    let target_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
-    let (init_rate, blocks) = (DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into(), block!(10));
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    let params = TokenDataBuilder::new_empty()
-        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::reduce_patronage_rate_to(token_id, target_rate);
+        ReducePatronageRateToFixture::default()
+            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
         assert_eq!(
-            block!(1) + blocks, // starting block + blocks
-            Token::token_info_by_id(token_id)
+            block!(11), // starting block + blocks
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .last_unclaimed_patronage_tally_block
         )
@@ -241,22 +211,17 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
 
 #[test]
 fn decreasing_patronage_rate_fails_with_target_rate_exceeding_current_rate() {
-    let init_rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let owner_id = member!(1).0;
-    let target_rate = DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into();
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
-        .build();
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
+        let result = ReducePatronageRateToFixture::default()
+            .with_target_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call();
 
-    build_test_externalities(config).execute_with(|| {
-        let result = Token::reduce_patronage_rate_to(token_id, target_rate);
-
-        assert_noop!(
+        assert_err!(
             result,
             Error::<Test>::TargetPatronageRateIsHigherThanCurrentRate
         );
@@ -265,43 +230,41 @@ fn decreasing_patronage_rate_fails_with_target_rate_exceeding_current_rate() {
 
 #[test]
 fn decreasing_patronage_rate_fails_invalid_token() {
-    let config = GenesisConfigBuilder::new_empty().build();
-    let decrease = yearly_rate!(20);
-    let token_id = token!(1);
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    build_test_externalities(config).execute_with(|| {
-        let result = Token::reduce_patronage_rate_to(token_id, decrease);
+        let result = ReducePatronageRateToFixture::default()
+            .with_token_id(DEFAULT_TOKEN_ID + 1u64)
+            .execute_call();
 
-        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
+        assert_err!(result, Error::<Test>::TokenDoesNotExist);
     })
 }
 
 #[test]
 fn claim_patronage_fails_with_active_revenue_split() {
-    let token_id = token!(1);
-    let (owner_id, owner_account) = member!(1);
-    let (rate, blocks) = (rate!(10), block!(MIN_REVENUE_SPLIT_TIME_TO_START - 1));
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ISSUER_ACCOUNT_ID,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let params = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .with_split_rate(DEFAULT_SPLIT_RATE);
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner_id, ConfigAccountData::default())
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_account_balance(
-            &owner_account,
-            DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
-        );
         IssueRevenueSplitFixture::default().execute_call().unwrap(); // activate revenue split
-        increase_block_number_by(blocks);
+        increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START - 1);
+        let result = ReducePatronageRateToFixture::default()
+            .with_token_id(DEFAULT_TOKEN_ID + 1u64)
+            .execute_call();
 
         // expect it to fail even though the staking period is not started yet
-        assert_noop!(
-            Token::claim_patronage_credit(token_id, owner_id),
+        assert_err!(
+            result,
             Error::<Test>::CannotModifySupplyWhenRevenueSplitsAreActive,
         );
     })
@@ -309,239 +272,168 @@ fn claim_patronage_fails_with_active_revenue_split() {
 
 #[test]
 fn claim_patronage_ok() {
-    let token_id = token!(1);
-    let owner_id = member!(1).0;
-    let (rate, blocks) = (rate!(10), block!(10));
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner_id, ConfigAccountData::default())
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let result = Token::claim_patronage_credit(token_id, owner_id);
+        let result = ReducePatronageRateToFixture::default()
+            .with_token_id(DEFAULT_TOKEN_ID + 1u64)
+            .execute_call();
 
         assert_ok!(result);
     })
 }
 
-#[test]
-fn claim_patronage_ok_with_patronage_rate_for_period_capped_at_100pct() {
-    // Simulate condition where patronage_rate.for_period(blocks) > 100%
-    let token_id = token!(1);
-    let owner_id = member!(1).0;
-    let supply = balance!(100);
-    let rate = rate!(55);
-    let blocks = block!(2); // patronage rate for period = 110% > 100%
-
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
-    // rate for period = 110% but effective rate is capped at 100% -> 100% supply + supply
-    let expected = balance!(100) + supply;
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, params.build(), owner_id, supply)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::claim_patronage_credit(token_id, owner_id);
-
-        assert_eq!(
-            expected,
-            Token::account_info_by_token_and_member(token_id, owner_id)
-                .transferrable::<Test>(System::block_number())
-        );
-    })
-}
+// TODO(mrbovo): allow for more than 100% claim over supply
 
 #[test]
 fn claim_patronage_ok_with_supply_greater_than_u64_max() {
-    let token_id = token!(1);
-    let owner_id = member!(1).0;
-    let (rate, blocks) = (rate!(10), block!(10));
-    let supply = balance!(1_000_000_000_000_000_000_000_000_000_000u128);
-    // rate * blocks = 100% , expected  = 100 % supply + supply
-    let expected_amount = balance!(2_000_000_000_000_000_000_000_000_000_000u128);
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(1_000_000_000_000_000_000_000_000_000_000u128.into())
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, params.build(), owner_id, supply)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::claim_patronage_credit(token_id, owner_id);
+        ClaimPatronageCreditFixture::default()
+            .execute_call()
+            .unwrap();
 
         assert_eq!(
-            Token::account_info_by_token_and_member(token_id, owner_id)
+            Token::account_info_by_token_and_member(1u64, 1u64)
                 .transferrable::<Test>(System::block_number()),
-            expected_amount
+            balance!(1_010_000_000_000_000_000_000_000_000_000u128)
         );
     })
 }
 
 #[test]
 fn claim_patronage_ok_with_event_deposit() {
-    let token_id = token!(1);
-    let (rate, blocks) = (rate!(10), block!(10));
-    let (owner_id, init_supply) = (member!(1).0, balance!(100));
-
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
-
     // 10%(rate) * 10(blocks) * 100(supply)
     let expected_credit = balance!(100);
 
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner_id, ConfigAccountData::new_with_amount(init_supply))
-        .build();
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::claim_patronage_credit(token_id, owner_id);
+        ClaimPatronageCreditFixture::default()
+            .execute_call()
+            .unwrap();
 
         last_event_eq!(RawEvent::PatronageCreditClaimed(
-            token_id,
+            DEFAULT_TOKEN_ID,
             expected_credit,
-            owner_id,
+            DEFAULT_ISSUER_MEMBER_ID,
         ));
     })
 }
 
 #[test]
 fn claim_patronage_ok_with_credit_accounting() {
-    let token_id = token!(1);
-    let (owner_id, init_supply) = (member!(1).0, balance!(100));
-    let (rate, blocks) = (rate!(10), block!(10));
-
     // (rate * blocks)% * init_supply = 100
     let expected_patronage_credit = balance!(100);
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::claim_patronage_credit(token_id, owner_id);
+        ClaimPatronageCreditFixture::default()
+            .execute_call()
+            .unwrap();
 
         assert_eq!(
-            Token::account_info_by_token_and_member(token_id, owner_id)
+            Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
                 .transferrable::<Test>(System::block_number()),
-            expected_patronage_credit + init_supply,
+            expected_patronage_credit + DEFAULT_INITIAL_ISSUANCE,
         );
     })
 }
 
 #[test]
 fn claim_patronage_ok_with_unclaimed_patronage_reset() {
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let owner_id = member!(1).0;
-    let (rate, blocks) = (rate!(10), block!(10));
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
 
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
+        ClaimPatronageCreditFixture::default()
+            .execute_call()
+            .unwrap();
 
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::claim_patronage_credit(token_id, owner_id);
-
-        assert_eq!(
-            Token::token_info_by_id(token_id).unclaimed_patronage_at_block(System::block_number()),
-            balance!(0),
-        );
+        assert!(Token::token_info_by_id(DEFAULT_TOKEN_ID)
+            .unclaimed_patronage_at_block(System::block_number())
+            .is_zero());
     })
 }
 
 #[test]
 fn claim_patronage_credit_fails_with_invalid_token_id() {
-    let token_id = token!(1);
-    let owner_id = member!(1).0;
-    let config = GenesisConfigBuilder::new_empty().build();
+    build_default_test_externalities().execute_with(|| {
+        let result = ClaimPatronageCreditFixture::default()
+            .with_token_id(DEFAULT_TOKEN_ID)
+            .execute_call();
 
-    build_test_externalities(config).execute_with(|| {
-        let result = Token::claim_patronage_credit(token_id, owner_id);
-
-        assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
+        assert_err!(result, Error::<Test>::TokenDoesNotExist);
     })
 }
 
 #[test]
 fn claim_patronage_credit_fails_with_invalid_owner() {
-    let rate = rate!(50);
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let invalid_owner_id = member!(2).0;
-    let owner_id = member!(1).0;
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
 
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
+        let result = ClaimPatronageCreditFixture::default()
+            .with_member_id(MemberId::zero())
+            .execute_call();
 
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
-    build_test_externalities(config).execute_with(|| {
-        let result = Token::claim_patronage_credit(token_id, invalid_owner_id);
-
-        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+        assert_err!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
 }
 
 #[test]
 fn claim_patronage_ok_with_tally_amount_set_to_zero() {
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let owner_id = member!(1).0;
-    let (rate, blocks) = (rate!(10), block!(10));
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+        increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
+        ClaimPatronageCreditFixture::default()
+            .execute_call()
+            .unwrap();
 
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::claim_patronage_credit(token_id, owner_id);
-
-        assert_eq!(
-            Token::token_info_by_id(token_id)
-                .patronage_info
-                .unclaimed_patronage_tally_amount,
-            balance!(0)
-        );
+        assert!(Token::token_info_by_id(DEFAULT_TOKEN_ID)
+            .patronage_info
+            .unclaimed_patronage_tally_amount
+            .is_zero());
     })
 }
 
 #[test]
 fn update_max_yearly_patronage_rate_fails_with_non_root_origin() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
+    build_default_test_externalities().execute_with(|| {
         let res = Token::update_max_yearly_patronage_rate(
-            Origin::signed(1u64),
-            Permill::from_percent(7).into(),
+            Origin::signed(AccountId::zero()),
+            DEFAULT_YEARLY_PATRONAGE_RATE.into(),
         );
 
         assert!(res.is_err());

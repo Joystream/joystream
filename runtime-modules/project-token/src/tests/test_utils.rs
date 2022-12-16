@@ -75,17 +75,6 @@ impl TokenDataBuilder {
         }
     }
 
-    pub fn with_patronage_rate(self, rate: BlockRate) -> Self {
-        Self {
-            patronage_info: PatronageData::<_, _> {
-                unclaimed_patronage_tally_amount: Balance::zero(),
-                rate,
-                last_unclaimed_patronage_tally_block: BlockNumber::one(),
-            },
-            ..self
-        }
-    }
-
     pub fn new_empty() -> Self {
         Self {
             tokens_issued: Balance::zero(),

@@ -547,6 +547,11 @@ pub fn build_test_externalities(config: token::GenesisConfig<Test>) -> TestExter
     build_test_externalities_with_balances(config, vec![])
 }
 
+/// test externalities
+pub fn build_default_test_externalities() -> TestExternalities {
+    build_default_test_externalities_with_balances(vec![])
+}
+
 /// test externalities with empty Chain State and specified balance allocation
 pub fn build_default_test_externalities_with_balances(
     balances: Vec<(AccountId, Balance)>,
@@ -628,6 +633,9 @@ macro_rules! block {
 }
 
 // ------ General constants ---------------
+pub const DEFAULT_TOKEN_ID: u64 = 1;
+pub const DEFAULT_ISSUER_ACCOUNT_ID: u64 = 1001;
+pub const DEFAULT_ISSUER_MEMBER_ID: u64 = 1;
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
 pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
 pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
@@ -636,6 +644,7 @@ pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
 // ------ Patronage Constants ----------------
 pub const DEFAULT_MAX_YEARLY_PATRONAGE_RATE: Permill = Permill::from_percent(15);
 pub const DEFAULT_YEARLY_PATRONAGE_RATE: Permill = Permill::from_percent(10);
+pub const DEFAULT_BLOCK_INTERVAL: u64 = 10;
 
 // ------ Sale Constants ---------------------
 pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;
