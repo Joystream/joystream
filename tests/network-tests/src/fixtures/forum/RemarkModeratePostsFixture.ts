@@ -58,11 +58,10 @@ export class RemarkModeratePostsFixture extends WithForumWorkersFixture {
 
     this.events.map((e, i) => {
       const moderation = this.moderations[i]
-      const qPost = qPosts.find((p) => p.id === moderation.postId.toString())
-
-      Utils.assert(qPost, 'Query node: Post not found')
-
       if (moderation.expectFailure) return
+
+      const qPost = qPosts.find((p) => p.id === moderation.postId.toString())
+      Utils.assert(qPost, 'Query node: Post not found')
 
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qPost.status.__typename === 'PostStatusModerated', 'Invalid post status')
