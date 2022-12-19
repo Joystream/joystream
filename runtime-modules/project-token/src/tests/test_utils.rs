@@ -1,7 +1,7 @@
 use frame_support::BoundedBTreeMap;
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, Saturating};
-use sp_runtime::{Permill, Perquintill};
+use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryFrom;
 
@@ -9,10 +9,11 @@ use crate::{
     balance,
     tests::mock::*,
     types::{
-        AccountData, BlockRate, ConfigAccountDataOf, MerkleProof, MerkleSide, PatronageData,
+        AccountData, ConfigAccountDataOf, MerkleProof, MerkleSide, PatronageData,
         PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
         TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf,
         Transfers, Validated, ValidatedPayment, VestingSchedule, VestingScheduleOf, VestingSource,
+        YearlyRate,
     },
     Config, GenesisConfig,
 };
@@ -84,7 +85,7 @@ impl TokenDataBuilder {
             next_sale_id: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: BlockRate(Perquintill::zero()),
+                rate: YearlyRate::zero(),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },

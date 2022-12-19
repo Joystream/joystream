@@ -240,7 +240,7 @@ impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug, TypeInfo, MaxEncodedLen)]
 pub struct PatronageData<Balance, BlockNumber> {
     /// Patronage rate
-    pub rate: BlockRate,
+    pub rate: YearlyRate,
 
     /// Tally count for the outstanding credit before latest patronage config change
     pub unclaimed_patronage_tally_amount: Balance,
@@ -818,12 +818,64 @@ impl From<Permill> for YearlyRate {
     }
 }
 
+impl YearlyRate {
+    pub fn log_approx(&self) -> Perquintill {
+        let r = self.0;
+        let r2 = r.saturating_mul(r);
+        let r3 = r2.saturating_mul(r);
+        let r4 = r3.saturating_mul(r);
+
+        // log(1 + r) ~= r - r^2/2 + r^3/3 - r^4/4
+        let tmp = r
+            .saturating_sub(r2.div(2))
+            .saturating_add(r3.div(3))
+            .saturating_sub(r4.div(4));
+
+        Perquintill::from_parts((tmp.deconstruct() as u64).saturating_mul(1_000_000_000_000u64))
+    }
+    pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> (u64, Perquintill)
+    where
+        BlockNumber: AtLeast32BitUnsigned + Clone,
+        BlocksPerYear: Get<u32>,
+    {
+        // Approximation needed, since no f64::pow facilities provided
+        // (1 + r)^x - 1 ~= xln(r + 1) + 1/2 x^2 ln^2(r + 1) + 1/6 x^3 log^3(r + 1) + 1/24 x^4 log^4(r + 1)
+        // this approximation holds well for x in [0,5] and r in [0,0.2] see https://www.desmos.com/calculator/nbf3q1gikb
+
+        // BlockNumber is defined to be u32 in lib/src/primitives.rs, so no harm in using saturated_into
+        let time_elapsed = Perquintill::from_rational(
+            blocks.saturated_into::<u64>(),
+            BlocksPerYear::get().saturated_into::<u64>(),
+        );
+        let log_part = self.log_approx();
+        let first_term = log_part.saturating_mul(time_elapsed);
+        let second_term = first_term.saturating_mul(first_term).div(2);
+        let third_term = second_term.saturating_mul(first_term).div(3);
+        let fourth_term = third_term.saturating_mul(first_term).div(4);
+        let res_parts = first_term
+            .deconstruct()
+            .saturating_add(second_term.deconstruct())
+            .saturating_add(third_term.deconstruct())
+            .saturating_add(fourth_term.deconstruct());
+
+        // case : res > 100 %
+        if res_parts > <Perquintill as PerThing>::ACCURACY {
+            let integer_part = res_parts.div(<Perquintill as PerThing>::ACCURACY); // x-fold part
+            let float_part = res_parts.rem_euclid(integer_part); // in [0, ACCURACY)
+            (integer_part, Perquintill::from_parts(float_part))
+        } else {
+            (0u64, Perquintill::from_parts(res_parts))
+        }
+    }
+}
+
 impl Add for YearlyRate {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0.add(rhs.0))
     }
 }
+
 impl Zero for YearlyRate {
     fn is_zero(&self) -> bool {
         self.0.is_zero()
@@ -1372,10 +1424,15 @@ where
     }
 
     /// Computes supply inflation since last patronage event, used when updating patronage rate
-    pub(crate) fn unclaimed_patronage_at_block(&self, block: BlockNumber) -> Balance {
+    pub(crate) fn unclaimed_patronage_at_block<BlocksPerYear: Get<u32>>(
+        &self,
+        block: BlockNumber,
+    ) -> Balance {
         let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
-        let (integer_part, unclaimed_patronage_percent) =
-            self.patronage_info.rate.for_period(blocks);
+        let (integer_part, unclaimed_patronage_percent) = self
+            .patronage_info
+            .rate
+            .for_period::<_, BlocksPerYear>(blocks);
         let common_term = unclaimed_patronage_percent
             .mul_floor(self.total_supply)
             .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount);
@@ -1387,10 +1444,14 @@ where
         }
     }
 
-    pub fn set_new_patronage_rate_at_block(&mut self, new_rate: BlockRate, block: BlockNumber) {
+    pub fn set_new_patronage_rate_at_block<BlocksPerYear: Get<u32>>(
+        &mut self,
+        new_rate: YearlyRate,
+        block: BlockNumber,
+    ) {
         // update tally according to old rate
         self.patronage_info.unclaimed_patronage_tally_amount =
-            self.unclaimed_patronage_at_block(block);
+            self.unclaimed_patronage_at_block::<BlocksPerYear>(block);
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.rate = new_rate;
     }
@@ -1429,7 +1490,7 @@ where
             PatronageData::<<T as Config>::Balance, <T as frame_system::Config>::BlockNumber> {
                 last_unclaimed_patronage_tally_block: current_block,
                 unclaimed_patronage_tally_amount: <T as Config>::Balance::zero(),
-                rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
+                rate: params.patronage_rate,
             };
 
         let total_supply = params.initial_allocation.values().map(|v| v.amount).sum();
@@ -1534,50 +1595,6 @@ impl<MemberId: Ord, Payment, MaxOutputs: Get<u32>>
 {
     fn from(v: BoundedBTreeMap<MemberId, Payment, MaxOutputs>) -> Self {
         Self(v.into_inner())
-    }
-}
-
-/// Block Rate bare minimum impementation
-impl BlockRate {
-    pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
-        let max_accuracy: u64 = <Permill as PerThing>::ACCURACY.into();
-        BlockRate(Perquintill::from_rational(
-            r.0.deconstruct().into(),
-            max_accuracy.saturating_mul(blocks_per_year.into()),
-        ))
-    }
-
-    pub fn to_yearly_rate_representation(self, blocks_per_year: u32) -> Perquintill {
-        self.for_period(blocks_per_year).1
-    }
-
-    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> (u64, Perquintill)
-    where
-        BlockNumber: AtLeast32BitUnsigned + Clone,
-    {
-        // x = yearly_rate * (blocks) / blocks_per_year
-        // (1 + yearly_rate)^(blocks/blocks_per_year) - 1 ~= x + x^2/2 + x^3/6
-        let first_term =
-            Perquintill::from_parts(self.0.deconstruct().saturating_mul(blocks.saturated_into()));
-        let second_term = first_term.saturating_mul(first_term).div(2);
-        let third_term = second_term.saturating_mul(first_term).div(3);
-        let res = first_term
-            .deconstruct()
-            .saturating_add(second_term.deconstruct())
-            .saturating_add(third_term.deconstruct());
-
-        // case : res > 100 %
-        if res > <Perquintill as PerThing>::ACCURACY {
-            let integer_part = res.div(<Perquintill as PerThing>::ACCURACY);
-            let float_part = res.saturating_sub(integer_part);
-            (integer_part, Perquintill::from_parts(float_part))
-        } else {
-            (0u64, Perquintill::from_parts(res))
-        }
-    }
-
-    pub fn saturating_sub(self, other: Self) -> Self {
-        BlockRate(self.0.saturating_sub(other.0))
     }
 }
 

@@ -1,12 +1,13 @@
 #[cfg(test)]
 use frame_support::{assert_err, assert_ok};
-use sp_runtime::{traits::Zero, Permill, Perquintill};
+use sp_runtime::traits::Zero;
+use sp_runtime::SaturatedConversion;
 
 use crate::tests::fixtures::{ClaimPatronageCreditFixture, Fixture, IssueTokenFixture};
 use crate::tests::fixtures::{IssueRevenueSplitFixture, ReducePatronageRateToFixture};
 use crate::tests::mock::*;
-use crate::types::{BlockRate, YearlyRate};
-use crate::{balance, block, last_event_eq, yearly_rate, Error, RawEvent};
+use crate::types::YearlyRate;
+use crate::{assert_approx, balance, last_event_eq, Error, RawEvent};
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
@@ -28,24 +29,19 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 
 #[test]
 fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
-    // K = 1/blocks_per_years => floor(10% * 10 * K * 1bill) = floor(K * 2bill) = 380
-    let expected = balance!(190);
-
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
-            .with_supply(1_000_000u128.into())
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
             .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
-            .with_split_rate(DEFAULT_SPLIT_RATE)
             .execute_call()
             .unwrap();
 
         increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-        assert_eq!(
-            Token::token_info_by_id(DEFAULT_TOKEN_ID)
-                .unclaimed_patronage_at_block(System::block_number()),
-            expected,
-        );
+        let amnt = Token::token_info_by_id(DEFAULT_TOKEN_ID)
+            .unclaimed_patronage_at_block::<BlocksPerYear>(System::block_number());
+        println!("result: ({:?})", amnt);
+        assert_approx!(amnt, 18121u128,);
     })
 }
 
@@ -86,9 +82,6 @@ fn decrease_patronage_ok() {
 
 #[test]
 fn decrease_patronage_ok_with_tally_count_correctly_updated() {
-    // 10% * 100 = 10
-    let expected = balance!(10);
-
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
             .with_supply(100u64.into())
@@ -102,19 +95,17 @@ fn decrease_patronage_ok_with_tally_count_correctly_updated() {
             .execute_call()
             .unwrap();
 
-        assert_eq!(
+        assert_approx!(
             Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
-            expected
+            19013261179u128, // 10/5260000 * 1e7 = 19013261179 * 1e-18
         );
     })
 }
 
 #[test]
 fn decrease_patronage_ok_noop_with_current_patronage_rate_specified_as_target() {
-    let rate = BlockRate::from_yearly_rate(yearly_rate!(10), BlocksPerYear::get());
-
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
             .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
@@ -130,58 +121,7 @@ fn decrease_patronage_ok_noop_with_current_patronage_rate_specified_as_target() 
             Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .rate,
-            rate,
-        );
-    })
-}
-
-// for correct final rate approximation see next test
-#[test]
-fn decrease_patronage_ok_with_event_deposit() {
-    build_default_test_externalities().execute_with(|| {
-        IssueTokenFixture::default()
-            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
-            .execute_call()
-            .unwrap();
-
-        ReducePatronageRateToFixture::default()
-            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
-            .execute_call()
-            .unwrap();
-
-        let final_rate = Token::token_info_by_id(1u64)
-            .patronage_info
-            .rate
-            .to_yearly_rate_representation(BlocksPerYear::get());
-        last_event_eq!(RawEvent::PatronageRateDecreasedTo(
-            DEFAULT_TOKEN_ID,
-            final_rate
-        ));
-    })
-}
-
-#[test]
-fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
-    // K = 1/blocks_per_years => 10% * K ~= 19013261179 * 1e-18
-    let expected = BlockRate(Perquintill::from_parts(19013261179));
-    build_default_test_externalities().execute_with(|| {
-        IssueTokenFixture::default()
-            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
-            .execute_call()
-            .unwrap();
-
-        ReducePatronageRateToFixture::default()
-            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
-            .execute_call()
-            .unwrap();
-
-        assert_eq!(
-            Token::token_info_by_id(DEFAULT_TOKEN_ID)
-                .patronage_info
-                .rate
-                .0
-                .deconstruct(),
-            expected.0.deconstruct(),
+            YearlyRate::from(DEFAULT_YEARLY_PATRONAGE_RATE),
         );
     })
 }
@@ -200,11 +140,13 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
             .execute_call()
             .unwrap();
 
+        let tally_block = Token::token_info_by_id(DEFAULT_TOKEN_ID)
+            .patronage_info
+            .last_unclaimed_patronage_tally_block
+            .saturated_into::<u64>();
         assert_eq!(
-            block!(11), // starting block + blocks
-            Token::token_info_by_id(DEFAULT_TOKEN_ID)
-                .patronage_info
-                .last_unclaimed_patronage_tally_block
+            DEFAULT_BLOCK_INTERVAL + 1u64, // starting block + blocks
+            tally_block,
         )
     })
 }
@@ -258,9 +200,7 @@ fn claim_patronage_fails_with_active_revenue_split() {
 
         IssueRevenueSplitFixture::default().execute_call().unwrap(); // activate revenue split
         increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START - 1);
-        let result = ReducePatronageRateToFixture::default()
-            .with_token_id(DEFAULT_TOKEN_ID + 1u64)
-            .execute_call();
+        let result = ClaimPatronageCreditFixture::default().execute_call();
 
         // expect it to fail even though the staking period is not started yet
         assert_err!(
@@ -280,9 +220,7 @@ fn claim_patronage_ok() {
 
         increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-        let result = ReducePatronageRateToFixture::default()
-            .with_token_id(DEFAULT_TOKEN_ID + 1u64)
-            .execute_call();
+        let result = ReducePatronageRateToFixture::default().execute_call();
 
         assert_ok!(result);
     })
@@ -314,9 +252,6 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max() {
 
 #[test]
 fn claim_patronage_ok_with_event_deposit() {
-    // 10%(rate) * 10(blocks) * 100(supply)
-    let expected_credit = balance!(100);
-
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
             .with_supply(DEFAULT_INITIAL_ISSUANCE)
@@ -331,7 +266,7 @@ fn claim_patronage_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             DEFAULT_TOKEN_ID,
-            expected_credit,
+            18120u128.into(), // 100 billions * (1 + 10%/100%)^(10/5260000)
             DEFAULT_ISSUER_MEMBER_ID,
         ));
     })
@@ -339,8 +274,6 @@ fn claim_patronage_ok_with_event_deposit() {
 
 #[test]
 fn claim_patronage_ok_with_credit_accounting() {
-    // (rate * blocks)% * init_supply = 100
-    let expected_patronage_credit = balance!(100);
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
             .with_supply(DEFAULT_INITIAL_ISSUANCE)
@@ -354,10 +287,10 @@ fn claim_patronage_ok_with_credit_accounting() {
             .execute_call()
             .unwrap();
 
-        assert_eq!(
+        assert_approx!(
             Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
                 .transferrable::<Test>(System::block_number()),
-            expected_patronage_credit + DEFAULT_INITIAL_ISSUANCE,
+            Balance::from(18120u64) + DEFAULT_INITIAL_ISSUANCE,
         );
     })
 }
@@ -378,7 +311,7 @@ fn claim_patronage_ok_with_unclaimed_patronage_reset() {
             .unwrap();
 
         assert!(Token::token_info_by_id(DEFAULT_TOKEN_ID)
-            .unclaimed_patronage_at_block(System::block_number())
+            .unclaimed_patronage_at_block::<BlocksPerYear>(System::block_number())
             .is_zero());
     })
 }

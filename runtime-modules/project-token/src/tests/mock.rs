@@ -637,7 +637,7 @@ pub const DEFAULT_TOKEN_ID: u64 = 1;
 pub const DEFAULT_ISSUER_ACCOUNT_ID: u64 = 1001;
 pub const DEFAULT_ISSUER_MEMBER_ID: u64 = 1;
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
-pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
+pub const DEFAULT_INITIAL_ISSUANCE: u128 = 100_000_000_000;
 pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
 pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
 
@@ -685,6 +685,16 @@ macro_rules! merkle_root {
 macro_rules! merkle_proof {
     ($idx:expr,[$($vals:expr),*]) => {
         MerkleProofOf::<Test>::new(build_merkle_path_helper::<Test, _>(&vec![$($vals,)*], $idx as usize))
+    };
+}
+
+#[macro_export]
+#[cfg(feature = "std")]
+macro_rules! assert_approx {
+    ($value: expr, $target: expr,) => {
+        let abs_diff = $value.max($target).saturating_sub($value.min($target));
+        assert!(abs_diff < 1_000_000)
+        // accuracy up to 1 million HAPI accuracy -> .0001 $JOY
     };
 }
 

@@ -1053,22 +1053,20 @@ impl<T: Config>
     /// Reduce patronage rate by amount
     /// Preconditions:
     /// - token by `token_id` must exists
-    /// - `decrement` must be less or equal than current patronage rate for `token_id`
+    /// - `target_rate` must be less or equal than current patronage rate for `token_id`
     ///
     /// Postconditions:
-    /// - patronage rate for `token_id` reduced by `decrement`
+    /// - patronage rate for `token_id` reduced to `target_rate`
     /// - no-op if `target_rate` is equal to the current patronage rate
     fn reduce_patronage_rate_to(token_id: T::TokenId, target_rate: YearlyRate) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        let target_rate_per_block =
-            BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
 
-        if token_info.patronage_info.rate == target_rate_per_block {
+        if token_info.patronage_info.rate == target_rate {
             return Ok(());
         }
 
         ensure!(
-            token_info.patronage_info.rate > target_rate_per_block,
+            token_info.patronage_info.rate > target_rate,
             Error::<T>::TargetPatronageRateIsHigherThanCurrentRate,
         );
 
@@ -1076,16 +1074,10 @@ impl<T: Config>
 
         let now = Self::current_block();
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.set_new_patronage_rate_at_block(target_rate_per_block, now);
+            token_info.set_new_patronage_rate_at_block::<T::BlocksPerYear>(target_rate, now);
         });
 
-        let new_yearly_rate =
-            target_rate_per_block.to_yearly_rate_representation(T::BlocksPerYear::get());
-
-        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
-            token_id,
-            new_yearly_rate,
-        ));
+        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, target_rate));
 
         Ok(())
     }
@@ -1108,7 +1100,7 @@ impl<T: Config>
         Self::ensure_account_data_exists(token_id, &member_id).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage_at_block::<T::BlocksPerYear>(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());

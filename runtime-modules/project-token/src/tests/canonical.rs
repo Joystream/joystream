@@ -1,19 +1,18 @@
 #![cfg(test)]
 use frame_support::{assert_err, assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::{traits::Hash, Permill, Perquintill};
+use sp_runtime::{traits::Hash, Permill};
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
 use crate::traits::PalletToken;
 use crate::types::{
-    BlockRate, Joy, MerkleProofOf, PatronageData, RevenueSplitState, TokenAllocationOf,
+    Joy, MerkleProofOf, PatronageData, RevenueSplitState, TokenAllocationOf,
     TokenIssuanceParametersOf, VestingSource, YearlyRate,
 };
 use crate::{
-    account, assert_approx_eq, balance, block, joy, last_event_eq, member, merkle_proof,
-    merkle_root, origin, token, yearly_rate, Config, Error, RawEvent, RepayableBloatBond,
-    TokenDataOf,
+    account, balance, block, joy, last_event_eq, member, merkle_proof, merkle_root, origin, token,
+    yearly_rate, Config, Error, RawEvent, RepayableBloatBond, TokenDataOf,
 };
 use frame_support::traits::Currency;
 use sp_runtime::DispatchError;
@@ -1120,7 +1119,7 @@ fn issue_token_ok_with_token_info_added() {
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),
-                    rate: BlockRate::from_yearly_rate(patronage_rate, BlocksPerYear::get()),
+                    rate: DEFAULT_YEARLY_PATRONAGE_RATE.into(),
                 },
                 sale: None,
                 next_sale_id: 0,
@@ -1130,37 +1129,6 @@ fn issue_token_ok_with_token_info_added() {
                 amm_curve: None,
             }
         );
-    })
-}
-
-#[test]
-fn issue_token_ok_with_correct_patronage_rate_approximated() {
-    let token_id = token!(1);
-    let (owner_id, owner_acc) = member!(1);
-    let supply = balance!(100);
-
-    let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
-        transfer_policy: TransferPolicyParams::Permissionless,
-        revenue_split_rate: DEFAULT_SPLIT_RATE,
-        patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
-        ..Default::default()
-    }
-    .with_allocation(&owner_id, supply, None);
-
-    // rate = floor(.105 / blocks_per_year * 1e18) per quintill = 19963924238 per quintill
-    let expected = BlockRate(Perquintill::from_parts(19963924238));
-
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(owner_acc, params.clone(), default_upload_context());
-
-        let actual = <crate::TokenInfoById<Test>>::get(token_id)
-            .patronage_info
-            .rate;
-
-        assert_approx_eq!(actual.0.deconstruct(), expected.0.deconstruct(), 1u64);
     })
 }
 
