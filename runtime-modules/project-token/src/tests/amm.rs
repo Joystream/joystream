@@ -774,10 +774,14 @@ fn deactivate_fails_with_invalid_token_id() {
 fn deactivate_fails_with_too_much_amm_provided_supply_outstanding() {
     let amount = Permill::from_percent(10).mul_floor(DEFAULT_INITIAL_ISSUANCE);
     // give enough balance to bond amount
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(10_000_000_000));
+    let ((user_member_id, user_account_id), user_balance) =
+        (member!(2), joy!(10_000_000_000_000_000_000));
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
-            IssueTokenFixture::default().execute_call().unwrap();
+            IssueTokenFixture::default()
+                .with_supply(1_000u128)
+                .execute_call()
+                .unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
             AmmBuyFixture::default()
                 .with_amount(amount)

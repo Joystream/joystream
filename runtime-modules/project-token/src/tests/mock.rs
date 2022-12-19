@@ -15,8 +15,11 @@ use frame_support::{
 use frame_system::ensure_signed;
 use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
-use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
+use sp_runtime::{
+    testing::{Header, H256},
+    Perquintill,
+};
 use sp_runtime::{DispatchError, DispatchResult, PerThing, Permill};
 use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::{LockComparator, StakingHandler};
@@ -628,7 +631,7 @@ pub const DEFAULT_TOKEN_ID: u64 = 1;
 pub const DEFAULT_ISSUER_ACCOUNT_ID: u64 = 1001;
 pub const DEFAULT_ISSUER_MEMBER_ID: u64 = 1;
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
-pub const DEFAULT_INITIAL_ISSUANCE: u128 = 100_000_000_000;
+pub const DEFAULT_INITIAL_ISSUANCE: u128 = 100_000_000;
 pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
 pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
 
@@ -646,7 +649,7 @@ pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
 pub const DEFAULT_SPLIT_REVENUE: u128 = 1000;
 pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
-pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
+pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 10_000_000;
 pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * revenue * rate
 
 // ------ Bonding Curve Constants ------------
@@ -756,4 +759,9 @@ pub(crate) fn amm_function_values(
         AmmOperation::Buy => res + DEFAULT_AMM_BUY_FEES.mul_floor(res),
         AmmOperation::Sell => DEFAULT_AMM_SELL_FEES.left_from_one().mul_floor(res),
     }
+}
+
+// computes  supply * [(1 + 10%/100%)^(10/BlocksPerYear::get()) - 1]
+pub(crate) fn compute_correct_patronage_amount(supply: Balance) -> Balance {
+    Perquintill::from_parts(181215751000).mul_floor(supply)
 }

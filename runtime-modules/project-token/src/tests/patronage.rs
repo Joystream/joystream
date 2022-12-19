@@ -7,7 +7,7 @@ use crate::tests::fixtures::{ClaimPatronageCreditFixture, Fixture, IssueTokenFix
 use crate::tests::fixtures::{IssueRevenueSplitFixture, ReducePatronageRateToFixture};
 use crate::tests::mock::*;
 use crate::types::YearlyRate;
-use crate::{assert_approx, balance, last_event_eq, Error, RawEvent};
+use crate::{balance, last_event_eq, Error, RawEvent};
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
@@ -38,10 +38,11 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 
         increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
-        let amnt = Token::token_info_by_id(DEFAULT_TOKEN_ID)
-            .unclaimed_patronage_at_block::<BlocksPerYear>(System::block_number());
-        println!("result: ({:?})", amnt);
-        assert_approx!(amnt, 18121u128,);
+        assert_eq!(
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
+                .unclaimed_patronage_at_block::<BlocksPerYear>(System::block_number()),
+            compute_correct_patronage_amount(DEFAULT_INITIAL_ISSUANCE)
+        );
     })
 }
 
@@ -84,22 +85,22 @@ fn decrease_patronage_ok() {
 fn decrease_patronage_ok_with_tally_count_correctly_updated() {
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
-            .with_supply(100u64.into())
-            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
             .execute_call()
             .unwrap();
         increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
         ReducePatronageRateToFixture::default()
-            .with_target_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .with_target_rate(YearlyRate::zero())
             .execute_call()
             .unwrap();
 
-        assert_approx!(
+        assert_eq!(
             Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
-            19013261179u128, // 10/5260000 * 1e7 = 19013261179 * 1e-18
+            compute_correct_patronage_amount(DEFAULT_INITIAL_ISSUANCE)
         );
     })
 }
@@ -230,9 +231,10 @@ fn claim_patronage_ok() {
 
 #[test]
 fn claim_patronage_ok_with_supply_greater_than_u64_max() {
+    let big_supply = 1_000_000_000_000_000_000_000_000_000_000u128;
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
-            .with_supply(1_000_000_000_000_000_000_000_000_000_000u128.into())
+            .with_supply(big_supply)
             .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
             .execute_call()
             .unwrap();
@@ -242,11 +244,13 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max() {
             .execute_call()
             .unwrap();
 
-        assert_eq!(
-            Token::account_info_by_token_and_member(1u64, 1u64)
-                .transferrable::<Test>(System::block_number()),
-            balance!(1_010_000_000_000_000_000_000_000_000_000u128)
-        );
+        let approx =
+            Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
+                .transferrable::<Test>(System::block_number());
+        let target = 1000000181215750580000000000000;
+        let diff = approx.max(target) - approx.min(target);
+        assert!(diff < 1_000_000_000_000_000_000); // interest rate is approximated up to the 12th
+                                                   // decimal digits
     })
 }
 
@@ -266,7 +270,7 @@ fn claim_patronage_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             DEFAULT_TOKEN_ID,
-            18120u128.into(), // 100 billions * (1 + 10%/100%)^(10/5260000)
+            compute_correct_patronage_amount(DEFAULT_INITIAL_ISSUANCE),
             DEFAULT_ISSUER_MEMBER_ID,
         ));
     })
@@ -280,6 +284,9 @@ fn claim_patronage_ok_with_credit_accounting() {
             .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
             .execute_call()
             .unwrap();
+        let issuer_amount_pre =
+            Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
+                .transferrable::<Test>(System::block_number());
 
         increase_block_number_by(DEFAULT_BLOCK_INTERVAL);
 
@@ -287,10 +294,12 @@ fn claim_patronage_ok_with_credit_accounting() {
             .execute_call()
             .unwrap();
 
-        assert_approx!(
+        let issuer_amount_post =
             Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
-                .transferrable::<Test>(System::block_number()),
-            Balance::from(18120u64) + DEFAULT_INITIAL_ISSUANCE,
+                .transferrable::<Test>(System::block_number());
+        assert_eq!(
+            issuer_amount_post - issuer_amount_pre,
+            compute_correct_patronage_amount(issuer_amount_pre)
         );
     })
 }
