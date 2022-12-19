@@ -824,12 +824,24 @@ impl YearlyRate {
         let r2 = r.saturating_mul(r);
         let r3 = r2.saturating_mul(r);
         let r4 = r3.saturating_mul(r);
+        let r5 = r4.saturating_mul(r);
+        let r6 = r5.saturating_mul(r);
+        let r7 = r6.saturating_mul(r);
+        let r8 = r7.saturating_mul(r);
+        let r9 = r8.saturating_mul(r);
+        let r10 = r9.saturating_mul(r);
 
         // log(1 + r) ~= r - r^2/2 + r^3/3 - r^4/4
         let tmp = r
             .saturating_sub(r2.div(2))
             .saturating_add(r3.div(3))
-            .saturating_sub(r4.div(4));
+            .saturating_sub(r4.div(4))
+            .saturating_add(r5.div(5))
+            .saturating_sub(r6.div(6))
+            .saturating_add(r7.div(7))
+            .saturating_sub(r8.div(8))
+            .saturating_add(r9.div(9))
+            .saturating_sub(r10.div(10));
 
         Perquintill::from_parts((tmp.deconstruct() as u64).saturating_mul(1_000_000_000_000u64))
     }
@@ -848,15 +860,30 @@ impl YearlyRate {
             BlocksPerYear::get().saturated_into::<u64>(),
         );
         let log_part = self.log_approx();
-        let first_term = log_part.saturating_mul(time_elapsed);
-        let second_term = first_term.saturating_mul(first_term).div(2);
-        let third_term = second_term.saturating_mul(first_term).div(3);
-        let fourth_term = third_term.saturating_mul(first_term).div(4);
-        let res_parts = first_term
+
+        // terms in the approximation
+        let x1 = log_part.saturating_mul(time_elapsed);
+        let x2 = x1.saturating_mul(x1).div(2);
+        let x3 = x2.saturating_mul(x1).div(3);
+        let x4 = x3.saturating_mul(x1).div(4);
+        let x5 = x4.saturating_mul(x1).div(5);
+        let x6 = x5.saturating_mul(x1).div(6);
+        let x7 = x6.saturating_mul(x1).div(7);
+        let x8 = x7.saturating_mul(x1).div(8);
+        let x9 = x8.saturating_mul(x1).div(9);
+        let x10 = x9.saturating_mul(x1).div(10);
+
+        let res_parts = x1
             .deconstruct()
-            .saturating_add(second_term.deconstruct())
-            .saturating_add(third_term.deconstruct())
-            .saturating_add(fourth_term.deconstruct());
+            .saturating_add(x2.deconstruct())
+            .saturating_add(x3.deconstruct())
+            .saturating_add(x4.deconstruct())
+            .saturating_add(x5.deconstruct())
+            .saturating_add(x6.deconstruct())
+            .saturating_add(x7.deconstruct())
+            .saturating_add(x8.deconstruct())
+            .saturating_add(x9.deconstruct())
+            .saturating_add(x10.deconstruct());
 
         // case : res > 100 %
         if res_parts > <Perquintill as PerThing>::ACCURACY {

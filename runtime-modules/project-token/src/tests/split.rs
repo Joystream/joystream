@@ -337,7 +337,10 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
     )])
     .execute_with(|| {
         let treasury_account = Token::module_treasury_account();
-        IssueTokenFixture::default().execute_call().unwrap();
+        IssueTokenFixture::default()
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .execute_call()
+            .unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START);
