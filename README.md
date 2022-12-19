@@ -67,7 +67,7 @@ yarn start
 ```sh
 git checkout master
 WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
-./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-7-carthage.json
+./target/release/joystream-node -- --pruning archive --chain joy-mainnet.json
 ```
 
 Learn more about [joystream-node](bin/node/README.md).
