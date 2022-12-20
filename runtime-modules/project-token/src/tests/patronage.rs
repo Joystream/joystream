@@ -228,9 +228,44 @@ fn claim_patronage_ok() {
 }
 
 // TODO(mrbovo): allow for more than 100% claim over supply
+#[test]
+fn claim_patronage_ok_with_correct_credit_accounting_and_more_than_100_percent_supply() {
+    // [(1 + 10%/100%)^{(10*BlocksPerYear + 10)/BlocksPerYear} - 1] * supply
+    let expected_amount = (1.59374293008f64
+        * (DEFAULT_INITIAL_ISSUANCE).saturated_into::<u32>() as f64)
+        .trunc() as u128;
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .with_patronage_rate(DEFAULT_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+        let issuer_amount_pre =
+            Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
+                .transferrable::<Test>(System::block_number());
+
+        // advancing with increase_block_number_by would take too long...
+        System::set_block_number(
+            10 * BlocksPerYear::get().saturated_into::<u64>() + DEFAULT_BLOCK_INTERVAL + 1u64,
+        );
+
+        ClaimPatronageCreditFixture::default()
+            .execute_call()
+            .unwrap();
+
+        let issuer_amount_post =
+            Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
+                .transferrable::<Test>(System::block_number());
+        assert_eq!(issuer_amount_post - issuer_amount_pre, expected_amount);
+
+        ClaimPatronageCreditFixture::default()
+            .execute_call()
+            .unwrap();
+    })
+}
 
 #[test]
-fn claim_patronage_ok_with_supply_greater_than_u64_max() {
+fn claim_patronage_ok_with_supply_greater_than_u64_max_and_sufficient_precision() {
     let big_supply = 1_000_000_000_000_000_000_000_000_000_000u128;
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
@@ -247,10 +282,10 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max() {
         let approx =
             Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
                 .transferrable::<Test>(System::block_number());
-        let target = 1000000181215750580000000000000;
+        let target = 1000000181215750585898368181876;
         let diff = approx.max(target) - approx.min(target);
-        assert!(diff < 1_000_000_000_000_000_000); // interest rate is approximated up to the 12th
-                                                   // decimal digits
+        assert!(diff <= 1_000_000_000_000_000); // approximation works up to 15 dec places, ideally
+                                                // should be correct up to 18 decimal places
     })
 }
 
