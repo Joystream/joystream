@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
     traits::{CheckedAdd, CheckedMul, CheckedSub, Convert, Hash, UniqueSaturatedInto},
-    PerThing, Permill, Perquintill, SaturatedConversion,
+    Permill, Perquintill, SaturatedConversion,
 };
 use sp_std::{
     borrow::ToOwned,
@@ -819,80 +819,19 @@ impl From<Permill> for YearlyRate {
 }
 
 impl YearlyRate {
-    pub fn log_approx(&self) -> Perquintill {
-        let r = self.0;
-        let r2 = r.saturating_mul(r);
-        let r3 = r2.saturating_mul(r);
-        let r4 = r3.saturating_mul(r);
-        let r5 = r4.saturating_mul(r);
-        let r6 = r5.saturating_mul(r);
-        let r7 = r6.saturating_mul(r);
-        let r8 = r7.saturating_mul(r);
-        let r9 = r8.saturating_mul(r);
-        let r10 = r9.saturating_mul(r);
-
-        // log(1 + r) ~= r - r^2/2 + r^3/3 - r^4/4
-        let tmp = r
-            .saturating_sub(r2.div(2))
-            .saturating_add(r3.div(3))
-            .saturating_sub(r4.div(4))
-            .saturating_add(r5.div(5))
-            .saturating_sub(r6.div(6))
-            .saturating_add(r7.div(7))
-            .saturating_sub(r8.div(8))
-            .saturating_add(r9.div(9))
-            .saturating_sub(r10.div(10));
-
-        Perquintill::from_parts((tmp.deconstruct() as u64).saturating_mul(1_000_000_000_000u64))
-    }
-    pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> (u64, Perquintill)
+    pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> (u32, Perquintill)
     where
-        BlockNumber: AtLeast32BitUnsigned + Clone,
+        BlockNumber: AtLeast32BitUnsigned + Copy,
         BlocksPerYear: Get<u32>,
     {
-        // Approximation needed, since no f64::pow facilities provided
-        // (1 + r)^x - 1 ~= xln(r + 1) + 1/2 x^2 ln^2(r + 1) + 1/6 x^3 log^3(r + 1) + 1/24 x^4 log^4(r + 1)
-        // this approximation holds well for x in [0,5] and r in [0,0.2] see https://www.desmos.com/calculator/nbf3q1gikb
+        let rate = f64::from(self.0.deconstruct()).div(f64::from(1_000_000u32));
+        // let log_part = (1f64 + rate).ln();
+        let time = f64::from(blocks.saturated_into::<u32>()).div(f64::from(BlocksPerYear::get()));
+        let result_float = (1f64 + rate).powf(time) - 1f64;
 
-        // BlockNumber is defined to be u32 in lib/src/primitives.rs, so no harm in using saturated_into
-        let time_elapsed = Perquintill::from_rational(
-            blocks.saturated_into::<u64>(),
-            BlocksPerYear::get().saturated_into::<u64>(),
-        );
-        let log_part = self.log_approx();
-
-        // terms in the approximation
-        let x1 = log_part.saturating_mul(time_elapsed);
-        let x2 = x1.saturating_mul(x1).div(2);
-        let x3 = x2.saturating_mul(x1).div(3);
-        let x4 = x3.saturating_mul(x1).div(4);
-        let x5 = x4.saturating_mul(x1).div(5);
-        let x6 = x5.saturating_mul(x1).div(6);
-        let x7 = x6.saturating_mul(x1).div(7);
-        let x8 = x7.saturating_mul(x1).div(8);
-        let x9 = x8.saturating_mul(x1).div(9);
-        let x10 = x9.saturating_mul(x1).div(10);
-
-        let res_parts = x1
-            .deconstruct()
-            .saturating_add(x2.deconstruct())
-            .saturating_add(x3.deconstruct())
-            .saturating_add(x4.deconstruct())
-            .saturating_add(x5.deconstruct())
-            .saturating_add(x6.deconstruct())
-            .saturating_add(x7.deconstruct())
-            .saturating_add(x8.deconstruct())
-            .saturating_add(x9.deconstruct())
-            .saturating_add(x10.deconstruct());
-
-        // case : res > 100 %
-        if res_parts > <Perquintill as PerThing>::ACCURACY {
-            let integer_part = res_parts.div(<Perquintill as PerThing>::ACCURACY); // x-fold part
-            let float_part = res_parts.rem_euclid(integer_part); // in [0, ACCURACY)
-            (integer_part, Perquintill::from_parts(float_part))
-        } else {
-            (0u64, Perquintill::from_parts(res_parts))
-        }
+        let integer_part = result_float.trunc() as u32;
+        let fract_part = result_float.fract();
+        (integer_part, Perquintill::from_float(fract_part))
     }
 }
 
@@ -1456,15 +1395,17 @@ where
         block: BlockNumber,
     ) -> Balance {
         let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
-        let (integer_part, unclaimed_patronage_percent) = self
+        let (integer_part, percent_part) = self
             .patronage_info
             .rate
             .for_period::<_, BlocksPerYear>(blocks);
-        let common_term = unclaimed_patronage_percent
+        let common_term = percent_part
             .mul_floor(self.total_supply)
             .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount);
         if !integer_part.is_zero() {
-            let integer_part_term = self.total_supply.saturating_mul(integer_part.into());
+            let integer_part_term = self
+                .total_supply
+                .saturating_mul(integer_part.saturated_into::<u64>().into());
             integer_part_term.saturating_add(common_term)
         } else {
             common_term
