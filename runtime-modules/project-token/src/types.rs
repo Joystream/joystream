@@ -803,6 +803,8 @@ impl From<Permill> for YearlyRate {
 }
 
 impl YearlyRate {
+    // computes the interest rate in a (X-fold, percent) format,
+    // so that patronage amount = supply * X + percent.mul_floor(supply)
     pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> (u32, Perquintill)
     where
         BlockNumber: AtLeast32BitUnsigned + Copy,
