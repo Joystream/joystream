@@ -171,8 +171,6 @@ export type App = BaseGraphQlObject & {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
-  channel: Channel
-  channelId: Scalars['String']
 }
 
 export type AppConnection = {
@@ -196,7 +194,6 @@ export type AppCreateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
-  channel: Scalars['ID']
 }
 
 export type AppEdge = {
@@ -237,8 +234,6 @@ export enum AppOrderByInput {
   CategoryDesc = 'category_DESC',
   AuthKeyAsc = 'authKey_ASC',
   AuthKeyDesc = 'authKey_DESC',
-  ChannelAsc = 'channel_ASC',
-  ChannelDesc = 'channel_DESC',
 }
 
 export type AppUpdateInput = {
@@ -256,7 +251,6 @@ export type AppUpdateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
-  channel?: Maybe<Scalars['ID']>
 }
 
 export type AppWhereInput = {
@@ -344,7 +338,6 @@ export type AppWhereInput = {
   authKey_in?: Maybe<Array<Scalars['String']>>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
-  channel?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<AppWhereInput>>
   OR?: Maybe<Array<AppWhereInput>>
   NOT?: Maybe<Array<AppWhereInput>>

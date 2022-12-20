@@ -1,19 +1,18 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { CreateApp, ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
-import { ChannelId } from '@joystream/types/primitives'
-import { logger } from '@joystream/warthog'
-import { Channel, App } from 'query-node/dist/model'
-import { inconsistentState } from '../common'
+import { MemberId } from '@joystream/types/primitives'
+import { App } from 'query-node/dist/model'
+import { logger } from '../common'
 
 export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  channelId: ChannelId,
+  memberId: MemberId,
   message: ICreateApp
 ): Promise<void> {
   const { name, appMetadata } = message
-  const appId = await createAppId(event)
+  const appId = await getAppId(store, event)
 
   const isAppExists = await store.get(App, {
     where: {
@@ -22,17 +21,8 @@ export async function processCreateAppMessage(
   })
 
   if (isAppExists) {
-    inconsistentState(`App with this name already exists:`, name)
-  }
-
-  // load channel
-  const channel = await store.get(Channel, {
-    where: { id: channelId.toString() },
-  })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel update requested', channelId)
+    logger.error('App already exists', { name })
+    return
   }
 
   const newApp = new App({
@@ -49,32 +39,24 @@ export async function processCreateAppMessage(
     platforms: appMetadata?.platforms || undefined,
     category: appMetadata?.category || undefined,
     authKey: appMetadata?.authKey || undefined,
-    ownerCuratorGroup: channel.ownerCuratorGroup,
-    ownerMember: channel.ownerMember,
-    channel,
   })
-  await store.save<App>(newApp)
+  await store.save<CreateApp>(newApp)
   logger.info('App has been created', { name })
 }
 
-async function createAppId(event: SubstrateEvent): Promise<string> {
-  return `${event.blockNumber}-${event.indexInBlock}`
-}
-
-export async function processUpdateApp(
+export async function processUpdateAppMessage(
   store: DatabaseManager,
-  channelId: ChannelId,
+  event: SubstrateEvent,
+  memberId: MemberId,
   message: IUpdateApp
 ): Promise<void> {
   const { appId, appMetadata } = message
 
-  const app = await getAppById(store, appId)
+  const app = await getAppByIdAndMemberId(store, appId, memberId)
 
   if (!app) {
-    inconsistentState("App doesn't exists; appId:", appId)
-  }
-  if (app?.channel.id !== channelId.toString()) {
-    inconsistentState(`Cannot update app; app does not belong to the channelId: `, channelId)
+    logger.error("App doesn't exists or doesn't belong to the member", { appId, memberId: memberId.toString() })
+    return
   }
 
   if (appMetadata) {
@@ -97,12 +79,49 @@ export async function processUpdateApp(
   logger.info('App has been updated', { appId })
 }
 
-async function getAppById(store: DatabaseManager, appId: string): Promise<App | undefined> {
+export async function processDeleteAppMessage(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  memberId: MemberId,
+  message: IDeleteApp
+): Promise<void> {
+  const { appId } = message
+
+  const app = await getAppByIdAndMemberId(store, appId, memberId)
+
+  if (!app) {
+    logger.error("App doesn't exists or doesn't belong to the member", { appId, memberId: memberId.toString() })
+    return
+  }
+
+  await store.remove<App>(new App({ id: appId }))
+  logger.info('App has been removed', { appId })
+}
+
+async function getAppId(store: DatabaseManager, event: SubstrateEvent): Promise<string> {
+  let appId = `${event.blockNumber}-${event.indexInBlock}`
+  let tries = 0
+
+  // make sure app id is unique
+  while (await store.get<App>(App, { where: { id: appId } })) {
+    tries++
+    appId = `${event.blockNumber}-${event.indexInBlock}-${tries}`
+  }
+
+  return appId
+}
+
+async function getAppByIdAndMemberId(
+  store: DatabaseManager,
+  appId: string,
+  memberId: MemberId
+): Promise<App | undefined> {
   const app = await store.get(App, {
     where: {
       id: appId,
+      createdById: memberId.toString(),
     },
-    relations: ['channel'],
   })
+
   return app
 }

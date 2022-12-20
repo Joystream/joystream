@@ -1,0 +1,23 @@
+type App @entity {
+  id: ID!
+  name: String!
+
+  # Url where user can read more about the project or company for this app
+  websiteUrl: String
+  # Url to the app
+  useUri: String
+  # what should I to do with icons?
+  smallIcon: String
+  mediumIcon: String
+  bigIcon: String
+
+  oneLiner: String
+  description: String
+  termsOfService: String
+
+  # List of platforms on which the app will be available, e.g. [mobile, web, native]
+  platforms: [String]
+  category: String
+
+  authKey: String
+}

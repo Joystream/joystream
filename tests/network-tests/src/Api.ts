@@ -62,10 +62,10 @@ import {
 } from './consts'
 
 import {
-  ChannelOwnerRemarked,
+  CreateApp,
   CreateVideoCategory,
+  DeleteApp,
   IAppMetadata,
-  IChannelOwnerRemarked,
   MemberRemarked,
   UpdateApp,
 } from '@joystream/metadata-protobuf'
@@ -805,42 +805,32 @@ export class Api {
     return event.data[2]
   }
 
-  async createApp(
-    memberId: u64,
-    channelId: number,
-    name: string,
-    appMetadata?: IAppMetadata
-  ): Promise<ISubmittableResult> {
+  async createApp(memberId: u64, name: string, appMetadata?: IAppMetadata): Promise<ISubmittableResult> {
     const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
     if (!memberAccount) {
       throw new Error('invalid member id')
     }
 
-    const msg: IChannelOwnerRemarked = {
-      createApp: {
+    const meta = new MemberRemarked({
+      createApp: new CreateApp({
         name,
         appMetadata,
-      },
-    }
+      }),
+    })
 
     return this.sender.signAndSend(
-      this.api.tx.content.channelOwnerRemark(channelId, Utils.metadataToBytes(ChannelOwnerRemarked, msg)),
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
       memberAccount.toString()
     )
   }
 
-  async updateApp(
-    memberId: u64,
-    channelId: number,
-    appId: string,
-    appMetadata: IAppMetadata
-  ): Promise<ISubmittableResult> {
+  async updateApp(memberId: u64, appId: string, appMetadata: IAppMetadata): Promise<ISubmittableResult> {
     const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
     if (!memberAccount) {
       throw new Error('invalid member id')
     }
 
-    const meta = new ChannelOwnerRemarked({
+    const meta = new MemberRemarked({
       updateApp: new UpdateApp({
         appId,
         appMetadata,
@@ -848,7 +838,25 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      this.api.tx.content.channelOwnerRemark(channelId, Utils.metadataToBytes(ChannelOwnerRemarked, meta)),
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      memberAccount.toString()
+    )
+  }
+
+  async deleteApp(memberId: u64, appId: string): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const meta = new MemberRemarked({
+      deleteApp: new DeleteApp({
+        appId,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
       memberAccount.toString()
     )
   }
