@@ -819,21 +819,23 @@ impl From<Permill> for YearlyRate {
 }
 
 impl YearlyRate {
-    // computes the interest rate in a (X-fold, percent) format,
-    // so that patronage amount = supply * X + percent.mul_floor(supply)
+    // the maximum decimal precision allowed is 15,16 decimal places
+    // see (https://stackoverflow.com/questions/65719216/why-does-rust-only-use-16-significant-digits-for-f64-equality-checks)
+    // practically speaking issuer will get 1 HAPI fluctuation in a 100k JOY claim
     pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> (u32, Perquintill)
     where
         BlockNumber: AtLeast32BitUnsigned + Copy,
         BlocksPerYear: Get<u32>,
     {
         let rate = f64::from(self.0.deconstruct()).div(f64::from(1_000_000u32));
-        // let log_part = (1f64 + rate).ln();
         let time = f64::from(blocks.saturated_into::<u32>()).div(f64::from(BlocksPerYear::get()));
         let result_float = (1f64 + rate).powf(time) - 1f64;
 
         let integer_part = result_float.trunc() as u32;
-        let fract_part = result_float.fract();
-        (integer_part, Perquintill::from_float(fract_part))
+        // f64 allows up for 15/16 decimal precision, so converting into Perquintill (18 decimals
+        // representation) shouldn't yield any loss in precision
+        let fract_part = Perquintill::from_float(result_float.fract());
+        (integer_part, fract_part)
     }
 }
 

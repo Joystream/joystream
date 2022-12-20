@@ -284,8 +284,7 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max_and_sufficient_precision(
                 .transferrable::<Test>(System::block_number());
         let target = 1000000181215750585898368181876;
         let diff = approx.max(target) - approx.min(target);
-        assert!(diff <= 1_000_000_000_000_000); // approximation works up to 15 dec places, ideally
-                                                // should be correct up to 18 decimal places
+        assert!(diff <= 1_000_000_000_000); // approximation works up to 15 dec places -> OK
     })
 }
 
