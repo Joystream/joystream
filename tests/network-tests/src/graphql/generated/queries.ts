@@ -1,6 +1,33 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type AppFieldsFragment = {
+  id: string
+  name: string
+  websiteUrl?: Types.Maybe<string>
+  useUrI?: Types.Maybe<string>
+  smallIcon?: Types.Maybe<string>
+  mediumIcon?: Types.Maybe<string>
+  bigIcon?: Types.Maybe<string>
+  oneLiner?: Types.Maybe<string>
+  description?: Types.Maybe<string>
+  termsOfService?: Types.Maybe<string>
+  platforms?: Types.Maybe<Array<string>>
+  category?: Types.Maybe<string>
+}
+
+export type GetAppByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<AppFieldsFragment> }
+
+export type GetAppsByNameQueryVariables = Types.Exact<{
+  name: Types.Scalars['String']
+}>
+
+export type GetAppsByNameQuery = { apps: Array<AppFieldsFragment> }
+
 type DataObjectTypeFields_DataObjectTypeChannelAvatar_Fragment = {
   __typename: 'DataObjectTypeChannelAvatar'
   channel?: Types.Maybe<{ id: string }>
@@ -2588,6 +2615,22 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export const AppFields = gql`
+  fragment AppFields on App {
+    id
+    name
+    websiteUrl
+    useUrI
+    smallIcon
+    mediumIcon
+    bigIcon
+    oneLiner
+    description
+    termsOfService
+    platforms
+    category
+  }
+`
 export const DataObjectTypeFields = gql`
   fragment DataObjectTypeFields on DataObjectType {
     __typename
@@ -5001,6 +5044,22 @@ export const BudgetSpendingEventFields = gql`
     amount
     rationale
   }
+`
+export const GetAppById = gql`
+  query getAppById($id: ID!) {
+    appByUniqueInput(where: { id: $id }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
+`
+export const GetAppsByName = gql`
+  query getAppsByName($name: String!) {
+    apps(where: { name_eq: $name }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
 `
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {

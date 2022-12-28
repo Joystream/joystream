@@ -443,6 +443,13 @@ import {
   GetStorageNodesInfoByBagIdQueryVariables,
   GetStorageNodesInfoByBagId,
   GetChannelRewardClaimedEventsByEventIds,
+  GetAppByIdQuery,
+  GetAppByIdQueryVariables,
+  GetAppById,
+  AppFieldsFragment,
+  GetAppsByNameQuery,
+  GetAppsByNameQueryVariables,
+  GetAppsByName,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1526,5 +1533,13 @@ export class QueryNodeApi {
       GetChannelFundsWithdrawnEventsByEventIdsQuery,
       GetChannelFundsWithdrawnEventsByEventIdsQueryVariables
     >(GetChannelFundsWithdrawnEventsByEventIds, { eventIds }, 'channelFundsWithdrawnEvents')
+  }
+
+  public async getAppById(id: string): Promise<AppFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetAppByIdQuery, GetAppByIdQueryVariables>(GetAppById, { id }, 'appByUniqueInput')
+  }
+
+  public async getAppsByName(name: string): Promise<AppFieldsFragment[] | null> {
+    return this.multipleEntitiesQuery<GetAppsByNameQuery, GetAppsByNameQueryVariables>(GetAppsByName, { name }, 'apps')
   }
 }
