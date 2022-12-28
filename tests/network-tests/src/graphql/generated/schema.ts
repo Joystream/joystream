@@ -141,6 +141,183 @@ export type AnnouncingPeriodStartedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type App = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  name: Scalars['String']
+  websiteUrl?: Maybe<Scalars['String']>
+  useUrI?: Maybe<Scalars['String']>
+  smallIcon?: Maybe<Scalars['String']>
+  mediumIcon?: Maybe<Scalars['String']>
+  bigIcon?: Maybe<Scalars['String']>
+  oneLiner?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  termsOfService?: Maybe<Scalars['String']>
+  platforms?: Maybe<Array<Scalars['String']>>
+  category?: Maybe<Scalars['String']>
+}
+
+export type AppConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<AppEdge>
+  pageInfo: PageInfo
+}
+
+export type AppCreateInput = {
+  name: Scalars['String']
+  websiteUrl?: Maybe<Scalars['String']>
+  useUrI?: Maybe<Scalars['String']>
+  smallIcon?: Maybe<Scalars['String']>
+  mediumIcon?: Maybe<Scalars['String']>
+  bigIcon?: Maybe<Scalars['String']>
+  oneLiner?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  termsOfService?: Maybe<Scalars['String']>
+  platforms?: Maybe<Array<Scalars['String']>>
+  category?: Maybe<Scalars['String']>
+}
+
+export type AppEdge = {
+  node: App
+  cursor: Scalars['String']
+}
+
+export enum AppOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  NameAsc = 'name_ASC',
+  NameDesc = 'name_DESC',
+  WebsiteUrlAsc = 'websiteUrl_ASC',
+  WebsiteUrlDesc = 'websiteUrl_DESC',
+  UseUrIAsc = 'useUrI_ASC',
+  UseUrIDesc = 'useUrI_DESC',
+  SmallIconAsc = 'smallIcon_ASC',
+  SmallIconDesc = 'smallIcon_DESC',
+  MediumIconAsc = 'mediumIcon_ASC',
+  MediumIconDesc = 'mediumIcon_DESC',
+  BigIconAsc = 'bigIcon_ASC',
+  BigIconDesc = 'bigIcon_DESC',
+  OneLinerAsc = 'oneLiner_ASC',
+  OneLinerDesc = 'oneLiner_DESC',
+  DescriptionAsc = 'description_ASC',
+  DescriptionDesc = 'description_DESC',
+  TermsOfServiceAsc = 'termsOfService_ASC',
+  TermsOfServiceDesc = 'termsOfService_DESC',
+  CategoryAsc = 'category_ASC',
+  CategoryDesc = 'category_DESC',
+}
+
+export type AppUpdateInput = {
+  name?: Maybe<Scalars['String']>
+  websiteUrl?: Maybe<Scalars['String']>
+  useUrI?: Maybe<Scalars['String']>
+  smallIcon?: Maybe<Scalars['String']>
+  mediumIcon?: Maybe<Scalars['String']>
+  bigIcon?: Maybe<Scalars['String']>
+  oneLiner?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  termsOfService?: Maybe<Scalars['String']>
+  platforms?: Maybe<Array<Scalars['String']>>
+  category?: Maybe<Scalars['String']>
+}
+
+export type AppWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  name_eq?: Maybe<Scalars['String']>
+  name_contains?: Maybe<Scalars['String']>
+  name_startsWith?: Maybe<Scalars['String']>
+  name_endsWith?: Maybe<Scalars['String']>
+  name_in?: Maybe<Array<Scalars['String']>>
+  websiteUrl_eq?: Maybe<Scalars['String']>
+  websiteUrl_contains?: Maybe<Scalars['String']>
+  websiteUrl_startsWith?: Maybe<Scalars['String']>
+  websiteUrl_endsWith?: Maybe<Scalars['String']>
+  websiteUrl_in?: Maybe<Array<Scalars['String']>>
+  useUrI_eq?: Maybe<Scalars['String']>
+  useUrI_contains?: Maybe<Scalars['String']>
+  useUrI_startsWith?: Maybe<Scalars['String']>
+  useUrI_endsWith?: Maybe<Scalars['String']>
+  useUrI_in?: Maybe<Array<Scalars['String']>>
+  smallIcon_eq?: Maybe<Scalars['String']>
+  smallIcon_contains?: Maybe<Scalars['String']>
+  smallIcon_startsWith?: Maybe<Scalars['String']>
+  smallIcon_endsWith?: Maybe<Scalars['String']>
+  smallIcon_in?: Maybe<Array<Scalars['String']>>
+  mediumIcon_eq?: Maybe<Scalars['String']>
+  mediumIcon_contains?: Maybe<Scalars['String']>
+  mediumIcon_startsWith?: Maybe<Scalars['String']>
+  mediumIcon_endsWith?: Maybe<Scalars['String']>
+  mediumIcon_in?: Maybe<Array<Scalars['String']>>
+  bigIcon_eq?: Maybe<Scalars['String']>
+  bigIcon_contains?: Maybe<Scalars['String']>
+  bigIcon_startsWith?: Maybe<Scalars['String']>
+  bigIcon_endsWith?: Maybe<Scalars['String']>
+  bigIcon_in?: Maybe<Array<Scalars['String']>>
+  oneLiner_eq?: Maybe<Scalars['String']>
+  oneLiner_contains?: Maybe<Scalars['String']>
+  oneLiner_startsWith?: Maybe<Scalars['String']>
+  oneLiner_endsWith?: Maybe<Scalars['String']>
+  oneLiner_in?: Maybe<Array<Scalars['String']>>
+  description_eq?: Maybe<Scalars['String']>
+  description_contains?: Maybe<Scalars['String']>
+  description_startsWith?: Maybe<Scalars['String']>
+  description_endsWith?: Maybe<Scalars['String']>
+  description_in?: Maybe<Array<Scalars['String']>>
+  termsOfService_eq?: Maybe<Scalars['String']>
+  termsOfService_contains?: Maybe<Scalars['String']>
+  termsOfService_startsWith?: Maybe<Scalars['String']>
+  termsOfService_endsWith?: Maybe<Scalars['String']>
+  termsOfService_in?: Maybe<Array<Scalars['String']>>
+  platforms_containsAll?: Maybe<Array<Scalars['String']>>
+  platforms_containsNone?: Maybe<Array<Scalars['String']>>
+  platforms_containsAny?: Maybe<Array<Scalars['String']>>
+  category_eq?: Maybe<Scalars['String']>
+  category_contains?: Maybe<Scalars['String']>
+  category_startsWith?: Maybe<Scalars['String']>
+  category_endsWith?: Maybe<Scalars['String']>
+  category_in?: Maybe<Array<Scalars['String']>>
+  AND?: Maybe<Array<AppWhereInput>>
+  OR?: Maybe<Array<AppWhereInput>>
+  NOT?: Maybe<Array<AppWhereInput>>
+}
+
+export type AppWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type ApplicationFormQuestion = BaseGraphQlObject & {
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
@@ -20370,6 +20547,9 @@ export type Query = {
   announcingPeriodStartedEvents: Array<AnnouncingPeriodStartedEvent>
   announcingPeriodStartedEventByUniqueInput?: Maybe<AnnouncingPeriodStartedEvent>
   announcingPeriodStartedEventsConnection: AnnouncingPeriodStartedEventConnection
+  apps: Array<App>
+  appByUniqueInput?: Maybe<App>
+  appsConnection: AppConnection
   applicationFormQuestionAnswers: Array<ApplicationFormQuestionAnswer>
   applicationFormQuestionAnswerByUniqueInput?: Maybe<ApplicationFormQuestionAnswer>
   applicationFormQuestionAnswersConnection: ApplicationFormQuestionAnswerConnection
@@ -21007,6 +21187,26 @@ export type QueryAnnouncingPeriodStartedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<AnnouncingPeriodStartedEventWhereInput>
   orderBy?: Maybe<Array<AnnouncingPeriodStartedEventOrderByInput>>
+}
+
+export type QueryAppsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<AppWhereInput>
+  orderBy?: Maybe<Array<AppOrderByInput>>
+}
+
+export type QueryAppByUniqueInputArgs = {
+  where: AppWhereUniqueInput
+}
+
+export type QueryAppsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<AppWhereInput>
+  orderBy?: Maybe<Array<AppOrderByInput>>
 }
 
 export type QueryApplicationFormQuestionAnswersArgs = {
