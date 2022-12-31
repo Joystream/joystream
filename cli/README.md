@@ -22,7 +22,7 @@ Command Line Interface for Joystream community and governance activities
 <!-- usage -->
 
 ```sh-session
-$ npm install -g @joystream/cli
+$ npm install @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
