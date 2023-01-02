@@ -67,6 +67,7 @@ import {
 } from './content'
 import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
 
 async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations })
@@ -672,6 +673,24 @@ async function processMemberRemark(
     const videoCategory = await createVideoCategory(store, event, createParams)
 
     return { videoCategoryCreatedId: videoCategory.id }
+  }
+
+  if (messageType === 'createApp') {
+    await processCreateAppMessage(store, event, memberId, decodedMessage.createApp!)
+
+    return {}
+  }
+
+  if (messageType === 'updateApp') {
+    await processUpdateAppMessage(store, event, memberId, decodedMessage.updateApp!)
+
+    return {}
+  }
+
+  if (messageType === 'deleteApp') {
+    await processDeleteAppMessage(store, event, memberId, decodedMessage.deleteApp!)
+
+    return {}
   }
 
   // unknown message type
