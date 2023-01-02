@@ -61,7 +61,14 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
+import {
+  CreateApp,
+  CreateVideoCategory,
+  DeleteApp,
+  IAppMetadata,
+  MemberRemarked,
+  UpdateApp,
+} from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -796,6 +803,62 @@ export class Api {
 
     const event = this.getEvent(result.events, 'content', 'VideoCreated')
     return event.data[2]
+  }
+
+  async createApp(memberId: u64, name: string, appMetadata?: IAppMetadata): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const meta = new MemberRemarked({
+      createApp: new CreateApp({
+        name,
+        appMetadata,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      memberAccount.toString()
+    )
+  }
+
+  async updateApp(memberId: u64, appId: string, appMetadata: IAppMetadata): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const meta = new MemberRemarked({
+      updateApp: new UpdateApp({
+        appId,
+        appMetadata,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      memberAccount.toString()
+    )
+  }
+
+  async deleteApp(memberId: u64, appId: string): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const meta = new MemberRemarked({
+      deleteApp: new DeleteApp({
+        appId,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      memberAccount.toString()
+    )
   }
 
   async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {
