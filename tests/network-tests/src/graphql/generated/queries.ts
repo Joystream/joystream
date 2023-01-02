@@ -5,13 +5,14 @@ export type AppFieldsFragment = {
   id: string
   name: string
   websiteUrl?: Types.Maybe<string>
-  useUrI?: Types.Maybe<string>
+  useUri?: Types.Maybe<string>
   smallIcon?: Types.Maybe<string>
   mediumIcon?: Types.Maybe<string>
   bigIcon?: Types.Maybe<string>
   oneLiner?: Types.Maybe<string>
   description?: Types.Maybe<string>
   termsOfService?: Types.Maybe<string>
+  authKey?: Types.Maybe<string>
   platforms?: Types.Maybe<Array<string>>
   category?: Types.Maybe<string>
 }
@@ -2523,13 +2524,14 @@ export const AppFields = gql`
     id
     name
     websiteUrl
-    useUrI
+    useUri
     smallIcon
     mediumIcon
     bigIcon
     oneLiner
     description
     termsOfService
+    authKey
     platforms
     category
   }

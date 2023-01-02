@@ -152,7 +152,7 @@ export type App = BaseGraphQlObject & {
   version: Scalars['Int']
   name: Scalars['String']
   websiteUrl?: Maybe<Scalars['String']>
-  useUrI?: Maybe<Scalars['String']>
+  useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
   mediumIcon?: Maybe<Scalars['String']>
   bigIcon?: Maybe<Scalars['String']>
@@ -161,6 +161,7 @@ export type App = BaseGraphQlObject & {
   termsOfService?: Maybe<Scalars['String']>
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
+  authKey?: Maybe<Scalars['String']>
 }
 
 export type AppConnection = {
@@ -172,7 +173,7 @@ export type AppConnection = {
 export type AppCreateInput = {
   name: Scalars['String']
   websiteUrl?: Maybe<Scalars['String']>
-  useUrI?: Maybe<Scalars['String']>
+  useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
   mediumIcon?: Maybe<Scalars['String']>
   bigIcon?: Maybe<Scalars['String']>
@@ -181,6 +182,7 @@ export type AppCreateInput = {
   termsOfService?: Maybe<Scalars['String']>
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
+  authKey?: Maybe<Scalars['String']>
 }
 
 export type AppEdge = {
@@ -199,8 +201,8 @@ export enum AppOrderByInput {
   NameDesc = 'name_DESC',
   WebsiteUrlAsc = 'websiteUrl_ASC',
   WebsiteUrlDesc = 'websiteUrl_DESC',
-  UseUrIAsc = 'useUrI_ASC',
-  UseUrIDesc = 'useUrI_DESC',
+  UseUriAsc = 'useUri_ASC',
+  UseUriDesc = 'useUri_DESC',
   SmallIconAsc = 'smallIcon_ASC',
   SmallIconDesc = 'smallIcon_DESC',
   MediumIconAsc = 'mediumIcon_ASC',
@@ -215,12 +217,14 @@ export enum AppOrderByInput {
   TermsOfServiceDesc = 'termsOfService_DESC',
   CategoryAsc = 'category_ASC',
   CategoryDesc = 'category_DESC',
+  AuthKeyAsc = 'authKey_ASC',
+  AuthKeyDesc = 'authKey_DESC',
 }
 
 export type AppUpdateInput = {
   name?: Maybe<Scalars['String']>
   websiteUrl?: Maybe<Scalars['String']>
-  useUrI?: Maybe<Scalars['String']>
+  useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
   mediumIcon?: Maybe<Scalars['String']>
   bigIcon?: Maybe<Scalars['String']>
@@ -229,6 +233,7 @@ export type AppUpdateInput = {
   termsOfService?: Maybe<Scalars['String']>
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
+  authKey?: Maybe<Scalars['String']>
 }
 
 export type AppWhereInput = {
@@ -266,11 +271,11 @@ export type AppWhereInput = {
   websiteUrl_startsWith?: Maybe<Scalars['String']>
   websiteUrl_endsWith?: Maybe<Scalars['String']>
   websiteUrl_in?: Maybe<Array<Scalars['String']>>
-  useUrI_eq?: Maybe<Scalars['String']>
-  useUrI_contains?: Maybe<Scalars['String']>
-  useUrI_startsWith?: Maybe<Scalars['String']>
-  useUrI_endsWith?: Maybe<Scalars['String']>
-  useUrI_in?: Maybe<Array<Scalars['String']>>
+  useUri_eq?: Maybe<Scalars['String']>
+  useUri_contains?: Maybe<Scalars['String']>
+  useUri_startsWith?: Maybe<Scalars['String']>
+  useUri_endsWith?: Maybe<Scalars['String']>
+  useUri_in?: Maybe<Array<Scalars['String']>>
   smallIcon_eq?: Maybe<Scalars['String']>
   smallIcon_contains?: Maybe<Scalars['String']>
   smallIcon_startsWith?: Maybe<Scalars['String']>
@@ -309,6 +314,11 @@ export type AppWhereInput = {
   category_startsWith?: Maybe<Scalars['String']>
   category_endsWith?: Maybe<Scalars['String']>
   category_in?: Maybe<Array<Scalars['String']>>
+  authKey_eq?: Maybe<Scalars['String']>
+  authKey_contains?: Maybe<Scalars['String']>
+  authKey_startsWith?: Maybe<Scalars['String']>
+  authKey_endsWith?: Maybe<Scalars['String']>
+  authKey_in?: Maybe<Array<Scalars['String']>>
   AND?: Maybe<Array<AppWhereInput>>
   OR?: Maybe<Array<AppWhereInput>>
   NOT?: Maybe<Array<AppWhereInput>>
