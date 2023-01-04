@@ -335,12 +335,24 @@ async function handleWorkingGroupMetadataAction(
 
 async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
+  const group = await getWorkingGroup(store, event, ['leader'])
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, [
+    'application',
+    'workinggroupleader',
+  ])
 
-  const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
+  if (worker.isLead) {
+    const terminatedLeaderEvent = new TerminatedLeaderEvent({
+      ...genericEventFields(event),
+      group,
+      worker,
+      penalty: optPenalty.unwrapOr(undefined),
+      rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
+    })
+    await store.save<TerminatedLeaderEvent>(terminatedLeaderEvent)
+  }
 
-  const terminatedEvent = new EventConstructor({
+  const terminatedWorkerEvent = new TerminatedWorkerEvent({
     ...genericEventFields(event),
     group,
     worker,
@@ -348,14 +360,15 @@ async function handleTerminatedWorker({ store, event }: EventContext & StoreCont
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 
-  await store.save(terminatedEvent)
+  await store.save<TerminatedWorkerEvent>(terminatedWorkerEvent)
 
   const status = new WorkerStatusTerminated()
-  status.terminatedWorkerEventId = terminatedEvent.id
+  status.terminatedWorkerEventId = terminatedWorkerEvent.id
   worker.status = status
   worker.stake = new BN(0)
   worker.rewardPerBlock = new BN(0)
   worker.isActive = isWorkerActive(worker)
+  worker.workinggroupleader = [] // Make the worker not the group leader if there were
 
   await store.save<Worker>(worker)
 }

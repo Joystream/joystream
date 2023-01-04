@@ -589,12 +589,17 @@ export class Api {
     return opening
   }
 
-  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+  public async getLeaderId(group: WorkingGroupModuleName): Promise<WorkerId> {
     const leadId = await this.api.query[group].currentLead()
     if (leadId.isNone) {
       throw new Error(`Cannot get ${group} lead: Lead not hired!`)
     }
-    return [leadId.unwrap(), (await this.api.query[group].workerById(leadId.unwrap())).unwrap()]
+    return leadId.unwrap()
+  }
+
+  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+    const leadId = await this.getLeaderId(group)
+    return [leadId, (await this.api.query[group].workerById(leadId)).unwrap()]
   }
 
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
