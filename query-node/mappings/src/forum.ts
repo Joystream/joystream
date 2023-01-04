@@ -77,7 +77,7 @@ async function getThread(store: DatabaseManager, threadId: string): Promise<Foru
 async function getPost(store: DatabaseManager, postId: string, relations?: string[]): Promise<ForumPost> {
   const post = await store.get(ForumPost, { where: { id: postId }, relations })
   if (!post) {
-    throw new Error(`Forum post not found by id: ${postId.toString()}`)
+    throw new Error(`Forum post not found by id: ${postId}`)
   }
 
   return post
@@ -101,8 +101,15 @@ export async function moderatePost(
   actor: Worker,
   rationale: string
 ): Promise<void> {
-  const post = await getPost(store, postId, ['thread', 'thread.category'])
+  const post = await store.get(ForumPost, { where: { id: postId }, relations: ['thread', 'thread.category'] })
 
+  if (!post) {
+    const message = `Forum post not found by id: ${postId}`
+    if (type === 'runtime') {
+      throw Error(message)
+    }
+    return invalidMetadata(message)
+  }
   if (type !== 'runtime' && post.status.isTypeOf !== 'PostStatusLocked') {
     return invalidMetadata(
       `Trying to moderate forum post ${post.id}, with status ${post.status.isTypeOf}. Only locked forum post can be moderated with remark`
