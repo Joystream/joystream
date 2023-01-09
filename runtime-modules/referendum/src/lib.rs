@@ -314,6 +314,9 @@ decl_storage! { generate_storage_info
         /// A stake for a vote can be reused in future referendum cycles.
         pub Votes get(fn votes): map hasher(blake2_128_concat)
                                           T::AccountId => CastVoteOf<T>;
+
+        /// Black list for account in order to prevent certain voters from voting
+        pub VoterBlacklist get(fn voter_blacklist): map hasher(blake2_128_concat) T::AccountId => ();
     }
 }
 
@@ -347,6 +350,9 @@ decl_event! {
 
         /// User released his stake
         StakeReleased(AccountId),
+
+        // Account has been blacklisted
+        AccountBlacklisted(AccountId),
     }
 }
 
@@ -392,6 +398,9 @@ decl_error! {
 
         /// Unstaking has been forbidden for the user (at least for now)
         UnstakingForbidden,
+
+        /// Account blacklisted
+        AccountBlacklisted,
     }
 }
 
@@ -441,6 +450,33 @@ decl_module! {
         }
 
         /////////////////// User actions ///////////////////////////////////////
+
+
+        /// Add an account to the blacklist
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = 10_000_000] // TODO: Adjust weight
+        pub fn add_account_to_blacklist(origin) -> Result<(), Error<T, I>> {
+            let account_id = EnsureChecks::ensure_regular_user(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // add account to the blacklist
+            Mutations::<T, I>::add_account_to_blacklist(&account_id);
+
+            // emit event
+            Self::deposit_event(RawEvent::AccountBlacklisted(account_id));
+
+            Ok(())
+        }
 
         /// Cast a sealed vote in the referendum.
         ///
@@ -761,6 +797,11 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
         );
     }
 
+    // Add account to the blacklist
+    fn add_account_to_blacklist(account_id: &<T as frame_system::Config>::AccountId) {
+        VoterBlacklist::<T, I>::insert(account_id.clone(), ());
+    }
+
     // Reveal user's vote target and check the commitment proof.
     fn reveal_vote(
         stage_data: ReferendumStageRevealingOf<T, I>,
@@ -983,6 +1024,11 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
         ensure!(
             T::StakingHandler::is_enough_balance_for_stake(&account_id, *stake),
             Error::InsufficientStake
+        );
+
+        ensure!(
+            VoterBlacklist::<T, I>::contains_key(&account_id),
+            Error::AccountBlacklisted
         );
 
         Ok((current_cycle_id, account_id))
