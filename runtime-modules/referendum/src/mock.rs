@@ -4,7 +4,7 @@
 use crate::{
     BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
     ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
-    Votes,
+    VoterBlacklist, Votes,
 };
 
 pub use crate::DefaultInstance;
@@ -658,6 +658,38 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         );
 
         INTERMEDIATE_RESULTS.with(|value| assert_eq!(*value.borrow(), expected_referendum_result,));
+    }
+
+    pub fn add_account_to_blacklist(
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        account_id: <Runtime as frame_system::Config>::AccountId,
+        expected_result: Result<(), Error<Runtime, DefaultInstance>>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            Module::<Runtime>::add_account_to_blacklist(InstanceMockUtils::<
+                Runtime,
+                DefaultInstance,
+            >::mock_origin(origin),),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert!(VoterBlacklist::<Runtime, DefaultInstance>::contains_key(
+            account_id
+        ),);
+
+        // check event was emitted
+        assert_eq!(
+            frame_system::Pallet::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            Event::Referendum(RawEvent::AccountBlacklisted(account_id))
+        );
     }
 
     pub fn vote(

@@ -1177,3 +1177,45 @@ fn referendum_manager_force_start_error_with_more_than_allowed_target() {
         Mocks::check_winning_target_count(winning_target_count - 5);
     });
 }
+
+/////////////////// Blacklist //////////////////////////////////////////
+
+/// Test that any valid origin can add itself to the blacklist
+#[test]
+fn regular_user_can_blacklist_himself() {
+    build_test_externalities().execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        Mocks::add_account_to_blacklist(origin.clone(), account_id, Ok(()));
+    })
+}
+
+/// Test that a blacklisted user cannot vote
+#[test]
+fn blacklisted_account_cannot_vote() {
+    build_test_externalities().execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        Mocks::add_account_to_blacklist(origin.clone(), account_id, Ok(()));
+
+        let cycle_id = 1;
+
+        let winning_target_count = 1;
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Config>::MinimumStake::get();
+        let (commitment, _) =
+            MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
+
+        Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, cycle_id, Ok(()));
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            cycle_id,
+            Err(Error::AccountBlacklisted),
+        );
+    })
+}
