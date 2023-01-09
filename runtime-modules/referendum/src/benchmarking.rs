@@ -463,6 +463,16 @@ benchmarks_instance! {
         assert_last_event::<T, I>(RawEvent::RevealingStageStarted(revealing_ends_at).into());
     }
 
+    add_account_to_blacklist {
+        let account_id = funded_account::<T, I>("caller", 0);
+
+    }: _ (RawOrigin::Signed(account_id.clone()))
+    verify {
+        assert!(AccountsBlacklist::<T, I>::contains_key(account_id.clone()), "Account wasn't added to blacklist");
+
+        assert_last_event::<T, I>(RawEvent::AccountBlacklisted(account_id.clone()).into());
+    }
+
     vote {
         start_voting_cycle::<T, I>(0);
 

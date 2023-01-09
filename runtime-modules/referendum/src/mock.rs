@@ -2,9 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
-    ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
-    VoterBlacklist, Votes,
+    AccountsBlacklist, BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult,
+    RawEvent, ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting,
+    Stage, Votes,
 };
 
 pub use crate::DefaultInstance;
@@ -678,7 +678,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             return;
         }
 
-        assert!(VoterBlacklist::<Runtime, DefaultInstance>::contains_key(
+        assert!(AccountsBlacklist::<Runtime, DefaultInstance>::contains_key(
             account_id
         ),);
 

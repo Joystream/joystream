@@ -20,6 +20,7 @@
 //! ## Supported extrinsics
 //!
 //! - [vote](./struct.Module.html#method.vote)
+//! - [add_account_to_blacklist](./struct.Module.html#method.add_account_to_blacklist)
 //! - [reveal_vote](./struct.Module.html#method.reveal_vote)
 //! - [release_vote_stake](./struct.Module.html#method.release_vote_stake)
 //!
@@ -316,7 +317,7 @@ decl_storage! { generate_storage_info
                                           T::AccountId => CastVoteOf<T>;
 
         /// Black list for account in order to prevent certain voters from voting
-        pub VoterBlacklist get(fn voter_blacklist): map hasher(blake2_128_concat) T::AccountId => ();
+        pub AccountsBlacklist get(fn voter_blacklist): map hasher(blake2_128_concat) T::AccountId => ();
     }
 }
 
@@ -461,7 +462,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = 10_000_000] // TODO: Adjust weight
+        #[weight = ReferendumWeightInfo::<T, I>::add_account_to_blacklist()]
         pub fn add_account_to_blacklist(origin) -> Result<(), Error<T, I>> {
             let account_id = EnsureChecks::ensure_regular_user(origin)?;
 
@@ -799,7 +800,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
 
     // Add account to the blacklist
     fn add_account_to_blacklist(account_id: &<T as frame_system::Config>::AccountId) {
-        VoterBlacklist::<T, I>::insert(account_id.clone(), ());
+        AccountsBlacklist::<T, I>::insert(account_id.clone(), ());
     }
 
     // Reveal user's vote target and check the commitment proof.
@@ -1027,7 +1028,7 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
         );
 
         ensure!(
-            VoterBlacklist::<T, I>::contains_key(&account_id),
+            !AccountsBlacklist::<T, I>::contains_key(&account_id),
             Error::AccountBlacklisted
         );
 

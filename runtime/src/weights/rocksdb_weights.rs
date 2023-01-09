@@ -16,23 +16,22 @@
 // limitations under the License.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-10-20 (Y/M/D)
+//! DATE: 2023-01-09 (Y/M/D)
 //!
 //! DATABASE: `RocksDb`, RUNTIME: `Development`
 //! BLOCK-NUM: `BlockId::Number(0)`
 //! SKIP-WRITE: `false`, SKIP-READ: `false`, WARMUPS: `100`
 //! STATE-VERSION: `V1`, STATE-CACHE-SIZE: `0`
-//! WEIGHT-PATH: `./../runtime/src/weights/`
+//! WEIGHT-PATH: `./scripts/../runtime/src/weights/`
 //! METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./../target/release/joystream-node
+//   ./scripts/../target/release/joystream-node
 //   benchmark
 //   storage
-//   --base-path=/mnt/disks/local-ssd/
-//   --chain=dev
+//   --chain=prod-test
 //   --warmups=100
-//   --weight-path=./../runtime/src/weights/
+//   --weight-path=./scripts/../runtime/src/weights/
 //   --state-version
 //   1
 
@@ -51,31 +50,31 @@ pub mod constants {
             /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 3_780, 590_000
-            ///   Average:  8_997
-            ///   Median:   5_490
-            ///   Std-Dev:  43436.83
+            ///   Min, Max: 3_460, 308_156
+            ///   Average:  6_914
+            ///   Median:   4_967
+            ///   Std-Dev:  23393.73
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 8_780
-            ///   95th: 7_570
-            ///   75th: 6_340
-            read: 8_997 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 9_096
+            ///   95th: 6_416
+            ///   75th: 5_576
+            read: 6_914 * constants::WEIGHT_PER_NANOS,
 
             /// Time to write one storage item.
             /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 11_740, 5_390_690
-            ///   Average:  54_966
-            ///   Median:   24_860
-            ///   Std-Dev:  398861.54
+            ///   Min, Max: 9_853, 4_385_963
+            ///   Average:  45_834
+            ///   Median:   19_379
+            ///   Std-Dev:  336902.58
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 46_410
-            ///   95th: 36_880
-            ///   75th: 29_580
-            write: 54_966 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 52_660
+            ///   95th: 27_474
+            ///   75th: 22_907
+            write: 45_834 * constants::WEIGHT_PER_NANOS,
         };
     }
 
