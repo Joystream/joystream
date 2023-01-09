@@ -537,7 +537,9 @@ declare module '@polkadot/types/lookup' {
     readonly asVoteRevealed: ITuple<[AccountId32, u64, Bytes]>;
     readonly isStakeReleased: boolean;
     readonly asStakeReleased: AccountId32;
-    readonly type: 'ReferendumStarted' | 'ReferendumStartedForcefully' | 'RevealingStageStarted' | 'ReferendumFinished' | 'VoteCast' | 'VoteRevealed' | 'StakeReleased';
+    readonly isAccountBlacklisted: boolean;
+    readonly asAccountBlacklisted: AccountId32;
+    readonly type: 'ReferendumStarted' | 'ReferendumStartedForcefully' | 'RevealingStageStarted' | 'ReferendumFinished' | 'VoteCast' | 'VoteRevealed' | 'StakeReleased' | 'AccountBlacklisted';
   }
 
   /** @name PalletReferendumInstance1 (66) */
@@ -3017,6 +3019,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletReferendumCall (378) */
   export interface PalletReferendumCall extends Enum {
+    readonly isAddAccountToBlacklist: boolean;
     readonly isVote: boolean;
     readonly asVote: {
       readonly commitment: H256;
@@ -3028,7 +3031,7 @@ declare module '@polkadot/types/lookup' {
       readonly voteOptionId: u64;
     } & Struct;
     readonly isReleaseVoteStake: boolean;
-    readonly type: 'Vote' | 'RevealVote' | 'ReleaseVoteStake';
+    readonly type: 'AddAccountToBlacklist' | 'Vote' | 'RevealVote' | 'ReleaseVoteStake';
   }
 
   /** @name PalletMembershipCall (379) */
@@ -4743,7 +4746,8 @@ declare module '@polkadot/types/lookup' {
     readonly isUnstakingVoteInSameCycle: boolean;
     readonly isSaltTooLong: boolean;
     readonly isUnstakingForbidden: boolean;
-    readonly type: 'BadOrigin' | 'ReferendumNotRunning' | 'RevealingNotInProgress' | 'ConflictStakesOnAccount' | 'InsufficientBalanceToStake' | 'InsufficientStake' | 'InvalidReveal' | 'InvalidVote' | 'VoteNotExisting' | 'AlreadyVotedThisCycle' | 'UnstakingVoteInSameCycle' | 'SaltTooLong' | 'UnstakingForbidden';
+    readonly isAccountBlacklisted: boolean;
+    readonly type: 'BadOrigin' | 'ReferendumNotRunning' | 'RevealingNotInProgress' | 'ConflictStakesOnAccount' | 'InsufficientBalanceToStake' | 'InsufficientStake' | 'InvalidReveal' | 'InvalidVote' | 'VoteNotExisting' | 'AlreadyVotedThisCycle' | 'UnstakingVoteInSameCycle' | 'SaltTooLong' | 'UnstakingForbidden' | 'AccountBlacklisted';
   }
 
   /** @name PalletMembershipMembershipObject (536) */
@@ -5363,12 +5367,12 @@ declare module '@polkadot/types/lookup' {
     readonly isInsufficientTransferrableBalance: boolean;
     readonly isTokenDoesNotExist: boolean;
     readonly isAccountInformationDoesNotExist: boolean;
+    readonly isTransferDestinationMemberDoesNotExist: boolean;
     readonly isMerkleProofVerificationFailure: boolean;
     readonly isTargetPatronageRateIsHigherThanCurrentRate: boolean;
     readonly isTokenSymbolAlreadyInUse: boolean;
     readonly isInitialAllocationToNonExistingMember: boolean;
     readonly isAccountAlreadyExists: boolean;
-    readonly isTransferDestinationMemberDoesNotExist: boolean;
     readonly isTokenIssuanceNotInIdleState: boolean;
     readonly isInsufficientJoyBalance: boolean;
     readonly isJoyTransferSubjectToDusting: boolean;
@@ -5408,7 +5412,7 @@ declare module '@polkadot/types/lookup' {
     readonly isRevenueSplitRateIsZero: boolean;
     readonly isBurnAmountIsZero: boolean;
     readonly isBurnAmountGreaterThanAccountTokensAmount: boolean;
-    readonly type: 'ArithmeticError' | 'InsufficientTransferrableBalance' | 'TokenDoesNotExist' | 'AccountInformationDoesNotExist' | 'MerkleProofVerificationFailure' | 'TargetPatronageRateIsHigherThanCurrentRate' | 'TokenSymbolAlreadyInUse' | 'InitialAllocationToNonExistingMember' | 'AccountAlreadyExists' | 'TransferDestinationMemberDoesNotExist' | 'TokenIssuanceNotInIdleState' | 'InsufficientJoyBalance' | 'JoyTransferSubjectToDusting' | 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode' | 'AttemptToRemoveNonEmptyAccount' | 'CannotJoinWhitelistInPermissionlessMode' | 'CannotDeissueTokenWithOutstandingAccounts' | 'NoUpcomingSale' | 'NoActiveSale' | 'InsufficientBalanceForTokenPurchase' | 'NotEnoughTokensOnSale' | 'SaleStartingBlockInThePast' | 'SaleAccessProofRequired' | 'SaleAccessProofParticipantIsNotSender' | 'SalePurchaseCapExceeded' | 'MaxVestingSchedulesPerAccountPerTokenReached' | 'PreviousSaleNotFinalized' | 'NoTokensToRecover' | 'SaleDurationTooShort' | 'SaleDurationIsZero' | 'SaleUpperBoundQuantityIsZero' | 'SaleCapPerMemberIsZero' | 'SaleUnitPriceIsZero' | 'SalePurchaseAmountIsZero' | 'RevenueSplitTimeToStartTooShort' | 'RevenueSplitDurationTooShort' | 'RevenueSplitAlreadyActiveForToken' | 'RevenueSplitNotActiveForToken' | 'RevenueSplitDidNotEnd' | 'RevenueSplitNotOngoing' | 'UserAlreadyParticipating' | 'InsufficientBalanceForSplitParticipation' | 'UserNotParticipantingInAnySplit' | 'CannotParticipateInSplitWithZeroAmount' | 'CannotIssueSplitWithZeroAllocationAmount' | 'CannotModifySupplyWhenRevenueSplitsAreActive' | 'RevenueSplitRateIsZero' | 'BurnAmountIsZero' | 'BurnAmountGreaterThanAccountTokensAmount';
+    readonly type: 'ArithmeticError' | 'InsufficientTransferrableBalance' | 'TokenDoesNotExist' | 'AccountInformationDoesNotExist' | 'TransferDestinationMemberDoesNotExist' | 'MerkleProofVerificationFailure' | 'TargetPatronageRateIsHigherThanCurrentRate' | 'TokenSymbolAlreadyInUse' | 'InitialAllocationToNonExistingMember' | 'AccountAlreadyExists' | 'TokenIssuanceNotInIdleState' | 'InsufficientJoyBalance' | 'JoyTransferSubjectToDusting' | 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode' | 'AttemptToRemoveNonEmptyAccount' | 'CannotJoinWhitelistInPermissionlessMode' | 'CannotDeissueTokenWithOutstandingAccounts' | 'NoUpcomingSale' | 'NoActiveSale' | 'InsufficientBalanceForTokenPurchase' | 'NotEnoughTokensOnSale' | 'SaleStartingBlockInThePast' | 'SaleAccessProofRequired' | 'SaleAccessProofParticipantIsNotSender' | 'SalePurchaseCapExceeded' | 'MaxVestingSchedulesPerAccountPerTokenReached' | 'PreviousSaleNotFinalized' | 'NoTokensToRecover' | 'SaleDurationTooShort' | 'SaleDurationIsZero' | 'SaleUpperBoundQuantityIsZero' | 'SaleCapPerMemberIsZero' | 'SaleUnitPriceIsZero' | 'SalePurchaseAmountIsZero' | 'RevenueSplitTimeToStartTooShort' | 'RevenueSplitDurationTooShort' | 'RevenueSplitAlreadyActiveForToken' | 'RevenueSplitNotActiveForToken' | 'RevenueSplitDidNotEnd' | 'RevenueSplitNotOngoing' | 'UserAlreadyParticipating' | 'InsufficientBalanceForSplitParticipation' | 'UserNotParticipantingInAnySplit' | 'CannotParticipateInSplitWithZeroAmount' | 'CannotIssueSplitWithZeroAllocationAmount' | 'CannotModifySupplyWhenRevenueSplitsAreActive' | 'RevenueSplitRateIsZero' | 'BurnAmountIsZero' | 'BurnAmountGreaterThanAccountTokensAmount';
   }
 
   /** @name PalletProposalsEngineProposal (608) */

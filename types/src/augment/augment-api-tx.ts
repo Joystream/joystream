@@ -4355,6 +4355,18 @@ declare module '@polkadot/api-base/types/submittable' {
     };
     referendum: {
       /**
+       * Add an account to the blacklist
+       * 
+       * # <weight>
+       * 
+       * ## weight
+       * `O (1)`
+       * - db:
+       * - `O(1)` doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      addAccountToBlacklist: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+      /**
        * Release a locked stake.
        * # <weight>
        * 

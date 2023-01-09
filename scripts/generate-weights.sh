@@ -108,31 +108,31 @@ storage_benchmarks
 overhead_benchmarks
 
 # FRAME benchmarks
-# substrate_pallet_benchmark frame_system
-# substrate_pallet_benchmark substrate_utility
-# substrate_pallet_benchmark pallet_session
-# substrate_pallet_benchmark pallet_timestamp
-# substrate_pallet_benchmark pallet_vesting
-# substrate_pallet_benchmark pallet_multisig
-# substrate_pallet_benchmark pallet_bags_list
-# substrate_pallet_benchmark pallet_election_provider_multi_phase
-# substrate_pallet_benchmark pallet_election_provider_support_benchmarking
-# substrate_pallet_benchmark pallet_staking
-# substrate_pallet_benchmark pallet_balances
-# substrate_pallet_benchmark pallet_im_online
+substrate_pallet_benchmark frame_system
+substrate_pallet_benchmark substrate_utility
+substrate_pallet_benchmark pallet_session
+substrate_pallet_benchmark pallet_timestamp
+substrate_pallet_benchmark pallet_vesting
+substrate_pallet_benchmark pallet_multisig
+substrate_pallet_benchmark pallet_bags_list
+substrate_pallet_benchmark pallet_election_provider_multi_phase
+substrate_pallet_benchmark pallet_election_provider_support_benchmarking
+substrate_pallet_benchmark pallet_staking
+substrate_pallet_benchmark pallet_balances
+substrate_pallet_benchmark pallet_im_online
 
-# # Joystrem benchmarks
-# joystream_pallet_benchmark proposals_discussion proposals/discussion
-# joystream_pallet_benchmark proposals_engine proposals/engine
-# joystream_pallet_benchmark proposals_codex proposals/codex
-# joystream_pallet_benchmark pallet_constitution constitution
-# joystream_pallet_benchmark working_group working-group
-# joystream_pallet_benchmark council council
+# Joystrem benchmarks
+joystream_pallet_benchmark proposals_discussion proposals/discussion
+joystream_pallet_benchmark proposals_engine proposals/engine
+joystream_pallet_benchmark proposals_codex proposals/codex
+joystream_pallet_benchmark pallet_constitution constitution
+joystream_pallet_benchmark working_group working-group
+joystream_pallet_benchmark council council
 joystream_pallet_benchmark referendum referendum
-# joystream_pallet_benchmark forum forum
-# joystream_pallet_benchmark membership membership
-# joystream_pallet_benchmark bounty bounty
-# joystream_pallet_benchmark joystream_utility utility
-# joystream_pallet_benchmark storage storage
-# joystream_pallet_benchmark content content
-# joystream_pallet_benchmark project_token project-token
+joystream_pallet_benchmark forum forum
+joystream_pallet_benchmark membership membership
+joystream_pallet_benchmark bounty bounty
+joystream_pallet_benchmark joystream_utility utility
+joystream_pallet_benchmark storage storage
+joystream_pallet_benchmark content content
+joystream_pallet_benchmark project_token project-token

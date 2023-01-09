@@ -2291,6 +2291,7 @@ declare module '@polkadot/api-base/types/events' {
       Voted: AugmentedEvent<ApiType, [u64, u32, PalletProposalsEngineVoteKind, Bytes]>;
     };
     referendum: {
+      AccountBlacklisted: AugmentedEvent<ApiType, [AccountId32]>;
       /**
        * Referendum ended and winning option was selected
        **/

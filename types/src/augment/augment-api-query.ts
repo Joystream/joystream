@@ -1036,6 +1036,10 @@ declare module '@polkadot/api-base/types/storage' {
     };
     referendum: {
       /**
+       * Black list for account in order to prevent certain voters from voting
+       **/
+      accountsBlacklist: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Null>, [AccountId32]>;
+      /**
        * Current referendum stage.
        **/
       stage: AugmentedQuery<ApiType, () => Observable<PalletReferendumReferendumStage>, []>;

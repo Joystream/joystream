@@ -2432,7 +2432,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
       /**
-       * Transfer destination member id invalid
+       * At least one of the transfer destinations is not an existing member id
        **/
       TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
       /**
@@ -2688,6 +2688,10 @@ declare module '@polkadot/api-base/types/errors' {
       ZeroExactExecutionBlock: AugmentedError<ApiType>;
     };
     referendum: {
+      /**
+       * Account blacklisted
+       **/
+      AccountBlacklisted: AugmentedError<ApiType>;
       /**
        * Trying to vote multiple time in the same cycle
        **/
