@@ -27,6 +27,7 @@ import {
   logger,
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
+  getMemberById,
 } from './common'
 import {
   Membership,
@@ -64,17 +65,11 @@ import {
   processCreateCommentMessage,
   processEditCommentMessage,
   processDeleteCommentMessage,
+  processChannelPaymentFromMember,
 } from './content'
 import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-
-async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
-  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
-  if (!member) {
-    throw new Error(`Member(${id}) not found`)
-  }
-  return member
-}
+import { AccountId32, Balance } from '@polkadot/types/interfaces'
 
 async function saveMembershipExternalResources(
   store: DatabaseManager,
@@ -610,12 +605,12 @@ export async function members_LeaderInvitationQuotaUpdated({
 
 export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [memberId, message] = new Members.MemberRemarkedEvent(event).params
+  const [memberId, message, payment] = new Members.MemberRemarkedEvent(event).params
 
   try {
     const decodedMessage = MemberRemarked.decode(message.toU8a(true))
 
-    const metaTransactionInfo = await processMemberRemark(store, event, memberId, decodedMessage)
+    const metaTransactionInfo = await processMemberRemark(ctx, memberId, decodedMessage, payment.unwrapOr(undefined))
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
@@ -631,10 +626,10 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
 }
 
 async function processMemberRemark(
-  store: DatabaseManager,
-  event: SubstrateEvent,
+  { store, event }: EventContext & StoreContext,
   memberId: MemberId,
-  decodedMessage: MemberRemarked
+  decodedMessage: MemberRemarked,
+  payment?: [AccountId32, Balance]
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
   const messageType = decodedMessage.memberRemarked
 
@@ -664,6 +659,19 @@ async function processMemberRemark(
   if (messageType === 'deleteComment') {
     const comment = await processDeleteCommentMessage(store, event, memberId, decodedMessage.deleteComment!)
     return { commentDeletedId: comment.id }
+  }
+
+  // Though the payments can be sent along with any arbitrary metadata message type,
+  // however they will only be processed if the message type is 'makePayment'
+  if (messageType === 'makeChannelPayment' && payment) {
+    const channelPayment = await processChannelPaymentFromMember(
+      store,
+      event,
+      memberId,
+      decodedMessage.makeChannelPayment!,
+      payment
+    )
+    return { channelPaidId: channelPayment.payeeChannel?.id }
   }
 
   if (messageType === 'createVideoCategory') {

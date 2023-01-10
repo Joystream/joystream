@@ -2,8 +2,13 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
-import { ChannelId, DataObjectId } from '@joystream/types/primitives'
+import {
+  ChannelMetadata,
+  ChannelModeratorRemarked,
+  ChannelOwnerRemarked,
+  IMakeChannelPayment,
+} from '@joystream/metadata-protobuf'
+import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
 import {
   Channel,
   Collaborator,
@@ -23,6 +28,10 @@ import {
   ChannelRewardClaimedEvent,
   DataObjectTypeChannelPayoutsPayload,
   ChannelFundsWithdrawnEvent,
+  PaymentContextVideo,
+  PaymentContextChannel,
+  ChannelPaymentMadeEvent,
+  Video,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -35,6 +44,8 @@ import {
   saveMetaprotocolTransactionErrored,
   unwrap,
   bytesToString,
+  getMemberById,
+  invalidMetadata,
 } from '../common'
 import {
   processBanOrUnbanMemberFromChannelMessage,
@@ -53,6 +64,7 @@ import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
+import { AccountId32, Balance } from '@polkadot/types/interfaces'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -543,4 +555,69 @@ export async function content_ChannelFundsWithdrawn({ store, event }: EventConte
   })
 
   await store.save<ChannelFundsWithdrawnEvent>(rewardClaimedEvent)
+}
+
+export async function processChannelPaymentFromMember(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  memberId: MemberId,
+  message: IMakeChannelPayment,
+  [payeeAccount, amount]: [AccountId32, Balance]
+): Promise<ChannelPaymentMadeEvent> {
+  const member = await getMemberById(store, memberId)
+
+  // Only channel reward accounts are being checked right now as payment destination.
+  // Transfers to any other destination will be ignored by the query node.
+  const channel = await store.get(Channel, { where: { rewardAccount: payeeAccount.toString() } })
+  if (!channel) {
+    inconsistentState('Payment made to unknown channel reward account')
+  }
+
+  // Get payment context from the metadata
+  const getPaymentContext = async (msg: IMakeChannelPayment) => {
+    if (msg.channelId) {
+      const paymentContext = new PaymentContextChannel()
+      if (msg.channelId.toString() !== channel.id) {
+        invalidMetadata(
+          `payment context (channel) added in the metadata of 'member_remark' call is different from` +
+            `queried channel based on payee address, EXPECTED: ${channel.id}, ACTUAL: ${msg.channelId}`
+        )
+      }
+
+      paymentContext.channelId = channel.id
+      return paymentContext
+    } else if (message.videoId) {
+      const paymentContext = new PaymentContextVideo()
+      const video = await store.get(Video, { where: { id: message.videoId.toString() }, relations: ['channel'] })
+      if (!video) {
+        invalidMetadata(`payment context (video) added in the metadata of 'member_remark' call is invalid`)
+        return
+      }
+
+      if (video.channel.id !== channel.id) {
+        invalidMetadata(
+          `payment context (video) added in the metadata of 'member_remark' call is different from` +
+            `queried video based on payee address, EXPECTED: ${channel.id}, ACTUAL: ${video.channel.id}`
+        )
+      }
+      paymentContext.videoId = channel.id
+      return paymentContext
+    } else if (message.appId) {
+      // TODO: Add support for app payments
+    }
+  }
+
+  const paymentMadeEvent = new ChannelPaymentMadeEvent({
+    ...genericEventFields(event),
+
+    payer: member,
+    payeeChannel: channel,
+    paymentContext: await getPaymentContext(message),
+    rationale: message.rationale || undefined,
+    amount: amount,
+  })
+
+  await store.save<ChannelPaymentMadeEvent>(paymentMadeEvent)
+
+  return paymentMadeEvent
 }
