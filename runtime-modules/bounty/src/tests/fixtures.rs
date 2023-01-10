@@ -1,4 +1,4 @@
-use super::mocks::{Balances, Bounty, Event, System, Test};
+use super::mocks::{Balance, Balances, Bounty, Event, System, Test};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
     ClosedContractWhitelist, Config, Entry, FundingType, OracleJudgmentOf, RawEvent,
@@ -6,11 +6,12 @@ use crate::{
 use common::council::CouncilBudgetManager;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize, WithdrawReasons};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
+use staking_handler::StakingHandler;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -279,6 +280,8 @@ impl CreateBountyFixture {
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
                 has_unpaid_oracle_reward: params.oracle_reward > 0,
+                creator_bloat_bond_amount:
+                    <Test as crate::Config>::CreatorStateBloatBondAmount::get(),
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
@@ -810,4 +813,24 @@ impl WithdrawOracleRewardFixture {
 
         assert_eq!(actual_result, expected_result);
     }
+}
+
+pub fn ed() -> Balance {
+    <Test as balances::Config>::ExistentialDeposit::get().into()
+}
+
+pub fn default_bounty_cost() -> Balance {
+    bounty_cost(DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_REWARD)
+}
+
+pub fn bounty_cost(cherry: Balance, oracle_reward: Balance) -> <Test as balances::Config>::Balance {
+    cherry + oracle_reward + get_creator_state_bloat_bond_amount()
+}
+
+pub fn set_invitation_lock(who: &<Test as frame_system::Config>::AccountId, amount: Balance) {
+    <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
+        &who,
+        amount,
+        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+    );
 }

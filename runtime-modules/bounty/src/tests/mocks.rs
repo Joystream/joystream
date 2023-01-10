@@ -267,7 +267,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const MinimumPeriod: u64 = 5;
 }
 
@@ -389,3 +389,5 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 
     t.into()
 }
+
+pub type Balance = <Test as balances::Config>::Balance;
