@@ -622,6 +622,31 @@ export type GetChannelFundsWithdrawnEventsByEventIdsQuery = {
   channelFundsWithdrawnEvents: Array<ChannelFundsWithdrawnEventFieldsFragment>
 }
 
+export type ChannelPaymentMadeEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  amount: any
+  rationale?: Types.Maybe<string>
+  payeeChannel?: Types.Maybe<ChannelFieldsFragment>
+  payer: MembershipFieldsFragment
+  paymentContext?: Types.Maybe<
+    | { __typename: 'PaymentContextVideo'; video?: Types.Maybe<VideoFieldsFragment> }
+    | { __typename: 'PaymentContextChannel'; channel?: Types.Maybe<ChannelFieldsFragment> }
+  >
+}
+
+export type GetChannelPaymentMadeEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelPaymentMadeEventsByEventIdsQuery = {
+  channelPaymentMadeEvents: Array<ChannelPaymentMadeEventFieldsFragment>
+}
+
 export type EnglishAuctionStartedEventFieldsFragment = {
   video: { id: string }
   auction: { id: string }
@@ -2588,6 +2613,31 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export const LicenseFields = gql`
+  fragment LicenseFields on License {
+    code
+    attribution
+    customText
+  }
+`
+export const VideoMediaEncodingFields = gql`
+  fragment VideoMediaEncodingFields on VideoMediaEncoding {
+    codecName
+    container
+    mimeMediaType
+  }
+`
+export const VideoMediaMetadataFields = gql`
+  fragment VideoMediaMetadataFields on VideoMediaMetadata {
+    encoding {
+      ...VideoMediaEncodingFields
+    }
+    pixelWidth
+    pixelHeight
+    size
+  }
+  ${VideoMediaEncodingFields}
+`
 export const DataObjectTypeFields = gql`
   fragment DataObjectTypeFields on DataObjectType {
     __typename
@@ -2635,61 +2685,6 @@ export const StorageDataObjectFields = gql`
     storageBagId
   }
   ${DataObjectTypeFields}
-`
-export const ChannelFields = gql`
-  fragment ChannelFields on Channel {
-    id
-    activeVideosCounter
-    title
-    description
-    isPublic
-    language {
-      iso
-    }
-    isCensored
-    ownerMember {
-      id
-    }
-    ownerCuratorGroup {
-      id
-    }
-    avatarPhoto {
-      ...StorageDataObjectFields
-    }
-    coverPhoto {
-      ...StorageDataObjectFields
-    }
-    bannedMembers {
-      id
-    }
-    rewardAccount
-  }
-  ${StorageDataObjectFields}
-`
-export const LicenseFields = gql`
-  fragment LicenseFields on License {
-    code
-    attribution
-    customText
-  }
-`
-export const VideoMediaEncodingFields = gql`
-  fragment VideoMediaEncodingFields on VideoMediaEncoding {
-    codecName
-    container
-    mimeMediaType
-  }
-`
-export const VideoMediaMetadataFields = gql`
-  fragment VideoMediaMetadataFields on VideoMediaMetadata {
-    encoding {
-      ...VideoMediaEncodingFields
-    }
-    pixelWidth
-    pixelHeight
-    size
-  }
-  ${VideoMediaEncodingFields}
 `
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
@@ -3181,6 +3176,130 @@ export const ChannelFundsWithdrawnEventFields = gql`
     account
   }
 `
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
+    title
+    description
+    isPublic
+    language {
+      iso
+    }
+    isCensored
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+    avatarPhoto {
+      ...StorageDataObjectFields
+    }
+    coverPhoto {
+      ...StorageDataObjectFields
+    }
+    bannedMembers {
+      id
+    }
+    rewardAccount
+  }
+  ${StorageDataObjectFields}
+`
+export const MemberMetadataFields = gql`
+  fragment MemberMetadataFields on MemberMetadata {
+    name
+    about
+    avatar {
+      ... on AvatarUri {
+        avatarUri
+      }
+    }
+    externalResources {
+      type
+      value
+    }
+  }
+`
+export const MembershipFields = gql`
+  fragment MembershipFields on Membership {
+    id
+    handle
+    metadata {
+      ...MemberMetadataFields
+    }
+    controllerAccount
+    rootAccount
+    entry {
+      __typename
+      ... on MembershipEntryPaid {
+        membershipBoughtEvent {
+          id
+        }
+      }
+      ... on MembershipEntryInvited {
+        memberInvitedEvent {
+          id
+        }
+      }
+      ... on MembershipEntryGifted {
+        membershipGiftedEvent {
+          id
+        }
+      }
+      ... on MembershipEntryMemberCreated {
+        memberCreatedEvent {
+          id
+        }
+      }
+    }
+    isVerified
+    isFoundingMember
+    inviteCount
+    invitedBy {
+      id
+    }
+    invitees {
+      id
+    }
+    boundAccounts
+  }
+  ${MemberMetadataFields}
+`
+export const ChannelPaymentMadeEventFields = gql`
+  fragment ChannelPaymentMadeEventFields on ChannelPaymentMadeEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    payeeChannel {
+      ...ChannelFields
+    }
+    payer {
+      ...MembershipFields
+    }
+    amount
+    rationale
+    paymentContext {
+      __typename
+      ... on PaymentContextChannel {
+        channel {
+          ...ChannelFields
+        }
+      }
+      ... on PaymentContextVideo {
+        video {
+          ...VideoFields
+        }
+      }
+    }
+  }
+  ${ChannelFields}
+  ${MembershipFields}
+  ${VideoFields}
+`
 export const EnglishAuctionStartedEventFields = gql`
   fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
     video {
@@ -3630,66 +3749,6 @@ export const PostDeletedEventFields = gql`
     }
     rationale
   }
-`
-export const MemberMetadataFields = gql`
-  fragment MemberMetadataFields on MemberMetadata {
-    name
-    about
-    avatar {
-      ... on AvatarUri {
-        avatarUri
-      }
-    }
-    externalResources {
-      type
-      value
-    }
-  }
-`
-export const MembershipFields = gql`
-  fragment MembershipFields on Membership {
-    id
-    handle
-    metadata {
-      ...MemberMetadataFields
-    }
-    controllerAccount
-    rootAccount
-    entry {
-      __typename
-      ... on MembershipEntryPaid {
-        membershipBoughtEvent {
-          id
-        }
-      }
-      ... on MembershipEntryInvited {
-        memberInvitedEvent {
-          id
-        }
-      }
-      ... on MembershipEntryGifted {
-        membershipGiftedEvent {
-          id
-        }
-      }
-      ... on MembershipEntryMemberCreated {
-        memberCreatedEvent {
-          id
-        }
-      }
-    }
-    isVerified
-    isFoundingMember
-    inviteCount
-    invitedBy {
-      id
-    }
-    invitees {
-      id
-    }
-    boundAccounts
-  }
-  ${MemberMetadataFields}
 `
 export const MembershipBoughtEventFields = gql`
   fragment MembershipBoughtEventFields on MembershipBoughtEvent {
@@ -5241,6 +5300,14 @@ export const GetChannelFundsWithdrawnEventsByEventIds = gql`
     }
   }
   ${ChannelFundsWithdrawnEventFields}
+`
+export const GetChannelPaymentMadeEventsByEventIds = gql`
+  query getChannelPaymentMadeEventsByEventIds($eventIds: [ID!]) {
+    channelPaymentMadeEvents(where: { id_in: $eventIds }) {
+      ...ChannelPaymentMadeEventFields
+    }
+  }
+  ${ChannelPaymentMadeEventFields}
 `
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
