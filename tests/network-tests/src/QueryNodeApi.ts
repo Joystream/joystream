@@ -443,6 +443,10 @@ import {
   GetStorageNodesInfoByBagIdQueryVariables,
   GetStorageNodesInfoByBagId,
   GetChannelRewardClaimedEventsByEventIds,
+  ChannelPaymentMadeEventFieldsFragment,
+  GetChannelPaymentMadeEventsByEventIdsQuery,
+  GetChannelPaymentMadeEventsByEventIdsQueryVariables,
+  GetChannelPaymentMadeEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1526,5 +1530,13 @@ export class QueryNodeApi {
       GetChannelFundsWithdrawnEventsByEventIdsQuery,
       GetChannelFundsWithdrawnEventsByEventIdsQueryVariables
     >(GetChannelFundsWithdrawnEventsByEventIds, { eventIds }, 'channelFundsWithdrawnEvents')
+  }
+
+  public async getChannelPaymentMadeEvents(events: EventDetails[]): Promise<ChannelPaymentMadeEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelPaymentMadeEventsByEventIdsQuery,
+      GetChannelPaymentMadeEventsByEventIdsQueryVariables
+    >(GetChannelPaymentMadeEventsByEventIds, { eventIds }, 'channelPaymentMadeEvents')
   }
 }
