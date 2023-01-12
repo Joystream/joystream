@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+import "proto/Video.proto";
+import "proto/Channel.proto";
+
+message AppAction {
+  // ID of application
+  required string app_id = 1;
+
+  // Metadata
+  optional bytes metadata = 2;
+
+  // Raw metadata of wrapped action
+  oneof raw_action {
+    ContentMetadata content_metadata  = 3;
+    ChannelMetadata channel_metadata = 4;
+  }
+
+  required string signature = 5;
+}
