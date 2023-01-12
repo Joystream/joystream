@@ -64,8 +64,7 @@ scenario('Full', async ({ job, env }) => {
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
 
-  return
-  // Below flows depend on sudo which has been disabled. So skipping for now.
+  // TODO: Below flows depend on sudo which has been disabled, to be fixed 
 
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [

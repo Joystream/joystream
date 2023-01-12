@@ -1,7 +1,6 @@
 import { FlowProps } from '../../Flow'
 import {
   ApplyOnOpeningsHappyCaseFixture,
-  CreateOpeningsFixture,
   FillOpeningsFixture,
   ApplicantDetails,
   createDefaultOpeningParams,
@@ -11,6 +10,7 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { workingGroups } from '../../consts'
+import { CreateLeadOpeningsFixture } from 'src/fixtures/workingGroups/CreateLeadOpeningFixture'
 
 export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = workingGroups) =>
   async function leadOpening({ api, query }: FlowProps): Promise<void> {
@@ -28,11 +28,12 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
           throw new Error('Cannot hire lead - lead already set!')
         }
 
-        const createOpeningFixture = new CreateOpeningsFixture(api, query, group, undefined, true)
+        // replace this
+        const openingParams = createDefaultOpeningParams(api)
+        const createOpeningFixture = new CreateLeadOpeningsFixture(api, query, openingParams, group)
         const openingRunner = new FixtureRunner(createOpeningFixture)
         await openingRunner.run()
         const [openingId] = createOpeningFixture.getCreatedOpeningIds()
-        const { stake: openingStake, metadata: openingMetadata } = createDefaultOpeningParams(api)
 
         const [roleAccount, stakingAccount, rewardAccount] = (await api.createKeyPairs(3)).map(({ key }) => key.address)
         const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [roleAccount])
@@ -46,7 +47,7 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
           },
         ])
         await new FixtureRunner(addStakingAccFixture).run()
-        await api.treasuryTransferBalance(stakingAccount, openingStake)
+        await api.treasuryTransferBalance(stakingAccount, openingParams.stake)
 
         const applicantDetails: ApplicantDetails = {
           memberId,
@@ -58,7 +59,7 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         const applyOnOpeningFixture = new ApplyOnOpeningsHappyCaseFixture(api, query, group, [
           {
             openingId,
-            openingMetadata,
+            openingMetadata: openingParams.metadata,
             applicants: [applicantDetails],
           },
         ])

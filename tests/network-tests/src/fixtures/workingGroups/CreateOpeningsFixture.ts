@@ -75,6 +75,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
+    // TODO: remove this Sudo and replace with account
     return this.asSudo ? (await this.api.query.sudo.key()).toString() : await this.api.getLeadRoleKey(this.group)
   }
 
