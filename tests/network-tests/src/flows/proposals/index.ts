@@ -5,7 +5,7 @@ import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } fro
 import { Utils } from '../../utils'
 import {
   ApplyOnOpeningsHappyCaseFixture,
-  CreateOpeningsFixture,
+  CreateLeadOpeningFixture,
   createDefaultOpeningParams,
 } from '../../fixtures/workingGroups'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
@@ -18,12 +18,11 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   api.enableVerboseTxLogs()
 
   debug('Creating test lead openings and applications...')
-  const createLeadOpeningsFixture = new CreateOpeningsFixture(
+  const createLeadOpeningsFixture = new CreateLeadOpeningFixture(
     api,
     query,
-    'membershipWorkingGroup',
     [createDefaultOpeningParams(api), createDefaultOpeningParams(api)],
-    true
+    'membershipWorkingGroup'
   )
   await new FixtureRunner(createLeadOpeningsFixture).run()
   const [openingToCancelId, openingToFillId] = createLeadOpeningsFixture.getCreatedOpeningIds()

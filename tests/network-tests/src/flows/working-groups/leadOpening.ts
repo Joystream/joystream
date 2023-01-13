@@ -10,7 +10,7 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { workingGroups } from '../../consts'
-import { CreateLeadOpeningsFixture } from 'src/fixtures/workingGroups/CreateLeadOpeningFixture'
+import { CreateLeadOpeningFixture } from '../../fixtures/workingGroups/CreateLeadOpeningFixture'
 
 export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = workingGroups) =>
   async function leadOpening({ api, query }: FlowProps): Promise<void> {
@@ -28,9 +28,8 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
           throw new Error('Cannot hire lead - lead already set!')
         }
 
-        // replace this
         const openingParams = createDefaultOpeningParams(api)
-        const createOpeningFixture = new CreateLeadOpeningsFixture(api, query, openingParams, group)
+        const createOpeningFixture = new CreateLeadOpeningFixture(api, query, [openingParams], group)
         const openingRunner = new FixtureRunner(createOpeningFixture)
         await openingRunner.run()
         const [openingId] = createOpeningFixture.getCreatedOpeningIds()

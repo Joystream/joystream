@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { createType } from '@joystream/types'
-import { BaseQueryNodeFixture, FixtureRunner } from 'src/Fixture'
+import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../membership'
 import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../proposals'
 import { EventDetails } from '@joystream/cli/src/Types'
@@ -9,10 +9,10 @@ import { OpeningAddedEventFieldsFragment, OpeningFieldsFragment } from 'src/grap
 import { OpeningId } from '@joystream/types/primitives'
 import { IOpeningMetadata, OpeningMetadata } from '@joystream/metadata-protobuf'
 import { assert } from 'chai'
-import { QueryNodeApi } from 'src/QueryNodeApi'
-import { Api } from 'src/Api'
+import { QueryNodeApi } from '../../QueryNodeApi'
+import { Api } from '../../Api'
 import { Utils } from '../../utils'
-import { WorkingGroupOpeningType } from 'src/graphql/generated/schema'
+import { WorkingGroupOpeningType } from '../../graphql/generated/schema'
 import { assertQueriedOpeningMetadataIsValid } from './utils'
 import moment from 'moment'
 
@@ -46,19 +46,14 @@ export type OpeningParams = {
   expectMetadataFailure?: boolean
 }
 
-export class CreateLeadOpeningsFixture extends BaseQueryNodeFixture {
+export class CreateLeadOpeningFixture extends BaseQueryNodeFixture {
   protected events: OpeningAddedEventDetails[] = []
-  protected openingParams: OpeningParams
+  protected openingParams: OpeningParams[]
   protected group: WorkingGroupModuleName
 
-  public constructor(
-    api: Api,
-    query: QueryNodeApi,
-    openingParams: OpeningParams,
-    group: WorkingGroupModuleName,
-  ) {
-    super(api, query,)
-    this.openingParams = openingParams 
+  public constructor(api: Api, query: QueryNodeApi, openingParams: OpeningParams[], group: WorkingGroupModuleName) {
+    super(api, query)
+    this.openingParams = openingParams
     this.group = group
   }
 
@@ -71,32 +66,36 @@ export class CreateLeadOpeningsFixture extends BaseQueryNodeFixture {
     await new FixtureRunner(buyMembershipFixture).run()
     const [memberId] = buyMembershipFixture.getCreatedMembers()
 
-    // create lead opening proposal
-    const createProposalsFixture = new CreateProposalsFixture(api, query, [
-      {
-        type: 'CreateWorkingGroupLeadOpening',
-        details: createType('PalletProposalsCodexCreateOpeningParameters', {
-          'description': createType('Bytes', 'Proposal to hire lead'),
-          'stakePolicy': createType('PalletWorkingGroupStakePolicy', {
-            'stakeAmount': this.openingParams.stake,
-            'leavingUnstakingPeriod': this.openingParams.unstakingPeriod,
-          }),
-          'rewardPerBlock': this.openingParams.reward,
-          'group': createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Content'),
-        }),
-        asMember: memberId,
-        title: 'To be cancelled by runtime',
-        description: 'Proposal to be cancelled by runtime',
-      },
-    ])
-    await new FixtureRunner(createProposalsFixture).run()
-    const [createOpeninProposalId] = createProposalsFixture.getCreatedProposalsIds()
+    // create lead opening proposal with various parameters
+    await Promise.all(
+      this.openingParams.map(async (params) => {
+        const createProposalsFixture = new CreateProposalsFixture(api, query, [
+          {
+            type: 'CreateWorkingGroupLeadOpening',
+            details: createType('PalletProposalsCodexCreateOpeningParameters', {
+              'description': createType('Bytes', 'Proposal to hire lead'),
+              'stakePolicy': createType('PalletWorkingGroupStakePolicy', {
+                'stakeAmount': params.stake,
+                'leavingUnstakingPeriod': params.unstakingPeriod,
+              }),
+              'rewardPerBlock': params.reward,
+              'group': createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Content'),
+            }),
+            asMember: memberId,
+            title: 'To be cancelled by runtime',
+            description: 'Proposal to be cancelled by runtime',
+          },
+        ])
+        await new FixtureRunner(createProposalsFixture).run()
+        const [createOpeninProposalId] = createProposalsFixture.getCreatedProposalsIds()
 
-    // have the proposal approved
-    const decideOnProposalStatusFixture = new DecideOnProposalStatusFixture(api, query, [
-      { proposalId: createOpeninProposalId, status: 'Approved' },
-    ])
-    await new FixtureRunner(decideOnProposalStatusFixture).run()
+        // have the proposal approved
+        const decideOnProposalStatusFixture = new DecideOnProposalStatusFixture(api, query, [
+          { proposalId: createOpeninProposalId, status: 'Approved' },
+        ])
+        await new FixtureRunner(decideOnProposalStatusFixture).run()
+      })
+    )
   }
 
   public getCreatedOpeningIds(): OpeningId[] {
@@ -113,19 +112,19 @@ export class CreateLeadOpeningsFixture extends BaseQueryNodeFixture {
     // TODO add several opeining Params
     this.events.map((e, i) => {
       const qOpening = qOpenings.find((o) => o.runtimeId === e.event.data[0].toNumber())
-      const openingParams = this.openingParams
+      const params = this.openingParams[i]
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       Utils.assert(qOpening, 'Query node: Opening not found')
       assert.equal(qOpening.runtimeId, e.event.data[0].toNumber())
       assert.equal(qOpening.createdInEvent.id, qEvent.id)
       assert.equal(qOpening.group.name, this.group)
-      assert.equal(qOpening.rewardPerBlock, openingParams.reward.toString())
+      assert.equal(qOpening.rewardPerBlock, params.reward.toString())
       assert.equal(qOpening.type, WorkingGroupOpeningType.Regular)
       assert.equal(qOpening.status.__typename, 'OpeningStatusOpen')
-      assert.equal(qOpening.stakeAmount, openingParams.stake.toString())
-      assert.equal(qOpening.unstakingPeriod, openingParams.unstakingPeriod)
+      assert.equal(qOpening.stakeAmount, params.stake.toString())
+      assert.equal(qOpening.unstakingPeriod, params.unstakingPeriod)
       // Metadata
-      assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getOpeningMetadata(openingParams))
+      assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getOpeningMetadata(params))
     })
   }
 
