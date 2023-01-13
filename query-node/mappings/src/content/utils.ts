@@ -6,8 +6,10 @@ import {
   IMediaType,
   IChannelMetadata,
   ISubtitleMetadata,
+  IAppAction,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
+import { ed25519Verify } from '@polkadot/util-crypto'
 import { invalidMetadata, inconsistentState, logger, deterministicEntityId, EntityType } from '../common'
 import {
   // primary entities
@@ -164,6 +166,75 @@ async function processVideoSubtitleAssets(
       await store.save<StorageDataObject>(asset)
     }
   }
+}
+
+async function checkAppActionNonce<T>(
+  ctx: EventContext & StoreContext,
+  entity: T,
+  actionOwnerId: string | undefined,
+  appAction: DecodedMetadataObject<IAppAction>
+): Promise<boolean> {
+  if (!appAction.metadata?.nonceId || !actionOwnerId) {
+    return false
+  }
+
+  if (appAction.contentMetadata?.videoMetadata) {
+    return (
+      (await ctx.store.getMany(Video, { where: { channel: { ownerMember: { id: actionOwnerId } } } })).length ===
+      parseInt(appAction.metadata.nonceId)
+    )
+  }
+
+  if (appAction.channelMetadata) {
+    return (
+      (await ctx.store.getMany(Channel, { where: { ownerMember: { id: actionOwnerId } } })).length ===
+      parseInt(appAction.metadata.nonceId)
+    )
+  }
+
+  return false
+}
+
+async function validateAppSignature<T>(
+  ctx: EventContext & StoreContext,
+  entity: T,
+  actionOwnerId: string | undefined,
+  appAction: DecodedMetadataObject<IAppAction>
+) {
+  // If one is missing we cannot verify the signature
+  if (!appAction.appId || !appAction.signature || !appAction.metadata) {
+    return false
+  }
+
+  // todo change to App after https://github.com/Joystream/joystream/pull/4504
+  const app = await ctx.store.get(Channel, { where: { id: appAction.appId } })
+
+  if (!app || !(await checkAppActionNonce(ctx, entity, actionOwnerId, appAction))) {
+    return false
+  }
+
+  // todo create commitment based on the metadata
+  const appCommitment = 'commitment'
+
+  // todo: change to app.authKey after https://github.com/Joystream/joystream/pull/4504
+  return ed25519Verify(appCommitment, appAction.signature, app.title ?? '')
+}
+
+export async function processAppActionMetadata<T extends { appId?: string }>(
+  ctx: EventContext & StoreContext,
+  entity: T,
+  actionOwnerId: string | undefined,
+  meta: DecodedMetadataObject<IAppAction>,
+  entityMetadataProcessor: (entity: T) => Promise<T>
+): Promise<T> {
+  if (!(await validateAppSignature(ctx, entity, actionOwnerId, meta))) {
+    invalidMetadata('Invalid application signature')
+    return entityMetadataProcessor(entity)
+  }
+
+  integrateMeta(entity, meta, ['appId'])
+
+  return entityMetadataProcessor(entity)
 }
 
 export async function processChannelMetadata(
