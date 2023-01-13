@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { ContentMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { AppAction, ContentMetadata, IAppAction, IVideoMetadata } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
   PalletContentPermissionsContentActor as ContentActor,
@@ -43,6 +43,7 @@ import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
+  processAppActionMetadata,
   processVideoMetadata,
   unsetAssetRelations,
   videoRelationsForCounters,
@@ -93,19 +94,20 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   }
 
   // deserialize & process metadata
-  const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
+  const appAction = meta.isSome ? deserializeMetadata(AppAction, meta.unwrap()) : undefined
+  // const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
 
   // Content Creation Preference
   // 1. metadata == `VideoMetadata` || undefined -> create Video
   // 1. metadata == `PlaylistMetadata` -> create Playlist (Not Supported Yet)
 
-  await processCreateVideoMessage(ctx, channel, contentMetadata?.videoMetadata || undefined, contentCreatedEventData)
+  await processCreateVideoMessage(ctx, channel, appAction ?? undefined, contentCreatedEventData)
 }
 
 export async function processCreateVideoMessage(
   ctx: EventContext & StoreContext,
   channel: Channel,
-  metadata: DecodedMetadataObject<IVideoMetadata> | undefined,
+  appAction: DecodedMetadataObject<IAppAction> | undefined,
   contentCreatedEventData: ContentCreatedEventData
 ): Promise<void> {
   const { store, event } = ctx
@@ -123,8 +125,11 @@ export async function processCreateVideoMessage(
     reactionsCount: 0,
   })
 
-  if (metadata) {
-    await processVideoMetadata(ctx, video, metadata, newDataObjectIds)
+  if (appAction) {
+    const videoMetadata = appAction.contentMetadata?.videoMetadata ?? {}
+    await processAppActionMetadata(ctx, video, appAction, (entity) =>
+      processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
+    )
   }
 
   // save video

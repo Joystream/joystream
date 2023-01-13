@@ -39,6 +39,9 @@ type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
+  "Entity indentifier for Application used for channel creation"
+  appId: ID
+
   "Member owning the channel (if any)"
   ownerMember: Membership
 
@@ -124,6 +127,9 @@ type VideoCategory @entity {
 type Video @entity {
   "Runtime identifier"
   id: ID!
+
+  "Entity indentifier for Application used for channel creation"
+  appId: ID
 
   "Reference to videos's channel"
   channel: Channel!

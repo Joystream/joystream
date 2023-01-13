@@ -2,7 +2,12 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
+import {
+  AppAction,
+  ChannelMetadata,
+  ChannelModeratorRemarked,
+  ChannelOwnerRemarked,
+} from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId } from '@joystream/types/primitives'
 import {
   Channel,
@@ -42,6 +47,7 @@ import {
   processChannelMetadata,
   unsetAssetRelations,
   mapAgentPermission,
+  processAppActionMetadata,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -78,8 +84,10 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
-    await processChannelMetadata(ctx, channel, metadata, dataObjects)
+    const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap()) || {}
+    await processAppActionMetadata(ctx, channel, channel.ownerMember?.id, appAction, (entity: Channel) =>
+      processChannelMetadata(ctx, entity, appAction.channelMetadata ?? {}, dataObjects)
+    )
   }
 
   // save entity
