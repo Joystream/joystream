@@ -27,6 +27,7 @@ import {
   logger,
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
+  getWorkingGroupByName,
 } from './common'
 import {
   Membership,
@@ -67,6 +68,16 @@ import {
 } from './content'
 import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { membershipConfig } from './bootstrap-data'
+import { BN } from 'bn.js'
+
+// FIXME: Should be emitted as part of MemberInvited event, but this requires a runtime upgrade
+async function initialInvitationBalance(store: DatabaseManager) {
+  const lastInitialInviationBalanceUpdateEvent = await store.get(InitialInvitationBalanceUpdatedEvent, {
+    order: { inBlock: 'DESC', indexInBlock: 'DESC' },
+  })
+  return lastInitialInviationBalanceUpdateEvent?.newInitialBalance || new BN(membershipConfig.initialInvitationBalance)
+}
 
 async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations })
@@ -464,6 +475,12 @@ export async function members_MemberInvited({ store, event }: EventContext & Sto
   const invitingMember = await getMemberById(store, inviteMembershipParameters.invitingMemberId)
   invitingMember.inviteCount -= 1
   await store.save<Membership>(invitingMember)
+
+  // Decrease working group budget
+  const membershipWg = await getWorkingGroupByName(store, 'membershipWorkingGroup')
+  const invitedMemberBalance = await initialInvitationBalance(store)
+  membershipWg.budget = membershipWg.budget.sub(invitedMemberBalance)
+  await store.save<WorkingGroup>(membershipWg)
 
   const memberInvitedEvent = new MemberInvitedEvent({
     ...genericEventFields(event),
