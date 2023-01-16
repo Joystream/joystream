@@ -289,6 +289,10 @@ async function parseProposalDetails(
     details.minCashoutAllowed = unwrap(specificDetails.minCashoutAllowed)
     details.maxCashoutAllowed = unwrap(specificDetails.maxCashoutAllowed)
     details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
+
+    const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
+    details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
+
     return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
