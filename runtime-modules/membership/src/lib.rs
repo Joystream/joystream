@@ -1187,7 +1187,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoMembership::<T>::member_remark()]
+        #[weight = Module::<T>::calculate_weight_for_member_remark(payment)]
         pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>, payment: Option<(T::AccountId, T::Balance)>) {
             let sender = ensure_signed(origin)?;
             Self::ensure_is_controller_account_for_member(&member_id, &sender)?;
@@ -1288,6 +1288,14 @@ impl<T: Config> Module<T> {
                 to_kb(Self::text_length_unwrap_or_default(&params.handle)),
                 to_kb(params.metadata.len().saturated_into()),
             )
+        }
+    }
+
+    fn calculate_weight_for_member_remark(payment: &Option<(T::AccountId, T::Balance)>) -> Weight {
+        if payment.is_some() {
+            WeightInfoMembership::<T>::member_remark_with_payment()
+        } else {
+            WeightInfoMembership::<T>::member_remark_without_payment()
         }
     }
 
