@@ -1249,7 +1249,7 @@ impl<T: Config> Module<T> {
             (true, true) => WeightInfoMembership::<T>::update_accounts_both(),
             (false, true) => WeightInfoMembership::<T>::update_accounts_root(),
             (true, false) => WeightInfoMembership::<T>::update_accounts_controller(),
-            _ => WeightInfoMembership::<T>::update_accounts_both(),
+            _ => WeightInfoMembership::<T>::update_accounts_none(),
         }
     }
 
