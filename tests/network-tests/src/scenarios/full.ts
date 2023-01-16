@@ -85,11 +85,11 @@ scenario('Full', async ({ job, env }) => {
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
   job('group status', groupStatus).requires(sudoHireLead)
   job('worker actions', workerActions).requires(sudoHireLead)
-  job('group budget', groupBudget).requires(sudoHireLead)
+  const groupBudgetJob = job('group budget', groupBudget).requires(sudoHireLead)
 
   // Memberships (depending on hired lead)
   job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
-  job('inviting members', invitingMebers).after(sudoHireLead)
+  job('inviting members', invitingMebers).after(groupBudgetJob)
 
   // Forum:
   job('forum categories', categories).requires(sudoHireLead)
