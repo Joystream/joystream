@@ -616,12 +616,12 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
 
     // emit log event
     logger.info('Member remarked', { decodedMessage })
-  } catch (e) {
+  } catch (error) {
     // emit log event
-    logger.info(`Bad metadata for member's remark`, { e })
+    logger.info(`Bad metadata for member's remark`, { error })
 
     // save metaprotocol info
-    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for member's remark`)
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for member's remark, error: ${error}}`)
   }
 }
 

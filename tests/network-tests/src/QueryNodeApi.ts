@@ -447,6 +447,10 @@ import {
   GetChannelPaymentMadeEventsByEventIdsQuery,
   GetChannelPaymentMadeEventsByEventIdsQueryVariables,
   GetChannelPaymentMadeEventsByEventIds,
+  MetaprotocolTransactionStatusEventFieldsFragment,
+  GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
+  GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables,
+  GetMetaprotocolTransactionalStatusEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1538,5 +1542,15 @@ export class QueryNodeApi {
       GetChannelPaymentMadeEventsByEventIdsQuery,
       GetChannelPaymentMadeEventsByEventIdsQueryVariables
     >(GetChannelPaymentMadeEventsByEventIds, { eventIds }, 'channelPaymentMadeEvents')
+  }
+
+  public async getMetaprotocolTransactionEvents(
+    events: EventDetails[]
+  ): Promise<MetaprotocolTransactionStatusEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
+      GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables
+    >(GetMetaprotocolTransactionalStatusEventsByEventIds, { eventIds }, 'metaprotocolTransactionStatusEvents')
   }
 }

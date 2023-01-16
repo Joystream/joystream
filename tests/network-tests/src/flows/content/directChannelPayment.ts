@@ -12,8 +12,9 @@ import {
 import { createJoystreamCli } from '../utils'
 import {
   ChannelPaymentParams,
-  DirectChannelPaymentsFixture,
-} from '../../fixtures/content/channelPayouts/DirectChannelPaymentFixture'
+  DirectChannelPaymentsHappyCaseFixture,
+} from '../../fixtures/content/channelPayouts/DirectChannelPaymentHappyCaseFixture'
+import { DirectChannelPaymentsWithInvalidRewardAccountFixture } from '../../fixtures/content/channelPayouts/DirectChannelPaymentWithInvalidRewardAccountFixture'
 
 export default async function directChannelPayment({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:direct channel payment')
@@ -66,8 +67,8 @@ export default async function directChannelPayment({ api, query }: FlowProps): P
   const channel = await query.channelById(channelId.toString())
   Utils.assert(channel?.rewardAccount, `Channel ${channelId} reward account is not set`)
 
-  // Comments input
-  const channelPayments: ChannelPaymentParams[] = [
+  // direct channel payment input input
+  const validChannelPayments: ChannelPaymentParams[] = [
     // Channel Payment for a video:
     {
       msg: {
@@ -89,8 +90,27 @@ export default async function directChannelPayment({ api, query }: FlowProps): P
   ]
 
   // check that direct channel payment is working
-  const channelPaymentsFixture = new DirectChannelPaymentsFixture(api, query, channelPayments)
-  await new FixtureRunner(channelPaymentsFixture).runWithQueryNodeChecks()
+  const channelPaymentsSuccessfulFixture = new DirectChannelPaymentsHappyCaseFixture(api, query, validChannelPayments)
+  await new FixtureRunner(channelPaymentsSuccessfulFixture).runWithQueryNodeChecks()
+
+  const invalidChannelPayments: ChannelPaymentParams[] = [
+    // Channel Payment for a video:
+    {
+      msg: {
+        videoId: Long.fromNumber(videosData[0].videoId),
+        rationale: 'Really good video',
+      },
+      payment: [participants[0].account, channelPaymentAmount],
+      asMember: participants[0].memberId,
+    },
+  ]
+  // check that direct channel payment failed with invalid channel's reward account recipient address
+  const channelPaymentsErroredFixture = new DirectChannelPaymentsWithInvalidRewardAccountFixture(
+    api,
+    query,
+    invalidChannelPayments
+  )
+  await new FixtureRunner(channelPaymentsErroredFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

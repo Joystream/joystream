@@ -7,7 +7,7 @@ import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { ChannelPaymentMadeEventFieldsFragment } from '../../../graphql/generated/queries'
+import { MetaprotocolTransactionStatusEventFieldsFragment } from '../../../graphql/generated/queries'
 import { EventDetails, EventType } from '../../../types'
 import { Utils } from '../../../utils'
 
@@ -19,7 +19,7 @@ export type ChannelPaymentParams = {
   payment: [string, BN]
 }
 
-export class DirectChannelPaymentsFixture extends StandardizedFixture {
+export class DirectChannelPaymentsWithInvalidRewardAccountFixture extends StandardizedFixture {
   protected paymentParams: ChannelPaymentParams[]
 
   public constructor(api: Api, query: QueryNodeApi, paymentParams: ChannelPaymentParams[]) {
@@ -65,18 +65,15 @@ export class DirectChannelPaymentsFixture extends StandardizedFixture {
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: ChannelPaymentMadeEventFieldsFragment, i: number): void {
-    const params = this.paymentParams[i]
-    assert.equal(qEvent.rationale, params.msg.rationale)
-    assert.equal(qEvent.payer.id, params.asMember.toString())
-    assert.equal(qEvent.amount, params.payment[1])
+  protected assertQueryNodeEventIsValid(qEvent: MetaprotocolTransactionStatusEventFieldsFragment): void {
+    assert.equal(qEvent.status.__typename, 'MetaprotocolTransactionErrored')
   }
 
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
     // Query the events
     await this.query.tryQueryWithTimeout(
-      () => this.query.getChannelPaymentMadeEvents(this.events),
+      () => this.query.getMetaprotocolTransactionEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
   }
