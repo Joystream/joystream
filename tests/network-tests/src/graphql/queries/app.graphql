@@ -17,11 +17,17 @@ fragment AppFields on App {
 query getAppById($id: ID!) {
   appByUniqueInput(where: { id: $id }) {
     ...AppFields
+    channel {
+      ...ChannelFields
+    }
   }
 }
 
 query getAppsByName($name: String!) {
   apps(where: { name_eq: $name }) {
     ...AppFields
+    channel {
+      ...ChannelFields
+    }
   }
 }

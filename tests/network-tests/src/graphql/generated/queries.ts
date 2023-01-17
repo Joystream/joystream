@@ -21,13 +21,13 @@ export type GetAppByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
 
-export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<AppFieldsFragment> }
+export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<{ channel: ChannelFieldsFragment } & AppFieldsFragment> }
 
 export type GetAppsByNameQueryVariables = Types.Exact<{
   name: Types.Scalars['String']
 }>
 
-export type GetAppsByNameQuery = { apps: Array<AppFieldsFragment> }
+export type GetAppsByNameQuery = { apps: Array<{ channel: ChannelFieldsFragment } & AppFieldsFragment> }
 
 type DataObjectTypeFields_DataObjectTypeChannelAvatar_Fragment = {
   __typename: 'DataObjectTypeChannelAvatar'
@@ -90,6 +90,7 @@ export type ChannelFieldsFragment = {
   isCensored: boolean
   rewardAccount: string
   language?: Types.Maybe<{ iso: string }>
+  app?: Types.Maybe<AppFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -2595,6 +2596,9 @@ export const ChannelFields = gql`
       iso
     }
     isCensored
+    app {
+      ...AppFields
+    }
     ownerMember {
       id
     }
@@ -2612,6 +2616,7 @@ export const ChannelFields = gql`
     }
     rewardAccount
   }
+  ${AppFields}
   ${StorageDataObjectFields}
 `
 export const LicenseFields = gql`
@@ -4888,17 +4893,25 @@ export const GetAppById = gql`
   query getAppById($id: ID!) {
     appByUniqueInput(where: { id: $id }) {
       ...AppFields
+      channel {
+        ...ChannelFields
+      }
     }
   }
   ${AppFields}
+  ${ChannelFields}
 `
 export const GetAppsByName = gql`
   query getAppsByName($name: String!) {
     apps(where: { name_eq: $name }) {
       ...AppFields
+      channel {
+        ...ChannelFields
+      }
     }
   }
   ${AppFields}
+  ${ChannelFields}
 `
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {
