@@ -581,6 +581,11 @@ export class Api {
     }
   }
 
+  public async getNextOpeningId(group: WorkingGroupModuleName): Promise<u64> {
+    const openingId = await this.api.query[group].nextOpeningId()
+    return openingId
+  }
+
   public async getOpening(group: WorkingGroupModuleName, id: OpeningId): Promise<Opening> {
     const opening = await this.api.query[group].openingById(id)
     if (opening.isEmpty) {
@@ -842,6 +847,8 @@ export class Api {
     initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
   ): Promise<ISubmittableResult[]> {
     // path to append to base SURI
+    const debug = extendDebug('api-factory')
+    debug(`assigning Worker WellKnown Account for ${group}`)
     const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
     const account = this.createCustomKeyPair(uri).address
     return Promise.all([

@@ -1,7 +1,8 @@
-import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
+import { PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletCommonWorkingGroupIterableEnumsWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
 import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
 import { ProposalType, WorkingGroupModuleName } from './types'
+import { createType } from '@joystream/types'
 
 export const debuggingCli = false // set to true to see CLI commands run
 
@@ -40,6 +41,29 @@ export const workingGroupNameByModuleName = {
   'operationsWorkingGroupGamma': 'OperationsGamma',
 }
 validateType<{ [k in WorkingGroupModuleName]: string }>(workingGroupNameByModuleName)
+
+export function getWorkingGroupNameByModuleName(group: WorkingGroupModuleName): PalletCommonWorkingGroupIterableEnumsWorkingGroup {
+  switch (group) {
+    case 'storageWorkingGroup':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Storage')
+    case 'contentWorkingGroup':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Content')
+    case 'forumWorkingGroup':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Forum')
+    case 'membershipWorkingGroup':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Membership')
+    case 'operationsWorkingGroupAlpha':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'OperationsAlpha')
+    case 'appWorkingGroup':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'App')
+    case 'operationsWorkingGroupBeta':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'OperationsBeta')
+    case 'distributionWorkingGroup':
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Distribution')
+    default:
+      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'OperationsGamma')
+  }
+}
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
   if (group.isContent) {

@@ -2,7 +2,7 @@ import { FlowProps } from '../../Flow'
 import {
   ApplyOnOpeningsHappyCaseFixture,
   CancelOpeningsFixture,
-  CreateLeadOpeningFixture,
+  CreateOpeningsFixture,
   WithdrawApplicationsFixture,
   ApplicantDetails,
   createDefaultOpeningParams,
@@ -81,7 +81,7 @@ export default async function openingsAndApplications({ api, query, env }: FlowP
       )
 
       // Create an opening
-      const createOpeningsFixture = new CreateLeadOpeningFixture(api, query, openingsToCreate(api), group)
+      const createOpeningsFixture = new CreateOpeningsFixture(api, query, group, openingsToCreate(api))
       const openingsRunner = new FixtureRunner(createOpeningsFixture)
       await openingsRunner.run()
       const [openingId] = createOpeningsFixture.getCreatedOpeningIds()
