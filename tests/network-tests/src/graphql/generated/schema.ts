@@ -151,6 +151,10 @@ export type App = BaseGraphQlObject & {
   deletedById?: Maybe<Scalars['ID']>
   version: Scalars['Int']
   name: Scalars['String']
+  ownerMember?: Maybe<Membership>
+  ownerMemberId?: Maybe<Scalars['String']>
+  ownerCuratorGroup?: Maybe<CuratorGroup>
+  ownerCuratorGroupId?: Maybe<Scalars['String']>
   websiteUrl?: Maybe<Scalars['String']>
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
@@ -162,6 +166,8 @@ export type App = BaseGraphQlObject & {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
+  channel: Channel
+  channelId: Scalars['String']
 }
 
 export type AppConnection = {
@@ -172,6 +178,8 @@ export type AppConnection = {
 
 export type AppCreateInput = {
   name: Scalars['String']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
   websiteUrl?: Maybe<Scalars['String']>
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
@@ -183,6 +191,7 @@ export type AppCreateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
+  channel: Scalars['ID']
 }
 
 export type AppEdge = {
@@ -199,6 +208,10 @@ export enum AppOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   NameAsc = 'name_ASC',
   NameDesc = 'name_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
   WebsiteUrlAsc = 'websiteUrl_ASC',
   WebsiteUrlDesc = 'websiteUrl_DESC',
   UseUriAsc = 'useUri_ASC',
@@ -219,10 +232,14 @@ export enum AppOrderByInput {
   CategoryDesc = 'category_DESC',
   AuthKeyAsc = 'authKey_ASC',
   AuthKeyDesc = 'authKey_DESC',
+  ChannelAsc = 'channel_ASC',
+  ChannelDesc = 'channel_DESC',
 }
 
 export type AppUpdateInput = {
   name?: Maybe<Scalars['String']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
   websiteUrl?: Maybe<Scalars['String']>
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
@@ -234,6 +251,7 @@ export type AppUpdateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
+  channel?: Maybe<Scalars['ID']>
 }
 
 export type AppWhereInput = {
@@ -319,6 +337,9 @@ export type AppWhereInput = {
   authKey_startsWith?: Maybe<Scalars['String']>
   authKey_endsWith?: Maybe<Scalars['String']>
   authKey_in?: Maybe<Array<Scalars['String']>>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  channel?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<AppWhereInput>>
   OR?: Maybe<Array<AppWhereInput>>
   NOT?: Maybe<Array<AppWhereInput>>
@@ -6347,6 +6368,7 @@ export type Channel = BaseGraphQlObject & {
   channelStateBloatBond: Scalars['BigInt']
   /** Channel's privilege level */
   privilegeLevel?: Maybe<Scalars['Int']>
+  app?: Maybe<App>
   /** Cumulative rewards claimed by this channel */
   cumulativeRewardClaimed?: Maybe<Scalars['BigInt']>
   claimedRewards: Array<ChannelRewardClaimedEvent>
@@ -7740,6 +7762,7 @@ export type ChannelWhereInput = {
   channelrewardclaimedandwithdrawneventchannel_none?: Maybe<ChannelRewardClaimedAndWithdrawnEventWhereInput>
   channelrewardclaimedandwithdrawneventchannel_some?: Maybe<ChannelRewardClaimedAndWithdrawnEventWhereInput>
   channelrewardclaimedandwithdrawneventchannel_every?: Maybe<ChannelRewardClaimedAndWithdrawnEventWhereInput>
+  app?: Maybe<AppWhereInput>
   commentcreatedeventvideoChannel_none?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_some?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_every?: Maybe<CommentCreatedEventWhereInput>
@@ -9932,6 +9955,7 @@ export type CuratorGroup = BaseGraphQlObject & {
   channels: Array<Channel>
   nftCollectorInChannels: Array<ChannelNftCollectors>
   curators: Array<CuratorAgentPermissions>
+  appownerCuratorGroup?: Maybe<Array<App>>
   auctionbidcanceledeventownerCuratorGroup?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventownerCuratorGroup?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventownerCuratorGroup?: Maybe<Array<AuctionCanceledEvent>>
@@ -10018,6 +10042,9 @@ export type CuratorGroupWhereInput = {
   curators_none?: Maybe<CuratorAgentPermissionsWhereInput>
   curators_some?: Maybe<CuratorAgentPermissionsWhereInput>
   curators_every?: Maybe<CuratorAgentPermissionsWhereInput>
+  appownerCuratorGroup_none?: Maybe<AppWhereInput>
+  appownerCuratorGroup_some?: Maybe<AppWhereInput>
+  appownerCuratorGroup_every?: Maybe<AppWhereInput>
   auctionbidcanceledeventownerCuratorGroup_none?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_some?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_every?: Maybe<AuctionBidCanceledEventWhereInput>
@@ -14663,6 +14690,7 @@ export type Membership = BaseGraphQlObject & {
   memberEnglishAuctionSettledEvents: Array<EnglishAuctionSettledEvent>
   memberOpenAuctionAcceptedBidEvents: Array<OpenAuctionBidAcceptedEvent>
   memberBidMadeCompletingAuctionEvents: Array<BidMadeCompletingAuctionEvent>
+  appownerMember?: Maybe<Array<App>>
   auctioninitialOwner?: Maybe<Array<Auction>>
   auctionwinningMember?: Maybe<Array<Auction>>
   auctionbidcanceledeventmember?: Maybe<Array<AuctionBidCanceledEvent>>
@@ -15519,6 +15547,9 @@ export type MembershipWhereInput = {
   memberBidMadeCompletingAuctionEvents_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   memberBidMadeCompletingAuctionEvents_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   memberBidMadeCompletingAuctionEvents_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  appownerMember_none?: Maybe<AppWhereInput>
+  appownerMember_some?: Maybe<AppWhereInput>
+  appownerMember_every?: Maybe<AppWhereInput>
   auctioninitialOwner_none?: Maybe<AuctionWhereInput>
   auctioninitialOwner_some?: Maybe<AuctionWhereInput>
   auctioninitialOwner_every?: Maybe<AuctionWhereInput>

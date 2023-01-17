@@ -8,6 +8,29 @@ type Language @entity {
   createdInBlock: Int!
 }
 
+type App @entity {
+  id: ID!
+  name: String!
+  ownerMember: Membership
+  ownerCuratorGroup: CuratorGroup
+  # Url where user can read more about the project or company for this app
+  websiteUrl: String
+  # Url to the app
+  useUri: String
+  # what should I to do with icons?
+  smallIcon: String
+  mediumIcon: String
+  bigIcon: String
+  oneLiner: String
+  description: String
+  termsOfService: String
+  # List of platforms on which the app will be available, e.g. [mobile, web, native]
+  platforms: [String]
+  category: String
+  authKey: String
+  channel: Channel!
+}
+
 type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -67,6 +90,8 @@ type Channel @entity {
 
   "Channel's privilege level"
   privilegeLevel: Int
+
+  app: App @derivedFrom(field: "channel")
 
   #################
   # Channel Rewards
