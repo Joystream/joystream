@@ -17,39 +17,35 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
   const joystreamCli = await createJoystreamCli()
 
   // settings
-  const videoCategoryCount = 2
+  const videoCount = 0
+  const videoCategoryCount = 0
+  const channelCount = 1
   const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // create channel categories and video categories
   const createContentStructureFixture = new CreateContentStructureFixture(api, query, joystreamCli, videoCategoryCount)
   await new FixtureRunner(createContentStructureFixture).run()
 
+  const { videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+
   // create author of channels and videos
   const createMembersFixture = new CreateMembersFixture(api, query, 3, 0, sufficientTopupAmount)
   await new FixtureRunner(createMembersFixture).run()
   const [member] = createMembersFixture.getCreatedItems().members
 
-  await joystreamCli.createChannel(
-    {
-      title: 'App channel',
-      description: 'Channel for testing apps',
-      isPublic: true,
-      language: 'en',
-    },
-    ['--context', 'Member', '--useMemberId', member.memberId.toString()]
+  // create channels and videos
+  const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
+    api,
+    query,
+    joystreamCli,
+    channelCount,
+    videoCount,
+    videoCategoryIds[0],
+    member
   )
+  await new FixtureRunner(createChannelsAndVideos).run()
 
-  // // create channels and videos
-  // const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
-  //   api,
-  //   query,
-  //   joystreamCli,
-  //   channelCount,
-  //   videoCount,
-  //   videoCategoryIds[0],
-  //   member
-  // )
-  // await new FixtureRunner(createChannelsAndVideos).run()
+  const [channelId] = createChannelsAndVideos.getCreatedItems().channelIds
 
   const newAppName = 'create_me'
   const newAppMetadata: Partial<AppMetadata> = {
@@ -59,7 +55,7 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(member.memberId, newAppName)
+  await api.createApp(member.memberId, channelId, newAppName, newAppMetadata)
 
   await query.tryQueryWithTimeout(
     () => query.getAppsByName(newAppName),

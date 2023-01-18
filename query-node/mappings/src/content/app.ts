@@ -49,6 +49,9 @@ export async function processCreateAppMessage(
     platforms: appMetadata?.platforms || undefined,
     category: appMetadata?.category || undefined,
     authKey: appMetadata?.authKey || undefined,
+    ownerCuratorGroup: channel.ownerCuratorGroup,
+    ownerMember: channel.ownerMember,
+    channel,
   })
   await store.save<App>(newApp)
   logger.info('App has been created', { name })
