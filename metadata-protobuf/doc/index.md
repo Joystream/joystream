@@ -602,7 +602,6 @@ edit comment by author
 | rationale | [string](#string) | optional | Reason why payment is being made |
 | video_id | [uint64](#uint64) | optional |  |
 | channel_id | [uint64](#uint64) | optional |  |
-| app_id | [uint32](#uint32) | optional |  |
 
 
 

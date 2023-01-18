@@ -117,11 +117,10 @@ message MakeChannelPayment {
     // Reason why payment is being made
     optional string rationale = 1;
 
-    // Context of payment, if it is being made for a specific video, channel, or from an app/gateway
+    // Context of payment, if it is being made for a specific video, a channel.
     oneof payment_context {
         uint64 video_id = 2;
         uint64 channel_id = 3;
-        uint32 app_id = 4;
     }
 }
 

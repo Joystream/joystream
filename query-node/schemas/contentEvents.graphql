@@ -681,13 +681,9 @@ type PaymentContextChannel @variant {
   channel: Channel!
 }
 
-# type PaymentContextApp @variant {
-#   "Gateway/App that made the payment to specific channel"
-#   app: App!
-# }
-
 "Various Channel Payment Contexts"
-union PaymentContext = PaymentContextVideo | PaymentContextChannel # | PaymentContextApp
+union PaymentContext = PaymentContextVideo | PaymentContextChannel
+
 "Direct channel payment by any member by-passing the council payouts"
 type ChannelPaymentMadeEvent @entity {
   ### GENERIC DATA ###

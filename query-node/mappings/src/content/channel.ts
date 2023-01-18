@@ -602,8 +602,6 @@ export async function processChannelPaymentFromMember(
       }
       paymentContext.videoId = channel.id
       return paymentContext
-    } else if (message.appId) {
-      // TODO: Add support for app payments
     }
   }
 
