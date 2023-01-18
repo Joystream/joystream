@@ -17,6 +17,7 @@ import upcomingOpenings from '../flows/working-groups/upcomingOpenings'
 import groupStatus from '../flows/working-groups/groupStatus'
 import workerActions from '../flows/working-groups/workerActions'
 import groupBudget from '../flows/working-groups/groupBudget'
+import terminateLeads from '../flows/working-groups/terminateLeads'
 import proposals from '../flows/proposals'
 import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
@@ -78,9 +79,12 @@ scenario('Full', async ({ job, env }) => {
   ]).requires(councilFailuresJob)
 
   // Working groups
-  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    proposalsJob
+  // Before any other jobs hire then terminate all WG leads
+  const terminateLeadsJob = job('terminate working-group leads', terminateLeads).after(
+    job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(proposalsJob)
   )
+  // Re-hire leads then go on
+  const sudoHireLead = job('sudo re-hire leads', leadOpening(true)).after(terminateLeadsJob)
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
   job('group status', groupStatus).requires(sudoHireLead)

@@ -57,3 +57,14 @@ message WorkingGroupMetadataAction {
     RemoveUpcomingOpening remove_upcoming_opening = 3;
   }
 }
+
+message ModeratePost {
+  required uint64 post_id = 1;
+  required string rationale = 2;
+}
+
+message RemarkMetadataAction {
+  oneof action {
+    ModeratePost moderate_post = 1;
+  }
+}
