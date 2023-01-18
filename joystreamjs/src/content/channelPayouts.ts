@@ -13,6 +13,7 @@ import { Reader, Writer } from 'protobufjs'
 import { ChannelPayoutProof } from '../../typings/ChannelPayoutsPayload.schema'
 import { ChannelPayoutsVector } from '../../typings/ChannelPayoutsVector.schema'
 import { asValidatedMetadata, readBytesFromFile, ReadFileContext } from '../utils'
+import { Buffer } from 'buffer'
 
 export const hashFunc = blake2AsU8a
 
