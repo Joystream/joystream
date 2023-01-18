@@ -3,7 +3,7 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
-import { ChannelId, DataObjectId } from '@joystream/types/primitives'
+import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
 import {
   Channel,
   Collaborator,
@@ -18,6 +18,7 @@ import {
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
   ChannelVisibilitySetByModeratorEvent,
+  App,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -46,6 +47,7 @@ import {
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
+import { processCreateAppMessage } from './app'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -385,6 +387,12 @@ async function processOwnerRemark(
       decodedMessage.moderateComment!
     )
     return { commentModeratedId: comment.id }
+  }
+
+  if (messageType === 'createApp') {
+    await processCreateAppMessage(store, event, channelId, decodedMessage.createApp!)
+
+    return {}
   }
 
   return inconsistentState('Unsupported message type in channel owner remark action', messageType)

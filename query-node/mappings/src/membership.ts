@@ -70,7 +70,6 @@ import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { membershipConfig } from './bootstrap-data'
 import { BN } from 'bn.js'
-import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
 
 // FIXME: Should be emitted as part of MemberInvited event, but this requires a runtime upgrade
 async function initialInvitationBalance(store: DatabaseManager) {
@@ -690,24 +689,6 @@ async function processMemberRemark(
     const videoCategory = await createVideoCategory(store, event, createParams)
 
     return { videoCategoryCreatedId: videoCategory.id }
-  }
-
-  if (messageType === 'createApp') {
-    await processCreateAppMessage(store, event, memberId, decodedMessage.createApp!)
-
-    return {}
-  }
-
-  if (messageType === 'updateApp') {
-    await processUpdateAppMessage(store, event, memberId, decodedMessage.updateApp!)
-
-    return {}
-  }
-
-  if (messageType === 'deleteApp') {
-    await processDeleteAppMessage(store, event, memberId, decodedMessage.deleteApp!)
-
-    return {}
   }
 
   // unknown message type

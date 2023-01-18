@@ -1,17 +1,18 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { CreateApp, ICreateApp, IDeleteApp, IUpdateApp } from '@joystream/metadata-protobuf'
-import { MemberId } from '@joystream/types/primitives'
-import { App } from 'query-node/dist/model'
-import { logger } from '../common'
+import { ICreateApp } from '@joystream/metadata-protobuf'
+import { ChannelId } from '@joystream/types/primitives'
+import { logger } from '@joystream/warthog'
+import { Channel, App } from 'query-node/dist/model'
+import { inconsistentState } from '../common'
 
 export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  memberId: MemberId,
+  channelId: ChannelId,
   message: ICreateApp
 ): Promise<void> {
   const { name, appMetadata } = message
-  const appId = await getAppId(store, event)
+  const appId = await getAppId(event)
 
   const isAppExists = await store.get(App, {
     where: {
@@ -24,10 +25,19 @@ export async function processCreateAppMessage(
     return
   }
 
+  // load channel
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+  })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Non-existing channel update requested', channelId)
+  }
+
   const newApp = new App({
     name,
     id: appId,
-    createdById: memberId.toString(),
     websiteUrl: appMetadata?.websiteUrl || undefined,
     useUri: appMetadata?.useUri || undefined,
     smallIcon: appMetadata?.smallIcon || undefined,
@@ -40,84 +50,56 @@ export async function processCreateAppMessage(
     category: appMetadata?.category || undefined,
     authKey: appMetadata?.authKey || undefined,
   })
-  await store.save<CreateApp>(newApp)
+  await store.save<App>(newApp)
   logger.info('App has been created', { name })
+
+  channel.app = newApp
+
+  await store.save<Channel>(channel)
+  logger.info('Channel has been updated', { channel })
 }
 
-export async function processUpdateAppMessage(
-  store: DatabaseManager,
-  event: SubstrateEvent,
-  memberId: MemberId,
-  message: IUpdateApp
-): Promise<void> {
-  const { appId, appMetadata } = message
-
-  const app = await getAppByIdAndMemberId(store, appId, memberId)
-
-  if (!app) {
-    logger.error("App doesn't exists or doesn't belong to the member", { appId, memberId: memberId.toString() })
-    return
-  }
-
-  app.websiteUrl = appMetadata?.websiteUrl || app.websiteUrl
-  app.useUri = appMetadata?.useUri || app.useUri
-  app.smallIcon = appMetadata?.smallIcon || app.smallIcon
-  app.mediumIcon = appMetadata?.mediumIcon || app.mediumIcon
-  app.bigIcon = appMetadata?.bigIcon || app.bigIcon
-  app.oneLiner = appMetadata?.oneLiner || app.oneLiner
-  app.description = appMetadata?.description || app.description
-  app.termsOfService = appMetadata?.termsOfService || app.termsOfService
-  app.platforms = appMetadata?.platforms || app.platforms
-  app.category = appMetadata?.category || app.category
-  app.authKey = appMetadata?.authKey || app.authKey
-
-  await store.save<App>(app)
-  logger.info('App has been updated', { appId })
+async function getAppId(event: SubstrateEvent): Promise<string> {
+  return `${event.blockNumber}-${event.indexInBlock}`
 }
 
-export async function processDeleteAppMessage(
-  store: DatabaseManager,
-  event: SubstrateEvent,
-  memberId: MemberId,
-  message: IDeleteApp
-): Promise<void> {
-  const { appId } = message
+// export async function processUpdateAppMessage(store: DatabaseManager, message: IUpdateApp): Promise<void> {
+//   const { appId, appMetadata } = message
 
-  const app = await getAppByIdAndMemberId(store, appId, memberId)
+//   const app = await getAppByIdAndMemberId(store, appId)
 
-  if (!app) {
-    logger.error("App doesn't exists or doesn't belong to the member", { appId, memberId: memberId.toString() })
-    return
-  }
+//   if (!app) {
+//     logger.error("App doesn't exists or doesn't belong to the member", { appId })
+//     return
+//   }
 
-  await store.remove<App>(new App({ id: appId }))
-  logger.info('App has been removed', { appId })
-}
+//   app.websiteUrl = appMetadata?.websiteUrl || app.websiteUrl
+//   app.useUri = appMetadata?.useUri || app.useUri
+//   app.smallIcon = appMetadata?.smallIcon || app.smallIcon
+//   app.mediumIcon = appMetadata?.mediumIcon || app.mediumIcon
+//   app.bigIcon = appMetadata?.bigIcon || app.bigIcon
+//   app.oneLiner = appMetadata?.oneLiner || app.oneLiner
+//   app.description = appMetadata?.description || app.description
+//   app.termsOfService = appMetadata?.termsOfService || app.termsOfService
+//   app.platforms = appMetadata?.platforms || app.platforms
+//   app.category = appMetadata?.category || app.category
+//   app.authKey = appMetadata?.authKey || app.authKey
 
-async function getAppId(store: DatabaseManager, event: SubstrateEvent): Promise<string> {
-  let appId = `${event.blockNumber}-${event.indexInBlock}`
-  let tries = 0
+//   await store.save<App>(app)
+//   logger.info('App has been updated', { appId })
+// }
 
-  // make sure app id is unique
-  while (await store.get<App>(App, { where: { id: appId } })) {
-    tries++
-    appId = `${event.blockNumber}-${event.indexInBlock}-${tries}`
-  }
+// async function getAppByIdAndMemberId(
+//   store: DatabaseManager,
+//   appId: string,
+//   memberId: MemberId
+// ): Promise<App | undefined> {
+//   const app = await store.get(App, {
+//     where: {
+//       id: appId,
+//       createdById: memberId.toString(),
+//     },
+//   })
 
-  return appId
-}
-
-async function getAppByIdAndMemberId(
-  store: DatabaseManager,
-  appId: string,
-  memberId: MemberId
-): Promise<App | undefined> {
-  const app = await store.get(App, {
-    where: {
-      id: appId,
-      createdById: memberId.toString(),
-    },
-  })
-
-  return app
-}
+//   return app
+// }
