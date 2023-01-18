@@ -12,7 +12,7 @@ import { getWorkingGroupNameByModuleName, workingGroups } from '../../consts'
 import { createType } from '@joystream/types'
 import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
-import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/primitives'
+import { OpeningId, WorkerId } from '@joystream/types/primitives'
 
 export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = workingGroups) =>
   async function leadOpening({ api, query, lock }: FlowProps): Promise<void> {
