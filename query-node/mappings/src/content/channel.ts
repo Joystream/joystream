@@ -273,7 +273,6 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
     const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
-
     const metaTransactionInfo = await processOwnerRemark(store, event, channelId, contentActor, decodedMessage)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)

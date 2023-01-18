@@ -1,4 +1,4 @@
-import { createApp } from '../flows/content/createApp'
+import { createApp } from '../flows/content/app'
 import initFaucet from '../flows/faucet/initFaucet'
 import leaderSetup from '../flows/working-groups/leadOpening'
 import { scenario } from '../Scenario'
