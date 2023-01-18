@@ -62,10 +62,10 @@ import {
 } from './consts'
 
 import {
-  CreateApp,
+  ChannelOwnerRemarked,
   CreateVideoCategory,
-  DeleteApp,
   IAppMetadata,
+  IChannelOwnerRemarked,
   MemberRemarked,
   UpdateApp,
 } from '@joystream/metadata-protobuf'
@@ -810,15 +810,15 @@ export class Api {
       throw new Error('invalid member id')
     }
 
-    const meta = new MemberRemarked({
-      createApp: new CreateApp({
+    const msg: IChannelOwnerRemarked = {
+      createApp: {
         name,
         appMetadata,
-      }),
-    })
+      },
+    }
 
     return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(ChannelOwnerRemarked, msg)),
       memberAccount.toString()
     )
   }
@@ -829,7 +829,7 @@ export class Api {
       throw new Error('invalid member id')
     }
 
-    const meta = new MemberRemarked({
+    const meta = new ChannelOwnerRemarked({
       updateApp: new UpdateApp({
         appId,
         appMetadata,
@@ -837,25 +837,7 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
-      memberAccount.toString()
-    )
-  }
-
-  async deleteApp(memberId: u64, appId: string): Promise<ISubmittableResult> {
-    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
-    if (!memberAccount) {
-      throw new Error('invalid member id')
-    }
-
-    const meta = new MemberRemarked({
-      deleteApp: new DeleteApp({
-        appId,
-      }),
-    })
-
-    return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      this.api.tx.content.channelOwnerRemark(memberId, Utils.metadataToBytes(ChannelOwnerRemarked, meta)),
       memberAccount.toString()
     )
   }
