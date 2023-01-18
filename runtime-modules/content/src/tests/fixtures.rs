@@ -2227,6 +2227,7 @@ impl ClaimChannelRewardFixture {
                 System::events().last().unwrap().event,
                 MetaEvent::Content(RawEvent::ChannelRewardUpdated(
                     self.item.cumulative_reward_earned,
+                    cashout,
                     self.item.channel_id
                 ))
             );

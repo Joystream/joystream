@@ -282,7 +282,7 @@ declare module '@polkadot/api-base/types/events' {
       ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
       ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
-      ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u64]>;
+      ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u128, u64]>;
       ChannelStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferCommitmentParametersBTreeMap]>;
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;

@@ -469,7 +469,7 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
 
 export async function content_ChannelRewardUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // load event data
-  const [amount, channelId] = new Content.ChannelRewardUpdatedEvent(event).params
+  const [, claimedAmount, channelId] = new Content.ChannelRewardUpdatedEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })
@@ -484,13 +484,13 @@ export async function content_ChannelRewardUpdated({ store, event }: EventContex
   const rewardClaimedEvent = new ChannelRewardClaimedEvent({
     ...genericEventFields(event),
 
-    amount,
+    amount: claimedAmount,
     channel,
   })
 
   await store.save<ChannelRewardClaimedEvent>(rewardClaimedEvent)
 
-  channel.cumulativeRewardClaimed = amount
+  channel.cumulativeRewardClaimed = channel.cumulativeRewardClaimed?.add(claimedAmount.toBn())
 
   // save channel
   await store.save<Channel>(channel)

@@ -881,7 +881,7 @@ declare module '@polkadot/types/lookup' {
     readonly isChannelPayoutsUpdated: boolean;
     readonly asChannelPayoutsUpdated: ITuple<[PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
     readonly isChannelRewardUpdated: boolean;
-    readonly asChannelRewardUpdated: ITuple<[u128, u64]>;
+    readonly asChannelRewardUpdated: ITuple<[u128, u128, u64]>;
     readonly isCouncilRewardClaimed: boolean;
     readonly asCouncilRewardClaimed: ITuple<[u64, u128]>;
     readonly isEnglishAuctionStarted: boolean;
