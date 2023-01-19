@@ -66,11 +66,17 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         await new FixtureRunner(decideOnLeadOpeningProposalStatusFixture).run()
         unlock()
 
-        const openingAddedEvent = await decideOnLeadOpeningProposalStatusFixture.getExecutionEvents(
-          group,
-          'OpeningAdded'
-        )
-        const openingId = openingAddedEvent.map((event) => event.data[0])[0] as OpeningId
+        const openingsCreated = (
+          await decideOnLeadOpeningProposalStatusFixture.getExecutionEvents('membershipWorkingGroup', 'OpeningAdded')
+        ).map((dispatchEvents) => {
+          if (dispatchEvents) {
+            return dispatchEvents.map((e) => e.data[0]) // first element in the tuple: Openingid
+          } else {
+            return undefined
+          }
+        })[0]
+        unlock()
+        const [openingId] = openingsCreated! as OpeningId[]
 
         // CANDIDATE stakes
         const addStakingAccFixture = new AddStakingAccountsHappyCaseFixture(api, query, [
@@ -99,8 +105,6 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         const applicationRunner = new FixtureRunner(applyOnOpeningFixture)
         await applicationRunner.run()
         const [applicationId] = applyOnOpeningFixture.getCreatedApplicationsByOpeningId(openingId)
-        // Run query node checks once this part of the flow is done
-        // await Promise.all([openingRunner.runQueryNodeChecks(), applicationRunner.runQueryNodeChecks()])
 
         // CANDIDATE fills opening
         const createFillOpeningProposalsFixture = new CreateProposalsFixture(api, query, [
@@ -126,17 +130,18 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         await new FixtureRunner(decideOnFillLeadOpeningProposalStatusFixture).run()
         unlock()
 
-        const leaderSetEvents = await decideOnFillLeadOpeningProposalStatusFixture.getExecutionEvents(
-          group,
-          'LeaderSet'
-        )
-        const workerIds = leaderSetEvents.map((event) => {
-          return event.data[0]
-        }) as WorkerId[]
-        // const fillOpeningFixture = new FillOpeningsFixture(api, query, group, [openingId], [[applicationId]], true)
-        // await new FixtureRunner(fillOpeningFixture).runWithQueryNodeChecks()
-        // const workerIds = decideOnFillLeadOpeningProposalStatusFixture.getCreatedWorkerIdsByOpeningId(openingId)
-        await api.assignWorkerWellknownAccount(group, workerIds[0])
+        const leaderIds = (
+          await decideOnFillLeadOpeningProposalStatusFixture.getExecutionEvents('membershipWorkingGroup', 'OpeningAdded')
+        ).map((dispatchEvents) => {
+          if (dispatchEvents) {
+            return dispatchEvents.map((e) => e.data[0]) // first element in the tuple: Openingid
+          } else {
+            return undefined
+          }
+        })[0]
+        unlock()
+        const [workerId] = leaderIds! as WorkerId[]
+        await api.assignWorkerWellknownAccount(group, workerId)
 
         debug('Done')
       })
