@@ -105,16 +105,17 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
 
   async execute(): Promise<void> {
     const initialInvitationBalance = await this.api.query.members.initialInvitationBalance()
+    const initialWgBudget = initialInvitationBalance.muln(this.accounts.length)
     // Top up working group budget to allow funding invited members
-    await this.api.makeSudoCall(
-      this.api.tx.membershipWorkingGroup.setBudget(initialInvitationBalance.muln(this.accounts.length))
-    )
+    await this.api.makeSudoCall(this.api.tx.membershipWorkingGroup.setBudget(initialWgBudget))
     // Load initial invites count
     this.initialInvitesCount = (await this.api.query.members.membershipById(this.inviterContext.memberId))
       .unwrap()
       .invites.toNumber()
     // Execute
     await super.execute()
+    const postExecutionWgBudget = await this.api.query.membershipWorkingGroup.budget()
+    assert.equal(postExecutionWgBudget.toString(), '0')
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -141,5 +142,9 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       invitees.map(({ id }) => id),
       invitedMembersIds.map((id) => id.toString())
     )
+
+    const membershipWg = await this.query.getWorkingGroup('membershipWorkingGroup')
+    Utils.assert(membershipWg)
+    assert.equal(membershipWg.budget, '0')
   }
 }

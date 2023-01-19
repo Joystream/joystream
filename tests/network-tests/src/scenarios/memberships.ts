@@ -22,7 +22,7 @@ scenario('Memberships', async ({ job }) => {
   job('creating founding members', creatingFoundingMembers)
   job('creating members', creatingMembers)
   job('gifting members', giftingMemberships)
-  job('inviting members', invitingMembers)
+  job('inviting members', invitingMembers).after(sudoHireLead)
   job('transferring invites', transferringInvites)
   job('managing staking accounts', managingStakingAccounts)
   job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
