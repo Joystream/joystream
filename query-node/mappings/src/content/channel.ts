@@ -3,7 +3,7 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
-import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
+import { ChannelId, DataObjectId } from '@joystream/types/primitives'
 import {
   Channel,
   Collaborator,
@@ -54,7 +54,7 @@ import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
-import { processCreateAppMessage } from './app'
+import { proccessUpdateApp, processCreateAppMessage } from './app'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -397,6 +397,12 @@ async function processOwnerRemark(
 
   if (messageType === 'createApp') {
     await processCreateAppMessage(store, event, channelId, decodedMessage.createApp!)
+
+    return {}
+  }
+
+  if (messageType === 'updateApp') {
+    await proccessUpdateApp(store, channelId, decodedMessage.updateApp!)
 
     return {}
   }

@@ -1,5 +1,5 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { ICreateApp } from '@joystream/metadata-protobuf'
+import { ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
 import { ChannelId } from '@joystream/types/primitives'
 import { logger } from '@joystream/warthog'
 import { Channel, App } from 'query-node/dist/model'
@@ -12,7 +12,7 @@ export async function processCreateAppMessage(
   message: ICreateApp
 ): Promise<void> {
   const { name, appMetadata } = message
-  const appId = await getAppId(event)
+  const appId = await createAppId(event)
 
   const isAppExists = await store.get(App, {
     where: {
@@ -21,8 +21,7 @@ export async function processCreateAppMessage(
   })
 
   if (isAppExists) {
-    logger.error('App already exists', { name })
-    return
+    inconsistentState(`App with this name already exists:`, name)
   }
 
   // load channel
@@ -62,47 +61,48 @@ export async function processCreateAppMessage(
   logger.info('Channel has been updated', { channel })
 }
 
-async function getAppId(event: SubstrateEvent): Promise<string> {
+async function createAppId(event: SubstrateEvent): Promise<string> {
   return `${event.blockNumber}-${event.indexInBlock}`
 }
 
-// export async function processUpdateAppMessage(store: DatabaseManager, message: IUpdateApp): Promise<void> {
-//   const { appId, appMetadata } = message
+export async function proccessUpdateApp(
+  store: DatabaseManager,
+  channelId: ChannelId,
+  message: IUpdateApp
+): Promise<void> {
+  const { appId, appMetadata } = message
 
-//   const app = await getAppByIdAndMemberId(store, appId)
+  const app = await getAppById(store, appId)
 
-//   if (!app) {
-//     logger.error("App doesn't exists or doesn't belong to the member", { appId })
-//     return
-//   }
+  if (!app) {
+    inconsistentState("App doesn't exists; appId:", appId)
+  }
+  if (app?.channel.id !== channelId.toString()) {
+    inconsistentState(`Cannot update app; app does not belong to the channelId: `, channelId)
+  }
 
-//   app.websiteUrl = appMetadata?.websiteUrl || app.websiteUrl
-//   app.useUri = appMetadata?.useUri || app.useUri
-//   app.smallIcon = appMetadata?.smallIcon || app.smallIcon
-//   app.mediumIcon = appMetadata?.mediumIcon || app.mediumIcon
-//   app.bigIcon = appMetadata?.bigIcon || app.bigIcon
-//   app.oneLiner = appMetadata?.oneLiner || app.oneLiner
-//   app.description = appMetadata?.description || app.description
-//   app.termsOfService = appMetadata?.termsOfService || app.termsOfService
-//   app.platforms = appMetadata?.platforms || app.platforms
-//   app.category = appMetadata?.category || app.category
-//   app.authKey = appMetadata?.authKey || app.authKey
+  app.websiteUrl = appMetadata?.websiteUrl || app.websiteUrl
+  app.useUri = appMetadata?.useUri || app.useUri
+  app.smallIcon = appMetadata?.smallIcon || app.smallIcon
+  app.mediumIcon = appMetadata?.mediumIcon || app.mediumIcon
+  app.bigIcon = appMetadata?.bigIcon || app.bigIcon
+  app.oneLiner = appMetadata?.oneLiner || app.oneLiner
+  app.description = appMetadata?.description || app.description
+  app.termsOfService = appMetadata?.termsOfService || app.termsOfService
+  app.platforms = appMetadata?.platforms || app.platforms
+  app.category = appMetadata?.category || app.category
+  app.authKey = appMetadata?.authKey || app.authKey
 
-//   await store.save<App>(app)
-//   logger.info('App has been updated', { appId })
-// }
+  await store.save<App>(app)
+  logger.info('App has been updated', { appId })
+}
 
-// async function getAppByIdAndMemberId(
-//   store: DatabaseManager,
-//   appId: string,
-//   memberId: MemberId
-// ): Promise<App | undefined> {
-//   const app = await store.get(App, {
-//     where: {
-//       id: appId,
-//       createdById: memberId.toString(),
-//     },
-//   })
-
-//   return app
-// }
+async function getAppById(store: DatabaseManager, appId: string): Promise<App | undefined> {
+  const app = await store.get(App, {
+    where: {
+      id: appId,
+    },
+    relations: ['channel'],
+  })
+  return app
+}
