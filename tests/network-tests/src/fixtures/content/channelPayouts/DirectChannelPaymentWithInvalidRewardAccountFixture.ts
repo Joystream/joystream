@@ -54,7 +54,6 @@ export class DirectChannelPaymentsWithInvalidRewardAccountFixture extends Standa
           rationale: params.msg.rationale,
           videoId: params.msg.videoId,
           channelId: params.msg.channelId,
-          appId: params.msg.appId,
         },
       }
       return this.api.tx.members.memberRemark(
