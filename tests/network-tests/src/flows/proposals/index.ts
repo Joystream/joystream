@@ -21,14 +21,6 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   api.enableVerboseTxLogs()
 
   debug('Creating test lead openings and applications...')
-  // const createLeadOpeningsFixture = new CreateLeadOpeningFixture(
-  //   api,
-  //   query,
-  //   [createDefaultOpeningParams(api), createDefaultOpeningParams(api)],
-  //   'membershipWorkingGroup'
-  // )
-  // await new FixtureRunner(createLeadOpeningsFixture).run()
-  // const [openingToCancelId, openingToFillId] = createLeadOpeningsFixture.getCreatedOpeningIds()
 
   const [applicantControllerAcc, applicantStakingAcc] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [applicantControllerAcc])
