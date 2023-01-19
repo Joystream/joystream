@@ -131,7 +131,10 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         unlock()
 
         const leaderIds = (
-          await decideOnFillLeadOpeningProposalStatusFixture.getExecutionEvents('membershipWorkingGroup', 'OpeningAdded')
+          await decideOnFillLeadOpeningProposalStatusFixture.getExecutionEvents(
+            'membershipWorkingGroup',
+            'OpeningAdded'
+          )
         ).map((dispatchEvents) => {
           if (dispatchEvents) {
             return dispatchEvents.map((e) => e.data[0]) // first element in the tuple: Openingid
