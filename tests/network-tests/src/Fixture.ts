@@ -129,8 +129,9 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
   protected abstract getEventFromResult(result: ISubmittableResult): Promise<EventDetails>
   protected abstract assertQueryNodeEventIsValid(qEvent: AnyQueryNodeEvent, i: number): void
 
-  protected assertQueryNodeEventsAreValid(qEvents: AnyQueryNodeEvent[]): void {
+  protected assertQueryNodeEventsAreValid(qEvents: AnyQueryNodeEvent[], expectFailureAtIndexes: number[] = []): void {
     this.events.forEach((e, i) => {
+      if (expectFailureAtIndexes.includes(i)) return
       const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
       assert.equal(qEvent.inExtrinsic, this.extrinsics[i].hash.toString())
       assert.equal(new Date(qEvent.createdAt).getTime(), e.blockTimestamp)

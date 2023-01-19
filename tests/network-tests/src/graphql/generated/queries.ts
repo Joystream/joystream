@@ -1992,7 +1992,7 @@ export type WorkerFieldsFragment = {
   storage?: Types.Maybe<string>
   rewardPerBlock: any
   missingRewardAmount?: Types.Maybe<any>
-  group: { name: string }
+  group: { name: string; leaderId?: Types.Maybe<string> }
   membership: { id: string }
   status:
     | { __typename: 'WorkerStatusActive' }
@@ -4491,6 +4491,7 @@ export const WorkerFields = gql`
     runtimeId
     group {
       name
+      leaderId
     }
     membership {
       id

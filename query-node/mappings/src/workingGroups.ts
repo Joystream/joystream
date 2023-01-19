@@ -13,6 +13,7 @@ import {
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
   OpeningMetadata,
+  RemarkMetadataAction,
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
@@ -26,6 +27,8 @@ import {
   INT32MAX,
   inconsistentState,
   getWorkingGroupByName,
+  getWorkingGroupLead,
+  invalidMetadata,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -86,6 +89,7 @@ import {
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
+import { moderatePost } from './forum'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -335,12 +339,24 @@ async function handleWorkingGroupMetadataAction(
 
 async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
+  const group = await getWorkingGroup(store, event, ['leader'])
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, [
+    'application',
+    'workinggroupleader',
+  ])
 
-  const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
+  if (worker.isLead) {
+    const terminatedLeaderEvent = new TerminatedLeaderEvent({
+      ...genericEventFields(event),
+      group,
+      worker,
+      penalty: optPenalty.unwrapOr(undefined),
+      rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
+    })
+    await store.save<TerminatedLeaderEvent>(terminatedLeaderEvent)
+  }
 
-  const terminatedEvent = new EventConstructor({
+  const terminatedWorkerEvent = new TerminatedWorkerEvent({
     ...genericEventFields(event),
     group,
     worker,
@@ -348,14 +364,15 @@ async function handleTerminatedWorker({ store, event }: EventContext & StoreCont
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 
-  await store.save(terminatedEvent)
+  await store.save<TerminatedWorkerEvent>(terminatedWorkerEvent)
 
   const status = new WorkerStatusTerminated()
-  status.terminatedWorkerEventId = terminatedEvent.id
+  status.terminatedWorkerEventId = terminatedWorkerEvent.id
   worker.status = status
   worker.stake = new BN(0)
   worker.rewardPerBlock = new BN(0)
   worker.isActive = isWorkerActive(worker)
+  worker.workinggroupleader = [] // Make the worker not the group leader if there were
 
   await store.save<Worker>(worker)
 }
@@ -669,6 +686,42 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   // Now we can set the "real" result
   statusTextChangedEvent.result = result
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
+}
+
+export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [metadataByte] = new WorkingGroups.LeadRemarkedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getWorkingGroupLead(store, group.name)
+
+    await moderatePost(store, event, 'leadRemark', postId, actor, rationale)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
+}
+
+export async function workingGroups_WorkerRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [workerId, metadataByte] = new WorkingGroups.WorkerRemarkedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getWorker(store, group.name, workerId)
+
+    await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated({

@@ -1,3 +1,7 @@
+### Version 12.1000.0 - Mainnet
+  - Disabled channel payouts proposal
+  - Renamed 'Gateway' working group to 'App' working group
+
 ### Version 11.3.0 - Carthage - new chain
   - Update to substrate v0.9.23
   - Introduce project-token pallet into runtime

@@ -3,6 +3,7 @@ import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembersAndCurators'
 import BN from 'bn.js'
+import { EventDetails, EventType } from 'src/types'
 
 export class PlaceBidsInAuctionFixture extends BaseQueryNodeFixture {
   private participants: IMember[]
@@ -10,6 +11,7 @@ export class PlaceBidsInAuctionFixture extends BaseQueryNodeFixture {
   private minimalBidStep: BN
   private videoId: number
   private auctionType: 'Open' | 'English'
+  private events: EventDetails<EventType<'content', 'AuctionBidMade'>>[] = []
 
   constructor(
     api: Api,
@@ -53,6 +55,16 @@ export class PlaceBidsInAuctionFixture extends BaseQueryNodeFixture {
       return
     }
 
-    await this.api.bidInEnglishAuction(participant.account, participant.memberId.toNumber(), this.videoId, bidAmount)
+    const result = await this.api.bidInEnglishAuction(
+      participant.account,
+      participant.memberId.toNumber(),
+      this.videoId,
+      bidAmount
+    )
+    this.events.push(await this.api.getEventDetails(result, 'content', 'AuctionBidMade'))
+  }
+
+  public getLastBidBlock(): number {
+    return this.events[this.events.length - 1].blockNumber
   }
 }
