@@ -41,7 +41,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
     {
       type: 'CreateWorkingGroupLeadOpening',
       details: createType('PalletProposalsCodexCreateOpeningParameters', {
-        'description': createType('Bytes', `Proposal to hire lead membership TO BE KEPT`),
+        'description': createType('Bytes', `Proposal to hire lead membership TO CANCEL `),
         'stakePolicy': createType('PalletWorkingGroupStakePolicy', {
           'stakeAmount': openingParams.stake,
           'leavingUnstakingPeriod': openingParams.unstakingPeriod,
@@ -50,7 +50,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
         'group': createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Membership'),
       }),
       asMember: applicantMemberId,
-      title: 'Proposal to Hired lead TO BE KEPT',
+      title: 'Proposal to Hired lead TO KEEP',
       description: 'Proposal to hire lead membership',
     },
     {
@@ -70,17 +70,25 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
     },
   ])
   await new FixtureRunner(createLeadOpeningProposalsFixture).run()
-  const [proposalToCancel, proposalToKeep] = createLeadOpeningProposalsFixture.getCreatedProposalsIds()
+  const [proposalWithOpeningToBeCancelled, proposalWithOpeningToBeKept] =
+    createLeadOpeningProposalsFixture.getCreatedProposalsIds()
 
   const approveProposalsFixture = new DecideOnProposalStatusFixture(api, query, [
-    { proposalId: proposalToKeep, status: 'Approved', expectExecutionFailure: false },
-    { proposalId: proposalToCancel, status: 'Approved', expectExecutionFailure: false },
+    { proposalId: proposalWithOpeningToBeCancelled, status: 'Approved', expectExecutionFailure: false },
+    { proposalId: proposalWithOpeningToBeKept, status: 'Approved', expectExecutionFailure: false },
   ])
   await new FixtureRunner(approveProposalsFixture).run()
-  unlock()
-  const [openingToCancelId, openingToFillId] = (
+  const openingsCreated = (
     await approveProposalsFixture.getExecutionEvents('membershipWorkingGroup', 'OpeningAdded')
-  ).map((event) => event.data[0]) as OpeningId[]
+  ).map((dispatchEvents) => {
+    if (dispatchEvents) {
+      return dispatchEvents.map((e) => e.data[0]) // first element in the tuple: Openingid
+    } else {
+      return undefined
+    }
+  })[0]
+  unlock()
+  const [openingToCancelId, openingToFillId] = openingsCreated! as OpeningId[]
 
   // stake to apply
   const addStakingAccountsFixture = new AddStakingAccountsHappyCaseFixture(api, query, [

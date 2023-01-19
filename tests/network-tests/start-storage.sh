@@ -8,7 +8,8 @@ export COLOSSUS_1_URL="http://${HOST_IP}:3333"
 export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
 export COLOSSUS_2_URL="http://${HOST_IP}:3335"
 export DISTRIBUTOR_2_URL="http://${HOST_IP}:3336"
-# $THIS_DIR/run-test-scenario.sh initStorageAndDistribution
+$THIS_DIR/run-test-scenario.sh initStorageAndDistribution
+
 
 # Start colossus & argus
 docker-compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-1
