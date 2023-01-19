@@ -51,7 +51,6 @@ export class CreateLeadOpeningFixture extends BaseQueryNodeFixture {
   protected openingParams: OpeningParams[]
   protected group: WorkingGroupModuleName
 
-
   public constructor(api: Api, query: QueryNodeApi, openingParams: OpeningParams[], group: WorkingGroupModuleName) {
     super(api, query)
     this.openingParams = openingParams

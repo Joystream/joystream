@@ -1,4 +1,7 @@
-import { PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletCommonWorkingGroupIterableEnumsWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
+import {
+  PalletCommonWorkingGroupIterableEnumsWorkingGroup,
+  PalletCommonWorkingGroupIterableEnumsWorkingGroup as WorkingGroup,
+} from '@polkadot/types/lookup'
 import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
 import { ProposalType, WorkingGroupModuleName } from './types'
@@ -42,7 +45,9 @@ export const workingGroupNameByModuleName = {
 }
 validateType<{ [k in WorkingGroupModuleName]: string }>(workingGroupNameByModuleName)
 
-export function getWorkingGroupNameByModuleName(group: WorkingGroupModuleName): PalletCommonWorkingGroupIterableEnumsWorkingGroup {
+export function getWorkingGroupNameByModuleName(
+  group: WorkingGroupModuleName
+): PalletCommonWorkingGroupIterableEnumsWorkingGroup {
   switch (group) {
     case 'storageWorkingGroup':
       return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Storage')
