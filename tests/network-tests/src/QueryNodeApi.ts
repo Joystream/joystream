@@ -474,7 +474,7 @@ export class QueryNodeApi {
     query: () => Promise<QueryResultT>,
     assertResultIsValid: (res: QueryResultT) => void,
     retryTimeMs = BLOCKTIME * 9,
-    retries = 20
+    retries = 6
   ): Promise<QueryResultT> {
     const label = query.toString().replace(/^.*\.([A-za-z0-9]+\(.*\))$/g, '$1')
     const debug = this.tryDebug.extend(label)
