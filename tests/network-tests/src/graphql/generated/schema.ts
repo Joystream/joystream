@@ -7753,6 +7753,7 @@ export type ChannelWhereInput = {
   channelNftCollectors_none?: Maybe<ChannelNftCollectorsWhereInput>
   channelNftCollectors_some?: Maybe<ChannelNftCollectorsWhereInput>
   channelNftCollectors_every?: Maybe<ChannelNftCollectorsWhereInput>
+  app?: Maybe<AppWhereInput>
   claimedRewards_none?: Maybe<ChannelRewardClaimedEventWhereInput>
   claimedRewards_some?: Maybe<ChannelRewardClaimedEventWhereInput>
   claimedRewards_every?: Maybe<ChannelRewardClaimedEventWhereInput>
@@ -7762,7 +7763,6 @@ export type ChannelWhereInput = {
   channelrewardclaimedandwithdrawneventchannel_none?: Maybe<ChannelRewardClaimedAndWithdrawnEventWhereInput>
   channelrewardclaimedandwithdrawneventchannel_some?: Maybe<ChannelRewardClaimedAndWithdrawnEventWhereInput>
   channelrewardclaimedandwithdrawneventchannel_every?: Maybe<ChannelRewardClaimedAndWithdrawnEventWhereInput>
-  app?: Maybe<AppWhereInput>
   commentcreatedeventvideoChannel_none?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_some?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_every?: Maybe<CommentCreatedEventWhereInput>
