@@ -67,7 +67,7 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         unlock()
 
         const openingsCreated = (
-          await decideOnLeadOpeningProposalStatusFixture.getExecutionEvents('membershipWorkingGroup', 'OpeningAdded')
+          await decideOnLeadOpeningProposalStatusFixture.getExecutionEvents(group, 'OpeningAdded')
         ).map((dispatchEvents) => {
           if (dispatchEvents) {
             return dispatchEvents.map((e) => e.data[0]) // first element in the tuple: Openingid
@@ -75,7 +75,6 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
             return undefined
           }
         })[0]
-        unlock()
         const [openingId] = openingsCreated! as OpeningId[]
 
         // CANDIDATE stakes
@@ -107,6 +106,7 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
         const [applicationId] = applyOnOpeningFixture.getCreatedApplicationsByOpeningId(openingId)
 
         // CANDIDATE fills opening
+        const unlockFillPosition = await lock(Resource.Proposals)
         const createFillOpeningProposalsFixture = new CreateProposalsFixture(api, query, [
           {
             type: 'FillWorkingGroupLeadOpening',
@@ -128,13 +128,10 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
           { proposalId: fillLeadOpeningProposalId, status: 'Approved', expectExecutionFailure: false },
         ])
         await new FixtureRunner(decideOnFillLeadOpeningProposalStatusFixture).run()
-        unlock()
+        unlockFillPosition()
 
-        const leaderIds = (
-          await decideOnFillLeadOpeningProposalStatusFixture.getExecutionEvents(
-            'membershipWorkingGroup',
-            'OpeningAdded'
-          )
+        const workerIds = (
+          await decideOnFillLeadOpeningProposalStatusFixture.getExecutionEvents(group, 'LeaderSet')
         ).map((dispatchEvents) => {
           if (dispatchEvents) {
             return dispatchEvents.map((e) => e.data[0]) // first element in the tuple: Openingid
@@ -142,8 +139,9 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
             return undefined
           }
         })[0]
-        unlock()
-        const [workerId] = leaderIds! as WorkerId[]
+
+        const [workerId] = workerIds! as WorkerId[]
+        debug(`position filled for ${group} by ${workerId}`)
         await api.assignWorkerWellknownAccount(group, workerId)
 
         debug('Done')
