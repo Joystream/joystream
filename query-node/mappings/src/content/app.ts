@@ -54,18 +54,13 @@ export async function processCreateAppMessage(
   })
   await store.save<App>(newApp)
   logger.info('App has been created', { name })
-
-  channel.app = newApp
-
-  await store.save<Channel>(channel)
-  logger.info('Channel has been updated', { channel })
 }
 
 async function createAppId(event: SubstrateEvent): Promise<string> {
   return `${event.blockNumber}-${event.indexInBlock}`
 }
 
-export async function proccessUpdateApp(
+export async function processUpdateApp(
   store: DatabaseManager,
   channelId: ChannelId,
   message: IUpdateApp

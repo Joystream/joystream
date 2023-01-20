@@ -23,7 +23,6 @@ import {
   ChannelRewardClaimedEvent,
   DataObjectTypeChannelPayoutsPayload,
   ChannelFundsWithdrawnEvent,
-  App,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
@@ -54,7 +53,7 @@ import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
-import { proccessUpdateApp, processCreateAppMessage } from './app'
+import { processUpdateApp, processCreateAppMessage } from './app'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -402,7 +401,7 @@ async function processOwnerRemark(
   }
 
   if (messageType === 'updateApp') {
-    await proccessUpdateApp(store, channelId, decodedMessage.updateApp!)
+    await processUpdateApp(store, channelId, decodedMessage.updateApp!)
 
     return {}
   }
