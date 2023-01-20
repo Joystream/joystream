@@ -1604,17 +1604,17 @@ decl_module! {
             proof: Vec<ProofElement<T>>,
             item: PullPayment<T>,
         ) -> DispatchResult {
-            let (.., reward_account, amount) =
+            let (.., reward_account, cashout_amount) =
                 Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
-            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
+            Self::execute_channel_reward_claim(item.channel_id, &reward_account, cashout_amount);
 
             Self::deposit_event(
-                RawEvent::ChannelRewardUpdated(item.cumulative_reward_earned, item.channel_id)
+                RawEvent::ChannelRewardUpdated(item.cumulative_reward_earned, cashout_amount, item.channel_id)
             );
 
             Ok(())
@@ -4907,7 +4907,7 @@ decl_event!(
 
         // Rewards
         ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, Option<DataObjectId>),
-        ChannelRewardUpdated(Balance, ChannelId),
+        ChannelRewardUpdated(Balance, Balance, ChannelId),
         CouncilRewardClaimed(ChannelId, Balance),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
