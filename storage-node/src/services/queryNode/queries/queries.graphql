@@ -114,3 +114,16 @@ query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $curso
     totalCount
   }
 }
+
+fragment QueryNodeStateFields on ProcessorState {
+  chainHead
+  indexerHead
+  lastProcessedEvent
+  lastCompleteBlock
+}
+
+subscription queryNodeState {
+  stateSubscription {
+    ...QueryNodeStateFields
+  }
+}

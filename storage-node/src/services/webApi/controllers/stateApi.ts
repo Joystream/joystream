@@ -7,7 +7,15 @@ import fastFolderSize from 'fast-folder-size'
 import { promisify } from 'util'
 import fs from 'fs'
 import NodeCache from 'node-cache'
-import { DataObjectResponse, DataStatsResponse, GetLocalDataObjectsByBagIdParams, VersionResponse } from '../types'
+import {
+  DataObjectResponse,
+  DataStatsResponse,
+  GetLocalDataObjectsByBagIdParams,
+  StatusResponse,
+  VersionResponse,
+} from '../types'
+import { QueryNodeApi } from '../../queryNode/api'
+import logger from '../../logger'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
@@ -127,6 +135,19 @@ export async function getVersion(
 }
 
 /**
+ * A public endpoint: returns the server status.
+ */
+export async function getStatus(req: express.Request, res: express.Response<StatusResponse, AppConfig>): Promise<void> {
+  const config = res.locals
+
+  // Copy from an object, because the actual object could contain more data.
+  res.status(200).json({
+    version: config.process.version,
+    queryNodeStatus: await getQueryNodeStatus(config.queryNodeEndpoint),
+  })
+}
+
+/**
  * Returns cached data objects IDs from the local data storage. Data could be
  * obsolete until cache expiration.
  *
@@ -141,4 +162,19 @@ async function getCachedDataObjectsObligations(queryNodeUrl: string, bagId: stri
   }
 
   return dataCache.get(entryName) ?? []
+}
+
+async function getQueryNodeStatus(queryNodeUrl: string): Promise<StatusResponse['queryNodeStatus']> {
+  const api = new QueryNodeApi(queryNodeUrl)
+  const qnState = await api.getQueryNodeState()
+
+  if (qnState === null) {
+    logger.error("Couldn't fetch the state from connected query-node")
+  }
+
+  return {
+    url: queryNodeUrl,
+    chainHead: qnState?.chainHead || 0,
+    blocksProcessed: qnState?.lastCompleteBlock || 0,
+  }
 }

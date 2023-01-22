@@ -84,6 +84,17 @@ export type GetDataObjectConnectionQuery = {
   }
 }
 
+export type QueryNodeStateFieldsFragment = {
+  chainHead: number
+  indexerHead: number
+  lastProcessedEvent: string
+  lastCompleteBlock: number
+}
+
+export type QueryNodeStateSubscriptionVariables = Types.Exact<{ [key: string]: never }>
+
+export type QueryNodeStateSubscription = { stateSubscription: QueryNodeStateFieldsFragment }
+
 export const StorageBucketIds = gql`
   fragment StorageBucketIds on StorageBucket {
     id
@@ -118,6 +129,14 @@ export const DataObjectDetails = gql`
   fragment DataObjectDetails on StorageDataObject {
     id
     storageBagId
+  }
+`
+export const QueryNodeStateFields = gql`
+  fragment QueryNodeStateFields on ProcessorState {
+    chainHead
+    indexerHead
+    lastProcessedEvent
+    lastCompleteBlock
   }
 `
 export const GetStorageBucketsConnection = gql`
@@ -215,4 +234,12 @@ export const GetDataObjectConnection = gql`
     }
   }
   ${DataObjectDetails}
+`
+export const QueryNodeState = gql`
+  subscription queryNodeState {
+    stateSubscription {
+      ...QueryNodeStateFields
+    }
+  }
+  ${QueryNodeStateFields}
 `

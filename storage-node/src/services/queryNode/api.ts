@@ -1,4 +1,4 @@
-import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client'
+import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode, split } from '@apollo/client'
 import fetch from 'cross-fetch'
 import {
   GetBagConnection,
@@ -20,9 +20,15 @@ import {
   GetStorageBucketsConnectionQuery,
   GetStorageBucketsConnectionQueryVariables,
   GetStorageBucketDetailsByWorkerId,
+  QueryNodeStateFieldsFragment,
+  QueryNodeStateSubscription,
+  QueryNodeStateSubscriptionVariables,
+  QueryNodeState,
 } from './generated/queries'
 import { Maybe, StorageBagWhereInput } from './generated/schema'
-
+import { WebSocketLink } from '@apollo/client/link/ws'
+import { getMainDefinition } from '@apollo/client/utilities'
+import ws from 'ws'
 import logger from '../logger'
 
 /**
@@ -51,8 +57,26 @@ export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
 
   public constructor(endpoint: string) {
+    const queryLink = new HttpLink({ uri: endpoint, fetch })
+    const wsLink = new WebSocketLink({
+      uri: endpoint,
+      options: {
+        reconnect: true,
+        reconnectionAttempts: 5,
+      },
+      webSocketImpl: ws,
+    })
+    const splitLink = split(
+      ({ query }) => {
+        const definition = getMainDefinition(query)
+        return definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
+      },
+      wsLink,
+      queryLink
+    )
+
     this.apolloClient = new ApolloClient({
-      link: new HttpLink({ uri: endpoint, fetch }),
+      link: splitLink,
       cache: new InMemoryCache(),
       defaultOptions: {
         query: { fetchPolicy: 'no-cache', errorPolicy: 'none' },
@@ -161,6 +185,29 @@ export class QueryNodeApi {
   }
 
   /**
+   * Get entity from subscription
+   *
+   * @param query - actual query
+   * @param variables - query parameters
+   * @param resultKey - helps result parsing
+   */
+  protected async uniqueEntitySubscription<
+    SubscriptionT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof SubscriptionT
+  ): Promise<SubscriptionT[keyof SubscriptionT] | null> {
+    return new Promise((resolve) => {
+      const sub = this.apolloClient.subscribe<SubscriptionT, VariablesT>({ query, variables }).subscribe(({ data }) => {
+        resolve(data ? data[resultKey] : null)
+        sub.unsubscribe()
+      })
+    })
+  }
+
+  /**
    * Returns storage bucket IDs filtered by worker ID.
    *
    * @param workerId - worker ID
@@ -259,5 +306,13 @@ export class QueryNodeApi {
     }
 
     return result
+  }
+
+  public getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
+    return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
+      QueryNodeState,
+      {},
+      'stateSubscription'
+    )
   }
 }

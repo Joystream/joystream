@@ -207,6 +207,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataStatsResponse'
+  /status:
+    get:
+      operationId: stateApi.getStatus
+      description: Returns json object describing current node status.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        500:
+          description: Unexpected server error
 components:
   schemas:
     TokenRequest:
@@ -275,6 +288,29 @@ components:
           type: string
         userAgent:
           type: string
+    StatusResponse:
+      type: object
+      required:
+        - version
+        - queryNodeStatus
+      properties:
+        version:
+          type: string
+        queryNodeStatus:
+          type: object
+          required:
+            - 'url'
+            - 'chainHead'
+            - 'blocksProcessed'
+          properties:
+            url:
+              type: string
+            chainHead:
+              type: integer
+              minimum: 0
+            blocksProcessed:
+              type: integer
+              minimum: 0
     DataObjectResponse:
       type: array
       items:
