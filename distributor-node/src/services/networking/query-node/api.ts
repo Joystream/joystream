@@ -1,24 +1,39 @@
-import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode, from } from '@apollo/client/core'
+import {
+  ApolloClient,
+  DocumentNode,
+  HttpLink,
+  InMemoryCache,
+  NormalizedCacheObject,
+  from,
+  split,
+} from '@apollo/client/core'
 import { onError } from '@apollo/client/link/error'
+import { WebSocketLink } from '@apollo/client/link/ws'
+import { getMainDefinition } from '@apollo/client/utilities'
 import fetch from 'cross-fetch'
 import { Logger } from 'winston'
+import ws from 'ws'
 import { LoggingService } from '../../logging'
 import {
   DataObjectDetailsFragment,
+  DistirubtionBucketWithObjectsFragment,
+  GetActiveStorageBucketOperatorsData,
+  GetActiveStorageBucketOperatorsDataQuery,
+  GetActiveStorageBucketOperatorsDataQueryVariables,
   GetDataObjectDetails,
   GetDataObjectDetailsQuery,
   GetDataObjectDetailsQueryVariables,
-  DistirubtionBucketWithObjectsFragment,
+  GetDistributionBucketsWithObjectsByIds,
   GetDistributionBucketsWithObjectsByIdsQuery,
   GetDistributionBucketsWithObjectsByIdsQueryVariables,
-  GetDistributionBucketsWithObjectsByIds,
+  GetDistributionBucketsWithObjectsByWorkerId,
   GetDistributionBucketsWithObjectsByWorkerIdQuery,
   GetDistributionBucketsWithObjectsByWorkerIdQueryVariables,
-  GetDistributionBucketsWithObjectsByWorkerId,
+  QueryNodeState,
+  QueryNodeStateFieldsFragment,
+  QueryNodeStateSubscription,
+  QueryNodeStateSubscriptionVariables,
   StorageBucketOperatorFieldsFragment,
-  GetActiveStorageBucketOperatorsDataQuery,
-  GetActiveStorageBucketOperatorsDataQueryVariables,
-  GetActiveStorageBucketOperatorsData,
 } from './generated/queries'
 import { Maybe } from './generated/schema'
 
@@ -50,8 +65,27 @@ export class QueryNodeApi {
       this.logger.error('Error when trying to execute a query!', { err: { message, graphQLErrors, networkError } })
       exitOnError && process.exit(-1)
     })
+
+    const queryLink = from([errorLink, new HttpLink({ uri: endpoint, fetch })])
+    const wsLink = new WebSocketLink({
+      uri: endpoint,
+      options: {
+        reconnect: true,
+        reconnectionAttempts: 5,
+      },
+      webSocketImpl: ws,
+    })
+    const splitLink = split(
+      ({ query }) => {
+        const definition = getMainDefinition(query)
+        return definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
+      },
+      wsLink,
+      queryLink
+    )
+
     this.apolloClient = new ApolloClient({
-      link: from([errorLink, new HttpLink({ uri: endpoint, fetch })]),
+      link: splitLink,
       cache: new InMemoryCache(),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
@@ -114,6 +148,22 @@ export class QueryNodeApi {
     return results
   }
 
+  protected async uniqueEntitySubscription<
+    SubscriptionT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof SubscriptionT
+  ): Promise<SubscriptionT[keyof SubscriptionT] | null> {
+    return new Promise((resolve) => {
+      const sub = this.apolloClient.subscribe<SubscriptionT, VariablesT>({ query, variables }).subscribe(({ data }) => {
+        resolve(data ? data[resultKey] : null)
+        sub.unsubscribe()
+      })
+    })
+  }
+
   public getDataObjectDetails(objectId: string): Promise<DataObjectDetailsFragment | null> {
     return this.uniqueEntityQuery<GetDataObjectDetailsQuery, GetDataObjectDetailsQueryVariables>(
       GetDataObjectDetails,
@@ -144,5 +194,13 @@ export class QueryNodeApi {
       GetActiveStorageBucketOperatorsDataQuery,
       CustomVariables<GetActiveStorageBucketOperatorsDataQueryVariables>
     >(GetActiveStorageBucketOperatorsData, {}, 'storageBucketsConnection')
+  }
+
+  public getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
+    return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
+      QueryNodeState,
+      {},
+      'stateSubscription'
+    )
   }
 }

@@ -80,6 +80,17 @@ export type GetActiveStorageBucketOperatorsDataQuery = {
   storageBucketsConnection: StorageBucketsConnectionFieldsFragment
 }
 
+export type QueryNodeStateFieldsFragment = {
+  chainHead: number
+  indexerHead: number
+  lastProcessedEvent: string
+  lastCompleteBlock: number
+}
+
+export type QueryNodeStateSubscriptionVariables = Types.Exact<{ [key: string]: never }>
+
+export type QueryNodeStateSubscription = { stateSubscription: QueryNodeStateFieldsFragment }
+
 export const StorageBucketDetails = gql`
   fragment StorageBucketDetails on StorageBucket {
     id
@@ -172,6 +183,14 @@ export const StorageBucketsConnectionFields = gql`
   }
   ${StorageBucketOperatorFields}
 `
+export const QueryNodeStateFields = gql`
+  fragment QueryNodeStateFields on ProcessorState {
+    chainHead
+    indexerHead
+    lastProcessedEvent
+    lastCompleteBlock
+  }
+`
 export const GetDataObjectDetails = gql`
   query getDataObjectDetails($id: ID!) {
     storageDataObjectByUniqueInput(where: { id: $id }) {
@@ -207,4 +226,12 @@ export const GetActiveStorageBucketOperatorsData = gql`
     }
   }
   ${StorageBucketsConnectionFields}
+`
+export const QueryNodeState = gql`
+  subscription queryNodeState {
+    stateSubscription {
+      ...QueryNodeStateFields
+    }
+  }
+  ${QueryNodeStateFields}
 `
