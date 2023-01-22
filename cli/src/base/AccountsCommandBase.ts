@@ -15,7 +15,7 @@ import { KeypairType } from '@polkadot/util-crypto/types'
 import { createTestKeyring } from '@polkadot/keyring/testing'
 import chalk from 'chalk'
 import { mnemonicGenerate } from '@polkadot/util-crypto'
-import { validateAddress } from '../helpers/validation'
+import { checkBalance, isValidBalance, validateAddress } from '../helpers/validation'
 import slug from 'slug'
 import { PalletMembershipMembershipObject as Membership } from '@polkadot/types/lookup'
 import { LockIdentifier, AccountId } from '@polkadot/types/interfaces'
@@ -72,6 +72,24 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   private initAccountsFs(): void {
     if (!fs.existsSync(this.getAccountsDirPath())) {
       fs.mkdirSync(this.getAccountsDirPath())
+    }
+  }
+
+  async ensureJoyTransferIsPossible(fromAddress: string, toAddress: string, amount: string): Promise<void> {
+    if (!isValidBalance(amount)) {
+      this.error('Invalid transfer amount', { exit: ExitCodes.InvalidInput })
+    }
+    const [fromBalances, toBalances] = await this.getApi().getAccountsBalancesInfo([fromAddress, toAddress])
+
+    // payer account balance should be greater than amount, otherwise transfer will fail
+    checkBalance(fromBalances, new BN(amount))
+
+    // payee account balance AFTER transfer should be greater than existential deposit, otherwise transfer will fail
+    if (toBalances.availableBalance.add(new BN(amount)).lt(this.getApi().existentialDeposit())) {
+      throw new CLIError(
+        `Insufficient transfer amount: payee account balance after transfer should be greater than "ExistentialDeposit"`,
+        { exit: ExitCodes.InvalidInput }
+      )
     }
   }
 
