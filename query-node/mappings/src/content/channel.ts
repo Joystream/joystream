@@ -93,21 +93,26 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap()) || {}
+    const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap())
 
-    const appCommitment = generateAppActionCommitment(
-      channelOwner.ownerMember?.id ?? channelOwner.ownerCuratorGroup?.id ?? '',
-      channelCreationParameters.assets,
-      metadataToBytes(ChannelMetadata, appAction.channelMetadata ?? {}),
-      metadataToBytes(AppActionMetadata, appAction.metadata ?? {})
-    )
-    await processAppActionMetadata(
-      ctx,
-      channel,
-      appAction,
-      { actionOwnerId: channel.ownerMember?.id, appCommitment },
-      (entity: Channel) => processChannelMetadata(ctx, entity, appAction.channelMetadata ?? {}, dataObjects)
-    )
+    if (appAction && Object.keys(appAction).length) {
+      const appCommitment = generateAppActionCommitment(
+        channelOwner.ownerMember?.id ?? channelOwner.ownerCuratorGroup?.id ?? '',
+        channelCreationParameters.assets,
+        metadataToBytes(ChannelMetadata, appAction.channelMetadata ?? {}),
+        metadataToBytes(AppActionMetadata, appAction.metadata ?? {})
+      )
+      await processAppActionMetadata(
+        ctx,
+        channel,
+        appAction,
+        { actionOwnerId: channel.ownerMember?.id, appCommitment },
+        (entity: Channel) => processChannelMetadata(ctx, entity, appAction.channelMetadata ?? {}, dataObjects)
+      )
+    } else {
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) ?? {}
+      await processChannelMetadata(ctx, channel, channelMetadata, dataObjects)
+    }
   }
 
   // save entity
@@ -146,8 +151,14 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const newMetadata = deserializeMetadata(AppAction, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata.channelMetadata ?? {}, newDataObjects)
+    const newMetadata = deserializeMetadata(AppAction, newMetadataBytes)
+
+    if (newMetadata && Object.keys(newMetadata)) {
+      await processChannelMetadata(ctx, channel, newMetadata.channelMetadata ?? {}, newDataObjects)
+    } else {
+      const realNewMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes)
+      await processChannelMetadata(ctx, channel, realNewMetadata ?? {}, newDataObjects)
+    }
   }
 
   // save channel
