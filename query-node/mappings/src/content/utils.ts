@@ -42,15 +42,14 @@ import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentIterableEnumsChannelActionPermission,
-  PalletContentStorageAssetsRecord,
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { getSortedDataObjectsByIds } from '../storage/utils'
-import { BTreeSet, Bytes, Option } from '@polkadot/types'
+import { BTreeSet } from '@polkadot/types'
 import { DataObjectId } from '@joystream/types/primitives'
-import { createType } from '@joystream/types'
+import { getAppById } from './app'
 
 const ASSET_TYPES = {
   channel: [
@@ -211,15 +210,13 @@ async function validateAppSignature<T>(
     return false
   }
 
-  // todo change to App after https://github.com/Joystream/joystream/pull/4504
-  const app = await ctx.store.get(Channel, { where: { id: appAction.appId } })
+  const app = await getAppById(ctx.store, appAction.appId)
 
-  if (!app || !(await checkAppActionNonce(ctx, entity, validationContext.actionOwnerId, appAction))) {
+  if (!app || !app.authKey || !(await checkAppActionNonce(ctx, entity, validationContext.actionOwnerId, appAction))) {
     return false
   }
 
-  // todo: change to app.authKey after https://github.com/Joystream/joystream/pull/4504
-  return ed25519Verify(validationContext.appCommitment, appAction.signature, app.title ?? '')
+  return ed25519Verify(validationContext.appCommitment, appAction.signature, app.authKey)
 }
 
 export async function processAppActionMetadata<T extends { appId?: string }>(
@@ -763,20 +760,4 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
 export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
-}
-
-// this ideally should be transfered to @joystream-js
-export function generateAppActionCommitment(
-  creatorId: string,
-  assets: Option<PalletContentStorageAssetsRecord>,
-  rawAction: Option<Bytes>,
-  rawAppMetadata: Option<Bytes>
-): string {
-  return JSON.stringify([creatorId, assets.toString(), rawAction, rawAppMetadata])
-}
-
-export const wrapMetadata = (metadata: Uint8Array): Option<Bytes> => {
-  const metadataRaw = createType('Raw', metadata)
-  const metadataBytes = createType('Bytes', metadataRaw)
-  return createType('Option<Bytes>', metadataBytes)
 }

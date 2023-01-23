@@ -2,14 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import {
-  AppAction,
-  AppActionMetadata,
-  ContentMetadata,
-  IAppAction,
-  IVideoMetadata,
-  VideoMetadata,
-} from '@joystream/metadata-protobuf'
+import { AppAction, AppActionMetadata, IAppAction, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
   PalletContentPermissionsContentActor as ContentActor,
@@ -50,14 +43,13 @@ import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
-  generateAppActionCommitment,
   processAppActionMetadata,
   processVideoMetadata,
   unsetAssetRelations,
   videoRelationsForCounters,
-  wrapMetadata,
 } from './utils'
 import { BTreeSet } from '@polkadot/types'
+import { metadataToBytes, generateAppActionCommitment } from '@joystream/js/lib/utils'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor
@@ -139,9 +131,8 @@ export async function processCreateVideoMessage(
     const appCommitment = generateAppActionCommitment(
       channel.id ?? '',
       contentCreationParameters.assets,
-      // after ephesus merge can be replaced with `metadataToBytes` helper fn from joystream/js
-      wrapMetadata(VideoMetadata.encode(videoMetadata as IVideoMetadata).finish()),
-      wrapMetadata(AppActionMetadata.encode(appAction.metadata ?? {}).finish())
+      metadataToBytes(VideoMetadata, videoMetadata as IVideoMetadata),
+      metadataToBytes(AppActionMetadata, appAction.metadata ?? {})
     )
     await processAppActionMetadata(ctx, video, appAction, { actionOwnerId: channel.id, appCommitment }, (entity) =>
       processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
@@ -205,9 +196,14 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   })
 
   if (video) {
-    const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
+    const contentMetadata = newMeta.isSome ? deserializeMetadata(AppAction, newMeta.unwrap()) : undefined
 
-    await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
+    await processUpdateVideoMessage(
+      ctx,
+      video,
+      contentMetadata?.contentMetadata?.videoMetadata || undefined,
+      contentUpdatedEventData
+    )
     return
   }
 

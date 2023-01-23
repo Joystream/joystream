@@ -49,13 +49,12 @@ import {
   unsetAssetRelations,
   mapAgentPermission,
   processAppActionMetadata,
-  generateAppActionCommitment,
-  wrapMetadata,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import { processUpdateApp, processCreateAppMessage } from './app'
+import { generateAppActionCommitment, metadataToBytes } from '@joystream/js/lib/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -92,9 +91,8 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     const appCommitment = generateAppActionCommitment(
       channelOwner.ownerMember?.id ?? channelOwner.ownerCuratorGroup?.id ?? '',
       channelCreationParameters.assets,
-      // after ephesus merge can be replaced with `metadataToBytes` helper fn from joystream/js
-      wrapMetadata(ChannelMetadata.encode(appAction.channelMetadata ?? {}).finish()),
-      wrapMetadata(AppActionMetadata.encode(appAction.metadata ?? {}).finish())
+      metadataToBytes(ChannelMetadata, appAction.channelMetadata ?? {}),
+      metadataToBytes(AppActionMetadata, appAction.metadata ?? {})
     )
     await processAppActionMetadata(
       ctx,
@@ -141,8 +139,8 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, newDataObjects)
+    const newMetadata = deserializeMetadata(AppAction, newMetadataBytes) || {}
+    await processChannelMetadata(ctx, channel, newMetadata.channelMetadata ?? {}, newDataObjects)
   }
 
   // save channel
