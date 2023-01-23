@@ -2,7 +2,14 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { AppAction, AppActionMetadata, IAppAction, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
+import {
+  AppAction,
+  AppActionMetadata,
+  ContentMetadata,
+  IAppAction,
+  IVideoMetadata,
+  VideoMetadata,
+} from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
   PalletContentPermissionsContentActor as ContentActor,
@@ -96,19 +103,24 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
 
   // deserialize & process metadata
   const appAction = meta.isSome ? deserializeMetadata(AppAction, meta.unwrap()) : undefined
-  // const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
+  const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
 
   // Content Creation Preference
   // 1. metadata == `VideoMetadata` || undefined -> create Video
   // 1. metadata == `PlaylistMetadata` -> create Playlist (Not Supported Yet)
 
-  await processCreateVideoMessage(ctx, channel, appAction ?? undefined, contentCreatedEventData)
+  await processCreateVideoMessage(
+    ctx,
+    channel,
+    appAction && Object.keys(appAction).length ? appAction : contentMetadata?.videoMetadata ?? undefined,
+    contentCreatedEventData
+  )
 }
 
 export async function processCreateVideoMessage(
   ctx: EventContext & StoreContext,
   channel: Channel,
-  appAction: DecodedMetadataObject<IAppAction> | undefined,
+  metadata: DecodedMetadataObject<IAppAction> | DecodedMetadataObject<IVideoMetadata> | undefined,
   contentCreatedEventData: ContentCreatedEventData
 ): Promise<void> {
   const { store, event } = ctx
@@ -126,17 +138,19 @@ export async function processCreateVideoMessage(
     reactionsCount: 0,
   })
 
-  if (appAction) {
-    const videoMetadata = appAction.contentMetadata?.videoMetadata ?? {}
+  if (metadata && 'appId' in metadata) {
+    const videoMetadata = metadata.contentMetadata?.videoMetadata ?? {}
     const appCommitment = generateAppActionCommitment(
       channel.id ?? '',
       contentCreationParameters.assets,
       metadataToBytes(VideoMetadata, videoMetadata as IVideoMetadata),
-      metadataToBytes(AppActionMetadata, appAction.metadata ?? {})
+      metadataToBytes(AppActionMetadata, metadata.metadata ?? {})
     )
-    await processAppActionMetadata(ctx, video, appAction, { actionOwnerId: channel.id, appCommitment }, (entity) =>
+    await processAppActionMetadata(ctx, video, metadata, { actionOwnerId: channel.id, appCommitment }, (entity) =>
       processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
     )
+  } else if (metadata) {
+    await processVideoMetadata(ctx, video, metadata as DecodedMetadataObject<IVideoMetadata>, newDataObjectIds)
   }
 
   // save video
