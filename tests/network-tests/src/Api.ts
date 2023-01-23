@@ -61,7 +61,14 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
+import {
+  ChannelOwnerRemarked,
+  CreateVideoCategory,
+  IAppMetadata,
+  IChannelOwnerRemarked,
+  MemberRemarked,
+  UpdateApp,
+} from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -795,6 +802,54 @@ export class Api {
 
     const event = this.getEvent(result.events, 'content', 'VideoCreated')
     return event.data[2]
+  }
+
+  async createApp(
+    memberId: u64,
+    channelId: number,
+    name: string,
+    appMetadata?: IAppMetadata
+  ): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const msg: IChannelOwnerRemarked = {
+      createApp: {
+        name,
+        appMetadata,
+      },
+    }
+
+    return this.sender.signAndSend(
+      this.api.tx.content.channelOwnerRemark(channelId, Utils.metadataToBytes(ChannelOwnerRemarked, msg)),
+      memberAccount.toString()
+    )
+  }
+
+  async updateApp(
+    memberId: u64,
+    channelId: number,
+    appId: string,
+    appMetadata: IAppMetadata
+  ): Promise<ISubmittableResult> {
+    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
+    if (!memberAccount) {
+      throw new Error('invalid member id')
+    }
+
+    const meta = new ChannelOwnerRemarked({
+      updateApp: new UpdateApp({
+        appId,
+        appMetadata,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.content.channelOwnerRemark(channelId, Utils.metadataToBytes(ChannelOwnerRemarked, meta)),
+      memberAccount.toString()
+    )
   }
 
   async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {

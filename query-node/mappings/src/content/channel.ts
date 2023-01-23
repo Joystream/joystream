@@ -62,6 +62,7 @@ import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
+import { processUpdateApp, processCreateAppMessage } from './app'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -301,7 +302,6 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
     const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
-
     const metaTransactionInfo = await processOwnerRemark(store, event, channelId, contentActor, decodedMessage)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
@@ -415,6 +415,18 @@ async function processOwnerRemark(
       decodedMessage.moderateComment!
     )
     return { commentModeratedId: comment.id }
+  }
+
+  if (messageType === 'createApp') {
+    await processCreateAppMessage(store, event, channelId, decodedMessage.createApp!)
+
+    return {}
+  }
+
+  if (messageType === 'updateApp') {
+    await processUpdateApp(store, channelId, decodedMessage.updateApp!)
+
+    return {}
   }
 
   return inconsistentState('Unsupported message type in channel owner remark action', messageType)
