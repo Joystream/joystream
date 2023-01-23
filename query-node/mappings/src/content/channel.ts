@@ -4,6 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import {
   AppAction,
+  AppActionMetadata,
   ChannelMetadata,
   ChannelModeratorRemarked,
   ChannelOwnerRemarked,
@@ -48,6 +49,8 @@ import {
   unsetAssetRelations,
   mapAgentPermission,
   processAppActionMetadata,
+  generateAppActionCommitment,
+  wrapMetadata,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -60,6 +63,9 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
     new Content.ChannelCreatedEvent(event).params
 
+  // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
+  const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
+
   // create entity
   const channel = new Channel({
     // main data
@@ -68,10 +74,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     videos: [],
     createdInBlock: event.blockNumber,
     activeVideosCounter: 0,
-
-    // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-    ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
-
+    ...channelOwner,
     rewardAccount: rewardAccount.toString(),
     channelStateBloatBond: channelStateBloatBond.amount,
   })
@@ -85,8 +88,20 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     }
 
     const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap()) || {}
-    await processAppActionMetadata(ctx, channel, channel.ownerMember?.id, appAction, (entity: Channel) =>
-      processChannelMetadata(ctx, entity, appAction.channelMetadata ?? {}, dataObjects)
+
+    const appCommitment = generateAppActionCommitment(
+      channelOwner.ownerMember?.id ?? channelOwner.ownerCuratorGroup?.id ?? '',
+      channelCreationParameters.assets,
+      // after ephesus merge can be replaced with `metadataToBytes` helper fn from joystream/js
+      wrapMetadata(ChannelMetadata.encode(appAction.channelMetadata ?? {}).finish()),
+      wrapMetadata(AppActionMetadata.encode(appAction.metadata ?? {}).finish())
+    )
+    await processAppActionMetadata(
+      ctx,
+      channel,
+      appAction,
+      { actionOwnerId: channel.ownerMember?.id, appCommitment },
+      (entity: Channel) => processChannelMetadata(ctx, entity, appAction.channelMetadata ?? {}, dataObjects)
     )
   }
 
