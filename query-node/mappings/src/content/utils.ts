@@ -42,13 +42,15 @@ import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentIterableEnumsChannelActionPermission,
+  PalletContentStorageAssetsRecord,
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { getSortedDataObjectsByIds } from '../storage/utils'
-import { BTreeSet } from '@polkadot/types'
+import { BTreeSet, Bytes, Option } from '@polkadot/types'
 import { DataObjectId } from '@joystream/types/primitives'
+import { createType } from '@joystream/types'
 
 const ASSET_TYPES = {
   channel: [
@@ -198,36 +200,39 @@ async function checkAppActionNonce<T>(
 async function validateAppSignature<T>(
   ctx: EventContext & StoreContext,
   entity: T,
-  actionOwnerId: string | undefined,
+  validationContext: {
+    actionOwnerId: string | undefined
+    appCommitment: string | undefined
+  },
   appAction: DecodedMetadataObject<IAppAction>
 ) {
   // If one is missing we cannot verify the signature
-  if (!appAction.appId || !appAction.signature || !appAction.metadata) {
+  if (!appAction.appId || !appAction.signature || !appAction.metadata || !validationContext.appCommitment) {
     return false
   }
 
   // todo change to App after https://github.com/Joystream/joystream/pull/4504
   const app = await ctx.store.get(Channel, { where: { id: appAction.appId } })
 
-  if (!app || !(await checkAppActionNonce(ctx, entity, actionOwnerId, appAction))) {
+  if (!app || !(await checkAppActionNonce(ctx, entity, validationContext.actionOwnerId, appAction))) {
     return false
   }
 
-  // todo create commitment based on the metadata
-  const appCommitment = 'commitment'
-
   // todo: change to app.authKey after https://github.com/Joystream/joystream/pull/4504
-  return ed25519Verify(appCommitment, appAction.signature, app.title ?? '')
+  return ed25519Verify(validationContext.appCommitment, appAction.signature, app.title ?? '')
 }
 
 export async function processAppActionMetadata<T extends { appId?: string }>(
   ctx: EventContext & StoreContext,
   entity: T,
-  actionOwnerId: string | undefined,
   meta: DecodedMetadataObject<IAppAction>,
+  validationContext: {
+    actionOwnerId: string | undefined
+    appCommitment: string | undefined
+  },
   entityMetadataProcessor: (entity: T) => Promise<T>
 ): Promise<T> {
-  if (!(await validateAppSignature(ctx, entity, actionOwnerId, meta))) {
+  if (!(await validateAppSignature(ctx, entity, validationContext, meta))) {
     invalidMetadata('Invalid application signature')
     return entityMetadataProcessor(entity)
   }
@@ -758,4 +763,20 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
 export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
+}
+
+// this ideally should be transfered to @joystream-js
+export function generateAppActionCommitment(
+  creatorId: string,
+  assets: Option<PalletContentStorageAssetsRecord>,
+  rawAction: Option<Bytes>,
+  rawAppMetadata: Option<Bytes>
+): string {
+  return JSON.stringify([creatorId, assets.toString(), rawAction, rawAppMetadata])
+}
+
+export const wrapMetadata = (metadata: Uint8Array): Option<Bytes> => {
+  const metadataRaw = createType('Raw', metadata)
+  const metadataBytes = createType('Bytes', metadataRaw)
+  return createType('Option<Bytes>', metadataBytes)
 }

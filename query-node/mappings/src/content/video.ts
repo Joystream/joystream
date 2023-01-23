@@ -2,7 +2,14 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { AppAction, ContentMetadata, IAppAction, IVideoMetadata } from '@joystream/metadata-protobuf'
+import {
+  AppAction,
+  AppActionMetadata,
+  ContentMetadata,
+  IAppAction,
+  IVideoMetadata,
+  VideoMetadata,
+} from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
   PalletContentPermissionsContentActor as ContentActor,
@@ -43,10 +50,12 @@ import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
+  generateAppActionCommitment,
   processAppActionMetadata,
   processVideoMetadata,
   unsetAssetRelations,
   videoRelationsForCounters,
+  wrapMetadata,
 } from './utils'
 import { BTreeSet } from '@polkadot/types'
 
@@ -128,7 +137,14 @@ export async function processCreateVideoMessage(
 
   if (appAction) {
     const videoMetadata = appAction.contentMetadata?.videoMetadata ?? {}
-    await processAppActionMetadata(ctx, video, appAction, (entity) =>
+    const appCommitment = generateAppActionCommitment(
+      channel.id ?? '',
+      contentCreationParameters.assets,
+      // after ephesus merge can be replaced with `metadataToBytes` helper fn from joystream/js
+      wrapMetadata(VideoMetadata.encode(videoMetadata as IVideoMetadata).finish()),
+      wrapMetadata(AppActionMetadata.encode(appAction.metadata ?? {}).finish())
+    )
+    await processAppActionMetadata(ctx, video, appAction, { actionOwnerId: channel.id, appCommitment }, (entity) =>
       processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
     )
   }
