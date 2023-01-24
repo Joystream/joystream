@@ -46,6 +46,7 @@ import {
   bytesToString,
   getMemberById,
   invalidMetadata,
+  unexpectedData,
 } from '../common'
 import {
   processBanOrUnbanMemberFromChannelMessage,
@@ -570,25 +571,14 @@ export async function processChannelPaymentFromMember(
   // Transfers to any other destination will be ignored by the query node.
   const channel = await store.get(Channel, { where: { rewardAccount: payeeAccount.toString() } })
   if (!channel) {
-    inconsistentState('Payment made to unknown channel reward account')
+    unexpectedData('Payment made to unknown channel reward account')
   }
 
   // Get payment context from the metadata
   const getPaymentContext = async (msg: IMakeChannelPayment) => {
-    if (msg.channelId) {
-      const paymentContext = new PaymentContextChannel()
-      if (msg.channelId.toString() !== channel.id) {
-        invalidMetadata(
-          `payment context (channel) added in the metadata of 'member_remark' call is different from` +
-            `queried channel based on payee address, EXPECTED: ${channel.id}, ACTUAL: ${msg.channelId}`
-        )
-      }
-
-      paymentContext.channelId = channel.id
-      return paymentContext
-    } else if (message.videoId) {
+    if (msg.videoId) {
       const paymentContext = new PaymentContextVideo()
-      const video = await store.get(Video, { where: { id: message.videoId.toString() }, relations: ['channel'] })
+      const video = await store.get(Video, { where: { id: msg.videoId.toString() }, relations: ['channel'] })
       if (!video) {
         invalidMetadata(`payment context (video) added in the metadata of 'member_remark' call is invalid`)
         return
@@ -600,9 +590,13 @@ export async function processChannelPaymentFromMember(
             `queried video based on payee address, EXPECTED: ${channel.id}, ACTUAL: ${video.channel.id}`
         )
       }
-      paymentContext.videoId = channel.id
+      paymentContext.videoId = video.id
       return paymentContext
     }
+
+    const paymentContext = new PaymentContextChannel()
+    paymentContext.channelId = channel.id
+    return paymentContext
   }
 
   const paymentMadeEvent = new ChannelPaymentMadeEvent({

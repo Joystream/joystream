@@ -27,14 +27,6 @@ export class DirectChannelPaymentsHappyCaseFixture extends StandardizedFixture {
     this.paymentParams = paymentParams
   }
 
-  public async getCreatedCommentsIds(): Promise<string[]> {
-    const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getCommentCreatedEvents(this.events),
-      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
-    )
-    return qEvents.map((e) => e.comment.id)
-  }
-
   protected async getEventFromResult(result: ISubmittableResult): Promise<MemberRemarkedEventDetails> {
     return this.api.getEventDetails(result, 'members', 'MemberRemarked')
   }
@@ -50,11 +42,7 @@ export class DirectChannelPaymentsHappyCaseFixture extends StandardizedFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.paymentParams.map((params) => {
       const msg: IMemberRemarked = {
-        makeChannelPayment: {
-          rationale: params.msg.rationale,
-          videoId: params.msg.videoId,
-          channelId: params.msg.channelId,
-        },
+        makeChannelPayment: params.msg,
       }
       return this.api.tx.members.memberRemark(
         params.asMember,
@@ -69,6 +57,14 @@ export class DirectChannelPaymentsHappyCaseFixture extends StandardizedFixture {
     assert.equal(qEvent.rationale, params.msg.rationale)
     assert.equal(qEvent.payer.id, params.asMember.toString())
     assert.equal(qEvent.amount, params.payment[1])
+    assert.equal(qEvent.payeeChannel?.rewardAccount, params.payment[0])
+    Utils.assert(qEvent.paymentContext)
+    if (params.msg.videoId) {
+      Utils.assert(qEvent.paymentContext?.__typename === 'PaymentContextVideo')
+      assert.equal(qEvent.paymentContext?.video?.id, params.msg.videoId.toString())
+    } else {
+      Utils.assert(qEvent.paymentContext?.__typename === 'PaymentContextChannel')
+    }
   }
 
   async runQueryNodeChecks(): Promise<void> {

@@ -27,14 +27,6 @@ export class DirectChannelPaymentsWithInvalidRewardAccountFixture extends Standa
     this.paymentParams = paymentParams
   }
 
-  public async getCreatedCommentsIds(): Promise<string[]> {
-    const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getCommentCreatedEvents(this.events),
-      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
-    )
-    return qEvents.map((e) => e.comment.id)
-  }
-
   protected async getEventFromResult(result: ISubmittableResult): Promise<MemberRemarkedEventDetails> {
     return this.api.getEventDetails(result, 'members', 'MemberRemarked')
   }
@@ -50,11 +42,7 @@ export class DirectChannelPaymentsWithInvalidRewardAccountFixture extends Standa
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.paymentParams.map((params) => {
       const msg: IMemberRemarked = {
-        makeChannelPayment: {
-          rationale: params.msg.rationale,
-          videoId: params.msg.videoId,
-          channelId: params.msg.channelId,
-        },
+        makeChannelPayment: params.msg,
       }
       return this.api.tx.members.memberRemark(
         params.asMember,

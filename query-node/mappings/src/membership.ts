@@ -22,12 +22,12 @@ import {
   deserializeMetadata,
   genericEventFields,
   getWorker,
-  inconsistentState,
   toNumber,
   logger,
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
   getMemberById,
+  unexpectedData,
 } from './common'
 import {
   Membership,
@@ -662,8 +662,15 @@ async function processMemberRemark(
   }
 
   // Though the payments can be sent along with any arbitrary metadata message type,
-  // however they will only be processed if the message type is 'makePayment'
-  if (messageType === 'makeChannelPayment' && payment) {
+  // however they will only be processed if the message type is 'makeChannelPayment'
+  if (messageType === 'makeChannelPayment') {
+    if (!payment) {
+      unexpectedData(
+        `payment info should be set when sending remark with 'makeChannelPayment' message type`,
+        messageType
+      )
+    }
+
     const channelPayment = await processChannelPaymentFromMember(
       store,
       event,
@@ -683,5 +690,5 @@ async function processMemberRemark(
   }
 
   // unknown message type
-  return inconsistentState('Unsupported message type in member_remark action', messageType)
+  return unexpectedData('Unsupported message type in member_remark action', messageType)
 }
