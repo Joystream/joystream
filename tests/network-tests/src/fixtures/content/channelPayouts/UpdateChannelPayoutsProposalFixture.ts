@@ -12,7 +12,6 @@ import { Utils } from '../../../utils'
 export type UpdateChannelPayoutsProposalParams = {
   asMember: MemberId
   protobufPayloadFilePath: string
-  uploaderAccount: string
   minCashoutAllowedInput?: BN
   maxCashoutAllowedInput?: BN
   channelCashoutsEnabled?: boolean
@@ -46,7 +45,6 @@ export class UpdateChannelPayoutsProposalFixture extends BaseQueryNodeFixture {
         details: createType('PalletContentUpdateChannelPayoutsParametersRecord', {
           commitment: await generateCommitmentFromPayloadFile('PATH', protobufPayloadFilePath),
           payload: {
-            uploaderAccount: this.updateChannelPayoutsParams.uploaderAccount,
             objectCreationParams: {
               size_: fs.statSync(protobufPayloadFilePath).size,
               ipfsContentId: await Utils.calculateFileHash(protobufPayloadFilePath),
