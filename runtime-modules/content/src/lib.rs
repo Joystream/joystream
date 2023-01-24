@@ -4908,7 +4908,6 @@ decl_event!(
         // Rewards
         ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, Option<DataObjectId>),
         ChannelRewardUpdated(Balance, Balance, ChannelId),
-        CouncilRewardClaimed(ChannelId, Balance),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),

@@ -81,7 +81,6 @@ export default async function directChannelPayment({ api, query }: FlowProps): P
     // Channel Payment as channel wide tip:
     {
       msg: {
-        channelId: Long.fromNumber(channelId),
         rationale: 'Great channel',
       },
       payment: [channel.rewardAccount, channelPaymentAmount],
