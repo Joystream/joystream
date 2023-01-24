@@ -879,7 +879,7 @@ declare module '@polkadot/types/lookup' {
     readonly isVideoAssetsDeletedByModerator: boolean;
     readonly asVideoAssetsDeletedByModerator: ITuple<[PalletContentPermissionsContentActor, u64, BTreeSet<u64>, bool, Bytes]>;
     readonly isChannelPayoutsUpdated: boolean;
-    readonly asChannelPayoutsUpdated: ITuple<[PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
+    readonly asChannelPayoutsUpdated: ITuple<[PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>, AccountId32]>;
     readonly isChannelRewardUpdated: boolean;
     readonly asChannelRewardUpdated: ITuple<[u128, u128, u64]>;
     readonly isEnglishAuctionStarted: boolean;
@@ -1189,7 +1189,6 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletContentChannelPayoutsPayloadParametersRecord (150) */
   export interface PalletContentChannelPayoutsPayloadParametersRecord extends Struct {
-    readonly uploaderAccount: AccountId32;
     readonly objectCreationParams: PalletStorageDataObjectCreationParameters;
     readonly expectedDataSizeFee: u128;
     readonly expectedDataObjectStateBloatBond: u128;
@@ -3447,6 +3446,7 @@ declare module '@polkadot/types/lookup' {
     readonly isUpdateChannelPayouts: boolean;
     readonly asUpdateChannelPayouts: {
       readonly params: PalletContentUpdateChannelPayoutsParametersRecord;
+      readonly uploaderAccount: AccountId32;
     } & Struct;
     readonly isClaimChannelReward: boolean;
     readonly asClaimChannelReward: {
