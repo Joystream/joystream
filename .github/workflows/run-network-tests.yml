@@ -186,8 +186,6 @@ jobs:
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}
 
   runtime_upgrade:
-    # Re-Enable when we want to test carthage runtime updates
-    if: ${{ false }}
     name: Runtime Upgrade From Carthage Spec 0
     needs: build_images
     runs-on: ubuntu-latest
