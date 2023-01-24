@@ -25,6 +25,7 @@ source ./node-utils.sh
 function fork_off_init() {
     # chain-spec-raw already existing
 
+    # download the raw storage state 
     if ! [[ -f ${DATA_PATH}/storage.json ]]; then
         curl http://testnet-rpc-3-uk.joystream.org:9933 -H \
             "Content-type: application/json" -d \
@@ -32,18 +33,39 @@ function fork_off_init() {
             > ${DATA_PATH}/storage.json
     fi
 
+    # provide types definition for the storage state
     if ! [[ -f ${DATA_PATH}/schema.json ]]; then
         cp $SCRIPT_PATH/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
     fi
 
-    id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
-    docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
+    # perform actual forkless runtime upgrade
+    runtime_upgrade
 
     # RPC endpoint for live RUNTIME testnet
     WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org" \
         yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
 
+#######################################
+# Perform substrate forkless upgrade by replacing the runtime.wasm
+# Globals:
+#   TARGET_RUNTIME_TAG
+#   DATA_PATH
+# Arguments:
+#   None
+#######################################
+function runtime_upgrade() {
+    id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
+    docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
+  }
+
+#######################################
+# Write initial genesis state to disk
+# Globals:
+#   DATA_PATH
+# Arguments:
+#   None
+#######################################
 function export_chainspec_file_to_disk() {
     echo "**** Initializing node database by exporting state ****"
     # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time
@@ -57,21 +79,26 @@ function export_chainspec_file_to_disk() {
 function main {
     CONTAINER_ID=""
 
-    echo "**** CREATING EMPTY CHAINSPEC ****"
-    create_initial_config
-    create_chainspec_file
-    convert_chainspec
-    echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
+    if (DATA_MIGRATION_NEEDED); then
+      echo "**** CREATING EMPTY CHAINSPEC ****"
+      create_initial_config
+      create_chainspec_file
+      convert_chainspec
+      echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-    # use forkoff to update chainspec with the live state + update runtime code
-    fork_off_init
+      # use forkoff to update chainspec with the live state + update runtime code
+      fork_off_init
+      
+      # export chain-spec BEFORE starting the node
+      export_chainspec_file_to_disk
+      
+      echo "***** STARTING NODE WITH FORKED STATE *****"
+    else
+      runtime_upgrade
+    fi
 
     export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
 
-    # export chain-spec BEFORE starting the node
-    export_chainspec_file_to_disk
-
-    echo "***** STARTING NODE WITH FORKED STATE *****"
     CONTAINER_ID=$(start_node)
 
     trap cleanup EXIT
