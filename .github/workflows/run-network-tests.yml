@@ -186,7 +186,7 @@ jobs:
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}
 
   runtime_upgrade:
-    name: Runtime Upgrade From Carthage Spec 0
+    name: Runtime Upgrade From Mainnet To Ephesus 
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -207,6 +207,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/js build
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
