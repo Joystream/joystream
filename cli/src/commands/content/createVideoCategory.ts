@@ -2,7 +2,6 @@ import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { metadataToString } from '../../helpers/serialization'
 import chalk from 'chalk'
 import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
-import MemberRemarkCommand from '../membership/memberRemark'
 
 export default class CreateVideoCategoryCommand extends ContentDirectoryCommandBase {
   static description = 'Create video category inside content directory.'
@@ -31,6 +30,7 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
   async run(): Promise<void> {
     const { name, description, parentCategoryId } = this.parse(CreateVideoCategoryCommand).args
 
+    const [memberId, controllerAccount] = await this.getValidatedMemberRemarkParams()
     const meta = new MemberRemarked({
       createVideoCategory: new CreateVideoCategory({
         name,
@@ -38,10 +38,11 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
         parentCategoryId,
       }),
     })
-    const metaMessage = metadataToString(MemberRemarked, meta)
+    const message = metadataToString(MemberRemarked, meta)
+    const keypair = await this.getDecodedPair(controllerAccount)
+    const result = await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [memberId, message, null])
 
-    await MemberRemarkCommand.run([metaMessage])
-
-    this.log(chalk.green(`Video category successfully created!`))
+    const [id] = this.getEvent(result, 'members', 'MemberRemarked').data
+    this.log(chalk.green(`Video category ${name} successfully created by member ${id}!`))
   }
 }

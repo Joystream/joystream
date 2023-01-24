@@ -152,11 +152,11 @@ export default class QueryNodeApi {
   }
 
   async getChannelByRewardAccount(rewardAccount: string): Promise<ChannelFieldsFragment | null> {
-    const channels = await this.multipleEntitiesQuery<
-      GetChannelByRewardAccountQuery,
-      GetChannelByRewardAccountQueryVariables
-    >(GetChannelByRewardAccount, { rewardAccount }, 'channels')
-    return channels.length > 0 ? channels[0] : null
+    return await this.firstEntityQuery<GetChannelByRewardAccountQuery, GetChannelByRewardAccountQueryVariables>(
+      GetChannelByRewardAccount,
+      { rewardAccount },
+      'channels'
+    )
   }
 
   async storageNodesInfoByBagId(bagId: string): Promise<StorageNodeInfo[]> {
