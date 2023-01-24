@@ -5,7 +5,7 @@ import path from 'path'
 import { execSync } from 'child_process'
 
 // paths & env variables
-const alice = process.env.SUDO_ACCOUNT
+// const alice = process.env.SUDO_ACCOUNT
 // bad error handling TODO: fix process.env
 const schemaPath = path.join(process.env.DATA_PATH || '', 'schema.json')
 const wasmPath = path.join(process.env.DATA_PATH || '', 'runtime.wasm') || ''
@@ -103,11 +103,12 @@ async function main() {
   // To prevent the validator set from changing mid-test, set Staking.ForceEra to ForceNone ('0x02')
   chainSpec.genesis.raw.top['0x5f3e4907f716ac89b6347d15ececedcaf7dad0317324aecae8744b87fc95f2f3'] = '0x02'
 
-  if (alice !== '') {
-    // Set sudo key to //Alice
-    chainSpec.genesis.raw.top['0x5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b'] =
-      '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'
-  }
+  // uncomment in case sudo key is needed
+  // if (alice !== '') {
+  //   // Set sudo key to //Alice
+  //   chainSpec.genesis.raw.top['0x5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b'] =
+  //     '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'
+  // }
 
   fs.writeFileSync(specPath, JSON.stringify(chainSpec, null, 4))
 
