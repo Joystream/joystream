@@ -782,7 +782,10 @@ impl referendum::Config<ReferendumInstance> for Test {
 }
 
 impl ProposalEncoder<Test> for () {
-    fn encode_proposal(_proposal_details: ProposalDetailsOf<Test>) -> Vec<u8> {
+    fn encode_proposal(
+        _proposal_details: ProposalDetailsOf<Test>,
+        _account_id: <Test as frame_system::Config>::AccountId,
+    ) -> Vec<u8> {
         Vec::new()
     }
 }
