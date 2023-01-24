@@ -43,20 +43,21 @@ import {
   VideoSubtitle,
 } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
-import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { deserializeMetadata, genericEventFields, inconsistentState, invalidMetadata, logger } from '../common'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
+  generateAppActionCommitment,
+  metadataToBytes,
   processAppActionMetadata,
   processVideoMetadata,
   unsetAssetRelations,
   videoRelationsForCounters,
 } from './utils'
 import { BTreeSet } from '@polkadot/types'
-import { metadataToBytes, generateAppActionCommitment } from '@joystream/js/lib/utils'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor
@@ -112,7 +113,7 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   await processCreateVideoMessage(
     ctx,
     channel,
-    appAction && Object.keys(appAction).length ? appAction : contentMetadata?.videoMetadata ?? undefined,
+    appAction && 'signature' in appAction ? appAction : contentMetadata?.videoMetadata ?? undefined,
     contentCreatedEventData
   )
 }
@@ -139,7 +140,7 @@ export async function processCreateVideoMessage(
     reactionsCount: 0,
   })
 
-  if (metadata && 'appId' in metadata) {
+  if (metadata && 'signature' in metadata) {
     const videoMetadata = metadata.contentMetadata?.videoMetadata ?? {}
     const appCommitment = generateAppActionCommitment(
       channel.id ?? '',
@@ -211,14 +212,18 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   })
 
   if (video) {
-    const contentMetadata = newMeta.isSome ? deserializeMetadata(AppAction, newMeta.unwrap()) : undefined
-
-    await processUpdateVideoMessage(
-      ctx,
-      video,
-      contentMetadata?.contentMetadata?.videoMetadata || undefined,
-      contentUpdatedEventData
-    )
+    const appAction = newMeta.isSome ? deserializeMetadata(AppAction, newMeta.unwrap()) : undefined
+    if (appAction && 'signature' in appAction) {
+      await processUpdateVideoMessage(
+        ctx,
+        video,
+        appAction?.contentMetadata?.videoMetadata || undefined,
+        contentUpdatedEventData
+      )
+    } else {
+      const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
+      await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
+    }
     return
   }
 

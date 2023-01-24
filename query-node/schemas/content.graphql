@@ -33,14 +33,16 @@ type App @entity {
   category: String
   authKey: String
   channel: Channel!
+  appVideos: [Video!] @derivedFrom(field: "entryApp")
+  appChannels: [Channel!] @derivedFrom(field: "entryApp")
 }
 
 type Channel @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
 
-  "Entity indentifier for Application used for channel creation"
-  appId: ID
+  "Application used for channel creation"
+  entryApp: App
 
   "Member owning the channel (if any)"
   ownerMember: Membership
@@ -138,8 +140,8 @@ type Video @entity {
   "Runtime identifier"
   id: ID!
 
-  "Entity indentifier for Application used for channel creation"
-  appId: ID
+  "Application used for video creation"
+  entryApp: App
 
   "Reference to videos's channel"
   channel: Channel!

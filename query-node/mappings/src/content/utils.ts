@@ -21,6 +21,7 @@ import {
   Language,
   License,
   VideoMediaMetadata,
+  App,
   // asset
   Membership,
   VideoMediaEncoding,
@@ -42,14 +43,17 @@ import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentIterableEnumsChannelActionPermission,
+  PalletContentStorageAssetsRecord,
 } from '@polkadot/types/lookup'
-import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { getSortedDataObjectsByIds } from '../storage/utils'
-import { BTreeSet } from '@polkadot/types'
+import { BTreeSet, Option } from '@polkadot/types'
 import { DataObjectId } from '@joystream/types/primitives'
 import { getAppById } from './app'
+import { Bytes } from '@polkadot/types/primitive'
+import { createType } from '@joystream/types'
 
 const ASSET_TYPES = {
   channel: [
@@ -196,7 +200,7 @@ async function checkAppActionNonce<T>(
   return false
 }
 
-async function validateAppSignature<T>(
+async function validateAndGetApp<T>(
   ctx: EventContext & StoreContext,
   entity: T,
   validationContext: {
@@ -204,22 +208,35 @@ async function validateAppSignature<T>(
     appCommitment: string | undefined
   },
   appAction: DecodedMetadataObject<IAppAction>
-) {
+): Promise<App | undefined> {
   // If one is missing we cannot verify the signature
   if (!appAction.appId || !appAction.signature || !appAction.metadata || !validationContext.appCommitment) {
-    return false
+    invalidMetadata('Missing action fields to verify app')
+    return undefined
   }
 
   const app = await getAppById(ctx.store, appAction.appId)
 
-  if (!app || !app.authKey || !(await checkAppActionNonce(ctx, entity, validationContext.actionOwnerId, appAction))) {
-    return false
+  if (!app || !app.authKey) {
+    invalidMetadata('No app of given id')
+    return undefined
   }
 
-  return ed25519Verify(validationContext.appCommitment, appAction.signature, app.authKey)
+  if (!(await checkAppActionNonce(ctx, entity, validationContext.actionOwnerId, appAction))) {
+    invalidMetadata('Invalid app action nonce')
+
+    return undefined
+  }
+
+  try {
+    return ed25519Verify(validationContext.appCommitment, appAction.signature, app.authKey) ? app : undefined
+  } catch (e) {
+    invalidMetadata((e as Error)?.message)
+    return undefined
+  }
 }
 
-export async function processAppActionMetadata<T extends { appId?: string }>(
+export async function processAppActionMetadata<T extends { entryApp?: App }>(
   ctx: EventContext & StoreContext,
   entity: T,
   meta: DecodedMetadataObject<IAppAction>,
@@ -229,12 +246,12 @@ export async function processAppActionMetadata<T extends { appId?: string }>(
   },
   entityMetadataProcessor: (entity: T) => Promise<T>
 ): Promise<T> {
-  if (!(await validateAppSignature(ctx, entity, validationContext, meta))) {
-    invalidMetadata('Invalid application signature')
+  const app = await validateAndGetApp(ctx, entity, validationContext, meta)
+  if (!app) {
     return entityMetadataProcessor(entity)
   }
 
-  integrateMeta(entity, meta, ['appId'])
+  integrateMeta(entity, { entryApp: app }, ['entryApp'])
 
   return entityMetadataProcessor(entity)
 }
@@ -760,4 +777,21 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
 export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
+}
+
+export function generateAppActionCommitment(
+  creatorId: string,
+  assets: Option<PalletContentStorageAssetsRecord>,
+  rawAction: Bytes,
+  rawAppMetadata: Bytes
+): string {
+  return JSON.stringify([creatorId, assets.toString(), rawAction, rawAppMetadata])
+}
+
+export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
+  return createType('Bytes', metadataToString(metaClass, obj))
+}
+
+export function metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
+  return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
 }
