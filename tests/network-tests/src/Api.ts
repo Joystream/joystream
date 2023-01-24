@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, u128, BTreeSet, Option, Vec } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option, Vec, Bytes } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -62,8 +62,10 @@ import {
 } from './consts'
 
 import {
+  AppAction,
   ChannelOwnerRemarked,
   CreateVideoCategory,
+  IAppAction,
   IAppMetadata,
   IChannelOwnerRemarked,
   MemberRemarked,
@@ -760,7 +762,8 @@ export class Api {
       distributionBucketFamilyId: number
       distributionBucketIndex: number
     }[],
-    memberControllerAccount?: string
+    memberControllerAccount?: string,
+    channelMeta?: IAppAction
   ): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
@@ -768,14 +771,18 @@ export class Api {
       throw new Error('invalid member id')
     }
 
+    const dataObjectPerMegabyteFee = await this.api.query.storage.dataObjectPerMegabyteFee()
+    const channelStateBloatBondValue = await this.api.query.content.channelStateBloatBondValue()
     // Create a channel without any assets
     const tx = this.api.tx.content.createChannel(
       { Member: memberId },
       {
         assets: null,
-        meta: null,
+        meta: channelMeta ? Utils.metadataToBytes(AppAction, channelMeta) : null,
         storageBuckets,
         distributionBuckets,
+        expectedChannelStateBloatBond: channelStateBloatBondValue,
+        expectedDataObjectStateBloatBond: dataObjectPerMegabyteFee,
       }
     )
 
