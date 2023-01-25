@@ -83,8 +83,8 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
     // payer account balance should be greater than amount, otherwise transfer will fail
     if (
-      fromBalances.votingBalance.lt(new BN(amount).add(this.getApi().existentialDeposit()))
-      || fromBalances.availableBalance.lt(new BN(amount))
+      fromBalances.votingBalance.lt(new BN(amount).add(this.getApi().existentialDeposit())) ||
+      fromBalances.availableBalance.lt(new BN(amount))
     ) {
       throw new CLIError('Not enough balance available', { exit: ExitCodes.InvalidInput })
     }
