@@ -10,5 +10,5 @@ scenario('App', async ({ job }) => {
 
   job('Create app', createApp).after(leads)
   job('Update app', updateApp).after(leads)
-  job('Update app', createAppActions).after(leads)
+  job('Create app actions', createAppActions).after(leads)
 })

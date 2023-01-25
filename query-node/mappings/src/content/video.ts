@@ -50,14 +50,13 @@ import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
-  generateAppActionCommitment,
-  metadataToBytes,
   processAppActionMetadata,
   processVideoMetadata,
   unsetAssetRelations,
   videoRelationsForCounters,
 } from './utils'
 import { BTreeSet } from '@polkadot/types'
+import { generateAppActionCommitment, metadataToBytes } from '@joystream/js/utils'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor

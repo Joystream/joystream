@@ -20,14 +20,11 @@ import {
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 import { Utils } from '../../utils'
-import { Option } from '@polkadot/types'
-import { AnyMetadataClass } from '@joystream/metadata-protobuf/types'
-import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
-import { Bytes } from '@polkadot/types/primitive'
 import { createType } from '@joystream/types'
 import { ed25519PairFromString, ed25519Sign } from '@polkadot/util-crypto'
 import { u8aToHex } from '@polkadot/util'
 import { CreateChannelsAsMemberFixture } from '../../misc/createChannelsAsMemberFixture'
+import { generateAppActionCommitment } from '@joystream/js/utils'
 
 const sufficientTopupAmount = new BN(10_000_000_000_000)
 
@@ -143,7 +140,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const appChannelId = await getChannelId(api, query, member)
 
   const keypair = ed25519PairFromString('fake_secret')
-  const newAppName = 'app_action_1'
+  const newAppName = 'app_action_3hmm'
   const newAppMetadata: Partial<AppMetadata> = {
     category: 'blockchain',
     oneLiner: 'best blokchain video platform',
@@ -167,14 +164,13 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     language: 'en',
   }
   const appActionMeta = {
-    // todo change naming
-    nonceId: '1',
+    nonce: '1',
   }
   const appChannelCommitment = generateAppActionCommitment(
     member.memberId.toString(),
     createType('Option<PalletContentStorageAssetsRecord>', null),
-    metadataToBytes(ChannelMetadata, channelInput),
-    metadataToBytes(AppActionMetadata, appActionMeta)
+    Utils.metadataToBytes(ChannelMetadata, channelInput),
+    Utils.metadataToBytes(AppActionMetadata, appActionMeta)
   )
   const signature = u8aToHex(ed25519Sign(appChannelCommitment, keypair, true))
   const appChannelInput = {
@@ -217,18 +213,15 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     },
   }
   const videoAppActionMeta = {
-    // todo change naming
-    nonceId: '0',
+    nonce: '0',
   }
   const appVideoCommitment = generateAppActionCommitment(
     channelId.toString(),
     createType('Option<PalletContentStorageAssetsRecord>', null),
-    metadataToBytes(ContentMetadata, contentMetadata),
-    metadataToBytes(AppActionMetadata, videoAppActionMeta)
+    Utils.metadataToBytes(ContentMetadata, contentMetadata),
+    Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta)
   )
   const videoSignature = u8aToHex(ed25519Sign(appVideoCommitment, keypair, true))
-  debug(appVideoCommitment)
-  debug(videoSignature)
   const appVideoInput: IAppAction = {
     appId: appFragment?.[0].id,
     contentMetadata: contentMetadata,
@@ -279,21 +272,4 @@ async function getChannelId(api: Api, query: QueryNodeApi, member: IMember) {
   const [channelId] = createChannelsAndVideos.getCreatedItems().channelIds
 
   return channelId
-}
-
-export function generateAppActionCommitment(
-  creatorId: string,
-  assets: Option<PalletContentStorageAssetsRecord>,
-  rawAction: Bytes,
-  rawAppMetadata: Bytes
-): string {
-  return JSON.stringify([creatorId, assets.toString(), rawAction, rawAppMetadata])
-}
-
-export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
-  return createType('Bytes', metadataToString(metaClass, obj))
-}
-
-export function metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
-  return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
 }

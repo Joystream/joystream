@@ -179,21 +179,23 @@ async function checkAppActionNonce<T>(
   actionOwnerId: string | undefined,
   appAction: DecodedMetadataObject<IAppAction>
 ): Promise<boolean> {
-  if (!appAction.metadata?.nonceId || !actionOwnerId) {
+  if (!appAction.metadata?.nonce || !actionOwnerId) {
     return false
   }
 
   if (appAction.contentMetadata?.videoMetadata) {
     return (
       (await ctx.store.getMany(Video, { where: { channel: { ownerMember: { id: actionOwnerId } } } })).length ===
-      parseInt(appAction.metadata.nonceId)
+      parseInt(appAction.metadata.nonce)
     )
   }
 
   if (appAction.channelMetadata) {
+    const expected = (await ctx.store.getMany(Channel, { where: { ownerMember: { id: actionOwnerId } } })).length
+    invalidMetadata('Epected nonce', expected)
     return (
       (await ctx.store.getMany(Channel, { where: { ownerMember: { id: actionOwnerId } } })).length ===
-      parseInt(appAction.metadata.nonceId)
+      parseInt(appAction.metadata.nonce)
     )
   }
 
@@ -777,21 +779,4 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
 export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
-}
-
-export function generateAppActionCommitment(
-  creatorId: string,
-  assets: Option<PalletContentStorageAssetsRecord>,
-  rawAction: Bytes,
-  rawAppMetadata: Bytes
-): string {
-  return JSON.stringify([creatorId, assets.toString(), rawAction, rawAppMetadata])
-}
-
-export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
-  return createType('Bytes', metadataToString(metaClass, obj))
-}
-
-export function metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
-  return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
 }
