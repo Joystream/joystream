@@ -7,8 +7,8 @@ import {
   AppActionMetadata,
   ContentMetadata,
   IAppAction,
+  IContentMetadata,
   IVideoMetadata,
-  VideoMetadata,
 } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
@@ -145,7 +145,7 @@ export async function processCreateVideoMessage(
     const appCommitment = generateAppActionCommitment(
       channel.id ?? '',
       contentCreationParameters.assets,
-      metadataToBytes(VideoMetadata, videoMetadata as IVideoMetadata),
+      metadataToBytes(ContentMetadata, metadata.contentMetadata as IContentMetadata),
       metadataToBytes(AppActionMetadata, metadata.metadata ?? {})
     )
     await processAppActionMetadata(ctx, video, metadata, { actionOwnerId: channel.id, appCommitment }, (entity) =>
