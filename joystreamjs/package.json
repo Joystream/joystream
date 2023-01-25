@@ -1,6 +1,6 @@
 {
   "name": "@joystream/js",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "license": "GPL-3.0-only",
   "description": "Joystream JS package provides  utilities required to work with Joystream network.",
   "main": "lib/index.js",

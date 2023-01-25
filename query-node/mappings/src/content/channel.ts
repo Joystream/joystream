@@ -55,14 +55,13 @@ import {
   unsetAssetRelations,
   mapAgentPermission,
   processAppActionMetadata,
-  generateAppActionCommitment,
-  metadataToBytes,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import { processUpdateApp, processCreateAppMessage } from './app'
+import { generateAppActionCommitment, metadataToBytes } from '@joystream/js/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx

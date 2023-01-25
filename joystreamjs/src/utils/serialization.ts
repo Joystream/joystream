@@ -2,6 +2,8 @@ import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-pro
 import { Bytes } from '@polkadot/types/primitive'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { createType } from '@joystream/types'
+import { Option } from '@polkadot/types'
+import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 
 export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
   return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
@@ -17,4 +19,13 @@ export function asValidatedMetadata<T>(metaClass: AnyMetadataClass<T>, anyObject
     throw new Error(`Invalid metadata: ${error}`)
   }
   return { ...anyObject } as T
+}
+
+export function generateAppActionCommitment(
+  creatorId: string,
+  assets: Option<PalletContentStorageAssetsRecord>,
+  rawAction: Bytes,
+  rawAppMetadata: Bytes
+): string {
+  return JSON.stringify([creatorId, assets.toString(), rawAction, rawAppMetadata])
 }
