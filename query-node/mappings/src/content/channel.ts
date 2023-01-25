@@ -578,18 +578,17 @@ export async function processChannelPaymentFromMember(
   const getPaymentContext = async (msg: IMakeChannelPayment) => {
     if (msg.videoId) {
       const paymentContext = new PaymentContextVideo()
-      const video = await store.get(Video, { where: { id: msg.videoId.toString() }, relations: ['channel'] })
+      const video = await store.get(Video, {
+        where: { id: msg.videoId.toString(), channel: { id: channel.id } },
+        relations: ['channel'],
+      })
       if (!video) {
-        invalidMetadata(`payment context (video) added in the metadata of 'member_remark' call is invalid`)
+        invalidMetadata(
+          `payment context video not found in channel that was queried based on reward (or payee) account.`
+        )
         return
       }
 
-      if (video.channel.id !== channel.id) {
-        invalidMetadata(
-          `payment context (video) added in the metadata of 'member_remark' call is different from` +
-            `queried video based on payee address, EXPECTED: ${channel.id}, ACTUAL: ${video.channel.id}`
-        )
-      }
       paymentContext.videoId = video.id
       return paymentContext
     }
