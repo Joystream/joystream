@@ -31,13 +31,13 @@ export default class GenerateChannelPayoutsPayload extends UploadBaseCommand {
     const [commitment, channelPayouts] = generateJsonPayloadFromPayoutsVector(payloadBodyInput)
     const serializedPayload = generateSerializedPayload(channelPayouts)
 
+    saveOutputToFile(out, serializedPayload)
+
     displayCollapsedRow({
       'Payload Size': Buffer.from(serializedPayload).byteLength,
-      'Payload Hash': blake2AsHex(serializedPayload),
+      'Payload Hash': await this.calculateFileHash(out),
       'Payload Commitment': commitment,
     })
-
-    saveOutputToFile(out, serializedPayload)
 
     this.log(chalk.green(`Channel Payout payload successfully saved to file: ${chalk.cyanBright(out)} !`))
   }
