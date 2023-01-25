@@ -55,8 +55,10 @@ function fork_off_init() {
 #   None
 #######################################
 function runtime_upgrade() {
+    # TODO: replace this with a scenario using proposals
     id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
-    docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
+    yarn workspace api-scripts tsnode-strict src/fork-off.ts
+    # docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
   }
 
 #######################################
