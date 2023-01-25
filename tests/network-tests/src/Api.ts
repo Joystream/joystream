@@ -771,8 +771,12 @@ export class Api {
       throw new Error('invalid member id')
     }
 
-    const dataObjectPerMegabyteFee = await this.api.query.storage.dataObjectPerMegabyteFee()
-    const channelStateBloatBondValue = await this.api.query.content.channelStateBloatBondValue()
+    const txParameters = channelMeta
+      ? {
+          expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectPerMegabyteFee(),
+          expectedChannelStateBloatBond: await this.api.query.content.channelStateBloatBondValue(),
+        }
+      : {}
     // Create a channel without any assets
     const tx = this.api.tx.content.createChannel(
       { Member: memberId },
@@ -781,8 +785,7 @@ export class Api {
         meta: channelMeta ? Utils.metadataToBytes(AppAction, channelMeta) : null,
         storageBuckets,
         distributionBuckets,
-        expectedChannelStateBloatBond: channelStateBloatBondValue,
-        expectedDataObjectStateBloatBond: dataObjectPerMegabyteFee,
+        ...txParameters,
       }
     )
 
@@ -793,17 +796,30 @@ export class Api {
   }
 
   // Create a mock video, throws on failure
-  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
+  async createMockVideo(
+    memberId: number,
+    channelId: number,
+    memberControllerAccount?: string,
+    videoMeta?: IAppAction
+  ): Promise<VideoId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
 
+    const txParameters = videoMeta
+      ? {
+          storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
+          expectedVideoStateBloatBond: await this.getVideoStateBloatBond(),
+          expectedDataObjectStateBloatBond: await this.getDataObjectStateBloatBond(),
+        }
+      : {}
     // Create a video without any assets
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
       assets: null,
-      meta: null,
+      meta: videoMeta ? Utils.metadataToBytes(AppAction, videoMeta) : null,
+      ...txParameters,
     })
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)

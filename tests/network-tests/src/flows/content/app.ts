@@ -1,4 +1,10 @@
-import { AppActionMetadata, AppMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
+import {
+  AppActionMetadata,
+  AppMetadata,
+  ChannelMetadata,
+  ContentMetadata,
+  IAppAction,
+} from '@joystream/metadata-protobuf'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Api } from 'src/Api'
@@ -125,7 +131,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
   debug('done')
 }
 
-export async function createAppAction({ api, query }: FlowProps): Promise<void> {
+export async function createAppActions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:create-app-actions')
   debug('Started')
   // create author of channels and videos
@@ -154,8 +160,6 @@ export async function createAppAction({ api, query }: FlowProps): Promise<void> 
     }
   )
 
-  // const nonce = await query.chan([member.memberId.toString()])
-
   const channelInput = {
     title: `Channel from ${appFragment?.[0].name} app`,
     description: 'This is the app channel',
@@ -179,20 +183,17 @@ export async function createAppAction({ api, query }: FlowProps): Promise<void> 
     signature,
     metadata: appActionMeta,
   }
-  debug(appChannelInput)
-  debug(keypair)
   const storageBuckets = await createChannelFixture.selectStorageBucketsForNewChannel()
   const distBuckets = await createChannelFixture.selectDistributionBucketsForNewChannel()
-  const account = await api.getMemberControllerAccount(member.memberId.toNumber())
 
+  debug('Creating app channel...')
   const channelId = await api.createMockChannel(
     member.memberId.toNumber(),
     storageBuckets,
     distBuckets,
-    account,
+    undefined,
     appChannelInput
   )
-  debug(channelId)
 
   await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
@@ -202,7 +203,49 @@ export async function createAppAction({ api, query }: FlowProps): Promise<void> 
       assert.equal(channel.description, appChannelInput.channelMetadata?.description)
       assert.equal(channel.isPublic, appChannelInput.channelMetadata?.isPublic)
       assert.equal(channel.language?.iso, appChannelInput.channelMetadata?.language)
-      assert.equal(channel.app?.id, appFragment?.[0].id)
+      assert.equal(channel.entryApp?.id, appFragment?.[0].id)
+      assert.equal(channel.entryApp?.name, appFragment?.[0].name)
+    }
+  )
+
+  debug('Creating app video')
+  const contentMetadata = {
+    videoMetadata: {
+      title: 'Mock video for app action',
+      description: 'Mock video for app action description',
+      duration: 777,
+    },
+  }
+  const videoAppActionMeta = {
+    // todo change naming
+    nonceId: '0',
+  }
+  const appVideoCommitment = generateAppActionCommitment(
+    channelId.toString(),
+    createType('Option<PalletContentStorageAssetsRecord>', null),
+    metadataToBytes(ContentMetadata, contentMetadata),
+    metadataToBytes(AppActionMetadata, videoAppActionMeta)
+  )
+  const videoSignature = u8aToHex(ed25519Sign(appVideoCommitment, keypair, true))
+  debug(appVideoCommitment)
+  debug(videoSignature)
+  const appVideoInput: IAppAction = {
+    appId: appFragment?.[0].id,
+    contentMetadata: contentMetadata,
+    signature: videoSignature,
+    metadata: videoAppActionMeta,
+  }
+  const videoId = await api.createMockVideo(member.memberId.toNumber(), channelId.toNumber(), undefined, appVideoInput)
+
+  await query.tryQueryWithTimeout(
+    () => query.videoById(videoId.toString()),
+    (video) => {
+      Utils.assert(video, 'Video not found')
+      assert.equal(video.title, appVideoInput.contentMetadata?.videoMetadata?.title)
+      assert.equal(video.description, appVideoInput.contentMetadata?.videoMetadata?.description)
+      assert.equal(video.duration, appVideoInput.contentMetadata?.videoMetadata?.duration)
+      assert.equal(video.entryApp?.id, appFragment?.[0].id)
+      assert.equal(video.entryApp?.name, appFragment?.[0].name)
     }
   )
 

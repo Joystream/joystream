@@ -113,7 +113,7 @@ scenario('Full', async ({ job, env }) => {
   )
   job('create app', createApp).after(sudoHireLead)
   job('update app', updateApp).after(sudoHireLead)
-  job('create channel app action', createAppAction).after(sudoHireLead)
+  job('create app actions', createAppActions).after(sudoHireLead)
 
   const contentDirectoryJob = commentsAndReactionsJob // keep updated to last job above
 
