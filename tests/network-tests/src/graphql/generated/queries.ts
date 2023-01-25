@@ -90,6 +90,7 @@ export type ChannelFieldsFragment = {
   isCensored: boolean
   rewardAccount: string
   language?: Types.Maybe<{ iso: string }>
+  entryApp?: Types.Maybe<AppFieldsFragment>
   app?: Types.Maybe<AppFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
@@ -162,6 +163,7 @@ export type VideoFieldsFragment = {
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  entryApp?: Types.Maybe<AppFieldsFragment>
   license?: Types.Maybe<LicenseFieldsFragment>
   mediaMetadata?: Types.Maybe<VideoMediaMetadataFieldsFragment>
   media?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -2596,6 +2598,9 @@ export const ChannelFields = gql`
       iso
     }
     isCensored
+    entryApp {
+      ...AppFields
+    }
     app {
       ...AppFields
     }
@@ -2716,6 +2721,9 @@ export const VideoFields = gql`
     isPublic
     isExplicit
     hasMarketing
+    entryApp {
+      ...AppFields
+    }
     license {
       ...LicenseFields
     }
@@ -2750,6 +2758,7 @@ export const VideoFields = gql`
       ...VideoSubtitleFields
     }
   }
+  ${AppFields}
   ${LicenseFields}
   ${VideoMediaMetadataFields}
   ${StorageDataObjectFields}
