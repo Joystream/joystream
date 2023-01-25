@@ -4,7 +4,7 @@ import "proto/Video.proto";
 import "proto/Channel.proto";
 
 message AppActionMetadata {
-  optional string nonceId = 1;
+  optional string nonce = 1;
 }
 
 message AppAction {
