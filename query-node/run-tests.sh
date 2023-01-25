@@ -37,6 +37,6 @@ export IGNORE_HIRED_LEADS=true # this directive is needed to run `full` scenario
 # pass the scenario name without .ts extension
 SCENARIO=$1
 # fallback if scenario if not specified
-SCENARIO=${SCENARIO:="content-directory"}
+SCENARIO=${SCENARIO:="full"}
 
 time yarn workspace network-tests run-test-scenario ${SCENARIO}
