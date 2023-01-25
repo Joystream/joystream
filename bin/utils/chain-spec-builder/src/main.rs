@@ -61,7 +61,7 @@ impl Into<ChainType> for ChainDeployment {
     }
 }
 
-/// A utility to easily create a testnet chain spec definition with a given set
+/// A utility to easily create a chain spec definition with a given set
 /// of authorities and endowed accounts and/or generate random accounts.
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]

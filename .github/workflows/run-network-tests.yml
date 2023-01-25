@@ -218,6 +218,5 @@ jobs:
           yarn joystream-cli api:setUri ws://localhost:9944
           # Rhodes release (spec 7) production runtime profile
           export RUNTIME_TAG=e3f72ac0dbfc3d8dc69b63c2ab991f104411f205
-          export DATA_MIGRATION_NEEDED=$false
           export TARGET_RUNTIME_TAG=latest
           tests/network-tests/run-migration-tests.sh

@@ -38,8 +38,8 @@ function fork_off_init() {
         cp $SCRIPT_PATH/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
     fi
 
-    # perform actual forkless runtime upgrade
-    runtime_upgrade
+    # set old runtime.wasm before the upgrade
+    set_old_runtime 
 
     # RPC endpoint for live RUNTIME testnet
     WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org" \
@@ -54,11 +54,10 @@ function fork_off_init() {
 # Arguments:
 #   None
 #######################################
-function runtime_upgrade() {
+function set_old_runtime {
     # TODO: replace this with a scenario using proposals
     id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
-    yarn workspace api-scripts tsnode-strict src/fork-off.ts
-    # docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
+    docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
   }
 
 #######################################
@@ -81,23 +80,19 @@ function export_chainspec_file_to_disk() {
 function main {
     CONTAINER_ID=""
 
-    if (DATA_MIGRATION_NEEDED); then
-      echo "**** CREATING EMPTY CHAINSPEC ****"
-      create_initial_config
-      create_chainspec_file
-      convert_chainspec
-      echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
+    echo "**** CREATING EMPTY CHAINSPEC ****"
+    # create_initial_config
+    create_chainspec_file
+    convert_chainspec
+    echo "**** EMPTY CHAINSPEC CREATED SUCCESSFULLY ****"
 
-      # use forkoff to update chainspec with the live state + update runtime code
-      fork_off_init
-      
-      # export chain-spec BEFORE starting the node
-      export_chainspec_file_to_disk
-      
-      echo "***** STARTING NODE WITH FORKED STATE *****"
-    else
-      runtime_upgrade
-    fi
+    # use forkoff to update chainspec with the live state + update runtime code
+    fork_off_init
+    
+    # export chain-spec BEFORE starting the node
+    export_chainspec_file_to_disk
+    
+    echo "***** STARTING NODE WITH FORKED STATE *****"
 
     export JOYSTREAM_NODE_TAG=$RUNTIME_TAG
 

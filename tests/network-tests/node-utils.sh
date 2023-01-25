@@ -68,12 +68,12 @@ function create_chainspec_file {
     docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder \
 	   joystream/node:${RUNTIME_TAG} \
 	   new \
-	   --authorities //Alice \
-	   --sudo-account ${SUDO_ACCOUNT} \
+	   # --authorities //Alice \ # no authorities
+	   # --sudo-account ${SUDO_ACCOUNT} \ # no sudo
 	   --deployment dev \
 	   --chain-spec-path /data/chain-spec.json \
-	   --initial-balances-path /data/initial-balances.json
-}
+	   # --initial-balances-path /data/initial-balances.json # no balances
+} 
 
 #######################################
 # convert human-readable chainspec into
