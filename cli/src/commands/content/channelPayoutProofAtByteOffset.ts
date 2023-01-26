@@ -1,4 +1,5 @@
 import { channelPayoutProofAtByteOffset } from '@joystream/js/content'
+import { readBytesFromFile } from '@joystream/js/utils'
 import { Command, flags } from '@oclif/command'
 import { displayCollapsedRow } from '../../helpers/display'
 
@@ -36,8 +37,8 @@ export default class ChannelPayoutProofAtByteOffset extends Command {
       }
 
       const payoutProof = path
-        ? await channelPayoutProofAtByteOffset('PATH', path, start)
-        : await channelPayoutProofAtByteOffset('URL', url!, start)
+        ? await channelPayoutProofAtByteOffset(readBytesFromFile('PATH', path), start)
+        : await channelPayoutProofAtByteOffset(readBytesFromFile('URL', url!), start)
 
       displayCollapsedRow({
         'Channel Id': payoutProof.channelId,

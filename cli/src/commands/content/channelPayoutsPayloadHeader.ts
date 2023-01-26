@@ -1,5 +1,6 @@
 import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { serializedPayloadHeader } from '@joystream/js/content'
+import { readBytesFromFile } from '@joystream/js/utils'
 import { Command, flags } from '@oclif/command'
 import chalk from 'chalk'
 import { displayCollapsedRow, displayTable } from '../../helpers/display'
@@ -27,8 +28,8 @@ export default class ChannelPayoutPayloadHeader extends Command {
 
     try {
       const serializedHeader = path
-        ? await serializedPayloadHeader('PATH', path)
-        : await serializedPayloadHeader('URL', url!)
+        ? await serializedPayloadHeader(readBytesFromFile('PATH', path))
+        : await serializedPayloadHeader(readBytesFromFile('URL', url!))
 
       const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
       this.log(
