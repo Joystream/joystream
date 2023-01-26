@@ -20,7 +20,7 @@ export default class MemberRemarkCommand extends MembershipsCommandBase {
     const { id: memberId, membership } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(membership.controllerAccount)
 
-    await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [memberId, message])
+    await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [memberId, message, null])
 
     this.log(chalk.green(`Member remarked successfully`))
   }

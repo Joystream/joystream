@@ -333,3 +333,39 @@ query getChannelFundsWithdrawnEventsByEventIds($eventIds: [ID!]) {
     ...ChannelFundsWithdrawnEventFields
   }
 }
+
+fragment ChannelPaymentMadeEventFields on ChannelPaymentMadeEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  payeeChannel {
+    ...ChannelFields
+  }
+  payer {
+    ...MembershipFields
+  }
+  amount
+  rationale
+  paymentContext {
+    __typename
+    ... on PaymentContextChannel {
+      channel {
+        ...ChannelFields
+      }
+    }
+    ... on PaymentContextVideo {
+      video {
+        ...VideoFields
+      }
+    }
+  }
+}
+
+query getChannelPaymentMadeEventsByEventIds($eventIds: [ID!]) {
+  channelPaymentMadeEvents(where: { id_in: $eventIds }) {
+    ...ChannelPaymentMadeEventFields
+  }
+}

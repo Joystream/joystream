@@ -23,6 +23,9 @@ type MetaprotocolTransactionSuccessful @variant {
   # TODO: deletion event will need rework - can't have relation to no longer existing record
   "ID of the delete video category (if any)"
   videoCategoryDeleted: Video
+
+  "Payment made to channel by the member sending the remark action (if any)"
+  channelPaid: Channel
 }
 
 type MetaprotocolTransactionErrored @variant {

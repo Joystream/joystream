@@ -1612,6 +1612,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       HandleMustBeProvidedDuringRegistration: AugmentedError<ApiType>;
       /**
+       * Insufficient balance to cover payment.
+       **/
+      InsufficientBalanceToCoverPayment: AugmentedError<ApiType>;
+      /**
        * Insufficient balance to cover stake.
        **/
       InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
