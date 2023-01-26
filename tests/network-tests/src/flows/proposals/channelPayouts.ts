@@ -93,7 +93,7 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
   // Upload channel payouts payload to the council bag
   await joystreamCli.reuploadAssets({
     bagId: COUNCIL_BAG_ID,
-    assets: [{ objectId: channelPayoutsUpdatedEvent.payloadDataObject.id, path: protobufPayloadFilePath }],
+    assets: [{ objectId: channelPayoutsUpdatedEvent.payloadDataObject?.id || '', path: protobufPayloadFilePath }],
   })
 
   // Fetch channel payout proof from payload data object in council bag
@@ -101,7 +101,7 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
     query,
     COUNCIL_BAG_ID,
     rewardChannelId,
-    channelPayoutsUpdatedEvent.payloadDataObject.id
+    channelPayoutsUpdatedEvent.payloadDataObject?.id || ''
   )
 
   // Channel reward for given channel
