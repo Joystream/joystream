@@ -104,13 +104,14 @@ function cleanup() {
     rm -rf $DATA_PATH
 }
 
-#######################################
+##############################################################################
 # Start a chain with generated chain spec
 # Globals:
-#   DATA_PATH
+#   DATA_PATH: directory where to find the chainspec at root /spec
+#   JOYSTREAM_NODE_TAG: tag for the joystream/node docker image to be used
 # Arguments:
 #   None
-#######################################
+##############################################################################
 function start_node {
     docker-compose -f ../../docker-compose.yml run \
 		   -d -v ${DATA_PATH}:/spec --name "${JOYSTREAM_NODE_TAG}" \

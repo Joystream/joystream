@@ -14,6 +14,7 @@ scenario('Full', async ({ job, env }) => {
 
   const coreJob = runtimeUpgradeProposalJob || councilJob
 
+  // Runtime checks
   job('Run Post Upgrade Checks', postRuntimeUpdateChecks).requires(coreJob)
   })
 

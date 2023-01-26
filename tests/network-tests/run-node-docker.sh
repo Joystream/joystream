@@ -12,8 +12,9 @@ cd $SCRIPT_PATH
 DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
-# The docker image tag to use for joystream/node
-RUNTIME=${RUNTIME:=$(../../scripts/runtime-code-shasum.sh)}
+# The latest docker image tag to use for joystream/node
+RUNTIME_TAG=latest 
+TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(../../scripts/runtime-code-shasum.sh)}
 
 # Initial account balance for sudo account
 # SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
@@ -23,16 +24,17 @@ RUNTIME=${RUNTIME:=$(../../scripts/runtime-code-shasum.sh)}
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
-TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # >&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
->&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
+# >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
+>&2 echo "current runtime ${RUNTIME_TAG}"
+>&2 echo "target runtime ${TARGET_RUNTIME_TAG}"
 
 # Default initial balances
 function generate_config_files {
   echo "{
     \"balances\":[
-      [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
       [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
     ],
     \"vesting\":[]
@@ -57,7 +59,7 @@ function generate_config_files {
 
 # Create a chain spec file
 function create_hex_chain_spec {
-  docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
+  docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME_TAG} \
     new \
     # --fund-accounts \
     --authorities //Alice \
@@ -67,19 +69,33 @@ function create_hex_chain_spec {
     # --initial-balances-path /spec/initial-balances.json
 
   # Convert the chain spec file to a raw chainspec file
-  docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
+  docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME_TAG} build-spec \
     --raw --disable-default-bootnode \
     --chain /spec/chain-spec.json > ${DATA_PATH}/chain-spec-raw.json
 }
 
 # Start a chain with generated chain spec
 function start_joystream_node {
-  export JOYSTREAM_NODE_TAG=${RUNTIME}
+  export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
   docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
     -p 9944:9944 -p 9933:9933 joystream-node \
     --alice --validator --unsafe-ws-external --unsafe-rpc-external \
     --rpc-methods Unsafe --rpc-cors=all -l runtime \
     --chain /spec/chain-spec-raw.json --pruning=archive --no-telemetry
+}
+
+#######################################
+# Perform substrate forkless upgrade by replacing the runtime.wasm
+# Globals:
+#   TARGET_RUNTIME_TAG
+#   DATA_PATH
+# Arguments:
+#   None
+#######################################
+function set_new_runtime_wasm{
+    id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
+    export RUNTIME_UPGRADE_TARGET_WASM_PATH=$id:/joystream/runtime.compact.wasm 
+    # docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
 }
 
 #######################################
@@ -106,8 +122,8 @@ function fork_off_init() {
         cp $SCRIPT_PATH/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
     fi
 
-    # set old runtime.wasm before the upgrade
-    set_old_runtime 
+    # set old runtime.wasm before the upgrade this should be removed in favour of
+    # set_new_runtime_wasm 
 
     # RPC endpoint for live RUNTIME testnet
     if [[ -z $WS_RPC_ENDPOINT ]]; then
@@ -119,11 +135,15 @@ function fork_off_init() {
 
 # entrypoint
 function main {
-  # 1. create empty raw chainspec
-  create_hex_chain_spec
-  # 2. clone live chainspec with fork it
-  fork_off_init
-  # 3. start node
+  if [ $TARGET_RUNTIME_TAG != $RUNTIME_TAG ]; then 
+    # 1. create empty raw chainspec
+    create_hex_chain_spec
+    # 2. clone live chainspec with fork it
+    fork_off_init
+    # 3. set new runtime variable in order to trigger migration
+    set_new_runtime_wasm
+  fi
+  # 4. start node
   start_joystream_node
 }
 
