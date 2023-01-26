@@ -121,6 +121,10 @@ export default class Api {
     return (await this._api.derive.chain.bestNumber()).toNumber()
   }
 
+  existentialDeposit(): Balance {
+    return this._api.consts.balances.existentialDeposit
+  }
+
   async getAccountsBalancesInfo(accountAddresses: string[]): Promise<DeriveBalancesAll[]> {
     const accountsBalances: DeriveBalancesAll[] = await Promise.all(
       accountAddresses.map((addr) => this._api.derive.balances.all(addr))

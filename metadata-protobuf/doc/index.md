@@ -41,6 +41,7 @@
     - [CreateVideoCategory](#.CreateVideoCategory)
     - [DeleteComment](#.DeleteComment)
     - [EditComment](#.EditComment)
+    - [MakeChannelPayment](#.MakeChannelPayment)
     - [MemberRemarked](#.MemberRemarked)
     - [ModerateComment](#.ModerateComment)
     - [PinOrUnpinComment](#.PinOrUnpinComment)
@@ -590,6 +591,23 @@ edit comment by author
 
 
 
+<a name=".MakeChannelPayment"></a>
+
+### MakeChannelPayment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rationale | [string](#string) | optional | Reason why payment is being made |
+| video_id | [uint64](#uint64) | optional |  |
+| channel_id | [uint64](#uint64) | optional |  |
+
+
+
+
+
+
 <a name=".MemberRemarked"></a>
 
 ### MemberRemarked
@@ -604,6 +622,7 @@ edit comment by author
 | edit_comment | [EditComment](#EditComment) | optional |  |
 | delete_comment | [DeleteComment](#DeleteComment) | optional |  |
 | create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
+| make_channel_payment | [MakeChannelPayment](#MakeChannelPayment) | optional |  |
 
 
 

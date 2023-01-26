@@ -47,7 +47,7 @@ export class ReactToVideosFixture extends StandardizedFixture {
           reaction: params.msg.reaction,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg))
+      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg), null)
     })
   }
 

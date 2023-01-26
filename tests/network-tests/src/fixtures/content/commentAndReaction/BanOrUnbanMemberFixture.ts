@@ -52,7 +52,7 @@ export class BanOrUnbanMembersFixture extends StandardizedFixture {
           option: params.msg.option,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(ChannelOwnerRemarked, msg))
+      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(ChannelOwnerRemarked, msg), null)
     })
   }
 
