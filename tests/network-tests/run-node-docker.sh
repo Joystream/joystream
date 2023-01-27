@@ -17,9 +17,9 @@ RUNTIME_TAG=latest
 TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(../../scripts/runtime-code-shasum.sh)}
 
 # Initial account balance for sudo account
-# SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
-# SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
-# SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
+SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
+SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
@@ -35,6 +35,7 @@ TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${T
 function generate_config_files {
   echo "{
     \"balances\":[
+      [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
       [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
     ],
     \"vesting\":[]
@@ -61,12 +62,12 @@ function generate_config_files {
 function create_hex_chain_spec {
   docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME_TAG} \
     new \
-    # --fund-accounts \
+    --fund-accounts \
     --authorities //Alice \
-    # --sudo-account ${SUDO_ACCOUNT} \
+    --sudo-account ${SUDO_ACCOUNT} \
     --deployment dev \
     --chain-spec-path /spec/chain-spec.json \
-    # --initial-balances-path /spec/initial-balances.json
+    --initial-balances-path /spec/initial-balances.json
 
   # Convert the chain spec file to a raw chainspec file
   docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME_TAG} build-spec \
@@ -92,10 +93,10 @@ function start_joystream_node {
 # Arguments:
 #   None
 #######################################
-function set_new_runtime_wasm{
-    id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
-    export RUNTIME_UPGRADE_TARGET_WASM_PATH=$id:/joystream/runtime.compact.wasm 
-    # docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
+function set_new_runtime_wasm() {
+    # id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
+    export RUNTIME_UPGRADE_TARGET_WASM_PATH=../..target/release/wbuild/joystream-node-runtime/runtime.compact.wasm 
+    >&2 echo "${TARGET_RUNTIME_TAG} wasm located at ${RUNTIME_UPGRADE_TARGET_WASM_PATH}"
 }
 
 #######################################
@@ -118,16 +119,16 @@ function fork_off_init() {
     fi
 
     # provide types definition for the storage state
-    if ! [[ -f ${DATA_PATH}/schema.json ]]; then
-        cp $SCRIPT_PATH/../../types/augment/all/defs.json ${DATA_PATH}/schema.json
-    fi
+    # if ! [[ -f ${DATA_PATH}/schema.json ]]; then
+    #     cp ../../types/augment/all/defs.json ${DATA_PATH}/schema.json
+    # fi
 
     # set old runtime.wasm before the upgrade this should be removed in favour of
     # set_new_runtime_wasm 
 
     # RPC endpoint for live RUNTIME testnet
     if [[ -z $WS_RPC_ENDPOINT ]]; then
-      WS_RPC_ENDPOINT="wss://testnet-rpc-3-uk.joystream.org" 
+      export WS_RPC_ENDPOINT="wss://rpc.joystream.org:9944" 
     fi
     yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
