@@ -90,10 +90,12 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
   // Council bag ID
   const COUNCIL_BAG_ID = 'static:council'
 
+  Utils.assert(channelPayoutsUpdatedEvent.payloadDataObject, 'Payload data object missing!')
+
   // Upload channel payouts payload to the council bag
   await joystreamCli.reuploadAssets({
     bagId: COUNCIL_BAG_ID,
-    assets: [{ objectId: channelPayoutsUpdatedEvent.payloadDataObject?.id || '', path: protobufPayloadFilePath }],
+    assets: [{ objectId: channelPayoutsUpdatedEvent.payloadDataObject.id, path: protobufPayloadFilePath }],
   })
 
   // Fetch channel payout proof from payload data object in council bag
