@@ -1,17 +1,18 @@
 import { xxhashAsHex } from '@polkadot/util-crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import fs from 'fs'
-import path from 'path'
-import { execSync } from 'child_process'
+// import path from 'path'
+// import { execSync } from 'child_process'
+console.log(`data path: ${process.env.DATA_PATH}`)
 
 // paths & env variables
-// const alice = process.env.SUDO_ACCOUNT
+const alice = process.env.SUDO_ACCOUNT
 // bad error handling TODO: fix process.env
-const schemaPath = path.join(process.env.DATA_PATH || '', 'schema.json')
-const wasmPath = path.join(process.env.DATA_PATH || '', 'runtime.wasm') || ''
-const hexPath = path.join(process.env.DATA_PATH || '', 'runtime.hex') || ''
-const specPath = path.join(process.env.DATA_PATH || '', 'chain-spec-raw.json')
-const storagePath = path.join(process.env.DATA_PATH || '', 'storage.json')
+// const schemaPath = path.join(process.env.DATA_PATH || '', 'schema.json')
+// const wasmPath = path.join(process.env.DATA_PATH || '', 'runtime.wasm') || ''
+// const hexPath = path.join(process.env.DATA_PATH || '', 'runtime.hex') || ''
+// const specPath = path.join(process.env.DATA_PATH || '', 'chain-spec-raw.json')
+// const storagePath = path.join(process.env.DATA_PATH || '', 'storage.json')
 
 // this might not be of much use
 const provider = new WsProvider(process.env.WS_RPC_ENDPOINT || 'ws://localhost:9944')
@@ -37,6 +38,7 @@ const skippedModulesPrefix = [
   'GrandpaFinality',
   'FinalityTracker',
   'Authorship',
+  'Council', // empty council
 ]
 
 // Apparently not needed: To review
@@ -50,42 +52,42 @@ const skippedModulesPrefix = [
 // }
 
 async function main() {
+  console.log(`data path: ${process.env.DATA_PATH}`)
   // hexdump of runtime wasm binary, running it from the shell gives bad format error
-  execSync('cat ' + wasmPath + ' | hexdump -ve \'/1 "%02x"\' > ' + hexPath)
+  // execSync('cat ' + wasmPath + ' | hexdump -ve \'/1 "%02x"\' > ' + hexPath)
 
-  let api
-  if (!fs.existsSync(schemaPath)) {
-    console.log('Custom Schema missing, using default schema.')
-    api = await ApiPromise.create({ provider })
-  } else {
-    const types = JSON.parse(fs.readFileSync(schemaPath, 'utf8'))
-    api = await ApiPromise.create({
-      provider,
-      types,
-    })
-  }
+  // if (!fs.existsSync(schemaPath)) {
+  //   console.log('Custom Schema missing, using default schema.')
+  const api = await ApiPromise.create({ provider })
+  // } else {
+  //   const types = JSON.parse(fs.readFileSync(schemaPath, 'utf8'))
+  //   api = await ApiPromise.create({
+  //     provider,
+  //     types,
+  //   })
+  // }
 
   // storage.json is guaranteed to exists
 
   const metadata = await api.rpc.state.getMetadata()
   // Populate the prefixes array
-  const modules = metadata.asV12.modules
-  modules.forEach((module) => {
-    if (module.storage.isSome) {
-      if (!skippedModulesPrefix.includes(module.storage.unwrap().prefix.toString())) {
-        prefixes.push(xxhashAsHex(module.storage.unwrap().prefix.toString(), 128))
+  const pallets = metadata.asV14.pallets
+  pallets.forEach((pallet) => {
+    if (pallet.storage.isSome) {
+      if (!skippedModulesPrefix.includes(pallet.storage.unwrap().prefix.toString())) {
+        prefixes.push(xxhashAsHex(pallet.storage.unwrap().prefix.toString(), 128))
       }
     }
   })
 
   // blank starting chainspec guaranteed to exist
-
-  const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
-  const chainSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
+  // const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
+  const storage: Storage = JSON.parse(fs.readFileSync("/Users/ignazio/developer/joystream/tests/network-tests/data/storage.json", 'utf8'))
+  const chainSpec = JSON.parse(fs.readFileSync("/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-raw.json",'utf8'))
 
   // Modify chain name and id
-  chainSpec.name = chainSpec.name + '-fork'
-  chainSpec.id = chainSpec.id + '-fork'
+  // chainSpec.name = 'ephesus'
+  // chainSpec.id = '2001'
 
   // Grab the items to be moved, then iterate through and insert into storage
   storage.result
@@ -93,26 +95,26 @@ async function main() {
     .forEach(([key, value]) => (chainSpec.genesis.raw.top[key] = value))
 
   // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
-  delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']
+  // delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']
 
   //    fixParachinStates(api, chainSpec);
 
   // Set the code to the current runtime code: this replaces the set code transaction
-  chainSpec.genesis.raw.top['0x3a636f6465'] = '0x' + fs.readFileSync(hexPath, 'utf8').trim()
+  // chainSpec.genesis.raw.top['0x3a636f6465'] = '0x' + fs.readFileSync(hexPath, 'utf8').trim()
 
   // To prevent the validator set from changing mid-test, set Staking.ForceEra to ForceNone ('0x02')
   chainSpec.genesis.raw.top['0x5f3e4907f716ac89b6347d15ececedcaf7dad0317324aecae8744b87fc95f2f3'] = '0x02'
 
   // uncomment in case sudo key is needed
-  // if (alice !== '') {
-  //   // Set sudo key to //Alice
-  //   chainSpec.genesis.raw.top['0x5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b'] =
-  //     '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'
-  // }
+  if (alice !== '') {
+    // Set sudo key to //Alice
+    chainSpec.genesis.raw.top['0x5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b'] =
+      '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'
+  }
 
-  fs.writeFileSync(specPath, JSON.stringify(chainSpec, null, 4))
+  fs.writeFileSync("/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-forked.json", JSON.stringify(chainSpec, null, 4))
 
-  console.log('****** INITIAL CHAINSPEC UPDATED TO REFLECT LIVE STATE ******')
+  // console.log('****** INITIAL CHAINSPEC UPDATED TO REFLECT LIVE STATE ******')
   process.exit()
 }
 

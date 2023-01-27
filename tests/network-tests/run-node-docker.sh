@@ -77,7 +77,6 @@ function create_hex_chain_spec {
 
 # Start a chain with generated chain spec
 function start_joystream_node {
-  export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
   docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
     -p 9944:9944 -p 9933:9933 joystream-node \
     --alice --validator --unsafe-ws-external --unsafe-rpc-external \
@@ -94,9 +93,9 @@ function start_joystream_node {
 #   None
 #######################################
 function set_new_runtime_wasm() {
-    # id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
-    export RUNTIME_UPGRADE_TARGET_WASM_PATH=../..target/release/wbuild/joystream-node-runtime/runtime.compact.wasm 
-    >&2 echo "${TARGET_RUNTIME_TAG} wasm located at ${RUNTIME_UPGRADE_TARGET_WASM_PATH}"
+  id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
+  >&2 echo "${id} container"
+  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
 }
 
 #######################################
@@ -110,42 +109,74 @@ function set_new_runtime_wasm() {
 function fork_off_init() {
     # chain-spec-raw already existing
 
-    # download the raw storage state 
-    if ! [[ -f ${DATA_PATH}/storage.json ]]; then
-        curl http://testnet-rpc-3-uk.joystream.org:9933 -H \
-            "Content-type: application/json" -d \
-            '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
-            > ${DATA_PATH}/storage.json
-    fi
-
-    # provide types definition for the storage state
-    # if ! [[ -f ${DATA_PATH}/schema.json ]]; then
-    #     cp ../../types/augment/all/defs.json ${DATA_PATH}/schema.json
-    # fi
-
-    # set old runtime.wasm before the upgrade this should be removed in favour of
-    # set_new_runtime_wasm 
-
     # RPC endpoint for live RUNTIME testnet
     if [[ -z $WS_RPC_ENDPOINT ]]; then
       export WS_RPC_ENDPOINT="wss://rpc.joystream.org:9944" 
     fi
+
+    if [[ -z $HTTP_RPC_ENDPOINT ]]; then
+      export HTTP_RPC_ENDPOINT="http://mainnet-rpc-1.joystream.org:9933" 
+    fi
+
+    # download the raw storage state 
+    if ! [[ -f ${DATA_PATH}/storage.json ]]; then
+      curl $HTTP_RPC_ENDPOINT -H \
+          "Content-type: application/json" -d \
+          '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
+          > ${DATA_PATH}/storage.json
+      >&2 echo "storage trie downloaded at ${DATA_PATH}/storage.json"
+    fi
+
     yarn workspace api-scripts tsnode-strict src/fork-off.ts
 }
 
 
+#######################################
+# Write initial genesis state to disk
+# Globals:
+#   DATA_PATH
+# Arguments:
+#   None
+#######################################
+function export_chainspec_file_to_disk() {
+    # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time
+    # exporting should give some essential tasks errors but they are harmless https://github.com/paritytech/substrate/issues/10583
+    echo >&2 "exporting state"
+    docker-compose -f ../../docker-compose.yml run \
+		   -v ${DATA_PATH}:/spec joystream-node export-state \
+		   --chain /spec/chain-spec-raw.json \
+		   --base-path /data --pruning archive > ${DATA_PATH}/exported-state.json
+}
+
 # entrypoint
 function main {
   if [ $TARGET_RUNTIME_TAG != $RUNTIME_TAG ]; then 
-    # 1. create empty raw chainspec
-    create_hex_chain_spec
-    # 2. clone live chainspec with fork it
-    fork_off_init
-    # 3. set new runtime variable in order to trigger migration
-    set_new_runtime_wasm
+    if ! [[ -f ${DATA_PATH}/chain-spec-raw.json ]]; then
+      # 0. Generate config files
+      generate_config_files
+      >&2 echo "config files generated"
+      # 1. create empty raw chainspec
+      create_hex_chain_spec
+      >&2 echo "chainspec generated"
+      # 2. clone live chainspec with fork it
+      fork_off_init
+      >&2 echo "storage downloaded & dumped into the raw chainspec"
+    fi
+    export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
+    # 3. copy chainspec to disk
+    export_chainspec_file_to_disk
+    >&2 echo "chainspec exported"
   fi
   # 4. start node
   start_joystream_node
 }
 
 main
+
+
+
+
+
+
+
+
