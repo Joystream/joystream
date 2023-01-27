@@ -113,6 +113,17 @@ message CreateVideoCategory {
     optional string parent_category_id = 3;
 }
 
+message MakeChannelPayment {
+    // Reason why payment is being made
+    optional string rationale = 1;
+
+    // Context of payment, if it is being made for channel or specific video.
+    // default is assumed to be `channel` if no conext provided
+    oneof payment_context {
+        uint64 video_id = 2;
+        // Other possible contexts, e.g. playlist etc.
+    }
+}
 
 message MemberRemarked {
     // member_remark extrinsic would emit event containing
@@ -124,6 +135,7 @@ message MemberRemarked {
         EditComment edit_comment = 4;
         DeleteComment delete_comment = 5;
         CreateVideoCategory create_video_category = 6;
+        MakeChannelPayment make_channel_payment = 7;
     }
 }
 

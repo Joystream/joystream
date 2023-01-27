@@ -866,7 +866,7 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
       memberAccount.toString()
     )
   }

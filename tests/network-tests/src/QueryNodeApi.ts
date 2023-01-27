@@ -450,6 +450,14 @@ import {
   GetAppsByNameQuery,
   GetAppsByNameQueryVariables,
   GetAppsByName,
+  ChannelPaymentMadeEventFieldsFragment,
+  GetChannelPaymentMadeEventsByEventIdsQuery,
+  GetChannelPaymentMadeEventsByEventIdsQueryVariables,
+  GetChannelPaymentMadeEventsByEventIds,
+  MetaprotocolTransactionStatusEventFieldsFragment,
+  GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
+  GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables,
+  GetMetaprotocolTransactionalStatusEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1541,5 +1549,23 @@ export class QueryNodeApi {
 
   public async getAppsByName(name: string): Promise<AppFieldsFragment[] | null> {
     return this.multipleEntitiesQuery<GetAppsByNameQuery, GetAppsByNameQueryVariables>(GetAppsByName, { name }, 'apps')
+  }
+
+  public async getChannelPaymentMadeEvents(events: EventDetails[]): Promise<ChannelPaymentMadeEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelPaymentMadeEventsByEventIdsQuery,
+      GetChannelPaymentMadeEventsByEventIdsQueryVariables
+    >(GetChannelPaymentMadeEventsByEventIds, { eventIds }, 'channelPaymentMadeEvents')
+  }
+
+  public async getMetaprotocolTransactionEvents(
+    events: EventDetails[]
+  ): Promise<MetaprotocolTransactionStatusEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
+      GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables
+    >(GetMetaprotocolTransactionalStatusEventsByEventIds, { eventIds }, 'metaprotocolTransactionStatusEvents')
   }
 }

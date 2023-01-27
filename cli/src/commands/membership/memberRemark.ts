@@ -1,3 +1,4 @@
+import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import MembershipsCommandBase from '../../base/MembershipsCommandBase'
 
@@ -12,16 +13,33 @@ export default class MemberRemarkCommand extends MembershipsCommandBase {
   ]
 
   static flags = {
+    account: flags.string({
+      description: 'Account where JOY needs to be transferred',
+      dependsOn: ['amount'],
+    }),
+    amount: flags.string({
+      description: 'JOY amount to be transferred',
+    }),
     ...MembershipsCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { message } = this.parse(MemberRemarkCommand).args
-    const { id: memberId, membership } = await this.getRequiredMemberContext(true)
-    const keypair = await this.getDecodedPair(membership.controllerAccount)
+    const { account, amount } = this.parse(MemberRemarkCommand).flags
+    const [memberId, controllerAccount, payment] = await this.getValidatedMemberRemarkParams(
+      amount ? { account, amount } : undefined
+    )
 
-    await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [memberId, message])
+    const keypair = await this.getDecodedPair(controllerAccount)
+    const result = await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [memberId, message, payment])
 
-    this.log(chalk.green(`Member remarked successfully`))
+    const [id, msg, optionalPayment] = this.getEvent(result, 'members', 'MemberRemarked').data
+    this.log(
+      chalk.green(
+        `Member ${id} remarked successfully with message: ${msg} ${
+          optionalPayment.isSome ? `and payment: ${optionalPayment.unwrap()}` : ''
+        }`
+      )
+    )
   }
 }

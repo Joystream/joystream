@@ -670,3 +670,53 @@ type ChannelPayoutsUpdatedEvent @entity {
   "Is the commitment valid. Most recent commitment would be considered valid"
   isCommitmentValid: Boolean!
 }
+
+type PaymentContextVideo @variant {
+  "Video for which the payment was made"
+  video: Video!
+}
+
+type PaymentContextChannel @variant {
+  "Channel for which the payment was made"
+  channel: Channel!
+}
+
+"Various Channel Payment Contexts"
+union PaymentContext = PaymentContextVideo | PaymentContextChannel
+
+"Direct channel payment by any member by-passing the council payouts"
+type ChannelPaymentMadeEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that made the payment"
+  payer: Membership!
+
+  "Amount of the payment"
+  amount: BigInt!
+
+  "Payment and payee context"
+  paymentContext: PaymentContext
+
+  "Channel that received the payment (if any)"
+  payeeChannel: Channel
+
+  "Reason of the payment"
+  rationale: String
+}

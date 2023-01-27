@@ -1,13 +1,23 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
-export type ChannelFieldsFragment = { id: string; videos: Array<{ id: string; videoStateBloatBond: any }> }
+export type ChannelFieldsFragment = {
+  id: string
+  rewardAccount: string
+  videos: Array<{ id: string; videoStateBloatBond: any }>
+}
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
   channelId: Types.Scalars['ID']
 }>
 
 export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
+
+export type GetChannelByRewardAccountQueryVariables = Types.Exact<{
+  rewardAccount: Types.Scalars['String']
+}>
+
+export type GetChannelByRewardAccountQuery = { channels: Array<ChannelFieldsFragment> }
 
 export type ChannelPayoutsUpdatedEventFragment = {
   id: string
@@ -184,6 +194,7 @@ export const ChannelFields = gql`
       id
       videoStateBloatBond
     }
+    rewardAccount
   }
 `
 export const ChannelPayoutsUpdatedEvent = gql`
@@ -327,6 +338,14 @@ export const UpcomingWorkingGroupOpeningDetails = gql`
 export const GetChannelById = gql`
   query getChannelById($channelId: ID!) {
     channelByUniqueInput(where: { id: $channelId }) {
+      ...ChannelFields
+    }
+  }
+  ${ChannelFields}
+`
+export const GetChannelByRewardAccount = gql`
+  query getChannelByRewardAccount($rewardAccount: String!) {
+    channels(where: { rewardAccount_eq: $rewardAccount }) {
       ...ChannelFields
     }
   }

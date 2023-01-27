@@ -651,6 +651,31 @@ export type GetChannelFundsWithdrawnEventsByEventIdsQuery = {
   channelFundsWithdrawnEvents: Array<ChannelFundsWithdrawnEventFieldsFragment>
 }
 
+export type ChannelPaymentMadeEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  amount: any
+  rationale?: Types.Maybe<string>
+  payeeChannel?: Types.Maybe<ChannelFieldsFragment>
+  payer: MembershipFieldsFragment
+  paymentContext?: Types.Maybe<
+    | { __typename: 'PaymentContextVideo'; video?: Types.Maybe<VideoFieldsFragment> }
+    | { __typename: 'PaymentContextChannel'; channel?: Types.Maybe<ChannelFieldsFragment> }
+  >
+}
+
+export type GetChannelPaymentMadeEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelPaymentMadeEventsByEventIdsQuery = {
+  channelPaymentMadeEvents: Array<ChannelPaymentMadeEventFieldsFragment>
+}
+
 export type EnglishAuctionStartedEventFieldsFragment = {
   video: { id: string }
   auction: { id: string }
@@ -1401,6 +1426,41 @@ export type GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables = T
 
 export type GetMemberVerificationStatusUpdatedEventsByEventIdsQuery = {
   memberVerificationStatusUpdatedEvents: Array<MemberVerificationStatusUpdatedEventFieldsFragment>
+}
+
+type MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment = {
+  __typename: 'MetaprotocolTransactionSuccessful'
+  commentCreated?: Types.Maybe<CommentFieldsFragment>
+  commentDeleted?: Types.Maybe<CommentFieldsFragment>
+}
+
+type MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment = {
+  __typename: 'MetaprotocolTransactionErrored'
+  message: string
+}
+
+export type MetaprotocolTransactionStatusFieldsFragment =
+  | MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment
+  | MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment
+
+export type MetaprotocolTransactionStatusEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  status:
+    | MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment
+    | MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment
+}
+
+export type GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetMetaprotocolTransactionalStatusEventsByEventIdsQuery = {
+  metaprotocolTransactionStatusEvents: Array<MetaprotocolTransactionStatusEventFieldsFragment>
 }
 
 type ProposalStatusFields_ProposalStatusDeciding_Fragment = {
@@ -2617,22 +2677,30 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
-export const AppFields = gql`
-  fragment AppFields on App {
-    id
-    name
-    websiteUrl
-    useUri
-    smallIcon
-    mediumIcon
-    bigIcon
-    oneLiner
-    description
-    termsOfService
-    authKey
-    platforms
-    category
+export const LicenseFields = gql`
+  fragment LicenseFields on License {
+    code
+    attribution
+    customText
   }
+`
+export const VideoMediaEncodingFields = gql`
+  fragment VideoMediaEncodingFields on VideoMediaEncoding {
+    codecName
+    container
+    mimeMediaType
+  }
+`
+export const VideoMediaMetadataFields = gql`
+  fragment VideoMediaMetadataFields on VideoMediaMetadata {
+    encoding {
+      ...VideoMediaEncodingFields
+    }
+    pixelWidth
+    pixelHeight
+    size
+  }
+  ${VideoMediaEncodingFields}
 `
 export const DataObjectTypeFields = gql`
   fragment DataObjectTypeFields on DataObjectType {
@@ -2681,65 +2749,6 @@ export const StorageDataObjectFields = gql`
     storageBagId
   }
   ${DataObjectTypeFields}
-`
-export const ChannelFields = gql`
-  fragment ChannelFields on Channel {
-    id
-    activeVideosCounter
-    title
-    description
-    isPublic
-    language {
-      iso
-    }
-    isCensored
-    app {
-      ...AppFields
-    }
-    ownerMember {
-      id
-    }
-    ownerCuratorGroup {
-      id
-    }
-    avatarPhoto {
-      ...StorageDataObjectFields
-    }
-    coverPhoto {
-      ...StorageDataObjectFields
-    }
-    bannedMembers {
-      id
-    }
-    rewardAccount
-  }
-  ${AppFields}
-  ${StorageDataObjectFields}
-`
-export const LicenseFields = gql`
-  fragment LicenseFields on License {
-    code
-    attribution
-    customText
-  }
-`
-export const VideoMediaEncodingFields = gql`
-  fragment VideoMediaEncodingFields on VideoMediaEncoding {
-    codecName
-    container
-    mimeMediaType
-  }
-`
-export const VideoMediaMetadataFields = gql`
-  fragment VideoMediaMetadataFields on VideoMediaMetadata {
-    encoding {
-      ...VideoMediaEncodingFields
-    }
-    pixelWidth
-    pixelHeight
-    size
-  }
-  ${VideoMediaEncodingFields}
 `
 export const VideoCategoryFields = gql`
   fragment VideoCategoryFields on VideoCategory {
@@ -3231,6 +3240,151 @@ export const ChannelFundsWithdrawnEventFields = gql`
     account
   }
 `
+export const AppFields = gql`
+  fragment AppFields on App {
+    id
+    name
+    websiteUrl
+    useUri
+    smallIcon
+    mediumIcon
+    bigIcon
+    oneLiner
+    description
+    termsOfService
+    authKey
+    platforms
+    category
+  }
+`
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
+    title
+    description
+    isPublic
+    language {
+      iso
+    }
+    isCensored
+    app {
+      ...AppFields
+    }
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+    avatarPhoto {
+      ...StorageDataObjectFields
+    }
+    coverPhoto {
+      ...StorageDataObjectFields
+    }
+    bannedMembers {
+      id
+    }
+    rewardAccount
+  }
+  ${AppFields}
+  ${StorageDataObjectFields}
+`
+export const MemberMetadataFields = gql`
+  fragment MemberMetadataFields on MemberMetadata {
+    name
+    about
+    avatar {
+      ... on AvatarUri {
+        avatarUri
+      }
+    }
+    externalResources {
+      type
+      value
+    }
+  }
+`
+export const MembershipFields = gql`
+  fragment MembershipFields on Membership {
+    id
+    handle
+    metadata {
+      ...MemberMetadataFields
+    }
+    controllerAccount
+    rootAccount
+    entry {
+      __typename
+      ... on MembershipEntryPaid {
+        membershipBoughtEvent {
+          id
+        }
+      }
+      ... on MembershipEntryInvited {
+        memberInvitedEvent {
+          id
+        }
+      }
+      ... on MembershipEntryGifted {
+        membershipGiftedEvent {
+          id
+        }
+      }
+      ... on MembershipEntryMemberCreated {
+        memberCreatedEvent {
+          id
+        }
+      }
+    }
+    isVerified
+    isFoundingMember
+    inviteCount
+    invitedBy {
+      id
+    }
+    invitees {
+      id
+    }
+    boundAccounts
+  }
+  ${MemberMetadataFields}
+`
+export const ChannelPaymentMadeEventFields = gql`
+  fragment ChannelPaymentMadeEventFields on ChannelPaymentMadeEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    payeeChannel {
+      ...ChannelFields
+    }
+    payer {
+      ...MembershipFields
+    }
+    amount
+    rationale
+    paymentContext {
+      __typename
+      ... on PaymentContextChannel {
+        channel {
+          ...ChannelFields
+        }
+      }
+      ... on PaymentContextVideo {
+        video {
+          ...VideoFields
+        }
+      }
+    }
+  }
+  ${ChannelFields}
+  ${MembershipFields}
+  ${VideoFields}
+`
 export const EnglishAuctionStartedEventFields = gql`
   fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
     video {
@@ -3681,66 +3835,6 @@ export const PostDeletedEventFields = gql`
     rationale
   }
 `
-export const MemberMetadataFields = gql`
-  fragment MemberMetadataFields on MemberMetadata {
-    name
-    about
-    avatar {
-      ... on AvatarUri {
-        avatarUri
-      }
-    }
-    externalResources {
-      type
-      value
-    }
-  }
-`
-export const MembershipFields = gql`
-  fragment MembershipFields on Membership {
-    id
-    handle
-    metadata {
-      ...MemberMetadataFields
-    }
-    controllerAccount
-    rootAccount
-    entry {
-      __typename
-      ... on MembershipEntryPaid {
-        membershipBoughtEvent {
-          id
-        }
-      }
-      ... on MembershipEntryInvited {
-        memberInvitedEvent {
-          id
-        }
-      }
-      ... on MembershipEntryGifted {
-        membershipGiftedEvent {
-          id
-        }
-      }
-      ... on MembershipEntryMemberCreated {
-        memberCreatedEvent {
-          id
-        }
-      }
-    }
-    isVerified
-    isFoundingMember
-    inviteCount
-    invitedBy {
-      id
-    }
-    invitees {
-      id
-    }
-    boundAccounts
-  }
-  ${MemberMetadataFields}
-`
 export const MembershipBoughtEventFields = gql`
   fragment MembershipBoughtEventFields on MembershipBoughtEvent {
     id
@@ -3977,6 +4071,37 @@ export const MemberVerificationStatusUpdatedEventFields = gql`
     }
     isVerified
   }
+`
+export const MetaprotocolTransactionStatusFields = gql`
+  fragment MetaprotocolTransactionStatusFields on MetaprotocolTransactionStatus {
+    __typename
+    ... on MetaprotocolTransactionSuccessful {
+      commentCreated {
+        ...CommentFields
+      }
+      commentDeleted {
+        ...CommentFields
+      }
+    }
+    ... on MetaprotocolTransactionErrored {
+      message
+    }
+  }
+  ${CommentFields}
+`
+export const MetaprotocolTransactionStatusEventFields = gql`
+  fragment MetaprotocolTransactionStatusEventFields on MetaprotocolTransactionStatusEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    status {
+      ...MetaprotocolTransactionStatusFields
+    }
+  }
+  ${MetaprotocolTransactionStatusFields}
 `
 export const ApplicationFormQuestionFields = gql`
   fragment ApplicationFormQuestionFields on ApplicationFormQuestion {
@@ -5316,6 +5441,14 @@ export const GetChannelFundsWithdrawnEventsByEventIds = gql`
   }
   ${ChannelFundsWithdrawnEventFields}
 `
+export const GetChannelPaymentMadeEventsByEventIds = gql`
+  query getChannelPaymentMadeEventsByEventIds($eventIds: [ID!]) {
+    channelPaymentMadeEvents(where: { id_in: $eventIds }) {
+      ...ChannelPaymentMadeEventFields
+    }
+  }
+  ${ChannelPaymentMadeEventFields}
+`
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
     englishAuctionStartedEvents(where: { id_in: $eventIds }) {
@@ -5639,6 +5772,14 @@ export const GetMemberVerificationStatusUpdatedEventsByEventIds = gql`
     }
   }
   ${MemberVerificationStatusUpdatedEventFields}
+`
+export const GetMetaprotocolTransactionalStatusEventsByEventIds = gql`
+  query getMetaprotocolTransactionalStatusEventsByEventIds($eventIds: [ID!]) {
+    metaprotocolTransactionStatusEvents(where: { id_in: $eventIds }) {
+      ...MetaprotocolTransactionStatusEventFields
+    }
+  }
+  ${MetaprotocolTransactionStatusEventFields}
 `
 export const GetProposalsByIds = gql`
   query getProposalsByIds($ids: [ID!]) {

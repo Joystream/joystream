@@ -1,7 +1,7 @@
 import { DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 import { Bytes, Option } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { WorkerId } from '@joystream/types/primitives'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WGType } from '@polkadot/types/lookup'
 import {
   Worker,
@@ -11,6 +11,7 @@ import {
   MetaprotocolTransactionStatusEvent,
   MetaprotocolTransactionErrored,
   MetaprotocolTransactionSuccessful,
+  Membership,
 } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
@@ -214,6 +215,18 @@ export async function getWorkingGroupByName(
     return inconsistentState(`Working group ${name} not found!`)
   }
   return group
+}
+
+export async function getMemberById(
+  store: DatabaseManager,
+  id: MemberId,
+  relations: string[] = []
+): Promise<Membership> {
+  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
+  if (!member) {
+    throw new Error(`Member(${id}) not found`)
+  }
+  return member
 }
 
 export async function getWorker(

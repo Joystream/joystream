@@ -8,6 +8,7 @@ import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 import leadOpening from '../flows/working-groups/leadOpening'
 import { scenario } from '../Scenario'
+import directChannelPayment from '../flows/content/directChannelPayment'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Content directory', async ({ job }) => {
@@ -18,6 +19,7 @@ scenario('Content directory', async ({ job }) => {
 
   // following jobs must be run sequentially due to some QN queries that could interfere
   const channelJob = job('manage channels and videos through CLI', channelsAndVideos).requires(leadSetupJob)
+  job('direct channel payment by members', directChannelPayment).after(channelJob)
   const videoCategoriesJob = job('video categories', testVideoCategories).after(channelJob)
   const subtitlesJob = job('Add and Update Video Subtitles', addAndUpdateVideoSubtitles).after(videoCategoriesJob)
   const videoCountersJob = job('check active video counters', activeVideoCounters).after(subtitlesJob)

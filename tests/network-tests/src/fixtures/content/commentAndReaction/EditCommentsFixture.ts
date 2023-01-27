@@ -54,7 +54,7 @@ export class EditCommentsFixture extends StandardizedFixture {
           newBody: params.msg.newBody,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg))
+      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg), null)
     })
   }
 
