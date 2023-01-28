@@ -12,9 +12,9 @@ cd $SCRIPT_PATH
 DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
-# The latest docker image tag to use for joystream/node
-RUNTIME_TAG=${RUNTIME_TAG:=latest}
-TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(RUNTIME_PROFILE=testing ../../scripts/runtime-code-shasum.sh)}
+# The latest docker image tag to use for joystream/node (testing profile)
+RUNTIME_TAG=mainnet
+TARGET_RUNTIME_TAG=ephesus
 
 # Initial account balance for sudo account
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
@@ -81,7 +81,7 @@ function start_joystream_node {
     -p 9944:9944 -p 9933:9933 joystream-node \
     --alice --validator --unsafe-ws-external --unsafe-rpc-external \
     --rpc-methods Unsafe --rpc-cors=all -l runtime \
-    --chain /spec/chain-spec-raw.json --pruning=archive --no-telemetry
+    --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry
 }
 
 #######################################
@@ -166,8 +166,8 @@ function main {
     fi
     export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
     # 3. copy chainspec to disk
-    export_chainspec_file_to_disk
-    >&2 echo "chainspec exported"
+    # export_chainspec_file_to_disk
+    # >&2 echo "chainspec exported"
   fi
   # 5. start node
   start_joystream_node

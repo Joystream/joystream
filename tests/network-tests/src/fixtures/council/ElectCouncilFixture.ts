@@ -10,6 +10,8 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
     const { api, query } = this
     const { councilSize, minNumberOfExtraCandidates } = api.consts.council
+    assert.isAbove(councilSize.toNumber(), 0, 'councilSize is zero')
+    assert.isAtLeast(minNumberOfExtraCandidates.toNumber(), 0, 'minimub extra candidates is below zero')
     const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
     const numberOfVoters = numberOfCandidates
 
