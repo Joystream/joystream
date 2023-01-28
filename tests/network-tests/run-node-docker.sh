@@ -13,8 +13,8 @@ DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
 # The latest docker image tag to use for joystream/node
-RUNTIME_TAG=latest 
-TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(../../scripts/runtime-code-shasum.sh)}
+RUNTIME_TAG=${RUNTIME_TAG:=latest}
+TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(RUNTIME_PROFILE=testing ../../scripts/runtime-code-shasum.sh)}
 
 # Initial account balance for sudo account
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
@@ -92,10 +92,10 @@ function start_joystream_node {
 # Arguments:
 #   None
 #######################################
-function set_new_runtime_wasm() {
+function set_new_runtime_wasm_path() {
   id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
-  >&2 echo "${id} container"
-  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/runtime.wasm
+  # needed for runtimeUpgrade integration test scenario
+  export RUNTIME_UPGRADE_TARGET_WASM_PATH=$id:/joystream/runtime.compact.was 
 }
 
 #######################################
@@ -161,13 +161,15 @@ function main {
       # 2. clone live chainspec with fork it
       fork_off_init
       >&2 echo "storage downloaded & dumped into the raw chainspec"
+      # 3. set path to new runtime.wasm
+      set_new_runtime_wasm_path
     fi
     export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
     # 3. copy chainspec to disk
     export_chainspec_file_to_disk
     >&2 echo "chainspec exported"
   fi
-  # 4. start node
+  # 5. start node
   start_joystream_node
 }
 
