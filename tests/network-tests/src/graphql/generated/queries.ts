@@ -1,34 +1,6 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
-export type AppFieldsFragment = {
-  id: string
-  name: string
-  websiteUrl?: Types.Maybe<string>
-  useUri?: Types.Maybe<string>
-  smallIcon?: Types.Maybe<string>
-  mediumIcon?: Types.Maybe<string>
-  bigIcon?: Types.Maybe<string>
-  oneLiner?: Types.Maybe<string>
-  description?: Types.Maybe<string>
-  termsOfService?: Types.Maybe<string>
-  authKey?: Types.Maybe<string>
-  platforms?: Types.Maybe<Array<string>>
-  category?: Types.Maybe<string>
-}
-
-export type GetAppByIdQueryVariables = Types.Exact<{
-  id: Types.Scalars['ID']
-}>
-
-export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<{ channel: ChannelFieldsFragment } & AppFieldsFragment> }
-
-export type GetAppsByNameQueryVariables = Types.Exact<{
-  name: Types.Scalars['String']
-}>
-
-export type GetAppsByNameQuery = { apps: Array<{ channel: ChannelFieldsFragment } & AppFieldsFragment> }
-
 type DataObjectTypeFields_DataObjectTypeChannelAvatar_Fragment = {
   __typename: 'DataObjectTypeChannelAvatar'
   channel?: Types.Maybe<{ id: string }>
@@ -96,7 +68,6 @@ export type ChannelFieldsFragment = {
   isCensored: boolean
   rewardAccount: string
   language?: Types.Maybe<{ iso: string }>
-  app?: Types.Maybe<AppFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -3240,23 +3211,6 @@ export const ChannelFundsWithdrawnEventFields = gql`
     account
   }
 `
-export const AppFields = gql`
-  fragment AppFields on App {
-    id
-    name
-    websiteUrl
-    useUri
-    smallIcon
-    mediumIcon
-    bigIcon
-    oneLiner
-    description
-    termsOfService
-    authKey
-    platforms
-    category
-  }
-`
 export const ChannelFields = gql`
   fragment ChannelFields on Channel {
     id
@@ -3268,9 +3222,6 @@ export const ChannelFields = gql`
       iso
     }
     isCensored
-    app {
-      ...AppFields
-    }
     ownerMember {
       id
     }
@@ -3288,7 +3239,6 @@ export const ChannelFields = gql`
     }
     rewardAccount
   }
-  ${AppFields}
   ${StorageDataObjectFields}
 `
 export const MemberMetadataFields = gql`
@@ -5176,30 +5126,6 @@ export const BudgetSpendingEventFields = gql`
     amount
     rationale
   }
-`
-export const GetAppById = gql`
-  query getAppById($id: ID!) {
-    appByUniqueInput(where: { id: $id }) {
-      ...AppFields
-      channel {
-        ...ChannelFields
-      }
-    }
-  }
-  ${AppFields}
-  ${ChannelFields}
-`
-export const GetAppsByName = gql`
-  query getAppsByName($name: String!) {
-    apps(where: { name_eq: $name }) {
-      ...AppFields
-      channel {
-        ...ChannelFields
-      }
-    }
-  }
-  ${AppFields}
-  ${ChannelFields}
 `
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {

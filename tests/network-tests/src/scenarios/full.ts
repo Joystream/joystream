@@ -37,7 +37,6 @@ import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
 import channelPayouts from '../flows/proposals/channelPayouts'
-import { createApp, updateApp } from '../flows/content/app'
 import directChannelPayment from '../flows/content/directChannelPayment'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -113,8 +112,6 @@ scenario('Full', async ({ job, env }) => {
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     nftAuctionAndOffersJob
   )
-  job('create app', createApp).after(sudoHireLead)
-  job('update app', updateApp).after(sudoHireLead)
   const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
     commentsAndReactionsJob
   )
