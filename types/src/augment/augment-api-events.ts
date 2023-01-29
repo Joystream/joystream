@@ -279,7 +279,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       ChannelOwnerRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
       ChannelPausedFeaturesUpdatedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>, Bytes]>;
-      ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
+      ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>, AccountId32]>;
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
       ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
       ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u128, u64]>;

@@ -72,7 +72,6 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
 
   const updateChannelPayoutsParams: UpdateChannelPayoutsProposalParams = {
     asMember: channelPayoutsProposer.memberId,
-    uploaderAccount: channelPayoutsProposer.account,
     protobufPayloadFilePath,
   }
 

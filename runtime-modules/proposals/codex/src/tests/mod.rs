@@ -2503,7 +2503,6 @@ fn create_update_channel_payouts_common_checks_succeed() {
                     b"commitment".as_ref(),
                 )),
                 payload: Some(content::ChannelPayoutsPayloadParametersRecord {
-                    uploader_account: <Test as frame_system::Config>::AccountId::default(),
                     object_creation_params: content::DataObjectCreationParameters {
                         size: u64::MAX,
                         ipfs_content_id: Vec::from_iter((0..46).map(|_| u8::MAX)),
