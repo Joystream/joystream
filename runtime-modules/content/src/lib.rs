@@ -346,7 +346,7 @@ decl_module! {
         /// Export const - min cashout allowed limits
         const MinimumCashoutAllowedLimit: BalanceOf<T> = T::MinimumCashoutAllowedLimit::get();
 
-        /// Export const - min cashout allowed limits
+        /// Export const - max cashout allowed limits
         const MaximumCashoutAllowedLimit: BalanceOf<T> = T::MaximumCashoutAllowedLimit::get();
 
         // ======
