@@ -38,7 +38,17 @@ const skippedModulesPrefix = [
   'GrandpaFinality',
   'FinalityTracker',
   'Authorship',
+  // Joystream specific
   'Council', // empty council
+  'appWorkingGroup',
+  'ContentWorkingGroup',
+  'DistributionWorkingGroup',
+  'ForumWorkingGroup',
+  'MembershipWorkingGroup',
+  'OperationsWorkingGroupAlpha',
+  'OperationsWorkingGroupBeta',
+  'OperationsWorkingGroupGamma',
+  'StorageWorkingGroup'
 ]
 
 // Apparently not needed: To review
@@ -71,14 +81,14 @@ async function main() {
 
   const metadata = await api.rpc.state.getMetadata()
   // Populate the prefixes array
-  const pallets = metadata.asV14.pallets
+  const pallets = metadata.asLatest.pallets
   pallets.forEach((pallet) => {
-    if (pallet.storage.isSome) {
-      if (!skippedModulesPrefix.includes(pallet.storage.unwrap().prefix.toString())) {
-        prefixes.push(xxhashAsHex(pallet.storage.unwrap().prefix.toString(), 128))
+    if (pallet.storage) {
+      if (!skippedModulesPrefix.includes(pallet.name.toString())) {
+        prefixes.push(xxhashAsHex(pallet.name.toString(), 128));
       }
     }
-  })
+  });
 
   // blank starting chainspec guaranteed to exist
   // const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
