@@ -157,7 +157,7 @@ export class ApiFactory {
     if (isCustom) {
       this.customKeys.push(suriPath)
     }
-    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing1//${suriPath}`
+    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}`
     const pair = this.keyring.addFromUri(uri)
     this.addressesToSuri.set(pair.address, uri)
     return pair
