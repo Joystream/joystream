@@ -13,8 +13,8 @@ DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
 # The latest docker image tag to use for joystream/node (testing profile)
-RUNTIME_TAG=mainnet
-TARGET_RUNTIME_TAG=ephesus
+RUNTIME_TAG=${RUNTIME_TAG:=mainnetDev}
+TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=ephesus}
 
 # Initial account balance for sudo account
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
