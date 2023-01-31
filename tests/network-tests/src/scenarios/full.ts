@@ -46,8 +46,8 @@ scenario('Full', async ({ job, env }) => {
   const councilJob = job('electing council', electCouncil)
   const newRuntimePath = env.RUNTIME_UPGRADE_TARGET_WASM_PATH || './data/new_runtime.wasm'
   const runtimeUpgradeProposalJob = newRuntimePath
-      ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
-      : undefined
+    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
+    : undefined
 
   const coreJob = runtimeUpgradeProposalJob || councilJob
 

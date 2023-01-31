@@ -51,12 +51,6 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
     { proposalId: toBeCanceledByRuntimeProposalId, status: 'Approved' },
   ])
 
-  const currentSlot = await api.query.babe.currentSlot()
-  const slotDuration = (await api.consts.timestamp.minimumPeriod).toBn().muln(2)
-  const now = (await api.query.timestamp.now()).toBn()
-  const timestampSlot = now.divRound(slotDuration)
-  debug(`current slot: ${currentSlot} vs timestamp slot ${timestampSlot}`)
-  
   await new FixtureRunner(decideOnProposalStatusFixture).run()
 
   // Runtime upgrade proposal

@@ -97,7 +97,6 @@ function set_new_runtime_wasm_path() {
   # needed for runtimeUpgrade integration test scenario
   cp ../../target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.compressed.wasm \
     ${DATA_PATH}/new_runtime.wasm
-  export RUNTIME_UPGRADE_TARGET_WASM_PATH=${DATA_PATH}/new_runtime.wasm
 }
 
 #######################################
