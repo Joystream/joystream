@@ -63,7 +63,6 @@ const skippedModulesPrefix = [
 // }
 
 async function main() {
-  console.log(`data path: ${process.env.DATA_PATH}`)
   // hexdump of runtime wasm binary, running it from the shell gives bad format error
   // execSync('cat ' + wasmPath + ' | hexdump -ve \'/1 "%02x"\' > ' + hexPath)
 
@@ -93,8 +92,8 @@ async function main() {
 
   // blank starting chainspec guaranteed to exist
   // const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
-  const storage: Storage = JSON.parse(fs.readFileSync("/Users/ignazio/developer/joystream/tests/network-tests/data/storage.json", 'utf8'))
-  const chainSpec = JSON.parse(fs.readFileSync("/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-raw.json",'utf8'))
+  const storage: Storage = JSON.parse(fs.readFileSync("../../../test/network-tests/data/storage.json", 'utf8'))
+  const chainSpec = JSON.parse(fs.readFileSync("../../../tests/network-tests/data/chain-spec-raw.json",'utf8'))
 
   // Modify chain name and id
   // chainSpec.name = 'ephesus'
@@ -123,7 +122,7 @@ async function main() {
       '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'
   }
 
-  fs.writeFileSync("/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-forked.json", JSON.stringify(chainSpec, null, 4))
+  fs.writeFileSync("../../../tests/network-tests/data/chain-spec-forked.json", JSON.stringify(chainSpec, null, 4))
 
   // console.log('****** INITIAL CHAINSPEC UPDATED TO REFLECT LIVE STATE ******')
   process.exit()
