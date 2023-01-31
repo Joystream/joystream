@@ -217,6 +217,8 @@ jobs:
           mkdir -p ${HOME}/.local/share/joystream-cli
           yarn joystream-cli api:setUri ws://localhost:9944
           # Rhodes release (spec 7) production runtime profile
-          export RUNTIME_TAG=e3f72ac0dbfc3d8dc69b63c2ab991f104411f205
+          git clone https://github.com/Joystream/joystream.git joystream_master 
+          export RUNTIME_PROFILE=TESTINg
+          export RUNTIME_TAG=$(joystream_master/scripts/runtime-code-shasum.sh) && cd ..
           export TARGET_RUNTIME_TAG=latest
           tests/network-tests/run-migration-tests.sh
