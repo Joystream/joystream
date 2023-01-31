@@ -48,7 +48,8 @@ const skippedModulesPrefix = [
   'OperationsWorkingGroupAlpha',
   'OperationsWorkingGroupBeta',
   'OperationsWorkingGroupGamma',
-  'StorageWorkingGroup'
+  'StorageWorkingGroup',
+  'Referendum'
 ]
 
 // Apparently not needed: To review
