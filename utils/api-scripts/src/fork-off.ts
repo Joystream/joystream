@@ -40,7 +40,7 @@ const skippedModulesPrefix = [
   'Authorship',
   // Joystream specific
   'Council', // empty council
-  'appWorkingGroup',
+  'AppWorkingGroup',
   'ContentWorkingGroup',
   'DistributionWorkingGroup',
   'ForumWorkingGroup',
@@ -92,8 +92,8 @@ async function main() {
 
   // blank starting chainspec guaranteed to exist
   // const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
-  const storage: Storage = JSON.parse(fs.readFileSync("../../../test/network-tests/data/storage.json", 'utf8'))
-  const chainSpec = JSON.parse(fs.readFileSync("../../../tests/network-tests/data/chain-spec-raw.json",'utf8'))
+  const storage: Storage = JSON.parse(fs.readFileSync('/Users/ignazio/developer/joystream/tests/network-tests/data/storage.json', 'utf8'))
+  const chainSpec = JSON.parse(fs.readFileSync('/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-raw.json','utf8'))
 
   // Modify chain name and id
   // chainSpec.name = 'ephesus'
@@ -112,6 +112,9 @@ async function main() {
   // Set the code to the current runtime code: this replaces the set code transaction
   // chainSpec.genesis.raw.top['0x3a636f6465'] = '0x' + fs.readFileSync(hexPath, 'utf8').trim()
 
+  // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
+  delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8'];
+
   // To prevent the validator set from changing mid-test, set Staking.ForceEra to ForceNone ('0x02')
   chainSpec.genesis.raw.top['0x5f3e4907f716ac89b6347d15ececedcaf7dad0317324aecae8744b87fc95f2f3'] = '0x02'
 
@@ -122,7 +125,7 @@ async function main() {
       '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'
   }
 
-  fs.writeFileSync("../../../tests/network-tests/data/chain-spec-forked.json", JSON.stringify(chainSpec, null, 4))
+  fs.writeFileSync('/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-forked.json', JSON.stringify(chainSpec, null, 4))
 
   // console.log('****** INITIAL CHAINSPEC UPDATED TO REFLECT LIVE STATE ******')
   process.exit()
