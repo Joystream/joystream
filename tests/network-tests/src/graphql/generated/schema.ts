@@ -150,19 +150,24 @@ export type App = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['ID']>
   version: Scalars['Int']
+  /** The name of the App */
   name: Scalars['String']
   ownerMember?: Maybe<Membership>
   ownerMemberId?: Maybe<Scalars['String']>
   ownerCuratorGroup?: Maybe<CuratorGroup>
   ownerCuratorGroupId?: Maybe<Scalars['String']>
+  /** Url where user can read more about the project or company for this app */
   websiteUrl?: Maybe<Scalars['String']>
+  /** Url to the app */
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
   mediumIcon?: Maybe<Scalars['String']>
   bigIcon?: Maybe<Scalars['String']>
+  /** Tagline of the app */
   oneLiner?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   termsOfService?: Maybe<Scalars['String']>
+  /** List of platforms on which the app will be available, e.g. [mobile, web, native] */
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>

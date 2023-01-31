@@ -46,7 +46,6 @@ import {
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
-import BN from 'bn.js'
 import { processUpdateApp, processCreateAppMessage } from './app'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {

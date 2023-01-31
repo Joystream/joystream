@@ -1,5 +1,6 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { ChannelId } from '@joystream/types/primitives'
 import { logger } from '@joystream/warthog'
 import { Channel, App } from 'query-node/dist/model'
@@ -76,17 +77,21 @@ export async function processUpdateApp(
     inconsistentState(`Cannot update app; app does not belong to the channelId: `, channelId)
   }
 
-  app.websiteUrl = appMetadata?.websiteUrl || app.websiteUrl
-  app.useUri = appMetadata?.useUri || app.useUri
-  app.smallIcon = appMetadata?.smallIcon || app.smallIcon
-  app.mediumIcon = appMetadata?.mediumIcon || app.mediumIcon
-  app.bigIcon = appMetadata?.bigIcon || app.bigIcon
-  app.oneLiner = appMetadata?.oneLiner || app.oneLiner
-  app.description = appMetadata?.description || app.description
-  app.termsOfService = appMetadata?.termsOfService || app.termsOfService
-  app.platforms = appMetadata?.platforms || app.platforms
-  app.category = appMetadata?.category || app.category
-  app.authKey = appMetadata?.authKey || app.authKey
+  if (appMetadata) {
+    integrateMeta(app, appMetadata, [
+      'websiteUrl',
+      'useUri',
+      'smallIcon',
+      'mediumIcon',
+      'bigIcon',
+      'oneLiner',
+      'description',
+      'termsOfService',
+      'platforms',
+      'category',
+      'authKey',
+    ])
+  }
 
   await store.save<App>(app)
   logger.info('App has been updated', { appId })

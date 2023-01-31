@@ -90,7 +90,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
   const updatedAppData: Partial<AppMetadata> = {
     category: 'sport',
     oneLiner: 'best sport video platform',
-    description: 'short description',
+    description: '',
     websiteUrl: 'http://example.com',
     platforms: ['web', 'mobile'],
   }
@@ -107,7 +107,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
       assert.equal(appsByName?.[0]?.category, updatedAppData.category)
       assert.equal(appsByName?.[0]?.oneLiner, updatedAppData.oneLiner)
       assert.equal(appsByName?.[0]?.description, updatedAppData.description)
-      assert.equal(appsByName?.[0]?.termsOfService, null)
+      assert.equal(appsByName?.[0]?.termsOfService, '')
       assert.equal(appsByName?.[0]?.websiteUrl, updatedAppData.websiteUrl)
       assert.deepEqual(appsByName?.[0]?.platforms, updatedAppData.platforms)
     }
