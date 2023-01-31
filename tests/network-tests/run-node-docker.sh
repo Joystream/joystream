@@ -95,7 +95,8 @@ function start_joystream_node {
 function set_new_runtime_wasm_path() {
   id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
   # needed for runtimeUpgrade integration test scenario
-  export RUNTIME_UPGRADE_TARGET_WASM_PATH=$id:/joystream/runtime.compact.was 
+  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}/new_runtime.wasm
+  export RUNTIME_UPGRADE_TARGET_WASM_PATH=${DATA_PATH}/new_runtime.wasm
 }
 
 #######################################
@@ -163,11 +164,12 @@ function main {
       >&2 echo "storage downloaded & dumped into the raw chainspec"
       # 3. set path to new runtime.wasm
       set_new_runtime_wasm_path
+      >&2 echo "new wasm path: ${RUNTIME_UPGRADE_TARGET_WASM_PATH}"
     fi
     export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
     # 3. copy chainspec to disk
-    # export_chainspec_file_to_disk
-    # >&2 echo "chainspec exported"
+    export_chainspec_file_to_disk
+    >&2 echo "chainspec exported"
   fi
   # 5. start node
   start_joystream_node
