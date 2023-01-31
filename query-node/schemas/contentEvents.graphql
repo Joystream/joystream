@@ -586,8 +586,8 @@ type ChannelRewardClaimedAndWithdrawnEvent implements Event @entity {
   "Reward amount claimed"
   amount: BigInt!
 
-  "Destination account ID"
-  account: String!
+  "Destination account ID. Null in case the funds destination was Council"
+  account: String
 
   "Content actor"
   actor: ContentActor!
@@ -619,8 +619,8 @@ type ChannelFundsWithdrawnEvent implements Event @entity {
   "Reward amount claimed"
   amount: BigInt!
 
-  "Destination account ID"
-  account: String!
+  "Destination account ID. Null in case the funds destination was Council"
+  account: String
 
   "Content actor"
   actor: ContentActor!

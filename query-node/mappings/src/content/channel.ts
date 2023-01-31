@@ -470,7 +470,7 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
 
 export async function content_ChannelRewardUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // load event data
-  const [, claimedAmount, channelId] = new Content.ChannelRewardUpdatedEvent(event).params
+  const [cumulativeRewardEarned, claimedAmount, channelId] = new Content.ChannelRewardUpdatedEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })
@@ -491,7 +491,7 @@ export async function content_ChannelRewardUpdated({ store, event }: EventContex
 
   await store.save<ChannelRewardClaimedEvent>(rewardClaimedEvent)
 
-  channel.cumulativeRewardClaimed = channel.cumulativeRewardClaimed?.add(claimedAmount.toBn())
+  channel.cumulativeRewardClaimed = cumulativeRewardEarned
 
   // save channel
   await store.save<Channel>(channel)
@@ -502,7 +502,7 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // load event data
-  const [owner, channelId, amount, accountId] = new Content.ChannelRewardClaimedAndWithdrawnEvent(event).params
+  const [owner, channelId, amount, destination] = new Content.ChannelRewardClaimedAndWithdrawnEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })
@@ -519,13 +519,13 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
 
     amount,
     channel,
-    account: accountId.toString(),
+    account: destination.isAccountId ? destination.asAccountId.toString() : undefined,
     actor: await convertContentActor(store, owner),
   })
 
   await store.save<ChannelRewardClaimedAndWithdrawnEvent>(rewardClaimedEvent)
 
-  channel.cumulativeRewardClaimed = amount
+  channel.cumulativeRewardClaimed = (channel.cumulativeRewardClaimed || new BN(0)).add(amount)
 
   // save channel
   await store.save<Channel>(channel)
@@ -534,7 +534,7 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
 export async function content_ChannelFundsWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
   // load event data
   // load event data
-  const [owner, channelId, amount, account] = new Content.ChannelFundsWithdrawnEvent(event).params
+  const [owner, channelId, amount, destination] = new Content.ChannelFundsWithdrawnEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })
@@ -551,7 +551,7 @@ export async function content_ChannelFundsWithdrawn({ store, event }: EventConte
 
     amount,
     channel,
-    account: account.toString(),
+    account: destination.isAccountId ? destination.asAccountId.toString() : undefined,
     actor: await convertContentActor(store, owner),
   })
 

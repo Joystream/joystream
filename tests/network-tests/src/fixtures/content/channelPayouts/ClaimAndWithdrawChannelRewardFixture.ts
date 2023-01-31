@@ -1,34 +1,21 @@
 import { prepareClaimChannelRewardExtrinsicArgs } from '@joystream/js/content'
-import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
-import { MemberId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
 import { Utils } from '../../../utils'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
-import { ChannelFieldsFragment, ChannelRewardClaimedEventFieldsFragment } from '../../../graphql/generated/queries'
+import {
+  ChannelFieldsFragment,
+  ChannelRewardClaimedAndWithdrawnEventFieldsFragment,
+} from '../../../graphql/generated/queries'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
-import BN from 'bn.js'
+import { ClaimChannelRewardParams, getExpectedClaims } from './ClaimChannelRewardFixture'
 
-type ClaimChannelRewardEventDetails = EventDetails<EventType<'content', 'ChannelRewardUpdated'>>
+type ClaimAndWithdrawChannelRewardEventDetails = EventDetails<EventType<'content', 'ChannelRewardClaimedAndWithdrawn'>>
 
-export type ClaimChannelRewardParams = {
-  asMember: MemberId
-  payoutProof: ChannelPayoutsMetadata.Body.ChannelPayoutProof
-}
-
-export async function getExpectedClaims(api: Api, params: ClaimChannelRewardParams[]): Promise<string[]> {
-  return Promise.all(
-    params.map(async ({ payoutProof: { channelId, cumulativeRewardEarned } }) => {
-      const channel = await api.query.content.channelById(channelId)
-      return new BN(cumulativeRewardEarned).sub(channel.cumulativeRewardClaimed).toString()
-    })
-  )
-}
-
-export class ClaimChannelRewardFixture extends StandardizedFixture {
+export class ClaimAndWithdrawChannelRewardFixture extends StandardizedFixture {
   protected claimChannelRewardParams: ClaimChannelRewardParams[]
   protected expectedClaims: string[] = []
 
@@ -37,8 +24,8 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
     this.claimChannelRewardParams = claimChannelRewardParams
   }
 
-  protected async getEventFromResult(result: ISubmittableResult): Promise<ClaimChannelRewardEventDetails> {
-    return this.api.getEventDetails(result, 'content', 'ChannelRewardUpdated')
+  protected async getEventFromResult(result: ISubmittableResult): Promise<ClaimAndWithdrawChannelRewardEventDetails> {
+    return this.api.getEventDetails(result, 'content', 'ChannelRewardClaimedAndWithdrawn')
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
@@ -54,14 +41,15 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
       // Prepare extrinsic arguments
       const { pullPayment, proofElements } = prepareClaimChannelRewardExtrinsicArgs(params.payoutProof)
 
-      return this.api.tx.content.claimChannelReward({ Member: params.asMember }, proofElements, pullPayment)
+      return this.api.tx.content.claimAndWithdrawChannelReward({ Member: params.asMember }, proofElements, pullPayment)
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: ChannelRewardClaimedEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: ChannelRewardClaimedAndWithdrawnEventFieldsFragment, i: number): void {
     const params = this.claimChannelRewardParams[i]
     assert.equal(qEvent.channel.id, params.payoutProof.channelId.toString())
     assert.equal(qEvent.amount, this.expectedClaims[i])
+    assert.equal(qEvent.account, this.extrinsics[i].signer.toString())
   }
 
   protected assertQueryNodeChannelsAreValid(qChannels: ChannelFieldsFragment[]): void {
@@ -82,7 +70,7 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
     await super.runQueryNodeChecks()
     // Query the events
     await this.query.tryQueryWithTimeout(
-      () => this.query.getChannelRewardClaimedEvents(this.events),
+      () => this.query.getChannelRewardClaimedAndWithdrawnEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
     // Query the channels
