@@ -1,0 +1,33 @@
+fragment AppFields on App {
+  id
+  name
+  websiteUrl
+  useUri
+  smallIcon
+  mediumIcon
+  bigIcon
+  oneLiner
+  description
+  termsOfService
+  authKey
+  platforms
+  category
+}
+
+query getAppById($id: ID!) {
+  appByUniqueInput(where: { id: $id }) {
+    ...AppFields
+    channel {
+      ...ChannelFields
+    }
+  }
+}
+
+query getAppsByName($name: String!) {
+  apps(where: { name_eq: $name }) {
+    ...AppFields
+    channel {
+      ...ChannelFields
+    }
+  }
+}

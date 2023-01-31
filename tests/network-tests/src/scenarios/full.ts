@@ -37,6 +37,7 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
+import { createApp, updateApp } from '../flows/content/app'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -110,6 +111,8 @@ scenario('Full', async ({ job, env }) => {
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     nftAuctionAndOffersJob
   )
+  job('create app', createApp).after(sudoHireLead)
+  job('update app', updateApp).after(sudoHireLead)
 
   const contentDirectoryJob = commentsAndReactionsJob // keep updated to last job above
 

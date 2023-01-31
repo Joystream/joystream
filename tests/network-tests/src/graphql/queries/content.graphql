@@ -53,6 +53,9 @@ fragment ChannelFields on Channel {
     iso
   }
   isCensored
+  app {
+    ...AppFields
+  }
   ownerMember {
     id
   }

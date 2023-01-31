@@ -141,6 +141,219 @@ export type AnnouncingPeriodStartedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
+export type App = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['ID']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['ID']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['ID']>
+  version: Scalars['Int']
+  /** The name of the App */
+  name: Scalars['String']
+  ownerMember?: Maybe<Membership>
+  ownerMemberId?: Maybe<Scalars['String']>
+  ownerCuratorGroup?: Maybe<CuratorGroup>
+  ownerCuratorGroupId?: Maybe<Scalars['String']>
+  /** Url where user can read more about the project or company for this app */
+  websiteUrl?: Maybe<Scalars['String']>
+  /** Url to the app */
+  useUri?: Maybe<Scalars['String']>
+  smallIcon?: Maybe<Scalars['String']>
+  mediumIcon?: Maybe<Scalars['String']>
+  bigIcon?: Maybe<Scalars['String']>
+  /** Tagline of the app */
+  oneLiner?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  termsOfService?: Maybe<Scalars['String']>
+  /** List of platforms on which the app will be available, e.g. [mobile, web, native] */
+  platforms?: Maybe<Array<Scalars['String']>>
+  category?: Maybe<Scalars['String']>
+  authKey?: Maybe<Scalars['String']>
+  channel: Channel
+  channelId: Scalars['String']
+}
+
+export type AppConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<AppEdge>
+  pageInfo: PageInfo
+}
+
+export type AppCreateInput = {
+  name: Scalars['String']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  websiteUrl?: Maybe<Scalars['String']>
+  useUri?: Maybe<Scalars['String']>
+  smallIcon?: Maybe<Scalars['String']>
+  mediumIcon?: Maybe<Scalars['String']>
+  bigIcon?: Maybe<Scalars['String']>
+  oneLiner?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  termsOfService?: Maybe<Scalars['String']>
+  platforms?: Maybe<Array<Scalars['String']>>
+  category?: Maybe<Scalars['String']>
+  authKey?: Maybe<Scalars['String']>
+  channel: Scalars['ID']
+}
+
+export type AppEdge = {
+  node: App
+  cursor: Scalars['String']
+}
+
+export enum AppOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  NameAsc = 'name_ASC',
+  NameDesc = 'name_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  WebsiteUrlAsc = 'websiteUrl_ASC',
+  WebsiteUrlDesc = 'websiteUrl_DESC',
+  UseUriAsc = 'useUri_ASC',
+  UseUriDesc = 'useUri_DESC',
+  SmallIconAsc = 'smallIcon_ASC',
+  SmallIconDesc = 'smallIcon_DESC',
+  MediumIconAsc = 'mediumIcon_ASC',
+  MediumIconDesc = 'mediumIcon_DESC',
+  BigIconAsc = 'bigIcon_ASC',
+  BigIconDesc = 'bigIcon_DESC',
+  OneLinerAsc = 'oneLiner_ASC',
+  OneLinerDesc = 'oneLiner_DESC',
+  DescriptionAsc = 'description_ASC',
+  DescriptionDesc = 'description_DESC',
+  TermsOfServiceAsc = 'termsOfService_ASC',
+  TermsOfServiceDesc = 'termsOfService_DESC',
+  CategoryAsc = 'category_ASC',
+  CategoryDesc = 'category_DESC',
+  AuthKeyAsc = 'authKey_ASC',
+  AuthKeyDesc = 'authKey_DESC',
+  ChannelAsc = 'channel_ASC',
+  ChannelDesc = 'channel_DESC',
+}
+
+export type AppUpdateInput = {
+  name?: Maybe<Scalars['String']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  websiteUrl?: Maybe<Scalars['String']>
+  useUri?: Maybe<Scalars['String']>
+  smallIcon?: Maybe<Scalars['String']>
+  mediumIcon?: Maybe<Scalars['String']>
+  bigIcon?: Maybe<Scalars['String']>
+  oneLiner?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  termsOfService?: Maybe<Scalars['String']>
+  platforms?: Maybe<Array<Scalars['String']>>
+  category?: Maybe<Scalars['String']>
+  authKey?: Maybe<Scalars['String']>
+  channel?: Maybe<Scalars['ID']>
+}
+
+export type AppWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  name_eq?: Maybe<Scalars['String']>
+  name_contains?: Maybe<Scalars['String']>
+  name_startsWith?: Maybe<Scalars['String']>
+  name_endsWith?: Maybe<Scalars['String']>
+  name_in?: Maybe<Array<Scalars['String']>>
+  websiteUrl_eq?: Maybe<Scalars['String']>
+  websiteUrl_contains?: Maybe<Scalars['String']>
+  websiteUrl_startsWith?: Maybe<Scalars['String']>
+  websiteUrl_endsWith?: Maybe<Scalars['String']>
+  websiteUrl_in?: Maybe<Array<Scalars['String']>>
+  useUri_eq?: Maybe<Scalars['String']>
+  useUri_contains?: Maybe<Scalars['String']>
+  useUri_startsWith?: Maybe<Scalars['String']>
+  useUri_endsWith?: Maybe<Scalars['String']>
+  useUri_in?: Maybe<Array<Scalars['String']>>
+  smallIcon_eq?: Maybe<Scalars['String']>
+  smallIcon_contains?: Maybe<Scalars['String']>
+  smallIcon_startsWith?: Maybe<Scalars['String']>
+  smallIcon_endsWith?: Maybe<Scalars['String']>
+  smallIcon_in?: Maybe<Array<Scalars['String']>>
+  mediumIcon_eq?: Maybe<Scalars['String']>
+  mediumIcon_contains?: Maybe<Scalars['String']>
+  mediumIcon_startsWith?: Maybe<Scalars['String']>
+  mediumIcon_endsWith?: Maybe<Scalars['String']>
+  mediumIcon_in?: Maybe<Array<Scalars['String']>>
+  bigIcon_eq?: Maybe<Scalars['String']>
+  bigIcon_contains?: Maybe<Scalars['String']>
+  bigIcon_startsWith?: Maybe<Scalars['String']>
+  bigIcon_endsWith?: Maybe<Scalars['String']>
+  bigIcon_in?: Maybe<Array<Scalars['String']>>
+  oneLiner_eq?: Maybe<Scalars['String']>
+  oneLiner_contains?: Maybe<Scalars['String']>
+  oneLiner_startsWith?: Maybe<Scalars['String']>
+  oneLiner_endsWith?: Maybe<Scalars['String']>
+  oneLiner_in?: Maybe<Array<Scalars['String']>>
+  description_eq?: Maybe<Scalars['String']>
+  description_contains?: Maybe<Scalars['String']>
+  description_startsWith?: Maybe<Scalars['String']>
+  description_endsWith?: Maybe<Scalars['String']>
+  description_in?: Maybe<Array<Scalars['String']>>
+  termsOfService_eq?: Maybe<Scalars['String']>
+  termsOfService_contains?: Maybe<Scalars['String']>
+  termsOfService_startsWith?: Maybe<Scalars['String']>
+  termsOfService_endsWith?: Maybe<Scalars['String']>
+  termsOfService_in?: Maybe<Array<Scalars['String']>>
+  platforms_containsAll?: Maybe<Array<Scalars['String']>>
+  platforms_containsNone?: Maybe<Array<Scalars['String']>>
+  platforms_containsAny?: Maybe<Array<Scalars['String']>>
+  category_eq?: Maybe<Scalars['String']>
+  category_contains?: Maybe<Scalars['String']>
+  category_startsWith?: Maybe<Scalars['String']>
+  category_endsWith?: Maybe<Scalars['String']>
+  category_in?: Maybe<Array<Scalars['String']>>
+  authKey_eq?: Maybe<Scalars['String']>
+  authKey_contains?: Maybe<Scalars['String']>
+  authKey_startsWith?: Maybe<Scalars['String']>
+  authKey_endsWith?: Maybe<Scalars['String']>
+  authKey_in?: Maybe<Array<Scalars['String']>>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  channel?: Maybe<ChannelWhereInput>
+  AND?: Maybe<Array<AppWhereInput>>
+  OR?: Maybe<Array<AppWhereInput>>
+  NOT?: Maybe<Array<AppWhereInput>>
+}
+
+export type AppWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type ApplicationFormQuestion = BaseGraphQlObject & {
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
@@ -6160,6 +6373,7 @@ export type Channel = BaseGraphQlObject & {
   channelStateBloatBond: Scalars['BigInt']
   /** Channel's privilege level */
   privilegeLevel?: Maybe<Scalars['Int']>
+  app?: Maybe<App>
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
   commentdeletedeventvideoChannel?: Maybe<Array<CommentDeletedEvent>>
   commentmoderatedeventvideoChannel?: Maybe<Array<CommentModeratedEvent>>
@@ -6894,6 +7108,7 @@ export type ChannelWhereInput = {
   channelNftCollectors_none?: Maybe<ChannelNftCollectorsWhereInput>
   channelNftCollectors_some?: Maybe<ChannelNftCollectorsWhereInput>
   channelNftCollectors_every?: Maybe<ChannelNftCollectorsWhereInput>
+  app?: Maybe<AppWhereInput>
   commentcreatedeventvideoChannel_none?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_some?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_every?: Maybe<CommentCreatedEventWhereInput>
@@ -8934,6 +9149,7 @@ export type CuratorGroup = BaseGraphQlObject & {
   channels: Array<Channel>
   nftCollectorInChannels: Array<ChannelNftCollectors>
   curators: Array<CuratorAgentPermissions>
+  appownerCuratorGroup?: Maybe<Array<App>>
   auctionbidcanceledeventownerCuratorGroup?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventownerCuratorGroup?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventownerCuratorGroup?: Maybe<Array<AuctionCanceledEvent>>
@@ -9020,6 +9236,9 @@ export type CuratorGroupWhereInput = {
   curators_none?: Maybe<CuratorAgentPermissionsWhereInput>
   curators_some?: Maybe<CuratorAgentPermissionsWhereInput>
   curators_every?: Maybe<CuratorAgentPermissionsWhereInput>
+  appownerCuratorGroup_none?: Maybe<AppWhereInput>
+  appownerCuratorGroup_some?: Maybe<AppWhereInput>
+  appownerCuratorGroup_every?: Maybe<AppWhereInput>
   auctionbidcanceledeventownerCuratorGroup_none?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_some?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_every?: Maybe<AuctionBidCanceledEventWhereInput>
@@ -13656,6 +13875,7 @@ export type Membership = BaseGraphQlObject & {
   memberEnglishAuctionSettledEvents: Array<EnglishAuctionSettledEvent>
   memberOpenAuctionAcceptedBidEvents: Array<OpenAuctionBidAcceptedEvent>
   memberBidMadeCompletingAuctionEvents: Array<BidMadeCompletingAuctionEvent>
+  appownerMember?: Maybe<Array<App>>
   auctioninitialOwner?: Maybe<Array<Auction>>
   auctionwinningMember?: Maybe<Array<Auction>>
   auctionbidcanceledeventmember?: Maybe<Array<AuctionBidCanceledEvent>>
@@ -14512,6 +14732,9 @@ export type MembershipWhereInput = {
   memberBidMadeCompletingAuctionEvents_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   memberBidMadeCompletingAuctionEvents_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   memberBidMadeCompletingAuctionEvents_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  appownerMember_none?: Maybe<AppWhereInput>
+  appownerMember_some?: Maybe<AppWhereInput>
+  appownerMember_every?: Maybe<AppWhereInput>
   auctioninitialOwner_none?: Maybe<AuctionWhereInput>
   auctioninitialOwner_some?: Maybe<AuctionWhereInput>
   auctioninitialOwner_every?: Maybe<AuctionWhereInput>
@@ -20370,6 +20593,9 @@ export type Query = {
   announcingPeriodStartedEvents: Array<AnnouncingPeriodStartedEvent>
   announcingPeriodStartedEventByUniqueInput?: Maybe<AnnouncingPeriodStartedEvent>
   announcingPeriodStartedEventsConnection: AnnouncingPeriodStartedEventConnection
+  apps: Array<App>
+  appByUniqueInput?: Maybe<App>
+  appsConnection: AppConnection
   applicationFormQuestionAnswers: Array<ApplicationFormQuestionAnswer>
   applicationFormQuestionAnswerByUniqueInput?: Maybe<ApplicationFormQuestionAnswer>
   applicationFormQuestionAnswersConnection: ApplicationFormQuestionAnswerConnection
@@ -21007,6 +21233,26 @@ export type QueryAnnouncingPeriodStartedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<AnnouncingPeriodStartedEventWhereInput>
   orderBy?: Maybe<Array<AnnouncingPeriodStartedEventOrderByInput>>
+}
+
+export type QueryAppsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<AppWhereInput>
+  orderBy?: Maybe<Array<AppOrderByInput>>
+}
+
+export type QueryAppByUniqueInputArgs = {
+  where: AppWhereUniqueInput
+}
+
+export type QueryAppsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<AppWhereInput>
+  orderBy?: Maybe<Array<AppOrderByInput>>
 }
 
 export type QueryApplicationFormQuestionAnswersArgs = {
