@@ -89,6 +89,8 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
   // Council bag ID
   const COUNCIL_BAG_ID = 'static:council'
 
+  Utils.assert(channelPayoutsUpdatedEvent.payloadDataObject, 'Payload data object missing!')
+
   // Upload channel payouts payload to the council bag
   await joystreamCli.reuploadAssets({
     bagId: COUNCIL_BAG_ID,
@@ -100,7 +102,7 @@ export default async function channelPayouts({ api, query, lock, env }: FlowProp
     query,
     COUNCIL_BAG_ID,
     rewardChannelId,
-    channelPayoutsUpdatedEvent.payloadDataObject.id
+    channelPayoutsUpdatedEvent.payloadDataObject?.id || ''
   )
 
   // Channel reward for given channel
