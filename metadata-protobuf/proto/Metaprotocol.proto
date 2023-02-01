@@ -168,34 +168,6 @@ message ChannelModeratorRemarked {
     }
 }
 
-message AppMetadata {
-    // Url where user can read more about the project or company for this app
-    optional string website_url = 2;
-    // Url to the app
-    optional string use_uri = 3;
-    optional string small_icon = 4;
-    optional string medium_icon = 5;
-    optional string big_icon = 6;
-    // Tagline for the app
-    optional string one_liner = 7;
-    optional string description = 8;
-    optional string terms_of_service = 9;
-    optional string auth_key = 10;
-    // List of platforms on which the app will be available, e.g. [mobile, web, native]
-    repeated string platforms = 11;
-    // E.g messaging, adult 
-    optional string category = 12;
-  }
-
-message CreateApp {
-    required string name = 1;
-    optional AppMetadata app_metadata = 3;
-}
-message UpdateApp {
-    required string app_id = 1;
-    optional AppMetadata app_metadata = 3;
-}
-
 message ChannelOwnerRemarked {
     // channel_owner_remark extrinsic would emit event containing
     // any one of the following serialized messages
@@ -204,7 +176,5 @@ message ChannelOwnerRemarked {
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         VideoReactionsPreference video_reactions_preference = 3;
         ModerateComment moderate_comment = 5;
-        CreateApp create_app = 6;
-        UpdateApp update_app = 7;
     }
 }
