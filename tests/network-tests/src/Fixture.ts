@@ -53,7 +53,7 @@ export abstract class BaseFixture {
   protected expectDispatchError(result: ISubmittableResult, errMessage: string): ISubmittableResult {
     const success = result.findRecord('system', 'ExtrinsicSuccess')
 
-    if (!success) {
+    if (success) {
       this.error(new Error(errMessage))
     }
 
