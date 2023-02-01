@@ -127,13 +127,14 @@ export class CreateLeadOpeningFixture extends BaseQueryNodeFixture {
       assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getOpeningMetadata(params))
     })
   }
+
   protected assertQueryNodeEventIsValid(qEvent: OpeningAddedEventFieldsFragment, i: number): void {
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.opening.runtimeId, this.events[i].event.data[0].toNumber())
   }
 
-  protected async assertQueryNodeEventsAreValid(qEvents: OpeningAddedEventFieldsFragment[]): Promise<void> {
-    await Promise.all(qEvents.map(async (qEvent, i) => this.assertQueryNodeEventIsValid(qEvent, i)))
+  protected assertQueryNodeEventsAreValid(qEvents: OpeningAddedEventFieldsFragment[]): void {
+    qEvents.map((qEvent, i) => this.assertQueryNodeEventIsValid(qEvent, i))
   }
 
   async runQueryNodeChecks(): Promise<void> {
