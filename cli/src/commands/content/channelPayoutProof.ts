@@ -29,7 +29,7 @@ export default class ChannelPayoutProof extends UploadCommandBase {
 
     const payoutProof = await channelPayoutProof(
       'URL',
-      `${storageNodeInfo.apiEndpoint}/files/${payloadDataObject.id}`,
+      `${storageNodeInfo.apiEndpoint}/files/${payloadDataObject?.id}`,
       Number(channelId)
     )
 

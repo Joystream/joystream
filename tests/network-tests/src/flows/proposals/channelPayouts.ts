@@ -18,8 +18,9 @@ import {
 import { FundCouncilBudgetFixture, FundCouncilBudgetParams } from '../../fixtures/council/FundCouncilBudgetFixture'
 import { FlowProps } from '../../Flow'
 import { Resource } from '../../Resources'
+import { Utils } from '../../utils'
 import { createJoystreamCli } from '../utils'
-import { QueryNodeApi } from 'src/QueryNodeApi'
+import { QueryNodeApi } from '../../QueryNodeApi'
 import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { ChannelPayoutsVector } from '@joystream/js/typings/ChannelPayoutsVector.schema'
 
@@ -123,6 +124,7 @@ export default async function channelPayouts({ api, query, lock }: FlowProps): P
     const COUNCIL_BAG_ID = 'static:council'
 
     // Upload channel payouts payload to the council bag
+    Utils.assert(channelPayoutsUpdatedEvent.payloadDataObject, 'Payload data object missing!')
     await joystreamCli.reuploadAssets({
       bagId: COUNCIL_BAG_ID,
       assets: [{ objectId: channelPayoutsUpdatedEvent.payloadDataObject.id, path: channelPayoutsPayloadFilePath }],

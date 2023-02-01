@@ -575,7 +575,7 @@ export type ChannelPayoutsUpdatedEventFragment = {
   minCashoutAllowed?: Types.Maybe<any>
   maxCashoutAllowed?: Types.Maybe<any>
   channelCashoutsEnabled?: Types.Maybe<boolean>
-  payloadDataObject: { id: string }
+  payloadDataObject?: Types.Maybe<{ id: string }>
 }
 
 export type GetMostRecentChannelPayoutsUpdatedEventQueryVariables = Types.Exact<{ [key: string]: never }>
