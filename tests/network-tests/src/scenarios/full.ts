@@ -74,28 +74,28 @@ scenario('Full', async ({ job, env }) => {
   ]).requires(councilFailuresJob)
 
   // Working groups
-  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+  const hireLeads = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
     proposalsJob
   )
-  job('openings and applications', openingsAndApplications).requires(sudoHireLead)
-  job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
-  job('group status', groupStatus).requires(sudoHireLead)
-  job('worker actions', workerActions).requires(sudoHireLead)
-  job('group budget', groupBudget).requires(sudoHireLead)
+  job('openings and applications', openingsAndApplications).requires(hireLeads)
+  job('upcoming openings', upcomingOpenings).requires(hireLeads)
+  job('group status', groupStatus).requires(hireLeads)
+  job('worker actions', workerActions).requires(hireLeads)
+  job('group budget', groupBudget).requires(hireLeads)
 
   // Memberships (depending on hired lead)
-  job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
+  job('updating member verification status', updatingVerificationStatus).after(hireLeads)
 
   // Forum:
-  job('forum categories', categories).requires(sudoHireLead)
-  job('forum threads', threads).requires(sudoHireLead)
-  job('forum thread tags', threadTags).requires(sudoHireLead)
-  job('forum posts', posts).requires(sudoHireLead)
-  job('forum moderation', moderation).requires(sudoHireLead)
+  job('forum categories', categories).requires(hireLeads)
+  job('forum threads', threads).requires(hireLeads)
+  job('forum thread tags', threadTags).requires(hireLeads)
+  job('forum posts', posts).requires(hireLeads)
+  job('forum moderation', moderation).requires(hireLeads)
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(hireLeads)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
   )

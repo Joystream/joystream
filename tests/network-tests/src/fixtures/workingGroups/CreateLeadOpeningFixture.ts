@@ -127,26 +127,29 @@ export class CreateLeadOpeningFixture extends BaseQueryNodeFixture {
       assertQueriedOpeningMetadataIsValid(qOpening.metadata, this.getOpeningMetadata(params))
     })
   }
-
   protected assertQueryNodeEventIsValid(qEvent: OpeningAddedEventFieldsFragment, i: number): void {
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.opening.runtimeId, this.events[i].event.data[0].toNumber())
   }
 
+  protected async assertQueryNodeEventsAreValid(qEvents: OpeningAddedEventFieldsFragment[]): Promise<void> {
+    await Promise.all(qEvents.map(async (qEvent, i) => this.assertQueryNodeEventIsValid(qEvent, i)))
+  }
+
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
     // Query the events
-    // const qEvents = await this.query.tryQueryWithTimeout(
-    //   () => this.query.getOpeningAddedEvents(this.events),
-    //   (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
-    // )
+    const qEvents = await this.query.tryQueryWithTimeout(
+      () => this.query.getOpeningAddedEvents(this.events),
+      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
+    )
 
     // // Query the openings
-    // const qOpenings = await this.query.getOpeningsByIds(
-    //   this.events.map((e) => e.event.data[0]),
-    //   this.group
-    // )
-    // this.assertQueriedOpeningsAreValid(qOpenings, qEvents)
+    const qOpenings = await this.query.getOpeningsByIds(
+      this.events.map((e) => e.event.data[0]),
+      this.group
+    )
+    this.assertQueriedOpeningsAreValid(qOpenings, qEvents)
   }
 
   protected getOpeningMetadata(params: OpeningParams): IOpeningMetadata | null {
