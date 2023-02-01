@@ -1530,7 +1530,8 @@ decl_module! {
         #[weight = WeightInfoContent::<T>::update_channel_payouts()]
         pub fn update_channel_payouts(
             origin,
-            params: UpdateChannelPayoutsParameters<T>
+            params: UpdateChannelPayoutsParameters<T>,
+            uploader_account: T::AccountId
         ) {
             ensure_root(origin)?;
 
@@ -1554,7 +1555,7 @@ decl_module! {
                 let upload_params = UploadParameters::<T> {
                     bag_id: storage::BagId::<T>::from(StaticBagId::Council),
                     object_creation_list: vec![payload.object_creation_params.clone()],
-                    state_bloat_bond_source_account_id: payload.uploader_account.clone(),
+                    state_bloat_bond_source_account_id: uploader_account.clone(),
                     expected_data_size_fee: payload.expected_data_size_fee,
                     expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
                 };
@@ -1583,7 +1584,8 @@ decl_module! {
 
             Self::deposit_event(RawEvent::ChannelPayoutsUpdated(
                 params,
-                payload_data_object_id
+                payload_data_object_id,
+                uploader_account
             ));
         }
 
@@ -4906,7 +4908,11 @@ decl_event!(
         ),
 
         // Rewards
-        ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, Option<DataObjectId>),
+        ChannelPayoutsUpdated(
+            UpdateChannelPayoutsParameters,
+            Option<DataObjectId>,
+            AccountId,
+        ),
         ChannelRewardUpdated(Balance, Balance, ChannelId),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),

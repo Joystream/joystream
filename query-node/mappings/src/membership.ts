@@ -22,11 +22,12 @@ import {
   deserializeMetadata,
   genericEventFields,
   getWorker,
-  inconsistentState,
   toNumber,
   logger,
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
+  getMemberById,
+  unexpectedData,
 } from './common'
 import {
   Membership,
@@ -64,17 +65,11 @@ import {
   processCreateCommentMessage,
   processEditCommentMessage,
   processDeleteCommentMessage,
+  processChannelPaymentFromMember,
 } from './content'
 import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-
-async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
-  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
-  if (!member) {
-    throw new Error(`Member(${id}) not found`)
-  }
-  return member
-}
+import { AccountId32, Balance } from '@polkadot/types/interfaces'
 
 async function saveMembershipExternalResources(
   store: DatabaseManager,
@@ -610,31 +605,31 @@ export async function members_LeaderInvitationQuotaUpdated({
 
 export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [memberId, message] = new Members.MemberRemarkedEvent(event).params
+  const [memberId, message, payment] = new Members.MemberRemarkedEvent(event).params
 
   try {
     const decodedMessage = MemberRemarked.decode(message.toU8a(true))
 
-    const metaTransactionInfo = await processMemberRemark(store, event, memberId, decodedMessage)
+    const metaTransactionInfo = await processMemberRemark(ctx, memberId, decodedMessage, payment.unwrapOr(undefined))
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
     // emit log event
     logger.info('Member remarked', { decodedMessage })
-  } catch (e) {
+  } catch (error) {
     // emit log event
-    logger.info(`Bad metadata for member's remark`, { e })
+    logger.info(`Bad metadata for member's remark`, { error })
 
     // save metaprotocol info
-    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for member's remark`)
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for member's remark, error: ${error}}`)
   }
 }
 
 async function processMemberRemark(
-  store: DatabaseManager,
-  event: SubstrateEvent,
+  { store, event }: EventContext & StoreContext,
   memberId: MemberId,
-  decodedMessage: MemberRemarked
+  decodedMessage: MemberRemarked,
+  payment?: [AccountId32, Balance]
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
   const messageType = decodedMessage.memberRemarked
 
@@ -666,6 +661,26 @@ async function processMemberRemark(
     return { commentDeletedId: comment.id }
   }
 
+  // Though the payments can be sent along with any arbitrary metadata message type,
+  // however they will only be processed if the message type is 'makeChannelPayment'
+  if (messageType === 'makeChannelPayment') {
+    if (!payment) {
+      unexpectedData(
+        `payment info should be set when sending remark with 'makeChannelPayment' message type`,
+        messageType
+      )
+    }
+
+    const channelPayment = await processChannelPaymentFromMember(
+      store,
+      event,
+      memberId,
+      decodedMessage.makeChannelPayment!,
+      payment
+    )
+    return { channelPaidId: channelPayment.payeeChannel?.id }
+  }
+
   if (messageType === 'createVideoCategory') {
     const createParams = decodedMessage.createVideoCategory as ICreateVideoCategory
 
@@ -675,5 +690,5 @@ async function processMemberRemark(
   }
 
   // unknown message type
-  return inconsistentState('Unsupported message type in member_remark action', messageType)
+  return unexpectedData('Unsupported message type in member_remark action', messageType)
 }

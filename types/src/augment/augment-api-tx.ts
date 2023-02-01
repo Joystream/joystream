@@ -1040,7 +1040,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1)
        * # </weight>
        **/
-      updateChannelPayouts: AugmentedSubmittable<(params: PalletContentUpdateChannelPayoutsParametersRecord | { commitment?: any; payload?: any; minCashoutAllowed?: any; maxCashoutAllowed?: any; channelCashoutsEnabled?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentUpdateChannelPayoutsParametersRecord]>;
+      updateChannelPayouts: AugmentedSubmittable<(params: PalletContentUpdateChannelPayoutsParametersRecord | { commitment?: any; payload?: any; minCashoutAllowed?: any; maxCashoutAllowed?: any; channelCashoutsEnabled?: any } | string | Uint8Array, uploaderAccount: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentUpdateChannelPayoutsParametersRecord, AccountId32]>;
       /**
        * Extrinsic for updating channel privilege level (requires lead access)
        * 
@@ -2748,7 +2748,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      memberRemark: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
+      memberRemark: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array, payment: Option<ITuple<[AccountId32, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes, Option<ITuple<[AccountId32, u128]>>]>;
       /**
        * Remove staking account for a member.
        * 

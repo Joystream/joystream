@@ -279,7 +279,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       ChannelOwnerRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
       ChannelPausedFeaturesUpdatedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>, Bytes]>;
-      ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
+      ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>, AccountId32]>;
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
       ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
       ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u128, u64]>;
@@ -287,7 +287,6 @@ declare module '@polkadot/api-base/types/events' {
       ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferCommitmentParametersBTreeMap]>;
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
-      CouncilRewardClaimed: AugmentedEvent<ApiType, [u64, u128]>;
       CreatorTokenIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64]>;
       CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>]>;
       CuratorGroupCreated: AugmentedEvent<ApiType, [u64]>;
@@ -1299,7 +1298,7 @@ declare module '@polkadot/api-base/types/events' {
       MemberCreated: AugmentedEvent<ApiType, [u64, PalletMembershipCreateMemberParameters, u32]>;
       MemberInvited: AugmentedEvent<ApiType, [u64, PalletMembershipInviteMembershipParameters]>;
       MemberProfileUpdated: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
-      MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
+      MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes, Option<ITuple<[AccountId32, u128]>>]>;
       MembershipBought: AugmentedEvent<ApiType, [u64, PalletMembershipBuyMembershipParameters, u32]>;
       MembershipGifted: AugmentedEvent<ApiType, [u64, PalletMembershipGiftMembershipParameters]>;
       MembershipPriceUpdated: AugmentedEvent<ApiType, [u128]>;

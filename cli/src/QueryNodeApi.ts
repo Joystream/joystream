@@ -65,6 +65,9 @@ import {
   GetChannelPayoutsUpdatedEventByCommitmentQuery,
   GetChannelPayoutsUpdatedEventByCommitmentQueryVariables,
   GetChannelPayoutsUpdatedEventByCommitment,
+  GetChannelByRewardAccount,
+  GetChannelByRewardAccountQuery,
+  GetChannelByRewardAccountQueryVariables,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -145,6 +148,14 @@ export default class QueryNodeApi {
       GetChannelById,
       { channelId },
       'channelByUniqueInput'
+    )
+  }
+
+  async getChannelByRewardAccount(rewardAccount: string): Promise<ChannelFieldsFragment | null> {
+    return await this.firstEntityQuery<GetChannelByRewardAccountQuery, GetChannelByRewardAccountQueryVariables>(
+      GetChannelByRewardAccount,
+      { rewardAccount },
+      'channels'
     )
   }
 
