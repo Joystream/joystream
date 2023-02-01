@@ -151,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full']
+        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage']
         include:
           - scenario: 'full'
             no_storage: 'false'
