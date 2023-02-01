@@ -61,8 +61,6 @@ scenario('Full', async ({ job, env }) => {
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
 
-  // TODO: Below flows depend on sudo which has been disabled, to be fixed
-
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
     proposals,
@@ -74,9 +72,7 @@ scenario('Full', async ({ job, env }) => {
   ]).requires(councilFailuresJob)
 
   // Working groups
-  const hireLeads = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    proposalsJob
-  )
+  const hireLeads = job('hire leads', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(proposalsJob)
   job('openings and applications', openingsAndApplications).requires(hireLeads)
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)

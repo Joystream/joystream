@@ -15,17 +15,11 @@ cd $SCRIPT_PATH
 export DATA_PATH=${DATA_PATH:=$(pwd)/data}
 mkdir -p ${DATA_PATH}
 
-# Initial account balance for sudo account
-SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=100000000}
-SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
-SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
-
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=100000000}
-TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:=$SUDO_ACCOUNT_URI}
+TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Alice"}
 TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
->&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
 
 # Prevent joystream cli from prompting
@@ -36,8 +30,6 @@ export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
 #######################################
 # create initial-balances.json files
 # Globals:
-#   SUDO_INITIAL_BALANCES
-#   SUDO_ACCOUNT
 #   TREASURY_ACCOUNT
 #   TREASURY_INITIAL_BALANCE
 #   DATA_PATH
@@ -47,7 +39,6 @@ export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
 function create_initial_config {
   echo "{
     \"balances\":[
-      [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
       [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
     ],
     \"vesting\": []
@@ -58,7 +49,6 @@ function create_initial_config {
 #######################################
 # create human-readable chainspec file
 # Globals:
-#   SUDO_ACCOUNT
 #   DATA_PATH
 # Arguments:
 #   None
@@ -69,7 +59,6 @@ function create_chainspec_file {
 	   joystream/node:${RUNTIME_TAG} \
 	   new \
 	   --authorities //Alice \
-	   --sudo-account ${SUDO_ACCOUNT} \
 	   --deployment dev \
 	   --chain-spec-path /data/chain-spec.json \
 	   --initial-balances-path /data/initial-balances.json
