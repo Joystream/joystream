@@ -551,6 +551,11 @@ decl_module! {
         pub fn opt_out_of_voting(origin) -> Result<(), Error<T, I>> {
             let account_id = EnsureChecks::<T, I>::ensure_regular_user(origin)?;
 
+            if AccountsOptedOut::<T, I>::contains_key(&account_id) {
+                // No-op
+                return Ok(())
+            }
+
             //
             // == MUTATION SAFE ==
             //
