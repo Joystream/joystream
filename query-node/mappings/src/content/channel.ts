@@ -49,12 +49,13 @@ import {
   unsetAssetRelations,
   mapAgentPermission,
   processAppActionMetadata,
+  generateAppActionCommitment,
+  metadataToBytes,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import { processUpdateApp, processCreateAppMessage } from './app'
-import { generateAppActionCommitment, metadataToBytes } from '@joystream/js/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -91,7 +92,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     if (appAction && Object.keys(appAction).length) {
       const appCommitment = generateAppActionCommitment(
         channelOwner.ownerMember?.id ?? channelOwner.ownerCuratorGroup?.id ?? '',
-        channelCreationParameters.assets,
+        channelCreationParameters.assets.toU8a(),
         metadataToBytes(ChannelMetadata, appAction.channelMetadata ?? {}),
         metadataToBytes(AppActionMetadata, appAction.metadata ?? {})
       )

@@ -43,16 +43,16 @@ import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentIterableEnumsChannelActionPermission,
-  PalletContentStorageAssetsRecord,
 } from '@polkadot/types/lookup'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { getSortedDataObjectsByIds } from '../storage/utils'
-import { BTreeSet, Option } from '@polkadot/types'
+import { BTreeSet } from '@polkadot/types'
 import { DataObjectId } from '@joystream/types/primitives'
 import { getAppById } from './app'
 import { Bytes } from '@polkadot/types/primitive'
+import { u8aToHex, stringToHex } from '@polkadot/util'
 import { createType } from '@joystream/types'
 
 const ASSET_TYPES = {
@@ -779,4 +779,22 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
 export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
+}
+
+export function generateAppActionCommitment(
+  creatorId: string,
+  assets: Uint8Array,
+  rawAction: Bytes,
+  rawAppActionMetadata: Bytes
+): string {
+  const rawCommitment = [creatorId, u8aToHex(assets), u8aToHex(rawAction), u8aToHex(rawAppActionMetadata)]
+  return stringToHex(JSON.stringify(rawCommitment))
+}
+
+export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
+  return createType('Bytes', metadataToString(metaClass, obj))
+}
+
+export function metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
+  return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
 }

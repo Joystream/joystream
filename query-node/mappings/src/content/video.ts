@@ -43,20 +43,21 @@ import {
   VideoSubtitle,
 } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
-import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, invalidMetadata,logger } from '../common'
+import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
+  generateAppActionCommitment,
+  metadataToBytes,
   processAppActionMetadata,
   processVideoMetadata,
   unsetAssetRelations,
   videoRelationsForCounters,
 } from './utils'
 import { BTreeSet } from '@polkadot/types'
-import { generateAppActionCommitment, metadataToBytes } from '@joystream/js/utils'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor
@@ -142,7 +143,7 @@ export async function processCreateVideoMessage(
     const videoMetadata = metadata.contentMetadata?.videoMetadata ?? {}
     const appCommitment = generateAppActionCommitment(
       channel.id ?? '',
-      contentCreationParameters.assets,
+      contentCreationParameters.assets.toU8a(),
       metadataToBytes(ContentMetadata, metadata.contentMetadata as IContentMetadata),
       metadataToBytes(AppActionMetadata, metadata.metadata ?? {})
     )

@@ -22,9 +22,9 @@ import { createJoystreamCli } from '../utils'
 import { Utils } from '../../utils'
 import { createType } from '@joystream/types'
 import { ed25519PairFromString, ed25519Sign } from '@polkadot/util-crypto'
-import { u8aToHex } from '@polkadot/util'
+import { u8aToHex, stringToHex } from '@polkadot/util'
 import { CreateChannelsAsMemberFixture } from '../../misc/createChannelsAsMemberFixture'
-import { generateAppActionCommitment } from '@joystream/js/utils'
+import { Bytes } from '@polkadot/types'
 
 const sufficientTopupAmount = new BN(10_000_000_000_000)
 
@@ -168,7 +168,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   }
   const appChannelCommitment = generateAppActionCommitment(
     member.memberId.toString(),
-    createType('Option<PalletContentStorageAssetsRecord>', null),
+    createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
     Utils.metadataToBytes(ChannelMetadata, channelInput),
     Utils.metadataToBytes(AppActionMetadata, appActionMeta)
   )
@@ -217,7 +217,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   }
   const appVideoCommitment = generateAppActionCommitment(
     channelId.toString(),
-    createType('Option<PalletContentStorageAssetsRecord>', null),
+    createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
     Utils.metadataToBytes(ContentMetadata, contentMetadata),
     Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta)
   )
@@ -272,4 +272,14 @@ async function getChannelId(api: Api, query: QueryNodeApi, member: IMember) {
   const [channelId] = createChannelsAndVideos.getCreatedItems().channelIds
 
   return channelId
+}
+
+export function generateAppActionCommitment(
+  creatorId: string,
+  assets: Uint8Array,
+  rawAction: Bytes,
+  rawAppActionMetadata: Bytes
+): string {
+  const rawCommitment = [creatorId, u8aToHex(assets), u8aToHex(rawAction), u8aToHex(rawAppActionMetadata)]
+  return stringToHex(JSON.stringify(rawCommitment))
 }

@@ -37,7 +37,7 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
-import { createApp, createAppAction, updateApp } from '../flows/content/app'
+import { createApp, createAppActions, updateApp } from '../flows/content/app'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
