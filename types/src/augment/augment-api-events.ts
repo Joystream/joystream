@@ -2291,6 +2291,10 @@ declare module '@polkadot/api-base/types/events' {
     };
     referendum: {
       /**
+       * Account permanently opted out of voting in referendum.
+       **/
+      AccountOptedOutOfVoting: AugmentedEvent<ApiType, [AccountId32]>;
+      /**
        * Referendum ended and winning option was selected
        **/
       ReferendumFinished: AugmentedEvent<ApiType, [Vec<PalletReferendumOptionResult>]>;

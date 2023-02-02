@@ -1036,6 +1036,10 @@ declare module '@polkadot/api-base/types/storage' {
     };
     referendum: {
       /**
+       * Accounts that permanently opted out of voting in referendum.
+       **/
+      accountsOptedOut: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Null>, [AccountId32]>;
+      /**
        * Current referendum stage.
        **/
       stage: AugmentedQuery<ApiType, () => Observable<PalletReferendumReferendumStage>, []>;
