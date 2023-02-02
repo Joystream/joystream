@@ -104,11 +104,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
   }
 
   async execute(): Promise<void> {
-    const initialInvitationBalance = await this.api.query.members.initialInvitationBalance()
-    // Top up working group budget to allow funding invited members
-    await this.api.makeSudoCall(
-      this.api.tx.membershipWorkingGroup.setBudget(initialInvitationBalance.muln(this.accounts.length))
-    )
+    // Membership WG balance MUST be already set up to support addition of new members
     // Load initial invites count
     this.initialInvitesCount = (await this.api.query.members.membershipById(this.inviterContext.memberId))
       .unwrap()

@@ -5058,7 +5058,8 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       setStorageOperatorMetadata: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, storageBucketId: u64 | AnyNumber | Uint8Array, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, Bytes]>;
       /**
-       * Create a dynamic bag. Development mode.
+       * Deposit a StorageOperatorRemarked event
+       * containing a generic message.
        * <weight>
        * 
        * ## Weight

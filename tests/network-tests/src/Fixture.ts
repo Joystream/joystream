@@ -54,15 +54,7 @@ export abstract class BaseFixture {
     const success = result.findRecord('system', 'ExtrinsicSuccess')
 
     if (success) {
-      const sudid = result.findRecord('sudo', 'Sudid')
-      if (sudid) {
-        const dispatchResult = sudid.event.data[0] as DispatchResult
-        if (dispatchResult.isOk) {
-          this.error(new Error(errMessage))
-        }
-      } else {
-        this.error(new Error(errMessage))
-      }
+      this.error(new Error(errMessage))
     }
 
     return result
@@ -71,16 +63,7 @@ export abstract class BaseFixture {
   protected expectDispatchSuccess(result: ISubmittableResult, errMessage: string): ISubmittableResult {
     const success = result.findRecord('system', 'ExtrinsicSuccess')
 
-    if (success) {
-      const sudid = result.findRecord('sudo', 'Sudid')
-      if (sudid) {
-        const dispatchResult = sudid.event.data[0] as DispatchResult
-        if (dispatchResult.isError) {
-          this.error(new Error(errMessage))
-          // Log DispatchError details
-        }
-      }
-    } else {
+    if (!success) {
       this.error(new Error(errMessage))
       // Log DispatchError
     }

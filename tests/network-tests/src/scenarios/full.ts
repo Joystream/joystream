@@ -5,11 +5,8 @@ import moderation from '../flows/forum/moderation'
 import threadTags from '../flows/forum/threadTags'
 import leadOpening from '../flows/working-groups/leadOpening'
 import buyingMemberships from '../flows/membership/buyingMemberships'
-import creatingMembers from '../flows/membership/creatingMembers'
-import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
-import invitingMebers from '../flows/membership/invitingMembers'
 import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
 import openingsAndApplications from '../flows/working-groups/openingsAndApplications'
@@ -17,7 +14,6 @@ import upcomingOpenings from '../flows/working-groups/upcomingOpenings'
 import groupStatus from '../flows/working-groups/groupStatus'
 import workerActions from '../flows/working-groups/workerActions'
 import groupBudget from '../flows/working-groups/groupBudget'
-import terminateLeads from '../flows/working-groups/terminateLeads'
 import proposals from '../flows/proposals'
 import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
@@ -65,9 +61,6 @@ scenario('Full', async ({ job, env }) => {
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
 
-  return
-  // Below flows depend on sudo which has been disabled. So skipping for now.
-
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
     proposals,
@@ -79,31 +72,26 @@ scenario('Full', async ({ job, env }) => {
   ]).requires(councilFailuresJob)
 
   // Working groups
-  // Before any other jobs hire then terminate all WG leads
-  const terminateLeadsJob = job('terminate working-group leads', terminateLeads).after(
-    job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(proposalsJob)
-  )
-  // Re-hire leads then go on
-  const sudoHireLead = job('sudo re-hire leads', leadOpening(true)).after(terminateLeadsJob)
-  job('openings and applications', openingsAndApplications).requires(sudoHireLead)
-  job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
-  job('group status', groupStatus).requires(sudoHireLead)
-  job('worker actions', workerActions).requires(sudoHireLead)
-  job('group budget', groupBudget).requires(sudoHireLead)
+  const hireLeads = job('hire leads', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(proposalsJob)
+  job('openings and applications', openingsAndApplications).requires(hireLeads)
+  job('upcoming openings', upcomingOpenings).requires(hireLeads)
+  job('group status', groupStatus).requires(hireLeads)
+  job('worker actions', workerActions).requires(hireLeads)
+  job('group budget', groupBudget).requires(hireLeads)
 
   // Memberships (depending on hired lead)
-  job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
+  job('updating member verification status', updatingVerificationStatus).after(hireLeads)
 
   // Forum:
-  job('forum categories', categories).requires(sudoHireLead)
-  job('forum threads', threads).requires(sudoHireLead)
-  job('forum thread tags', threadTags).requires(sudoHireLead)
-  job('forum posts', posts).requires(sudoHireLead)
-  job('forum moderation', moderation).requires(sudoHireLead)
+  job('forum categories', categories).requires(hireLeads)
+  job('forum threads', threads).requires(hireLeads)
+  job('forum thread tags', threadTags).requires(hireLeads)
+  job('forum posts', posts).requires(hireLeads)
+  job('forum moderation', moderation).requires(hireLeads)
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(hireLeads)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
   )

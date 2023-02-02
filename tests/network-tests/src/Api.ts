@@ -90,7 +90,6 @@ export class ApiFactory {
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string,
     miniSecret: string
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
@@ -112,7 +111,7 @@ export class ApiFactory {
         const version = await api.rpc.state.getRuntimeVersion()
         console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
+        return new ApiFactory(api, treasuryAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -122,11 +121,10 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
-    this.keyring.addFromUri(sudoAccountUri)
     this.miniSecret = miniSecret
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
@@ -280,11 +278,6 @@ export class Api {
     return results
   }
 
-  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
-    const sudo = await this.api.query.sudo.key()
-    return this.signAndSend(this.api.tx.sudo.sudo(tx), sudo.unwrap())
-  }
-
   public enableDebugTxLogs(): void {
     this.sender.setLogLevel(LogLevel.Debug)
   }
@@ -425,14 +418,6 @@ export class Api {
     amount: BN
   }): Promise<ISubmittableResult> {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
-  }
-
-  public async grantTreasuryWorkingBalance(): Promise<ISubmittableResult> {
-    return this.sudoSetBalance(this.treasuryAccount, new BN(100000000), new BN(0))
-  }
-
-  public async sudoSetBalance(who: string, free: BN, reserved: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.balances.setBalance(who, free, reserved))
   }
 
   public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
@@ -579,6 +564,11 @@ export class Api {
         //
       }
     }
+  }
+
+  public async getNextOpeningId(group: WorkingGroupModuleName): Promise<u64> {
+    const openingId = await this.api.query[group].nextOpeningId()
+    return openingId
   }
 
   public async getOpening(group: WorkingGroupModuleName, id: OpeningId): Promise<Opening> {
@@ -847,6 +837,8 @@ export class Api {
     initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
   ): Promise<ISubmittableResult[]> {
     // path to append to base SURI
+    const debug = extendDebug('api-factory')
+    debug(`assigning Worker WellKnown Account for ${group}`)
     const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
     const account = this.createCustomKeyPair(uri).address
     return Promise.all([
