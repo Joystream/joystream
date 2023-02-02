@@ -343,6 +343,12 @@ decl_module! {
         const DefaultChannelWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
             T::DefaultGlobalDailyNftLimit::get();
 
+        /// Export const - min cashout allowed limits
+        const MinimumCashoutAllowedLimit: BalanceOf<T> = T::MinimumCashoutAllowedLimit::get();
+
+        /// Export const - max cashout allowed limits
+        const MaximumCashoutAllowedLimit: BalanceOf<T> = T::MaximumCashoutAllowedLimit::get();
+
         // ======
         // Next set of extrinsics can only be invoked by lead.
         // ======
