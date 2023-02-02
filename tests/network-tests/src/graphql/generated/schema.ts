@@ -6979,8 +6979,8 @@ export type ChannelPayoutsUpdatedEvent = BaseGraphQlObject & {
   indexInBlock: Scalars['Int']
   /** Merkle root of the channel payouts */
   commitment?: Maybe<Scalars['String']>
-  payloadDataObject: StorageDataObject
-  payloadDataObjectId: Scalars['String']
+  payloadDataObject?: Maybe<StorageDataObject>
+  payloadDataObjectId?: Maybe<Scalars['String']>
   /** Size of the serialized channel payouts payload */
   payloadSize?: Maybe<Scalars['BigInt']>
   /** Hash of the serialized channel payouts payload */
@@ -6991,8 +6991,6 @@ export type ChannelPayoutsUpdatedEvent = BaseGraphQlObject & {
   maxCashoutAllowed?: Maybe<Scalars['BigInt']>
   /** Can channel cashout the rewards */
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
-  /** Is the commitment valid. Most recent commitment would be considered valid */
-  isCommitmentValid: Scalars['Boolean']
 }
 
 export type ChannelPayoutsUpdatedEventConnection = {
@@ -7007,13 +7005,12 @@ export type ChannelPayoutsUpdatedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   commitment?: Maybe<Scalars['String']>
-  payloadDataObject: Scalars['ID']
+  payloadDataObject?: Maybe<Scalars['ID']>
   payloadSize?: Maybe<Scalars['String']>
   payloadHash?: Maybe<Scalars['String']>
   minCashoutAllowed?: Maybe<Scalars['String']>
   maxCashoutAllowed?: Maybe<Scalars['String']>
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
-  isCommitmentValid: Scalars['Boolean']
 }
 
 export type ChannelPayoutsUpdatedEventEdge = {
@@ -7050,8 +7047,6 @@ export enum ChannelPayoutsUpdatedEventOrderByInput {
   MaxCashoutAllowedDesc = 'maxCashoutAllowed_DESC',
   ChannelCashoutsEnabledAsc = 'channelCashoutsEnabled_ASC',
   ChannelCashoutsEnabledDesc = 'channelCashoutsEnabled_DESC',
-  IsCommitmentValidAsc = 'isCommitmentValid_ASC',
-  IsCommitmentValidDesc = 'isCommitmentValid_DESC',
 }
 
 export type ChannelPayoutsUpdatedEventUpdateInput = {
@@ -7066,7 +7061,6 @@ export type ChannelPayoutsUpdatedEventUpdateInput = {
   minCashoutAllowed?: Maybe<Scalars['String']>
   maxCashoutAllowed?: Maybe<Scalars['String']>
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
-  isCommitmentValid?: Maybe<Scalars['Boolean']>
 }
 
 export type ChannelPayoutsUpdatedEventWhereInput = {
@@ -7143,8 +7137,6 @@ export type ChannelPayoutsUpdatedEventWhereInput = {
   maxCashoutAllowed_in?: Maybe<Array<Scalars['BigInt']>>
   channelCashoutsEnabled_eq?: Maybe<Scalars['Boolean']>
   channelCashoutsEnabled_in?: Maybe<Array<Scalars['Boolean']>>
-  isCommitmentValid_eq?: Maybe<Scalars['Boolean']>
-  isCommitmentValid_in?: Maybe<Array<Scalars['Boolean']>>
   payloadDataObject?: Maybe<StorageDataObjectWhereInput>
   AND?: Maybe<Array<ChannelPayoutsUpdatedEventWhereInput>>
   OR?: Maybe<Array<ChannelPayoutsUpdatedEventWhereInput>>

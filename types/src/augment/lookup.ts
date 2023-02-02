@@ -488,7 +488,8 @@ export default {
       ReferendumFinished: 'Vec<PalletReferendumOptionResult>',
       VoteCast: '(AccountId32,H256,u128)',
       VoteRevealed: '(AccountId32,u64,Bytes)',
-      StakeReleased: 'AccountId32'
+      StakeReleased: 'AccountId32',
+      AccountOptedOutOfVoting: 'AccountId32'
     }
   },
   /**
@@ -2610,7 +2611,8 @@ export default {
         salt: 'Bytes',
         voteOptionId: 'u64',
       },
-      release_vote_stake: 'Null'
+      release_vote_stake: 'Null',
+      opt_out_of_voting: 'Null'
     }
   },
   /**
@@ -4081,7 +4083,7 @@ export default {
    * Lookup536: pallet_referendum::Error<T, I>
    **/
   PalletReferendumError: {
-    _enum: ['BadOrigin', 'ReferendumNotRunning', 'RevealingNotInProgress', 'ConflictStakesOnAccount', 'InsufficientBalanceToStake', 'InsufficientStake', 'InvalidReveal', 'InvalidVote', 'VoteNotExisting', 'AlreadyVotedThisCycle', 'UnstakingVoteInSameCycle', 'SaltTooLong', 'UnstakingForbidden']
+    _enum: ['BadOrigin', 'ReferendumNotRunning', 'RevealingNotInProgress', 'ConflictStakesOnAccount', 'InsufficientBalanceToStake', 'InsufficientStake', 'InvalidReveal', 'InvalidVote', 'VoteNotExisting', 'AlreadyVotedThisCycle', 'UnstakingVoteInSameCycle', 'SaltTooLong', 'UnstakingForbidden', 'AccountAlreadyOptedOutOfVoting']
   },
   /**
    * Lookup537: pallet_membership::MembershipObject<sp_core::crypto::AccountId32, primitive_types::H256>

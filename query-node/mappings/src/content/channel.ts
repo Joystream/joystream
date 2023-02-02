@@ -461,7 +461,6 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
     maxCashoutAllowed,
     channelCashoutsEnabled,
     payloadDataObject,
-    isCommitmentValid: true,
   })
 
   // save new channel payout parameters record (with new commitment)

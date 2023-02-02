@@ -327,6 +327,9 @@ type UpdateChannelPayoutsProposalDetails @variant {
 
   "Can channel cashout the rewards"
   channelCashoutsEnabled: Boolean
+
+  "The hash of the channel payout payload file"
+  payloadHash: String
 }
 
 union ProposalDetails =
