@@ -66,6 +66,7 @@ import {
   CreateVideoCategory,
   DeleteApp,
   IAppMetadata,
+  LeadRemarked,
   MemberRemarked,
   UpdateApp,
 } from '@joystream/metadata-protobuf'
@@ -811,7 +812,7 @@ export class Api {
       throw new Error('invalid member id')
     }
 
-    const meta = new MemberRemarked({
+    const meta = new LeadRemarked({
       createApp: new CreateApp({
         name,
         appMetadata,
@@ -819,7 +820,7 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
       memberAccount.toString()
     )
   }
@@ -830,7 +831,7 @@ export class Api {
       throw new Error('invalid member id')
     }
 
-    const meta = new MemberRemarked({
+    const meta = new LeadRemarked({
       updateApp: new UpdateApp({
         appId,
         appMetadata,
@@ -838,7 +839,7 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
       memberAccount.toString()
     )
   }
@@ -849,14 +850,14 @@ export class Api {
       throw new Error('invalid member id')
     }
 
-    const meta = new MemberRemarked({
+    const meta = new LeadRemarked({
       deleteApp: new DeleteApp({
         appId,
       }),
     })
 
     return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
       memberAccount.toString()
     )
   }

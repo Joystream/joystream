@@ -7,11 +7,13 @@ import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,
+  ILeadRemarked,
   IOpeningMetadata,
   IRemoveUpcomingOpening,
   ISetGroupMetadata,
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
+  LeadRemarked,
   OpeningMetadata,
   RemarkMetadataAction,
   WorkingGroupMetadataAction,
@@ -85,11 +87,13 @@ import {
   BudgetSpendingEvent,
   LeaderSetEvent,
   WorkerStatusLeaving,
+  MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { moderatePost } from './forum'
+import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -688,6 +692,17 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
+export async function contentWorkingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [metadataByte] = new WorkingGroups.LeadRemarkedEvent(event).params
+
+  const leadRemarkMetadata = deserializeMetadata(LeadRemarked, metadataByte)
+  if (leadRemarkMetadata) {
+    await processLeadRemarked(store, event, leadRemarkMetadata)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
+}
+
 export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
   const [metadataByte] = new WorkingGroups.LeadRemarkedEvent(event).params
   const group = await getWorkingGroup(store, event)
@@ -999,4 +1014,20 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   group.budget = group.budget.sub(amount)
 
   await store.save<WorkingGroup>(group)
+}
+
+async function processLeadRemarked(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  decodedMetadata: DecodedMetadataObject<ILeadRemarked> | null
+) {
+  if (decodedMetadata?.createApp) {
+    await processCreateAppMessage(store, event, decodedMetadata.createApp)
+  }
+  if (decodedMetadata?.updateApp) {
+    await processUpdateAppMessage(store, decodedMetadata.updateApp)
+  }
+  if (decodedMetadata?.deleteApp) {
+    await processDeleteAppMessage(store, decodedMetadata.deleteApp)
+  }
 }

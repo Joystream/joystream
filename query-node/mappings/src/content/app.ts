@@ -1,22 +1,21 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { CreateApp, ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { ICreateApp, IDeleteApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
-import { MemberId } from '@joystream/types/primitives'
 import { App } from 'query-node/dist/model'
 import { logger } from '../common'
 
 export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  memberId: MemberId,
-  message: ICreateApp
+  metadata: DecodedMetadataObject<ICreateApp>
 ): Promise<void> {
-  const { name, appMetadata } = message
-  const appId = await getAppId(store, event)
+  const { name, appMetadata } = metadata
+  const appId = `${event.blockNumber}-${event.indexInBlock}`
 
   const isAppExists = await store.get(App, {
     where: {
-      name: name,
+      name: metadata?.name,
     },
   })
 
@@ -40,22 +39,20 @@ export async function processCreateAppMessage(
     category: appMetadata?.category || undefined,
     authKey: appMetadata?.authKey || undefined,
   })
-  await store.save<CreateApp>(newApp)
+  await store.save<App>(newApp)
   logger.info('App has been created', { name })
 }
 
 export async function processUpdateAppMessage(
   store: DatabaseManager,
-  event: SubstrateEvent,
-  memberId: MemberId,
-  message: IUpdateApp
+  metadata: DecodedMetadataObject<IUpdateApp>
 ): Promise<void> {
-  const { appId, appMetadata } = message
+  const { appId, appMetadata } = metadata
 
-  const app = await getAppByIdAndMemberId(store, appId, memberId)
+  const app = await getAppByIdAndMemberId(store, appId)
 
   if (!app) {
-    logger.error("App doesn't exists or doesn't belong to the member", { appId, memberId: memberId.toString() })
+    logger.error("App doesn't exists or doesn't belong to the member", { appId })
     return
   }
 
@@ -81,45 +78,25 @@ export async function processUpdateAppMessage(
 
 export async function processDeleteAppMessage(
   store: DatabaseManager,
-  event: SubstrateEvent,
-  memberId: MemberId,
-  message: IDeleteApp
+  metadata: DecodedMetadataObject<IDeleteApp>
 ): Promise<void> {
-  const { appId } = message
+  const { appId } = metadata
 
-  const app = await getAppByIdAndMemberId(store, appId, memberId)
+  const app = await getAppByIdAndMemberId(store, appId)
 
   if (!app) {
-    logger.error("App doesn't exists or doesn't belong to the member", { appId, memberId: memberId.toString() })
+    logger.error("App doesn't exists or doesn't belong to the member", { appId })
     return
   }
 
-  await store.remove<App>(new App({ id: appId }))
+  await store.remove<App>(app)
   logger.info('App has been removed', { appId })
 }
 
-async function getAppId(store: DatabaseManager, event: SubstrateEvent): Promise<string> {
-  let appId = `${event.blockNumber}-${event.indexInBlock}`
-  let tries = 0
-
-  // make sure app id is unique
-  while (await store.get<App>(App, { where: { id: appId } })) {
-    tries++
-    appId = `${event.blockNumber}-${event.indexInBlock}-${tries}`
-  }
-
-  return appId
-}
-
-async function getAppByIdAndMemberId(
-  store: DatabaseManager,
-  appId: string,
-  memberId: MemberId
-): Promise<App | undefined> {
+async function getAppByIdAndMemberId(store: DatabaseManager, appId: string): Promise<App | undefined> {
   const app = await store.get(App, {
     where: {
       id: appId,
-      createdById: memberId.toString(),
     },
   })
 

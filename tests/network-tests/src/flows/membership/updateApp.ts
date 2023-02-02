@@ -38,7 +38,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
   const updatedMetadata: Partial<AppMetadata> = {
     description: 'updated description',
     oneLiner: 'updated one liner',
-    platforms: [],
+    platforms: ['tv'],
   }
 
   const newAppId = apps?.[0]?.id

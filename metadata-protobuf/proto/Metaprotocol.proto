@@ -144,6 +144,14 @@ message DeleteApp {
     required string app_id = 1;
 }
 
+message LeadRemarked {
+    oneof lead_remarked {
+        CreateApp create_app = 1;
+        UpdateApp update_app = 2;
+        DeleteApp delete_app = 3;
+    }
+}
+
 message MemberRemarked {
     // member_remark extrinsic would emit event containing
     // any one of the following serialized messages
@@ -154,9 +162,6 @@ message MemberRemarked {
         EditComment edit_comment = 4;
         DeleteComment delete_comment = 5;
         CreateVideoCategory create_video_category = 6;
-        CreateApp create_app = 7;
-        UpdateApp update_app = 8;
-        DeleteApp delete_app = 9;
     }
 }
 
