@@ -138,7 +138,7 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     })
   }
 
-  private flattenExtrinsics(
+  protected flattenExtrinsics(
     extrinsics: SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][]
   ): SubmittableExtrinsic<'promise'>[] {
     return Array.isArray(extrinsics[0])
