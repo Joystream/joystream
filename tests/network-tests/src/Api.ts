@@ -806,23 +806,39 @@ export class Api {
     return event.data[2]
   }
 
-  async createApp(memberId: u64, name: string, appMetadata?: IAppMetadata): Promise<ISubmittableResult> {
+  async createApp(
+    memberId: u64,
+    name: string,
+    appMetadata?: IAppMetadata,
+    ownedByLead?: boolean
+  ): Promise<ISubmittableResult> {
     const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
     if (!memberAccount) {
       throw new Error('invalid member id')
     }
-
-    const meta = new LeadRemarked({
-      createApp: new CreateApp({
-        name,
-        appMetadata,
-      }),
-    })
-
-    return this.sender.signAndSend(
-      this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
-      memberAccount.toString()
-    )
+    if (ownedByLead) {
+      const meta = new LeadRemarked({
+        createApp: new CreateApp({
+          name,
+          appMetadata,
+        }),
+      })
+      return this.sender.signAndSend(
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
+        memberAccount.toString()
+      )
+    } else {
+      const meta = new MemberRemarked({
+        createApp: new CreateApp({
+          name,
+          appMetadata,
+        }),
+      })
+      return this.sender.signAndSend(
+        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+        memberAccount.toString()
+      )
+    }
   }
 
   async updateApp(memberId: u64, appId: string, appMetadata: IAppMetadata): Promise<ISubmittableResult> {

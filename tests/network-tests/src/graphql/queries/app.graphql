@@ -1,6 +1,10 @@
 fragment AppFields on App {
   id
   name
+  ownerMember {
+    id
+  }
+  isLeadOwned
   websiteUrl
   useUri
   smallIcon
@@ -9,6 +13,7 @@ fragment AppFields on App {
   oneLiner
   description
   termsOfService
+  category
   authKey
   platforms
 }

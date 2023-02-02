@@ -70,6 +70,7 @@ import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { membershipConfig } from './bootstrap-data'
 import { BN } from 'bn.js'
+import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
 
 // FIXME: Should be emitted as part of MemberInvited event, but this requires a runtime upgrade
 async function initialInvitationBalance(store: DatabaseManager) {
@@ -654,6 +655,18 @@ async function processMemberRemark(
   decodedMessage: MemberRemarked
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
   const messageType = decodedMessage.memberRemarked
+
+  if (messageType === 'createApp') {
+    await processCreateAppMessage(store, event, decodedMessage.createApp!, memberId.toString())
+  }
+
+  if (messageType === 'updateApp') {
+    await processUpdateAppMessage(store, decodedMessage.updateApp!)
+  }
+
+  if (messageType === 'deleteApp') {
+    await processDeleteAppMessage(store, decodedMessage.deleteApp!)
+  }
 
   if (messageType === 'reactVideo') {
     await processReactVideoMessage(store, event, memberId, decodedMessage.reactVideo!)

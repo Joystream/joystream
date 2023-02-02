@@ -4,6 +4,7 @@ import gql from 'graphql-tag'
 export type AppFieldsFragment = {
   id: string
   name: string
+  isLeadOwned?: Types.Maybe<boolean>
   websiteUrl?: Types.Maybe<string>
   useUri?: Types.Maybe<string>
   smallIcon?: Types.Maybe<string>
@@ -12,9 +13,10 @@ export type AppFieldsFragment = {
   oneLiner?: Types.Maybe<string>
   description?: Types.Maybe<string>
   termsOfService?: Types.Maybe<string>
+  category?: Types.Maybe<string>
   authKey?: Types.Maybe<string>
   platforms?: Types.Maybe<Array<string>>
-  category?: Types.Maybe<string>
+  ownerMember?: Types.Maybe<{ id: string }>
 }
 
 export type GetAppByIdQueryVariables = Types.Exact<{
@@ -90,7 +92,6 @@ export type ChannelFieldsFragment = {
   isCensored: boolean
   rewardAccount: string
   language?: Types.Maybe<{ iso: string }>
-  app?: Types.Maybe<AppFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -2524,6 +2525,10 @@ export const AppFields = gql`
   fragment AppFields on App {
     id
     name
+    ownerMember {
+      id
+    }
+    isLeadOwned
     websiteUrl
     useUri
     smallIcon
@@ -2532,9 +2537,9 @@ export const AppFields = gql`
     oneLiner
     description
     termsOfService
+    category
     authKey
     platforms
-    category
   }
 `
 export const DataObjectTypeFields = gql`
@@ -2596,9 +2601,6 @@ export const ChannelFields = gql`
       iso
     }
     isCensored
-    app {
-      ...AppFields
-    }
     ownerMember {
       id
     }
@@ -2616,7 +2618,6 @@ export const ChannelFields = gql`
     }
     rewardAccount
   }
-  ${AppFields}
   ${StorageDataObjectFields}
 `
 export const LicenseFields = gql`

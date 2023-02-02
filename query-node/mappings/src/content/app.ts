@@ -1,21 +1,33 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { ICreateApp, IDeleteApp, IUpdateApp } from '@joystream/metadata-protobuf'
-import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
-import { App } from 'query-node/dist/model'
-import { logger } from '../common'
+import { App, Membership } from 'query-node/dist/model'
+import { logger, inconsistentState } from '../common'
 
 export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  metadata: DecodedMetadataObject<ICreateApp>
+  message: ICreateApp,
+  memberId?: string
 ): Promise<void> {
-  const { name, appMetadata } = metadata
+  const { name, appMetadata } = message
   const appId = `${event.blockNumber}-${event.indexInBlock}`
+
+  let ownerMember: Membership | undefined
+  if (memberId) {
+    ownerMember = await store.get(Membership, {
+      where: {
+        id: memberId,
+      },
+    })
+    if (!ownerMember) {
+      return inconsistentState(`Member with ${memberId} not found`)
+    }
+  }
 
   const isAppExists = await store.get(App, {
     where: {
-      name: metadata?.name,
+      name: message?.name,
     },
   })
 
@@ -27,6 +39,8 @@ export async function processCreateAppMessage(
   const newApp = new App({
     name,
     id: appId,
+    ownerMember: ownerMember || undefined,
+    isLeadOwned: !memberId,
     websiteUrl: appMetadata?.websiteUrl || undefined,
     useUri: appMetadata?.useUri || undefined,
     smallIcon: appMetadata?.smallIcon || undefined,
@@ -43,11 +57,8 @@ export async function processCreateAppMessage(
   logger.info('App has been created', { name })
 }
 
-export async function processUpdateAppMessage(
-  store: DatabaseManager,
-  metadata: DecodedMetadataObject<IUpdateApp>
-): Promise<void> {
-  const { appId, appMetadata } = metadata
+export async function processUpdateAppMessage(store: DatabaseManager, message: IUpdateApp): Promise<void> {
+  const { appId, appMetadata } = message
 
   const app = await getAppByIdAndMemberId(store, appId)
 
@@ -76,16 +87,13 @@ export async function processUpdateAppMessage(
   logger.info('App has been updated', { appId })
 }
 
-export async function processDeleteAppMessage(
-  store: DatabaseManager,
-  metadata: DecodedMetadataObject<IDeleteApp>
-): Promise<void> {
-  const { appId } = metadata
+export async function processDeleteAppMessage(store: DatabaseManager, message: IDeleteApp): Promise<void> {
+  const { appId } = message
 
   const app = await getAppByIdAndMemberId(store, appId)
 
   if (!app) {
-    logger.error("App doesn't exists or doesn't belong to the member", { appId })
+    logger.error("App doesn't exists", { appId })
     return
   }
 

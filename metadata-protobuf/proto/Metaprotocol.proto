@@ -162,6 +162,9 @@ message MemberRemarked {
         EditComment edit_comment = 4;
         DeleteComment delete_comment = 5;
         CreateVideoCategory create_video_category = 6;
+        CreateApp create_app = 7;
+        UpdateApp update_app = 8;
+        DeleteApp delete_app = 9;
     }
 }
 

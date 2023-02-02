@@ -37,9 +37,9 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
-import { createApp } from 'src/flows/membership/createApp'
-import { updateApp } from 'src/flows/membership/updateApp'
-import { deleteApp } from 'src/flows/membership/deleteApp'
+import { createApp } from '../flows/membership/createApp'
+import { updateApp } from '../flows/membership/updateApp'
+import { deleteApp } from '../flows/membership/deleteApp'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
