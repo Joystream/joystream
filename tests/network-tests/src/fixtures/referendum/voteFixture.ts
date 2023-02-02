@@ -21,9 +21,11 @@ export class VoteFixture extends StandardizedFixture {
     this.votes = votes
     this.failureExpected = failureExpected
   }
+
   protected getSignerAccountOrAccounts(): Promise<string | string[]> {
     return Promise.resolve(Array.from(this.votes.keys()))
   }
+
   protected getExtrinsics(): Promise<
     SubmittableExtrinsic<'promise', ISubmittableResult>[] | SubmittableExtrinsic<'promise', ISubmittableResult>[][]
   > {
@@ -32,11 +34,13 @@ export class VoteFixture extends StandardizedFixture {
     )
     return Promise.all(results)
   }
+
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails<unknown>> {
     return this.api.getEventDetails(result, 'referendum', 'VoteCast')
   }
+
   protected assertQueryNodeEventIsValid(qEvent: AnyQueryNodeEvent, i: number): void {
-    // TODO: implement as soon as QN support is added
+    // TODO: implement QN checks
   }
 
   // overwriting for using decremental tips

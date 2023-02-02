@@ -20,9 +20,11 @@ export class AnnounceCandidacyFixture extends StandardizedFixture {
     super(api, query)
     this.announcements = announcements
   }
+
   protected getSignerAccountOrAccounts(): Promise<string | string[]> {
     return Promise.resolve(Array.from(this.announcements.keys()))
   }
+
   protected getExtrinsics(): Promise<
     SubmittableExtrinsic<'promise', ISubmittableResult>[] | SubmittableExtrinsic<'promise', ISubmittableResult>[][]
   > {
@@ -31,8 +33,12 @@ export class AnnounceCandidacyFixture extends StandardizedFixture {
     )
     return Promise.all(results)
   }
+
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails<unknown>> {
     return this.api.getEventDetails(result, 'council', 'NewCandidate')
   }
-  protected assertQueryNodeEventIsValid(qEvent: AnyQueryNodeEvent, i: number): void {}
+
+  protected assertQueryNodeEventIsValid(qEvent: AnyQueryNodeEvent, i: number): void {
+    // TODO: implement QN checks
+  }
 }
