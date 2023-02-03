@@ -44,8 +44,6 @@ export default async function groupBudget({ api, query, lock }: FlowProps): Prom
       ])
       await new FixtureRunner(decideOnUpdateWgBudgetProposalStatusFixture).run()
       unlock()
-      // const setGroupBudgetFixture = new SetBudgetFixture(api, query, group, budgets)
-      // await new FixtureRunner(setGroupBudgetFixture).runWithQueryNodeChecks()
 
       const recievers = (await api.createKeyPairs(5)).map(({ key }) => key.address)
       const amounts = recievers.map((reciever, i) => new BN(10000 * (i + 1)))

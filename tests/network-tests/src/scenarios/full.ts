@@ -35,8 +35,6 @@ import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
 import channelPayouts from '../flows/proposals/channelPayouts'
 import directChannelPayment from '../flows/content/directChannelPayment'
-import creatingMembers from '../flows/membership/creatingMembers'
-import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
 import invitingMembers from '../flows/membership/invitingMembers'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -54,8 +52,6 @@ scenario('Full', async ({ job, env }) => {
 
   // Membership:
   job('buying members', buyingMemberships).after(coreJob)
-  job('creating members', creatingMembers).after(coreJob)
-  job('creating founding members', creatingFoundingMembers).after(coreJob)
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
   job('inviting members', invitingMembers).after(coreJob)
@@ -81,15 +77,9 @@ scenario('Full', async ({ job, env }) => {
     : undefined
 
   // Working groups
-  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+  const hireLeads = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
     channelPayoutsProposalJob || proposalsJob
   )
-  job('openings and applications', openingsAndApplications).requires(sudoHireLead)
-  job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
-  job('group status', groupStatus).requires(sudoHireLead)
-  job('worker actions', workerActions).requires(sudoHireLead)
-  job('group budget', groupBudget).requires(sudoHireLead)
-  const hireLeads = job('hire leads', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(proposalsJob)
   job('openings and applications', openingsAndApplications).requires(hireLeads)
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
