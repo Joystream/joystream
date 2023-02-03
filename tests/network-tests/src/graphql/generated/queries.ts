@@ -67,6 +67,7 @@ export type ChannelFieldsFragment = {
   isPublic?: Types.Maybe<boolean>
   isCensored: boolean
   rewardAccount: string
+  cumulativeRewardClaimed?: Types.Maybe<any>
   language?: Types.Maybe<{ iso: string }>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
@@ -600,6 +601,26 @@ export type GetChannelRewardClaimedEventsByEventIdsQueryVariables = Types.Exact<
 
 export type GetChannelRewardClaimedEventsByEventIdsQuery = {
   channelRewardClaimedEvents: Array<ChannelRewardClaimedEventFieldsFragment>
+}
+
+export type ChannelRewardClaimedAndWithdrawnEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  amount: any
+  account: string
+  channel: { id: string }
+}
+
+export type GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQuery = {
+  channelRewardClaimedAndWithdrawnEvents: Array<ChannelRewardClaimedAndWithdrawnEventFieldsFragment>
 }
 
 export type ChannelFundsWithdrawnEventFieldsFragment = {
@@ -3196,6 +3217,21 @@ export const ChannelRewardClaimedEventFields = gql`
     amount
   }
 `
+export const ChannelRewardClaimedAndWithdrawnEventFields = gql`
+  fragment ChannelRewardClaimedAndWithdrawnEventFields on ChannelRewardClaimedAndWithdrawnEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    amount
+    account
+  }
+`
 export const ChannelFundsWithdrawnEventFields = gql`
   fragment ChannelFundsWithdrawnEventFields on ChannelFundsWithdrawnEvent {
     id
@@ -3238,6 +3274,7 @@ export const ChannelFields = gql`
       id
     }
     rewardAccount
+    cumulativeRewardClaimed
   }
   ${StorageDataObjectFields}
 `
@@ -5359,6 +5396,14 @@ export const GetChannelRewardClaimedEventsByEventIds = gql`
     }
   }
   ${ChannelRewardClaimedEventFields}
+`
+export const GetChannelRewardClaimedAndWithdrawnEventsByEventIds = gql`
+  query getChannelRewardClaimedAndWithdrawnEventsByEventIds($eventIds: [ID!]) {
+    channelRewardClaimedAndWithdrawnEvents(where: { id_in: $eventIds }) {
+      ...ChannelRewardClaimedAndWithdrawnEventFields
+    }
+  }
+  ${ChannelRewardClaimedAndWithdrawnEventFields}
 `
 export const GetChannelFundsWithdrawnEventsByEventIds = gql`
   query getChannelFundsWithdrawnEventsByEventIds($eventIds: [ID!]) {

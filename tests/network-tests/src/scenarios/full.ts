@@ -72,9 +72,7 @@ scenario('Full', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
 
-  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
-    ? job('channel payouts proposal', channelPayouts).requires(proposalsJob)
-    : undefined
+  const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
   // Working groups
   const hireLeads = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(

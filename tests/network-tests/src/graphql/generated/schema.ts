@@ -30703,6 +30703,8 @@ export type UpdateChannelPayoutsProposalDetails = {
   maxCashoutAllowed?: Maybe<Scalars['Float']>
   /** Can channel cashout the rewards */
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
+  /** The hash of the channel payout payload file */
+  payloadHash?: Maybe<Scalars['String']>
 }
 
 export type UpdateWorkingGroupBudgetProposalDetails = {
