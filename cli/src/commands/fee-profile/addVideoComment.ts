@@ -32,8 +32,7 @@ export default class FeeProfileAddVideoComment extends FeeProfileCommandBase {
         body: _.repeat('x', commentLen),
       },
     }
-    const tx = api.tx.members.memberRemark(0, metadataToBytes(MemberRemarked, mockMetadata), null)
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    this.profile({ txFee })
+    const tx = api.tx.members.memberRemark(0, metadataToBytes(MemberRemarked, mockMetadata))
+    await this.profile(tx)
   }
 }

@@ -30765,8 +30765,6 @@ export type Video = BaseGraphQlObject & {
   mediaMetadata?: Maybe<VideoMediaMetadata>
   mediaMetadataId?: Maybe<Scalars['String']>
   createdInBlock: Scalars['Int']
-  /** Is video featured or not */
-  isFeatured: Scalars['Boolean']
   subtitles: Array<VideoSubtitle>
   /** Is comment section enabled (true if enabled) */
   isCommentSectionEnabled: Scalars['Boolean']
@@ -31139,7 +31137,6 @@ export type VideoCreateInput = {
   videoStateBloatBond: Scalars['String']
   mediaMetadata?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
-  isFeatured: Scalars['Boolean']
   isCommentSectionEnabled: Scalars['Boolean']
   commentsCount: Scalars['Float']
   isReactionFeatureEnabled: Scalars['Boolean']
@@ -31702,8 +31699,6 @@ export enum VideoOrderByInput {
   MediaMetadataDesc = 'mediaMetadata_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
   CreatedInBlockDesc = 'createdInBlock_DESC',
-  IsFeaturedAsc = 'isFeatured_ASC',
-  IsFeaturedDesc = 'isFeatured_DESC',
   IsCommentSectionEnabledAsc = 'isCommentSectionEnabled_ASC',
   IsCommentSectionEnabledDesc = 'isCommentSectionEnabled_DESC',
   CommentsCountAsc = 'commentsCount_ASC',
@@ -32331,7 +32326,6 @@ export type VideoUpdateInput = {
   videoStateBloatBond?: Maybe<Scalars['String']>
   mediaMetadata?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
-  isFeatured?: Maybe<Scalars['Boolean']>
   isCommentSectionEnabled?: Maybe<Scalars['Boolean']>
   commentsCount?: Maybe<Scalars['Float']>
   isReactionFeatureEnabled?: Maybe<Scalars['Boolean']>
@@ -32554,8 +32548,6 @@ export type VideoWhereInput = {
   createdInBlock_lt?: Maybe<Scalars['Int']>
   createdInBlock_lte?: Maybe<Scalars['Int']>
   createdInBlock_in?: Maybe<Array<Scalars['Int']>>
-  isFeatured_eq?: Maybe<Scalars['Boolean']>
-  isFeatured_in?: Maybe<Array<Scalars['Boolean']>>
   isCommentSectionEnabled_eq?: Maybe<Scalars['Boolean']>
   isCommentSectionEnabled_in?: Maybe<Array<Scalars['Boolean']>>
   commentsCount_eq?: Maybe<Scalars['Int']>

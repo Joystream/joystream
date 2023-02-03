@@ -13,3 +13,4 @@ export { ModeratePostsFixture, PostModerationInput } from './ModeratePostsFixtur
 export { InitializeForumFixture, InitializeForumConfig } from './InitializeForumFixture'
 export { UpdatePostsTextFixture, PostTextUpdate } from './UpdatePostsTextFixture'
 export { DeletePostsFixture, PostsRemovalInput } from './DeletePostsFixture'
+export { RemarkModeratePostsFixture } from './RemarkModeratePostsFixture'

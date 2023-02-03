@@ -122,7 +122,7 @@ export default async function openingsAndApplications({ api, query, env }: FlowP
       ])
       const applyRunner = new FixtureRunner(applyOnOpeningFixture)
       await applyRunner.run()
-      const applicationIds = await applyOnOpeningFixture.getCreatedApplicationsByOpeningId(openingId)
+      const applicationIds = applyOnOpeningFixture.getCreatedApplicationsByOpeningId(openingId)
 
       // Withdraw some applications
       const withdrawApplicationsFixture = new WithdrawApplicationsFixture(

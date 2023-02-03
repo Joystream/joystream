@@ -16,13 +16,9 @@ export default class FeeProfileDeleteForumThread extends FeeProfileCommandBase {
     this.log(`Thread deposit: ${chalk.cyanBright(formatBalance(threadDeposit))}`)
 
     const tx = api.tx.forum.deleteThread(0, 0, 0, true)
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    const costs = {
-      txFee,
-    }
     const returns = {
       threadDeposit,
     }
-    this.profile(costs, returns)
+    await this.profile(tx, undefined, returns)
   }
 }

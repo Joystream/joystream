@@ -42,7 +42,6 @@
   shell: >
     bin/chain-spec-builder new {{ ['-a'] | product(authorities.result.accounts) | map('join', ' ') | join(' ') }}
     --chain-spec-path {{ remote_data_path }}/chainspec.json
-    --sudo-account {{ sudo_account }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_data_path }}/initial-balances.json{% endif %}
     {% if fund_accounts is defined and fund_accounts|true %}--fund-accounts{% endif %}
@@ -54,7 +53,6 @@
   shell: >
     bin/chain-spec-builder new {{ ['-a'] | product(authority_seeds) | map('join', ' ') | join(' ') }}
     --chain-spec-path {{ remote_data_path }}/chainspec.json
-    --sudo-account {{ sudo_account }}
     --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
     {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_data_path }}/initial-balances.json{% endif %}
@@ -74,12 +72,6 @@
 # - name: Format chain spec output
 #   set_fact:
 #     chain_secrets_output_formatted: '{{ chainspec_builder_output.stdout | regex_replace("=", ": ") | from_yaml }}'
-#   run_once: true
-
-# - name: Extract sudo key from chain spec output
-#   set_fact:
-#     sudo_key: '{{ chain_secrets_output_formatted.sudo }}'
-#   delegate_to: '{{ first_validator }}'
 #   run_once: true
 
 # - name: Extract first endowed key from chain spec output
