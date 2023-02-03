@@ -501,7 +501,8 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // load event data
-  const [owner, channelId, amount, destination] = new Content.ChannelRewardClaimedAndWithdrawnEvent(event).params
+  const [owner, channelId, withdrawnAmount, destination] = new Content.ChannelRewardClaimedAndWithdrawnEvent(event)
+    .params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })
@@ -516,7 +517,7 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
   const rewardClaimedEvent = new ChannelRewardClaimedAndWithdrawnEvent({
     ...genericEventFields(event),
 
-    amount,
+    amount: withdrawnAmount,
     channel,
     account: destination.isAccountId ? destination.asAccountId.toString() : undefined,
     actor: await convertContentActor(store, owner),
@@ -524,7 +525,7 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
 
   await store.save<ChannelRewardClaimedAndWithdrawnEvent>(rewardClaimedEvent)
 
-  channel.cumulativeRewardClaimed = (channel.cumulativeRewardClaimed || new BN(0)).add(amount)
+  channel.cumulativeRewardClaimed = (channel.cumulativeRewardClaimed || new BN(0)).add(withdrawnAmount)
 
   // save channel
   await store.save<Channel>(channel)
