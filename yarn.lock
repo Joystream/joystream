@@ -2349,20 +2349,6 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/types@~0.20.5":
-  version "0.20.5"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.20.5.tgz#21c256a433d84dbb49a81e7be222cc438c354dac"
-  integrity sha512-juqa1RHMLGVIKf2b9TOcC+vhc2WXmpJ474vZekeOOMorzoB3JbIXSDJ3aLvx3cblt59qMWyxao6fd2I+WqnG4Q==
-  dependencies:
-    "@polkadot/api" "8.9.1"
-    "@polkadot/keyring" "9.5.1"
-    "@polkadot/types" "8.9.1"
-    "@types/lodash" "^4.14.157"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-    moment "^2.24.0"
-
 "@joystream/warthog@^2.41.9":
   version "2.41.9"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.9.tgz#7cfb16df80cb43339e541026af09ff38909eae82"

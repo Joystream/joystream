@@ -227,6 +227,8 @@ export async function getMemberById(
     throw new Error(`Member(${id}) not found`)
   }
   return member
+}
+
 export async function getWorkingGroupLead(store: DatabaseManager, groupName: WorkingGroupModuleName) {
   const lead = await store.get(Worker, { where: { groupId: groupName, isLead: true, isActive: true } })
   if (!lead) {
