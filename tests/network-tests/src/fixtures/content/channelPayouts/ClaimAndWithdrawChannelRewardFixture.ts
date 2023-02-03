@@ -12,6 +12,7 @@ import {
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
 import { ClaimChannelRewardParams, getExpectedClaims } from './ClaimChannelRewardFixture'
+import { BN } from 'bn.js'
 
 type ClaimAndWithdrawChannelRewardEventDetails = EventDetails<EventType<'content', 'ChannelRewardClaimedAndWithdrawn'>>
 
@@ -63,7 +64,12 @@ export class ClaimAndWithdrawChannelRewardFixture extends StandardizedFixture {
 
   public async execute(): Promise<void> {
     this.expectedClaims = await getExpectedClaims(this.api, this.claimChannelRewardParams)
+    const expectedClaimsSum = this.expectedClaims.reduce((sum, claim) => sum.add(new BN(claim)), new BN(0))
+    const councilBudgetPre = await this.api.query.council.budget()
     await super.execute()
+    const councilBudgetPost = await this.api.query.council.budget()
+    // For now we assume all channels are member-owned
+    assert.equal(councilBudgetPre.toString(), councilBudgetPost.add(expectedClaimsSum).toString())
   }
 
   async runQueryNodeChecks(): Promise<void> {

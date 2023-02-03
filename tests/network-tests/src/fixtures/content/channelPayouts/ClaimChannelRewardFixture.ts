@@ -75,7 +75,11 @@ export class ClaimChannelRewardFixture extends StandardizedFixture {
 
   public async execute(): Promise<void> {
     this.expectedClaims = await getExpectedClaims(this.api, this.claimChannelRewardParams)
+    const expectedClaimsSum = this.expectedClaims.reduce((sum, claim) => sum.add(new BN(claim)), new BN(0))
+    const councilBudgetPre = await this.api.query.council.budget()
     await super.execute()
+    const councilBudgetPost = await this.api.query.council.budget()
+    assert.equal(councilBudgetPre.toString(), councilBudgetPost.add(expectedClaimsSum).toString())
   }
 
   async runQueryNodeChecks(): Promise<void> {
