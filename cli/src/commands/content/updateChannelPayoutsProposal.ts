@@ -30,7 +30,7 @@ export default class UpdateChannelPayoutsProposal extends UploadCommandBase {
     }),
     min: flags.integer({
       required: false,
-      description: 'Minimum cashout amount allowad to a channel',
+      description: 'Minimum cashout amount allowed to a channel',
     }),
     max: flags.integer({
       required: false,
@@ -97,7 +97,6 @@ export default class UpdateChannelPayoutsProposal extends UploadCommandBase {
           commitment: payloadFilePath ? await generateCommitmentFromPayloadFile('PATH', payloadFilePath) : null,
           payload: payloadFilePath
             ? {
-                uploaderAccount: keypair.address,
                 objectCreationParams: {
                   size_: fs.statSync(payloadFilePath).size,
                   ipfsContentId: await this.calculateFileHash(payloadFilePath),
