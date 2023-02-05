@@ -109,8 +109,6 @@ query getActiveStorageBucketOperatorsData($limit: Int!, $lastCursor: String) {
 
 fragment QueryNodeStateFields on ProcessorState {
   chainHead
-  indexerHead
-  lastProcessedEvent
   lastCompleteBlock
 }
 
