@@ -1,7 +1,7 @@
 {
   "name": "storage-node",
   "description": "Joystream storage subsystem.",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "author": "Joystream contributors",
   "bin": {
     "storage-node": "./bin/run"
@@ -50,6 +50,7 @@
     "rimraf": "^3.0.2",
     "send": "^0.17.1",
     "sleep-promise": "^9.1.0",
+    "subscriptions-transport-ws": "^0.11.0",
     "superagent": "^6.1.0",
     "tslib": "^1",
     "url-join": "^4.0.1",
