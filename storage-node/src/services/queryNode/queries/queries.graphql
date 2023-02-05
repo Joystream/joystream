@@ -117,8 +117,6 @@ query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $curso
 
 fragment QueryNodeStateFields on ProcessorState {
   chainHead
-  indexerHead
-  lastProcessedEvent
   lastCompleteBlock
 }
 

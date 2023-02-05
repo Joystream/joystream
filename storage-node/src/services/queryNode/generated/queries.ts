@@ -84,12 +84,7 @@ export type GetDataObjectConnectionQuery = {
   }
 }
 
-export type QueryNodeStateFieldsFragment = {
-  chainHead: number
-  indexerHead: number
-  lastProcessedEvent: string
-  lastCompleteBlock: number
-}
+export type QueryNodeStateFieldsFragment = { chainHead: number; lastCompleteBlock: number }
 
 export type QueryNodeStateSubscriptionVariables = Types.Exact<{ [key: string]: never }>
 
@@ -134,8 +129,6 @@ export const DataObjectDetails = gql`
 export const QueryNodeStateFields = gql`
   fragment QueryNodeStateFields on ProcessorState {
     chainHead
-    indexerHead
-    lastProcessedEvent
     lastCompleteBlock
   }
 `

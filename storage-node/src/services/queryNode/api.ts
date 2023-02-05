@@ -1,4 +1,12 @@
-import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode, split } from '@apollo/client'
+import {
+  ApolloClient,
+  NormalizedCacheObject,
+  HttpLink,
+  defaultDataIdFromObject,
+  InMemoryCache,
+  DocumentNode,
+  split,
+} from '@apollo/client'
 import fetch from 'cross-fetch'
 import {
   GetBagConnection,
@@ -24,6 +32,7 @@ import {
   QueryNodeStateSubscription,
   QueryNodeStateSubscriptionVariables,
   QueryNodeState,
+  QueryNodeStateFields,
 } from './generated/queries'
 import { Maybe, StorageBagWhereInput } from './generated/schema'
 import { WebSocketLink } from '@apollo/client/link/ws'
@@ -55,14 +64,15 @@ type PaginationQueryResult<T = unknown> = {
  */
 export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
+  readonly endpoint: string
 
   public constructor(endpoint: string) {
+    this.endpoint = endpoint
     const queryLink = new HttpLink({ uri: endpoint, fetch })
     const wsLink = new WebSocketLink({
       uri: endpoint,
       options: {
         reconnect: true,
-        reconnectionAttempts: 5,
       },
       webSocketImpl: ws,
     })
@@ -77,10 +87,16 @@ export class QueryNodeApi {
 
     this.apolloClient = new ApolloClient({
       link: splitLink,
-      cache: new InMemoryCache(),
-      defaultOptions: {
-        query: { fetchPolicy: 'no-cache', errorPolicy: 'none' },
-      },
+      cache: new InMemoryCache({
+        dataIdFromObject: (object) => {
+          // setup cache object id for ProcessorState entity type
+          if (object.__typename === 'ProcessorState') {
+            return object.__typename
+          }
+          return defaultDataIdFromObject(object)
+        },
+      }),
+      defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
   }
 
@@ -200,9 +216,8 @@ export class QueryNodeApi {
     resultKey: keyof SubscriptionT
   ): Promise<SubscriptionT[keyof SubscriptionT] | null> {
     return new Promise((resolve) => {
-      const sub = this.apolloClient.subscribe<SubscriptionT, VariablesT>({ query, variables }).subscribe(({ data }) => {
+      this.apolloClient.subscribe<SubscriptionT, VariablesT>({ query, variables }).subscribe(({ data }) => {
         resolve(data ? data[resultKey] : null)
-        sub.unsubscribe()
       })
     })
   }
@@ -308,7 +323,22 @@ export class QueryNodeApi {
     return result
   }
 
-  public getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
+  public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
+    // fetch cached state
+    const cachedState = this.apolloClient.readFragment<
+      QueryNodeStateSubscription['stateSubscription'],
+      QueryNodeStateSubscriptionVariables
+    >({
+      id: 'ProcessorState',
+      fragment: QueryNodeStateFields,
+    })
+
+    // If we have the state in cache, return it
+    if (cachedState) {
+      return cachedState
+    }
+
+    // Otherwise setup the subscription (which will periodically update the cache) and return for the first result
     return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
       QueryNodeState,
       {},

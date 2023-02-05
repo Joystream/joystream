@@ -102,13 +102,10 @@ export async function getLocalDataObjectsByBagId(
   next: express.NextFunction
 ): Promise<void> {
   try {
-    const queryNodeUrl = res.locals.queryNodeEndpoint
+    const { qnApi } = res.locals
     const { bagId } = req.params
 
-    const [ids, requiredIds] = await Promise.all([
-      getDataObjectIDs(),
-      getCachedDataObjectsObligations(queryNodeUrl, bagId),
-    ])
+    const [ids, requiredIds] = await Promise.all([getDataObjectIDs(), getCachedDataObjectsObligations(qnApi, bagId)])
 
     const localDataForBag = _.intersection(ids, requiredIds)
 
@@ -138,12 +135,12 @@ export async function getVersion(
  * A public endpoint: returns the server status.
  */
 export async function getStatus(req: express.Request, res: express.Response<StatusResponse, AppConfig>): Promise<void> {
-  const config = res.locals
+  const { qnApi, process } = res.locals
 
   // Copy from an object, because the actual object could contain more data.
   res.status(200).json({
-    version: config.process.version,
-    queryNodeStatus: await getQueryNodeStatus(config.queryNodeEndpoint),
+    version: process.version,
+    queryNodeStatus: await getQueryNodeStatus(qnApi),
   })
 }
 
@@ -152,11 +149,11 @@ export async function getStatus(req: express.Request, res: express.Response<Stat
  * obsolete until cache expiration.
  *
  */
-async function getCachedDataObjectsObligations(queryNodeUrl: string, bagId: string): Promise<string[]> {
+async function getCachedDataObjectsObligations(qnApi: QueryNodeApi, bagId: string): Promise<string[]> {
   const entryName = `data_object_obligations_${bagId}`
 
   if (!dataCache.has(entryName)) {
-    const data = await getDataObjectIDsByBagId(queryNodeUrl, bagId)
+    const data = await getDataObjectIDsByBagId(qnApi, bagId)
 
     dataCache.set(entryName, data)
   }
@@ -164,16 +161,15 @@ async function getCachedDataObjectsObligations(queryNodeUrl: string, bagId: stri
   return dataCache.get(entryName) ?? []
 }
 
-async function getQueryNodeStatus(queryNodeUrl: string): Promise<StatusResponse['queryNodeStatus']> {
-  const api = new QueryNodeApi(queryNodeUrl)
-  const qnState = await api.getQueryNodeState()
+async function getQueryNodeStatus(qnApi: QueryNodeApi): Promise<StatusResponse['queryNodeStatus']> {
+  const qnState = await qnApi.getQueryNodeState()
 
   if (qnState === null) {
     logger.error("Couldn't fetch the state from connected query-node")
   }
 
   return {
-    url: queryNodeUrl,
+    url: qnApi.endpoint,
     chainHead: qnState?.chainHead || 0,
     blocksProcessed: qnState?.lastCompleteBlock || 0,
   }
