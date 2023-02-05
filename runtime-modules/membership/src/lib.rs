@@ -338,6 +338,9 @@ decl_error! {
 
         /// Gifter doesn't have sufficient balance to credit
         InsufficientBalanceToGift,
+
+        /// Insufficient balance to cover payment.
+        InsufficientBalanceToCoverPayment,
     }
 }
 
@@ -421,7 +424,7 @@ decl_event! {
         StakingAccountAdded(AccountId, MemberId),
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
-        MemberRemarked(MemberId, Vec<u8>),
+        MemberRemarked(MemberId, Vec<u8>, Option<(AccountId, Balance)>),
         MemberCreated(MemberId, CreateMemberParameters, u32),
     }
 }
@@ -1184,16 +1187,33 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoMembership::<T>::member_remark()]
-        pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>) {
+        #[weight = Module::<T>::calculate_weight_for_member_remark(payment)]
+        pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>, payment: Option<(T::AccountId, T::Balance)>) {
             let sender = ensure_signed(origin)?;
             Self::ensure_is_controller_account_for_member(&member_id, &sender)?;
+
+            if let Some((_, amount)) = payment {
+                ensure!(
+                    has_sufficient_balance_for_payment::<T>(&sender, amount),
+                    Error::<T>::InsufficientBalanceToCoverPayment
+                  )
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
+            if let Some((ref payee_account, amount)) = payment {
+                // Transfer funds to payee account
+                <balances::Pallet::<T> as Currency<T::AccountId>>::transfer(
+                    &sender,
+                    payee_account,
+                    amount,
+                    ExistenceRequirement::KeepAlive
+                )?;
+            }
+
+            Self::deposit_event(RawEvent::MemberRemarked(member_id, msg, payment));
         }
 
         /// Create a member profile as root.
@@ -1249,7 +1269,7 @@ impl<T: Config> Module<T> {
             (true, true) => WeightInfoMembership::<T>::update_accounts_both(),
             (false, true) => WeightInfoMembership::<T>::update_accounts_root(),
             (true, false) => WeightInfoMembership::<T>::update_accounts_controller(),
-            _ => WeightInfoMembership::<T>::update_accounts_both(),
+            _ => WeightInfoMembership::<T>::update_accounts_none(),
         }
     }
 
@@ -1268,6 +1288,14 @@ impl<T: Config> Module<T> {
                 to_kb(Self::text_length_unwrap_or_default(&params.handle)),
                 to_kb(params.metadata.len().saturated_into()),
             )
+        }
+    }
+
+    fn calculate_weight_for_member_remark(payment: &Option<(T::AccountId, T::Balance)>) -> Weight {
+        if payment.is_some() {
+            WeightInfoMembership::<T>::member_remark_with_payment()
+        } else {
+            WeightInfoMembership::<T>::member_remark_without_payment()
         }
     }
 

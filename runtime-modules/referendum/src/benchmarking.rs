@@ -777,6 +777,18 @@ benchmarks_instance! {
         assert_last_event::<T, I>(RawEvent::StakeReleased(account_id).into());
     }
 
+    opt_out_of_voting {
+        let account_id = funded_account::<T, I>("account", 0);
+    }: _ (RawOrigin::Signed(account_id.clone()))
+    verify {
+        assert!(
+            AccountsOptedOut::<T, I>::contains_key(account_id.clone()),
+            "Account not added to opted-out list"
+        );
+
+        assert_last_event::<T, I>(RawEvent::AccountOptedOutOfVoting(account_id).into());
+    }
+
     impl_benchmark_test_suite!(
         Module,
         crate::mock::build_test_externalities(),

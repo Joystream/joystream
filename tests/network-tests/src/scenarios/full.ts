@@ -37,6 +37,7 @@ import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
 import channelPayouts from '../flows/proposals/channelPayouts'
+import directChannelPayment from '../flows/content/directChannelPayment'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -75,13 +76,11 @@ scenario('Full', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
 
-  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
-    ? job('channel payouts proposal', channelPayouts).requires(proposalsJob)
-    : undefined
+  const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
   // Working groups
   const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    channelPayoutsProposalJob || proposalsJob
+    channelPayoutsProposalJob
   )
   job('openings and applications', openingsAndApplications).requires(sudoHireLead)
   job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
@@ -111,8 +110,11 @@ scenario('Full', async ({ job, env }) => {
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     nftAuctionAndOffersJob
   )
+  const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
+    commentsAndReactionsJob
+  )
 
-  const contentDirectoryJob = commentsAndReactionsJob // keep updated to last job above
+  const contentDirectoryJob = directChannelPaymentJob // keep updated to last job above
 
   // Storage & distribution CLIs
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(

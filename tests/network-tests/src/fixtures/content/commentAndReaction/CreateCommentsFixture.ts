@@ -55,7 +55,7 @@ export class CreateCommentsFixture extends StandardizedFixture {
           parentCommentId: params.msg.parentCommentId,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg))
+      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg), null)
     })
   }
 

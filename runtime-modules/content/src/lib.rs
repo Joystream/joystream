@@ -343,6 +343,12 @@ decl_module! {
         const DefaultChannelWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
             T::DefaultGlobalDailyNftLimit::get();
 
+        /// Export const - min cashout allowed limits
+        const MinimumCashoutAllowedLimit: BalanceOf<T> = T::MinimumCashoutAllowedLimit::get();
+
+        /// Export const - max cashout allowed limits
+        const MaximumCashoutAllowedLimit: BalanceOf<T> = T::MaximumCashoutAllowedLimit::get();
+
         // ======
         // Next set of extrinsics can only be invoked by lead.
         // ======
@@ -1530,7 +1536,8 @@ decl_module! {
         #[weight = WeightInfoContent::<T>::update_channel_payouts()]
         pub fn update_channel_payouts(
             origin,
-            params: UpdateChannelPayoutsParameters<T>
+            params: UpdateChannelPayoutsParameters<T>,
+            uploader_account: T::AccountId
         ) {
             ensure_root(origin)?;
 
@@ -1554,7 +1561,7 @@ decl_module! {
                 let upload_params = UploadParameters::<T> {
                     bag_id: storage::BagId::<T>::from(StaticBagId::Council),
                     object_creation_list: vec![payload.object_creation_params.clone()],
-                    state_bloat_bond_source_account_id: payload.uploader_account.clone(),
+                    state_bloat_bond_source_account_id: uploader_account.clone(),
                     expected_data_size_fee: payload.expected_data_size_fee,
                     expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
                 };
@@ -1583,7 +1590,8 @@ decl_module! {
 
             Self::deposit_event(RawEvent::ChannelPayoutsUpdated(
                 params,
-                payload_data_object_id
+                payload_data_object_id,
+                uploader_account
             ));
         }
 
@@ -1604,17 +1612,17 @@ decl_module! {
             proof: Vec<ProofElement<T>>,
             item: PullPayment<T>,
         ) -> DispatchResult {
-            let (.., reward_account, amount) =
+            let (.., reward_account, cashout_amount) =
                 Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
 
             //
             // == MUTATION_SAFE ==
             //
 
-            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
+            Self::execute_channel_reward_claim(item.channel_id, &reward_account, cashout_amount);
 
             Self::deposit_event(
-                RawEvent::ChannelRewardUpdated(item.cumulative_reward_earned, item.channel_id)
+                RawEvent::ChannelRewardUpdated(item.cumulative_reward_earned, cashout_amount, item.channel_id)
             );
 
             Ok(())
@@ -4906,9 +4914,12 @@ decl_event!(
         ),
 
         // Rewards
-        ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, Option<DataObjectId>),
-        ChannelRewardUpdated(Balance, ChannelId),
-        CouncilRewardClaimed(ChannelId, Balance),
+        ChannelPayoutsUpdated(
+            UpdateChannelPayoutsParameters,
+            Option<DataObjectId>,
+            AccountId,
+        ),
+        ChannelRewardUpdated(Balance, Balance, ChannelId),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),

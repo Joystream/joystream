@@ -314,6 +314,26 @@ query getChannelRewardClaimedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
+fragment ChannelRewardClaimedAndWithdrawnEventFields on ChannelRewardClaimedAndWithdrawnEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  amount
+  account
+}
+
+query getChannelRewardClaimedAndWithdrawnEventsByEventIds($eventIds: [ID!]) {
+  channelRewardClaimedAndWithdrawnEvents(where: { id_in: $eventIds }) {
+    ...ChannelRewardClaimedAndWithdrawnEventFields
+  }
+}
+
 fragment ChannelFundsWithdrawnEventFields on ChannelFundsWithdrawnEvent {
   id
   createdAt
@@ -331,5 +351,41 @@ fragment ChannelFundsWithdrawnEventFields on ChannelFundsWithdrawnEvent {
 query getChannelFundsWithdrawnEventsByEventIds($eventIds: [ID!]) {
   channelFundsWithdrawnEvents(where: { id_in: $eventIds }) {
     ...ChannelFundsWithdrawnEventFields
+  }
+}
+
+fragment ChannelPaymentMadeEventFields on ChannelPaymentMadeEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  payeeChannel {
+    ...ChannelFields
+  }
+  payer {
+    ...MembershipFields
+  }
+  amount
+  rationale
+  paymentContext {
+    __typename
+    ... on PaymentContextChannel {
+      channel {
+        ...ChannelFields
+      }
+    }
+    ... on PaymentContextVideo {
+      video {
+        ...VideoFields
+      }
+    }
+  }
+}
+
+query getChannelPaymentMadeEventsByEventIds($eventIds: [ID!]) {
+  channelPaymentMadeEvents(where: { id_in: $eventIds }) {
+    ...ChannelPaymentMadeEventFields
   }
 }
