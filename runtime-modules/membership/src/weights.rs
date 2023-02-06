@@ -233,13 +233,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn member_remark_without_payment() -> Weight {
-		(27_000_000 as Weight)
+		(22_917_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn member_remark_with_payment() -> Weight {
-		(83_000_000 as Weight)
+		(69_370_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}

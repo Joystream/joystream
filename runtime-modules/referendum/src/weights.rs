@@ -140,7 +140,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	// Storage: Instance1Referendum AccountsOptedOut (r:0 w:1)
 	fn opt_out_of_voting() -> Weight {
-		(16_920_000 as Weight)
+		(22_013_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 }

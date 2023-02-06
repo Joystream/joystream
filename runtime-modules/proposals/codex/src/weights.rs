@@ -530,13 +530,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32, ) -> Weight {
-		(136_543_000 as Weight)
+		(116_918_000 as Weight)
 			// Standard Error: 64_000
-			.saturating_add((997_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add((986_000 as Weight).saturating_mul(t as Weight))
 			// Standard Error: 64_000
-			.saturating_add((1_057_000 as Weight).saturating_mul(d as Weight))
+			.saturating_add((1_054_000 as Weight).saturating_mul(d as Weight))
 			// Standard Error: 9_000
-			.saturating_add((1_745_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add((1_867_000 as Weight).saturating_mul(i as Weight))
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(9 as Weight))
 	}
