@@ -234,10 +234,9 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
         match call {
             Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
             Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-            // REVIEW THIS CHANGE:
-            // Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
-            //     ..
-            // }) => false,
+            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+                ..
+            }) => false,
             Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
             Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
             Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
