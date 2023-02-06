@@ -70,6 +70,9 @@ fragment ChannelFields on Channel {
     id
   }
   rewardAccount
+  videos {
+    ...VideoFields
+  }
 }
 
 fragment VideoCategoryFields on VideoCategory {

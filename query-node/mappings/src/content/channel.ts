@@ -18,8 +18,10 @@ import {
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
   ChannelVisibilitySetByModeratorEvent,
+  ChannelNftCollectors,
+  MemberBannedFromChannelEvent,
 } from 'query-node/dist/model'
-import { In } from 'typeorm'
+import { In, FindOptionsWhere } from 'typeorm'
 import { Content } from '../../generated/types'
 import {
   deserializeMetadata,
@@ -45,6 +47,7 @@ import {
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
+import { BaseModel } from '@joystream/warthog'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -175,6 +178,11 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, channelId] = new Content.ChannelDeletedEvent(event).params
+
+  // TODO: remove manual deletion of referencing records after
+  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
+
+  await removeChannelReferencingRelations(store, channelId.toString())
 
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }
@@ -411,4 +419,32 @@ async function processModeratorRemark(
   }
 
   return inconsistentState('Unsupported message type in moderator remark action', messageType)
+}
+
+async function removeChannelReferencingRelations(store: DatabaseManager, channelId: string): Promise<void> {
+  const loadReferencingEntities = async <T extends BaseModel & { channel: Partial<Channel> }>(
+    store: DatabaseManager,
+    entityType: { new (): T },
+    channelId: string
+  ) => {
+    return await store.getMany(entityType, {
+      where: { channel: { id: channelId } } as FindOptionsWhere<T>,
+    })
+  }
+
+  const removeRelations = async <T>(store: DatabaseManager, entities: T[]) => {
+    await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
+  }
+
+  const referencingEntities: typeof BaseModel[] = [Collaborator, ChannelNftCollectors, MemberBannedFromChannelEvent]
+
+  // Find all DB records that reference the given channel
+  const referencingRecords = await Promise.all(
+    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity as any, channelId))
+  )
+
+  // Remove all relations
+  for (const records of referencingRecords) {
+    await removeRelations(store, records)
+  }
 }

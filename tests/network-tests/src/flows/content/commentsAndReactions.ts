@@ -19,6 +19,7 @@ import {
   EditCommentsFixture,
   ModerateCommentParams,
   ModerateCommentsFixture,
+  DeleteChannelWithVideosFixture,
 } from '../../fixtures/content'
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
@@ -258,11 +259,9 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   const moderateCommentsFixture = new ModerateCommentsFixture(api, query, moderateComments)
   await new FixtureRunner(moderateCommentsFixture).runWithQueryNodeChecks()
 
-  // Delete videos
-  debug('Delete video[0]')
-  await joystreamCli.deleteVideo(videosData[0].videoId)
-  debug('Delete video[1]')
-  await joystreamCli.deleteVideo(videosData[1].videoId)
+  // Delete videos & channels (to ensure all referencing relations are properly removed without causing QN processor crash)
+  const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, channelIds)
+  await new FixtureRunner(deleteChannelWithVideosFixture).run()
 
   debug('Done')
 }
