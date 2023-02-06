@@ -13,34 +13,20 @@ export async function processCreateAppMessage(
   const { name, appMetadata } = message
   const appId = `${event.blockNumber}-${event.indexInBlock}`
 
-  let ownerMember: Membership | undefined
-  if (memberId) {
-    ownerMember = await store.get(Membership, {
-      where: {
-        id: memberId,
-      },
-    })
-    if (!ownerMember) {
-      return inconsistentState(`Member with ${memberId} not found`)
-    }
-  }
-
   const isAppExists = await store.get(App, {
     where: {
-      name: message?.name,
+      name: message.name,
     },
   })
 
   if (isAppExists) {
-    logger.error('App already exists', { name })
-    return
+    inconsistentState('App already exists', { name })
   }
 
   const newApp = new App({
     name,
     id: appId,
-    ownerMember: ownerMember || undefined,
-    isLeadOwned: !memberId,
+    ownerMember: memberId ? new Membership({ id: memberId }) : undefined,
     websiteUrl: appMetadata?.websiteUrl || undefined,
     useUri: appMetadata?.useUri || undefined,
     smallIcon: appMetadata?.smallIcon || undefined,
@@ -63,8 +49,7 @@ export async function processUpdateAppMessage(store: DatabaseManager, message: I
   const app = await getAppByIdAndMemberId(store, appId)
 
   if (!app) {
-    logger.error("App doesn't exists or doesn't belong to the member", { appId })
-    return
+    inconsistentState("App doesn't exists or doesn't belong to the member", { appId })
   }
 
   if (appMetadata) {
@@ -93,8 +78,7 @@ export async function processDeleteAppMessage(store: DatabaseManager, message: I
   const app = await getAppByIdAndMemberId(store, appId)
 
   if (!app) {
-    logger.error("App doesn't exists", { appId })
-    return
+    inconsistentState("App doesn't exists", { appId })
   }
 
   await store.remove<App>(app)

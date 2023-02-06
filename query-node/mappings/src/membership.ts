@@ -658,14 +658,20 @@ async function processMemberRemark(
 
   if (messageType === 'createApp') {
     await processCreateAppMessage(store, event, decodedMessage.createApp!, memberId.toString())
+
+    return {}
   }
 
   if (messageType === 'updateApp') {
     await processUpdateAppMessage(store, decodedMessage.updateApp!)
+
+    return {}
   }
 
   if (messageType === 'deleteApp') {
     await processDeleteAppMessage(store, decodedMessage.deleteApp!)
+
+    return {}
   }
 
   if (messageType === 'reactVideo') {

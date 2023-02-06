@@ -692,9 +692,9 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
 }
 
 export async function contentWorkingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [metadataByte] = new WorkingGroups.LeadRemarkedEvent(event).params
+  const [metadataBytes] = new WorkingGroups.LeadRemarkedEvent(event).params
 
-  const leadRemarkMetadata = deserializeMetadata(LeadRemarked, metadataByte)
+  const leadRemarkMetadata = deserializeMetadata(LeadRemarked, metadataBytes)
   if (leadRemarkMetadata) {
     await processLeadRemarked(store, event, leadRemarkMetadata)
   } else {
