@@ -54,7 +54,6 @@ scenario('Full', async ({ job, env }) => {
   job('buying members', buyingMemberships).after(coreJob)
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
-  job('inviting members', invitingMembers).after(coreJob)
   job('transferring invites', transferringInvites).after(coreJob)
   job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
@@ -82,10 +81,11 @@ scenario('Full', async ({ job, env }) => {
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
   job('worker actions', workerActions).requires(hireLeads)
-  job('group budget', groupBudget).requires(hireLeads)
+  const groupBudgetSet = job('group budget', groupBudget).requires(hireLeads)
 
-  // Memberships (depending on hired lead)
+  // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
+  job('inviting members', invitingMembers).after(coreJob).requires(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
