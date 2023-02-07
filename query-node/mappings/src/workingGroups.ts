@@ -7,7 +7,6 @@ import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,
-  ILeadRemarked,
   IOpeningMetadata,
   IRemoveUpcomingOpening,
   ISetGroupMetadata,
@@ -31,6 +30,9 @@ import {
   getWorkingGroupByName,
   getWorkingGroupLead,
   invalidMetadata,
+  logger,
+  saveMetaprotocolTransactionSuccessful,
+  saveMetaprotocolTransactionErrored,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -87,6 +89,7 @@ import {
   BudgetSpendingEvent,
   LeaderSetEvent,
   WorkerStatusLeaving,
+  MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
@@ -692,13 +695,22 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
 }
 
 export async function contentWorkingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [metadataBytes] = new WorkingGroups.LeadRemarkedEvent(event).params
+  const [message] = new WorkingGroups.LeadRemarkedEvent(event).params
+  try {
+    const decodedMessage = LeadRemarked.decode(message.toU8a(true))
 
-  const leadRemarkMetadata = deserializeMetadata(LeadRemarked, metadataBytes)
-  if (leadRemarkMetadata) {
-    await processLeadRemarked(store, event, leadRemarkMetadata)
-  } else {
-    return invalidMetadata('Unrecognized remarked action')
+    const metaTransactionInfo = await processLeadRemarked(store, event, decodedMessage)
+
+    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
+
+    // emit log event
+    logger.info('Lead remarked', { decodedMessage })
+  } catch (e) {
+    // emit log event
+    logger.info(`Bad metadata for lead's remark`, { e })
+
+    // save metaprotocol info
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for lead's remark`)
   }
 }
 
@@ -1018,15 +1030,23 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
 async function processLeadRemarked(
   store: DatabaseManager,
   event: SubstrateEvent,
-  decodedMetadata: DecodedMetadataObject<ILeadRemarked> | null
-) {
-  if (decodedMetadata?.createApp) {
-    await processCreateAppMessage(store, event, decodedMetadata.createApp)
+  decodedMessage: LeadRemarked
+): Promise<Partial<MetaprotocolTransactionSuccessful>> {
+  const messageType = decodedMessage.leadRemarked
+
+  if (messageType === 'createApp') {
+    await processCreateAppMessage(store, event, decodedMessage.createApp!)
+    return {}
   }
-  if (decodedMetadata?.updateApp) {
-    await processUpdateAppMessage(store, decodedMetadata.updateApp)
+  if (messageType === 'updateApp') {
+    await processUpdateAppMessage(store, decodedMessage.updateApp!)
+    return {}
   }
-  if (decodedMetadata?.deleteApp) {
-    await processDeleteAppMessage(store, decodedMetadata.deleteApp)
+  if (messageType === 'deleteApp') {
+    await processDeleteAppMessage(store, decodedMessage.deleteApp!)
+    return {}
   }
+
+  // unknown message type
+  return inconsistentState('Unsupported message type in lead_remark action', messageType)
 }
