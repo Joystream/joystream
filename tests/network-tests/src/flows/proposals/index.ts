@@ -162,7 +162,6 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, proposalsToTest)
   await new FixtureRunner(testAllOutcomesFixture).run()
 
-  debug('FIRST LEG OF PROPOSALS DONE')
   // The membership lead should be hired at this point, so we can test lead-related proposals
 
   const leadId = (await api.query.membershipWorkingGroup.currentLead()).unwrap()
@@ -186,7 +185,6 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   ]
   const leadProposalsOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, leadProposalsToTest)
   await new FixtureRunner(leadProposalsOutcomesFixture).run()
-  debug('SECOND LEG OF PROPOSALS DONE')
 
   const terminateLeadProposalOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, [
     {

@@ -75,7 +75,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Working groups
   const hireLeads = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    channelPayoutsProposalJob || proposalsJob
+    channelPayoutsProposalJob
   )
   job('openings and applications', openingsAndApplications).requires(hireLeads)
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
