@@ -876,7 +876,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content MinCashoutAllowed (r:0 w:1)
 	// Storage: Content Commitment (r:0 w:1)
 	fn update_channel_payouts() -> Weight {
-		(162_891_000 as Weight)
+		(247_210_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(8 as Weight))
 			.saturating_add(T::DbWeight::get().writes(9 as Weight))
 	}
