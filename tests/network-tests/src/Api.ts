@@ -90,7 +90,6 @@ export class ApiFactory {
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string,
     miniSecret: string
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
@@ -112,7 +111,7 @@ export class ApiFactory {
         const version = await api.rpc.state.getRuntimeVersion()
         console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
+        return new ApiFactory(api, treasuryAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -122,11 +121,10 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
-    this.keyring.addFromUri(sudoAccountUri)
     this.miniSecret = miniSecret
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
@@ -280,11 +278,6 @@ export class Api {
     return results
   }
 
-  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
-    const sudo = await this.api.query.sudo.key()
-    return this.signAndSend(this.api.tx.sudo.sudo(tx), sudo.unwrap())
-  }
-
   public enableDebugTxLogs(): void {
     this.sender.setLogLevel(LogLevel.Debug)
   }
@@ -425,14 +418,6 @@ export class Api {
     amount: BN
   }): Promise<ISubmittableResult> {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
-  }
-
-  public async grantTreasuryWorkingBalance(): Promise<ISubmittableResult> {
-    return this.sudoSetBalance(this.treasuryAccount, new BN(100000000), new BN(0))
-  }
-
-  public async sudoSetBalance(who: string, free: BN, reserved: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.balances.setBalance(who, free, reserved))
   }
 
   public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
@@ -581,6 +566,11 @@ export class Api {
     }
   }
 
+  public async getNextOpeningId(group: WorkingGroupModuleName): Promise<u64> {
+    const openingId = await this.api.query[group].nextOpeningId()
+    return openingId
+  }
+
   public async getOpening(group: WorkingGroupModuleName, id: OpeningId): Promise<Opening> {
     const opening = await this.api.query[group].openingById(id)
     if (opening.isEmpty) {
@@ -589,12 +579,17 @@ export class Api {
     return opening
   }
 
-  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+  public async getLeaderId(group: WorkingGroupModuleName): Promise<WorkerId> {
     const leadId = await this.api.query[group].currentLead()
     if (leadId.isNone) {
       throw new Error(`Cannot get ${group} lead: Lead not hired!`)
     }
-    return [leadId.unwrap(), (await this.api.query[group].workerById(leadId.unwrap())).unwrap()]
+    return leadId.unwrap()
+  }
+
+  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+    const leadId = await this.getLeaderId(group)
+    return [leadId, (await this.api.query[group].workerById(leadId)).unwrap()]
   }
 
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
@@ -846,6 +841,8 @@ export class Api {
     initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
   ): Promise<ISubmittableResult[]> {
     // path to append to base SURI
+    const debug = extendDebug('api-factory')
+    debug(`assigning Worker WellKnown Account for ${group}`)
     const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
     const account = this.createCustomKeyPair(uri).address
     return Promise.all([
@@ -1016,7 +1013,10 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
+  async createEnglishAuctionParameters(
+    whitelist: number[] = [],
+    options: { extensionPeriod?: BN; duration?: BN } = {}
+  ): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -1026,11 +1026,11 @@ export class Api {
     const boundaries = await this.getAuctionParametersBoundaries()
 
     // auction duration must be larger than extension period (enforced in runtime)
-    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    const auctionDuration = options.duration ?? BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
 
     const startingPrice = boundaries.startingPrice.min
     const minimalBidStep = boundaries.bidStep.min
-    const extensionPeriod = boundaries.extensionPeriod.min
+    const extensionPeriod = options.extensionPeriod ?? boundaries.extensionPeriod.min
 
     const auctionParams = createType('PalletContentNftTypesEnglishAuctionParamsRecord', {
       startingPrice,

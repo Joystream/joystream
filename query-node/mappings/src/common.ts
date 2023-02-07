@@ -176,7 +176,7 @@ export type WorkingGroupModuleName =
   | 'forumWorkingGroup'
   | 'membershipWorkingGroup'
   | 'operationsWorkingGroupAlpha'
-  | 'gatewayWorkingGroup'
+  | 'appWorkingGroup'
   | 'distributionWorkingGroup'
   | 'operationsWorkingGroupBeta'
   | 'operationsWorkingGroupGamma'
@@ -192,8 +192,8 @@ export function getWorkingGroupModuleName(group: WGType): WorkingGroupModuleName
     return 'storageWorkingGroup'
   } else if (group.isOperationsAlpha) {
     return 'operationsWorkingGroupAlpha'
-  } else if (group.isGateway) {
-    return 'gatewayWorkingGroup'
+  } else if (group.isApp) {
+    return 'appWorkingGroup'
   } else if (group.isDistribution) {
     return 'distributionWorkingGroup'
   } else if (group.isOperationsBeta) {
@@ -227,6 +227,15 @@ export async function getMemberById(
     throw new Error(`Member(${id}) not found`)
   }
   return member
+}
+
+export async function getWorkingGroupLead(store: DatabaseManager, groupName: WorkingGroupModuleName) {
+  const lead = await store.get(Worker, { where: { groupId: groupName, isLead: true, isActive: true } })
+  if (!lead) {
+    return inconsistentState(`Couldn't find an active lead for ${groupName}`)
+  }
+
+  return lead
 }
 
 export async function getWorker(

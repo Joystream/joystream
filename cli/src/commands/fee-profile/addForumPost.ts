@@ -32,14 +32,7 @@ export default class FeeProfileAddForumPost extends FeeProfileCommandBase {
     this.jsonPrettyPrint(JSON.stringify({ postLen, editable }))
 
     const tx = api.tx.forum.addPost(0, 0, 0, _.repeat('x', postLen), editable)
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    this.profile(
-      editable
-        ? {
-            txFee,
-            postDeposit,
-          }
-        : { txFee }
-    )
+    const extraCosts = editable ? { postDeposit } : undefined
+    await this.profile(tx, extraCosts)
   }
 }

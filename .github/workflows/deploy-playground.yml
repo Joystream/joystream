@@ -30,14 +30,10 @@ on:
         description: 'Scenario name to run after chain stats'
         required: false
         default: 'setupNewChainMultiStorage'
-      sudoSuri:
-        description: 'SURI of sudo account - must be different than treasury'
+      treasurySuri:
+        description: 'SURI of treasury account'
         required: false
         default: '//Alice'
-      treasurySuri:
-        description: 'SURI of treasury account - must be different than sudo'
-        required: false
-        default: '//Bob'
       initialBalances: 
         description: 'JSON string or http URL to override initial balances and vesting config'
         default: ''
@@ -104,7 +100,6 @@ jobs:
                           stack_name=${{ env.STACK_NAME }} \
                           runtime_profile=${{ github.event.inputs.runtimeProfile }} \
                           ssh_pub_key='${{ github.event.inputs.sshPubKey }}' \
-                          sudo_suri='${{ github.event.inputs.sudoSuri }}' \
                           treasury_suri='${{ github.event.inputs.treasurySuri }}' \
                           initial_balances='${{ github.event.inputs.initialBalances }}' \
                           init_chain_scenario='${{ github.event.inputs.chainSetupScenario }}'"

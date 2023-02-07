@@ -35,7 +35,7 @@ export default class ClaimChannelReward extends UploadCommandBase {
     const [{ payloadDataObject }] = await this.getQNApi().getChannelPayoutsUpdatedEventByCommitment(commitment)
     const payoutProof = await channelPayoutProof(
       'URL',
-      `${storageNodeInfo.apiEndpoint}/files/${payloadDataObject.id}`,
+      `${storageNodeInfo.apiEndpoint}/files/${payloadDataObject?.id}`,
       Number(channelId)
     )
     const maxCashoutAllowed = await this.getOriginalApi().query.content.maxCashoutAllowed()

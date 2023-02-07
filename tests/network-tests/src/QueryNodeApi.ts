@@ -451,6 +451,10 @@ import {
   GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
   GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables,
   GetMetaprotocolTransactionalStatusEventsByEventIds,
+  ChannelRewardClaimedAndWithdrawnEventFieldsFragment,
+  GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQuery,
+  GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQueryVariables,
+  GetChannelRewardClaimedAndWithdrawnEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1524,6 +1528,16 @@ export class QueryNodeApi {
       GetChannelRewardClaimedEventsByEventIdsQuery,
       GetChannelRewardClaimedEventsByEventIdsQueryVariables
     >(GetChannelRewardClaimedEventsByEventIds, { eventIds }, 'channelRewardClaimedEvents')
+  }
+
+  public async getChannelRewardClaimedAndWithdrawnEvents(
+    events: EventDetails[]
+  ): Promise<ChannelRewardClaimedAndWithdrawnEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQuery,
+      GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQueryVariables
+    >(GetChannelRewardClaimedAndWithdrawnEventsByEventIds, { eventIds }, 'channelRewardClaimedAndWithdrawnEvents')
   }
 
   public async getChannelFundsWithdrawnEvents(

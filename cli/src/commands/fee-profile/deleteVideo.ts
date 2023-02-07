@@ -44,14 +44,10 @@ export default class FeeProfileDeleteVideo extends FeeProfileCommandBase {
     )
 
     const tx = api.tx.content.deleteVideo({ Member: 0 }, 0, assetsNum, createType('Option<u32>', storageBucketsNum))
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    const costs = {
-      txFee,
-    }
     const returns = {
       dataObjectsBloatBond: dataObjectBloatBond.muln(assetsNum),
       videoBloatBond,
     }
-    this.profile(costs, returns)
+    await this.profile(tx, undefined, returns)
   }
 }

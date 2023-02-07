@@ -6979,8 +6979,8 @@ export type ChannelPayoutsUpdatedEvent = BaseGraphQlObject & {
   indexInBlock: Scalars['Int']
   /** Merkle root of the channel payouts */
   commitment?: Maybe<Scalars['String']>
-  payloadDataObject: StorageDataObject
-  payloadDataObjectId: Scalars['String']
+  payloadDataObject?: Maybe<StorageDataObject>
+  payloadDataObjectId?: Maybe<Scalars['String']>
   /** Size of the serialized channel payouts payload */
   payloadSize?: Maybe<Scalars['BigInt']>
   /** Hash of the serialized channel payouts payload */
@@ -6991,8 +6991,6 @@ export type ChannelPayoutsUpdatedEvent = BaseGraphQlObject & {
   maxCashoutAllowed?: Maybe<Scalars['BigInt']>
   /** Can channel cashout the rewards */
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
-  /** Is the commitment valid. Most recent commitment would be considered valid */
-  isCommitmentValid: Scalars['Boolean']
 }
 
 export type ChannelPayoutsUpdatedEventConnection = {
@@ -7007,13 +7005,12 @@ export type ChannelPayoutsUpdatedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   commitment?: Maybe<Scalars['String']>
-  payloadDataObject: Scalars['ID']
+  payloadDataObject?: Maybe<Scalars['ID']>
   payloadSize?: Maybe<Scalars['String']>
   payloadHash?: Maybe<Scalars['String']>
   minCashoutAllowed?: Maybe<Scalars['String']>
   maxCashoutAllowed?: Maybe<Scalars['String']>
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
-  isCommitmentValid: Scalars['Boolean']
 }
 
 export type ChannelPayoutsUpdatedEventEdge = {
@@ -7050,8 +7047,6 @@ export enum ChannelPayoutsUpdatedEventOrderByInput {
   MaxCashoutAllowedDesc = 'maxCashoutAllowed_DESC',
   ChannelCashoutsEnabledAsc = 'channelCashoutsEnabled_ASC',
   ChannelCashoutsEnabledDesc = 'channelCashoutsEnabled_DESC',
-  IsCommitmentValidAsc = 'isCommitmentValid_ASC',
-  IsCommitmentValidDesc = 'isCommitmentValid_DESC',
 }
 
 export type ChannelPayoutsUpdatedEventUpdateInput = {
@@ -7066,7 +7061,6 @@ export type ChannelPayoutsUpdatedEventUpdateInput = {
   minCashoutAllowed?: Maybe<Scalars['String']>
   maxCashoutAllowed?: Maybe<Scalars['String']>
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
-  isCommitmentValid?: Maybe<Scalars['Boolean']>
 }
 
 export type ChannelPayoutsUpdatedEventWhereInput = {
@@ -7143,8 +7137,6 @@ export type ChannelPayoutsUpdatedEventWhereInput = {
   maxCashoutAllowed_in?: Maybe<Array<Scalars['BigInt']>>
   channelCashoutsEnabled_eq?: Maybe<Scalars['Boolean']>
   channelCashoutsEnabled_in?: Maybe<Array<Scalars['Boolean']>>
-  isCommitmentValid_eq?: Maybe<Scalars['Boolean']>
-  isCommitmentValid_in?: Maybe<Array<Scalars['Boolean']>>
   payloadDataObject?: Maybe<StorageDataObjectWhereInput>
   AND?: Maybe<Array<ChannelPayoutsUpdatedEventWhereInput>>
   OR?: Maybe<Array<ChannelPayoutsUpdatedEventWhereInput>>
@@ -30711,6 +30703,8 @@ export type UpdateChannelPayoutsProposalDetails = {
   maxCashoutAllowed?: Maybe<Scalars['Float']>
   /** Can channel cashout the rewards */
   channelCashoutsEnabled?: Maybe<Scalars['Boolean']>
+  /** The hash of the channel payout payload file */
+  payloadHash?: Maybe<Scalars['String']>
 }
 
 export type UpdateWorkingGroupBudgetProposalDetails = {
@@ -30773,8 +30767,6 @@ export type Video = BaseGraphQlObject & {
   mediaMetadata?: Maybe<VideoMediaMetadata>
   mediaMetadataId?: Maybe<Scalars['String']>
   createdInBlock: Scalars['Int']
-  /** Is video featured or not */
-  isFeatured: Scalars['Boolean']
   subtitles: Array<VideoSubtitle>
   /** Is comment section enabled (true if enabled) */
   isCommentSectionEnabled: Scalars['Boolean']
@@ -31147,7 +31139,6 @@ export type VideoCreateInput = {
   videoStateBloatBond: Scalars['String']
   mediaMetadata?: Maybe<Scalars['ID']>
   createdInBlock: Scalars['Float']
-  isFeatured: Scalars['Boolean']
   isCommentSectionEnabled: Scalars['Boolean']
   commentsCount: Scalars['Float']
   isReactionFeatureEnabled: Scalars['Boolean']
@@ -31710,8 +31701,6 @@ export enum VideoOrderByInput {
   MediaMetadataDesc = 'mediaMetadata_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
   CreatedInBlockDesc = 'createdInBlock_DESC',
-  IsFeaturedAsc = 'isFeatured_ASC',
-  IsFeaturedDesc = 'isFeatured_DESC',
   IsCommentSectionEnabledAsc = 'isCommentSectionEnabled_ASC',
   IsCommentSectionEnabledDesc = 'isCommentSectionEnabled_DESC',
   CommentsCountAsc = 'commentsCount_ASC',
@@ -32339,7 +32328,6 @@ export type VideoUpdateInput = {
   videoStateBloatBond?: Maybe<Scalars['String']>
   mediaMetadata?: Maybe<Scalars['ID']>
   createdInBlock?: Maybe<Scalars['Float']>
-  isFeatured?: Maybe<Scalars['Boolean']>
   isCommentSectionEnabled?: Maybe<Scalars['Boolean']>
   commentsCount?: Maybe<Scalars['Float']>
   isReactionFeatureEnabled?: Maybe<Scalars['Boolean']>
@@ -32562,8 +32550,6 @@ export type VideoWhereInput = {
   createdInBlock_lt?: Maybe<Scalars['Int']>
   createdInBlock_lte?: Maybe<Scalars['Int']>
   createdInBlock_in?: Maybe<Array<Scalars['Int']>>
-  isFeatured_eq?: Maybe<Scalars['Boolean']>
-  isFeatured_in?: Maybe<Array<Scalars['Boolean']>>
   isCommentSectionEnabled_eq?: Maybe<Scalars['Boolean']>
   isCommentSectionEnabled_in?: Maybe<Array<Scalars['Boolean']>>
   commentsCount_eq?: Maybe<Scalars['Int']>

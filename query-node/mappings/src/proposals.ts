@@ -105,7 +105,7 @@ async function parseProposalDetails(
   if (proposalDetails.isSignal) {
     const details = new SignalProposalDetails()
     const specificDetails = proposalDetails.asSignal
-    details.text = perpareString(specificDetails.toHuman() as string)
+    details.text = bytesToString(specificDetails)
     return details
   }
   // RuntimeUpgradeProposalDetails:
@@ -213,7 +213,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isAmendConstitution) {
     const details = new AmendConstitutionProposalDetails()
     const specificDetails = proposalDetails.asAmendConstitution
-    details.text = perpareString(specificDetails.toHuman() as string)
+    details.text = bytesToString(specificDetails)
     return details
   }
   // CancelWorkingGroupLeadOpeningProposalDetails:
@@ -289,6 +289,10 @@ async function parseProposalDetails(
     details.minCashoutAllowed = unwrap(specificDetails.minCashoutAllowed)
     details.maxCashoutAllowed = unwrap(specificDetails.maxCashoutAllowed)
     details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
+
+    const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
+    details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
+
     return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
@@ -332,8 +336,8 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     details: proposalDetails,
     councilApprovals: 0,
     creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
-    title: perpareString(generalProposalParameters.title.toHuman() as string),
-    description: perpareString(generalProposalParameters.description.toHuman() as string),
+    title: bytesToString(generalProposalParameters.title),
+    description: bytesToString(generalProposalParameters.description),
     exactExecutionBlock: generalProposalParameters.exactExecutionBlock.isSome
       ? toNumber(generalProposalParameters.exactExecutionBlock.unwrap(), INT32MAX)
       : undefined,

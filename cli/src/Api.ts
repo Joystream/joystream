@@ -61,7 +61,7 @@ export const apiModuleByGroup = {
   [WorkingGroups.Curators]: 'contentWorkingGroup',
   [WorkingGroups.Forum]: 'forumWorkingGroup',
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
-  [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
+  [WorkingGroups.App]: 'appWorkingGroup',
   [WorkingGroups.Builders]: 'operationsWorkingGroupAlpha',
   [WorkingGroups.HumanResources]: 'operationsWorkingGroupBeta',
   [WorkingGroups.Marketing]: 'operationsWorkingGroupGamma',
@@ -119,6 +119,10 @@ export default class Api {
 
   async bestNumber(): Promise<number> {
     return (await this._api.derive.chain.bestNumber()).toNumber()
+  }
+
+  existentialDeposit(): Balance {
+    return this._api.consts.balances.existentialDeposit
   }
 
   async getAccountsBalancesInfo(accountAddresses: string[]): Promise<DeriveBalancesAll[]> {

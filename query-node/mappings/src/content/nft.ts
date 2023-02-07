@@ -360,6 +360,9 @@ async function createBid(
 
     await store.save<Bid>(bid)
   }
+  auction.bids?.forEach((b) => {
+    if (cancelledBidsIds.includes(b.id)) b.isCanceled = true
+  })
 
   const amount = bidAmount ? new BN(bidAmount.toString()) : (auction.buyNowPrice as BN)
   const previousTopBid = auction.topBid
@@ -374,6 +377,7 @@ async function createBid(
     indexInBlock: event.indexInBlock,
     isCanceled: false,
   })
+  auction.bids ? auction.bids.push(newBid) : (auction.bids = [newBid])
 
   // check if the auction's top bid needs to be updated, this can happen in those cases:
   // 1. auction doesn't have the top bid at the moment, new bid should be new top bid
@@ -383,19 +387,19 @@ async function createBid(
   if (!auction.topBid || newBid.amount.gt(auction.topBid.amount)) {
     // handle cases 1 and 2
     newBid.auctionTopBid = auction
+    auction.topBid = newBid
   } else if (cancelledBidsIds.includes(auction.topBid.id)) {
     // handle case 3
-    const allAuctionBids = [...(auction.bids || []), newBid]
-    // filter canceled bids - auction.bids will be stale in memory
-    const notCanceledAuctionBids = allAuctionBids.filter((auctionBid) => !cancelledBidsIds.includes(auctionBid.id))
-    const newTopBid = findTopBid(notCanceledAuctionBids)
+    const newTopBid = findTopBid(auction.bids)
     if (newTopBid) {
       if (newTopBid.id !== newBid.id) {
         // only save newTopBid if it's not the newBid, otherwise store.save(newBid) below will overwrite it
         newTopBid.auctionTopBid = auction
+        auction.topBid = newTopBid
         await store.save<Bid>(newTopBid)
       } else {
         newBid.auctionTopBid = auction
+        auction.topBid = newBid
       }
     }
   }
@@ -731,12 +735,14 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
   )
 
   // extend auction duration when needed
-  if (
-    auction.auctionType instanceof AuctionTypeEnglish &&
-    auction.auctionType.plannedEndAtBlock - auction.auctionType.extensionPeriod < event.blockNumber
-  ) {
-    auction.auctionType.plannedEndAtBlock = auction.auctionType.extensionPeriod
-    await store.save<Auction>(auction)
+  if (auction.auctionType.isTypeOf === AuctionTypeEnglish.name) {
+    const auctionType = auction.auctionType as AuctionTypeEnglish
+    const { plannedEndAtBlock, extensionPeriod } = auctionType
+    // The condition has to be the same as in `runtime-modules/content/src/nft/types.rs`
+    if (plannedEndAtBlock - extensionPeriod <= event.blockNumber) {
+      auctionType.plannedEndAtBlock += extensionPeriod
+      await store.save<Auction>(auction)
+    }
   }
 
   // common event processing - second

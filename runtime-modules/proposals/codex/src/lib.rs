@@ -105,8 +105,8 @@ pub type ContentWorkingGroupInstance = working_group::Instance3;
 // The builder working group instance alias.
 pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
-// The gateway working group instance alias.
-pub type GatewayWorkingGroupInstance = working_group::Instance5;
+// The app working group instance alias.
+pub type AppWorkingGroupInstance = working_group::Instance5;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance6;
@@ -132,7 +132,7 @@ pub trait Config:
     + working_group::Config<StorageWorkingGroupInstance>
     + working_group::Config<ContentWorkingGroupInstance>
     + working_group::Config<OperationsWorkingGroupInstanceAlpha>
-    + working_group::Config<GatewayWorkingGroupInstance>
+    + working_group::Config<AppWorkingGroupInstance>
     + working_group::Config<MembershipWorkingGroupInstance>
     + working_group::Config<OperationsWorkingGroupInstanceBeta>
     + working_group::Config<OperationsWorkingGroupInstanceGamma>
@@ -523,18 +523,21 @@ decl_module! {
         ) {
             Self::ensure_details_checks(&proposal_details)?;
 
-            let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
-            // TODO: encode_proposal could take a reference instead of moving to prevent cloning
-            // since the encode trait takes a reference to `self`.
-            // (Note: this is an useful change since this could be a ~3MB copy in the case of
-            // a Runtime Upgrade). See: https://github.com/Joystream/joystream/issues/2161
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
             let account_id =
                 T::MembershipOriginValidator::ensure_member_controller_account_origin(
                     origin,
                     general_proposal_parameters.member_id
                 )?;
+
+            let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
+            // TODO: encode_proposal could take a reference instead of moving to prevent cloning
+            // since the encode trait takes a reference to `self`.
+            // (Note: this is an useful change since this could be a ~3MB copy in the case of
+            // a Runtime Upgrade). See: https://github.com/Joystream/joystream/issues/2161
+            let proposal_code = T::ProposalEncoder::encode_proposal(
+                proposal_details.clone(),
+                account_id.clone()
+            );
 
             <proposals_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
                 &proposal_parameters,
@@ -596,9 +599,7 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_worker_id::<OperationsWorkingGroupInstanceAlpha>(worker_id)
             }
-            WorkingGroup::Gateway => {
-                Self::is_lead_worker_id::<GatewayWorkingGroupInstance>(worker_id)
-            }
+            WorkingGroup::App => Self::is_lead_worker_id::<AppWorkingGroupInstance>(worker_id),
             WorkingGroup::Membership => {
                 Self::is_lead_worker_id::<MembershipWorkingGroupInstance>(worker_id)
             }
@@ -640,9 +641,7 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_opening_id::<OperationsWorkingGroupInstanceAlpha>(opening_id)
             }
-            WorkingGroup::Gateway => {
-                Self::is_lead_opening_id::<GatewayWorkingGroupInstance>(opening_id)
-            }
+            WorkingGroup::App => Self::is_lead_opening_id::<AppWorkingGroupInstance>(opening_id),
             WorkingGroup::Membership => {
                 Self::is_lead_opening_id::<MembershipWorkingGroupInstance>(opening_id)
             }
@@ -691,8 +690,8 @@ impl<T: Config> Module<T> {
             WorkingGroup::OperationsAlpha => {
                 Self::is_lead_application_id::<OperationsWorkingGroupInstanceAlpha>(application_id)
             }
-            WorkingGroup::Gateway => {
-                Self::is_lead_application_id::<GatewayWorkingGroupInstance>(application_id)
+            WorkingGroup::App => {
+                Self::is_lead_application_id::<AppWorkingGroupInstance>(application_id)
             }
             WorkingGroup::Membership => {
                 Self::is_lead_application_id::<MembershipWorkingGroupInstance>(application_id)

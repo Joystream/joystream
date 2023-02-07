@@ -110,8 +110,6 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 #[cfg(any(feature = "std", test))]
-pub use pallet_sudo::Call as SudoCall;
-#[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
 use constants::*;
@@ -228,78 +226,34 @@ parameter_types! {
 /// Our extrinsics call filter
 pub enum CallFilter {}
 
-/// Stage 1: Filter all non-essential calls.
-/// Allow only calls that are essential for successful block authoring, staking, nominating.
-/// Since balances calls are disabled, this means that stash and controller
-/// accounts must already be funded.
-/// This will be used at initial launch, and other calls will be enabled as we rollout.
-#[cfg(not(any(
-    feature = "playground-runtime",
-    feature = "testing-runtime",
-    feature = "runtime-benchmarks"
-)))]
-fn filter_stage_1(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    match call {
-        Call::System(method) =>
-        // All methods except the remark call
-        {
-            !matches!(method, frame_system::Call::<Runtime>::remark { .. })
-        }
-        // confirmed that Utility.batch dispatch does not bypass filter.
-        Call::Utility(_) => true,
-        Call::Babe(_) => true,
-        Call::Timestamp(_) => true,
-        Call::Authorship(_) => true,
-        Call::ElectionProviderMultiPhase(_) => true,
-        Call::Staking(_) => true,
-        Call::Session(_) => true,
-        Call::Grandpa(_) => true,
-        Call::ImOnline(_) => true,
-        Call::Sudo(_) => true,
-        Call::BagsList(_) => true,
-        Call::Multisig(_) => true,
-        // Disable all other calls
-        _ => false,
-    }
-}
-
-// Stage 2: Filter out only a subset of calls on content pallet, some specific proposals
+// Filter out only a subset of calls on content pallet, some specific proposals
 // and the bounty creation call.
-#[cfg(any(feature = "playground-runtime", feature = "testing-runtime"))]
-fn filter_stage_2(call: &<Runtime as frame_system::Config>::Call) -> bool {
-    // TODO: adjust after Carthage
-    match call {
-        Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-        Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-        Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-        Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
-            ..
-        }) => false,
-        Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-        Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
-        Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
-        Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
-            general_proposal_parameters: _,
-            proposal_details,
-        }) => !matches!(
-            proposal_details,
-            proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
-        ),
-        _ => true,
-    }
-}
-
-// Production config
-#[cfg(not(any(
-    feature = "playground-runtime",
-    feature = "testing-runtime",
-    feature = "runtime-benchmarks"
-)))]
+#[cfg(not(feature = "runtime-benchmarks"))]
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_1(call)
+        match call {
+            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+            Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
+            Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
+            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+                general_proposal_parameters: _,
+                proposal_details,
+            }) => !matches!(
+                proposal_details,
+                proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+            ),
+            _ => true,
+        }
     }
 }
 
@@ -308,14 +262,6 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
 impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
     fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
         true
-    }
-}
-
-// Playground and Testing - filter joystream pallet calls only to test they are properly disabled
-#[cfg(any(feature = "playground-runtime", feature = "testing-runtime"))]
-impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
-        filter_stage_2(call)
     }
 }
 
@@ -527,11 +473,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
-}
-
-impl pallet_sudo::Config for Runtime {
-    type Event = Event;
-    type Call = Call;
 }
 
 parameter_types! {
@@ -1386,7 +1327,7 @@ parameter_types! {
     pub const StorageWorkingGroupRewardPeriod: u32 = days!(1) + 20;
     pub const ContentWorkingGroupRewardPeriod: u32 = days!(1) + 30;
     pub const MembershipRewardPeriod: u32 = days!(1) + 40;
-    pub const GatewayRewardPeriod: u32 = days!(1) + 50;
+    pub const AppRewardPeriod: u32 = days!(1) + 50;
     pub const OperationsAlphaRewardPeriod: u32 = days!(1) + 60;
     pub const OperationsBetaRewardPeriod: u32 = days!(1) + 70;
     pub const OperationsGammaRewardPeriod: u32 = days!(1) + 80;
@@ -1419,8 +1360,8 @@ pub type InvitedMemberStakingManager =
     staking_handler::StakingManager<Runtime, InvitedMemberLockId>;
 pub type BoundStakingAccountStakingManager =
     staking_handler::StakingManager<Runtime, BoundStakingAccountLockId>;
-pub type GatewayWorkingGroupStakingManager =
-    staking_handler::StakingManager<Runtime, GatewayWorkingGroupLockId>;
+pub type AppWorkingGroupStakingManager =
+    staking_handler::StakingManager<Runtime, AppWorkingGroupLockId>;
 pub type OperationsWorkingGroupAlphaStakingManager =
     staking_handler::StakingManager<Runtime, OperationsWorkingGroupAlphaLockId>;
 pub type OperationsWorkingGroupBetaStakingManager =
@@ -1442,8 +1383,8 @@ pub type ContentWorkingGroupInstance = working_group::Instance3;
 // The builder working group instance alias.
 pub type OperationsWorkingGroupInstanceAlpha = working_group::Instance4;
 
-// The gateway working group instance alias.
-pub type GatewayWorkingGroupInstance = working_group::Instance5;
+// The app working group instance alias.
+pub type AppWorkingGroupInstance = working_group::Instance5;
 
 // The membership working group instance alias.
 pub type MembershipWorkingGroupInstance = working_group::Instance6;
@@ -1522,14 +1463,14 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Config<GatewayWorkingGroupInstance> for Runtime {
+impl working_group::Config<AppWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = GatewayWorkingGroupStakingManager;
+    type StakingHandler = AppWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = GatewayRewardPeriod;
+    type RewardPeriod = AppRewardPeriod;
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
@@ -1650,7 +1591,7 @@ macro_rules! call_wg {
             WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
-            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::App => <AppWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
             WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
@@ -1895,7 +1836,6 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-        Sudo: pallet_sudo,
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
@@ -1919,7 +1859,7 @@ construct_runtime!(
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
         ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupAlpha: working_group::<Instance4>::{Pallet, Call, Storage, Event<T>},
-        GatewayWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
+        AppWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
         MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},

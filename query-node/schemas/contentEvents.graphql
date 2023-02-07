@@ -586,8 +586,8 @@ type ChannelRewardClaimedAndWithdrawnEvent implements Event @entity {
   "Reward amount claimed"
   amount: BigInt!
 
-  "Destination account ID"
-  account: String!
+  "Destination account ID. Null in case the funds destination was Council"
+  account: String
 
   "Content actor"
   actor: ContentActor!
@@ -619,8 +619,8 @@ type ChannelFundsWithdrawnEvent implements Event @entity {
   "Reward amount claimed"
   amount: BigInt!
 
-  "Destination account ID"
-  account: String!
+  "Destination account ID. Null in case the funds destination was Council"
+  account: String
 
   "Content actor"
   actor: ContentActor!
@@ -650,7 +650,7 @@ type ChannelPayoutsUpdatedEvent @entity {
   commitment: String
 
   "Storage data object corresponding to the channel payouts payload"
-  payloadDataObject: StorageDataObject!
+  payloadDataObject: StorageDataObject
 
   "Size of the serialized channel payouts payload"
   payloadSize: BigInt
@@ -666,9 +666,6 @@ type ChannelPayoutsUpdatedEvent @entity {
 
   "Can channel cashout the rewards"
   channelCashoutsEnabled: Boolean
-
-  "Is the commitment valid. Most recent commitment would be considered valid"
-  isCommitmentValid: Boolean!
 }
 
 type PaymentContextVideo @variant {

@@ -4,10 +4,17 @@ fragment ChannelFields on Channel {
     id
     videoStateBloatBond
   }
+  rewardAccount
 }
 
 query getChannelById($channelId: ID!) {
   channelByUniqueInput(where: { id: $channelId }) {
+    ...ChannelFields
+  }
+}
+
+query getChannelByRewardAccount($rewardAccount: String!) {
+  channels(where: { rewardAccount_eq: $rewardAccount }) {
     ...ChannelFields
   }
 }

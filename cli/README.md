@@ -89,6 +89,13 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli account:info [ADDRESS]`](#joystream-cli-accountinfo-address)
 - [`joystream-cli account:list`](#joystream-cli-accountlist)
 - [`joystream-cli account:transferTokens`](#joystream-cli-accounttransfertokens)
+- [`joystream-cli advanced-transactions:constructSetCodeCall`](#joystream-cli-advanced-transactionsconstructsetcodecall)
+- [`joystream-cli advanced-transactions:constructTxCall`](#joystream-cli-advanced-transactionsconstructtxcall)
+- [`joystream-cli advanced-transactions:constructUnsignedTx`](#joystream-cli-advanced-transactionsconstructunsignedtx)
+- [`joystream-cli advanced-transactions:constructUnsignedTxApproveMs`](#joystream-cli-advanced-transactionsconstructunsignedtxapprovems)
+- [`joystream-cli advanced-transactions:constructUnsignedTxFinalApproveMs`](#joystream-cli-advanced-transactionsconstructunsignedtxfinalapprovems)
+- [`joystream-cli advanced-transactions:constructUnsignedTxInitiateMs`](#joystream-cli-advanced-transactionsconstructunsignedtxinitiatems)
+- [`joystream-cli advanced-transactions:constructWrappedTxCall`](#joystream-cli-advanced-transactionsconstructwrappedtxcall)
 - [`joystream-cli api:getQueryNodeEndpoint`](#joystream-cli-apigetquerynodeendpoint)
 - [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
 - [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
@@ -161,6 +168,7 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli membership:memberRemark MESSAGE`](#joystream-cli-membershipmemberremark-message)
 - [`joystream-cli membership:update`](#joystream-cli-membershipupdate)
 - [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
+- [`joystream-cli sign-offline:signUnsignedTx`](#joystream-cli-sign-offlinesignunsignedtx)
 - [`joystream-cli staking:validate`](#joystream-cli-stakingvalidate)
 - [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
 - [`joystream-cli working-groups:apply`](#joystream-cli-working-groupsapply)
@@ -293,6 +301,257 @@ OPTIONS
 ```
 
 _See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/transferTokens.ts)_
+
+## `joystream-cli advanced-transactions:constructSetCodeCall`
+
+Construct a "system.setCode" call.
+
+```
+USAGE
+  $ joystream-cli advanced-transactions:constructSetCodeCall
+
+OPTIONS
+  -o, --output=output              (required) Path to the file where the call should be saved
+  --address=address                (required) The address that is performing the final call.
+  --codeOutput=codeOutput          Path to where the parsed wasm code shold be saved.
+
+  --lifetime=lifetime              [default: 64] Lifetime of the transaction, from creation to included on chain, in
+                                   blocks before it becomes invalid.
+
+  --nonceIncrement=nonceIncrement  [default: 0] If you are preparing multiple transactions from the samme account,
+                                   before broadcasting them, you need to increase the nonce by 1 for each. This value
+                                   will be added to the nonce read from the chain.
+
+  --tip=tip                        [default: 0] Optional "tip" (in base value) for faster block inclusion.
+
+  --wasmPath=wasmPath              (required) The address that is performing the final call.
+```
+
+_See code: [src/commands/advanced-transactions/constructSetCodeCall.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/advanced-transactions/constructSetCodeCall.ts)_
+
+## `joystream-cli advanced-transactions:constructTxCall`
+
+Construct a call that as argument for a transaction, or to wrap in another call.
+
+```
+USAGE
+  $ joystream-cli advanced-transactions:constructTxCall
+
+OPTIONS
+  -o, --output=output              (required) Path to the file where the output JSON should be saved.
+  --address=address                (required) The address that is performing the (final) transaction.
+
+  --lifetime=lifetime              [default: 64] Lifetime of the transaction, from creation to included on chain, in
+                                   blocks before it becomes invalid.
+
+  --method=method                  (required) The method of the extrinsic
+
+  --module=module                  (required) The module (a.k.a. section) of the extrinsic
+
+  --nonceIncrement=nonceIncrement  [default: 0] If you are preparing multiple transactions from the samme account,
+                                   before broadcasting them, you need to increase the nonce by 1 for each. This value
+                                   will be added to the nonce read from the chain.
+
+  --tip=tip                        [default: 0] Optional "tip" (in base value) for faster block inclusion.
+```
+
+_See code: [src/commands/advanced-transactions/constructTxCall.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/advanced-transactions/constructTxCall.ts)_
+
+## `joystream-cli advanced-transactions:constructUnsignedTx`
+
+Create a simple unsigned transaction, for signing offline.
+
+```
+USAGE
+  $ joystream-cli advanced-transactions:constructUnsignedTx
+
+OPTIONS
+  -o, --output=output              (required) Path to the file where the output JSON should be saved.
+  --address=address                (required) The address that is performing the transaction.
+
+  --lifetime=lifetime              Lifetime of the transaction, from constructed to included in a block, in blocks
+                                   before it becomes invalid. Must be a power of two between 4 and 65536
+
+  --method=method                  (required) The method of the extrinsic
+
+  --module=module                  (required) The module of the extrinsic
+
+  --nonceIncrement=nonceIncrement  [default: 0] If you are preparing multiple transactions from the samme account,
+                                   before broadcasting them, you need to increase the nonce by 1 for each. This value
+                                   will be added to the nonce read from the chain.
+
+  --tip=tip                        [default: 0] Optional "tip" (in base value) for faster block inclusion.
+```
+
+_See code: [src/commands/advanced-transactions/constructUnsignedTx.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/advanced-transactions/constructUnsignedTx.ts)_
+
+## `joystream-cli advanced-transactions:constructUnsignedTxApproveMs`
+
+Approve a transaction from a multisig account, as initiated by another signer.
+
+```
+USAGE
+  $ joystream-cli advanced-transactions:constructUnsignedTxApproveMs
+
+OPTIONS
+  -i, --input=input                  Path to JSON file to use as input (if not specified - the input can be provided
+                                     interactively)
+
+  -o, --output=output                (required) Path to the file where the output JSON should be saved.
+
+  --addressMs=addressMs              The address of the multisig that is performing the transaction.
+
+  --addressSigner=addressSigner      (required) The address of the signer that is approving the multisig transaction.
+
+  --inputCall=inputCall              The hex-encoded call that is to be executed by the multisig if successfull.
+
+  --inputCallFile=inputCallFile      Path to a JSON file with the hex-encoded call that is to be executed by the
+                                     multisig if successfull.
+
+  --lifetime=lifetime                Lifetime of the transaction, from constructed to included in a block, in blocks
+                                     before it becomes invalid. Must be a power of two between 4 and 65536
+
+  --nonceIncrement=nonceIncrement    [default: 0] If you are preparing multiple transactions from the samme account,
+                                     before broadcasting them, you need to increase the nonce by 1 for each. This value
+                                     will be added to the nonce read from the chain.
+
+  --others=others                    Comma separated list of the accounts (other than the addressSigner) who can approve
+                                     this call. Ignored if "input" is provided.
+
+  --threshold=threshold              How many (m) of the n signatories (signer+others), are required to sign/approve the
+                                     transaction. Ignored if "input" is provided.
+
+  --timepointHeight=timepointHeight  Reference to the blockheight of the transaction that initiated the multisig
+                                     transaction. Ignored if "input" is provided.
+
+  --timepointIndex=timepointIndex    Reference to the extrinsic index in the "timepointHeight block. Ignored if "input"
+                                     is provided.
+
+  --tip=tip                          [default: 0] Optional "tip" (in base value) for faster block inclusion.
+```
+
+_See code: [src/commands/advanced-transactions/constructUnsignedTxApproveMs.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/advanced-transactions/constructUnsignedTxApproveMs.ts)_
+
+## `joystream-cli advanced-transactions:constructUnsignedTxFinalApproveMs`
+
+Final approval of a transaction from a multisig account, as initiated by another signer.
+
+```
+USAGE
+  $ joystream-cli advanced-transactions:constructUnsignedTxFinalApproveMs
+
+OPTIONS
+  -i, --input=input                  Path to JSON file to use as input (if not specified - the input can be provided
+                                     interactively)
+
+  -o, --output=output                (required) Path to the file where the output JSON should be saved.
+
+  --addressMs=addressMs              The address of the multisig that is performing the transaction.
+
+  --addressSigner=addressSigner      (required) The address of the signer that is approving the multisig transaction.
+
+  --inputCall=inputCall              The hex-encoded call that is to be executed by the multisig if successfull.
+
+  --inputCallFile=inputCallFile      Path to a JSON file with the hex-encoded call that is to be executed by the
+                                     multisig if successfull.
+
+  --lifetime=lifetime                Lifetime of the transaction, from constructed to included in a block, in blocks
+                                     before it becomes invalid. Must be a power of two between 4 and 65536
+
+  --nonceIncrement=nonceIncrement    [default: 0] If you are preparing multiple transactions from the samme account,
+                                     before broadcasting them, you need to increase the nonce by 1 for each. This value
+                                     will be added to the nonce read from the chain.
+
+  --others=others                    Comma separated list of the accounts (other than the addressSigner) who can approve
+                                     this call. Ignored if "input" is provided.
+
+  --threshold=threshold              How many (m) of the n signatories (signer+others), are required to sign/approve the
+                                     transaction. Ignored if "input" is provided.
+
+  --timepointHeight=timepointHeight  Reference to the blockheight of the transaction that initiated the multisig
+                                     transaction. Ignored if "input" is provided.
+
+  --timepointIndex=timepointIndex    Reference to the extrinsic index in the "timepointHeight block. Ignored if "input"
+                                     is provided.
+
+  --tip=tip                          [default: 0] Optional "tip" (in base value) for faster block inclusion.
+```
+
+_See code: [src/commands/advanced-transactions/constructUnsignedTxFinalApproveMs.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/advanced-transactions/constructUnsignedTxFinalApproveMs.ts)_
+
+## `joystream-cli advanced-transactions:constructUnsignedTxInitiateMs`
+
+Initiate a call (transaction) from a multisig account, as the first signer.
+
+```
+USAGE
+  $ joystream-cli advanced-transactions:constructUnsignedTxInitiateMs
+
+OPTIONS
+  -i, --input=input                Path to JSON file to use as input (if not specified - the input can be provided
+                                   interactively)
+
+  -o, --output=output              (required) Path to the file where the output JSON should be saved.
+
+  --addressMs=addressMs            The address of the multisig that is performing the transaction.
+
+  --addressSigner=addressSigner    (required) The address of the signer that is initiating the multisig transaction.
+
+  --inputCall=inputCall            The hex-encoded call that is to be executed by the multisig if successfull.
+
+  --inputCallFile=inputCallFile    Path to a JSON file with the hex-encoded call that is to be executed by the multisig
+                                   if successfull.
+
+  --lifetime=lifetime              Lifetime of the transaction, from constructed to included in a block, in blocks
+                                   before it becomes invalid. Must be a power of two between 4 and 65536
+
+  --nonceIncrement=nonceIncrement  [default: 0] If you are preparing multiple transactions from the samme account,
+                                   before broadcasting them, you need to increase the nonce by 1 for each. This value
+                                   will be added to the nonce read from the chain.
+
+  --others=others                  Comma separated list of the accounts (other than the addressSigner) who can approve
+                                   this call. Ignored if "input" is provided.
+
+  --threshold=threshold            How many (m) of the n signatories (signer+others), are required to sign/approve the
+                                   transaction. Ignored if "input" is provided.
+
+  --tip=tip                        [default: 0] Optional "tip" (in base value) for faster block inclusion.
+```
+
+_See code: [src/commands/advanced-transactions/constructUnsignedTxInitiateMs.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/advanced-transactions/constructUnsignedTxInitiateMs.ts)_
+
+## `joystream-cli advanced-transactions:constructWrappedTxCall`
+
+Construct a wrapped transaction call.
+
+```
+USAGE
+  $ joystream-cli advanced-transactions:constructWrappedTxCall
+
+OPTIONS
+  -o, --output=output              (required) Path to the file where the output JSON should be saved.
+  --address=address                (required) The address that is performing the (final) transaction.
+  --fullOutput=fullOutput          Path to the file where the full output should be saved
+  --inputCall=inputCall            The hex-encoded call that is to be executed by the multisig if successfull.
+
+  --inputCallFile=inputCallFile    Path to a JSON file with the hex-encoded call that is to be executed by the multisig
+                                   if successfull.
+
+  --lifetime=lifetime              [default: 64] Lifetime of the transaction, from creation to included on chain, in
+                                   blocks before it becomes invalid.
+
+  --method=method                  (required) The method of the extrinsic
+
+  --module=module                  (required) The module (a.k.a. section) of the extrinsic
+
+  --nonceIncrement=nonceIncrement  [default: 0] If you are preparing multiple transactions from the samme account,
+                                   before broadcasting them, you need to increase the nonce by 1 for each. This value
+                                   will be added to the nonce read from the chain.
+
+  --tip=tip                        [default: 0] Optional "tip" (in base value) for faster block inclusion.
+```
+
+_See code: [src/commands/advanced-transactions/constructWrappedTxCall.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/advanced-transactions/constructWrappedTxCall.ts)_
 
 ## `joystream-cli api:getQueryNodeEndpoint`
 
@@ -1693,6 +1952,37 @@ OPTIONS
 
 _See code: [src/commands/membership/updateAccounts.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/membership/updateAccounts.ts)_
 
+## `joystream-cli sign-offline:signUnsignedTx`
+
+Sign an unsigned transaction. Does not require an api connection.
+
+```
+USAGE
+  $ joystream-cli sign-offline:signUnsignedTx
+
+OPTIONS
+  -i, --input=input                      Path to JSON file to use as input (if not specified - the input can be provided
+                                         interactively)
+
+  -o, --output=output                    Path to the file where the JSON with full transaction details should be
+                                         saved.If omitted, only the signed transaction, the signature and the tx hash is
+                                         included
+
+  --backupFilePath=backupFilePath        Path to account backup JSON file
+
+  --keypairType=(sr25519|ed25519|ecdsa)  [default: sr25519] Account type (defaults to sr25519)
+
+  --mnemonic=mnemonic                    Mnemonic phrase
+
+  --password=password                    Account password
+
+  --seed=seed                            Secret seed
+
+  --suri=suri                            Substrate uri
+```
+
+_See code: [src/commands/sign-offline/signUnsignedTx.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/sign-offline/signUnsignedTx.ts)_
+
 ## `joystream-cli staking:validate`
 
 Start validating. Takes the controller key.
@@ -1722,9 +2012,9 @@ ARGUMENTS
   WGAPPLICATIONID  Working Group Application ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1745,9 +2035,9 @@ USAGE
   $ joystream-cli working-groups:apply
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --answers=answers
@@ -1786,9 +2076,9 @@ ARGUMENTS
   OPENINGID  Opening ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1812,9 +2102,9 @@ OPTIONS
   -e, --edit
       If provided along with --input - launches in edit mode allowing to modify the input before sending the exstinsic
 
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   -i, --input=input
@@ -1858,9 +2148,9 @@ ARGUMENTS
   AMOUNT    Amount of JOY to decrease the current worker stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1884,9 +2174,9 @@ ARGUMENTS
   WORKERID  Worker ID
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --penalty=penalty
@@ -1913,9 +2203,9 @@ USAGE
   $ joystream-cli working-groups:fillOpening
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --applicationIds=applicationIds
@@ -1945,9 +2235,9 @@ ARGUMENTS
   AMOUNT  Amount of JOY to increase the current stake by
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -1968,9 +2258,9 @@ USAGE
   $ joystream-cli working-groups:leaveRole
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --rationale=rationale
@@ -1993,9 +2283,9 @@ USAGE
   $ joystream-cli working-groups:opening
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --id=id
@@ -2022,9 +2312,9 @@ USAGE
   $ joystream-cli working-groups:openings
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --upcoming
@@ -2048,9 +2338,9 @@ USAGE
   $ joystream-cli working-groups:overview
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2071,9 +2361,9 @@ USAGE
   $ joystream-cli working-groups:removeUpcomingOpening
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   -i, --id=id
@@ -2097,9 +2387,9 @@ USAGE
   $ joystream-cli working-groups:setDefaultGroup
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2124,9 +2414,9 @@ ARGUMENTS
   AMOUNT    Slash amount
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --rationale=rationale
@@ -2149,9 +2439,9 @@ USAGE
   $ joystream-cli working-groups:updateGroupMetadata
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   -i, --input=input
@@ -2178,9 +2468,9 @@ ARGUMENTS
   ADDRESS  New reward account address (if omitted, can be provided interactivel)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2204,9 +2494,9 @@ ARGUMENTS
   ADDRESS  New role account address (if omitted, can be provided interactively)
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId
@@ -2231,9 +2521,9 @@ ARGUMENTS
   NEWREWARD  New reward
 
 OPTIONS
-  -g, --group=(storageProviders|curators|forum|membership|gateway|builders|humanResources|marketing|distributors)
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      Available values are: storageProviders, curators, forum, membership, gateway, builders, humanResources, marketing,
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
       distributors.
 
   --useMemberId=useMemberId

@@ -5,6 +5,136 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 
 declare module '@polkadot/api-base/types/errors' {
   export interface AugmentedErrors<ApiType extends ApiTypes> {
+    appWorkingGroup: {
+      /**
+       * Trying to fill opening with an application for other opening
+       **/
+      ApplicationsNotForOpening: AugmentedError<ApiType>;
+      /**
+       * Application stake is less than required opening stake.
+       **/
+      ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
+      /**
+       * Unexpected arithmetic error (overflow / underflow)
+       **/
+      ArithmeticError: AugmentedError<ApiType>;
+      /**
+       * Staking less than the lower bound.
+       **/
+      BelowMinimumStakes: AugmentedError<ApiType>;
+      /**
+       * Cannot decrease stake - stake delta greater than initial stake.
+       **/
+      CannotDecreaseStakeDeltaGreaterThanStake: AugmentedError<ApiType>;
+      /**
+       * There is leader already, cannot hire another one.
+       **/
+      CannotHireLeaderWhenLeaderExists: AugmentedError<ApiType>;
+      /**
+       * Cannot fill opening with multiple applications.
+       **/
+      CannotHireMultipleLeaders: AugmentedError<ApiType>;
+      /**
+       * Reward could not be zero.
+       **/
+      CannotRewardWithZero: AugmentedError<ApiType>;
+      /**
+       * Invalid spending amount.
+       **/
+      CannotSpendZero: AugmentedError<ApiType>;
+      /**
+       * Staking account contains conflicting stakes.
+       **/
+      ConflictStakesOnAccount: AugmentedError<ApiType>;
+      /**
+       * Current lead is not set.
+       **/
+      CurrentLeadNotSet: AugmentedError<ApiType>;
+      /**
+       * Cannot withdraw: insufficient budget balance.
+       **/
+      InsufficientBalanceForTransfer: AugmentedError<ApiType>;
+      /**
+       * Insufficient balance to cover stake.
+       **/
+      InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
+      /**
+       * It's not enough budget for this spending.
+       **/
+      InsufficientBudgetForSpending: AugmentedError<ApiType>;
+      /**
+       * Insufficient tokens for funding (on member controller account)
+       **/
+      InsufficientTokensForFunding: AugmentedError<ApiType>;
+      /**
+       * Invalid origin for a member.
+       **/
+      InvalidMemberOrigin: AugmentedError<ApiType>;
+      /**
+       * Staking account doesn't belong to a member.
+       **/
+      InvalidStakingAccountForMember: AugmentedError<ApiType>;
+      /**
+       * Not a lead account.
+       **/
+      IsNotLeadAccount: AugmentedError<ApiType>;
+      /**
+       * Working group size limit exceeded.
+       **/
+      MaxActiveWorkerNumberExceeded: AugmentedError<ApiType>;
+      /**
+       * Cannot fill opening - no applications provided.
+       **/
+      NoApplicationsProvided: AugmentedError<ApiType>;
+      /**
+       * Opening does not exist.
+       **/
+      OpeningDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Origin is not applicant.
+       **/
+      OriginIsNotApplicant: AugmentedError<ApiType>;
+      /**
+       * Signer is not worker role account.
+       **/
+      SignerIsNotWorkerRoleAccount: AugmentedError<ApiType>;
+      /**
+       * Provided stake balance cannot be zero.
+       **/
+      StakeBalanceCannotBeZero: AugmentedError<ApiType>;
+      /**
+       * Successful worker application does not exist.
+       **/
+      SuccessfulWorkerApplicationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Specified unstaking period is less then minimum set for the group.
+       **/
+      UnstakingPeriodLessThanMinimum: AugmentedError<ApiType>;
+      /**
+       * Worker application does not exist.
+       **/
+      WorkerApplicationDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Worker does not exist.
+       **/
+      WorkerDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Worker has no recurring reward.
+       **/
+      WorkerHasNoReward: AugmentedError<ApiType>;
+      /**
+       * Invalid operation - worker is leaving.
+       **/
+      WorkerIsLeaving: AugmentedError<ApiType>;
+      /**
+       * Worker storage text is too long.
+       **/
+      WorkerStorageValueTooLong: AugmentedError<ApiType>;
+      /**
+       * Trying to fund with zero tokens
+       **/
+      ZeroTokensFunding: AugmentedError<ApiType>;
+    };
     authorship: {
       /**
        * The uncle is genesis.
@@ -1392,136 +1522,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ZeroTokensFunding: AugmentedError<ApiType>;
     };
-    gatewayWorkingGroup: {
-      /**
-       * Trying to fill opening with an application for other opening
-       **/
-      ApplicationsNotForOpening: AugmentedError<ApiType>;
-      /**
-       * Application stake is less than required opening stake.
-       **/
-      ApplicationStakeDoesntMatchOpening: AugmentedError<ApiType>;
-      /**
-       * Unexpected arithmetic error (overflow / underflow)
-       **/
-      ArithmeticError: AugmentedError<ApiType>;
-      /**
-       * Staking less than the lower bound.
-       **/
-      BelowMinimumStakes: AugmentedError<ApiType>;
-      /**
-       * Cannot decrease stake - stake delta greater than initial stake.
-       **/
-      CannotDecreaseStakeDeltaGreaterThanStake: AugmentedError<ApiType>;
-      /**
-       * There is leader already, cannot hire another one.
-       **/
-      CannotHireLeaderWhenLeaderExists: AugmentedError<ApiType>;
-      /**
-       * Cannot fill opening with multiple applications.
-       **/
-      CannotHireMultipleLeaders: AugmentedError<ApiType>;
-      /**
-       * Reward could not be zero.
-       **/
-      CannotRewardWithZero: AugmentedError<ApiType>;
-      /**
-       * Invalid spending amount.
-       **/
-      CannotSpendZero: AugmentedError<ApiType>;
-      /**
-       * Staking account contains conflicting stakes.
-       **/
-      ConflictStakesOnAccount: AugmentedError<ApiType>;
-      /**
-       * Current lead is not set.
-       **/
-      CurrentLeadNotSet: AugmentedError<ApiType>;
-      /**
-       * Cannot withdraw: insufficient budget balance.
-       **/
-      InsufficientBalanceForTransfer: AugmentedError<ApiType>;
-      /**
-       * Insufficient balance to cover stake.
-       **/
-      InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
-      /**
-       * It's not enough budget for this spending.
-       **/
-      InsufficientBudgetForSpending: AugmentedError<ApiType>;
-      /**
-       * Insufficient tokens for funding (on member controller account)
-       **/
-      InsufficientTokensForFunding: AugmentedError<ApiType>;
-      /**
-       * Invalid origin for a member.
-       **/
-      InvalidMemberOrigin: AugmentedError<ApiType>;
-      /**
-       * Staking account doesn't belong to a member.
-       **/
-      InvalidStakingAccountForMember: AugmentedError<ApiType>;
-      /**
-       * Not a lead account.
-       **/
-      IsNotLeadAccount: AugmentedError<ApiType>;
-      /**
-       * Working group size limit exceeded.
-       **/
-      MaxActiveWorkerNumberExceeded: AugmentedError<ApiType>;
-      /**
-       * Cannot fill opening - no applications provided.
-       **/
-      NoApplicationsProvided: AugmentedError<ApiType>;
-      /**
-       * Opening does not exist.
-       **/
-      OpeningDoesNotExist: AugmentedError<ApiType>;
-      /**
-       * Origin is not applicant.
-       **/
-      OriginIsNotApplicant: AugmentedError<ApiType>;
-      /**
-       * Signer is not worker role account.
-       **/
-      SignerIsNotWorkerRoleAccount: AugmentedError<ApiType>;
-      /**
-       * Provided stake balance cannot be zero.
-       **/
-      StakeBalanceCannotBeZero: AugmentedError<ApiType>;
-      /**
-       * Successful worker application does not exist.
-       **/
-      SuccessfulWorkerApplicationDoesNotExist: AugmentedError<ApiType>;
-      /**
-       * Specified unstaking period is less then minimum set for the group.
-       **/
-      UnstakingPeriodLessThanMinimum: AugmentedError<ApiType>;
-      /**
-       * Worker application does not exist.
-       **/
-      WorkerApplicationDoesNotExist: AugmentedError<ApiType>;
-      /**
-       * Worker does not exist.
-       **/
-      WorkerDoesNotExist: AugmentedError<ApiType>;
-      /**
-       * Worker has no recurring reward.
-       **/
-      WorkerHasNoReward: AugmentedError<ApiType>;
-      /**
-       * Invalid operation - worker is leaving.
-       **/
-      WorkerIsLeaving: AugmentedError<ApiType>;
-      /**
-       * Worker storage text is too long.
-       **/
-      WorkerStorageValueTooLong: AugmentedError<ApiType>;
-      /**
-       * Trying to fund with zero tokens
-       **/
-      ZeroTokensFunding: AugmentedError<ApiType>;
-    };
     grandpa: {
       /**
        * Attempt to signal GRANDPA change with one already pending.
@@ -2693,6 +2693,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     referendum: {
       /**
+       * A vote cannot be cast from an account that already opted out of voting.
+       **/
+      AccountAlreadyOptedOutOfVoting: AugmentedError<ApiType>;
+      /**
        * Trying to vote multiple time in the same cycle
        **/
       AlreadyVotedThisCycle: AugmentedError<ApiType>;
@@ -3266,12 +3270,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Trying to fund with zero tokens
        **/
       ZeroTokensFunding: AugmentedError<ApiType>;
-    };
-    sudo: {
-      /**
-       * Sender must be the Sudo account
-       **/
-      RequireSudo: AugmentedError<ApiType>;
     };
     system: {
       /**

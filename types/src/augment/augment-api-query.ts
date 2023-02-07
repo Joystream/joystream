@@ -10,6 +10,48 @@ import type { Observable } from '@polkadot/types/types';
 
 declare module '@polkadot/api-base/types/storage' {
   export interface AugmentedQueries<ApiType extends ApiTypes> {
+    appWorkingGroup: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>, []>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupJobApplication>>, [u64]>;
+      /**
+       * Budget for the working group.
+       **/
+      budget: AugmentedQuery<ApiType, () => Observable<u128>, []>;
+      /**
+       * Current group lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<u64>>, []>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Next identifier value for new job opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Next identifier for a new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * Maps identifier to job opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletWorkingGroupOpening>, [u64]>;
+      /**
+       * Status text hash.
+       **/
+      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
+    };
     authorityDiscovery: {
       /**
        * Keys of the current authority set.
@@ -599,48 +641,6 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
     };
-    gatewayWorkingGroup: {
-      /**
-       * Count of active workers.
-       **/
-      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>, []>;
-      /**
-       * Maps identifier to worker application on opening.
-       **/
-      applicationById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupJobApplication>>, [u64]>;
-      /**
-       * Budget for the working group.
-       **/
-      budget: AugmentedQuery<ApiType, () => Observable<u128>, []>;
-      /**
-       * Current group lead.
-       **/
-      currentLead: AugmentedQuery<ApiType, () => Observable<Option<u64>>, []>;
-      /**
-       * Next identifier value for new worker application.
-       **/
-      nextApplicationId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Next identifier value for new job opening.
-       **/
-      nextOpeningId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Next identifier for a new worker.
-       **/
-      nextWorkerId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Maps identifier to job opening.
-       **/
-      openingById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletWorkingGroupOpening>, [u64]>;
-      /**
-       * Status text hash.
-       **/
-      statusTextHash: AugmentedQuery<ApiType, () => Observable<H256>, []>;
-      /**
-       * Maps identifier to corresponding worker.
-       **/
-      workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-    };
     grandpa: {
       /**
        * The number of changes (both in terms of keys and underlying economic responsibilities)
@@ -1035,6 +1035,10 @@ declare module '@polkadot/api-base/types/storage' {
       randomMaterial: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []>;
     };
     referendum: {
+      /**
+       * Accounts that permanently opted out of voting in referendum.
+       **/
+      accountsOptedOut: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Null>, [AccountId32]>;
       /**
        * Current referendum stage.
        **/
@@ -1446,12 +1450,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-    };
-    sudo: {
-      /**
-       * The `AccountId` of the sudo key.
-       **/
-      key: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []>;
     };
     system: {
       /**

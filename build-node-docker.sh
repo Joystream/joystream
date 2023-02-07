@@ -9,8 +9,8 @@ cd $SCRIPT_PATH
 
 source scripts/features.sh
 
-CODE_HASH=`scripts/runtime-code-shasum.sh`
-IMAGE=joystream/node:${CODE_HASH}
+CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+IMAGE=joystream/node:${CODE_SHASUM}
 
 # Look for image locally
 if ! docker inspect ${IMAGE} > /dev/null;
@@ -26,7 +26,8 @@ then
     docker build . --file joystream-node.Dockerfile \
       --tag ${IMAGE} \
       --build-arg CARGO_FEATURES=${FEATURES} \
-      --build-arg GIT_COMMIT_HASH=$(git rev-parse --short=11 HEAD)
+      --build-arg GIT_COMMIT_HASH=$(git rev-parse --short=11 HEAD) \
+      --build-arg CODE_SHASUM=${CODE_SHASUM}
   fi
 else
   echo "Found ${IMAGE} in local repo"
