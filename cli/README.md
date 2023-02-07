@@ -131,12 +131,14 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
 - [`joystream-cli content:setVideoVisibilityAsModerator`](#joystream-cli-contentsetvideovisibilityasmoderator)
 - [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
+- [`joystream-cli content:updateChannelPayoutsProposal`](#joystream-cli-contentupdatechannelpayoutsproposal)
 - [`joystream-cli content:updateChannelStateBloatBond VALUE`](#joystream-cli-contentupdatechannelstatebloatbond-value)
 - [`joystream-cli content:updateCuratorGroupPermissions [ID]`](#joystream-cli-contentupdatecuratorgrouppermissions-id)
 - [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
 - [`joystream-cli content:updateVideoStateBloatBond VALUE`](#joystream-cli-contentupdatevideostatebloatbond-value)
 - [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 - [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+- [`joystream-cli council:fundBudget`](#joystream-cli-councilfundbudget)
 - [`joystream-cli fee-profile:addForumPost`](#joystream-cli-fee-profileaddforumpost)
 - [`joystream-cli fee-profile:addVideoComment`](#joystream-cli-fee-profileaddvideocomment)
 - [`joystream-cli fee-profile:buyMembership`](#joystream-cli-fee-profilebuymembership)
@@ -1200,6 +1202,29 @@ OPTIONS
 
 _See code: [src/commands/content/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannel.ts)_
 
+## `joystream-cli content:updateChannelPayoutsProposal`
+
+Create channel payouts proposal.
+
+```
+USAGE
+  $ joystream-cli content:updateChannelPayoutsProposal
+
+OPTIONS
+  -b, --exactExecutionBlock=exactExecutionBlock  The Block at which the proposal should be automatically executed
+  -d, --description=description                  (required) Description of the proposal
+  -e, --channelCashoutsEnabled                   Whether cashouts be enabled/disabled
+  -p, --payloadFilePath=payloadFilePath          Path to protobuf serialized file containing channel payouts payload
+  -s, --stakingAccountId=stakingAccountId        (required) Proposer staking account Id
+  -t, --title=title                              (required) Title of the proposal
+  --max=max                                      Maximum cashout amount allowed to a channel
+  --min=min                                      Minimum cashout amount allowad to a channel
+  --useMemberId=useMemberId                      Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId                      Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/updateChannelPayoutsProposal.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelPayoutsProposal.ts)_
+
 ## `joystream-cli content:updateChannelStateBloatBond VALUE`
 
 Update channel state bloat bond.
@@ -1313,6 +1338,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
+
+## `joystream-cli council:fundBudget`
+
+Fund council budget by some member.
+
+```
+USAGE
+  $ joystream-cli council:fundBudget
+
+OPTIONS
+  --amount=amount            (required) Funding amount
+  --rationale=rationale      (required) Reason of funding the budget
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/council/fundBudget.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/council/fundBudget.ts)_
 
 ## `joystream-cli fee-profile:addForumPost`
 
