@@ -52,11 +52,7 @@ export class SpendBudgetFixture extends BaseWorkingGroupFixture {
 
   protected assertQueriedGroupIsValid(qGroup: WorkingGroupFieldsFragment | null): void {
     Utils.assert(qGroup, 'Query node: Working group not found!')
-    assert.equal(
-      qGroup.budget.toString(),
-      this.preExecuteBudget!.sub(this.amounts.reduce((a, b) => a.add(b), new BN(0))).toString(),
-      `error with budget for ${qGroup.name.toString()}`
-    )
+    assert.equal(qGroup.budget, this.preExecuteBudget!.sub(this.amounts.reduce((a, b) => a.add(b), new BN(0))))
   }
 
   async runQueryNodeChecks(): Promise<void> {
