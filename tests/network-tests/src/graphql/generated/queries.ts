@@ -67,6 +67,7 @@ export type ChannelFieldsFragment = {
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   bannedMembers: Array<{ id: string }>
+  videos: Array<VideoFieldsFragment>
 }
 
 export type VideoCategoryFieldsFragment = { id: string; name?: Types.Maybe<string>; activeVideosCounter: number }
@@ -2539,36 +2540,6 @@ export const StorageDataObjectFields = gql`
   }
   ${DataObjectTypeFields}
 `
-export const ChannelFields = gql`
-  fragment ChannelFields on Channel {
-    id
-    activeVideosCounter
-    title
-    description
-    isPublic
-    language {
-      iso
-    }
-    isCensored
-    ownerMember {
-      id
-    }
-    ownerCuratorGroup {
-      id
-    }
-    avatarPhoto {
-      ...StorageDataObjectFields
-    }
-    coverPhoto {
-      ...StorageDataObjectFields
-    }
-    bannedMembers {
-      id
-    }
-    rewardAccount
-  }
-  ${StorageDataObjectFields}
-`
 export const LicenseFields = gql`
   fragment LicenseFields on License {
     code
@@ -2707,6 +2678,40 @@ export const VideoFields = gql`
   ${CommentFields}
   ${VideoReactionFields}
   ${VideoSubtitleFields}
+`
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
+    title
+    description
+    isPublic
+    language {
+      iso
+    }
+    isCensored
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+    avatarPhoto {
+      ...StorageDataObjectFields
+    }
+    coverPhoto {
+      ...StorageDataObjectFields
+    }
+    bannedMembers {
+      id
+    }
+    rewardAccount
+    videos {
+      ...VideoFields
+    }
+  }
+  ${StorageDataObjectFields}
+  ${VideoFields}
 `
 export const BidFields = gql`
   fragment BidFields on Bid {
