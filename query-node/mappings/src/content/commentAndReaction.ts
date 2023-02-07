@@ -14,6 +14,7 @@ import {
   ReactVideo,
   VideoReactionsPreference,
 } from '@joystream/metadata-protobuf'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { MemberId, ChannelId } from '@joystream/types/primitives'
 import {
   Channel,
@@ -192,9 +193,9 @@ export async function processReactVideoMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: IReactVideo
+  metadata: DecodedMetadataObject<IReactVideo>
 ): Promise<void> {
-  const { videoId, reaction } = message
+  const { videoId, reaction } = metadata
   const reactionResult = parseVideoReaction(reaction)
 
   const changeOrRemovePreviousReaction = async (
@@ -356,10 +357,10 @@ export async function processCreateCommentMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: ICreateComment
+  metadata: DecodedMetadataObject<ICreateComment>
 ): Promise<Comment> {
   // in case of null `parentCommentId` protobuf would assign it a default value i.e. ''
-  const { videoId, parentCommentId, body } = message
+  const { videoId, parentCommentId, body } = metadata
 
   // load video
   const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])

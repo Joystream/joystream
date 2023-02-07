@@ -1,5 +1,6 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { ICreateApp, IDeleteApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { App, Membership } from 'query-node/dist/model'
 import { logger, inconsistentState } from '../common'
@@ -7,10 +8,10 @@ import { logger, inconsistentState } from '../common'
 export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  message: ICreateApp,
+  metadata: DecodedMetadataObject<ICreateApp>,
   memberId?: string
 ): Promise<void> {
-  const { name, appMetadata } = message
+  const { name, appMetadata } = metadata
 
   // memberId is required for MemberRemark, but not for LeadRemark
   if (event.method === 'MemberRemarked' && !memberId) {
@@ -21,7 +22,7 @@ export async function processCreateAppMessage(
 
   const isAppExists = await store.get(App, {
     where: {
-      name: message.name,
+      name: metadata.name,
     },
   })
 
@@ -53,10 +54,10 @@ export async function processCreateAppMessage(
 export async function processUpdateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  message: IUpdateApp,
+  metadata: DecodedMetadataObject<IUpdateApp>,
   memberId?: string
 ): Promise<void> {
-  const { appId, appMetadata } = message
+  const { appId, appMetadata } = metadata
 
   // memberId is required for MemberRemark, but not for LeadRemark
   if (event.method === 'MemberRemarked' && !memberId) {
@@ -96,10 +97,10 @@ export async function processUpdateAppMessage(
 export async function processDeleteAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  message: IDeleteApp,
+  metadata: DecodedMetadataObject<IDeleteApp>,
   memberId?: string
 ): Promise<void> {
-  const { appId } = message
+  const { appId } = metadata
 
   // memberId is required for MemberRemark, but not for LeadRemark
   if (event.method === 'MemberRemarked' && !memberId) {

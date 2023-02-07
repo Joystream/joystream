@@ -7,6 +7,7 @@ import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,
+  ILeadRemarked,
   IOpeningMetadata,
   IRemoveUpcomingOpening,
   ISetGroupMetadata,
@@ -695,16 +696,16 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
 }
 
 export async function contentWorkingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [message] = new WorkingGroups.LeadRemarkedEvent(event).params
+  const [metadataBytes] = new WorkingGroups.LeadRemarkedEvent(event).params
   try {
-    const decodedMessage = LeadRemarked.decode(message.toU8a(true))
+    const metadata = deserializeMetadata(LeadRemarked, metadataBytes)
 
-    const metaTransactionInfo = await processLeadRemarked(store, event, decodedMessage)
+    const metaTransactionInfo = await processLeadRemarked(store, event, metadata)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
     // emit log event
-    logger.info('Lead remarked', { decodedMessage })
+    logger.info('Lead remarked', { metadata })
   } catch (e) {
     // emit log event
     logger.info(`Bad metadata for lead's remark`, { e })
@@ -1030,23 +1031,24 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
 async function processLeadRemarked(
   store: DatabaseManager,
   event: SubstrateEvent,
-  decodedMessage: LeadRemarked
+  decodedMetadata: DecodedMetadataObject<ILeadRemarked> | null
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
-  const messageType = decodedMessage.leadRemarked
+  if (decodedMetadata?.createApp) {
+    await processCreateAppMessage(store, event, decodedMetadata.createApp)
 
-  if (messageType === 'createApp') {
-    await processCreateAppMessage(store, event, decodedMessage.createApp!)
     return {}
   }
-  if (messageType === 'updateApp') {
-    await processUpdateAppMessage(store, event, decodedMessage.updateApp!)
+  if (decodedMetadata?.updateApp) {
+    await processUpdateAppMessage(store, event, decodedMetadata.updateApp)
+
     return {}
   }
-  if (messageType === 'deleteApp') {
-    await processDeleteAppMessage(store, event, decodedMessage.deleteApp!)
+  if (decodedMetadata?.deleteApp) {
+    await processDeleteAppMessage(store, event, decodedMetadata.deleteApp)
+
     return {}
   }
 
   // unknown message type
-  return inconsistentState('Unsupported message type in lead_remark action', messageType)
+  return inconsistentState('Unsupported message type in lead_remark action', decodedMetadata)
 }
