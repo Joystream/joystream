@@ -2349,20 +2349,6 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/types@~0.20.5":
-  version "0.20.5"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.20.5.tgz#21c256a433d84dbb49a81e7be222cc438c354dac"
-  integrity sha512-juqa1RHMLGVIKf2b9TOcC+vhc2WXmpJ474vZekeOOMorzoB3JbIXSDJ3aLvx3cblt59qMWyxao6fd2I+WqnG4Q==
-  dependencies:
-    "@polkadot/api" "8.9.1"
-    "@polkadot/keyring" "9.5.1"
-    "@polkadot/types" "8.9.1"
-    "@types/lodash" "^4.14.157"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-    moment "^2.24.0"
-
 "@joystream/warthog@^2.41.9":
   version "2.41.9"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.9.tgz#7cfb16df80cb43339e541026af09ff38909eae82"
@@ -2856,7 +2842,7 @@
     "@polkadot/util-crypto" "^9.5.1"
     rxjs "^7.5.5"
 
-"@polkadot/api@8.9.1", "@polkadot/api@9.3.3":
+"@polkadot/api@8.9.1":
   version "8.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-8.9.1.tgz#c35c5d583845a5d67edfa8c3579bad143f65bcd6"
   integrity sha512-UwQ5hWPHruqnBO2hriaPhGaOwaWZx9MVECWFJzVs0ZuhKDge9jyBp+JXud/Ly/+8VbeokYUB0DSZG/gTAO5+vg==
@@ -3346,20 +3332,12 @@
   resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.22.0.tgz#d115bc5dcab8c0f5800e05e4ef265949042b13ec"
   integrity sha512-IKqrPY0B3AeIXEc5/JGgEhPZLy+SmVyQf+k0SIGcNSTqt1GLI3gQFEOFwSScJdem+iYZQUrn6YPPxC3TpdSC3A==
 
-"@substrate/txwrapper-core@3.1.3":
+"@substrate/txwrapper-core@3.1.3", "@substrate/txwrapper-core@=3.1.3", "@substrate/txwrapper-core@^3.1.3", "@substrate/txwrapper-core@^3.2.2":
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.1.3.tgz#ec790e332dd09ee5021b3824b43f11b0fc70f36a"
   integrity sha512-8QV5wp+V1/KXu/f2K9uTfbBrEXiu86z1N/O6+4858hYGihypZuO2YT0pChfsnj0Uic4K2T2QDzTCj8VJ70yORA==
   dependencies:
     "@polkadot/api" "8.9.1"
-    memoizee "0.4.15"
-
-"@substrate/txwrapper-core@^3.1.3", "@substrate/txwrapper-core@^3.2.2":
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.2.2.tgz#55825ff84bd4cd95fa2f869111616300f66db513"
-  integrity sha512-Wj6odIvu69YC7RbxAPRllm48bZhK3nyygw1jRSZLzp/gfIzOAYz8KYvVtm62ZtmKKhs9jggD/H0SO+Nn37N0DA==
-  dependencies:
-    "@polkadot/api" "9.3.3"
     memoizee "0.4.15"
 
 "@substrate/txwrapper-polkadot@3.1.3":
@@ -6245,7 +6223,7 @@ chainsaw@~0.1.0:
   dependencies:
     traverse ">=0.3.0 <0.4"
 
-chalk@1.1.3, chalk@4.1.2, chalk@^1.0.0, chalk@^1.1.1, chalk@^1.1.3, chalk@^2.0.0, chalk@^2.0.1, chalk@^2.1.0, chalk@^2.3.0, chalk@^2.4.1, chalk@^2.4.2, chalk@^3.0.0, chalk@^4.0.0, chalk@^4.1.0, chalk@^4.1.1, chalk@^4.1.2, chalk@^5.0.1:
+chalk@1.1.3, chalk@4.1.2, chalk@^1.0.0, chalk@^1.1.1, chalk@^1.1.3, chalk@^2.0.0, chalk@^2.0.1, chalk@^2.1.0, chalk@^2.3.0, chalk@^2.4.1, chalk@^2.4.2, chalk@^3.0.0, chalk@^4.0.0, chalk@^4.1.0, chalk@^4.1.1, chalk@^4.1.2:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/chalk/-/chalk-4.1.1.tgz#c80b3fab28bf6371e6863325eee67e618b77e6ad"
   integrity sha512-diHzdDKxcU+bAsUboHLPEDQiw0qEe0qd7SYUn3HgcFlWgbDcfLGswOHYeGrHKzG9z6UYf01d9VFMfZxPM1xZSg==

@@ -848,7 +848,7 @@ Initializing the api (ws://127.0.0.1:9944)...
                       "docs": []
                     },
                     {
-                      "name": "GatewayWorkingGroup",
+                      "name": "AppWorkingGroup",
                       "fields": [
                         {
                           "name": null,
@@ -5420,7 +5420,7 @@ Initializing the api (ws://127.0.0.1:9944)...
                       "docs": []
                     },
                     {
-                      "name": "Gateway",
+                      "name": "App",
                       "fields": [],
                       "index": 4,
                       "docs": []
@@ -21873,12 +21873,12 @@ Initializing the api (ws://127.0.0.1:9944)...
                       "docs": []
                     },
                     {
-                      "name": "GatewayWorkingGroup",
+                      "name": "AppWorkingGroup",
                       "fields": [
                         {
                           "name": null,
                           "type": 389,
-                          "typeName": "self::sp_api_hidden_includes_construct_runtime::hidden_include::dispatch\n::CallableCallFor<GatewayWorkingGroup, Runtime>",
+                          "typeName": "self::sp_api_hidden_includes_construct_runtime::hidden_include::dispatch\n::CallableCallFor<ApporkingGroup, Runtime>",
                           "docs": []
                         }
                       ],
@@ -59291,7 +59291,7 @@ Initializing the api (ws://127.0.0.1:9944)...
           "index": 34
         },
         {
-          "name": "GatewayWorkingGroup",
+          "name": "AppWorkingGroup",
           "storage": {
             "prefix": "Instance5WorkingGroup",
             "items": [

@@ -3,14 +3,17 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { Utils } from '../../utils'
-import {
-  ApplyOnOpeningsHappyCaseFixture,
-  CreateOpeningsFixture,
-  createDefaultOpeningParams,
-} from '../../fixtures/workingGroups'
+import { ApplyOnOpeningsHappyCaseFixture, createDefaultOpeningParams } from '../../fixtures/workingGroups'
 import { OpeningMetadata } from '@joystream/metadata-protobuf'
-import { AllProposalsOutcomesFixture, TestedProposal } from '../../fixtures/proposals'
+import {
+  AllProposalsOutcomesFixture,
+  CreateProposalsFixture,
+  DecideOnProposalStatusFixture,
+  TestedProposal,
+} from '../../fixtures/proposals'
 import { createType } from '@joystream/types'
+import { Resource } from '../../Resources'
+import { OpeningId } from '@joystream/types/primitives'
 
 export default async function creatingProposals({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:creating-proposals')
@@ -18,21 +21,68 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   api.enableVerboseTxLogs()
 
   debug('Creating test lead openings and applications...')
-  const createLeadOpeningsFixture = new CreateOpeningsFixture(
-    api,
-    query,
-    'membershipWorkingGroup',
-    [createDefaultOpeningParams(api), createDefaultOpeningParams(api)],
-    true
-  )
-  await new FixtureRunner(createLeadOpeningsFixture).run()
-  const [openingToCancelId, openingToFillId] = createLeadOpeningsFixture.getCreatedOpeningIds()
 
   const [applicantControllerAcc, applicantStakingAcc] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [applicantControllerAcc])
   await new FixtureRunner(buyMembershipFixture).run()
   const [applicantMemberId] = buyMembershipFixture.getCreatedMembers()
 
+  const unlock = await lock(Resource.Proposals)
+  const openingParams = createDefaultOpeningParams(api)
+  const createLeadOpeningProposalsFixture = new CreateProposalsFixture(api, query, [
+    {
+      type: 'CreateWorkingGroupLeadOpening',
+      details: createType('PalletProposalsCodexCreateOpeningParameters', {
+        'description': createType('Bytes', `Proposal to hire lead membership TO CANCEL `),
+        'stakePolicy': createType('PalletWorkingGroupStakePolicy', {
+          'stakeAmount': openingParams.stake,
+          'leavingUnstakingPeriod': openingParams.unstakingPeriod,
+        }),
+        'rewardPerBlock': openingParams.reward,
+        'group': createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Membership'),
+      }),
+      asMember: applicantMemberId,
+      title: 'Proposal to Hired lead TO KEEP',
+      description: 'Proposal to hire lead membership',
+    },
+    {
+      type: 'CreateWorkingGroupLeadOpening',
+      details: createType('PalletProposalsCodexCreateOpeningParameters', {
+        'description': createType('Bytes', `Proposal to hire lead membership TO BE CANCELLED`),
+        'stakePolicy': createType('PalletWorkingGroupStakePolicy', {
+          'stakeAmount': openingParams.stake,
+          'leavingUnstakingPeriod': openingParams.unstakingPeriod,
+        }),
+        'rewardPerBlock': openingParams.reward,
+        'group': createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Membership'),
+      }),
+      asMember: applicantMemberId,
+      title: 'Proposal to Hired lead TO BE CANCELLED',
+      description: 'Proposal to hire lead membership',
+    },
+  ])
+  await new FixtureRunner(createLeadOpeningProposalsFixture).run()
+  const [proposalWithOpeningToBeCancelled, proposalWithOpeningToBeKept] =
+    createLeadOpeningProposalsFixture.getCreatedProposalsIds()
+
+  const approveProposalsFixture = new DecideOnProposalStatusFixture(api, query, [
+    { proposalId: proposalWithOpeningToBeCancelled, status: 'Approved', expectExecutionFailure: false },
+    { proposalId: proposalWithOpeningToBeKept, status: 'Approved', expectExecutionFailure: false },
+  ])
+  await new FixtureRunner(approveProposalsFixture).run()
+  const openingsCreated = (
+    await approveProposalsFixture.getExecutionEvents('membershipWorkingGroup', 'OpeningAdded')
+  ).map((dispatchEvents) => {
+    if (dispatchEvents) {
+      return dispatchEvents.map((e) => e.data[0]) // first element in the tuple: Openingid
+    } else {
+      return undefined
+    }
+  })[0]
+  unlock()
+  const [openingToCancelId, openingToFillId] = openingsCreated! as OpeningId[]
+
+  // stake to apply
   const addStakingAccountsFixture = new AddStakingAccountsHappyCaseFixture(api, query, [
     { asMember: applicantMemberId, account: applicantStakingAcc, stakeAmount: createDefaultOpeningParams(api).stake },
   ])

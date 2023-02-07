@@ -8,7 +8,7 @@ import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Forum', async ({ job }) => {
-  const sudoHireLead = job('hiring working group leads', leadOpening())
+  const sudoHireLead = job('hiring working group leads', leadOpening(true))
   job('forum categories', categories).requires(sudoHireLead)
   job('forum threads', threads).requires(sudoHireLead)
   job('forum thread tags', threadTags).requires(sudoHireLead)

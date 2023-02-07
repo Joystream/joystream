@@ -174,7 +174,7 @@ export async function content_ChannelAssetsDeletedByModerator({
     actor: await convertContentActor(store, actor),
     channelId: channelId.toNumber(),
     assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
-    rationale: rationale.toHuman() as string,
+    rationale: bytesToString(rationale),
   })
 
   await store.save<ChannelAssetsDeletedByModeratorEvent>(channelAssetsDeletedByModeratorEvent)
@@ -209,7 +209,7 @@ export async function content_ChannelDeletedByModerator({ store, event }: EventC
   const channelDeletedByModeratorEvent = new ChannelDeletedByModeratorEvent({
     ...genericEventFields(event),
 
-    rationale: rationale.toHuman() as string,
+    rationale: bytesToString(rationale),
     actor: await convertContentActor(store, actor),
     channelId: channelId.toNumber(),
   })
@@ -250,7 +250,7 @@ export async function content_ChannelVisibilitySetByModerator({
 
     channelId: channelId.toNumber(),
     isHidden: isCensored.isTrue,
-    rationale: rationale.toHuman() as string,
+    rationale: bytesToString(rationale),
     actor: await convertContentActor(store, actor),
   })
 

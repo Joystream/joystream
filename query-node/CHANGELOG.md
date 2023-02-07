@@ -106,7 +106,7 @@ Runtime modules for which the mappings have been introduced in Olympia (there we
 
 #### [Working groups](./schemas/workingGroups.graphql)
 
-- All working groups are now supported by the query node (previously only `Gateway` and `Storage` groups were supported)
+- All working groups are now supported by the query node (previously only `Apps` and `Storage` groups were supported)
 - `Worker.id` now has a `{workingGroupModuleName}-{workerId}` format, for example: `storageWorkingGroup-1`.
 - `Worker.isActive` field has been removed in favor of `Worker.status` union (Note that `isActive` may be re-introduced after https://github.com/Joystream/joystream/issues/2657)
 - `Worker.type` enum has been replaced by `Worker.group`, which is a reference to the new `WorkingGroup` entity (each supported group has a corresponding `WorkingGroup` record).

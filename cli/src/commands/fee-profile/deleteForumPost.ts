@@ -36,13 +36,9 @@ export default class FeeProfileDeleteForumPost extends FeeProfileCommandBase {
       ),
       _.repeat('x', rationaleLen)
     )
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    const costs = {
-      txFee,
-    }
     const returns = {
       postDeposit,
     }
-    this.profile(costs, returns)
+    await this.profile(tx, undefined, returns)
   }
 }

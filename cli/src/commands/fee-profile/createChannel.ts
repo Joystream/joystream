@@ -162,13 +162,11 @@ export default class FeeProfileCreateChannel extends FeeProfileCommandBase {
         meta: metadataToBytes(ChannelMetadata, mockMetadata),
       })
     )
-    const txFee = await this.getApi().estimateFee(this.pairs.alice, tx)
-    const costs = {
+    const extraCosts = {
       dataObjectsBloatBond: dataObjectBloatBond.muln(assetsNum),
       dataObjectsSizeFee: dataSizeFee.muln(assetsSizeMB),
       channelBloatBond,
-      txFee,
     }
-    this.profile(costs)
+    await this.profile(tx, extraCosts)
   }
 }

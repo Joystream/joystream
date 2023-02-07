@@ -6,7 +6,6 @@ import { IMember } from '../createMembersAndCurators'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { Utils } from '../../../utils'
 import { assertNftOwner, assertAuctionAndBids, assertNftEventContentActor } from './utils'
-import BN from 'bn.js'
 
 export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
   private videoId: number
@@ -51,8 +50,9 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     )
 
     this.debug(`Start NFT auction (expected winner id ${winner.memberId})`)
-    const { auctionParams, startingPrice, minimalBidStep, auctionDuration, extensionPeriod } =
-      await this.api.createEnglishAuctionParameters()
+    const duration = await this.api.query.content.minAuctionDuration()
+    const { auctionParams, startingPrice, minimalBidStep, extensionPeriod } =
+      await this.api.createEnglishAuctionParameters([], { extensionPeriod: duration, duration })
 
     const auctionStartedResult = await this.api.startEnglishAuction(
       this.author.keyringPair.address,
@@ -60,8 +60,6 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       this.videoId,
       auctionParams
     )
-    // remember auction start block
-    const startBlockNumber = await this.api.getBestBlock()
 
     const auctionStartedRuntimeEvent = await this.api.getEventDetails(
       auctionStartedResult,
@@ -89,22 +87,17 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     )
     await new FixtureRunner(placeBidsFixture).run()
 
-    // remember block in which last bid was made
-    const lastBidBlockNumber = await this.api.getBestBlock()
-
     // calculate auction ending block (accounting for auction extension caused by bids)
-    const initialEndBlockNumber = startBlockNumber.add(auctionDuration)
-    const realEndBlockNumber =
-      lastBidBlockNumber < initialEndBlockNumber.sub(extensionPeriod)
-        ? initialEndBlockNumber.add(extensionPeriod)
-        : initialEndBlockNumber
+    const runtimeEndBlockNumber = (await this.api.query.content.videoById(this.videoId)).nftStatus.unwrap()
+      .transactionalStatus.asEnglishAuction.end
+    const auctionStart = auctionStartedRuntimeEvent.blockNumber
+    assert.equal(runtimeEndBlockNumber.toNumber(), auctionStart + duration.toNumber() + extensionPeriod.toNumber())
 
     this.debug('Wait for auction to end')
-    const waitBlocks = realEndBlockNumber.sub(lastBidBlockNumber).toNumber() + 1
-    await Utils.wait(this.api.getBlockDuration().muln(waitBlocks).toNumber())
+    await this.api.untilBlock(runtimeEndBlockNumber.toNumber())
 
     this.debug('Check NFT Auction and bids')
-    await assertAuctionAndBids(this.query, this.videoId, winner)
+    await assertAuctionAndBids(this.query, this.videoId, winner, runtimeEndBlockNumber.toNumber())
 
     this.debug('Complete auction')
     const settleEnglishAuctionResult = await this.api.settleEnglishAuction(

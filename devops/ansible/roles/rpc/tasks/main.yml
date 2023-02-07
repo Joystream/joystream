@@ -47,11 +47,6 @@
   shell: bash -ic "yarn start"
   environment:
     JOYSTREAM_NODE_WS: 'ws://{{ inventory_hostname }}:9944/'
-    # TREASURY_ACCOUNT_URI: '{% if endowed_key is defined %}{{ endowed_key }}{% else %}{{ sudo_key }}{% endif %}'
-    # SUDO_ACCOUNT_URI: '{{ sudo_key }}'
-    # INVITER_KEY: "//Faucet"
-    # BALANCE_CREDIT: "300000000000"
-    # BALANCE_LOCKED: "300000000000"
   args:
     chdir: '{{ remote_code_path }}/query-node'
   async: 3600
@@ -72,13 +67,11 @@
 - name: Set websocket and http endpoint variables
   set_fact:
     hostname: '{{ inventory_hostname }}'
-  run_once: true
 
 # If inventory hostname is infact an ip address, use .nip.io
 - name: Set websocket and http endpoint variables
   set_fact:
     hostname: '{{ inventory_hostname }}.nip.io'
-  run_once: true
   when: inventory_hostname | ansible.utils.ipaddr
 
 - name: Install and configure Caddy
@@ -102,12 +95,10 @@
       indexer: https://{{ hostname }}/query-node/indexer/graphql
       # member_faucet: https://{{ hostname }}/member-faucet/register
       config: https://{{ hostname }}/network/config.json
-  run_once: true
 
 - name: Print endpoints
   debug:
     msg: '{{ all_services | from_yaml }}'
-  run_once: true
 
 - name: Create config.json to serve as Caddy endpoint
   copy:
@@ -119,5 +110,5 @@
 - name: Save output as file on local
   copy:
     content: '{{ all_services | from_yaml | to_json }}'
-    dest: '{{ data_path }}/endpoints.json'
+    dest: '{{ data_path }}/endpoints-{{ hostname }}.json'
   delegate_to: localhost
