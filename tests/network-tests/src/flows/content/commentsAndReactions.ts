@@ -1,4 +1,4 @@
-import { ReactVideo } from '@joystream/metadata-protobuf'
+import { BanOrUnbanMemberFromChannel, ReactVideo } from '@joystream/metadata-protobuf'
 import BN from 'bn.js'
 import Long from 'long'
 import { extendDebug } from '../../Debugger'
@@ -20,6 +20,8 @@ import {
   ModerateCommentParams,
   ModerateCommentsFixture,
   DeleteChannelWithVideosFixture,
+  BanOrUnbanMemberParams,
+  BanOrUnbanMembersFixture,
 } from '../../fixtures/content'
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
@@ -258,6 +260,20 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
 
   const moderateCommentsFixture = new ModerateCommentsFixture(api, query, moderateComments)
   await new FixtureRunner(moderateCommentsFixture).runWithQueryNodeChecks()
+
+  const banMembers: BanOrUnbanMemberParams[] = [
+    {
+      asMember: channelOwner.memberId,
+      channelId: channelIds[0],
+      msg: {
+        memberId: Long.fromString(participants[0].memberId.toString()), // ban participant[0] from channel[0]
+        option: BanOrUnbanMemberFromChannel.Option.BAN,
+      },
+    },
+  ]
+
+  const banMembersFixture = new BanOrUnbanMembersFixture(api, query, banMembers)
+  await new FixtureRunner(banMembersFixture).runWithQueryNodeChecks()
 
   // Delete videos & channels (to ensure all referencing relations are properly removed without causing QN processor crash)
   const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, channelIds)

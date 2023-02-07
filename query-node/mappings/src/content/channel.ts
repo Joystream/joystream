@@ -436,11 +436,15 @@ async function removeChannelReferencingRelations(store: DatabaseManager, channel
     await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
   }
 
-  const referencingEntities: typeof BaseModel[] = [Collaborator, ChannelNftCollectors, MemberBannedFromChannelEvent]
+  const referencingEntities: { new (): BaseModel & { channel: Partial<Channel> } }[] = [
+    Collaborator,
+    ChannelNftCollectors,
+    MemberBannedFromChannelEvent,
+  ]
 
   // Find all DB records that reference the given channel
   const referencingRecords = await Promise.all(
-    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity as any, channelId))
+    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity, channelId))
   )
 
   // Remove all relations
