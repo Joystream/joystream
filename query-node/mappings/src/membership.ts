@@ -663,13 +663,13 @@ async function processMemberRemark(
   }
 
   if (messageType === 'updateApp') {
-    await processUpdateAppMessage(store, decodedMessage.updateApp!)
+    await processUpdateAppMessage(store, event, decodedMessage.updateApp!, memberId.toString())
 
     return {}
   }
 
   if (messageType === 'deleteApp') {
-    await processDeleteAppMessage(store, decodedMessage.deleteApp!)
+    await processDeleteAppMessage(store, event, decodedMessage.deleteApp!, memberId.toString())
 
     return {}
   }

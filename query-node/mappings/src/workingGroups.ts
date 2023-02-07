@@ -1039,11 +1039,11 @@ async function processLeadRemarked(
     return {}
   }
   if (messageType === 'updateApp') {
-    await processUpdateAppMessage(store, decodedMessage.updateApp!)
+    await processUpdateAppMessage(store, event, decodedMessage.updateApp!)
     return {}
   }
   if (messageType === 'deleteApp') {
-    await processDeleteAppMessage(store, decodedMessage.deleteApp!)
+    await processDeleteAppMessage(store, event, decodedMessage.deleteApp!)
     return {}
   }
 
