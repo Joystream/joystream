@@ -664,7 +664,7 @@ export class Api {
     blocksReserve = 4,
     intervalMs = BLOCKTIME
   ): Promise<void> {
-    const stageTimeoutMs = 500 * 6 * 1000
+    const stageTimeoutMs = 100 * 6 * 1000
     await Utils.until(
       `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
       async ({ debug }) => {
