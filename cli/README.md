@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.8.0 linux-x64 node-v16.18.0
+@joystream/cli/0.10.0 darwin-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -121,6 +121,7 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
 - [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
 - [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
+- [`joystream-cli content:directChannelPayment`](#joystream-cli-contentdirectchannelpayment)
 - [`joystream-cli content:generateChannelPayoutsCommitment`](#joystream-cli-contentgeneratechannelpayoutscommitment)
 - [`joystream-cli content:generateChannelPayoutsPayload`](#joystream-cli-contentgeneratechannelpayoutspayload)
 - [`joystream-cli content:getPayoutsOnchainCommitment`](#joystream-cli-contentgetpayoutsonchaincommitment)
@@ -1023,6 +1024,33 @@ OPTIONS
 
 _See code: [src/commands/content/deleteVideoAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAssetsAsModerator.ts)_
 
+## `joystream-cli content:directChannelPayment`
+
+Make direct payment to channel's reward account by any member .
+
+```
+USAGE
+  $ joystream-cli content:directChannelPayment
+
+OPTIONS
+  -r, --rationale=rationale      (required) Reason for the payment
+
+  -v, --videoId=videoId          video ID for which payment is being made. If not provided, payment is supposed to be a
+                                 channel wide tip
+
+  --amount=amount                (required) JOY amount to be paid
+
+  --channelId=channelId          ID of the channel to be paid
+
+  --rewardAccount=rewardAccount  Reward account of the channel to be paid
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/directChannelPayment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/directChannelPayment.ts)_
+
 ## `joystream-cli content:generateChannelPayoutsCommitment`
 
 Generate merkle root (commitment) from channel payouts payload.
@@ -1218,7 +1246,7 @@ OPTIONS
   -s, --stakingAccountId=stakingAccountId        (required) Proposer staking account Id
   -t, --title=title                              (required) Title of the proposal
   --max=max                                      Maximum cashout amount allowed to a channel
-  --min=min                                      Minimum cashout amount allowad to a channel
+  --min=min                                      Minimum cashout amount allowed to a channel
   --useMemberId=useMemberId                      Try using the specified member id as context whenever possible
   --useWorkerId=useWorkerId                      Try using the specified worker id as context whenever possible
 ```
@@ -1954,6 +1982,8 @@ ARGUMENTS
   MESSAGE  Remark message
 
 OPTIONS
+  --account=account          Account where JOY needs to be transferred
+  --amount=amount            JOY amount to be transferred
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
 ```
 
