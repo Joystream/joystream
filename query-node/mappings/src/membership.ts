@@ -656,53 +656,53 @@ async function processMemberRemark(
   decodedMetadata: DecodedMetadataObject<IMemberRemarked> | null
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
   if (decodedMetadata?.createApp) {
-    await processCreateAppMessage(store, event, decodedMetadata.createApp!, memberId.toString())
+    await processCreateAppMessage(store, event, decodedMetadata.createApp, memberId.toString())
 
     return {}
   }
 
   if (decodedMetadata?.updateApp) {
-    await processUpdateAppMessage(store, event, decodedMetadata.updateApp!, memberId.toString())
+    await processUpdateAppMessage(store, event, decodedMetadata.updateApp, memberId.toString())
 
     return {}
   }
 
   if (decodedMetadata?.deleteApp) {
-    await processDeleteAppMessage(store, event, decodedMetadata.deleteApp!, memberId.toString())
+    await processDeleteAppMessage(store, event, decodedMetadata.deleteApp, memberId.toString())
 
     return {}
   }
 
   if (decodedMetadata?.reactVideo) {
-    await processReactVideoMessage(store, event, memberId, decodedMetadata.reactVideo!)
+    await processReactVideoMessage(store, event, memberId, decodedMetadata.reactVideo)
 
     return {}
   }
 
   if (decodedMetadata?.reactComment) {
-    await processReactCommentMessage(store, event, memberId, decodedMetadata.reactComment!)
+    await processReactCommentMessage(store, event, memberId, decodedMetadata.reactComment)
 
     return {}
   }
 
   if (decodedMetadata?.createComment) {
-    const comment = await processCreateCommentMessage(store, event, memberId, decodedMetadata.createComment!)
+    const comment = await processCreateCommentMessage(store, event, memberId, decodedMetadata.createComment)
 
     return { commentCreatedId: comment.id }
   }
 
   if (decodedMetadata?.editComment) {
-    const comment = await processEditCommentMessage(store, event, memberId, decodedMetadata.editComment!)
+    const comment = await processEditCommentMessage(store, event, memberId, decodedMetadata.editComment)
     return { commentEditedId: comment.id }
   }
 
   if (decodedMetadata?.deleteComment) {
-    const comment = await processDeleteCommentMessage(store, event, memberId, decodedMetadata.deleteComment!)
+    const comment = await processDeleteCommentMessage(store, event, memberId, decodedMetadata.deleteComment)
     return { commentDeletedId: comment.id }
   }
 
   if (decodedMetadata?.createVideoCategory) {
-    const createParams = decodedMetadata?.createVideoCategory as ICreateVideoCategory
+    const createParams = decodedMetadata.createVideoCategory
 
     const videoCategory = await createVideoCategory(store, event, createParams)
 
