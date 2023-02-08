@@ -664,8 +664,7 @@ export class Api {
     blocksReserve = 4,
     intervalMs = BLOCKTIME
   ): Promise<void> {
-    // max 300 blocks (Announcing Stage) of 6s each for not having the playground timing out on setup
-    const stageTimeoutMs = 300 * 6 * 1000
+    const stageTimeoutMs = 500 * 6 * 1000
     await Utils.until(
       `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
       async ({ debug }) => {
