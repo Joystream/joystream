@@ -156,6 +156,10 @@ jobs:
         scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage']
         include:
           - scenario: 'full'
+            no_storage: 'false'
+          - scenario: 'setupNewChain'
+            no_storage: 'true'
+          - scenario: 'setupNewChainMultiStorage'
             no_storage: 'true'
     steps:
       - uses: actions/checkout@v3
