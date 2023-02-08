@@ -1,9 +1,8 @@
 import { generateJsonPayloadFromPayoutsVector, generateSerializedPayload } from '@joystream/js/content'
-import { ChannelPayoutsVectorSchema } from '@joystream/js/utils'
 import { ChannelPayoutsVector } from '@joystream/js/typings/ChannelPayoutsVector.schema'
+import { ChannelPayoutsVectorSchema } from '@joystream/js/utils'
 
 import { flags } from '@oclif/command'
-import { blake2AsHex } from '@polkadot/util-crypto'
 import chalk from 'chalk'
 import UploadBaseCommand from '../../base/UploadCommandBase'
 import { displayCollapsedRow } from '../../helpers/display'
@@ -31,13 +30,13 @@ export default class GenerateChannelPayoutsPayload extends UploadBaseCommand {
     const [commitment, channelPayouts] = generateJsonPayloadFromPayoutsVector(payloadBodyInput)
     const serializedPayload = generateSerializedPayload(channelPayouts)
 
+    saveOutputToFile(out, serializedPayload)
+
     displayCollapsedRow({
       'Payload Size': Buffer.from(serializedPayload).byteLength,
-      'Payload Hash': blake2AsHex(serializedPayload),
+      'Payload Hash': await this.calculateFileHash(out),
       'Payload Commitment': commitment,
     })
-
-    saveOutputToFile(out, serializedPayload)
 
     this.log(chalk.green(`Channel Payout payload successfully saved to file: ${chalk.cyanBright(out)} !`))
   }
