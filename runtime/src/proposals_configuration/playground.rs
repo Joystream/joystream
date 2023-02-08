@@ -61,7 +61,7 @@ pub(crate) fn funding_request_proposal() -> ProposalParameters<BlockNumber, Bala
 pub(crate) fn create_working_group_lead_opening_proposal(
 ) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
-        voting_period: 200,
+        voting_period: 20,
         grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 80,
@@ -76,7 +76,7 @@ pub(crate) fn create_working_group_lead_opening_proposal(
 pub(crate) fn fill_working_group_lead_opening_proposal() -> ProposalParameters<BlockNumber, Balance>
 {
     ProposalParameters {
-        voting_period: 200,
+        voting_period: 20,
         grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
