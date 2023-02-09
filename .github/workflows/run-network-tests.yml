@@ -194,10 +194,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with: 
-          repository: joystream/joystream
+          repository: Joystream/joystream
           ref: 'master' 
 
-      - id: compute_shasum
+      - id: compute_shasum_master
           name: Compute runtime code shasum
           env:
             RUNTIME_PROFILE: 'TESTING'
@@ -218,7 +218,7 @@ jobs:
           platforms: linux/amd64
           build-args: |
             CARGO_FEATURES=testing-runtime
-            CODE_SHASUM=${{ steps.compute_shasum.outputs.shasum }}
+            CODE_SHASUM=${{ steps.compute_shasum_master.outputs.shasum }}
           push: false
           tags: joystream/node:mainnetDev
           builder: ${{ steps.builder2.outputs.name }}
