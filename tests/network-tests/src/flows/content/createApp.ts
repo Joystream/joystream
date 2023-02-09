@@ -14,15 +14,17 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
   await new FixtureRunner(createMembersFixture).run()
   const [member] = createMembersFixture.getCreatedItems().members
 
-  const appOwnedByMember = 'app_owned_by_member'
-  const appOwnedByMemberMetadata: Partial<AppMetadata> = {
+  const appMetadata: Partial<AppMetadata> = {
     category: 'blockchain',
     oneLiner: 'best blokchain video platform',
     description: 'long description',
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(member.memberId, appOwnedByMember, appOwnedByMemberMetadata)
+  // app created by member
+  const appOwnedByMember = 'app_owned_by_member'
+
+  await api.createApp(member.memberId, appOwnedByMember, appMetadata)
 
   await query.tryQueryWithTimeout(
     () => query.getAppsByName(appOwnedByMember),
@@ -30,26 +32,20 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
       assert.equal(appsByName?.[0]?.name, appOwnedByMember)
       assert.equal(appsByName?.[0].ownerMember?.id, member.memberId.toString())
       assert.equal(appsByName?.[0].isLeadOwned, false)
-      assert.equal(appsByName?.[0]?.category, appOwnedByMemberMetadata.category)
-      assert.equal(appsByName?.[0]?.oneLiner, appOwnedByMemberMetadata.oneLiner)
-      assert.equal(appsByName?.[0]?.description, appOwnedByMemberMetadata.description)
+      assert.equal(appsByName?.[0]?.category, appMetadata.category)
+      assert.equal(appsByName?.[0]?.oneLiner, appMetadata.oneLiner)
+      assert.equal(appsByName?.[0]?.description, appMetadata.description)
       assert.equal(appsByName?.[0]?.termsOfService, null)
       assert.equal(appsByName?.[0]?.websiteUrl, null)
-      assert.deepEqual(appsByName?.[0]?.platforms, appOwnedByMemberMetadata.platforms)
+      assert.deepEqual(appsByName?.[0]?.platforms, appMetadata.platforms)
     }
   )
 
+  // app created by lead
   const leadId = await api.getLeaderId('contentWorkingGroup')
 
   const appOwnedByLead = 'app_owned_by_lead'
-  const appOwnedByLeadMetadata: Partial<AppMetadata> = {
-    category: 'blockchain',
-    oneLiner: 'best blokchain video platform',
-    description: 'long description',
-    platforms: ['web', 'mobile'],
-  }
-
-  await api.createApp(leadId, appOwnedByLead, appOwnedByLeadMetadata, true)
+  await api.createApp(leadId, appOwnedByLead, appMetadata, true)
 
   await query.tryQueryWithTimeout(
     () => query.getAppsByName(appOwnedByLead),
@@ -57,12 +53,12 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
       assert.equal(appsByName?.[0]?.name, appOwnedByLead)
       assert.equal(appsByName?.[0].ownerMember?.id, null)
       assert.equal(appsByName?.[0].isLeadOwned, true)
-      assert.equal(appsByName?.[0]?.category, appOwnedByLeadMetadata.category)
-      assert.equal(appsByName?.[0]?.oneLiner, appOwnedByLeadMetadata.oneLiner)
-      assert.equal(appsByName?.[0]?.description, appOwnedByLeadMetadata.description)
+      assert.equal(appsByName?.[0]?.category, appMetadata.category)
+      assert.equal(appsByName?.[0]?.oneLiner, appMetadata.oneLiner)
+      assert.equal(appsByName?.[0]?.description, appMetadata.description)
       assert.equal(appsByName?.[0]?.termsOfService, null)
       assert.equal(appsByName?.[0]?.websiteUrl, null)
-      assert.deepEqual(appsByName?.[0]?.platforms, appOwnedByMemberMetadata.platforms)
+      assert.deepEqual(appsByName?.[0]?.platforms, appMetadata.platforms)
     }
   )
 
