@@ -42,24 +42,16 @@ scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
   const councilJob = job('electing council', electCouncil)
-  const newRuntimePath = env.RUNTIME_UPGRADE_TARGET_WASM_PATH || './data/new_runtime.wasm'
-  const runtimeUpgradeProposalJob = newRuntimePath
-    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
-    : undefined
-
-  const coreJob = runtimeUpgradeProposalJob || councilJob
-
-  // All other jobs should be executed after coreJob
 
   // Membership:
-  job('buying members', buyingMemberships).after(coreJob)
-  job('updating member profile', updatingMemberProfile).after(coreJob)
-  job('updating member accounts', updatingMemberAccounts).after(coreJob)
-  job('transferring invites', transferringInvites).after(coreJob)
-  job('managing staking accounts', managingStakingAccounts).after(coreJob)
+  job('buying members', buyingMemberships).after(councilJob)
+  job('updating member profile', updatingMemberProfile).after(councilJob)
+  job('updating member accounts', updatingMemberAccounts).after(councilJob)
+  job('transferring invites', transferringInvites).after(councilJob)
+  job('managing staking accounts', managingStakingAccounts).after(councilJob)
 
   // Council (should not interrupt proposalsJob!)
-  const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
+  const secondCouncilJob = job('electing second council', electCouncil).requires(councilJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
 
   // Proposals:
@@ -86,7 +78,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  job('inviting members', invitingMembers).after(coreJob).requires(groupBudgetSet)
+  job('inviting members', invitingMembers).requires(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
