@@ -198,12 +198,11 @@ jobs:
           ref: master
 
       - id: compute_shasum_master
-          name: Compute runtime code shasum master
-          env:
-            RUNTIME_PROFILE: 'TESTING'
-          run: |
-            export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
-            echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+        env:
+          RUNTIME_PROFILE: 'TESTING'
+        run: |
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
       - name: Set up Docker Buildx master
         uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
