@@ -1,14 +1,13 @@
 import { xxhashAsHex } from '@polkadot/util-crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import fs from 'fs'
-// import path from 'path'
-console.log(`data path: ${process.env.DATA_PATH}`)
+import path from 'path'
 
 // paths & env variables
-// const wasmPath = path.join(process.env.DATA_PATH || '', 'runtime.wasm') || ''
-// const hexPath = path.join(process.env.DATA_PATH || '', 'runtime.hex') || ''
-// const specPath = path.join(process.env.DATA_PATH || '', 'chain-spec-raw.json')
-// const storagePath = path.join(process.env.DATA_PATH || '', 'storage.json')
+const dataPath = process.argv.slice(2).toString() || ''
+const specPath = path.join(dataPath, 'chain-spec-raw.json')
+const forkedSpecPath = path.join(dataPath, 'chain-spec-forked.json')
+const storagePath = path.join(dataPath, 'storage.json')
 
 // this might not be of much use
 const provider = new WsProvider(process.env.WS_RPC_ENDPOINT || 'ws://localhost:9944')
@@ -36,27 +35,8 @@ const skippedModulesPrefix = [
   'Authorship',
   // Joystream specific
   'Council', // empty council
-  'AppWorkingGroup',
-  'ContentWorkingGroup',
-  'DistributionWorkingGroup',
-  'ForumWorkingGroup',
-  'MembershipWorkingGroup',
-  'OperationsWorkingGroupAlpha',
-  'OperationsWorkingGroupBeta',
-  'OperationsWorkingGroupGamma',
-  'StorageWorkingGroup',
-  'Referendum'
+  'Referendum',
 ]
-
-// Apparently not needed: To review
-// async function fixParachinStates(api: ApiPromise, chainSpec: any) {
-//     const skippedKeys = [
-//         api.query["parasScheduler"].sessionStartBlock.key()
-//     ];
-//     for (const k of skippedKeys) {
-//         delete chainSpec.genesis.raw.top[k];
-//     }
-// }
 
 async function main() {
   const api = await ApiPromise.create({ provider })
@@ -68,14 +48,14 @@ async function main() {
   pallets.forEach((pallet) => {
     if (pallet.storage) {
       if (!skippedModulesPrefix.includes(pallet.name.toString())) {
-        prefixes.push(xxhashAsHex(pallet.name.toString(), 128));
+        prefixes.push(xxhashAsHex(pallet.name.toString(), 128))
       }
     }
-  });
+  })
 
   // blank starting chainspec guaranteed to exist
-  const storage: Storage = JSON.parse(fs.readFileSync('/Users/ignazio/developer/joystream/tests/network-tests/data/storage.json', 'utf8'))
-  const chainSpec = JSON.parse(fs.readFileSync('/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-raw.json','utf8'))
+  const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
+  const chainSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
 
   // Grab the items to be moved, then iterate through and insert into storage
   storage.result
@@ -86,12 +66,12 @@ async function main() {
   delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']
 
   // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
-  delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8'];
+  delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']
 
   // To prevent the validator set from changing mid-test, set Staking.ForceEra to ForceNone ('0x02')
   chainSpec.genesis.raw.top['0x5f3e4907f716ac89b6347d15ececedcaf7dad0317324aecae8744b87fc95f2f3'] = '0x02'
 
-  fs.writeFileSync('/Users/ignazio/developer/joystream/tests/network-tests/data/chain-spec-forked.json', JSON.stringify(chainSpec, null, 4))
+  fs.writeFileSync(forkedSpecPath, JSON.stringify(chainSpec, null, 4))
 
   process.exit()
 }
