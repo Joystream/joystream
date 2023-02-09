@@ -94,6 +94,9 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
     memberId.toString(),
   ])
 
+  debug('Giving the query node a minute to sync...')
+  await Utils.wait(60_000)
+
   const channel = await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
     (r) => Utils.assert(r, `Cannot find channel ${channelId}`)
