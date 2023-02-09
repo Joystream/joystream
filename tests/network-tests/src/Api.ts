@@ -661,9 +661,10 @@ export class Api {
   public async untilCouncilStage(
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
     announcementPeriodNr: number | null = null,
-    blocksReserve = 4,
+    blocksReserve = 1, // TODO dynamically adjust this as it stuck the election process
     intervalMs = BLOCKTIME
   ): Promise<void> {
+    const stageTimeoutMs = 100 * 6 * 1000
     await Utils.until(
       `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
       async ({ debug }) => {
@@ -699,7 +700,8 @@ export class Api {
           announcementPeriodNr === currentAnnouncementPeriodNr
         )
       },
-      intervalMs
+      intervalMs,
+      stageTimeoutMs
     )
   }
 
