@@ -50,7 +50,7 @@ function generate_config_files() {
 
 # Create a chain spec file
 function create_hex_chain_spec() {
-  docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
+  docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME_TAG} \
     new \
     --fund-accounts \
     --authorities //Alice \
@@ -160,3 +160,5 @@ function main {
   # 5. start node
   start_joystream_node
 }
+
+main
