@@ -10,13 +10,7 @@ import {
   PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
   PalletMembershipCreateMemberParameters as CreateMemberParameters,
 } from '@polkadot/types/lookup'
-import {
-  MembershipMetadata,
-  MemberRemarked,
-  ICreateVideoCategory,
-  IMembershipMetadata,
-  IMemberRemarked,
-} from '@joystream/metadata-protobuf'
+import { MembershipMetadata, MemberRemarked, IMembershipMetadata, IMemberRemarked } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import {
   bytesToString,

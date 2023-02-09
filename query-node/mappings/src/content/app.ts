@@ -74,6 +74,10 @@ export async function processUpdateAppMessage(
     inconsistentState("App doesn't belong to the member", { appId, memberId })
   }
 
+  if (event.method === 'LeadRemarked' && app.ownerMember?.id) {
+    inconsistentState("App doesn't belong to the lead", { appId })
+  }
+
   if (appMetadata) {
     integrateMeta(app, appMetadata, [
       'websiteUrl',
@@ -115,6 +119,10 @@ export async function processDeleteAppMessage(
 
   if (memberId && app?.ownerMember?.id !== memberId) {
     inconsistentState("App doesn't belong to the member", { appId, memberId })
+  }
+
+  if (event.method === 'LeadRemarked' && app.ownerMember?.id) {
+    inconsistentState("App doesn't belong to the lead", { appId })
   }
 
   await store.remove<App>(app)

@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, u128, BTreeSet, Option, Vec } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -62,11 +62,11 @@ import {
 } from './consts'
 
 import {
+  ContentLeadRemarked,
   CreateApp,
   CreateVideoCategory,
   DeleteApp,
   IAppMetadata,
-  LeadRemarked,
   MemberRemarked,
   UpdateApp,
 } from '@joystream/metadata-protobuf'
@@ -812,20 +812,23 @@ export class Api {
     appMetadata?: IAppMetadata,
     ownedByLead?: boolean
   ): Promise<ISubmittableResult> {
-    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
-    if (!memberAccount) {
-      throw new Error('invalid member id')
+    const account = ownedByLead
+      ? await this.getLeadRoleKey('contentWorkingGroup')
+      : await this.getMemberControllerAccount(memberId.toNumber())
+
+    if (!account) {
+      throw new Error('invalid account')
     }
     if (ownedByLead) {
-      const meta = new LeadRemarked({
+      const meta = new ContentLeadRemarked({
         createApp: new CreateApp({
           name,
           appMetadata,
         }),
       })
       return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
-        memberAccount.toString()
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
       )
     } else {
       const meta = new MemberRemarked({
@@ -836,7 +839,7 @@ export class Api {
       })
       return this.sender.signAndSend(
         this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
-        memberAccount.toString()
+        account.toString()
       )
     }
   }
@@ -847,13 +850,16 @@ export class Api {
     appMetadata: IAppMetadata,
     ownedByLead?: boolean
   ): Promise<ISubmittableResult> {
-    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
-    if (!memberAccount) {
-      throw new Error('invalid member id')
+    const account = ownedByLead
+      ? await this.getLeadRoleKey('contentWorkingGroup')
+      : await this.getMemberControllerAccount(memberId.toNumber())
+
+    if (!account) {
+      throw new Error('invalid account')
     }
 
     if (ownedByLead) {
-      const meta = new LeadRemarked({
+      const meta = new ContentLeadRemarked({
         updateApp: new UpdateApp({
           appId,
           appMetadata,
@@ -861,8 +867,8 @@ export class Api {
       })
 
       return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
-        memberAccount.toString()
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
       )
     } else {
       const meta = new MemberRemarked({
@@ -874,26 +880,30 @@ export class Api {
 
       return this.sender.signAndSend(
         this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
-        memberAccount.toString()
+        account.toString()
       )
     }
   }
 
   async deleteApp(memberId: u64, appId: string, ownedByLead?: boolean): Promise<ISubmittableResult> {
-    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
-    if (!memberAccount) {
-      throw new Error('invalid member id')
+    const account = ownedByLead
+      ? await this.getLeadRoleKey('contentWorkingGroup')
+      : await this.getMemberControllerAccount(memberId.toNumber())
+
+    if (!account) {
+      throw new Error('invalid account')
     }
+
     if (ownedByLead) {
-      const meta = new LeadRemarked({
+      const meta = new ContentLeadRemarked({
         deleteApp: new DeleteApp({
           appId,
         }),
       })
 
       return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(LeadRemarked, meta)),
-        memberAccount.toString()
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
       )
     } else {
       const meta = new MemberRemarked({
@@ -903,7 +913,7 @@ export class Api {
       })
       return this.sender.signAndSend(
         this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
-        memberAccount.toString()
+        account.toString()
       )
     }
   }

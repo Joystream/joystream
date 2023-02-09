@@ -39,6 +39,8 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
     }
   )
 
+  const leadId = await api.getLeaderId('contentWorkingGroup')
+
   const appOwnedByLead = 'app_owned_by_lead'
   const appOwnedByLeadMetadata: Partial<AppMetadata> = {
     category: 'blockchain',
@@ -47,7 +49,7 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(member.memberId, appOwnedByLead, appOwnedByLeadMetadata, true)
+  await api.createApp(leadId, appOwnedByLead, appOwnedByLeadMetadata, true)
 
   await query.tryQueryWithTimeout(
     () => query.getAppsByName(appOwnedByLead),
