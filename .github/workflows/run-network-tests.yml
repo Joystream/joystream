@@ -222,6 +222,6 @@ jobs:
           yarn joystream-cli api:setUri ws://localhost:9944
           git clone https://github.com/Joystream/joystream.git joystream_master 
           export RUNTIME_PROFILE=TESTING
-          export RUNTIME_TAG=$(joystream_master/scripts/runtime-code-shasum.sh)
-          export TARGET_RUNTIME_TAG=latest
+          export RUNTIME=$(joystream_master/scripts/runtime-code-shasum.sh)
+          export TARGET_RUNTIME=latest
           tests/network-tests/run-migration-tests.sh
