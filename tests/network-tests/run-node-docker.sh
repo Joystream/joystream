@@ -16,17 +16,24 @@ mkdir -p ${DATA_PATH}
 RUNTIME_TAG=${RUNTIME_TAG:=mainnetDev}
 TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=ephesus}
 
+# Initial account balance for sudo account
+SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
+SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
+SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
 TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME_TAG} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
+echo >&2 "sudo account from suri: ${SUDO_ACCOUNT}"
 echo >&2 "treasury account from suri: ${TREASURY_ACCOUNT}"
 
 # Default initial balances
 function generate_config_files() {
   echo "{
   \"balances\":[
+    [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
     [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
   ],
   \"vesting\":[]
@@ -54,6 +61,7 @@ function create_hex_chain_spec() {
     new \
     --fund-accounts \
     --authorities //Alice \
+    --sudo-account ${SUDO_ACCOUNT} \
     --deployment dev \
     --chain-spec-path /spec/chain-spec.json \
     --initial-balances-path /spec/initial-balances.json
@@ -83,7 +91,7 @@ function start_joystream_node {
 #######################################
 function set_new_runtime_wasm_path() {
   id=$(docker create joystream/node:${TARGET_RUNTIME_TAG})
-  cp $id:/joystream/runtime.compact.compressed.wasm ${DATA_PATH}/new_runtime.wasm
+  docker cp $id:/joystream/runtime.compact.compressed.wasm ${DATA_PATH}/new_runtime.wasm
 }
 
 #######################################
@@ -137,6 +145,7 @@ function export_chainspec_file_to_disk() {
 
 # entrypoint
 function main {
+  export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
   if [ $TARGET_RUNTIME_TAG != $RUNTIME_TAG ]; then
     if ! [[ -f ${DATA_PATH}/chain-spec-raw.json ]]; then
       # 0. Generate config files
@@ -151,11 +160,10 @@ function main {
       # 3. set path to new runtime.wasm
       set_new_runtime_wasm_path
       echo >&2 "new wasm path: ${RUNTIME_UPGRADE_TARGET_WASM_PATH}"
+      # 4. copy chainspec to disk
+      export_chainspec_file_to_disk
+      echo >&2 "chainspec exported"
     fi
-    export JOYSTREAM_NODE_TAG=${RUNTIME_TAG}
-    # 3. copy chainspec to disk
-    export_chainspec_file_to_disk
-    echo >&2 "chainspec exported"
   fi
   # 5. start node
   start_joystream_node
