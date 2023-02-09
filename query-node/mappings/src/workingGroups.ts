@@ -7,13 +7,13 @@ import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,
-  ILeadRemarked,
+  IContentLeadRemarked,
   IOpeningMetadata,
   IRemoveUpcomingOpening,
   ISetGroupMetadata,
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
-  LeadRemarked,
+  ContentLeadRemarked,
   OpeningMetadata,
   RemarkMetadataAction,
   WorkingGroupMetadataAction,
@@ -698,20 +698,20 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
 export async function contentWorkingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
   const [metadataBytes] = new WorkingGroups.LeadRemarkedEvent(event).params
   try {
-    const metadata = deserializeMetadata(LeadRemarked, metadataBytes)
+    const metadata = deserializeMetadata(ContentLeadRemarked, metadataBytes)
 
-    const metaTransactionInfo = await processLeadRemarked(store, event, metadata)
+    const metaTransactionInfo = await processContentLeadRemarked(store, event, metadata)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
     // emit log event
-    logger.info('Lead remarked', { metadata })
+    logger.info('Content lead remarked', { metadata })
   } catch (e) {
     // emit log event
-    logger.info(`Bad metadata for lead's remark`, { e })
+    logger.info(`Bad metadata for content lead's remark`, { e })
 
     // save metaprotocol info
-    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for lead's remark`)
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for content lead's remark`)
   }
 }
 
@@ -1028,10 +1028,10 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   await store.save<WorkingGroup>(group)
 }
 
-async function processLeadRemarked(
+async function processContentLeadRemarked(
   store: DatabaseManager,
   event: SubstrateEvent,
-  decodedMetadata: DecodedMetadataObject<ILeadRemarked> | null
+  decodedMetadata: DecodedMetadataObject<IContentLeadRemarked> | null
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
   if (decodedMetadata?.createApp) {
     await processCreateAppMessage(store, event, decodedMetadata.createApp)

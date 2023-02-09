@@ -144,7 +144,7 @@ message DeleteApp {
     required string app_id = 1;
 }
 
-message LeadRemarked {
+message ContentLeadRemarked {
     oneof lead_remarked {
         CreateApp create_app = 1;
         UpdateApp update_app = 2;
