@@ -191,6 +191,7 @@ jobs:
 
   build_master_testing:
     name: Build joystream node images for mainnet-testing
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
