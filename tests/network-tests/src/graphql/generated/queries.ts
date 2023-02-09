@@ -227,6 +227,10 @@ export type GetChannelsByIdsQueryVariables = Types.Exact<{
 
 export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
 
+export type GetChannelsCountQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelsCountQuery = { channelsConnection: { totalCount: number } }
+
 export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
@@ -4859,6 +4863,13 @@ export const GetChannelsByIds = gql`
     }
   }
   ${ChannelFields}
+`
+export const GetChannelsCount = gql`
+  query getChannelsCount {
+    channelsConnection {
+      totalCount
+    }
+  }
 `
 export const GetVideoCategoryById = gql`
   query getVideoCategoryById($id: ID!) {
