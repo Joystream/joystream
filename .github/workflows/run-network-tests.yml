@@ -190,10 +190,10 @@ jobs:
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}
 
   build_master_testing:
-    name: Build joystream node images for mainnet-testing 
+    name: Build joystream node images for mainnet-testing
     steps:
       - uses: actions/checkout@v3
-        with: 
+        with:
           repository: Joystream/joystream
           ref: master
 
@@ -225,7 +225,7 @@ jobs:
         if: steps.check_files.outputs.files_exists == 'false'
 
   runtime_upgrade:
-    name: Runtime Upgrade From Mainnet To Ephesus 
+    name: Runtime Upgrade From Mainnet To Ephesus
     needs: [build_images, build_master_testing]
     runs-on: ubuntu-latest
     steps:
@@ -250,8 +250,8 @@ jobs:
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
-      - name: Execute network tests 
-        env: 
+      - name: Execute network tests
+        env:
           RUNTIME: latest
           TARGET_RUNTIME: mainnetDev
         run: |
