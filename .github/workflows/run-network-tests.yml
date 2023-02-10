@@ -274,6 +274,7 @@ jobs:
           node-version: '14.x'
       - name: Install artifacts
         uses: actions/download-artifact@v3
+      - name: load docker images
         run: |
           docker load --input joystream-node-docker-image.tar.gz
           docker load --input joystream-node-docker-image-master.tar.gz
