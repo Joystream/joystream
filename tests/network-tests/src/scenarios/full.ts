@@ -74,7 +74,7 @@ scenario('Full', async ({ job, env }) => {
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
   job('worker actions', workerActions).requires(hireLeads)
-  const groupBudgetSet = job('group budget', groupBudget).requires(hireLeads)
+  const groupBudgetSet = job('group budget', groupBudget).after(councilJob).requires(hireLeads)
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
