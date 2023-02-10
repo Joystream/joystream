@@ -328,6 +328,12 @@ query getChannelsByIds($ids: [ID!]) {
   }
 }
 
+query getChannelsCount {
+  channelsConnection {
+    totalCount
+  }
+}
+
 query getVideoCategoryById($id: ID!) {
   videoCategoryByUniqueInput(where: { id: $id }) {
     ...VideoCategoryFields
