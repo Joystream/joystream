@@ -1,5 +1,5 @@
 import { FlowProps } from '../../Flow'
-import { BuyMembershipHappyCaseFixture, InviteMembersHappyCaseFixture } from '../../fixtures/membership'
+import { InviteMembersHappyCaseFixture } from '../../fixtures/membership'
 
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
@@ -13,19 +13,28 @@ export default async function invitingMembers({ api, query, env }: FlowProps): P
   const N: number = +env.MEMBERS_INVITE_N!
   assert(N > 0)
 
-  const [inviterAcc] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
-  const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [inviterAcc])
-  await new FixtureRunner(buyMembershipHappyCaseFixture).run()
-  const [inviterMemberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
+  const [, leader] = await api.getLeader('membershipWorkingGroup')
+  const leaderController = await api.getControllerAccountOfMember(leader.memberId)
+  await api.makeSudoCall(api.tx.members.setLeaderInvitationQuota(N * 3))
 
-  const inviteesAccs = (await api.createKeyPairs(N)).map(({ key }) => key.address)
-  const inviteMembersHappyCaseFixture = new InviteMembersHappyCaseFixture(
-    api,
-    query,
-    { account: inviterAcc, memberId: inviterMemberId },
-    inviteesAccs
-  )
-  await new FixtureRunner(inviteMembersHappyCaseFixture).runWithQueryNodeChecks()
+  const inviteMembers = async () => {
+    const inviteesAccs = (await api.createKeyPairs(N)).map(({ key }) => key.address)
+    const inviteMembersHappyCaseFixture = new InviteMembersHappyCaseFixture(
+      api,
+      query,
+      { account: leaderController, memberId: leader.memberId },
+      inviteesAccs
+    )
+    await new FixtureRunner(inviteMembersHappyCaseFixture).runWithQueryNodeChecks()
+  }
+
+  await inviteMembers()
+
+  // Update initialInvitationBalance and try again, do it twice just to be sure the correct value is always used
+  for (let i = 0; i < 2; ++i) {
+    await api.makeSudoCall(api.tx.members.setInitialInvitationBalance(10_000_000_000 * i))
+    await inviteMembers()
+  }
 
   debug('Done')
 }

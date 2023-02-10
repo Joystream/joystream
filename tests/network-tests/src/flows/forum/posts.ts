@@ -1,3 +1,4 @@
+import { createType } from '@joystream/types'
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
@@ -9,9 +10,10 @@ import {
   PostsRemovalInput,
   PostTextUpdate,
   UpdatePostsTextFixture,
+  RemarkModeratePostsFixture,
 } from '../../fixtures/forum'
 
-export default async function threads({ api, query }: FlowProps): Promise<void> {
+export default async function posts({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug(`flow:threads`)
   debug('Started')
   api.enableDebugTxLogs()
@@ -20,11 +22,15 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
     numberOfForumMembers: 5,
     numberOfCategories: 2,
     threadsPerCategory: 2,
+    moderatorsPerCategory: 1,
   })
   await new FixtureRunner(initializeForumFixture).runWithQueryNodeChecks()
 
   const memberIds = initializeForumFixture.getCreatedForumMemberIds()
   const threadPaths = initializeForumFixture.getThreadPaths()
+  const moderatorIds = threadPaths.map(
+    ({ categoryId }) => initializeForumFixture.getCreatedForumModeratorsByCategoryId(categoryId)[0]
+  )
 
   // Create posts
   const posts: PostParams[] = [
@@ -87,6 +93,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   const addRepliesFixture = new AddPostsFixture(api, query, postReplies)
   const addRepliesRunner = new FixtureRunner(addRepliesFixture)
   await addRepliesRunner.run()
+  const replyIds = addRepliesFixture.getCreatedPostsIds()
 
   // Run compound query node checks
   await Promise.all([addPostsFixture.runQueryNodeChecks(), addRepliesRunner.runQueryNodeChecks()])
@@ -113,6 +120,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   const updatePostsTextRunner = new FixtureRunner(updatePostsTextFixture)
   await updatePostsTextRunner.run()
 
+  // Remove posts
   const postRemovals: PostsRemovalInput[] = [
     {
       posts: [
@@ -128,13 +136,46 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
     {
       posts: [
         {
+          ...threadPaths[0],
+          postId: replyIds[0],
+          hide: false,
+        },
+      ],
+      asMember: memberIds[1],
+      rationale: `Remove reply 0 (id ${replyIds[0].toNumber()}) from the chain only`,
+    },
+    {
+      posts: [
+        {
+          ...threadPaths[0],
+          postId: replyIds[1],
+          hide: false,
+        },
+      ],
+      asMember: memberIds[1],
+      rationale: `Remove reply 1 (id ${replyIds[1].toNumber()}) from the chain only`,
+    },
+    {
+      posts: [
+        {
           ...threadPaths[3],
           postId: postIds[3],
           hide: false,
         },
       ],
       asMember: memberIds[3],
-      rationale: 'Hide = false test',
+      rationale: `Remove the third post (id ${postIds[3].toNumber()} from the chain only)`,
+    },
+    {
+      posts: [
+        {
+          ...threadPaths[3],
+          postId: postIds[4],
+          hide: false,
+        },
+      ],
+      asMember: memberIds[3],
+      rationale: 'Hide = false again',
     },
   ]
   const deletePostsFixture = new DeletePostsFixture(api, query, postRemovals)
@@ -143,6 +184,36 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
 
   // Run compound query node checks
   await Promise.all([updatePostsTextRunner.runQueryNodeChecks(), deletePostsRunner.runQueryNodeChecks()])
+
+  // Moderate removed posts
+  const postModerations = [
+    {
+      postId: postIds[3],
+      rationale: 'Moderated by creator',
+      asWorker: moderatorIds[3],
+    },
+    {
+      postId: replyIds[0],
+      rationale: 'Moderated by category moderator',
+      asWorker: moderatorIds[0],
+    },
+    { postId: postIds[4], rationale: 'Moderated by lead' },
+    // Invalid cases
+    { postId: createType('u64', 999999), rationale: 'Does not exist', expectFailure: true },
+    { postId: postIds[0], rationale: 'Already hidden', expectFailure: true },
+    { postId: postIds[2], rationale: 'Not deleted', expectFailure: true },
+    {
+      postId: replyIds[0],
+      rationale: 'Wrong worker',
+      asWorker: moderatorIds[3],
+      expectFailure: true,
+    },
+    { postId: createType('u64', 999999), rationale: 'Does not exist', expectFailure: true },
+  ]
+  const remarkModerateFixture = new RemarkModeratePostsFixture(api, query, postModerations)
+  const remarkModerateRunner = new FixtureRunner(remarkModerateFixture)
+  await remarkModerateRunner.run()
+  await remarkModerateRunner.runQueryNodeChecks()
 
   // TODO: Delete posts as any member? Would require waiting PostLifetime (currently 3600 blocks)
 

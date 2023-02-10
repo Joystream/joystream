@@ -212,6 +212,15 @@ export async function getWorkingGroupByName(
   return group
 }
 
+export async function getWorkingGroupLead(store: DatabaseManager, groupName: WorkingGroupModuleName) {
+  const lead = await store.get(Worker, { where: { groupId: groupName, isLead: true, isActive: true } })
+  if (!lead) {
+    return inconsistentState(`Couldn't find an active lead for ${groupName}`)
+  }
+
+  return lead
+}
+
 export async function getWorker(
   store: DatabaseManager,
   groupName: WorkingGroupModuleName,

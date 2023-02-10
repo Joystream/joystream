@@ -1,4 +1,5 @@
-import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client'
+import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode, from } from '@apollo/client/core'
+import { onError } from '@apollo/client/link/error'
 import fetch from 'cross-fetch'
 import {
   GetBagConnection,
@@ -24,6 +25,7 @@ import {
 import { Maybe, StorageBagWhereInput } from './generated/schema'
 
 import logger from '../logger'
+import stringify from 'fast-safe-stringify'
 
 /**
  * Defines query paging limits.
@@ -51,8 +53,13 @@ export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
 
   public constructor(endpoint: string) {
+    const errorLink = onError((error) => {
+      const { networkError } = error
+      const message = networkError?.message || 'Graphql syntax errors found'
+      logger.error(`Error when trying to execute a query: ${message}. ${stringify(error)}`)
+    })
     this.apolloClient = new ApolloClient({
-      link: new HttpLink({ uri: endpoint, fetch }),
+      link: from([errorLink, new HttpLink({ uri: endpoint, fetch })]),
       cache: new InMemoryCache(),
       defaultOptions: {
         query: { fetchPolicy: 'no-cache', errorPolicy: 'none' },
@@ -229,18 +236,21 @@ export class QueryNodeApi {
    * @param offset - starting record of the page
    */
   public async getDataObjectDetails(bagIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
-    const input: StorageBagWhereInput = { id_in: bagIds }
-    const result = await this.multipleEntitiesWithPagination<
-      DataObjectDetailsFragment,
-      GetDataObjectConnectionQuery,
-      GetDataObjectConnectionQueryVariables
-    >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection')
-
-    if (!result) {
-      return []
+    const allBagIds = [...bagIds] // Copy to avoid modifying the original array
+    const fullResult: DataObjectDetailsFragment[] = []
+    while (allBagIds.length) {
+      const bagIdsBatch = allBagIds.splice(0, 1000)
+      const input: StorageBagWhereInput = { id_in: bagIdsBatch }
+      fullResult.push(
+        ...(await this.multipleEntitiesWithPagination<
+          DataObjectDetailsFragment,
+          GetDataObjectConnectionQuery,
+          GetDataObjectConnectionQueryVariables
+        >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection'))
+      )
     }
 
-    return result
+    return fullResult
   }
 
   /**

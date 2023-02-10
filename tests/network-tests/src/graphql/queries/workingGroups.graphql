@@ -62,6 +62,7 @@ fragment WorkerFields on Worker {
   runtimeId
   group {
     name
+    leaderId
   }
   membership {
     id

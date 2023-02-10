@@ -1,13 +1,14 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import {
   bytesToString,
   deserializeMetadata,
   genericEventFields,
   getWorker,
   inconsistentState,
+  invalidMetadata,
   perpareString,
   toNumber,
 } from './common'
@@ -73,13 +74,70 @@ async function getThread(store: DatabaseManager, threadId: string): Promise<Foru
   return thread
 }
 
-async function getPost(store: DatabaseManager, postId: string, relations?: 'thread'[]): Promise<ForumPost> {
+async function getPost(store: DatabaseManager, postId: string, relations?: string[]): Promise<ForumPost> {
   const post = await store.get(ForumPost, { where: { id: postId }, relations })
   if (!post) {
-    throw new Error(`Forum post not found by id: ${postId.toString()}`)
+    throw new Error(`Forum post not found by id: ${postId}`)
   }
 
   return post
+}
+
+type ModerationType = 'runtime' | 'leadRemark' | 'workerRemark'
+
+async function canModerate(store: DatabaseManager, actorId: string, categoryId: string): Promise<boolean> {
+  const category = await getCategory(store, categoryId, ['moderators', 'parent'])
+  return (
+    category.moderators.some(({ id }) => id === actorId) ||
+    (category.parent ? canModerate(store, actorId, category.parent.id) : false)
+  )
+}
+
+export async function moderatePost(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  type: ModerationType,
+  postId: string,
+  actor: Worker,
+  rationale: string
+): Promise<void> {
+  const post = await store.get(ForumPost, { where: { id: postId }, relations: ['thread', 'thread.category'] })
+
+  if (!post) {
+    const message = `Forum post not found by id: ${postId}`
+    if (type === 'runtime') {
+      throw Error(message)
+    }
+    return invalidMetadata(message)
+  }
+  if (type !== 'runtime' && post.status.isTypeOf !== 'PostStatusLocked') {
+    return invalidMetadata(
+      `Trying to moderate forum post ${post.id}, with status ${post.status.isTypeOf}. Only locked forum post can be moderated with remark`
+    )
+  }
+  if (type === 'workerRemark' && !(await canModerate(store, actor.id, post.thread.category.id))) {
+    return invalidMetadata(`The worker ${actor.id} can not moderate the post: ${post.id}`)
+  }
+
+  const postModeratedEvent = new PostModeratedEvent({
+    ...genericEventFields(event),
+    actor,
+    post,
+    rationale,
+  })
+
+  await store.save<PostModeratedEvent>(postModeratedEvent)
+
+  const newStatus = new PostStatusModerated()
+  newStatus.postModeratedEventId = postModeratedEvent.id
+
+  post.status = newStatus
+  post.isVisible = false
+  await store.save<ForumPost>(post)
+
+  const { thread } = post
+  --thread.visiblePostsCount
+  await store.save<ForumThread>(thread)
 }
 
 async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): Promise<Worker> {
@@ -463,27 +521,7 @@ export async function forum_CategoryMembershipOfModeratorUpdated({
 export async function forum_PostModerated({ event, store }: EventContext & StoreContext): Promise<void> {
   const [postId, rationaleBytes, privilegedActor] = new Forum.PostModeratedEvent(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
-  const post = await getPost(store, postId.toString(), ['thread'])
-
-  const postModeratedEvent = new PostModeratedEvent({
-    ...genericEventFields(event),
-    actor: actorWorker,
-    post,
-    rationale: bytesToString(rationaleBytes),
-  })
-
-  await store.save<PostModeratedEvent>(postModeratedEvent)
-
-  const newStatus = new PostStatusModerated()
-  newStatus.postModeratedEventId = postModeratedEvent.id
-
-  post.status = newStatus
-  post.isVisible = false
-  await store.save<ForumPost>(post)
-
-  const { thread } = post
-  --thread.visiblePostsCount
-  await store.save<ForumThread>(thread)
+  await moderatePost(store, event, 'runtime', postId.toString(), actorWorker, bytesToString(rationaleBytes))
 }
 
 export async function forum_PostTextUpdated({ event, store }: EventContext & StoreContext): Promise<void> {

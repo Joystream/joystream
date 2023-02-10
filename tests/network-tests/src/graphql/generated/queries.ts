@@ -67,6 +67,7 @@ export type ChannelFieldsFragment = {
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   bannedMembers: Array<{ id: string }>
+  videos: Array<VideoFieldsFragment>
 }
 
 export type VideoCategoryFieldsFragment = { id: string; name?: Types.Maybe<string>; activeVideosCounter: number }
@@ -225,6 +226,10 @@ export type GetChannelsByIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
+
+export type GetChannelsCountQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelsCountQuery = { channelsConnection: { totalCount: number } }
 
 export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
@@ -1992,7 +1997,7 @@ export type WorkerFieldsFragment = {
   storage?: Types.Maybe<string>
   rewardPerBlock: any
   missingRewardAmount?: Types.Maybe<any>
-  group: { name: string }
+  group: { name: string; leaderId?: Types.Maybe<string> }
   membership: { id: string }
   status:
     | { __typename: 'WorkerStatusActive' }
@@ -2539,36 +2544,6 @@ export const StorageDataObjectFields = gql`
   }
   ${DataObjectTypeFields}
 `
-export const ChannelFields = gql`
-  fragment ChannelFields on Channel {
-    id
-    activeVideosCounter
-    title
-    description
-    isPublic
-    language {
-      iso
-    }
-    isCensored
-    ownerMember {
-      id
-    }
-    ownerCuratorGroup {
-      id
-    }
-    avatarPhoto {
-      ...StorageDataObjectFields
-    }
-    coverPhoto {
-      ...StorageDataObjectFields
-    }
-    bannedMembers {
-      id
-    }
-    rewardAccount
-  }
-  ${StorageDataObjectFields}
-`
 export const LicenseFields = gql`
   fragment LicenseFields on License {
     code
@@ -2707,6 +2682,40 @@ export const VideoFields = gql`
   ${CommentFields}
   ${VideoReactionFields}
   ${VideoSubtitleFields}
+`
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
+    title
+    description
+    isPublic
+    language {
+      iso
+    }
+    isCensored
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+    avatarPhoto {
+      ...StorageDataObjectFields
+    }
+    coverPhoto {
+      ...StorageDataObjectFields
+    }
+    bannedMembers {
+      id
+    }
+    rewardAccount
+    videos {
+      ...VideoFields
+    }
+  }
+  ${StorageDataObjectFields}
+  ${VideoFields}
 `
 export const BidFields = gql`
   fragment BidFields on Bid {
@@ -4491,6 +4500,7 @@ export const WorkerFields = gql`
     runtimeId
     group {
       name
+      leaderId
     }
     membership {
       id
@@ -4853,6 +4863,13 @@ export const GetChannelsByIds = gql`
     }
   }
   ${ChannelFields}
+`
+export const GetChannelsCount = gql`
+  query getChannelsCount {
+    channelsConnection {
+      totalCount
+    }
+  }
 `
 export const GetVideoCategoryById = gql`
   query getVideoCategoryById($id: ID!) {

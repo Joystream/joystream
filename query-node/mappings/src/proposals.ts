@@ -57,14 +57,7 @@ import {
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
 } from 'query-node/dist/model'
-import {
-  bytesToString,
-  genericEventFields,
-  getWorkingGroupModuleName,
-  INT32MAX,
-  perpareString,
-  toNumber,
-} from './common'
+import { bytesToString, genericEventFields, getWorkingGroupModuleName, INT32MAX, toNumber } from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
@@ -103,7 +96,7 @@ async function parseProposalDetails(
   if (proposalDetails.isSignal) {
     const details = new SignalProposalDetails()
     const specificDetails = proposalDetails.asSignal
-    details.text = perpareString(specificDetails.toHuman() as string)
+    details.text = bytesToString(specificDetails)
     return details
   }
   // RuntimeUpgradeProposalDetails:
@@ -211,7 +204,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isAmendConstitution) {
     const details = new AmendConstitutionProposalDetails()
     const specificDetails = proposalDetails.asAmendConstitution
-    details.text = perpareString(specificDetails.toHuman() as string)
+    details.text = bytesToString(specificDetails)
     return details
   }
   // CancelWorkingGroupLeadOpeningProposalDetails:
@@ -319,8 +312,8 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     details: proposalDetails,
     councilApprovals: 0,
     creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
-    title: perpareString(generalProposalParameters.title.toHuman() as string),
-    description: perpareString(generalProposalParameters.description.toHuman() as string),
+    title: bytesToString(generalProposalParameters.title),
+    description: bytesToString(generalProposalParameters.description),
     exactExecutionBlock: generalProposalParameters.exactExecutionBlock.isSome
       ? toNumber(generalProposalParameters.exactExecutionBlock.unwrap(), INT32MAX)
       : undefined,
