@@ -5,16 +5,26 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import { GenericAccountId } from '@polkadot/types'
 import { assert } from 'chai'
 import { createType, registry } from '@joystream/types'
+import { QueryNodeApi } from '../../QueryNodeApi'
+import { Api } from '../../Api'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
+  protected candidatesAddresses: string[]
+
+  public constructor(api: Api, query: QueryNodeApi, candidatesAddresses: string[]) {
+    super(api, query)
+    this.candidatesAddresses = candidatesAddresses
+  }
+
   public async execute(): Promise<void> {
     const { api, query } = this
-    const { councilSize, minNumberOfExtraCandidates } = api.consts.council
-    const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
+    const councilSize = this.api.consts.council.councilSize
+    const numberOfCandidates = this.candidatesAddresses.length
     const numberOfVoters = numberOfCandidates
 
     // Prepare memberships
-    const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
+    // const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
+    const candidatesMemberAccounts = this.candidatesAddresses
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
     await new FixtureRunner(buyMembershipsFixture).run()
     const candidatesMemberIds = buyMembershipsFixture.getCreatedMembers()

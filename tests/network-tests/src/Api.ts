@@ -661,7 +661,7 @@ export class Api {
   public async untilCouncilStage(
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
     announcementPeriodNr: number | null = null,
-    blocksReserve = 4, 
+    blocksReserve = 4,
     intervalMs = BLOCKTIME
   ): Promise<void> {
     const stageTimeoutMs = 100 * 6 * 1000
