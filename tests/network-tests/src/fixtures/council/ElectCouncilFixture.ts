@@ -11,7 +11,7 @@ import { Api } from '../../Api'
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
   protected candidatesAddresses: string[]
 
-  public constructor(api: Api, query: QueryNodeApi, candidatesAddresses: string[]) {
+  public constructor(api: Api, query: QueryNodeApi, candidatesAddresses: string[] = []) {
     super(api, query)
     this.candidatesAddresses = candidatesAddresses
   }
@@ -22,9 +22,15 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const numberOfCandidates = this.candidatesAddresses.length
     const numberOfVoters = numberOfCandidates
 
-    // Prepare memberships
-    // const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
-    const candidatesMemberAccounts = this.candidatesAddresses
+    // get/create candidates member accounts
+    const candidatesMemberAccounts =
+      this.candidatesAddresses.length === 0
+        ? (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
+        : this.candidatesAddresses
+
+    // update candidates accounts if necessary 
+    this.candidatesAddresses = candidatesMemberAccounts
+
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
     await new FixtureRunner(buyMembershipsFixture).run()
     const candidatesMemberIds = buyMembershipsFixture.getCreatedMembers()
