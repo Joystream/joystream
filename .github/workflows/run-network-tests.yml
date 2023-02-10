@@ -191,24 +191,49 @@ jobs:
 
   build_master_testing:
     name: Build joystream node images for mainnet-testing
+    needs: build_images
     runs-on: ubuntu-latest
+    outputs:
+      use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
       - uses: actions/checkout@v3
         with:
           repository: Joystream/joystream
           ref: master
 
-      - id: compute_shasum_master
+      - id: compute_shasum
         env:
           RUNTIME_PROFILE: 'TESTING'
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
+      - name: Cache docker images
+        uses: actions/cache@v3
+        env:
+          cache-name: joystream-node-docker
+        with:
+          path: ~/docker-images
+          key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
+
+      - name: Check if we have cached image
+        continue-on-error: true
+        run: |
+          if [ -f ~/docker-images/joystream-node-docker-image-master.tar.gz ]; then
+            docker load --input ~/docker-images/joystream-node-docker-image-master.tar.gz
+            cp ~/docker-images/joystream-node-docker-image-master.tar.gz .
+          fi
+      
+      - name: Check we now have an image
+        id: check_master_image
+        uses: andstor/file-existence-action@v1
+        with:
+          files: 'joystream-node-docker-image-master.tar.gz'
+
       - name: Set up Docker Buildx master
         uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
         id: builder2
-        if: steps.check_files.outputs.files_exists == 'false'
+        if: steps.check_master_image.outputs.files_exists == 'false'
 
       - name: Build master image
         uses: docker/build-push-action@v3
@@ -223,24 +248,35 @@ jobs:
           tags: joystream/node:mainnetDev
           builder: ${{ steps.builder2.outputs.name }}
           load: true
-        if: steps.check_files.outputs.files_exists == 'false'
+        if: steps.check_master_image.outputs.files_exists == 'false'
+
+      - name: Save joystream/node image to cache
+        run: |
+          docker save --output joystream-node-docker-image-master.tar joystream/node
+          gzip joystream-node-docker-image-master.tar
+          cp joystream-node-docker-image-master.tar.gz ~/docker-images/
+        if: steps.check_master_image.outputs.files_exists == 'false'
+
+      - name: Save joystream/node image (master) to Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+          path: joystream-node-docker-image-master.tar.gz
 
   runtime_upgrade:
     name: Runtime Upgrade From Mainnet To Ephesus
-    needs: [build_images, build_master_testing]
+    needs: [build_master_testing, build_images]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
-      - name: Get artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
       - name: Install artifacts
+        uses: actions/download-artifact@v3
         run: |
           docker load --input joystream-node-docker-image.tar.gz
+          docker load --input joystream-node-docker-image-master.tar.gz
           docker images
       - name: Install packages and dependencies
         run: |
