@@ -253,8 +253,8 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         env:
-          RUNTIME: latest
-          TARGET_RUNTIME: mainnetDev
+          RUNTIME: mainnetDev
+          TARGET_RUNTIME: latest
         run: |
           export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
