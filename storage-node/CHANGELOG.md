@@ -1,6 +1,7 @@
 ### 3.0.1
 
 - **FIX** `getAllAssignedDataObjects`: The query to get all assigned objects during sync has been refactored into smaller queries. Each query will now provide no more than 1000 storage bag ids in the input to avoid hitting the request size limit (see: https://github.com/Joystream/joystream/issues/4615).
+- Improved error logging for Apollo GraphQL request errors.
 
 ### 3.0.0
 
