@@ -28,7 +28,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
         ? (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
         : this.candidatesAddresses
 
-    // update candidates accounts if necessary 
+    // update candidates accounts if necessary
     this.candidatesAddresses = candidatesMemberAccounts
 
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
