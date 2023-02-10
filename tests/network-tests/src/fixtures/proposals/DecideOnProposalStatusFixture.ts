@@ -12,7 +12,6 @@ import { ProposalId } from '@joystream/types/primitives'
 import { VoteOnProposalsFixture } from './VoteOnProposalsFixture'
 import { ProposalFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { BLOCKTIME } from '../../consts'
 
 export type DecisionStatus = 'Approved' | 'Rejected' | 'Slashed'
 
@@ -100,7 +99,6 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
   protected getExpectedProposalStatus(i: number): ResultingProposalStatus {
     const params = this.params[i]
     const proposal = this.proposals[i]
-    // this.debug(`EXAMINING PROPOSAL ${proposal.status}`)
     if (params.status === 'Approved') {
       if (proposal.parameters.constitutionality.toNumber() > proposal.nrOfCouncilConfirmations.toNumber() + 1) {
         return 'ProposalStatusDormant'

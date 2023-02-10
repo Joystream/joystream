@@ -27,7 +27,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
   await new FixtureRunner(buyMembershipFixture).run()
   const [applicantMemberId] = buyMembershipFixture.getCreatedMembers()
 
-  const unlock = await lock(Resource.Proposals)
+  const unlocks = await Promise.all(Array.from({ length: 2 }, () => lock(Resource.Proposals)))
   const openingParams = createDefaultOpeningParams(api)
   const createLeadOpeningProposalsFixture = new CreateProposalsFixture(api, query, [
     {
@@ -79,7 +79,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
       return undefined
     }
   })[0]
-  unlock()
+  unlocks.forEach((unlock) => unlock())
   const [openingToCancelId, openingToFillId] = openingsCreated! as OpeningId[]
 
   // stake to apply
