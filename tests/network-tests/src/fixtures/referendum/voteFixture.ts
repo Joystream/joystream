@@ -50,19 +50,17 @@ export class VoteFixture extends StandardizedFixture {
     this.extrinsics = super.flattenExtrinsics(extrinsics)
     await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics, 10)
     this.results = await this.api.sendExtrinsicsAndGetResults(extrinsics, accountOrAccounts, 10)
-
     if (!this.failureExpected) {
       this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
-    } else {
-      if (Array.isArray(accountOrAccounts)) {
-        accountOrAccounts.map(async (voter) => {
-          const vote = await this.api.query.referendum.votes(voter)
-          assert.equal(vote.commitment.toString(), '0x0000000000000000000000000000000000000000000000000000000000000000')
-        })
-      } else {
-        const vote = await this.api.query.referendum.votes(accountOrAccounts)
-        assert.equal(vote.commitment.toString(), '0x0000000000000000000000000000000000000000000000000000000000000000')
-      }
     }
+  }
+
+  public assertError(expectedErrName: string) {
+    const errNames = this.results.map((result) => {
+      const name = this.api.getErrorNameFromExtrinsicFailedRecord(result)
+      return name
+    })
+    const expectedNames = Array(this.results.length).fill(expectedErrName)
+    assert.deepEqual(errNames, expectedNames)
   }
 }

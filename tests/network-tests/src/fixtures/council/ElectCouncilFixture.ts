@@ -118,6 +118,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     )
 
     await new FixtureRunner(failingVotesFixture).run()
+    failingVotesFixture.assertError('AccountAlreadyOptedOutOfVoting')
 
     // Revealing stage
     await this.api.untilCouncilStage('Revealing')

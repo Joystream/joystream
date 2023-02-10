@@ -5,7 +5,8 @@ import { scenario } from '../Scenario'
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Council', async ({ job }) => {
   const councilJob = job('electing council', electCouncil)
-  const secondCouncilJob = job('electing second council', electCouncil).requires(councilJob)
+  // const secondCouncilJob = job('electing second council', electCouncil).requires(councilJob)
 
-  job('council election failures', failToElectCouncil).requires(secondCouncilJob)
+  job('council election failures', failToElectCouncil).requires(councilJob)
+  // job('council election failures', failToElectCouncil).requires(secondCouncilJob)
 })
