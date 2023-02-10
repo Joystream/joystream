@@ -1,43 +1,40 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { ICreateApp, IDeleteApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
-import { ChannelId } from '@joystream/types/primitives'
-import { logger } from '@joystream/warthog'
-import { Channel, App } from 'query-node/dist/model'
-import { inconsistentState } from '../common'
+import { App, Membership } from 'query-node/dist/model'
+import { logger, inconsistentState } from '../common'
 
 export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  channelId: ChannelId,
-  message: ICreateApp
+  metadata: DecodedMetadataObject<ICreateApp>,
+  memberId?: string
 ): Promise<void> {
-  const { name, appMetadata } = message
-  const appId = await createAppId(event)
+  const { name, appMetadata } = metadata
+
+  // memberId is required for MemberRemark, but not for LeadRemark
+  if (event.method === 'MemberRemarked' && !memberId) {
+    inconsistentState("memberId wasn't provided")
+  }
+
+  const appId = `${event.blockNumber}-${event.indexInBlock}`
 
   const isAppExists = await store.get(App, {
     where: {
-      name: name,
+      name: metadata.name,
     },
   })
 
   if (isAppExists) {
-    inconsistentState(`App with this name already exists:`, name)
-  }
-
-  // load channel
-  const channel = await store.get(Channel, {
-    where: { id: channelId.toString() },
-  })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel update requested', channelId)
+    inconsistentState('App already exists', { name })
   }
 
   const newApp = new App({
     name,
     id: appId,
+    ownerMember: memberId ? new Membership({ id: memberId }) : undefined,
+    isLeadOwned: !memberId,
     websiteUrl: appMetadata?.websiteUrl || undefined,
     useUri: appMetadata?.useUri || undefined,
     smallIcon: appMetadata?.smallIcon || undefined,
@@ -49,32 +46,36 @@ export async function processCreateAppMessage(
     platforms: appMetadata?.platforms || undefined,
     category: appMetadata?.category || undefined,
     authKey: appMetadata?.authKey || undefined,
-    ownerCuratorGroup: channel.ownerCuratorGroup,
-    ownerMember: channel.ownerMember,
-    channel,
   })
   await store.save<App>(newApp)
   logger.info('App has been created', { name })
 }
 
-async function createAppId(event: SubstrateEvent): Promise<string> {
-  return `${event.blockNumber}-${event.indexInBlock}`
-}
-
-export async function processUpdateApp(
+export async function processUpdateAppMessage(
   store: DatabaseManager,
-  channelId: ChannelId,
-  message: IUpdateApp
+  event: SubstrateEvent,
+  metadata: DecodedMetadataObject<IUpdateApp>,
+  memberId?: string
 ): Promise<void> {
-  const { appId, appMetadata } = message
+  const { appId, appMetadata } = metadata
+
+  // memberId is required for MemberRemark, but not for LeadRemark
+  if (event.method === 'MemberRemarked' && !memberId) {
+    inconsistentState("memberId wasn't provided")
+  }
 
   const app = await getAppById(store, appId)
 
   if (!app) {
-    inconsistentState("App doesn't exists; appId:", appId)
+    inconsistentState("App doesn't exists", { appId })
   }
-  if (app?.channel.id !== channelId.toString()) {
-    inconsistentState(`Cannot update app; app does not belong to the channelId: `, channelId)
+
+  if (memberId && app?.ownerMember?.id !== memberId) {
+    inconsistentState("App doesn't belong to the member", { appId, memberId })
+  }
+
+  if (event.method === 'LeadRemarked' && app.ownerMember?.id) {
+    inconsistentState("App doesn't belong to the lead", { appId })
   }
 
   if (appMetadata) {
@@ -97,12 +98,44 @@ export async function processUpdateApp(
   logger.info('App has been updated', { appId })
 }
 
+export async function processDeleteAppMessage(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  metadata: DecodedMetadataObject<IDeleteApp>,
+  memberId?: string
+): Promise<void> {
+  const { appId } = metadata
+
+  // memberId is required for MemberRemark, but not for LeadRemark
+  if (event.method === 'MemberRemarked' && !memberId) {
+    inconsistentState("memberId wasn't provided")
+  }
+
+  const app = await getAppById(store, appId)
+
+  if (!app) {
+    inconsistentState("App doesn't exists", { appId })
+  }
+
+  if (memberId && app?.ownerMember?.id !== memberId) {
+    inconsistentState("App doesn't belong to the member", { appId, memberId })
+  }
+
+  if (event.method === 'LeadRemarked' && app.ownerMember?.id) {
+    inconsistentState("App doesn't belong to the lead", { appId })
+  }
+
+  await store.remove<App>(app)
+  logger.info('App has been removed', { appId })
+}
+
 async function getAppById(store: DatabaseManager, appId: string): Promise<App | undefined> {
   const app = await store.get(App, {
     where: {
       id: appId,
     },
-    relations: ['channel'],
+    relations: ['ownerMember'],
   })
+
   return app
 }

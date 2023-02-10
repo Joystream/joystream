@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, u128, BTreeSet, Option, Vec } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -62,10 +62,11 @@ import {
 } from './consts'
 
 import {
-  ChannelOwnerRemarked,
+  ContentLeadRemarked,
+  CreateApp,
   CreateVideoCategory,
+  DeleteApp,
   IAppMetadata,
-  IChannelOwnerRemarked,
   MemberRemarked,
   UpdateApp,
 } from '@joystream/metadata-protobuf'
@@ -805,52 +806,106 @@ export class Api {
     return event.data[2]
   }
 
-  async createApp(
-    memberId: u64,
-    channelId: number,
-    name: string,
-    appMetadata?: IAppMetadata
-  ): Promise<ISubmittableResult> {
-    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
-    if (!memberAccount) {
-      throw new Error('invalid member id')
-    }
+  async createApp(name: string, appMetadata?: IAppMetadata, memberId?: u64): Promise<ISubmittableResult> {
+    const account = memberId
+      ? await this.getMemberControllerAccount(memberId.toNumber())
+      : await this.getLeadRoleKey('contentWorkingGroup')
 
-    const msg: IChannelOwnerRemarked = {
-      createApp: {
-        name,
-        appMetadata,
-      },
+    if (!account) {
+      throw new Error('invalid account')
     }
-
-    return this.sender.signAndSend(
-      this.api.tx.content.channelOwnerRemark(channelId, Utils.metadataToBytes(ChannelOwnerRemarked, msg)),
-      memberAccount.toString()
-    )
+    if (memberId) {
+      const meta = new MemberRemarked({
+        createApp: new CreateApp({
+          name,
+          appMetadata,
+        }),
+      })
+      return this.sender.signAndSend(
+        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+        account.toString()
+      )
+    } else {
+      const meta = new ContentLeadRemarked({
+        createApp: new CreateApp({
+          name,
+          appMetadata,
+        }),
+      })
+      return this.sender.signAndSend(
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
+      )
+    }
   }
 
-  async updateApp(
-    memberId: u64,
-    channelId: number,
-    appId: string,
-    appMetadata: IAppMetadata
-  ): Promise<ISubmittableResult> {
-    const memberAccount = await this.getMemberControllerAccount(memberId.toNumber())
-    if (!memberAccount) {
-      throw new Error('invalid member id')
+  async updateApp(appId: string, appMetadata: IAppMetadata, memberId?: u64): Promise<ISubmittableResult> {
+    const account = memberId
+      ? await this.getMemberControllerAccount(memberId.toNumber())
+      : await this.getLeadRoleKey('contentWorkingGroup')
+
+    if (!account) {
+      throw new Error('invalid account')
     }
 
-    const meta = new ChannelOwnerRemarked({
-      updateApp: new UpdateApp({
-        appId,
-        appMetadata,
-      }),
-    })
+    if (memberId) {
+      const meta = new MemberRemarked({
+        updateApp: new UpdateApp({
+          appId,
+          appMetadata,
+        }),
+      })
 
-    return this.sender.signAndSend(
-      this.api.tx.content.channelOwnerRemark(channelId, Utils.metadataToBytes(ChannelOwnerRemarked, meta)),
-      memberAccount.toString()
-    )
+      return this.sender.signAndSend(
+        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+        account.toString()
+      )
+    } else {
+      const meta = new ContentLeadRemarked({
+        updateApp: new UpdateApp({
+          appId,
+          appMetadata,
+        }),
+      })
+
+      return this.sender.signAndSend(
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
+      )
+    }
+  }
+
+  async deleteApp(appId: string, memberId?: u64): Promise<ISubmittableResult> {
+    const account = memberId
+      ? await this.getMemberControllerAccount(memberId.toNumber())
+      : await this.getLeadRoleKey('contentWorkingGroup')
+
+    if (!account) {
+      throw new Error('invalid account')
+    }
+
+    if (memberId) {
+      const meta = new MemberRemarked({
+        deleteApp: new DeleteApp({
+          appId,
+        }),
+      })
+      return this.sender.signAndSend(
+        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+        account.toString()
+      )
+    } else {
+      const meta = new ContentLeadRemarked({
+        deleteApp: new DeleteApp({
+          appId,
+        }),
+      })
+
+      return this.sender.signAndSend(
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
+      )
+    }
   }
 
   async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {

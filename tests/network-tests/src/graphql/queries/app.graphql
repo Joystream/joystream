@@ -1,6 +1,10 @@
 fragment AppFields on App {
   id
   name
+  ownerMember {
+    id
+  }
+  isLeadOwned
   websiteUrl
   useUri
   smallIcon
@@ -9,25 +13,19 @@ fragment AppFields on App {
   oneLiner
   description
   termsOfService
+  category
   authKey
   platforms
-  category
 }
 
 query getAppById($id: ID!) {
   appByUniqueInput(where: { id: $id }) {
     ...AppFields
-    channel {
-      ...ChannelFields
-    }
   }
 }
 
 query getAppsByName($name: String!) {
   apps(where: { name_eq: $name }) {
     ...AppFields
-    channel {
-      ...ChannelFields
-    }
   }
 }

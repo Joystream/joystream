@@ -154,8 +154,7 @@ export type App = BaseGraphQlObject & {
   name: Scalars['String']
   ownerMember?: Maybe<Membership>
   ownerMemberId?: Maybe<Scalars['String']>
-  ownerCuratorGroup?: Maybe<CuratorGroup>
-  ownerCuratorGroupId?: Maybe<Scalars['String']>
+  isLeadOwned?: Maybe<Scalars['Boolean']>
   /** Url where user can read more about the project or company for this app */
   websiteUrl?: Maybe<Scalars['String']>
   /** Url to the app */
@@ -171,8 +170,6 @@ export type App = BaseGraphQlObject & {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
-  channel: Channel
-  channelId: Scalars['String']
 }
 
 export type AppConnection = {
@@ -184,7 +181,7 @@ export type AppConnection = {
 export type AppCreateInput = {
   name: Scalars['String']
   ownerMember?: Maybe<Scalars['ID']>
-  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  isLeadOwned?: Maybe<Scalars['Boolean']>
   websiteUrl?: Maybe<Scalars['String']>
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
@@ -196,7 +193,6 @@ export type AppCreateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
-  channel: Scalars['ID']
 }
 
 export type AppEdge = {
@@ -215,8 +211,8 @@ export enum AppOrderByInput {
   NameDesc = 'name_DESC',
   OwnerMemberAsc = 'ownerMember_ASC',
   OwnerMemberDesc = 'ownerMember_DESC',
-  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
-  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  IsLeadOwnedAsc = 'isLeadOwned_ASC',
+  IsLeadOwnedDesc = 'isLeadOwned_DESC',
   WebsiteUrlAsc = 'websiteUrl_ASC',
   WebsiteUrlDesc = 'websiteUrl_DESC',
   UseUriAsc = 'useUri_ASC',
@@ -237,14 +233,12 @@ export enum AppOrderByInput {
   CategoryDesc = 'category_DESC',
   AuthKeyAsc = 'authKey_ASC',
   AuthKeyDesc = 'authKey_DESC',
-  ChannelAsc = 'channel_ASC',
-  ChannelDesc = 'channel_DESC',
 }
 
 export type AppUpdateInput = {
   name?: Maybe<Scalars['String']>
   ownerMember?: Maybe<Scalars['ID']>
-  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  isLeadOwned?: Maybe<Scalars['Boolean']>
   websiteUrl?: Maybe<Scalars['String']>
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
@@ -256,7 +250,6 @@ export type AppUpdateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
-  channel?: Maybe<Scalars['ID']>
 }
 
 export type AppWhereInput = {
@@ -289,6 +282,8 @@ export type AppWhereInput = {
   name_startsWith?: Maybe<Scalars['String']>
   name_endsWith?: Maybe<Scalars['String']>
   name_in?: Maybe<Array<Scalars['String']>>
+  isLeadOwned_eq?: Maybe<Scalars['Boolean']>
+  isLeadOwned_in?: Maybe<Array<Scalars['Boolean']>>
   websiteUrl_eq?: Maybe<Scalars['String']>
   websiteUrl_contains?: Maybe<Scalars['String']>
   websiteUrl_startsWith?: Maybe<Scalars['String']>
@@ -343,8 +338,6 @@ export type AppWhereInput = {
   authKey_endsWith?: Maybe<Scalars['String']>
   authKey_in?: Maybe<Array<Scalars['String']>>
   ownerMember?: Maybe<MembershipWhereInput>
-  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
-  channel?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<AppWhereInput>>
   OR?: Maybe<Array<AppWhereInput>>
   NOT?: Maybe<Array<AppWhereInput>>
@@ -6373,7 +6366,6 @@ export type Channel = BaseGraphQlObject & {
   channelStateBloatBond: Scalars['BigInt']
   /** Channel's privilege level */
   privilegeLevel?: Maybe<Scalars['Int']>
-  app?: Maybe<App>
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
   commentdeletedeventvideoChannel?: Maybe<Array<CommentDeletedEvent>>
   commentmoderatedeventvideoChannel?: Maybe<Array<CommentModeratedEvent>>
@@ -7108,7 +7100,6 @@ export type ChannelWhereInput = {
   channelNftCollectors_none?: Maybe<ChannelNftCollectorsWhereInput>
   channelNftCollectors_some?: Maybe<ChannelNftCollectorsWhereInput>
   channelNftCollectors_every?: Maybe<ChannelNftCollectorsWhereInput>
-  app?: Maybe<AppWhereInput>
   commentcreatedeventvideoChannel_none?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_some?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventvideoChannel_every?: Maybe<CommentCreatedEventWhereInput>
@@ -9149,7 +9140,6 @@ export type CuratorGroup = BaseGraphQlObject & {
   channels: Array<Channel>
   nftCollectorInChannels: Array<ChannelNftCollectors>
   curators: Array<CuratorAgentPermissions>
-  appownerCuratorGroup?: Maybe<Array<App>>
   auctionbidcanceledeventownerCuratorGroup?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventownerCuratorGroup?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventownerCuratorGroup?: Maybe<Array<AuctionCanceledEvent>>
@@ -9236,9 +9226,6 @@ export type CuratorGroupWhereInput = {
   curators_none?: Maybe<CuratorAgentPermissionsWhereInput>
   curators_some?: Maybe<CuratorAgentPermissionsWhereInput>
   curators_every?: Maybe<CuratorAgentPermissionsWhereInput>
-  appownerCuratorGroup_none?: Maybe<AppWhereInput>
-  appownerCuratorGroup_some?: Maybe<AppWhereInput>
-  appownerCuratorGroup_every?: Maybe<AppWhereInput>
   auctionbidcanceledeventownerCuratorGroup_none?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_some?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventownerCuratorGroup_every?: Maybe<AuctionBidCanceledEventWhereInput>

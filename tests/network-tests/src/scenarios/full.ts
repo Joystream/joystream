@@ -37,7 +37,9 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
-import { createApp, updateApp } from '../flows/content/app'
+import { createApp } from '../flows/content/createApp'
+import { updateApp } from '../flows/content/updateApp'
+import { deleteApp } from '../flows/content/deleteApp'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -113,6 +115,7 @@ scenario('Full', async ({ job, env }) => {
   )
   job('create app', createApp).after(sudoHireLead)
   job('update app', updateApp).after(sudoHireLead)
+  job('delete app', deleteApp).after(sudoHireLead)
 
   const contentDirectoryJob = commentsAndReactionsJob // keep updated to last job above
 
