@@ -23,7 +23,7 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(member.memberId, appToDeleteNameOwnedByMember, appToDeleteMetadataOwnedByMember)
+  await api.createApp(appToDeleteNameOwnedByMember, appToDeleteMetadataOwnedByMember, member.memberId)
 
   const appsCreatedByMember = await query.tryQueryWithTimeout(
     () => query.getAppsByName(appToDeleteNameOwnedByMember),
@@ -33,7 +33,7 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
   )
 
   if (appsCreatedByMember?.[0]?.id) {
-    await api.deleteApp(member.memberId, appsCreatedByMember?.[0]?.id)
+    await api.deleteApp(appsCreatedByMember?.[0]?.id, member.memberId)
 
     await query.tryQueryWithTimeout(
       () => query.getAppsByName(appToDeleteNameOwnedByMember),
@@ -44,7 +44,6 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
   }
 
   // app created by lead
-  const leadId = await api.getLeaderId('contentWorkingGroup')
 
   const appToDeleteNameOwnedByLead = 'delete_app_owned_by_lead'
   const appToDeleteMetadataOwnedByLead: Partial<AppMetadata> = {
@@ -54,7 +53,7 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(leadId, appToDeleteNameOwnedByLead, appToDeleteMetadataOwnedByLead, true)
+  await api.createApp(appToDeleteNameOwnedByLead, appToDeleteMetadataOwnedByLead)
 
   const appsCreatedByLead = await query.tryQueryWithTimeout(
     () => query.getAppsByName(appToDeleteNameOwnedByLead),
@@ -64,7 +63,7 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
   )
 
   if (appsCreatedByLead?.[0]?.id) {
-    await api.deleteApp(leadId, appsCreatedByLead?.[0]?.id, true)
+    await api.deleteApp(appsCreatedByLead?.[0]?.id)
 
     await query.tryQueryWithTimeout(
       () => query.getAppsByName(appToDeleteNameOwnedByLead),

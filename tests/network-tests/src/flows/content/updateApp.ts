@@ -30,7 +30,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
     useUri: 'http://example.com',
   }
 
-  await api.createApp(member.memberId, newAppNameOwnedByMember, newAppMetadataOwnedByMember)
+  await api.createApp(newAppNameOwnedByMember, newAppMetadataOwnedByMember, member.memberId)
 
   const appsCreatedByMember = await query.tryQueryWithTimeout(
     () => query.getAppsByName(newAppNameOwnedByMember),
@@ -45,7 +45,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
 
   const newAppCreatedByMemberId = appsCreatedByMember?.[0]?.id
   if (newAppCreatedByMemberId) {
-    await api.updateApp(member.memberId, newAppCreatedByMemberId, updatedMetadata)
+    await api.updateApp(newAppCreatedByMemberId, updatedMetadata, member.memberId)
   }
 
   await query.tryQueryWithTimeout(
@@ -63,8 +63,6 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
 
   // app created by lead
 
-  const leadId = await api.getLeaderId('contentWorkingGroup')
-
   const newAppNameOwnedByLead = 'update_app_owned_by_lead'
   const newAppOwnedByLeadMetadata: Partial<AppMetadata> = {
     category: 'blockchain',
@@ -73,7 +71,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(leadId, newAppNameOwnedByLead, newAppOwnedByLeadMetadata, true)
+  await api.createApp(newAppNameOwnedByLead, newAppOwnedByLeadMetadata)
 
   const appsCreatedByLead = await query.tryQueryWithTimeout(
     () => query.getAppsByName(newAppNameOwnedByLead),
@@ -92,7 +90,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
 
   const newAppOwnedByLeadId = appsCreatedByLead?.[0]?.id
   if (newAppOwnedByLeadId) {
-    await api.updateApp(leadId, newAppOwnedByLeadId, updatedMetadata, true)
+    await api.updateApp(newAppOwnedByLeadId, updatedMetadata)
   }
 
   await query.tryQueryWithTimeout(
@@ -101,8 +99,8 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
       assert.equal(appsByName?.[0]?.id, newAppOwnedByLeadId)
       assert.equal(appsByName?.[0]?.name, newAppNameOwnedByLead)
       assert.equal(appsByName?.[0]?.ownerMember?.id, null)
-      assert.equal(appsByName?.[0]?.useUri, updatedMetadata.useUri)
-      assert.equal(appsByName?.[0]?.category, updatedMetadata.category)
+      assert.equal(appsByName?.[0]?.useUri, newAppOwnedByLeadMetadata.useUri)
+      assert.equal(appsByName?.[0]?.category, newAppOwnedByLeadMetadata.category)
       assert.equal(appsByName?.[0]?.description, updatedMetadata.description)
       assert.equal(appsByName?.[0]?.oneLiner, updatedMetadata.oneLiner)
       assert.deepEqual(appsByName?.[0]?.platforms, updatedMetadata.platforms)

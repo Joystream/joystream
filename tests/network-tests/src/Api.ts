@@ -806,31 +806,15 @@ export class Api {
     return event.data[2]
   }
 
-  async createApp(
-    memberId: u64,
-    name: string,
-    appMetadata?: IAppMetadata,
-    ownedByLead?: boolean
-  ): Promise<ISubmittableResult> {
-    const account = ownedByLead
-      ? await this.getLeadRoleKey('contentWorkingGroup')
-      : await this.getMemberControllerAccount(memberId.toNumber())
+  async createApp(name: string, appMetadata?: IAppMetadata, memberId?: u64): Promise<ISubmittableResult> {
+    const account = memberId
+      ? await this.getMemberControllerAccount(memberId.toNumber())
+      : await this.getLeadRoleKey('contentWorkingGroup')
 
     if (!account) {
       throw new Error('invalid account')
     }
-    if (ownedByLead) {
-      const meta = new ContentLeadRemarked({
-        createApp: new CreateApp({
-          name,
-          appMetadata,
-        }),
-      })
-      return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
-        account.toString()
-      )
-    } else {
+    if (memberId) {
       const meta = new MemberRemarked({
         createApp: new CreateApp({
           name,
@@ -841,36 +825,30 @@ export class Api {
         this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
         account.toString()
       )
+    } else {
+      const meta = new ContentLeadRemarked({
+        createApp: new CreateApp({
+          name,
+          appMetadata,
+        }),
+      })
+      return this.sender.signAndSend(
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
+      )
     }
   }
 
-  async updateApp(
-    memberId: u64,
-    appId: string,
-    appMetadata: IAppMetadata,
-    ownedByLead?: boolean
-  ): Promise<ISubmittableResult> {
-    const account = ownedByLead
-      ? await this.getLeadRoleKey('contentWorkingGroup')
-      : await this.getMemberControllerAccount(memberId.toNumber())
+  async updateApp(appId: string, appMetadata: IAppMetadata, memberId?: u64): Promise<ISubmittableResult> {
+    const account = memberId
+      ? await this.getMemberControllerAccount(memberId.toNumber())
+      : await this.getLeadRoleKey('contentWorkingGroup')
 
     if (!account) {
       throw new Error('invalid account')
     }
 
-    if (ownedByLead) {
-      const meta = new ContentLeadRemarked({
-        updateApp: new UpdateApp({
-          appId,
-          appMetadata,
-        }),
-      })
-
-      return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
-        account.toString()
-      )
-    } else {
+    if (memberId) {
       const meta = new MemberRemarked({
         updateApp: new UpdateApp({
           appId,
@@ -882,19 +860,41 @@ export class Api {
         this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
         account.toString()
       )
+    } else {
+      const meta = new ContentLeadRemarked({
+        updateApp: new UpdateApp({
+          appId,
+          appMetadata,
+        }),
+      })
+
+      return this.sender.signAndSend(
+        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
+        account.toString()
+      )
     }
   }
 
-  async deleteApp(memberId: u64, appId: string, ownedByLead?: boolean): Promise<ISubmittableResult> {
-    const account = ownedByLead
-      ? await this.getLeadRoleKey('contentWorkingGroup')
-      : await this.getMemberControllerAccount(memberId.toNumber())
+  async deleteApp(appId: string, memberId?: u64): Promise<ISubmittableResult> {
+    const account = memberId
+      ? await this.getMemberControllerAccount(memberId.toNumber())
+      : await this.getLeadRoleKey('contentWorkingGroup')
 
     if (!account) {
       throw new Error('invalid account')
     }
 
-    if (ownedByLead) {
+    if (memberId) {
+      const meta = new MemberRemarked({
+        deleteApp: new DeleteApp({
+          appId,
+        }),
+      })
+      return this.sender.signAndSend(
+        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+        account.toString()
+      )
+    } else {
       const meta = new ContentLeadRemarked({
         deleteApp: new DeleteApp({
           appId,
@@ -903,16 +903,6 @@ export class Api {
 
       return this.sender.signAndSend(
         this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
-        account.toString()
-      )
-    } else {
-      const meta = new MemberRemarked({
-        deleteApp: new DeleteApp({
-          appId,
-        }),
-      })
-      return this.sender.signAndSend(
-        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
         account.toString()
       )
     }

@@ -24,7 +24,7 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
   // app created by member
   const appOwnedByMember = 'app_owned_by_member'
 
-  await api.createApp(member.memberId, appOwnedByMember, appMetadata)
+  await api.createApp(appOwnedByMember, appMetadata, member.memberId)
 
   await query.tryQueryWithTimeout(
     () => query.getAppsByName(appOwnedByMember),
@@ -42,10 +42,9 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
   )
 
   // app created by lead
-  const leadId = await api.getLeaderId('contentWorkingGroup')
 
   const appOwnedByLead = 'app_owned_by_lead'
-  await api.createApp(leadId, appOwnedByLead, appMetadata, true)
+  await api.createApp(appOwnedByLead, appMetadata)
 
   await query.tryQueryWithTimeout(
     () => query.getAppsByName(appOwnedByLead),
