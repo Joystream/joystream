@@ -25,13 +25,10 @@ export class AnnounceCandidacyFixture extends StandardizedFixture {
     return Promise.resolve(Array.from(this.announcements.keys()))
   }
 
-  protected getExtrinsics(): Promise<
-    SubmittableExtrinsic<'promise', ISubmittableResult>[] | SubmittableExtrinsic<'promise', ISubmittableResult>[][]
-  > {
-    const results = Array.from(this.announcements).map(async ([, params]) =>
+  protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise', ISubmittableResult>[]> {
+    return Array.from(this.announcements).map(([, params]) =>
       this.api.tx.council.announceCandidacy(params.memberId, params.stakingAccount, params.rewardAccount, params.stake)
     )
-    return Promise.all(results)
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails<unknown>> {
