@@ -143,11 +143,7 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     const accountOrAccounts = await this.getSignerAccountOrAccounts()
     const extrinsics = await this.getExtrinsics()
     this.extrinsics = extrinsics.flat()
-    await this.api.prepareAccountsForFeeExpenses(
-      accountOrAccounts,
-      this.extrinsics,
-      this.decrementalTip ? 10 : 0
-    )
+    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics, this.decrementalTip ? 10 : 0)
     this.results = await this.api.sendExtrinsicsAndGetResults(
       extrinsics,
       accountOrAccounts,
