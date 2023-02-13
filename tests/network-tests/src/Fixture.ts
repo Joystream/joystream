@@ -123,6 +123,7 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
   protected extrinsics: SubmittableExtrinsic<'promise'>[] = []
   protected results: ISubmittableResult[] = []
   protected events: EventDetails[] = []
+  protected decrementalTip: boolean = false
 
   protected abstract getSignerAccountOrAccounts(): Promise<string | string[]>
   protected abstract getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][]>
@@ -138,20 +139,20 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     })
   }
 
-  protected flattenExtrinsics(
-    extrinsics: SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][]
-  ): SubmittableExtrinsic<'promise'>[] {
-    return Array.isArray(extrinsics[0])
-      ? (extrinsics as SubmittableExtrinsic<'promise'>[][]).reduce((res, batch) => res.concat(batch), [])
-      : (extrinsics as SubmittableExtrinsic<'promise'>[])
-  }
-
   public async execute(): Promise<void> {
     const accountOrAccounts = await this.getSignerAccountOrAccounts()
     const extrinsics = await this.getExtrinsics()
-    this.extrinsics = this.flattenExtrinsics(extrinsics)
-    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics)
-    this.results = await this.api.sendExtrinsicsAndGetResults(extrinsics, accountOrAccounts)
+    this.extrinsics = extrinsics.flat()
+    await this.api.prepareAccountsForFeeExpenses(
+      accountOrAccounts,
+      this.extrinsics,
+      this.decrementalTip ? 100_000_000_000 : 0
+    )
+    this.results = await this.api.sendExtrinsicsAndGetResults(
+      extrinsics,
+      accountOrAccounts,
+      this.decrementalTip ? 100_000_000_000 : 0
+    )
     this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
   }
 }

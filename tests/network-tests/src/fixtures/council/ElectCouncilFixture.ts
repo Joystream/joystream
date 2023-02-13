@@ -64,7 +64,8 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
 
     const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
     const optOutVoters = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
-    await api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake)
+    await api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake) // fund accounts
+    await api.treasuryTransferBalanceToAccounts(optOutVoters, voteStake) // fund blacklisted accounts
 
     const cycleId = (await this.api.query.referendum.stage()).asVoting.currentCycleId
     const commitments = votersStakingAccounts.map((account, i) => {
@@ -90,12 +91,12 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
             },
           ]
         })
-      )
+      ),
+      false
     )
     await new FixtureRunner(voteFixture).run()
 
     // failing case for opted-out voters
-    this.debug(`accounts opting out of voting 👍`)
     const optOutVotersFixture = new BlackListVoteFixture(this.api, this.query, optOutVoters)
     await new FixtureRunner(optOutVotersFixture).run()
 

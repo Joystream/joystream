@@ -20,6 +20,7 @@ export class VoteFixture extends StandardizedFixture {
     super(api, query)
     this.votes = votes
     this.failureExpected = failureExpected
+    this.decrementalTip = true
   }
 
   protected getSignerAccountOrAccounts(): Promise<string | string[]> {
@@ -38,13 +39,23 @@ export class VoteFixture extends StandardizedFixture {
     // TODO: implement QN checks
   }
 
-  // overwriting for using decremental tips
+  // Due to the fact that we need the transactions to be processed in the expected order
+  // (which is not guaranteed by the nonce, because we're using different voter accounts),
+  // we'll be including a small, decremental tip (10 JOY * (votersStakingAccounts.length - 1 - accIndex))
   public async execute(): Promise<void> {
     const accountOrAccounts = await this.getSignerAccountOrAccounts()
     const extrinsics = await this.getExtrinsics()
-    this.extrinsics = super.flattenExtrinsics(extrinsics)
-    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics, 10)
-    this.results = await this.api.sendExtrinsicsAndGetResults(extrinsics, accountOrAccounts, 10)
+    this.extrinsics = extrinsics.flat()
+    await this.api.prepareAccountsForFeeExpenses(
+      accountOrAccounts,
+      this.extrinsics,
+      this.decrementalTip ? 100_000_000_000 : 0
+    )
+    this.results = await this.api.sendExtrinsicsAndGetResults(
+      extrinsics,
+      accountOrAccounts,
+      this.decrementalTip ? 100_000_000_000 : 0
+    )
     if (!this.failureExpected) {
       this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
     }
