@@ -299,6 +299,6 @@ In addition to cargo unit tests for runtime features, over time we have develope
 To run tests we build the joystream/node with the testing runtime profile and execute the test suite:
 
 ```
-docker build . --file joystream-node.Dockerfile --tag joystream/node:testing --build-arg CARGO_FEATURES=testing-runtime
-RUNTIME=testing tests/network-tests/run-node-docker.sh
+RUNTIME_PROFILE=TESTING ./build-node-docker.sh
+tests/network-tests/run-tests.sh
 ```
