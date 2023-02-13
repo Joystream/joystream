@@ -4,13 +4,12 @@ import { FixtureRunner } from '../../Fixture'
 import { ElectCouncilFixture } from '../../fixtures/council/ElectCouncilFixture'
 import { VotersOptingOut } from '../../fixtures/council/VotersOptingOut'
 
-export default async function electCouncil({ api, query }: FlowProps): Promise<void> {
+export default async function failToElectWithBlacklist({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:elect-council')
   debug('Started')
   api.enableDebugTxLogs()
 
-  const electCouncilFixture = new ElectCouncilFixture(api, query)
-  await new FixtureRunner(electCouncilFixture).run()
-
+  const votersOptOut = new VotersOptingOut(api, query)
+  await new FixtureRunner(votersOptOut).run()
   debug('Done')
 }

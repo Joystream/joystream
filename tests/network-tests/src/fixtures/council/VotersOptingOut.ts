@@ -1,14 +1,12 @@
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../membership'
-import { assertCouncilMembersRuntimeQnMatch } from './common'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { GenericAccountId } from '@polkadot/types'
-import { assert } from 'chai'
 import { createType, registry } from '@joystream/types'
 import { BlackListVoteFixture, VoteFixture } from '../referendum'
 import { AnnounceCandidacyFixture } from './announceCandidacyFixture'
 
-export class ElectCouncilFixture extends BaseQueryNodeFixture {
+export class VotersOptingOut extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
     const { api, query } = this
     const { councilSize, minNumberOfExtraCandidates } = api.consts.council
@@ -62,11 +60,11 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     // Voting stage
     await this.api.untilCouncilStage('Voting')
 
-    const votersStakingAccounts = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
-    await api.treasuryTransferBalanceToAccounts(votersStakingAccounts, voteStake) // fund accounts
+    const optOutVoters = (await this.api.createKeyPairs(numberOfVoters)).map(({ key }) => key.address)
+    await api.treasuryTransferBalanceToAccounts(optOutVoters, voteStake) // fund blacklisted accounts
 
     const cycleId = (await this.api.query.referendum.stage()).asVoting.currentCycleId
-    const commitments = votersStakingAccounts.map((account, i) => {
+    const commitments = optOutVoters.map((account, i) => {
       const accountId = new GenericAccountId(registry, account)
       const optionId = candidatesMemberIds[i % numberOfCandidates]
       const salt = createType('Bytes', `salt${i}`)
@@ -76,60 +74,29 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
       return commitment
     })
 
-    const voteFixture = new VoteFixture(
+    // failing case for opted-out voters
+    const optOutVotersFixture = new BlackListVoteFixture(this.api, this.query, optOutVoters)
+    await new FixtureRunner(optOutVotersFixture).run()
+
+    const failingVotesFixture = new VoteFixture(
       this.api,
       this.query,
       new Map(
-        votersStakingAccounts.map((account, i) => {
+        optOutVoters.map((account, i) => {
           return [
             account,
             {
-              commitment: commitments[i],
+              // these parameters won't be considered
+              commitment: commitments[i % optOutVoters.length],
               stake: voteStake,
             },
           ]
         })
       ),
-      false
+      true
     )
-    await new FixtureRunner(voteFixture).run()
 
-    // Revealing stage
-    await this.api.untilCouncilStage('Revealing')
-
-    const revealingTxs = votersStakingAccounts.map((account, i) => {
-      const optionId = candidatesMemberIds[i % numberOfCandidates]
-      return api.tx.referendum.revealVote(`salt${i}`, optionId)
-    })
-    await api.prepareAccountsForFeeExpenses(votersStakingAccounts, revealingTxs)
-    await api.sendExtrinsicsAndGetResults(revealingTxs, votersStakingAccounts)
-
-    const candidatesToWinIds = candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
-
-    // check intermediate election winners are properly set
-    if (this.queryNodeChecksEnabled) {
-      await query.tryQueryWithTimeout(
-        () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
-        (qnReferendumIntermediateWinners) => {
-          assert.sameMembers(
-            qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
-            candidatesToWinIds
-          )
-        }
-      )
-    }
-
-    await this.api.untilCouncilStage('Idle')
-
-    const councilMembers = await api.query.council.councilMembers()
-    assert.sameMembers(
-      councilMembers.map((m) => m.membershipId.toString()),
-      candidatesToWinIds
-    )
-  }
-
-  public async runQueryNodeChecks(): Promise<void> {
-    await super.runQueryNodeChecks()
-    await assertCouncilMembersRuntimeQnMatch(this.api, this.query)
+    await new FixtureRunner(failingVotesFixture).run()
+    failingVotesFixture.assertError('AccountAlreadyOptedOutOfVoting')
   }
 }
