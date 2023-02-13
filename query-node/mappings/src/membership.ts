@@ -10,12 +10,7 @@ import {
   PalletMembershipGiftMembershipParameters as GiftMembershipParameters,
   PalletMembershipCreateMemberParameters as CreateMemberParameters,
 } from '@polkadot/types/lookup'
-import {
-  MembershipMetadata,
-  MemberRemarked,
-  ICreateVideoCategory,
-  IMembershipMetadata,
-} from '@joystream/metadata-protobuf'
+import { MembershipMetadata, MemberRemarked, IMembershipMetadata, IMemberRemarked } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import {
   bytesToString,
@@ -70,6 +65,7 @@ import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { membershipConfig } from './bootstrap-data'
 import { BN } from 'bn.js'
+import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
 
 // FIXME: Should be emitted as part of MemberInvited event, but this requires a runtime upgrade
 async function initialInvitationBalance(store: DatabaseManager) {
@@ -627,17 +623,17 @@ export async function members_LeaderInvitationQuotaUpdated({
 
 export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [memberId, message] = new Members.MemberRemarkedEvent(event).params
+  const [memberId, metadataBytes] = new Members.MemberRemarkedEvent(event).params
 
   try {
-    const decodedMessage = MemberRemarked.decode(message.toU8a(true))
+    const metadata = deserializeMetadata(MemberRemarked, metadataBytes)
 
-    const metaTransactionInfo = await processMemberRemark(store, event, memberId, decodedMessage)
+    const metaTransactionInfo = await processMemberRemark(store, event, memberId, metadata)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
 
     // emit log event
-    logger.info('Member remarked', { decodedMessage })
+    logger.info('Member remarked', { metadata })
   } catch (e) {
     // emit log event
     logger.info(`Bad metadata for member's remark`, { e })
@@ -651,40 +647,56 @@ async function processMemberRemark(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  decodedMessage: MemberRemarked
+  decodedMetadata: DecodedMetadataObject<IMemberRemarked> | null
 ): Promise<Partial<MetaprotocolTransactionSuccessful>> {
-  const messageType = decodedMessage.memberRemarked
-
-  if (messageType === 'reactVideo') {
-    await processReactVideoMessage(store, event, memberId, decodedMessage.reactVideo!)
+  if (decodedMetadata?.createApp) {
+    await processCreateAppMessage(store, event, decodedMetadata.createApp, memberId.toString())
 
     return {}
   }
 
-  if (messageType === 'reactComment') {
-    await processReactCommentMessage(store, event, memberId, decodedMessage.reactComment!)
+  if (decodedMetadata?.updateApp) {
+    await processUpdateAppMessage(store, event, decodedMetadata.updateApp, memberId.toString())
 
     return {}
   }
 
-  if (messageType === 'createComment') {
-    const comment = await processCreateCommentMessage(store, event, memberId, decodedMessage.createComment!)
+  if (decodedMetadata?.deleteApp) {
+    await processDeleteAppMessage(store, event, decodedMetadata.deleteApp, memberId.toString())
+
+    return {}
+  }
+
+  if (decodedMetadata?.reactVideo) {
+    await processReactVideoMessage(store, event, memberId, decodedMetadata.reactVideo)
+
+    return {}
+  }
+
+  if (decodedMetadata?.reactComment) {
+    await processReactCommentMessage(store, event, memberId, decodedMetadata.reactComment)
+
+    return {}
+  }
+
+  if (decodedMetadata?.createComment) {
+    const comment = await processCreateCommentMessage(store, event, memberId, decodedMetadata.createComment)
 
     return { commentCreatedId: comment.id }
   }
 
-  if (messageType === 'editComment') {
-    const comment = await processEditCommentMessage(store, event, memberId, decodedMessage.editComment!)
+  if (decodedMetadata?.editComment) {
+    const comment = await processEditCommentMessage(store, event, memberId, decodedMetadata.editComment)
     return { commentEditedId: comment.id }
   }
 
-  if (messageType === 'deleteComment') {
-    const comment = await processDeleteCommentMessage(store, event, memberId, decodedMessage.deleteComment!)
+  if (decodedMetadata?.deleteComment) {
+    const comment = await processDeleteCommentMessage(store, event, memberId, decodedMetadata.deleteComment)
     return { commentDeletedId: comment.id }
   }
 
-  if (messageType === 'createVideoCategory') {
-    const createParams = decodedMessage.createVideoCategory as ICreateVideoCategory
+  if (decodedMetadata?.createVideoCategory) {
+    const createParams = decodedMetadata.createVideoCategory
 
     const videoCategory = await createVideoCategory(store, event, createParams)
 
@@ -692,5 +704,5 @@ async function processMemberRemark(
   }
 
   // unknown message type
-  return inconsistentState('Unsupported message type in member_remark action', messageType)
+  return inconsistentState('Unsupported message type in member_remark action', decodedMetadata)
 }

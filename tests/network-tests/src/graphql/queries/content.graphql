@@ -56,9 +56,6 @@ fragment ChannelFields on Channel {
   entryApp {
     ...AppFields
   }
-  app {
-    ...AppFields
-  }
   ownerMember {
     id
   }

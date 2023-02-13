@@ -113,28 +113,6 @@ message CreateVideoCategory {
     optional string parent_category_id = 3;
 }
 
-
-message MemberRemarked {
-    // member_remark extrinsic would emit event containing
-    // any one of the following serialized messages
-    oneof member_remarked {
-        ReactVideo react_video = 1;
-        ReactComment react_comment = 2;
-        CreateComment create_comment = 3;
-        EditComment edit_comment = 4;
-        DeleteComment delete_comment = 5;
-        CreateVideoCategory create_video_category = 6;
-    }
-}
-
-message ChannelModeratorRemarked {
-    // channel_moderator_remark extrinsic would emit event containing
-    // any one of the following serialized messages
-    oneof channel_moderator_remarked {
-        ModerateComment moderate_comment = 1;
-    }
-}
-
 message AppMetadata {
     // Url where user can read more about the project or company for this app
     optional string website_url = 2;
@@ -156,11 +134,46 @@ message AppMetadata {
 
 message CreateApp {
     required string name = 1;
-    optional AppMetadata app_metadata = 3;
+    optional AppMetadata app_metadata = 2;
 }
 message UpdateApp {
     required string app_id = 1;
-    optional AppMetadata app_metadata = 3;
+    optional AppMetadata app_metadata = 2;
+}
+message DeleteApp {
+    required string app_id = 1;
+}
+
+message ContentLeadRemarked {
+    oneof lead_remarked {
+        CreateApp create_app = 1;
+        UpdateApp update_app = 2;
+        DeleteApp delete_app = 3;
+    }
+}
+
+message MemberRemarked {
+    // member_remark extrinsic would emit event containing
+    // any one of the following serialized messages
+    oneof member_remarked {
+        ReactVideo react_video = 1;
+        ReactComment react_comment = 2;
+        CreateComment create_comment = 3;
+        EditComment edit_comment = 4;
+        DeleteComment delete_comment = 5;
+        CreateVideoCategory create_video_category = 6;
+        CreateApp create_app = 7;
+        UpdateApp update_app = 8;
+        DeleteApp delete_app = 9;
+    }
+}
+
+message ChannelModeratorRemarked {
+    // channel_moderator_remark extrinsic would emit event containing
+    // any one of the following serialized messages
+    oneof channel_moderator_remarked {
+        ModerateComment moderate_comment = 1;
+    }
 }
 
 message ChannelOwnerRemarked {
@@ -171,7 +184,5 @@ message ChannelOwnerRemarked {
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         VideoReactionsPreference video_reactions_preference = 3;
         ModerateComment moderate_comment = 5;
-        CreateApp create_app = 6;
-        UpdateApp update_app = 7;
     }
 }
