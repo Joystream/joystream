@@ -50,21 +50,13 @@ export const createDefaultOpeningParams = (
 }
 
 export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
-  protected asSudo: boolean
   protected events: OpeningAddedEventDetails[] = []
 
   protected openingsParams: OpeningParams[]
 
-  public constructor(
-    api: Api,
-    query: QueryNodeApi,
-    group: WorkingGroupModuleName,
-    openingsParams?: OpeningParams[],
-    asSudo = false
-  ) {
+  public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, openingsParams?: OpeningParams[]) {
     super(api, query, group)
     this.openingsParams = openingsParams || [createDefaultOpeningParams(api)]
-    this.asSudo = asSudo
   }
 
   public getCreatedOpeningIds(): OpeningId[] {
@@ -75,7 +67,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
-    return this.asSudo ? (await this.api.query.sudo.key()).toString() : await this.api.getLeadRoleKey(this.group)
+    return await this.api.getLeadRoleKey(this.group)
   }
 
   protected getOpeningMetadata(params: OpeningParams): IOpeningMetadata | null {
@@ -104,13 +96,13 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
     const extrinsics = this.openingsParams.map((params) =>
       this.api.tx[this.group].addOpening(
         this.getOpeningMetadataBytes(params),
-        this.asSudo ? 'Leader' : 'Regular',
+        'Regular',
         { stakeAmount: params.stake, leavingUnstakingPeriod: params.unstakingPeriod },
         params.reward
       )
     )
 
-    return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
+    return extrinsics
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<OpeningAddedEventDetails> {
@@ -130,7 +122,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
       assert.equal(qOpening.createdInEvent.id, qEvent.id)
       assert.equal(qOpening.group.name, this.group)
       assert.equal(qOpening.rewardPerBlock, openingParams.reward.toString())
-      assert.equal(qOpening.type, this.asSudo ? WorkingGroupOpeningType.Leader : WorkingGroupOpeningType.Regular)
+      assert.equal(qOpening.type, WorkingGroupOpeningType.Regular)
       assert.equal(qOpening.status.__typename, 'OpeningStatusOpen')
       assert.equal(qOpening.stakeAmount, openingParams.stake.toString())
       assert.equal(qOpening.unstakingPeriod, openingParams.unstakingPeriod)

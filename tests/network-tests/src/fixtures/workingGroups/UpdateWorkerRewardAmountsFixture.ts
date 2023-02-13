@@ -12,8 +12,6 @@ import { Utils } from '../../utils'
 import { WorkerFieldsFragment, WorkerRewardAmountUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
 
 export class UpdateWorkerRewardAmountsFixture extends BaseWorkingGroupFixture {
-  protected asSudo: boolean
-
   protected workerIds: WorkerId[]
   protected newRewards: (BN | null)[]
   protected workers: Worker[] = []
@@ -23,24 +21,22 @@ export class UpdateWorkerRewardAmountsFixture extends BaseWorkingGroupFixture {
     query: QueryNodeApi,
     group: WorkingGroupModuleName,
     workerIds: WorkerId[],
-    newRewards: (BN | null)[],
-    asSudo = false
+    newRewards: (BN | null)[]
   ) {
     super(api, query, group)
     this.workerIds = workerIds
     this.newRewards = newRewards
-    this.asSudo = asSudo
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
-    return this.asSudo ? (await this.api.query.sudo.key()).toString() : await this.api.getLeadRoleKey(this.group)
+    return await this.api.getLeadRoleKey(this.group)
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.workerIds.map((workerId, i) =>
       this.api.tx[this.group].updateRewardAmount(workerId, this.newRewards[i])
     )
-    return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
+    return extrinsics
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {

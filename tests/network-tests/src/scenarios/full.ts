@@ -5,11 +5,8 @@ import moderation from '../flows/forum/moderation'
 import threadTags from '../flows/forum/threadTags'
 import leadOpening from '../flows/working-groups/leadOpening'
 import buyingMemberships from '../flows/membership/buyingMemberships'
-import creatingMembers from '../flows/membership/creatingMembers'
-import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
-import invitingMebers from '../flows/membership/invitingMembers'
 import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
 import openingsAndApplications from '../flows/working-groups/openingsAndApplications'
@@ -39,6 +36,7 @@ import { testVideoCategories } from '../flows/content/videoCategories'
 import channelPayouts from '../flows/proposals/channelPayouts'
 import directChannelPayment from '../flows/content/directChannelPayment'
 import failToElectWithBlacklist from '../flows/council/electWithBlacklist'
+import invitingMembers from '../flows/membership/invitingMembers'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -55,11 +53,8 @@ scenario('Full', async ({ job, env }) => {
 
   // Membership:
   job('buying members', buyingMemberships).after(coreJob)
-  job('creating members', creatingMembers).after(coreJob)
-  job('creating founding members', creatingFoundingMembers).after(coreJob)
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
-  job('inviting members', invitingMebers).after(coreJob)
   job('transferring invites', transferringInvites).after(coreJob)
   job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
@@ -78,33 +73,32 @@ scenario('Full', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
 
-  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
-    ? job('channel payouts proposal', channelPayouts).requires(proposalsJob)
-    : undefined
+  const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
   // Working groups
-  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    channelPayoutsProposalJob || proposalsJob
+  const hireLeads = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+    channelPayoutsProposalJob
   )
-  job('openings and applications', openingsAndApplications).requires(sudoHireLead)
-  job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
-  job('group status', groupStatus).requires(sudoHireLead)
-  job('worker actions', workerActions).requires(sudoHireLead)
-  job('group budget', groupBudget).requires(sudoHireLead)
+  job('openings and applications', openingsAndApplications).requires(hireLeads)
+  job('upcoming openings', upcomingOpenings).requires(hireLeads)
+  job('group status', groupStatus).requires(hireLeads)
+  job('worker actions', workerActions).requires(hireLeads)
+  const groupBudgetSet = job('group budget', groupBudget).requires(hireLeads)
 
-  // Memberships (depending on hired lead)
-  job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
+  // Memberships (depending on hired lead, group budget set)
+  job('updating member verification status', updatingVerificationStatus).after(hireLeads)
+  job('inviting members', invitingMembers).after(coreJob).requires(groupBudgetSet)
 
   // Forum:
-  job('forum categories', categories).requires(sudoHireLead)
-  job('forum threads', threads).requires(sudoHireLead)
-  job('forum thread tags', threadTags).requires(sudoHireLead)
-  job('forum posts', posts).requires(sudoHireLead)
-  job('forum moderation', moderation).requires(sudoHireLead)
+  job('forum categories', categories).requires(hireLeads)
+  job('forum threads', threads).requires(hireLeads)
+  job('forum thread tags', threadTags).requires(hireLeads)
+  job('forum posts', posts).requires(hireLeads)
+  job('forum moderation', moderation).requires(hireLeads)
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(hireLeads)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
   )

@@ -16,9 +16,7 @@ scenario('Proposals', async ({ job, env }) => {
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
     : undefined
 
-  const channelPayoutsProposalJob = env.CHANNEL_PAYOUTS_VECTOR_FILE
-    ? job('channel payouts proposal', channelPayouts).requires(councilJob)
-    : undefined
+  const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(councilJob)
 
   const coreJob = job('proposals & proposal discussion', [
     proposals,
@@ -29,5 +27,5 @@ scenario('Proposals', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(runtimeUpgradeProposalJob || councilJob)
 
-  coreJob.requires(channelPayoutsProposalJob || councilJob)
+  coreJob.requires(channelPayoutsProposalJob)
 })

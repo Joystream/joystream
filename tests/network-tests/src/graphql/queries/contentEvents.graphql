@@ -314,6 +314,26 @@ query getChannelRewardClaimedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
+fragment ChannelRewardClaimedAndWithdrawnEventFields on ChannelRewardClaimedAndWithdrawnEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  amount
+  account
+}
+
+query getChannelRewardClaimedAndWithdrawnEventsByEventIds($eventIds: [ID!]) {
+  channelRewardClaimedAndWithdrawnEvents(where: { id_in: $eventIds }) {
+    ...ChannelRewardClaimedAndWithdrawnEventFields
+  }
+}
+
 fragment ChannelFundsWithdrawnEventFields on ChannelFundsWithdrawnEvent {
   id
   createdAt
