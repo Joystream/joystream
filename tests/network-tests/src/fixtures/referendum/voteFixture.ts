@@ -55,7 +55,7 @@ export class VoteFixture extends StandardizedFixture {
     }
   }
 
-  public assertError(expectedErrName: string) {
+  public assertError(expectedErrName: string): void {
     const errNames = this.results.map((result) => {
       const name = this.api.getErrorNameFromExtrinsicFailedRecord(result)
       return name
