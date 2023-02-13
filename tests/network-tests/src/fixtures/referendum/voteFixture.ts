@@ -26,13 +26,8 @@ export class VoteFixture extends StandardizedFixture {
     return Promise.resolve(Array.from(this.votes.keys()))
   }
 
-  protected getExtrinsics(): Promise<
-    SubmittableExtrinsic<'promise', ISubmittableResult>[] | SubmittableExtrinsic<'promise', ISubmittableResult>[][]
-  > {
-    const results = Array.from(this.votes).map(async ([, params]) =>
-      this.api.tx.referendum.vote(params.commitment, params.stake)
-    )
-    return Promise.all(results)
+  protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise', ISubmittableResult>[]> {
+    return Array.from(this.votes).map(([, params]) => this.api.tx.referendum.vote(params.commitment, params.stake))
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails<unknown>> {
