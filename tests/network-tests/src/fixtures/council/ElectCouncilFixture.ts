@@ -17,9 +17,9 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
   }
 
   protected async createCandidates(): Promise<string[]> {
-    const {councilSize, minNumberOfExtraCandidates}  = this.api.consts.council
+    const { councilSize, minNumberOfExtraCandidates } = this.api.consts.council
     const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates)
-    const addresses =  (await this.api.createKeyPairs(numberOfCandidates.toNumber())).map(({ key }) => key.address)
+    const addresses = (await this.api.createKeyPairs(numberOfCandidates.toNumber())).map(({ key }) => key.address)
     return addresses
   }
 
@@ -27,7 +27,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const { api, query } = this
 
     // get/create candidates member accounts
-    const candidatesMemberAccounts = this.candidatesAddresses ?? await this.createCandidates()
+    const candidatesMemberAccounts = this.candidatesAddresses ?? (await this.createCandidates())
 
     const numberOfCandidates = candidatesMemberAccounts.length
     const numberOfVoters = numberOfCandidates
