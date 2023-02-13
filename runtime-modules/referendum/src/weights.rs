@@ -81,8 +81,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn vote() -> Weight {
-		(43_910_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+		(57_013_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Instance1Referendum Stage (r:1 w:1)
